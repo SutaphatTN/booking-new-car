@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * Created by Reliese Model.
+ */
+
+namespace App\Models;
+
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+/**
+ * Class TbCarmodel
+ * 
+ * @property int $id
+ * @property string|null $Name_TH
+ * @property string|null $Name_EN
+ * @property string $Active
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ *
+ * @package App\Models
+ */
+class TbCarmodel extends Model
+{
+	use SoftDeletes;
+	
+	protected $table = 'tb_carmodels';
+
+	protected $fillable = [
+		'Name_TH',
+		'Name_EN',
+		'Active',
+		'userZone'
+	];
+
+	protected $dates = ['deleted_at'];
+}

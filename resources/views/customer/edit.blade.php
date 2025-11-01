@@ -1,0 +1,404 @@
+<div class="modal fade editCust" tabindex="-1" role="dialog" data-bs-backdrop="static">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header border-bottom">
+        <h4 class="modal-title mb-2" id="editCustLabel">แก้ไขข้อมูลลูกค้า</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form
+          action="{{ route('customer.update', $customers->id) }}"
+          method="POST"
+          enctype="multipart/form-data">
+          @csrf
+          @method('PUT')
+
+          <div class="row">
+            <div class="col-md-2 mb-5">
+              <label for="PrefixName" class="form-label">คำนำหน้า</label>
+              <select id="PrefixName" name="PrefixName" class="form-select" required>
+                <option value="">-- เลือกคำนำหน้า --</option>
+                @foreach ($perfixName as $item)
+                <option value="{{ @$item->id }}" {{ $customers->PrefixName == $item->id ? 'selected' : '' }}>
+                  {{ @$item->Name_TH }}
+                </option>
+                @endforeach
+              </select>
+
+              @error('PrefixName')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-5 mb-5">
+              <label class="form-label" for="FirstName">ชื่อ</label>
+              <input id="FirstName" type="text"
+                class="form-control @error('FirstName') is-invalid @enderror"
+                name="FirstName" value="{{ $customers->FirstName }}" required>
+
+              @error('FirstName')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-5 mb-5">
+              <label class="form-label" for="LastName">นามสกุล</label>
+              <input id="LastName" type="text"
+                class="form-control @error('LastName') is-invalid @enderror"
+                name="LastName" value="{{ $customers->LastName }}" required>
+
+              @error('LastName')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label class="form-label" for="IDNumber">เลขบัตรประชาชน</label>
+              <input id="IDNumber" type="text"
+                class="form-control @error('IDNumber') is-invalid @enderror"
+                name="IDNumber" maxlength="17" value="{{ $customers->formatted_id_number }}" required>
+
+              @error('IDNumber')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label class="form-label" for="NewCardDate">วันออกบัตรประชาชน</label>
+              <input id="NewCardDate" type="date"
+                class="form-control @error('NewCardDate') is-invalid @enderror"
+                name="NewCardDate" value="{{ $customers->NewCardDate }}" required>
+
+              @error('NewCardDate')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label class="form-label" for="ExpireCard">วันที่บัตรประชาชนหมดอายุ</label>
+              <input id="ExpireCard" type="date"
+                class="form-control @error('ExpireCard') is-invalid @enderror"
+                name="ExpireCard" value="{{ $customers->ExpireCard }}" required>
+
+              @error('ExpireCard')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label class="form-label" for="Birthday">วัน/เดือน/ปีเกิด</label>
+              <input id="Birthday" type="date"
+                class="form-control @error('Birthday') is-invalid @enderror"
+                name="Birthday" max="{{ date('Y-m-d') }}" value="{{ $customers->Birthday }}" required>
+
+              @error('Birthday')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label class="form-label" for="Gender">เพศ</label>
+              <select id="Gender" name="Gender" class="form-select" required>
+                <option value="">-- เลือกเพศ --</option>
+                <option value="Female" {{ $customers->Gender == 'Female' ? 'selected' : '' }}>หญิง</option>
+                <option value="Male" {{ $customers->Gender == 'Male' ? 'selected' : '' }}>ชาย</option>
+              </select>
+
+              @error('Gender')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label class="form-label" for="Nationality">สัญชาติ</label>
+              <input id="Nationality" type="text"
+                class="form-control @error('Nationality') is-invalid @enderror"
+                name="Nationality" value="{{ $customers->Nationality }}" required>
+
+              @error('Nationality')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label class="form-label" for="religion">ศาสนา</label>
+              <select id="religion" name="religion" class="form-select" required>
+                <option value="">-- เลือกศาสนา --</option>
+                <option value="buddhist" {{ $customers->religion == 'buddhist' ? 'selected' : '' }}>พุทธ</option>
+                <option value="islam" {{ $customers->religion == 'islam' ? 'selected' : '' }}>อิสลาม</option>
+                <option value="christian" {{ $customers->religion == 'Female' ? 'selected' : '' }}>คริสต์</option>
+                <option value="other" {{ $customers->religion == 'Male' ? 'selected' : '' }}>อื่นๆ</option>
+              </select>
+
+              @error('religion')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label class="form-label" for="Mobilephone1">เบอร์โทรหลัก</label>
+              <input id="Mobilephone1" type="text"
+                class="form-control @error('Mobilephone1') is-invalid @enderror"
+                name="Mobilephone1" maxlength="12" value="{{ $customers->formatted_mobile }}" required>
+
+              @error('Mobilephone1')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label class="form-label" for="Mobilephone2">เบอร์โทรสำรอง</label>
+              <input id="Mobilephone2" type="text"
+                class="form-control @error('Mobilephone2') is-invalid @enderror"
+                name="Mobilephone2" maxlength="12" value="{{ $customers->formatted_mobile_up}}">
+
+              @error('Mobilephone2')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="row mt-5">
+              <label class="form-label mb-4 fs-5" for="Address">ที่อยู่ปัจจุบัน</label>
+
+              <div class="col-md-2 mb-5">
+                <label class="form-label">เลขที่</label>
+                <input type="text" name="current_house_number"
+                  class="form-control"
+                  value="{{ old('current_house_number', $currentAddress->house_number ?? '') }}">
+              </div>
+
+              <div class="col-md-2 mb-5">
+                <label class="form-label">หมู่ที่</label>
+                <input type="text" name="current_group"
+                  class="form-control"
+                  value="{{ old('current_group', $currentAddress->group ?? '') }}">
+              </div>
+
+              <div class="col-md-4 mb-5">
+                <label class="form-label">หมู่บ้าน</label>
+                <input type="text" name="current_village"
+                  class="form-control"
+                  value="{{ old('current_village', $currentAddress->village ?? '') }}">
+              </div>
+
+              <div class="col-md-4 mb-5">
+                <label class="form-label">ซอย</label>
+                <input type="text" name="current_alley"
+                  class="form-control"
+                  value="{{ old('current_alley', $currentAddress->alley ?? '') }}">
+              </div>
+
+              <div class="col-md-4 mb-5">
+                <label class="form-label">ถนน</label>
+                <input type="text" name="current_road"
+                  class="form-control"
+                  value="{{ old('current_road', $currentAddress->road ?? '') }}">
+              </div>
+
+              <div class="col-md-4 mb-5">
+                <label class="form-label">ตำบล/แขวง</label>
+                <input type="text" name="current_subdistrict"
+                  class="form-control @error('current_subdistrict') is-invalid @enderror"
+                  value="{{ old('current_subdistrict', $currentAddress->subdistrict ?? '') }}" required>
+
+                @error('current_subdistrict')
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
+                @enderror
+              </div>
+
+              <div class="col-md-4 mb-5">
+                <label class="form-label">อำเภอ/เขต</label>
+                <input type="text" name="current_district"
+                  class="form-control @error('current_district') is-invalid @enderror"
+                  value="{{ old('current_district', $currentAddress->district ?? '') }}" required>
+
+                @error('current_district')
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
+                @enderror
+              </div>
+
+              <div class="col-md-3 mb-5">
+                <label class="form-label">จังหวัด</label>
+                <input type="text" name="current_province"
+                  class="form-control @error('current_province') is-invalid @enderror"
+                  value="{{ old('current_province', $currentAddress->province ?? '') }}" required>
+
+                @error('current_province')
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
+                @enderror
+              </div>
+
+              <div class="col-md-2 mb-5">
+                <label class="form-label">เลขไปรษณีย์</label>
+                <input type="text" name="current_postal_code"
+                  class="form-control @error('current_postal_code') is-invalid @enderror"
+                  value="{{ old('current_postal_code', $currentAddress->postal_code ?? '') }}" required>
+
+                @error('current_postal_code')
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
+                @enderror
+              </div>
+            </div>
+
+            @php
+            $isSameAddress =
+            isset($currentAddress, $docAddress) &&
+            $currentAddress->house_number == $docAddress->house_number &&
+            $currentAddress->group == $docAddress->group &&
+            $currentAddress->village == $docAddress->village &&
+            $currentAddress->alley == $docAddress->alley &&
+            $currentAddress->road == $docAddress->road &&
+            $currentAddress->subdistrict == $docAddress->subdistrict &&
+            $currentAddress->district == $docAddress->district &&
+            $currentAddress->province == $docAddress->province &&
+            $currentAddress->postal_code == $docAddress->postal_code;
+            @endphp
+
+            <div class="row mt-5">
+              <label class="form-label w-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="mb-4 fs-5">ที่อยู่สำหรับส่งเอกสาร</span>
+                  <div class="form-check mb-0">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="sameAsCurrent"
+                      {{ $isSameAddress ? 'checked' : '' }}>
+                    <label class="form-check-label fs-6" for="sameAsCurrent">
+                      ใช้ที่อยู่เดียวกับที่อยู่ปัจจุบัน
+                    </label>
+                  </div>
+                </div>
+              </label>
+
+              <div class="col-md-2 mb-5">
+                <label class="form-label">เลขที่</label>
+                <input type="text" name="doc_house_number"
+                  class="form-control"
+                  value="{{ old('doc_house_number', $docAddress->house_number ?? '') }}">
+              </div>
+
+              <div class="col-md-2 mb-5">
+                <label class="form-label">หมู่ที่</label>
+                <input type="text" name="doc_group"
+                  class="form-control"
+                  value="{{ old('doc_group', $docAddress->group ?? '') }}">
+              </div>
+
+              <div class="col-md-4 mb-5">
+                <label class="form-label">หมู่บ้าน</label>
+                <input type="text" name="doc_village"
+                  class="form-control"
+                  value="{{ old('doc_village', $docAddress->village ?? '') }}">
+              </div>
+
+              <div class="col-md-4 mb-5">
+                <label class="form-label">ซอย</label>
+                <input type="text" name="doc_alley"
+                  class="form-control"
+                  value="{{ old('doc_alley', $docAddress->alley ?? '') }}">
+              </div>
+
+              <div class="col-md-4 mb-5">
+                <label class="form-label">ถนน</label>
+                <input type="text" name="doc_road"
+                  class="form-control"
+                  value="{{ old('doc_road', $docAddress->road ?? '') }}">
+              </div>
+
+              <div class="col-md-4 mb-5">
+                <label class="form-label">ตำบล/แขวง</label>
+                <input type="text" name="doc_subdistrict"
+                  class="form-control @error('doc_subdistrict') is-invalid @enderror"
+                  value="{{ old('doc_subdistrict', $docAddress->subdistrict ?? '') }}" required>
+
+                @error('doc_subdistrict')
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
+                @enderror
+              </div>
+
+              <div class="col-md-4 mb-5">
+                <label class="form-label">อำเภอ/เขต</label>
+                <input type="text" name="doc_district"
+                  class="form-control @error('doc_district') is-invalid @enderror"
+                  value="{{ old('doc_district', $docAddress->district ?? '') }}" required>
+
+                @error('doc_district')
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
+                @enderror
+              </div>
+
+              <div class="col-md-3 mb-5">
+                <label class="form-label">จังหวัด</label>
+                <input type="text" name="doc_province"
+                  class="form-control @error('doc_province') is-invalid @enderror"
+                  value="{{ old('doc_province', $docAddress->province ?? '') }}" required>
+
+                @error('doc_province')
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
+                @enderror
+              </div>
+
+              <div class="col-md-2 mb-5">
+                <label class="form-label">เลขไปรษณีย์</label>
+                <input type="text" name="doc_postal_code"
+                  class="form-control @error('doc_postal_code') is-invalid @enderror"
+                  value="{{ old('doc_postal_code', $docAddress->postal_code ?? '') }}" required>
+
+                @error('doc_postal_code')
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
+                @enderror
+              </div>
+            </div>
+
+          </div>
+
+          <div class="d-flex justify-content-end">
+            <button type="button" id="btnUpdateCustomer" class="btn btn-primary">บันทึก</button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

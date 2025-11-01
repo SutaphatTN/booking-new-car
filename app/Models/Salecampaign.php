@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * Created by Reliese Model.
+ */
+
+namespace App\Models;
+
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * Class Salecampaign
+ * 
+ * @property int $id
+ * @property int|null $SaleID
+ * @property int|null $CampaignID
+ * @property int|null $CampaignType
+ * @property float|null $CashSupport
+ * @property float|null $CashSupportDeduct
+ * @property float|null $CashSupportFinal
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ *
+ * @package App\Models
+ */
+class Salecampaign extends Model
+{
+	protected $table = 'salecampaigns';
+
+	protected $casts = [
+		'SaleID' => 'int',
+		'CampaignID' => 'int',
+		'CampaignType' => 'int',
+		'CashSupport' => 'float',
+		'CashSupportDeduct' => 'float',
+		'CashSupportFinal' => 'float'
+	];
+
+	protected $fillable = [
+		'SaleID',
+		'CampaignID',
+		'CampaignType',
+		'CashSupport',
+		'CashSupportDeduct',
+		'CashSupportFinal'
+	];
+
+	public function campaign()
+	{
+		return $this->belongsTo(Campaigncar::class, 'CampaignID', 'id');
+	}
+}
