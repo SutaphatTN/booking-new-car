@@ -48,19 +48,101 @@
             </div>
 
             <div class="col-md-5 mb-5">
-              <label for="vinNo" class="form-label">Vin Number</label>
-              <input id="vinNo" type="text"
-                class="form-control @error('vinNo') is-invalid @enderror"
-                name="vinNo" value="{{ $order->vinNo }}" required>
+              <label for="vin_number" class="form-label">Vin Number</label>
+              <input id="vin_number" type="text"
+                class="form-control @error('vin_number') is-invalid @enderror"
+                name="vin_number" value="{{ $order->vin_number }}" required>
 
-              @error('vinNo')
+              @error('vin_number')
               <span class="invalid-feedback" role="alert">
                 <strong>{{ $message }}</strong>
               </span>
               @enderror
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-5 mb-5">
+              <label for="engine_number" class="form-label">หมายเลขเครื่องยนต์</label>
+              <input id="engine_number" type="text"
+                class="form-control @error('engine_number') is-invalid @enderror"
+                name="engine_number" value="{{ $order->engine_number }}" required>
+
+              @error('engine_number')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-2 mb-5">
+              <label for="option" class="form-label">Option</label>
+              <input id="option" type="text"
+                class="form-control @error('option') is-invalid @enderror"
+                name="option" value="{{ $order->option }}" required>
+
+              @error('option')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="color" class="form-label">สี</label>
+              <input id="color" type="text"
+                class="form-control @error('color') is-invalid @enderror"
+                name="color" value="{{ $order->color }}" required>
+
+              @error('color')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="year" class="form-label">ปี</label>
+              <input id="year" type="text"
+                class="form-control @error('year') is-invalid @enderror"
+                name="year" value="{{ $order->year }}" required>
+
+              @error('year')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="car_DNP" class="form-label">ราคาทุน</label>
+              <input id="car_DNP" type="text"
+                class="form-control text-end money-input @error('car_DNP') is-invalid @enderror"
+                name="car_DNP"
+                value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}"
+                required>
+
+              @error('car_DNP')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="car_MSRP" class="form-label">ราคาขาย</label>
+              <input id="car_MSRP" type="text"
+                class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror"
+                name="car_MSRP"
+                value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}"
+                required>
+
+              @error('car_MSRP')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-3 mb-5">
               <label for="purchase_source" class="form-label">แหล่งที่มา</label>
               <select id="purchase_source" name="purchase_source" class="form-select" required>
                 <option value="">-- เลือกแหล่งที่มา --</option>
@@ -91,54 +173,11 @@
               @enderror
             </div>
 
-            <div class="col-md-2 mb-5">
-              <label for="color" class="form-label">สี</label>
-              <input id="color" type="text"
-                class="form-control @error('color') is-invalid @enderror"
-                name="color" value="{{ $order->color }}" required>
-
-              @error('color')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-2 mb-5">
-              <label for="year" class="form-label">ปี</label>
-              <input id="year" type="text"
-                class="form-control @error('year') is-invalid @enderror"
-                name="year" value="{{ $order->year }}" required>
-
-              @error('year')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-4 mb-5">
-              <label for="order_status" class="form-label">สถานะการสั่งซื้อ</label>
-              <select id="order_status" name="order_status" class="form-select" required>
-                <option value="">-- เลือกสถานะ --</option>
-                <option value="OnWeb" {{ $order->order_status == 'OnWeb' ? 'selected' : '' }}>OnWeb</option>
-                <option value="Invoice" {{ $order->order_status == 'Invoice' ? 'selected' : '' }}>Invoice</option>
-                <option value="Stock" {{ $order->order_status == 'Stock' ? 'selected' : '' }}>Stock</option>
-                <option value="Cancel" {{ $order->order_status == 'Cancel' ? 'selected' : '' }}>Cancel</option>
-              </select>
-
-              @error('order_status')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-4 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="car_status" class="form-label">สถานะรถ</label>
               <select id="car_status" name="car_status" class="form-select" required>
                 <option value="">-- เลือกสถานะ --</option>
-                <option value="NULL" {{ $order->car_status == 'NULL' ? 'selected' : '' }}>NULL</option>
+                <option value="Null" {{ $order->car_status == 'Null' ? 'selected' : '' }}>Null</option>
                 <option value="Book" {{ $order->car_status == 'Book' ? 'selected' : '' }}>Book</option>
                 <option value="Send" {{ $order->car_status == 'Send' ? 'selected' : '' }}>Send</option>
               </select>
@@ -151,29 +190,41 @@
             </div>
 
             <div class="col-md-3 mb-5">
-              <label for="car_DNP" class="form-label">ราคาทุน</label>
-              <input id="car_DNP" type="text"
-                class="form-control text-end @error('car_DNP') is-invalid @enderror"
-                name="car_DNP" value="{{ $order->car_DNP }}" required>
+              <label for="order_status" class="form-label">สถานะ Car Order</label>
+              <select id="order_status" name="order_status" class="form-select" required>
+                <option value="">-- เลือกสถานะ --</option>
+                @foreach ($orderStatus as $status)
+                <option value="{{ $status->id }}"
+                  data-name="{{ $status->name }}"
+                  {{ $order->order_status == $status->id ? 'selected' : '' }}>
+                  {{ $status->name }}
+                </option>
+                @endforeach
+              </select>
 
-              @error('car_DNP')
+              @error('order_status')
               <span class="invalid-feedback" role="alert">
                 <strong>{{ $message }}</strong>
               </span>
               @enderror
             </div>
 
-            <div class="col-md-3 mb-5">
-              <label for="car_MSRP" class="form-label">ราคาขาย</label>
-              <input id="car_MSRP" type="text"
-                class="form-control text-end @error('car_MSRP') is-invalid @enderror"
-                name="car_MSRP" value="{{ $order->car_MSRP }}" required>
+            <div id="fieldInvoice" class="col-md-3 mb-5 d-none">
+              <label for="order_invoice_date" class="form-label">วันที่ออกใบกำกับ</label>
+              <input type="date" id="order_invoice_date" name="order_invoice_date" class="form-control" value="{{ $order->order_invoice_date }}">
+            </div>
 
-              @error('car_MSRP')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
+            <div id="fieldStock" class="col-md-12 row d-none">
+              <div class="col-md-3 mb-3">
+                <label for="order_stock_date" class="form-label">วันที่สต็อก</label>
+                <input type="date" id="order_stock_date" name="order_stock_date" class="form-control" value="{{ $order->order_stock_date }}">
+              </div>
+
+              <div class="col-md-3 mb-3">
+                <label for="estimated_stock_date" class="form-label">วันที่คาดว่าสินค้ามาถึง</label>
+                <input type="date" id="estimated_stock_date" name="estimated_stock_date" class="form-control" value="{{ $order->estimated_stock_date }}">
+              </div>
+
             </div>
 
           </div>

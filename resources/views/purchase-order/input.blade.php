@@ -16,26 +16,22 @@
       <div class="card-body">
         <form action="{{ route('purchase-order.store') }}" method="POST" enctype="multipart/form-data">
           @csrf
+
           <div class="row g-5">
 
-            <div class="col-md-2">
-              <label class="form-label" for="SaleID">รหัสผู้ขาย</label>
-              <input id="SaleID" type="text"
-                class="form-control @error('SaleID') is-invalid @enderror"
-                name="SaleID" required>
-
-              @error('SaleID')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
             <div class="col-md-3">
-              <label class="form-label" for="">ชื่อ - นามสกุล ผู้ขาย</label>
-              <input id="" type="text"
-                class="form-control"
-                name="">
+              <label class="form-label">รหัสผู้ขาย</label>
+              <input type="text" class="form-control" value="{{ Auth::user()->format_card_id }}" readonly>
             </div>
+            <div class="col-md-4">
+              <label class="form-label">ชื่อ - นามสกุล ผู้ขาย</label>
+              <input type="text" class="form-control" value="{{ Auth::user()->name }}" readonly>
+            </div>
+
+            <input type="hidden"
+              name="SaleID"
+              value="{{ Auth::user()->id }}">
+
             <div class="col-md-2">
               <label class="form-label" for="BookingDate">วันที่จอง</label>
               <input id="BookingDate" type="date"
@@ -48,118 +44,8 @@
               </span>
               @enderror
             </div>
-            <div class="col-md-2">
-              <label class="form-label" for="SaleConsultantID">เงินจอง</label>
-              <input id="SaleConsultantID" type="text"
-                class="form-control text-end @error('SaleConsultantID') is-invalid @enderror"
-                name="SaleConsultantID" required>
 
-              @error('SaleConsultantID')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
             <div class="col-md-3">
-              <label class="form-label d-block">ประเภทการจ่ายเงินจอง</label>
-
-              <div class="form-check form-check-inline">
-                <input class="form-check-input @error('hasTurnCar') is-invalid @enderror" type="radio" name="hasTurnCar" id="turnCarYes" value="yes" {{ old('hasTurnCar') == 'yes' ? 'checked' : '' }}>
-                <label class="form-check-label" for="turnCarYes">เงินสด</label>
-              </div>
-
-              <div class="form-check form-check-inline" style="margin-left: 10px">
-                <input class="form-check-input @error('hasTurnCar') is-invalid @enderror" type="radio" name="hasTurnCar" id="turnCarNo" value="no" {{ old('hasTurnCar') == 'no' ? 'checked' : '' }}>
-                <label class="form-check-label" for="turnCarNo">เงินโอน</label>
-              </div>
-
-              <div class="form-check form-check-inline">
-                <input class="form-check-input @error('hasTurnCar') is-invalid @enderror" type="radio" name="hasTurnCar" id="turnCarYes" value="yes" {{ old('hasTurnCar') == 'yes' ? 'checked' : '' }}>
-                <label class="form-check-label" for="turnCarYes">เช็ค</label>
-              </div>
-
-              <div class="form-check form-check-inline" style="margin-left: 10px">
-                <input class="form-check-input @error('hasTurnCar') is-invalid @enderror" type="radio" name="hasTurnCar" id="turnCarNo" value="no" {{ old('hasTurnCar') == 'no' ? 'checked' : '' }}>
-                <label class="form-check-label" for="turnCarNo">บัตรเครดิต</label>
-              </div>
-
-              @error('hasTurnCar')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-            <div class="col-md-3">
-              <label class="form-label" for="CarModelID">รุ่นรถหลัก</label>
-              <select id="CarModelID" name="CarModelID" class="form-select" required>
-                <option>-- เลือกรุ่นรถ --</option>
-                @foreach ($carModel as $item)
-                <option value="{{ @$item->id }}">{{ @$item->Name_TH }}</option>
-                @endforeach
-              </select>
-
-              @error('CarModelID')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-            <div class="col-md-4">
-              <label class="form-label" for="CarModelID">รุ่นรถย่อย</label>
-              <select id="CarModelID" name="CarModelID" class="form-select" required>
-                <option>-- เลือกรุ่นรถ --</option>
-                @foreach ($carModel as $item)
-                <option value="{{ @$item->id }}">{{ @$item->Name_TH }}</option>
-                @endforeach
-              </select>
-
-              @error('CarModelID')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-            <div class="col-md-3">
-              <label class="form-label" for="CarModelID">option</label>
-              <select id="CarModelID" name="CarModelID" class="form-select" required>
-                <option>-- เลือกรุ่นรถ --</option>
-                @foreach ($carModel as $item)
-                <option value="{{ @$item->id }}">{{ @$item->Name_TH }}</option>
-                @endforeach
-              </select>
-
-              @error('CarModelID')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-            <div class="col-md-1">
-              <label class="form-label" for="color">ปี</label>
-              <input id="color" type="text"
-                class="form-control @error('color') is-invalid @enderror"
-                name="color" required>
-
-              @error('color')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-            <div class="col-md-1">
-              <label class="form-label" for="color">สี</label>
-              <input id="color" type="text"
-                class="form-control @error('color') is-invalid @enderror"
-                name="color" required>
-
-              @error('color')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-4">
               <label class="form-label" for="customerSearch">ค้นหาข้อมูลลูกค้า</label>
               <div class="input-group">
                 <input id="customerSearch" type="text" class="form-control" name="customerSearch" placeholder="พิมพ์ข้อมูลลูกค้า">
@@ -179,39 +65,77 @@
               <label class="form-label" for="">เลขบัตรประชาชน</label>
               <input id="customerID" type="text" class="form-control" readonly>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label class="form-label" for="">เบอร์โทรศัพท์</label>
               <input id="customerPhone" type="text" class="form-control" readonly>
             </div>
 
+            <div class="col-md-3">
+              <label class="form-label" for="model_id">รุ่นรถหลัก</label>
+              <select id="model_id" name="model_id" class="form-select" required>
+                <option value="">-- เลือกรุ่นรถหลัก --</option>
+                @foreach ($model as $m)
+                <option value="{{ @$m->id }}">{{ @$m->Name_TH }}</option>
+                @endforeach
+              </select>
 
-            <!-- <div class="col-md-3">
-              <label class="form-label" for="FinanceID">รหัสไฟแนนซ์</label>
-              <input id="FinanceID" type="text"
-                class="form-control @error('FinanceID') is-invalid @enderror"
-                name="FinanceID" required>
-
-              @error('FinanceID')
+              @error('model_id')
               <span class="invalid-feedback" role="alert">
                 <strong>{{ $message }}</strong>
               </span>
               @enderror
             </div>
-            
-            <div class="col-md-3">
-              <label class="form-label" for="CashDeposit">เงินจอง</label>
-              <input id="CashDeposit" type="text"
-                class="form-control @error('CashDeposit') is-invalid @enderror"
-                name="CashDeposit" required>
+            <div class="col-md-4">
+              <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
+              <select id="subModel_id" name="subModel_id" class="form-select @error('subModel_id') is-invalid @enderror" required>
+                <option value="">-- เลือกรุ่นรถย่อย --</option>
+              </select>
 
-              @error('CashDeposit')
+              @error('subModel_id')
               <span class="invalid-feedback" role="alert">
                 <strong>{{ $message }}</strong>
               </span>
               @enderror
-            </div> -->
+            </div>
+            <div class="col-md-1">
+              <label class="form-label" for="option">Option</label>
+              <input id="option" type="text"
+                class="form-control @error('option') is-invalid @enderror"
+                name="option" required>
 
-            <div class="col-md-3">
+              @error('option')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-1">
+              <label class="form-label" for="Year">ปี</label>
+              <input id="Year" type="text"
+                class="form-control @error('Year') is-invalid @enderror"
+                name="Year" required>
+
+              @error('Year')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+            <div class="col-md-1">
+              <label class="form-label" for="Color">สี</label>
+              <input id="Color" type="text"
+                class="form-control @error('Color') is-invalid @enderror"
+                name="Color" required>
+
+              @error('Color')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-2">
               <label class="form-label d-block">รถเทิร์น</label>
 
               <div class="form-check form-check-inline">
@@ -231,15 +155,121 @@
               @enderror
             </div>
 
+            <div class="col-md-3">
+              <label class="form-label" for="reservation_cost">เงินจอง</label>
+              <input id="reservation_cost" type="text"
+                class="form-control text-end"
+                name="reservation_cost" required>
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label" for="reservation_date">วันที่จ่ายเงินจอง</label>
+              <input id="reservation_date" type="date"
+                class="form-control"
+                name="reservation_date" required>
+            </div>
+
+            <div class="col-md-7">
+              <label class="form-label d-block">ประเภทการจ่ายเงินจอง</label>
+
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="reservationCondition" id="cashRes" value="cash">
+                <label class="form-check-label" for="cashRes">เงินสด</label>
+              </div>
+
+              <div class="form-check form-check-inline" style="margin-left: 15px">
+                <input class="form-check-input" type="radio" name="reservationCondition" id="creditRes" value="credit">
+                <label class="form-check-label" for="creditRes">บัตรเครดิต</label>
+              </div>
+
+              <div class="form-check form-check-inline" style="margin-left: 15px">
+                <input class="form-check-input" type="radio" name="reservationCondition" id="checkRes" value="check">
+                <label class="form-check-label" for="checkRes">เช็คธนาคาร</label>
+              </div>
+
+              <div class="form-check form-check-inline" style="margin-left: 15px">
+                <input class="form-check-input" type="radio" name="reservationCondition" id="tranRes" value="transfer">
+                <label class="form-check-label" for="tranRes">เงินโอน</label>
+              </div>
+            </div>
+
+            <div id="creditSection" style="display:none;">
+              <div class="row">
+                <div class="col-md-4">
+                  <label class="form-label" for="reservation_credit">บัตรเครดิต</label>
+                  <input id="reservation_credit" type="text"
+                    class="form-control"
+                    name="reservation_credit">
+                </div>
+
+                <div class="col-md-2">
+                  <label class="form-label" for="reservation_tax_credit">ค่าธรรมเนียม</label>
+                  <input id="reservation_tax_credit" type="text"
+                    class="form-control text-end"
+                    name="reservation_tax_credit">
+                </div>
+              </div>
+            </div>
+
+            <div id="checkSection" style="display:none;">
+              <div class="row">
+                <div class="col-md-3">
+                  <label class="form-label" for="reservation_check_bank">ธนาคาร</label>
+                  <input id="reservation_check_bank" type="text"
+                    class="form-control"
+                    name="reservation_check_bank">
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="reservation_check_branch">สาขา</label>
+                  <input id="reservation_check_branch" type="text"
+                    class="form-control"
+                    name="reservation_check_branch">
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label" for="reservation_check_no">เลขที่</label>
+                  <input id="reservation_check_no" type="text"
+                    class="form-control"
+                    name="reservation_check_no">
+                </div>
+              </div>
+            </div>
+
+            <div id="bankSection" style="display:none;">
+              <div class="row">
+                <div class="col-md-3">
+                  <label class="form-label" for="reservation_transfer_bank">ธนาคาร</label>
+                  <input id="reservation_transfer_bank" type="text"
+                    class="form-control"
+                    name="reservation_transfer_bank">
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label" for="reservation_transfer_branch">สาขา</label>
+                  <input id="reservation_transfer_branch" type="text"
+                    class="form-control"
+                    name="reservation_transfer_branch">
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label" for="reservation_transfer_no">เลขที่</label>
+                  <input id="reservation_transfer_no" type="text"
+                    class="form-control"
+                    name="reservation_transfer_no">
+                </div>
+              </div>
+            </div>
+
             <div id="turnCarFields" class="row mt-6 g-5" style="display:none;">
-              <h4>กรณีมีรถเทิร์น</h4>
-              <div class="col-md-2">
+              <h4>รถเทิร์น</h4>
+              <div class="col-md-3">
                 <label class="form-label" for="brand">ยี่ห้อ</label>
                 <input id="brand" type="text"
                   class="form-control"
                   name="brand">
               </div>
-              <div class="col-md-2">
+              <div class="col-md-4">
                 <label class="form-label" for="model">รุ่น</label>
                 <input id="model" type="text"
                   class="form-control"
@@ -251,18 +281,6 @@
                   class="form-control"
                   name="machine">
               </div>
-              <div class="col-md-1">
-                <label class="form-label" for="year">ปี</label>
-                <input id="year" type="text"
-                  class="form-control"
-                  name="year">
-              </div>
-              <div class="col-md-2">
-                <label class="form-label" for="color">สี</label>
-                <input id="color" type="text"
-                  class="form-control"
-                  name="color">
-              </div>
               <div class="col-md-2">
                 <label class="form-label" for="license_plate">ทะเบียน</label>
                 <input id="license_plate" type="text"
@@ -270,16 +288,29 @@
                   name="license_plate">
               </div>
               <div class="col-md-2">
-                <label class="form-label" for="priceCost">ยอดเทิร์น</label>
-                <input id="priceCost" type="text"
-                  class="form-control text-end"
-                  name="priceCost">
+                <label class="form-label" for="year_turn">ปี</label>
+                <input id="year_turn" type="text"
+                  class="form-control"
+                  name="year_turn">
               </div>
               <div class="col-md-2">
-                <label class="form-label" for="priceCom">ค่าคอมยอดเทิร์น</label>
-                <input id="priceCom" type="text"
+                <label class="form-label" for="color_turn">สี</label>
+                <input id="color_turn" type="text"
+                  class="form-control"
+                  name="color_turn">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="cost_turn">ยอดเทิร์น</label>
+                <input id="cost_turn" type="text"
                   class="form-control text-end"
-                  name="priceCom">
+                  name="cost_turn">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="com_turn">ค่าคอมยอดเทิร์น</label>
+                <input id="com_turn" type="text"
+                  class="form-control text-end"
+                  name="com_turn">
               </div>
             </div>
 

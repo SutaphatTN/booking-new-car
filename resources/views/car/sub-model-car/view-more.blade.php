@@ -17,15 +17,10 @@
             <input class="form-control" type="text" value="{{ $sub->name }}" disabled />
           </div>
 
-          <div class="col-md-8 mb-5">
+          <!-- <div class="col-md-8 mb-5">
             <label for="code" class="form-label">รหัสรถ</label>
             <input class="form-control" type="text" value="{{ $sub->code }}" disabled />
-          </div>
-
-          <div class="col-md-4 mb-5">
-            <label for="year" class="form-label">ปี</label>
-            <input class="form-control" type="text" value="{{ $sub->year }}" disabled />
-          </div>
+          </div> -->
 
           <div class="col-md-12 mb-5">
             <label for="detail" class="form-label">รายละเอียด</label>

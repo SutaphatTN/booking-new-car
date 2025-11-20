@@ -59,6 +59,7 @@ class CustomerController extends Controller
                 'religion' => $request->religion,
                 'Mobilephone1' => preg_replace('/\D/', '', $request->Mobilephone1),
                 'Mobilephone2' => preg_replace('/\D/', '', $request->Mobilephone2),
+                'userZone' => $request->userZone  ?? null,
             ]);
 
             Address::create([
@@ -96,6 +97,8 @@ class CustomerController extends Controller
                 'message' => 'เพิ่มข้อมูลเรียบร้อยแล้ว'
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
+            
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
@@ -206,6 +209,8 @@ class CustomerController extends Controller
                 'message' => 'แก้ไขข้อมูลเรียบร้อยแล้ว'
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
+            
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'

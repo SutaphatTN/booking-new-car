@@ -104,7 +104,7 @@
             <div class="col-md-6 mb-5">
               <label for="cost" class="form-label">ราคาทุน</label>
               <input id="cost" type="text"
-                class="form-control @error('cost') is-invalid @enderror"
+                class="form-control text-end money-input @error('cost') is-invalid @enderror"
                 name="cost" required>
 
               @error('cost')
@@ -116,14 +116,14 @@
             <div class="col-md-6 mb-5">
               <label for="promo" class="form-label">ราคาพิเศษ</label>
               <input id="promo" type="text"
-                class="form-control"
+                class="form-control text-end money-input"
                 name="promo">
             </div>
 
             <div class="col-md-6 mb-5">
               <label for="sale" class="form-label">ราคาขาย</label>
               <input id="sale" type="text"
-                class="form-control @error('sale') is-invalid @enderror"
+                class="form-control text-end money-input @error('sale') is-invalid @enderror"
                 name="sale" required>
 
               @error('sale')
@@ -135,7 +135,7 @@
             <div class="col-md-6 mb-5">
               <label for="comSale" class="form-label">ค่าคอม ราคาขาย</label>
               <input id="comSale" type="text"
-                class="form-control"
+                class="form-control text-end money-input"
                 name="comSale">
             </div>
 

@@ -8,6 +8,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Class Salecar
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $CusID
  * @property Carbon|null $KeyInDate
  * @property int|null $SaleID
- * @property int|null $CarModelID
+ * @property int|null $model_id
  * @property string|null $Color
  * @property int|null $CarID
  * @property int|null $SaleConsultantID
@@ -42,7 +43,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property float|null $TotalPaymentatDelivery
  * @property int|null $ReferentPersonID
  * @property float|null $CashSupportFromMarkup
- * @property string|null $TotalSaleCampaign
+ * @property float|null $TotalSaleCampaign
  * @property float|null $CashSupportInterestPlus
  * @property float|null $TotalCashSupport
  * @property float|null $TotalAccessoryGift
@@ -50,7 +51,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property float|null $TotalCashSupportUsed
  * @property float|null $RemainingCashSuuportShared
  * @property float|null $SCCommissionIntPlus
- * @property float|null $AccessoryComAmount
  * @property float|null $TradeinComAmount
  * @property float|null $CommissionDeduct
  * @property string|null $ApprovalSignature
@@ -75,13 +75,15 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Salecar extends Model
 {
+	use SoftDeletes;
+
 	protected $table = 'salecars';
 
 	protected $casts = [
 		'CusID' => 'int',
 		'KeyInDate' => 'datetime',
 		'SaleID' => 'int',
-		'CarModelID' => 'int',
+		'model_id' => 'int',
 		'CarID' => 'int',
 		'SaleConsultantID' => 'int',
 		'FinanceID' => 'int',
@@ -90,7 +92,6 @@ class Salecar extends Model
 		'DeliveryDate' => 'datetime',
 		'DeliveryInDMSDate' => 'datetime',
 		'DeliveryInCKDate' => 'datetime',
-		'RegistrationProvince' => 'datetime',
 		'RedPlateAmount' => 'float',
 		'CarSalePrice' => 'float',
 		'MarkupPrice' => 'float',
@@ -112,7 +113,6 @@ class Salecar extends Model
 		'TotalCashSupportUsed' => 'float',
 		'RemainingCashSuuportShared' => 'float',
 		'SCCommissionIntPlus' => 'float',
-		'AccessoryComAmount' => 'float',
 		'TradeinComAmount' => 'float',
 		'CommissionDeduct' => 'float',
 		'FinanceAmount' => 'float',
@@ -132,11 +132,14 @@ class Salecar extends Model
 
 	protected $fillable = [
 		'CusID',
+		'CarOrderID',
 		'KeyInDate',
 		'SaleID',
-		'CarModelID',
+		'model_id',
 		'Color',
-		'CarID',
+		'Year',
+		'option',
+		'subModel_id',
 		'SaleConsultantID',
 		'FinanceID',
 		'TurnCarID',
@@ -154,6 +157,7 @@ class Salecar extends Model
 		'DownPayment',
 		'DownPaymentPercentage',
 		'DownPaymentDiscount',
+		'PaymentDiscount',
 		'CashDeposit',
 		'TradeinAddition',
 		'AdditionFromCustomer',
@@ -161,14 +165,16 @@ class Salecar extends Model
 		'ReferentPersonID',
 		'CashSupportFromMarkup',
 		'TotalSaleCampaign',
+		'balanceCampaign',
 		'CashSupportInterestPlus',
 		'TotalCashSupport',
 		'TotalAccessoryGift',
+		'AccessoryGiftCom',
 		'TotalAccessoryExtra',
+		'AccessoryExtraCom',
 		'TotalCashSupportUsed',
 		'RemainingCashSuuportShared',
 		'SCCommissionIntPlus',
-		'AccessoryComAmount',
 		'TradeinComAmount',
 		'CommissionDeduct',
 		'ApprovalSignature',
@@ -185,8 +191,16 @@ class Salecar extends Model
 		'AdminCheckedDate',
 		'CheckerID',
 		'CheckerCheckedDate',
-		'Note'
+		'GMApprovalSignature',
+		'Note',
+		'ReferrerID',
+		'ReferrerAmount',
+		'balance',
+		'balanceFinance',
+		'con_status'
 	];
+
+	protected $dates = ['deleted_at'];
 
 	public function turnCar()
 	{
@@ -198,20 +212,75 @@ class Salecar extends Model
 		return $this->belongsTo(Customer::class, 'CusID', 'id');
 	}
 
+	public function customerReferrer()
+	{
+		return $this->belongsTo(Customer::class, 'ReferrerID', 'id');
+	}
+
+	public function carOrder()
+	{
+		return $this->belongsTo(CarOrder::class, 'CarOrderID', 'id');
+	}
+
 	public function accessories()
 	{
-		return $this->belongsToMany(Accessory::class, 'saleaccessory', 'salecar_id', 'accessory_id')
+		return $this->belongsToMany(AccessoryPrice::class, 'saleaccessory', 'salecar_id', 'accessory_id')
 			->withPivot(['price_type', 'price', 'commission', 'type'])
 			->withTimestamps();
 	}
 
 	public function campaigns()
 	{
-		return $this->hasMany(Salecampaign::class, 'SaleID', 'SaleID');
+		return $this->hasMany(Salecampaign::class, 'SaleID', 'id');
 	}
 
-	public function carModel()
+	public function model()
 	{
-		return $this->belongsTo(TbCarmodel::class, 'CarModelID', 'id');
+		return $this->belongsTo(TbCarmodel::class, 'model_id', 'id');
+	}
+
+	public function subModel()
+	{
+		return $this->belongsTo(TbSubcarmodel::class, 'subModel_id', 'id');
+	}
+
+	public function conStatus()
+	{
+		return $this->belongsTo(TbConStatus::class, 'con_status', 'id');
+	}
+
+	public function provinces()
+	{
+		return $this->belongsTo(TbProvinces::class, 'RegistrationProvince', 'id');
+	}
+
+	public function reservationPayment()
+	{
+		return $this->hasOne(PaymentType::class, 'saleCar_id', 'id')->where('category', 'reservation');
+	}
+
+	public function remainingPayment()
+	{
+		return $this->hasOne(PaymentType::class, 'saleCar_id', 'id')->where('category', 'remaining');
+	}
+
+	public function deliveryPayment()
+	{
+		return $this->hasOne(PaymentType::class, 'saleCar_id', 'id')->where('category', 'delivery');
+	}
+
+	public function saleUser()
+	{
+		return $this->belongsTo(User::class, 'SaleID', 'id');
+	}
+
+	public function getBookingDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getFormatBookingDateAttribute()
+	{
+		return $this->BookingDate ? Carbon::parse($this->BookingDate)->format('d-m-Y') : null;
 	}
 }

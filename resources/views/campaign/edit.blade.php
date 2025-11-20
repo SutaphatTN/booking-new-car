@@ -79,8 +79,8 @@
             <div class="col-md-4 mb-5">
               <label for="cashSupport" class="form-label">เงินการขาย</label>
               <input id="cashSupport" type="text"
-                class="form-control text-end @error('cashSupport') is-invalid @enderror"
-                name="cashSupport" value="{{ $cam->cashSupport }}" required>
+                class="form-control text-end money-input @error('cashSupport') is-invalid @enderror"
+                name="cashSupport" value="{{ $cam->cashSupport !== null ? number_format($cam->cashSupport, 2) : '' }}" required>
 
               @error('cashSupport')
               <span class="invalid-feedback" role="alert">
@@ -92,8 +92,8 @@
             <div class="col-md-4 mb-5">
               <label for="cashSupport_deduct" class="form-label">เงินหัก</label>
               <input id="cashSupport_deduct" type="text"
-                class="form-control text-end @error('cashSupport_deduct') is-invalid @enderror"
-                name="cashSupport_deduct" value="{{ $cam->cashSupport_deduct }}" required>
+                class="form-control text-end money-input @error('cashSupport_deduct') is-invalid @enderror"
+                name="cashSupport_deduct" value="{{ $cam->cashSupport_deduct !== null ? number_format($cam->cashSupport_deduct, 2) : '' }}" required>
 
               @error('cashSupport_deduct')
               <span class="invalid-feedback" role="alert">
@@ -105,8 +105,8 @@
             <div class="col-md-4 mb-5">
               <label for="cashSupport_final" class="form-label">จำนวนเงินที่เหลือ</label>
               <input id="cashSupport_final" type="text"
-                class="form-control text-end @error('cashSupport_final') is-invalid @enderror"
-                name="cashSupport_final" value="{{ $cam->cashSupport_final }}" readonly>
+                class="form-control text-end money-input @error('cashSupport_final') is-invalid @enderror"
+                name="cashSupport_final" value="{{ $cam->cashSupport_final !== null ? number_format($cam->cashSupport_final, 2) : '' }}" readonly>
 
               @error('cashSupport_final')
               <span class="invalid-feedback" role="alert">

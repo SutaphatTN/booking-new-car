@@ -7,7 +7,7 @@
       </div>
       <div class="modal-body">
         <form
-          action="{{ route('sub-model-car.store') }}"
+          action="{{ route('model.sub-model.store') }}"
           method="POST"
           enctype="multipart/form-data">
           @csrf
@@ -42,7 +42,7 @@
               @enderror
             </div>
 
-            <div class="col-md-8 mb-5">
+            <!-- <div class="col-md-8 mb-5">
               <label for="code" class="form-label">รหัสรถ</label>
               <input id="code" type="text"
                 class="form-control @error('code') is-invalid @enderror"
@@ -53,20 +53,7 @@
                 <strong>{{ $message }}</strong>
               </span>
               @enderror
-            </div>
-
-            <div class="col-md-4 mb-5">
-              <label for="year" class="form-label">ปี</label>
-              <input id="year" type="text"
-                class="form-control @error('year') is-invalid @enderror"
-                name="year" required>
-
-              @error('year')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+            </div> -->
 
             <div class="col-md-12 mb-5">
               <label for="detail" class="form-label">รายละเอียด</label>

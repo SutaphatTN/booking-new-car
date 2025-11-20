@@ -74,7 +74,7 @@
             <div class="col-md-4 mb-5">
               <label for="cashSupport" class="form-label">เงินการขาย</label>
               <input id="cashSupport" type="text"
-                class="form-control text-end @error('cashSupport') is-invalid @enderror"
+                class="form-control text-end money-input @error('cashSupport') is-invalid @enderror"
                 name="cashSupport" required>
 
               @error('cashSupport')
@@ -87,7 +87,7 @@
             <div class="col-md-4 mb-5">
               <label for="cashSupport_deduct" class="form-label">เงินหัก</label>
               <input id="cashSupport_deduct" type="text"
-                class="form-control text-end @error('cashSupport_deduct') is-invalid @enderror"
+                class="form-control text-end money-input @error('cashSupport_deduct') is-invalid @enderror"
                 name="cashSupport_deduct" required>
 
               @error('cashSupport_deduct')
@@ -100,7 +100,7 @@
             <div class="col-md-4 mb-5">
               <label for="cashSupport_final" class="form-label">จำนวนเงินที่เหลือ</label>
               <input id="cashSupport_final" type="text"
-                class="form-control text-end @error('cashSupport_final') is-invalid @enderror"
+                class="form-control text-end money-input @error('cashSupport_final') is-invalid @enderror"
                 name="cashSupport_final" readonly>
 
               @error('cashSupport_final')

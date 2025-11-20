@@ -48,6 +48,37 @@ $(document).ready(function () {
   });
 });
 
+//css : format number
+$(document).ready(function () {
+  $('.money-input').each(function () {
+    let value = $(this).val();
+    if (value && !isNaN(value.replace(/,/g, ''))) {
+      $(this).val(
+        parseFloat(value.replace(/,/g, '')).toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
+      );
+    }
+  });
+});
+
+$(document).on('input', '.money-input', function () {
+  let value = this.value.replace(/,/g, '');
+  if (value === '' || isNaN(value)) {
+    this.value = '';
+    return;
+  }
+  this.value = parseFloat(value).toLocaleString();
+});
+
+$(document).on('blur', '.money-input', function () {
+  let value = this.value.replace(/,/g, '');
+  if (value && !isNaN(value)) {
+    this.value = parseFloat(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+});
+
 //view : toggle
 $(document).on('change', '.status-acc', function () {
   const $checkbox = $(this);
@@ -236,7 +267,7 @@ $(document).on('click', '.btnEditAcc', function () {
               title: 'สำเร็จ!',
               text: res.message,
               timer: 2000,
-              showConfirmButton: false
+              showConfirmButton: true
             });
 
             accessoryTable.ajax.reload(null, false);
@@ -458,7 +489,7 @@ $(document).on('click', '.btnEditPart', function () {
               title: 'สำเร็จ!',
               text: res.message,
               timer: 2000,
-              showConfirmButton: false
+              showConfirmButton: true
             });
 
             partnerTable.ajax.reload(null, false);

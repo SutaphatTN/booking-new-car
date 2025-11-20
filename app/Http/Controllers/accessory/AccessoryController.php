@@ -36,13 +36,21 @@ class AccessoryController extends Controller
             </div>
             ';
 
+            $saleText = '-';
+            if ($a->sale !== null) {
+                $saleText = number_format($a->sale, 2);
+                if ($a->comSale !== null && $a->comSale > 0) {
+                    $saleText .= ' (' . number_format($a->comSale, 2) . ')';
+                }
+            }
+
             return [
                 'No' => $index + 1,
                 'accessoryPartner_id' => $partnerA,
                 'accessory_id' => $a->accessory_id,
-                'cost' => $a->cost,
-                'sale' => $a->sale,
-                'promo' => $a->promo,
+                'cost' => $a->cost !== null ? number_format($a->cost, 2) : '-',
+                'sale' => $saleText,
+                'promo' => $a->promo !== null ? number_format($a->promo, 2) : '-',
                 'active' => $statusSwitch,
                 'Action' => view('accessory.button', compact('a'))->render()
             ];
@@ -98,10 +106,18 @@ class AccessoryController extends Controller
                 'detail' => $request->detail,
                 'accessoryType_id' => $request->accessoryType_id,
                 'accessoryPartner_id' => $request->accessoryPartner_id,
-                'cost' => str_replace(',', '', $request->cost ?: 0),
-                'sale' => str_replace(',', '', $request->sale ?: 0),
-                'comSale' => str_replace(',', '', $request->comSale ?: 0),
-                'promo' => str_replace(',', '', $request->promo ?: 0),
+                'cost' => $request->filled('cost')
+                    ? str_replace(',', '', $request->cost)
+                    : null,
+                'sale' => $request->filled('sale')
+                    ? str_replace(',', '', $request->sale)
+                    : null,
+                'comSale' => $request->filled('comSale')
+                    ? str_replace(',', '', $request->comSale)
+                    : null,
+                'promo' => $request->filled('promo')
+                    ? str_replace(',', '', $request->promo)
+                    : null,
                 'userZone' => $request->userZone  ?? null,
                 'startDate' => $request->startDate,
                 'endDate' => $request->endDate,
@@ -150,21 +166,22 @@ class AccessoryController extends Controller
             $acc = AccessoryPrice::findOrFail($id);
             $data = $request->except(['_token', '_method']);
 
-            if ($request->cost) {
-                $data['cost'] = str_replace(',', '', $request->cost);
-            }
+            $data['cost'] = $request->cost
+                ? str_replace(',', '', $request->cost)
+                : null;
 
-            if ($request->sale) {
-                $data['sale'] = str_replace(',', '', $request->sale);
-            }
+            $data['sale'] = $request->sale
+                ? str_replace(',', '', $request->sale)
+                : null;
 
-            if ($request->comSale) {
-                $data['comSale'] = str_replace(',', '', $request->comSale);
-            }
+            $data['comSale'] = $request->comSale
+                ? str_replace(',', '', $request->comSale)
+                : null;
 
-            if ($request->promo) {
-                $data['promo'] = str_replace(',', '', $request->promo);
-            }
+            $data['promo'] = $request->promo
+                ? str_replace(',', '', $request->promo)
+                : null;
+
             $acc->update($data);
 
             return response()->json([

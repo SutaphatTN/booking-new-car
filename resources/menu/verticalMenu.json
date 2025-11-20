@@ -8,12 +8,12 @@
         {
           "url": "customer",
           "name": "ข้อมูลลูกค้า",
-          "slug": "customer-view"
+          "slug": "customer.index"
         },
         {
           "url": "customer/create",
           "name": "เพิ่มข้อมูลลูกค้า",
-          "slug": "customer-create"
+          "slug": "customer.create"
         }
       ]
     },
@@ -25,37 +25,48 @@
         {
           "url": "purchase-order",
           "name": "รายการจอง",
-          "slug": "purchase-order-view"
+          "slug": "purchase-order.index"
         },
         {
           "url": "purchase-order/create",
           "name": "เพิ่มรายการจอง",
-          "slug": "purchase-order-create"
+          "slug": "purchase-order.create"
         }
       ]
     },
     {
       "name": "ข้อมูลรถ",
       "icon": "menu-icon icon-base bx bx-car",
-      "slug": "car",
+      "slug": "model",
       "submenu": [
         {
           "url": "model-car",
           "name": "ข้อมูลรถรุ่นหลัก",
-          "slug": "car-view"
+          "slug": "model-car.index"
         },
         {
           "url": "sub-model-car",
           "name": "ข้อมูลรถรุ่นย่อย",
-          "slug": "car-sub-view"
+          "slug": "model.sub-model.index"
         }
       ]
     },
     {
       "name": "ข้อมูลการสั่งรถ",
       "icon": "menu-icon icon-base bx bx-book-content",
-      "slug": "car-order-view",
-      "url": "car-order"
+      "slug": "car-order",
+      "submenu": [
+        {
+          "url": "car-order",
+          "name": "รายการสั่งรถ",
+          "slug": "car-order.index"
+        },
+        {
+          "url": "car-order/history",
+          "name": "ประวัติการสั่งรถ",
+          "slug": "car-order.history"
+        }
+      ]
     },
     {
       "name": "ประดับยนต์",
@@ -63,22 +74,28 @@
       "slug": "accessory",
       "submenu": [
         {
-          "url": "accessory/view/partner",
+          "url": "accessory/partner",
           "name": "แหล่งที่มา",
-          "slug": "accessory-partner"
+          "slug": "accessory.partner"
         },
         {
           "url": "accessory",
           "name": "ประดับยนต์",
-          "slug": "accessory-view"
+          "slug": "accessory.index"
         }
       ]
     },
     {
       "name": "แคมเปญ",
       "icon": "menu-icon icon-base bx bxs-megaphone",
-      "slug": "campaign-view",
+      "slug": "campaign.index",
       "url": "campaign"
+    },
+    {
+      "name": "Cards",
+      "icon": "menu-icon icon-base bx bx-collection",
+      "slug": "cards-basic",
+      "url": "cards/basic"
     },
     {
       "url": "/",

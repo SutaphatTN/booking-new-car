@@ -40,6 +40,7 @@ class Salecampaign extends Model
 	protected $fillable = [
 		'SaleID',
 		'CampaignID',
+		'CampaignName',
 		'CampaignType',
 		'CashSupport',
 		'CashSupportDeduct',
@@ -48,6 +49,6 @@ class Salecampaign extends Model
 
 	public function campaign()
 	{
-		return $this->belongsTo(Campaigncar::class, 'CampaignID', 'id');
+		return $this->belongsTo(Campaign::class, 'CampaignID', 'id');
 	}
 }

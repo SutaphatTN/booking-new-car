@@ -187,7 +187,7 @@
               <div class="col-md-2 mb-5">
                 <label class="form-label">เลขที่</label>
                 <input type="text" name="current_house_number"
-                  class="form-control">
+                  class="form-control" required>
               </div>
 
               <div class="col-md-2 mb-5">
@@ -277,7 +277,7 @@
               <div class="col-md-2 mb-5">
                 <label class="form-label">เลขที่</label>
                 <input type="text" name="doc_house_number"
-                  class="form-control">
+                  class="form-control" required>
               </div>
 
               <div class="col-md-2 mb-5">

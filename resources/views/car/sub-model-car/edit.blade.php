@@ -1,5 +1,5 @@
 <div class="modal fade editSubCar" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-md" role="document">
+  <div class="modal-dialog modal-sm" role="document">
     <div class="modal-content">
       <div class="modal-header border-bottom">
         <h4 class="modal-title mb-2" id="editSubCarLabel">แก้ไขข้อมูลรถรุ่นย่อย</h4>
@@ -7,7 +7,7 @@
       </div>
       <div class="modal-body">
         <form
-          action="{{ route('sub-model-car.update', $sub->id) }}"
+          action="{{ route('model.sub-model.update', ['sub_model_car' => $sub->id]) }}"
           method="POST"
           enctype="multipart/form-data">
           @csrf
@@ -43,7 +43,7 @@
               @enderror
             </div>
 
-            <div class="col-md-8 mb-5">
+            <!-- <div class="col-md-8 mb-5">
               <label for="code" class="form-label">รหัสรถ</label>
               <input id="code" type="text"
                 class="form-control @error('code') is-invalid @enderror"
@@ -54,20 +54,7 @@
                 <strong>{{ $message }}</strong>
               </span>
               @enderror
-            </div>
-
-            <div class="col-md-4 mb-5">
-              <label for="year" class="form-label">ปี</label>
-              <input id="year" type="text"
-                class="form-control @error('year') is-invalid @enderror"
-                name="year" value="{{ $sub->year }}" required>
-
-              @error('year')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+            </div> -->
 
             <div class="col-md-12 mb-5">
               <label for="detail" class="form-label">รายละเอียด</label>

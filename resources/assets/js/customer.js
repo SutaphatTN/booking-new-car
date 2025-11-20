@@ -106,7 +106,7 @@ $(document).on('click', '.btnEditCust', function () {
               title: 'สำเร็จ!',
               text: res.message,
               timer: 2000,
-              showConfirmButton: false
+              showConfirmButton: true
             });
 
             customerTable.ajax.reload(null, false);

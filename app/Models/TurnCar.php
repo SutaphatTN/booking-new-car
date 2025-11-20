@@ -19,8 +19,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $machine
  * @property string|null $color
  * @property string|null $license_plate
- * @property float|null $priceCost
- * @property float|null $priceCom
+ * @property float|null $cost
+ * @property float|null $com
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *
@@ -38,12 +38,12 @@ class TurnCar extends Model
 	protected $fillable = [
 		'brand',
 		'model',
-		'year',
+		'year_turn',
 		'machine',
-		'color',
+		'color_turn',
 		'license_plate',
-		'priceCost',
-		'priceCom'
+		'cost_turn',
+		'com_turn'
 	];
 
 	public function saleCar()

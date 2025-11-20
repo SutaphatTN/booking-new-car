@@ -16,9 +16,10 @@ $(document).ready(function () {
     ajax: '/car-order/list',
     columns: [
       { data: 'No' },
+      { data: 'order_code' },
       { data: 'model_id' },
       { data: 'subModel_id' },
-      { data: 'vinNo' },
+      { data: 'vin_number' },
       { data: 'order_status' },
       { data: 'car_status' },
       { data: 'Action', orderable: false, searchable: false }
@@ -54,6 +55,37 @@ $(document).on('click', '.btnViewCarOrder', function () {
     $('.viewMoreCarOrder').html(html);
     $('.viewCarOrder').modal('show');
   });
+});
+
+//css : format number
+$(document).ready(function () {
+  $('.money-input').each(function () {
+    let value = $(this).val();
+    if (value && !isNaN(value.replace(/,/g, ''))) {
+      $(this).val(
+        parseFloat(value.replace(/,/g, '')).toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
+      );
+    }
+  });
+});
+
+$(document).on('input', '.money-input', function () {
+  let value = this.value.replace(/,/g, '');
+  if (value === '' || isNaN(value)) {
+    this.value = '';
+    return;
+  }
+  this.value = parseFloat(value).toLocaleString();
+});
+
+$(document).on('blur', '.money-input', function () {
+  let value = this.value.replace(/,/g, '');
+  if (value && !isNaN(value)) {
+    this.value = parseFloat(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 });
 
 //input : modal car-order
@@ -150,6 +182,25 @@ $(document).on('change', '#model_id', function () {
   });
 });
 
+//hide select
+function toggleOrderStatusFields($modal) {
+  const selected = $modal.find('#order_status option:selected');
+  const statusName = selected.data('name');
+
+  $modal.find('#fieldInvoice, #fieldStock').addClass('d-none');
+
+  if (statusName === 'Invoice') {
+    $modal.find('#fieldInvoice').removeClass('d-none');
+  } else if (statusName === 'Stock') {
+    $modal.find('#fieldStock').removeClass('d-none');
+  }
+}
+
+$(document).on('change', '#order_status', function () {
+  const $modal = $(this).closest('.modal');
+  toggleOrderStatusFields($modal);
+});
+
 //edit : car-order
 $(document).on('click', '.btnEditCarOrder', function () {
   const id = $(this).data('id');
@@ -161,6 +212,10 @@ $(document).on('click', '.btnEditCarOrder', function () {
     const $modal = $('.editCarOrder');
 
     $modal.modal('show');
+
+    setTimeout(() => {
+      toggleOrderStatusFields($modal);
+    }, 50);
 
     $modal
       .find('.btnUpdateCarOrder')
@@ -196,7 +251,7 @@ $(document).on('click', '.btnEditCarOrder', function () {
               title: 'สำเร็จ!',
               text: res.message,
               timer: 2000,
-              showConfirmButton: false
+              showConfirmButton: true
             });
 
             carOrderTable.ajax.reload(null, false);
@@ -265,6 +320,47 @@ $(document).on('click', '.btnDeleteCarOrder', function () {
           });
         }
       });
+    }
+  });
+});
+
+// view history car-order
+let historyCarOrderTable;
+
+$(document).ready(function () {
+  if ($.fn.DataTable.isDataTable('.historyCarOrderTable')) {
+    $('.historyCarOrderTable').DataTable().destroy();
+  }
+
+  historyCarOrderTable = $('.historyCarOrderTable').DataTable({
+    ajax: '/car-order/history/list',
+    columns: [
+      { data: 'No' },
+      { data: 'full_name' },
+      { data: 'order_code' },
+      { data: 'model' },
+      { data: 'subModel' },
+      { data: 'booking' }
+    ],
+    paging: true,
+    lengthChange: true,
+    searching: true,
+    ordering: false,
+    info: true,
+    pageLength: 10,
+    autoWidth: false,
+    language: {
+      lengthMenu: 'แสดง _MENU_ แถว',
+      zeroRecords: 'ไม่พบข้อมูล',
+      info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
+      infoEmpty: 'ไม่มีข้อมูล',
+      search: 'ค้นหา:',
+      paginate: {
+        first: '',
+        last: '',
+        next: 'ถัดไป',
+        previous: 'ก่อนหน้า'
+      }
     }
   });
 });

@@ -40,7 +40,7 @@ class CampaignController extends Controller
                 'model_id' => $modelC,
                 'name' => $c->name,
                 'campaign_type' => $typeC,
-                'cashSupport_final' => $c->cashSupport_final,
+                'cashSupport_final' => $c->cashSupport_final !== null ? number_format($c->cashSupport_final, 2) : '-',
                 'active' => $statusSwitch,
                 'Action' => view('campaign.button', compact('c'))->render()
             ];
@@ -94,9 +94,15 @@ class CampaignController extends Controller
                 'subModel_id' => $request->subModel_id,
                 'name' => $request->name,
                 'campaign_type' => $request->campaign_type,
-                'cashSupport' => str_replace(',', '', $request->cashSupport ?: 0),
-                'cashSupport_deduct' => str_replace(',', '', $request->cashSupport_deduct ?: 0),
-                'cashSupport_final' => str_replace(',', '', $request->cashSupport_final ?: 0),
+                'cashSupport' => $request->filled('cashSupport')
+                    ? str_replace(',', '', $request->cashSupport)
+                    : null,
+                'cashSupport_deduct' => $request->filled('cashSupport_deduct')
+                    ? str_replace(',', '', $request->cashSupport_deduct)
+                    : null,
+                'cashSupport_final' => $request->filled('cashSupport_final')
+                    ? str_replace(',', '', $request->cashSupport_final)
+                    : null,
                 'userZone' => $request->userZone  ?? null,
                 'startDate' => $request->startDate,
                 'endDate' => $request->endDate,
@@ -142,17 +148,17 @@ class CampaignController extends Controller
             $cam = Campaign::findOrFail($id);
             $data = $request->except(['_token', '_method']);
 
-            if ($request->cashSupport) {
-                $data['cashSupport'] = str_replace(',', '', $request->cashSupport);
-            }
+            $data['cashSupport'] = $request->cashSupport
+                ? str_replace(',', '', $request->cashSupport)
+                : null;
 
-            if ($request->cashSupport_deduct) {
-                $data['cashSupport_deduct'] = str_replace(',', '', $request->cashSupport_deduct);
-            }
+            $data['cashSupport_deduct'] = $request->cashSupport_deduct
+                ? str_replace(',', '', $request->cashSupport_deduct)
+                : null;
 
-            if ($request->cashSupport_final) {
-                $data['cashSupport_final'] = str_replace(',', '', $request->cashSupport_final);
-            }
+            $data['cashSupport_final'] = $request->cashSupport_final
+                ? str_replace(',', '', $request->cashSupport_final)
+                : null;
 
             $cam->update($data);
 

@@ -7,18 +7,20 @@
       </div>
 
       <div class="modal-body">
-        <table class="table table-bordered" id="tableSelectCustomer">
-          <thead>
-            <tr>
-              <th>ชื่อ - นามสกุล</th>
-              <th>เบอร์โทรศัพท์</th>
-              <th>เลขบัตรประชาชน</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-bordered" id="tableSelectCustomer">
+            <thead>
+              <tr>
+                <th>ชื่อ - นามสกุล</th>
+                <th>เบอร์โทรศัพท์</th>
+                <th>เลขบัตรประชาชน</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>

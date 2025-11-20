@@ -29,17 +29,23 @@
 
           <div class="col-md-4 mb-5">
             <label for="cashSupport" class="form-label">เงินการขาย</label>
-            <input class="form-control text-end" type="text" value="{{ $cam->cashSupport }}" disabled />
+            <input class="form-control text-end money-input" type="text" 
+            value="{{ $cam->cashSupport !== null ? number_format($cam->cashSupport, 2) : '-' }}"
+            disabled />
           </div>
 
           <div class="col-md-4 mb-5">
             <label for="cashSupport_deduct" class="form-label">เงินหัก</label>
-            <input class="form-control text-end" type="text" value="{{ $cam->cashSupport_deduct }}" disabled />
+            <input class="form-control text-end money-input" type="text" 
+            value="{{ $cam->cashSupport_deduct !== null ? number_format($cam->cashSupport_deduct, 2) : '-' }}"
+            disabled />
           </div>
 
           <div class="col-md-4 mb-5">
             <label for="cashSupport_final" class="form-label">จำนวนเงินที่เหลือ</label>
-            <input class="form-control text-end" type="text" value="{{ $cam->cashSupport_final }}" disabled />
+            <input class="form-control text-end money-input" type="text" 
+            value="{{ $cam->cashSupport_final !== null ? number_format($cam->cashSupport_final, 2) : '-' }}"
+            disabled />
           </div>
 
           <div class="col-md-6 mb-5">

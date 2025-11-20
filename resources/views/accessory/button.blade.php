@@ -7,3 +7,9 @@
 <button class="btn btn-icon btn-danger btnDeleteAcc" data-id="{{ $a->id }}" title="ลบ">
     <i class="bx bx-trash"></i>
 </button>
+
+<style>
+  .btn-icon i {
+    color: white;
+  }
+</style>

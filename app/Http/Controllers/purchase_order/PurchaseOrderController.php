@@ -9,29 +9,42 @@ use App\Models\Accessorycost;
 use App\Models\Accessorypromoprice;
 use App\Models\Accessorysaleprice;
 use App\Models\Accessorybuymore;
+use App\Models\AccessoryPrice;
+use App\Models\Campaign;
 use App\Models\Campaigncar;
+use App\Models\CarOrder;
+use App\Models\CarOrderHistory;
 use App\Models\Customer;
+use App\Models\Finance;
+use App\Models\PaymentType;
 use App\Models\Salecampaign;
 use App\Models\Salecar;
+use App\Models\TbConStatus;
 use App\Models\TbPrefixname;
+use App\Models\TbProvinces;
+use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PurchaseOrderController extends Controller
 {
     public function index()
     {
         $saleCar = Salecar::all();
-        return view('purchase-order.view', compact('saleCar'));
+        $conStatus = TbConStatus::all();
+        return view('purchase-order.view', compact('saleCar', 'conStatus'));
     }
 
     public function viewMore($id)
     {
         $saleCar = SaleCar::with([
             'customer.prefix',
-            'carModel',
+            'model',
             'campaigns.campaign.campaignType',
             'accessories',
         ])->find($id);
@@ -41,111 +54,85 @@ class PurchaseOrderController extends Controller
 
     public function create()
     {
-        $carModel = TbCarmodel::all();
-        return view('purchase-order.input', compact('carModel'));
-    }
-
-    public function show()
-    {
-        $carModel = TbCarmodel::all();
-
-        return view('purchase-order.edit', compact('carModel'));
+        $model = TbCarmodel::all();
+        return view('purchase-order.input', compact('model'));
     }
 
     public function searchAccessory(Request $request)
     {
         $keyword = $request->get('keyword');
-        $CarModelID = $request->get('CarModelID');
-        $today = Carbon::today(); // วันที่ปัจจุบัน
+        $subModel_id = $request->get('subModel_id');
+        $today = Carbon::today();
 
-        $query = Accessory::query();
+        $query = AccessoryPrice::query();
 
         if ($keyword) {
             $query->where(function ($q) use ($keyword) {
-                $q->where('AccessorySource', 'LIKE', "%{$keyword}%")
-                    ->orWhere('AccessoryDetail', 'LIKE', "%{$keyword}%");
+                $q->where('detail', 'LIKE', "%{$keyword}%")
+                    ->orWhere('accessory_id', 'LIKE', "%{$keyword}%");;
             });
         }
 
-        if ($CarModelID) {
-            $query->where('Car_ID', $CarModelID);
+        if ($subModel_id) {
+            $query->where('subModel_id', $subModel_id);
         }
+
+        $query->where('active', 'active');
+        $query->where(function ($q) use ($today) {
+            $q->where('startDate', '<=', $today)
+                ->where(function ($q2) use ($today) {
+                    $q2->whereNull('endDate')->orWhere('endDate', '>=', $today);
+                });
+        });
 
         if ($request->exclude_ids) {
             $exclude = is_array($request->exclude_ids) ? $request->exclude_ids : explode(',', $request->exclude_ids);
             $query->whereNotIn('id', $exclude);
         }
 
-        $accessories = $query->get();
+        $accessories = $query->latest('startDate')->get();
 
-        $result = $accessories->map(function ($a) use ($today) {
-
-            // เช็คราคาทุน
-            $cost = Accessorycost::where('accessoryID', $a->id)
-                ->where(function ($q) use ($today) {
-                    $q->where('StartDate', '<=', $today)
-                        ->where(function ($q2) use ($today) {
-                            $q2->whereNull('EndDate')->orWhere('EndDate', '>=', $today);
-                        });
-                })
-                ->latest('StartDate')
-                ->first();
-
-            // เช็คราคาโปร
-            $promo = Accessorypromoprice::where('accessoryID', $a->id)
-                ->where(function ($q) use ($today) {
-                    $q->where('StartDate', '<=', $today)
-                        ->where(function ($q2) use ($today) {
-                            $q2->whereNull('EndDate')->orWhere('EndDate', '>=', $today);
-                        });
-                })
-                ->latest('StartDate')
-                ->first();
-
-            // เช็คราคาขาย
-            $sale = Accessorysaleprice::where('accessoryID', $a->id)
-                ->where(function ($q) use ($today) {
-                    $q->where('StartDate', '<=', $today)
-                        ->where(function ($q2) use ($today) {
-                            $q2->whereNull('EndDate')->orWhere('EndDate', '>=', $today);
-                        });
-                })
-                ->latest('StartDate')
-                ->first();
-
-            // ถ้าทั้ง 3 ตัวนี้ไม่มีราคาในช่วงวันที่ปัจจุบันเลย ก็ไม่ต้องแสดง
-            if (!$cost && !$promo && !$sale) {
-                return null;
-            }
-
+        $result = $accessories->map(function ($a) {
             return [
                 'id' => $a->id,
-                'AccessorySource' => $a->AccessorySource,
-                'AccessoryDetail' => $a->AccessoryDetail,
-                'accessoryCost' => $cost->accessoryCost ?? null,
-                'AccessoryComCost' => $cost->AccessoryCom ?? 0,
-                'AccessoryPromoPrice' => $promo->AccessoryPromoPrice ?? null,
-                'AccessoryComPromo' => $promo->AccessoryCom ?? 0,
-                'AccessorySalePrice' => $sale->AccessorySalePrice ?? null,
-                'AccessoryComSale' => $sale->AccessoryCom ?? 0,
+                'AccessorySource' => $a->accessory_id,
+                'AccessoryDetail' => $a->detail,
+                'accessoryCost' => $a->cost ?? null,
+                'AccessoryPromoPrice' => $a->promo ?? null,
+                'AccessorySalePrice' => $a->sale ?? null,
+                'AccessoryComSale' => $a->comSale ?? null,
             ];
-        })->filter(); // ตัด null ออก (accessory ที่ยังไม่เริ่มขายหรือหมดเขต)
+        });
 
         return response()->json($result->values());
     }
 
-    public function listPurchaseOrder()
+    public function listPurchaseOrder(Request $request)
     {
-        $saleCar = Salecar::with('customer.prefix')->get();
+        $statusFilter = $request->con_status;
+
+        $query = Salecar::with('customer.prefix', 'conStatus');
+
+        if ($statusFilter) {
+            $query->whereHas('conStatus', function ($q) use ($statusFilter) {
+                $q->where('name', $statusFilter);
+            });
+        }
+
+        $saleCar = $query->get();
 
         $data = $saleCar->map(function ($s, $index) {
             $c = $s->customer;
+            $subModelSale = $s->subModel ? $s->subModel->name : '';
+            $statusSale = $s->conStatus ? $s->conStatus->name : '';
 
             return [
                 'No' => $index + 1,
                 'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
                 'IDNumber' => $c->formatted_id_number,
                 'Mobilephone' => $c->formatted_mobile,
+                'subSale' => $subModelSale,
+                'statusSale' => $statusSale,
                 'Action' => view('purchase-order.button', compact('s'))->render()
             ];
         });
@@ -155,55 +142,167 @@ class PurchaseOrderController extends Controller
 
     function store(Request $request)
     {
+        DB::beginTransaction();
+
         try {
+
+            $request->validate([
+                'reservationCondition' => 'required',
+                'hasTurnCar' => 'required',
+                'reservation_cost' => 'required',
+                'reservation_date' => 'required|date',
+                'reservation_transfer_bank' => 'nullable|required_if:reservationCondition,transfer',
+                'reservation_transfer_branch' => 'nullable|required_if:reservationCondition,transfer',
+                'reservation_transfer_no' => 'nullable|required_if:reservationCondition,transfer',
+                'reservation_check_bank' => 'nullable|required_if:reservationCondition,check',
+                'reservation_check_branch' => 'nullable|required_if:reservationCondition,check',
+                'reservation_check_no' => 'nullable|required_if:reservationCondition,check',
+                'reservation_credit' => 'nullable|required_if:reservationCondition,credit',
+                'reservation_tax_credit' => 'nullable|required_if:reservationCondition,credit',
+            ], [
+                'hasTurnCar.required' => 'กรุณาเลือกประเภทรถเทิร์น',
+                'reservationCondition.required' => 'กรุณาเลือกประเภทการจ่ายเงินจอง',
+                'reservation_transfer_bank.required_if' => 'กรุณากรอกชื่อธนาคาร',
+                'reservation_transfer_branch.required_if' => 'กรุณากรอกสาขาธนาคาร',
+                'reservation_transfer_no.required_if' => 'กรุณากรอกเลขที่บัญชี',
+                'reservation_check_bank.required_if' => 'กรุณากรอกชื่อธนาคาร',
+                'reservation_check_branch.required_if' => 'กรุณากรอกสาขาธนาคาร',
+                'reservation_check_no.required_if' => 'กรุณากรอกเลขที่เช็ค',
+                'reservation_credit.required_if' => 'กรุณากรอกชื่อบัตรเครดิต',
+                'reservation_tax_credit.required_if' => 'กรุณากรอกค่าธรรมเนียมบัตรเครดิต',
+            ]);
+
             $turnCarID = null;
 
             if ($request->hasTurnCar === 'yes') {
-                $turnCar = new TurnCar();
-                $turnCar->brand = $request->brand;
-                $turnCar->model = $request->model;
-                $turnCar->machine = $request->machine;
-                $turnCar->year = $request->year;
-                $turnCar->color = $request->color;
-                $turnCar->license_plate = $request->license_plate;
-                $turnCar->save();
+                $turnCar = TurnCar::create([
+                    'brand' => $request->brand,
+                    'model' => $request->model,
+                    'machine' => $request->machine,
+                    'year_turn' => $request->year_turn,
+                    'color_turn' => $request->color_turn,
+                    'license_plate' => $request->license_plate,
+                    'cost_turn' => str_replace(',', '', $request->cost_turn ?: 0),
+                    'com_turn' => str_replace(',', '', $request->com_turn ?: 0),
+                ]);
 
                 $turnCarID = $turnCar->id;
             }
 
-            $data = [
+            $salecar = Salecar::create([
                 'SaleID' => $request->SaleID,
-                'CarModelID' => $request->CarModelID,
+                'model_id' => $request->model_id,
+                'subModel_id' => $request->subModel_id,
                 'Color' => $request->Color,
+                'Year' => $request->Year,
+                'option' => $request->option,
                 'CusID' => $request->CusID,
-                'FinanceID' => $request->FinanceID,
-                'SaleConsultantID' => $request->SaleConsultantID,
-                'CashDeposit' => str_replace(',', '', $request->CashDeposit ?: 0),
+                'BookingDate' => $request->BookingDate,
                 'TurnCarID' => $turnCarID,
-            ];
+            ]);
 
-            Salecar::create($data);
+            if ($request->filled('reservationCondition')) {
+                $data = [
+                    'saleCar_id' => $salecar->id,
+                    'category' => 'reservation',
+                    'type' => $request->reservationCondition,
+                    'cost' => str_replace(',', '', $request->reservation_cost ?: 0),
+                    'date' => $request->reservation_date,
+                    'userZone' => $request->userZone  ?? null,
+                ];
+
+                switch ($request->reservationCondition) {
+                    case 'transfer':
+                        $data['transfer_bank'] = $request->reservation_transfer_bank ?? null;
+                        $data['transfer_branch'] = $request->reservation_transfer_branch ?? null;
+                        $data['transfer_no'] = $request->reservation_transfer_no ?? null;
+
+                        $data['check_bank'] = null;
+                        $data['check_branch'] = null;
+                        $data['check_no'] = null;
+                        $data['credit'] = null;
+                        $data['tax_credit'] = null;
+                        break;
+
+                    case 'check':
+                        $data['check_bank'] = $request->reservation_check_bank ?? null;
+                        $data['check_branch'] = $request->reservation_check_branch ?? null;
+                        $data['check_no'] = $request->reservation_check_no ?? null;
+
+                        $data['transfer_bank'] = null;
+                        $data['transfer_branch'] = null;
+                        $data['transfer_no'] = null;
+                        $data['credit'] = null;
+                        $data['tax_credit'] = null;
+                        break;
+
+                    case 'credit':
+                        $data['credit'] = $request->reservation_credit ?? null;
+                        $data['tax_credit'] = $request->reservation_tax_credit ?? null;
+
+                        $data['transfer_bank'] = null;
+                        $data['transfer_branch'] = null;
+                        $data['transfer_no'] = null;
+                        $data['check_bank'] = null;
+                        $data['check_branch'] = null;
+                        $data['check_no'] = null;
+                        break;
+
+                    case 'cash':
+                    default:
+                        $data['transfer_bank'] = null;
+                        $data['transfer_branch'] = null;
+                        $data['transfer_no'] = null;
+                        $data['check_bank'] = null;
+                        $data['check_branch'] = null;
+                        $data['check_no'] = null;
+                        $data['credit'] = null;
+                        $data['tax_credit'] = null;
+                        break;
+                }
+
+                PaymentType::create($data);
+            }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'เพิ่มข้อมูลเรียบร้อยแล้ว'
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ], 500);
+            // return response()->json([
+            //     'success' => false,
+            //     'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            // ], 500);
         }
+    }
+
+    public function getSubModelPurchase($model_id)
+    {
+        $subModels = TbSubcarmodel::where('model_id', $model_id)
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($subModels);
     }
 
     public function getCampaign(Request $request)
     {
-        $carModelID = $request->CarModelID;
+        $subModel_id = $request->subModel_id;
         $today = Carbon::today();
 
-        $campaigns = CampaignCar::where('CarID', $carModelID)
-            ->whereDate('StartDate', '<=', $today)
-            ->whereDate('EndDate', '>=', $today)
+        $campaigns = Campaign::where('subModel_id', $subModel_id)
+            ->whereDate('startDate', '<=', $today)
+            ->whereDate('endDate', '>=', $today)
             ->get();
 
         return response()->json($campaigns);
@@ -211,33 +310,124 @@ class PurchaseOrderController extends Controller
 
     public function edit($id)
     {
-        $saleCar = Salecar::with(['customer.prefix', 'turnCar', 'accessories', 'carModel'])->findOrFail($id);
-        $carModel = TbCarmodel::all();
+        $saleCar = Salecar::with(['customer.prefix', 'customer.currentAddress', 'customer.documentAddress', 'customerReferrer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'conStatus', 'provinces', 'remainingPayment.financeInfo', 'campaigns.campaign.type'])->findOrFail($id);
+        $model = TbCarmodel::all();
+        $finances = Finance::all();
+        $subModels = TbSubcarmodel::where('model_id', $saleCar->model_id)->get();
+        $conStatus = TbConStatus::all();
+        $provinces = TbProvinces::all();
 
-        $carModelID = $saleCar->CarModelID;
+        $subModel_id = $saleCar->subModel_id;
 
         $today = Carbon::today();
 
+        $reservationPayment = PaymentType::where('saleCar_id', $id)
+            ->where('category', 'reservation')
+            ->first();
+
+        $remainingPayment = PaymentType::where('saleCar_id', $id)
+            ->where('category', 'remaining')
+            ->first();
+
+        $deliveryPayment = PaymentType::where('saleCar_id', $id)
+            ->where('category', 'delivery')
+            ->first();
+
         $campaigns = [];
-        if ($carModelID) {
-            $campaigns = CampaignCar::with('campaignType')
-                ->where('CarID', $carModelID)
-                ->whereDate('StartDate', '<=', $today)
-                ->whereDate('EndDate', '>=', $today)
+        if ($subModel_id) {
+            $campaigns = Campaign::where('subModel_id', $subModel_id)
+                ->where('active', 'active')
+                ->whereDate('startDate', '<=', $today)
+                ->whereDate('endDate', '>=', $today)
                 ->get();
         }
 
         $selected_campaigns = $saleCar->campaigns->pluck('CampaignID')->toArray();
 
-        return view('purchase-order.edit', compact('saleCar', 'carModel', 'campaigns', 'selected_campaigns'));
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'provinces'));
     }
 
     public function update(Request $request, $id)
     {
+        DB::beginTransaction();
+
         try {
+
+            // $request->validate([
+            //     //reservation
+            //     'reservationCondition' => 'nullable|in:cash,transfer,check,credit,finance',
+            //     'reservation_cost' => 'required',
+            //     'reservation_date' => 'required|date',
+            //     'reservation_transfer_bank' => 'nullable|required_if:reservationCondition,transfer',
+            //     'reservation_transfer_branch' => 'nullable|required_if:reservationCondition,transfer',
+            //     'reservation_transfer_no' => 'nullable|required_if:reservationCondition,transfer',
+            //     'reservation_check_bank' => 'nullable|required_if:reservationCondition,check',
+            //     'reservation_check_branch' => 'nullable|required_if:reservationCondition,check',
+            //     'reservation_check_no' => 'nullable|required_if:reservationCondition,check',
+            //     'reservation_credit' => 'nullable|required_if:reservationCondition,credit',
+            //     'reservation_tax_credit' => 'nullable|required_if:reservationCondition,credit',
+
+            //     //remaining
+            //     'reservation_transfer_bank' => 'required_if:reservationCondition,transfer',
+            //     'remaining_cost' => 'required',
+            //     'remaining_date' => 'required|date',
+            //     'remaining_transfer_bank' => 'nullable|required_if:remainingCondition,transfer',
+            //     'remaining_transfer_branch' => 'nullable|required_if:remainingCondition,transfer',
+            //     'remaining_transfer_no' => 'nullable|required_if:remainingCondition,transfer',
+            //     'remaining_check_bank' => 'nullable|required_if:remainingCondition,check',
+            //     'remaining_check_branch' => 'nullable|required_if:remainingCondition,check',
+            //     'remaining_check_no' => 'nullable|required_if:remainingCondition,check',
+            //     'remaining_credit' => 'nullable|required_if:remainingCondition,credit',
+            //     'remaining_tax_credit' => 'nullable|required_if:remainingCondition,credit',
+
+            //     //delivery
+            //     'deliveryCondition' => 'nullable|in:cash,transfer,check,credit',
+            //     'delivery_cost' => 'required',
+            //     'delivery_date' => 'required|date',
+            //     'delivery_transfer_bank' => 'sometimes|required_if:deliveryCondition,transfer',
+            //     'delivery_transfer_branch' => 'sometimes|required_if:deliveryCondition,transfer',
+            //     'delivery_transfer_no' => 'sometimes|required_if:deliveryCondition,transfer',
+            //     'delivery_check_bank' => 'sometimes|required_if:deliveryCondition,check',
+            //     'delivery_check_branch' => 'sometimes|required_if:deliveryCondition,check',
+            //     'delivery_check_no' => 'sometimes|required_if:deliveryCondition,check',
+            //     'delivery_credit' => 'sometimes|required_if:deliveryCondition,credit',
+            //     'delivery_tax_credit' => 'sometimes|required_if:deliveryCondition,credit',
+            // ], [
+            //     //reservation
+            //     'reservationCondition.required' => 'กรุณาเลือกประเภทการจ่ายเงินจอง',
+            //     'reservation_transfer_bank.required_if' => 'กรุณากรอกชื่อธนาคาร',
+            //     'reservation_transfer_branch.required_if' => 'กรุณากรอกสาขาธนาคาร',
+            //     'reservation_transfer_no.required_if' => 'กรุณากรอกเลขที่บัญชี',
+            //     'reservation_check_bank.required_if' => 'กรุณากรอกชื่อธนาคาร',
+            //     'reservation_check_branch.required_if' => 'กรุณากรอกสาขาธนาคาร',
+            //     'reservation_check_no.required_if' => 'กรุณากรอกเลขที่เช็ค',
+            //     'reservation_credit.required_if' => 'กรุณากรอกชื่อบัตรเครดิต',
+            //     'reservation_tax_credit.required_if' => 'กรุณากรอกค่าธรรมเนียมบัตรเครดิต',
+
+            //     //remaining
+            //     'remainingCondition.required' => 'กรุณาเลือกประเภทการจ่ายเงินจอง',
+            //     'remaining_transfer_bank.required_if' => 'กรุณากรอกชื่อธนาคาร',
+            //     'remaining_transfer_branch.required_if' => 'กรุณากรอกสาขาธนาคาร',
+            //     'remaining_transfer_no.required_if' => 'กรุณากรอกเลขที่บัญชี',
+            //     'remaining_check_bank.required_if' => 'กรุณากรอกชื่อธนาคาร',
+            //     'remaining_check_branch.required_if' => 'กรุณากรอกสาขาธนาคาร',
+            //     'remaining_check_no.required_if' => 'กรุณากรอกเลขที่เช็ค',
+            //     'remaining_credit.required_if' => 'กรุณากรอกชื่อบัตรเครดิต',
+            //     'remaining_tax_credit.required_if' => 'กรุณากรอกค่าธรรมเนียมบัตรเครดิต',
+
+            //     //delivery
+            //     'delivery_transfer_bank.required_if' => 'กรุณากรอกชื่อธนาคาร',
+            //     'delivery_transfer_branch.required_if' => 'กรุณากรอกสาขาธนาคาร',
+            //     'delivery_transfer_no.required_if' => 'กรุณากรอกเลขที่บัญชี',
+            //     'delivery_check_bank.required_if' => 'กรุณากรอกชื่อธนาคาร',
+            //     'delivery_check_branch.required_if' => 'กรุณากรอกสาขาธนาคาร',
+            //     'delivery_check_no.required_if' => 'กรุณากรอกเลขที่เช็ค',
+            //     'delivery_credit.required_if' => 'กรุณากรอกชื่อบัตรเครดิต',
+            //     'delivery_tax_credit.required_if' => 'กรุณากรอกค่าธรรมเนียมบัตรเครดิต',
+            // ]);
+
             $saleCar = Salecar::with('accessories')->findOrFail($id);
 
-            // 🔹 อัปเดตข้อมูลรถเทิร์น (TurnCar)
             $turnCarID = $saleCar->TurnCarID;
 
             if ($request->hasTurnCar === 'yes') {
@@ -248,51 +438,95 @@ class PurchaseOrderController extends Controller
                     'brand' => $request->brand,
                     'model' => $request->model,
                     'machine' => $request->machine,
-                    'year' => $request->year,
-                    'color' => $request->color,
+                    'year_turn' => $request->year_turn,
+                    'color_turn' => $request->color_turn,
                     'license_plate' => $request->license_plate,
+                    'cost_turn' => $request->cost_turn,
+                    'com_turn' => $request->com_turn,
                 ]);
                 $turnCarID = $turnCar->id;
             }
 
             $data = [
                 'SaleID' => $request->SaleID,
-                'CarModelID' => $request->CarModelID,
+                'model_id' => $request->model_id,
+                'subModel_id' => $request->subModel_id,
                 'Color' => $request->Color,
+                'CarOrderID' => $request->CarOrderID,
+                'option' => $request->option,
                 'CusID' => $request->CusID,
                 'FinanceID' => $request->FinanceID,
                 'SaleConsultantID' => $request->SaleConsultantID,
-                'CashDeposit' => str_replace(',', '', $request->CashDeposit ?: 0),
+                'CashDeposit' => $request->filled('CashDeposit')
+                    ? str_replace(',', '', $request->CashDeposit)
+                    : null,
                 'TurnCarID' => $turnCarID,
                 'BookingDate' => $request->BookingDate,
                 'DeliveryDate' => $request->DeliveryDate,
                 'DeliveryInDMSDate' => $request->DeliveryInDMSDate,
                 'DeliveryInCKDate' => $request->DeliveryInCKDate,
-                'RegistrationProvince' => $request->RegistrationProvince,
                 'RedPlateReceived' => $request->RedPlateReceived,
                 'RedPlateAmount' => $request->RedPlateAmount,
-                'CarSalePrice' => str_replace(',', '', $request->CarSalePrice ?: 0),
-                'MarkupPrice' => str_replace(',', '', $request->MarkupPrice ?: 0),
-                'Markup90' => str_replace(',', '', $request->Markup90 ?: 0),
-                'CarSalePriceFinal' => str_replace(',', '', $request->CarSalePriceFinal ?: 0),
-                'DownPayment' => str_replace(',', '', $request->DownPayment ?: 0),
-                'DownPaymentPercentage' => $request->DownPaymentPercentage,
-                'DownPaymentDiscount' => str_replace(',', '', $request->DownPaymentDiscount ?: 0),
-                'CashDeposit' => $request->CashDeposit,
+                'CarSalePrice' => $request->filled('CarSalePrice')
+                    ? str_replace(',', '', $request->CarSalePrice)
+                    : null,
+                'MarkupPrice' => $request->filled('MarkupPrice')
+                    ? str_replace(',', '', $request->MarkupPrice)
+                    : null,
+                'Markup90' => $request->filled('Markup90')
+                    ? str_replace(',', '', $request->Markup90)
+                    : null,
+                'CarSalePriceFinal' => $request->filled('CarSalePriceFinal')
+                    ? str_replace(',', '', $request->CarSalePriceFinal)
+                    : null,
+                'DownPayment' => $request->filled('DownPayment')
+                    ? str_replace(',', '', $request->DownPayment)
+                    : null,
+                'DownPaymentPercentage' => $request->filled('DownPaymentPercentage')
+                    ? str_replace(',', '', $request->DownPaymentPercentage)
+                    : null,
+                'DownPaymentDiscount' => $request->filled('DownPaymentDiscount')
+                    ? str_replace(',', '', $request->DownPaymentDiscount)
+                    : null,
+                'PaymentDiscount' => $request->filled('PaymentDiscount')
+                    ? str_replace(',', '', $request->PaymentDiscount)
+                    : null,
                 'TradeinAddition' => $request->TradeinAddition,
-                'AdditionFromCustomer' => str_replace(',', '', $request->AdditionFromCustomer ?: 0),
-                'TotalPaymentatDelivery' => str_replace(',', '', $request->TotalPaymentatDelivery ?: 0),
+                'AdditionFromCustomer' => $request->filled('AdditionFromCustomer')
+                    ? str_replace(',', '', $request->AdditionFromCustomer)
+                    : null,
+                'TotalPaymentatDelivery' => $request->filled('TotalPaymentatDelivery')
+                    ? str_replace(',', '', $request->TotalPaymentatDelivery)
+                    : null,
                 'ReferentPersonID' => $request->ReferentPersonID,
                 'CashSupportFromMarkup' => $request->CashSupportFromMarkup,
-                'TotalSaleCampaign' => str_replace(',', '', $request->TotalSaleCampaign ?: 0),
+                'TotalSaleCampaign' => $request->filled('TotalSaleCampaign')
+                    ? str_replace(',', '', $request->TotalSaleCampaign)
+                    : null,
+                'balanceCampaign' => $request->filled('balanceCampaign')
+                    ? str_replace(',', '', $request->balanceCampaign)
+                    : null,
                 'CashSupportInterestPlus' => $request->CashSupportInterestPlus,
-                'TotalCashSupport' => str_replace(',', '', $request->TotalCashSupport ?: 0),
-                'TotalAccessoryGift' => str_replace(',', '', $request->TotalAccessoryGift ?: 0),
-                'TotalAccessoryExtra' => str_replace(',', '', $request->TotalAccessoryExtra ?: 0),
-                'TotalCashSupportUsed' => str_replace(',', '', $request->TotalCashSupportUsed ?: 0),
+                'TotalCashSupport' => $request->filled('TotalCashSupport')
+                    ? str_replace(',', '', $request->TotalCashSupport)
+                    : null,
+                'TotalAccessoryGift' => $request->filled('TotalAccessoryGift')
+                    ? str_replace(',', '', $request->TotalAccessoryGift)
+                    : null,
+                'AccessoryGiftCom' => $request->filled('AccessoryGiftCom')
+                    ? str_replace(',', '', $request->AccessoryGiftCom)
+                    : null,
+                'TotalAccessoryExtra' => $request->filled('TotalAccessoryExtra')
+                    ? str_replace(',', '', $request->TotalAccessoryExtra)
+                    : null,
+                'AccessoryExtraCom' => $request->filled('AccessoryExtraCom')
+                    ? str_replace(',', '', $request->AccessoryExtraCom)
+                    : null,
+                'TotalCashSupportUsed' => $request->filled('TotalCashSupportUsed')
+                    ? str_replace(',', '', $request->TotalCashSupportUsed)
+                    : null,
                 'RemainingCashSuuportShared' => $request->RemainingCashSuuportShared,
                 'SCCommissionIntPlus' => $request->SCCommissionIntPlus,
-                'AccessoryComAmount' => $request->AccessoryComAmount,
                 'TradeinComAmount' => $request->TradeinComAmount,
                 'CommissionDeduct' => $request->CommissionDeduct,
                 'ApprovalSignature' => $request->ApprovalSignature,
@@ -309,10 +543,76 @@ class PurchaseOrderController extends Controller
                 'AdminCheckedDate' => $request->AdminCheckedDate,
                 'CheckerID' => $request->CheckerID,
                 'CheckerCheckedDate' => $request->CheckerCheckedDate,
+                'GMApprovalSignature' => $request->GMApprovalSignature,
                 'Note' => $request->Note,
+                'ReferrerID' => $request->ReferrerID,
+                'ReferrerAmount' => $request->filled('ReferrerAmount')
+                    ? str_replace(',', '', $request->ReferrerAmount)
+                    : null,
+                'balance' => $request->filled('balance')
+                    ? str_replace(',', '', $request->balance)
+                    : null,
+                'balanceFinance' => $request->filled('balanceFinance')
+                    ? str_replace(',', '', $request->balanceFinance)
+                    : null,
+                'con_status' => $request->con_status,
             ];
 
+            $oldCarOrderID = $saleCar->CarOrderID;
+            $newCarOrderID = $request->CarOrderID;
+
+            $regProvince = null;
+
+            switch ($request->remainingCondition) {
+                case 'finance':
+                    $regProvince = $request->RegistrationProvince_finance ?? null;
+                    break;
+
+                case 'credit':
+                    $regProvince = $request->RegistrationProvince_credit ?? null;
+                    break;
+
+                case 'transfer':
+                    $regProvince = $request->RegistrationProvince_bank ?? null;
+                    break;
+
+                case 'cash':
+                    $regProvince = $request->RegistrationProvince_cash ?? null;
+                    break;
+
+                case 'check':
+                    $regProvince = $request->RegistrationProvince_check ?? null;
+                    break;
+
+                default:
+                    $regProvince = null;
+            }
+
+            $data['RegistrationProvince'] = $regProvince;
+
             $saleCar->update($data);
+
+            if ($oldCarOrderID != $newCarOrderID && $newCarOrderID) {
+                CarOrderHistory::create([
+                    'SaleID' => $saleCar->id,
+                    'CarOrderID' => $newCarOrderID,
+                    'BookingDate' => $request->BookingDate,
+                ]);
+
+                if ($oldCarOrderID) {
+                    CarOrder::where('id', $oldCarOrderID)->update(['car_status' => 'Null']);
+                }
+                CarOrder::where('id', $newCarOrderID)->update(['car_status' => 'Book']);
+            }
+
+            if ($request->con_status == 5) {
+
+                if ($newCarOrderID) {
+                    CarOrder::where('id', $newCarOrderID)->update([
+                        'car_status' => 'Send'
+                    ]);
+                }
+            }
 
             $saleCar->accessories()->detach();
 
@@ -337,32 +637,250 @@ class PurchaseOrderController extends Controller
                 }
             }
 
-            Salecampaign::where('SaleID', $saleCar->SaleID)->delete();
+            Salecampaign::where('SaleID', $saleCar->id)->delete();
 
             // เพิ่มแคมเปญใหม่
             if ($request->has('CampaignID')) {
                 foreach ($request->input('CampaignID') as $campId) {
-                    $campaign = CampaignCar::find($campId);
+                    $campaign = Campaign::find($campId);
 
                     Salecampaign::create([
-                        'SaleID' => $saleCar->SaleID,
+                        'SaleID' => $saleCar->id,
                         'CampaignID' => $campId,
-                        'CampaignType' => $campaign->SubCampaignType ?? '',
-                        'CashSupport' => $campaign->CashSupport ?? 0,
-                        'CashSupportDeduct' => $campaign->CashSupportDeduct ?? 0,
-                        'CashSupportFinal' => $campaign->CashSupportFinal ?? 0,
+                        'CampaignName' => $campaign->name ?? '',
+                        'CampaignType' => $campaign->campaign_type ?? '',
+                        'CashSupport' => $campaign->cashSupport ?? '',
+                        'CashSupportDeduct' => $campaign->cashSupport_deduct ?? '',
+                        'CashSupportFinal' => $campaign->cashSupport_final ?? '',
                     ]);
                 }
             }
+
+            if ($request->filled('reservationCondition')) {
+                $data = [
+                    'saleCar_id' => $saleCar->id,
+                    'category' => 'reservation',
+                    'type' => $request->reservationCondition,
+                    'cost' => $request->filled('reservation_cost')
+                        ? str_replace(',', '', $request->reservation_cost)
+                        : null,
+                    'date' => $request->reservation_date,
+                    'userZone' => $request->userZone  ?? null,
+                ];
+
+                switch ($request->reservationCondition) {
+                    case 'transfer':
+                        $data['transfer_bank'] = $request->reservation_transfer_bank;
+                        $data['transfer_branch'] = $request->reservation_transfer_branch;
+                        $data['transfer_no'] = $request->reservation_transfer_no;
+
+                        $data['check_bank'] = null;
+                        $data['check_branch'] = null;
+                        $data['check_no'] = null;
+                        $data['credit'] = null;
+                        $data['tax_credit'] = null;
+                        break;
+
+                    case 'check':
+                        $data['check_bank'] = $request->reservation_check_bank;
+                        $data['check_branch'] = $request->reservation_check_branch;
+                        $data['check_no'] = $request->reservation_check_no;
+
+                        $data['transfer_bank'] = null;
+                        $data['transfer_branch'] = null;
+                        $data['transfer_no'] = null;
+                        $data['credit'] = null;
+                        $data['tax_credit'] = null;
+                        break;
+
+                    case 'credit':
+                        $data['credit'] = $request->reservation_credit;
+                        $data['tax_credit'] = $request->reservation_tax_credit ? str_replace(',', '', $request->reservation_tax_credit) : null;
+
+                        $data['transfer_bank'] = null;
+                        $data['transfer_branch'] = null;
+                        $data['transfer_no'] = null;
+                        $data['check_bank'] = null;
+                        $data['check_branch'] = null;
+                        $data['check_no'] = null;
+                        break;
+
+                    case 'cash':
+                    default:
+                        $data['transfer_bank'] = null;
+                        $data['transfer_branch'] = null;
+                        $data['transfer_no'] = null;
+                        $data['check_bank'] = null;
+                        $data['check_branch'] = null;
+                        $data['check_no'] = null;
+                        $data['credit'] = null;
+                        $data['tax_credit'] = null;
+                        break;
+                }
+
+                PaymentType::updateOrCreate(
+                    ['saleCar_id' => $saleCar->id, 'category' => 'reservation'],
+                    $data
+                );
+            }
+
+            if ($request->filled('remainingCondition')) {
+
+                $data = [
+                    'saleCar_id' => $saleCar->id,
+                    'category' => 'remaining',
+                    'type' => $request->remainingCondition,
+                    'cost' => $request->balanceFinance ?? '',
+                    'date' => $request->remaining_date,
+                    'userZone' => $request->userZone ?? null,
+                ];
+
+                $fieldsToClear = [
+                    'transfer_bank',
+                    'transfer_branch',
+                    'transfer_no',
+                    'check_bank',
+                    'check_branch',
+                    'check_no',
+                    'credit',
+                    'tax_credit',
+                    'finance',
+                    'interest',
+                    'period',
+                    'alp',
+                    'including_alp',
+                    'total_alp',
+                    'type_com',
+                    'total_com',
+                ];
+                foreach ($fieldsToClear as $field) {
+                    $data[$field] = null;
+                }
+
+                switch ($request->remainingCondition) {
+                    case 'transfer':
+                        $data['transfer_bank'] = $request->remaining_transfer_bank ?? null;
+                        $data['transfer_branch'] = $request->remaining_transfer_branch ?? null;
+                        $data['transfer_no'] = $request->remaining_transfer_no ?? null;
+                        break;
+
+                    case 'check':
+                        $data['check_bank'] = $request->remaining_check_bank ?? null;
+                        $data['check_branch'] = $request->remaining_check_branch ?? null;
+                        $data['check_no'] = $request->remaining_check_no ?? null;
+                        break;
+
+                    case 'credit':
+                        $data['credit'] = $request->remaining_credit ?? null;
+                        $data['tax_credit'] = $request->remaining_tax_credit ?? null;
+                        break;
+
+                    case 'finance':
+                        $data['finance'] = $request->remaining_finance ?? null;
+                        $data['interest'] = $request->remaining_interest ?? null;
+                        $data['period'] = $request->remaining_period ?? null;
+                        $data['alp'] = $request->remaining_alp ? str_replace(',', '', $request->remaining_alp) : null;
+                        $data['including_alp'] = $request->remaining_including_alp ? str_replace(',', '', $request->remaining_including_alp) : null;
+                        $data['total_alp'] = $request->remaining_total_alp ? str_replace(',', '', $request->remaining_total_alp) : null;
+                        $data['type_com'] = $request->remaining_type_com ?? null;
+                        $data['total_com'] = $request->remaining_total_com ? str_replace(',', '', $request->remaining_total_com) : null;
+                        break;
+
+                    case 'cash':
+                    default:
+                        break;
+                }
+
+                PaymentType::updateOrCreate(
+                    ['saleCar_id' => $saleCar->id, 'category' => 'remaining'],
+                    $data
+                );
+            }
+
+            if ($request->filled('deliveryCondition')) {
+                $data = [
+                    'saleCar_id' => $saleCar->id,
+                    'category' => 'delivery',
+                    'type' => $request->deliveryCondition,
+                    'cost' => $request->filled('delivery_cost')
+                        ? str_replace(',', '', $request->delivery_cost)
+                        : null,
+                    'date' => $request->delivery_date,
+                    'userZone' => $request->userZone  ?? null,
+                ];
+
+                switch ($request->deliveryCondition) {
+                    case 'transfer':
+                        $data['transfer_bank'] = $request->delivery_transfer_bank;
+                        $data['transfer_branch'] = $request->delivery_transfer_branch;
+                        $data['transfer_no'] = $request->delivery_transfer_no;
+
+                        $data['check_bank'] = null;
+                        $data['check_branch'] = null;
+                        $data['check_no'] = null;
+                        $data['credit'] = null;
+                        $data['tax_credit'] = null;
+                        break;
+
+                    case 'check':
+                        $data['check_bank'] = $request->delivery_check_bank;
+                        $data['check_branch'] = $request->delivery_check_branch;
+                        $data['check_no'] = $request->delivery_check_no;
+
+                        $data['transfer_bank'] = null;
+                        $data['transfer_branch'] = null;
+                        $data['transfer_no'] = null;
+                        $data['credit'] = null;
+                        $data['tax_credit'] = null;
+                        break;
+
+                    case 'credit':
+                        $data['credit'] = $request->delivery_credit;
+                        $data['tax_credit'] = $request->delivery_tax_credit ? str_replace(',', '', $request->delivery_tax_credit) : null;
+
+                        $data['transfer_bank'] = null;
+                        $data['transfer_branch'] = null;
+                        $data['transfer_no'] = null;
+                        $data['check_bank'] = null;
+                        $data['check_branch'] = null;
+                        $data['check_no'] = null;
+                        break;
+
+                    case 'cash':
+                    default:
+                        $data['transfer_bank'] = null;
+                        $data['transfer_branch'] = null;
+                        $data['transfer_no'] = null;
+                        $data['check_bank'] = null;
+                        $data['check_branch'] = null;
+                        $data['check_no'] = null;
+                        $data['credit'] = null;
+                        $data['tax_credit'] = null;
+                        break;
+                }
+
+                PaymentType::updateOrCreate(
+                    ['saleCar_id' => $saleCar->id, 'category' => 'delivery'],
+                    $data
+                );
+            }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'แก้ไขข้อมูลเรียบร้อยแล้ว'
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
+            // return response()->json([
+            //     'success' => false,
+            //     'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            // ], 500);
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ], 500);
         }
     }
@@ -371,6 +889,11 @@ class PurchaseOrderController extends Controller
     {
         try {
             $saleCar = Salecar::findOrFail($id);
+
+            if ($saleCar->CarOrderID) {
+                CarOrder::where('id', $saleCar->CarOrderID)->update(['car_status' => 'Null']);
+            }
+
             $saleCar->delete();
 
             return response()->json([
@@ -388,14 +911,40 @@ class PurchaseOrderController extends Controller
 
     public function summaryPurchase($id)
     {
-        $saleCar = Salecar::with(['customer.prefix', 'carModel', 'campaigns'])->findOrFail($id);
-        $carModel = TbCarmodel::all();
+        $saleCar = Salecar::with(['customer.prefix', 'model', 'campaigns.campaign.type', 'reservationPayment', 'remainingPayment.financeInfo', 'deliveryPayment', 'turnCar', 'provinces'])->findOrFail($id);
+        $model = TbCarmodel::all();
 
-        $pdf = Pdf::loadView('purchase-order.report.summary', compact('saleCar', 'carModel'))
+        $pdf = Pdf::loadView('purchase-order.report.summary', compact('saleCar', 'model'))
             ->setPaper('A4', 'portrait');
 
         $filename = 'purchase-order_' . $saleCar->id . '_' . now()->format('Ymd_His') . '.pdf';
 
         return $pdf->stream($filename);
+    }
+
+    public function preview($id)
+    {
+        $saleCar = Salecar::with(['customer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'campaigns', 'remainingPayment.financeInfo'])->findOrFail($id);
+        $model = TbCarmodel::all();
+        $finances = Finance::all();
+        $subModels = TbSubcarmodel::where('model_id', $saleCar->model_id)->get();
+
+        $subModel_id = $saleCar->subModel_id;
+
+        $today = Carbon::today();
+
+        $reservationPayment = PaymentType::where('saleCar_id', $id)
+            ->where('category', 'reservation')
+            ->first();
+
+        $remainingPayment = PaymentType::where('saleCar_id', $id)
+            ->where('category', 'remaining')
+            ->first();
+
+        $deliveryPayment = PaymentType::where('saleCar_id', $id)
+            ->where('category', 'delivery')
+            ->first();
+
+        return view('purchase-order.preview.preview', compact('saleCar', 'model', 'subModels', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances'));
     }
 }

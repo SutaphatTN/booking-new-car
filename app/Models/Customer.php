@@ -75,10 +75,13 @@ class Customer extends Model
 		'PhoneofRelation',
 		'Note',
 		'Mobilephone1',
-		'Mobilephone2'
+		'Mobilephone2',
+		'userZone'
 	];
 
 	protected $dates = ['deleted_at'];
+
+	protected $appends = ['formatted_id_number', 'formatted_mobile'];
 
 	public function prefix()
 	{
@@ -88,6 +91,11 @@ class Customer extends Model
 	public function salecars()
 	{
 		return $this->hasMany(Salecar::class, 'CusID', 'id');
+	}
+
+	public function salecarsRef()
+	{
+		return $this->hasMany(Salecar::class, 'ReferrerID', 'id');
 	}
 
 	public function getFormattedIdNumberAttribute()

@@ -155,7 +155,7 @@ $(document).on('click', '.btnEditCar', function () {
               title: 'สำเร็จ!',
               text: res.message,
               timer: 2000,
-              showConfirmButton: false
+              showConfirmButton: true
             });
 
             carTable.ajax.reload(null, false);
@@ -243,7 +243,7 @@ $(document).ready(function () {
     columns: [
       { data: 'No' },
       { data: 'model_id' },
-      { data: 'code' },
+      // { data: 'code' },
       { data: 'name' },
       { data: 'active', orderable: false, searchable: false },
       { data: 'Action', orderable: false, searchable: false }
@@ -321,7 +321,7 @@ $(document).on('click', '.btnViewSubCar', function () {
 
 //input : modal sub-model-car
 $(document).on('click', '.btnInputSubCar', function () {
-  $.get('/sub-model-car/create', function (html) {
+  $.get(window.routeSubModelCreate, function (html) {
     $('.inputSubCarModal').html(html);
     $('.inputSubCar').modal('show');
   });
@@ -391,7 +391,9 @@ $(document).on('click', '.btnEditSubCar', function () {
   const $btn = $(this);
   const form = $btn.closest('form')[0];
 
-  $.get('/sub-model-car/' + id + '/edit', function (html) {
+  const url = window.routeSubModelEdit.replace(':id', id);
+
+  $.get(url, function (html) {
     $('.editSubCarModal').html(html);
     const $modal = $('.editSubCar');
 
@@ -431,7 +433,7 @@ $(document).on('click', '.btnEditSubCar', function () {
               title: 'สำเร็จ!',
               text: res.message,
               timer: 2000,
-              showConfirmButton: false
+              showConfirmButton: true
             });
 
             subCarTable.ajax.reload(null, false);

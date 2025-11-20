@@ -46,6 +46,37 @@ $(document).ready(function () {
   });
 });
 
+//css : format number
+$(document).ready(function () {
+  $('.money-input').each(function () {
+    let value = $(this).val();
+    if (value && !isNaN(value.replace(/,/g, ''))) {
+      $(this).val(
+        parseFloat(value.replace(/,/g, '')).toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
+      );
+    }
+  });
+});
+
+$(document).on('input', '.money-input', function () {
+  let value = this.value.replace(/,/g, '');
+  if (value === '' || isNaN(value)) {
+    this.value = '';
+    return;
+  }
+  this.value = parseFloat(value).toLocaleString();
+});
+
+$(document).on('blur', '.money-input', function () {
+  let value = this.value.replace(/,/g, '');
+  if (value && !isNaN(value)) {
+    this.value = parseFloat(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+});
+
 //view : toggle
 $(document).on('change', '.status-cam', function () {
   const $checkbox = $(this);
@@ -188,25 +219,6 @@ $(document).on('change', '#model_id', function () {
   });
 });
 
-//input : calculate เงินเหลือ
-$(document).on('input', '#cashSupport, #cashSupport_deduct', function (e) {
-  let val = $(this)
-    .val()
-    .replace(/[^0-9.]/g, '');
-  const parts = val.split('.');
-
-  if (parts.length > 2) {
-    val = parts[0] + '.' + parts[1];
-  }
-
-  $(this).val(val);
-
-  const cashSupport = parseFloat($('#cashSupport').val()) || 0;
-  const cashSupportDeduct = parseFloat($('#cashSupport_deduct').val()) || 0;
-  const finalAmount = cashSupport - cashSupportDeduct;
-
-  $('#cashSupport_final').val(finalAmount.toLocaleString());
-});
 
 //edit : cam
 $(document).on('click', '.btnEditCam', function () {
@@ -254,7 +266,7 @@ $(document).on('click', '.btnEditCam', function () {
               title: 'สำเร็จ!',
               text: res.message,
               timer: 2000,
-              showConfirmButton: false
+              showConfirmButton: true
             });
 
             campaignTable.ajax.reload(null, false);
@@ -274,6 +286,21 @@ $(document).on('click', '.btnEditCam', function () {
       });
   });
 });
+
+//calculate
+function updateCashSupportFinal() {
+    let cashSupport = parseFloat($('#cashSupport').val().replace(/,/g, '')) || 0;
+    let cashSupportDeduct = parseFloat($('#cashSupport_deduct').val().replace(/,/g, '')) || 0;
+
+    let cashSupportFinal = cashSupport - cashSupportDeduct;
+
+    $('#cashSupport_final').val(cashSupportFinal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+}
+
+$(document).on('input', '#cashSupport, #cashSupport_deduct', function () {
+    updateCashSupportFinal();
+});
+
 
 //delete cam
 $(document).on('click', '.btnDeleteCam', function () {

@@ -35,7 +35,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class AccessoryPrice extends Model
 {
 	use SoftDeletes;
-	
+
 	protected $table = 'accessory_price';
 
 	protected $casts = [
@@ -88,6 +88,13 @@ class AccessoryPrice extends Model
 	public function partner()
 	{
 		return $this->belongsTo(AccessoryPartner::class, 'accessoryPartner_id', 'id');
+	}
+
+	public function salecars()
+	{
+		return $this->belongsToMany(Salecar::class, 'saleaccessory')
+			->withPivot(['price_type', 'price', 'commission'])
+			->withTimestamps();
 	}
 
 	public function getFormatStartDateAttribute()

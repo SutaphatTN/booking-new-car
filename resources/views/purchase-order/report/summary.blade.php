@@ -21,52 +21,43 @@
 
     body {
       font-family: 'THSarabunNew', DejaVu Sans, sans-serif;
-      font-size: 16pt;
-      margin: 0px 50px 30px 50px;
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 5px;
-    }
-
-    .print-date {
-      text-align: right;
       font-size: 14pt;
-      margin-bottom: 20px;
+      margin: 0px;
+      line-height: 0.9;
+    }
+
+    .center-text {
+      text-align: center;
+      margin-bottom: 8px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .two-column {
+      width: 100%;
+      display: table;
+      margin-top: 2px;
+    }
+
+    .col-left,
+    .col-right {
+      display: table-cell;
+      vertical-align: top;
+      width: 50%;
+      padding: 3px;
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 2px;
+      font-weight: bold;
     }
 
     .section-title {
       font-weight: bold;
       margin-top: 0px;
       margin-bottom: 0px;
-      font-size: 17pt;
-    }
-
-    .info-block {
-      margin-left: 10px;
-      line-height: 1.6;
-    }
-
-    .info-block p {
-      margin: 0;
-    }
-
-    .info-row {
-      display: flex;
-      flex-wrap: wrap;
-      line-height: 1;
-      margin-left: 15px;
-      margin-top: 0px;
-      margin-bottom: 0px;
-    }
-
-    .info-row span {
-      white-space: nowrap;
-    }
-
-    .info-row strong {
-      font-weight: bold;
+      font-size: 14pt;
     }
 
     table {
@@ -86,231 +77,458 @@
       background-color: #f2f2f2;
       text-align: center;
     }
-
-    p {
-      margin-top: 0px;
-      margin-bottom: 0px;
-    }
-
-    .label-top {
-      display: table;
-      width: 100%;
-    }
-
-    .label-top img {
-      display: table-cell;
-      vertical-align: top;
-      width: 140px;
-      height: 140px;
-    }
-
-    .label-text {
-      display: table-cell;
-      vertical-align: top;
-      padding-left: 8px;
-      font-size: 16pt;
-      text-align: left;
-    }
-
-    .label-text p {
-      margin: 0;
-      line-height: 1.2;
-    }
+    
   </style>
 </head>
 
 <body>
-  <h2>สรุปค่าใช้จ่ายใบจองรถ</h2>
-  <div class="print-date">วันที่พิมพ์: {{ now()->format('d/m/Y H:i') }}</div>
-
-  <div class="section-title">ข้อมูลลูกค้า</div>
-  <div class="info-row">
-    <span><strong>ชื่อ - นามสกุล :</strong> {{ $saleCar->customer->prefix->Name_TH ?? '' }} {{ $saleCar->customer->FirstName }} {{ $saleCar->customer->LastName }}</span>
-    &nbsp;&nbsp;
-    <span><strong>เบอร์โทรศัพท์ :</strong> {{ $saleCar->customer->Mobilephone1 ?? '' }}</span>
+  <div class="center-text">
+    รายละเอียดวันที่จอง : {{ $saleCar->format_booking_date ?? '-' }}
+    &nbsp;&nbsp;&nbsp;
+    จังหวัดที่ขึ้นทะเบียน : {{ $saleCar->provinces->name ?? '-' }}
   </div>
 
-  <div class="section-title">รายละเอียดรถ</div>
-  <div class="info-row">
-    <span><strong>รุ่นรถ : </strong> {{ $saleCar->carModel->Name_TH ?? '-' }}</span>
-    &nbsp;&nbsp;
-    <span><strong>สี : </strong> {{ $saleCar->Color ?? '-' }}</span>
+  <div class="two-column">
+
+    <!-- LEFT -->
+    <div class="col-left">
+      <span class="label">
+        จองชื่อ :
+        <span style="font-weight: normal;">
+          {{ $saleCar->customer->prefix->Name_TH ?? '' }}
+          {{ $saleCar->customer->FirstName ?? '' }}
+          {{ $saleCar->customer->LastName ?? '' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ที่อยู่ปัจจุบัน :
+        <span style="font-weight: normal;">
+          {{ $saleCar->customer->currentAddress->full_address ?? '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ที่อยู่สำหรับส่งเอกสาร :
+        <span style="font-weight: normal;">
+          {{ $saleCar->customer->documentAddress->full_address ?? '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        เบอร์โทรศัพท์ :
+        <span style="font-weight: normal;">
+          {{ $saleCar->customer->formatted_mobile ?? '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        รุ่นรถ :
+        <span style="font-weight: normal;">
+          {{ $saleCar->carOrder->model->Name_TH ?? '-' }}
+        </span> &nbsp;&nbsp;
+        แบบ :
+        <span style="font-weight: normal;">
+          {{ $saleCar->carOrder->option ?? '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        สีรถ :
+        <span style="font-weight: normal;">
+          {{ $saleCar->carOrder->color ?? '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ราคาเงินสด (รวมบวกหัว) :
+        <span style="font-weight: normal;">
+          {{ number_format($saleCar->CarSalePriceFinal ?? 0, 2) }}
+        </span>
+      </span>
+
+      <span class="label">
+        เงินจอง :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->reservationPayment->cost ?? null) 
+            ? number_format($saleCar->reservationPayment->cost, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        หักราคารถเทิร์น :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->turnCar->cost_turn ?? null) 
+            ? number_format($saleCar->turnCar->cost_turn, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ลูกค้าจ่ายเพิ่ม :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->TotalAccessoryExtra ?? null) 
+            ? number_format($saleCar->TotalAccessoryExtra, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      @if($saleCar->remainingPayment->type === 'finance')
+      <span class="label">
+        เงินดาวน์ :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->DownPayment ?? null) 
+            ? number_format($saleCar->DownPayment, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ส่วนลดเงินดาวน์ :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->DownPaymentDiscount ?? null) 
+            ? number_format($saleCar->DownPaymentDiscount, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        สรุปค่าใช้จ่ายวันออกรถ :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->deliveryPayment->cost ?? null) 
+            ? number_format($saleCar->deliveryPayment->cost, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ไฟแนนซ์ :
+        <span style="font-weight: normal;">
+          {{ $saleCar->remainingPayment && $saleCar->remainingPayment->financeInfo
+            ? $saleCar->remainingPayment->financeInfo->FinanceCompany
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ยอดจัด :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->remainingPayment->cost ?? null) 
+            ? number_format($saleCar->remainingPayment->cost, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ดอกเบี้ย :
+        <span style="font-weight: normal;">
+          {{ $saleCar->remainingPayment->interest ?? '-' }}
+        </span> &nbsp;&nbsp;
+        งวดผ่อน :
+        <span style="font-weight: normal;">
+          {{ $saleCar->remainingPayment->period ?? '-' }} งวด
+        </span>
+      </span>
+
+      <span class="label">
+        ค่างวด (กรณีไม่มี ALP) :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->remainingPayment->alp ?? null) 
+    ? number_format($saleCar->remainingPayment->alp, 2) 
+    : '-' }}
+
+        </span>
+      </span>
+
+      <span class="label">
+        ค่างวด (รวม ALP) :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->remainingPayment->including_alp ?? null) 
+            ? number_format($saleCar->remainingPayment->including_alp, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ยอดเงิน ALP ที่หักจากใบเสร็จดาวน์ :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->remainingPayment->total_alp ?? null) 
+            ? number_format($saleCar->remainingPayment->total_alp, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ดอกเบี้ยคอม :
+        <span style="font-weight: normal;">
+          {{ $saleCar->remainingPayment->type_com ?? '-' }}
+        </span> &nbsp;&nbsp;
+        ยอดเงินค่าคอม :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->remainingPayment->total_com ?? null) 
+            ? number_format($saleCar->remainingPayment->total_com, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      @else
+      <span class="label">
+        ส่วนลด :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->PaymentDiscount ?? null) 
+            ? number_format($saleCar->PaymentDiscount, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ยอดที่ต้องจ่ายวันออกรถ :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->remainingPayment->cost ?? null) 
+            ? number_format($saleCar->remainingPayment->cost, 2) 
+            : '-' }}
+        </span>
+      </span>
+      @endif
+
+      <span class="label">
+        ผู้แนะนำ :
+        <span style="font-weight: normal;">
+          {{ $saleCar->customerReferrer->formatted_id_number ?? '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ยอดเงินค่าแนะนำ :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->ReferrerAmount ?? null) 
+            ? number_format($saleCar->ReferrerAmount, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        แคมเปญ :
+        <span style="font-weight: normal;">
+          @if($saleCar->campaigns && $saleCar->campaigns->count() > 0)
+          @foreach($saleCar->campaigns as $index => $camp)
+          ({{ $camp->campaign->type->name ?? '-' }})
+          {{ $camp->campaign->name ?? '-' }} - {{ number_format($camp->CashSupport, 2) }}
+          @if(!$loop->last)
+          +
+          @endif
+          @endforeach
+          @else
+          -
+          @endif
+        </span>
+      </span>
+
+      @if($saleCar->remainingPayment->type === 'finance')
+      @php
+      $totalSaleCampaign = $saleCar->TotalSaleCampaign ?? 0;
+      $markup90 = $saleCar->Markup90 ?? 0;
+      $campaignBalance = $totalSaleCampaign + $markup90;
+      @endphp
+
+      <span class="label">
+        งบ :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->TotalSaleCampaign ?? null) 
+            ? number_format($saleCar->TotalSaleCampaign, 2) 
+            : '-' }}
+        </span> &nbsp;&nbsp;
+        บวกหัว 90% :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->Markup90 ?? null) 
+            ? number_format($saleCar->Markup90, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        รวม :
+        <span style="font-weight: normal;">
+          {{ is_numeric($campaignBalance ?? null) 
+            ? number_format($campaignBalance, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      @php
+      $DownPaymentDiscount = $saleCar->DownPaymentDiscount ?? 0;
+      $TotalAccessoryGift = $TotalAccessoryGift->Markup90 ?? 0;
+      $discountBalance = $DownPaymentDiscount + $TotalAccessoryGift;
+      @endphp
+
+      <span class="label">
+        ส่วนลด :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->DownPaymentDiscount ?? null) 
+            ? number_format($saleCar->DownPaymentDiscount, 2) 
+            : '-' }}
+        </span> &nbsp;&nbsp;
+        ส่วนต่างของแถม :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->TotalAccessoryGift ?? null) 
+            ? number_format($saleCar->TotalAccessoryGift, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        รวมส่วนลด :
+        <span style="font-weight: normal;">
+          {{ is_numeric($discountBalance ?? null) 
+            ? number_format($discountBalance, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        เหลืองบ :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->balanceCampaign ?? null) 
+            ? number_format($saleCar->balanceCampaign, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      @else
+      <span class="label">
+        รวม :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->TotalSaleCampaign ?? null) 
+            ? number_format($saleCar->TotalSaleCampaign, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      @php
+      $PaymentDiscount = $saleCar->PaymentDiscount ?? 0;
+      $TotalAccessoryGift = $TotalAccessoryGift->Markup90 ?? 0;
+      $discountBalance = $PaymentDiscount + $TotalAccessoryGift;
+      @endphp
+
+      <span class="label">
+        ส่วนลด :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->PaymentDiscount ?? null) 
+            ? number_format($saleCar->PaymentDiscount, 2) 
+            : '-' }}
+        </span> &nbsp;&nbsp;
+        ส่วนต่างของแถม :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->TotalAccessoryGift ?? null) 
+            ? number_format($saleCar->TotalAccessoryGift, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        รวมส่วนลด :
+        <span style="font-weight: normal;">
+          {{ is_numeric($discountBalance ?? null) 
+            ? number_format($discountBalance, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        เหลืองบ :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->balanceCampaign ?? null) 
+            ? number_format($saleCar->balanceCampaign, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      @endif
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col-right">
+      <div class="section-title">รายละเอียดอุปกรณ์ตกแต่ง (แถม)</div>
+      @php
+      $giftAccessories = $saleCar->accessories->where('pivot.type', 'gift');
+      @endphp
+      @if($giftAccessories->isNotEmpty())
+      <table style="width:100%; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th>ลำดับ</th>
+            <th>รหัส</th>
+            <th>รายละเอียด</th>
+            <th>ประเภทราคา</th>
+            <th>ราคา</th>
+            <th>ค่าคอม</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach($giftAccessories as $index => $giftAccessories)
+          <tr>
+            <td style="text-align: center;">{{ $index + 1 }}</td>
+            <td style="text-align: center;">{{ $giftAccessories->accessory_id ?? '-' }}</td>
+            <td style="text-align: center;">{{ $giftAccessories->detail ?? '-' }}</td>
+            <td style="text-align: center;">{{ $giftAccessories->pivot->price_type ?? '-' }}</td>
+            <td style="text-align: right;">{{ number_format($giftAccessories->pivot->price, 2) }}</td>
+            <td style="text-align: right;">{{ number_format($giftAccessories->pivot->commission, 2) }}</td>
+          </tr>
+          @endforeach
+          <tr>
+            <td colspan="4" style="text-align: center; font-weight: bold;">รวมทั้งหมด</td>
+            <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->TotalAccessoryGift ?? 0, 2) }}</td>
+            <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->AccessoryGiftCom ?? 0, 2) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      @else
+      <p>- ไม่มีข้อมูลรายการของแถม -</p>
+      @endif
+
+      <div class="section-title">รายการซื้อเพิ่ม</div>
+      @php
+      $extraAccessories = $saleCar->accessories->where('pivot.type', 'extra');
+      @endphp
+      @if($extraAccessories->isNotEmpty())
+      <table style="width:100%; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th>ลำดับ</th>
+            <th>รหัส</th>
+            <th>รายละเอียด</th>
+            <th>ประเภทราคา</th>
+            <th>ราคา</th>
+            <th>ค่าคอม</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach($extraAccessories as $index => $extraAccessories)
+          <tr>
+            <td style="text-align: center;">{{ $index + 1 }}</td>
+            <td style="text-align: center;">{{ $extraAccessories->accessory_id ?? '-' }}</td>
+            <td style="text-align: center;">{{ $extraAccessories->detail ?? '-' }}</td>
+            <td style="text-align: center;">{{ $extraAccessories->pivot->price_type ?? '-' }}</td>
+            <td style="text-align: right;">{{ number_format($extraAccessories->pivot->price, 2) }}</td>
+            <td style="text-align: right;">{{ number_format($extraAccessories->pivot->commission, 2) }}</td>
+          </tr>
+          @endforeach
+          <tr>
+            <td colspan="4" style="text-align: center; font-weight: bold;">รวมทั้งหมด</td>
+            <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->TotalAccessoryExtra ?? 0, 2) }}</td>
+            <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->AccessoryExtraCom ?? 0, 2) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      @else
+      <p>- ไม่มีข้อมูลรายการซื้อเพิ่ม -</p>
+      @endif
+
+    </div>
+
   </div>
-
-  <div class="section-title">รายละเอียดอุปกรณ์ตกแต่ง (แถม)</div>
-  @php
-  $giftAccessories = $saleCar->accessories->where('pivot.type', 'gift');
-  @endphp
-  @if($giftAccessories->isNotEmpty())
-  <table style="width:100%; border-collapse: collapse;">
-    <thead>
-      <tr>
-        <th>ลำดับ</th>
-        <th>รหัส</th>
-        <th>รายละเอียด</th>
-        <th>ประเภทราคา</th>
-        <th>ราคา</th>
-      </tr>
-    </thead>
-    <tbody>
-      @foreach($giftAccessories as $index => $giftAccessories)
-      <tr>
-        <td style="text-align: center;">{{ $index + 1 }}</td>
-        <td style="text-align: center;">{{ $giftAccessories->AccessorySource ?? '-' }}</td>
-        <td style="text-align: center;">{{ $giftAccessories->AccessoryDetail ?? '-' }}</td>
-        <td style="text-align: center;">{{ $giftAccessories->pivot->price_type ?? '-' }}</td>
-        <td style="text-align: right;">{{ number_format($giftAccessories->pivot->price, 2) }}</td>
-      </tr>
-      @endforeach
-      <tr>
-        <td colspan="4" style="text-align: center; font-weight: bold;">รวมทั้งหมด</td>
-        <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->TotalAccessoryGift ?? 0, 2) }}</td>
-      </tr>
-    </tbody>
-  </table>
-  @else
-  <p>- ไม่มีข้อมูลรายการของแถม -</p>
-  @endif
-
-  <div class="section-title">รายการซื้อเพิ่ม</div>
-  @php
-  $extraAccessories = $saleCar->accessories->where('pivot.type', 'extra');
-  @endphp
-  @if($extraAccessories->isNotEmpty())
-  <table style="width:100%; border-collapse: collapse;">
-    <thead>
-      <tr>
-        <th>ลำดับ</th>
-        <th>รหัส</th>
-        <th>รายละเอียด</th>
-        <th>ประเภทราคา</th>
-        <th>ราคา</th>
-      </tr>
-    </thead>
-    <tbody>
-      @foreach($extraAccessories as $index => $extraAccessories)
-      <tr>
-        <td style="text-align: center;">{{ $index + 1 }}</td>
-        <td style="text-align: center;">{{ $extraAccessories->AccessorySource ?? '-' }}</td>
-        <td style="text-align: center;">{{ $extraAccessories->AccessoryDetail ?? '-' }}</td>
-        <td style="text-align: center;">{{ $extraAccessories->pivot->price_type ?? '-' }}</td>
-        <td style="text-align: right;">{{ number_format($extraAccessories->pivot->price, 2) }}</td>
-      </tr>
-      @endforeach
-      <tr>
-        <td colspan="4" style="text-align: center; font-weight: bold;">รวมทั้งหมด</td>
-        <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->TotalAccessoryExtra ?? 0, 2) }}</td>
-      </tr>
-    </tbody>
-  </table>
-  @else
-  <p>- ไม่มีข้อมูลรายการซื้อเพิ่ม -</p>
-  @endif
-
-  <div class="section-title">ข้อมูลแคมเปญ</div>
-  @if($saleCar->campaigns->isNotEmpty())
-  <table style="width:100%; border-collapse: collapse;">
-    <thead>
-      <tr>
-        <th>ลำดับ</th>
-        <th>ชื่อแคมเปญ</th>
-        <th>ยอด (บาท)</th>
-      </tr>
-    </thead>
-    <tbody>
-      @foreach($saleCar->campaigns as $index => $saleCampaign)
-      <tr>
-        <td style="text-align: center;">{{ $index + 1 }}</td>
-        <td style="text-align: center;">{{ $saleCampaign->campaign->campaignType->Name_TH ?? '-' }}</td>
-        <td style="text-align: right;">{{ number_format($saleCampaign->CashSupport, 2) }}</td>
-
-        <!-- <td style="border: 1px solid #000; padding: 5px;">{{ $saleCampaign->campaign->SubCampaignType ?? '-' }}</td>
-        <td style="border: 1px solid #000; padding: 5px; text-align: right;">{{ number_format($saleCampaign->CashSupportDeduct, 2) }}</td>
-        <td style="border: 1px solid #000; padding: 5px; text-align: right;">{{ number_format($saleCampaign->CashSupportFinal, 2) }}</td> -->
-      </tr>
-      @endforeach
-
-      <tr>
-        <td colspan="2" style="text-align: center; font-weight: bold;">รวมทั้งหมด</td>
-        <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->TotalSaleCampaign ?? 0, 2) }}</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="section-title">ยอดคงเหลือแคมเปญ</div>
-  @php
-  $totalSaleCampaign = $saleCar->TotalSaleCampaign ?? 0;
-  $markup90 = $saleCar->Markup90 ?? 0;
-  $downPaymentDiscount = $saleCar->DownPaymentDiscount ?? 0;
-  $totalAccessoryGift = $saleCar->TotalAccessoryGift ?? 0;
-
-  $campaignBalance = ($totalSaleCampaign + $markup90) - ($downPaymentDiscount + $totalAccessoryGift);
-
-  $campaignMessage = number_format($campaignBalance, 2);
-
-  $campaignT = $totalSaleCampaign + $markup90;
-
-   $campaignTB = number_format($campaignT, 2);
-  @endphp
-  <!-- if ($campaignBalance > 0) {
-  $campaignMessage = 'ได้กำไร : ' . number_format($campaignBalance, 2) . ' บาท';
-  } elseif ($campaignBalance < 0) {
-    $campaignMessage='ขาดทุน : ' . number_format(abs($campaignBalance), 2) . ' บาท' ;
-    } else {
-    $campaignMessage='เสมอตัว' ;
-    }-->
-
-
-  <table style="width:100%; border-collapse: collapse;">
-    <tbody>
-      <tr>
-        <td style="text-align: center; font-weight: bold;">ยอดรวมแคมเปญ</td>
-        <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->TotalSaleCampaign ?? 0, 2) }}</td>
-      </tr>
-      <tr>
-        <td style="text-align: center; font-weight: bold;">บวกหัว 90%</td>
-        <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->Markup90 ?? 0, 2) }}</td>
-      </tr>
-      <tr>
-        <td style="text-align: center; font-weight: bold;">ยอดรวมแคมเปญ รวม บวกหัว 90%</td>
-        <td style="text-align: right; font-weight: bold;">{{ $campaignTB }}</td>
-      </tr>
-      <!-- <tr>
-        <td style="text-align: center; font-weight: bold;">ยอดรวมของแถม</td>
-        <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->TotalAccessoryGift ?? 0, 2) }}</td>
-      </tr> -->
-      <tr>
-        <td style="text-align: center; font-weight: bold;">คงเหลือ</td>
-        <td style="text-align: right; font-weight: bold;">{{ $campaignMessage }}</td>
-      </tr>
-    </tbody>
-  </table>
-  @else
-  <p>- ไม่มีข้อมูลแคมเปญ -</p>
-  @endif
-
-  <div class="section-title">สรุปยอด</div>
-  <table style="width:100%; border-collapse: collapse;">
-    <tbody>
-      <tr>
-        <td style="text-align: center; font-weight: bold;">ราคารถ (รวมบวกหัว)</td>
-        <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->CarSalePriceFinal ?? 0, 2) }}</td>
-      </tr>
-      <tr>
-        <td style="text-align: center; font-weight: bold;">ยอดดาวน์</td>
-        <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->DownPayment ?? 0, 2) }}</td>
-      </tr>
-      <tr>
-        <td style="text-align: center; font-weight: bold;">ค่าใช้จ่ายสำหรับวันที่ออกรถ</td>
-        <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->TotalPaymentatDelivery ?? 0, 2) }}</td>
-      </tr>
-      <tr>
-        <td style="text-align: center; font-weight: bold;">ยอดที่เหลือ</td>
-        <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->TotalCashSupportUsed ?? 0, 2) }}</td>
-      </tr>
-    </tbody>
-  </table>
-
 
 </body>
 

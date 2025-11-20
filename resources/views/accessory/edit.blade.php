@@ -109,8 +109,10 @@
             <div class="col-md-6 mb-5">
               <label for="cost" class="form-label">ราคาทุน</label>
               <input id="cost" type="text"
-                class="form-control @error('cost') is-invalid @enderror"
-                name="cost" value="{{ $acc->cost }}" required>
+                class="form-control text-end money-input @error('cost') is-invalid @enderror"
+                name="cost" 
+                value="{{ $acc->cost !== null ? number_format($acc->cost, 2) : '' }}"
+                required>
 
               @error('cost')
               <span class="invalid-feedback" role="alert">
@@ -121,15 +123,18 @@
             <div class="col-md-6 mb-5">
               <label for="promo" class="form-label">ราคาพิเศษ</label>
               <input id="promo" type="text"
-                class="form-control"
-                name="promo" value="{{ $acc->promo }}">
+                class="form-control text-end money-input"
+                name="promo"
+                value="{{ $acc->promo !== null ? number_format($acc->promo, 2) : '' }}" >
             </div>
 
             <div class="col-md-6 mb-5">
               <label for="sale" class="form-label">ราคาขาย</label>
               <input id="sale" type="text"
-                class="form-control @error('sale') is-invalid @enderror"
-                name="sale" value="{{ $acc->sale }}" required>
+                class="form-control text-end money-input @error('sale') is-invalid @enderror"
+                name="sale" 
+                value="{{ $acc->sale !== null ? number_format($acc->sale, 2) : '' }}"
+                required>
 
               @error('sale')
               <span class="invalid-feedback" role="alert">
@@ -140,8 +145,9 @@
             <div class="col-md-6 mb-5">
               <label for="comSale" class="form-label">ค่าคอม ราคาขาย</label>
               <input id="comSale" type="text"
-                class="form-control"
-                name="comSale" value="{{ $acc->comSale }}">
+                class="form-control text-end money-input"
+                name="comSale"
+                value="{{ $acc->comSale !== null ? number_format($acc->comSale, 2) : '' }}" >
             </div>
 
             <div class="col-md-6 mb-5">

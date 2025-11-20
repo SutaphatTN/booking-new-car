@@ -4,6 +4,54 @@ $.ajaxSetup({
   }
 });
 
+//format
+function formatNumber(num) {
+  if (num === null || num === undefined || num === '') return '-';
+  const n = parseFloat(num);
+  if (isNaN(n)) return '-';
+  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+//safe number
+function safeNumber(selector) {
+  const el = $(selector);
+  if (!el.length) return 0;
+  const val = el.val();
+  if (!val) return 0;
+  return parseFloat(val.replace(/,/g, '')) || 0;
+}
+
+//use css
+$(document).ready(function () {
+  $('.money-input').each(function () {
+    let value = $(this).val();
+    if (value && !isNaN(value.replace(/,/g, ''))) {
+      $(this).val(
+        parseFloat(value.replace(/,/g, '')).toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
+      );
+    }
+  });
+});
+
+$(document).on('input', '.money-input', function () {
+  let value = this.value.replace(/,/g, '');
+  if (value === '' || isNaN(value)) {
+    this.value = '';
+    return;
+  }
+  this.value = parseFloat(value).toLocaleString();
+});
+
+$(document).on('blur', '.money-input', function () {
+  let value = this.value.replace(/,/g, '');
+  if (value && !isNaN(value)) {
+    this.value = parseFloat(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+});
+
 //view
 
 //view : table
@@ -15,12 +63,17 @@ $(document).ready(function () {
   }
 
   purchaseTable = $('#purchaseTable').DataTable({
-    ajax: '/purchase-order/list',
+    ajax: {
+      url: '/purchase-order/list',
+      data: function (d) {
+        d.status = $('#filterStatus').val();
+      }
+    },
     columns: [
       { data: 'No' },
       { data: 'FullName' },
-      { data: 'IDNumber' },
-      { data: 'Mobilephone' },
+      { data: 'subSale' },
+      { data: 'statusSale' },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
@@ -43,6 +96,10 @@ $(document).ready(function () {
         previous: 'ก่อนหน้า'
       }
     }
+  });
+
+  $('#filterStatus').on('change', function () {
+    purchaseTable.ajax.reload();
   });
 });
 
@@ -134,24 +191,41 @@ document.addEventListener('DOMContentLoaded', function () {
 
 //input : search customer
 $(document).ready(function () {
-  const $searchInput = $('#customerSearch');
+  setupCustomerSearch({
+    searchInput: '#customerSearch',
+    nameInput: '#customerName',
+    phoneInput: '#customerPhone',
+    idInput: '#customerID',
+    hiddenId: '#CusID'
+  });
+
+  setupCustomerSearch({
+    searchInput: '#customerSearchRef',
+    nameInput: '#customerNameRef',
+    phoneInput: '#customerPhoneRef',
+    idInput: '#customerIDRef',
+    hiddenId: '#ReferrerID'
+  });
+});
+
+function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hiddenId }) {
+  const $search = $(searchInput);
   const $modal = $('#modalSearchCustomer');
   const $tableBody = $('#tableSelectCustomer tbody');
 
-  $searchInput.on('keypress', function (e) {
+  $search.on('keypress', function (e) {
     if (e.which === 13) {
       e.preventDefault();
       searchCustomer($(this).val());
     }
   });
 
-  $('.btnSearchCustomer').on('click', function () {
-    searchCustomer($searchInput.val());
+  $search.siblings('.btnSearchCustomer').on('click', function () {
+    searchCustomer($search.val());
   });
 
   function searchCustomer(keyword) {
     if (!keyword.trim()) return;
-
     $.ajax({
       url: '/customers/search',
       type: 'GET',
@@ -166,14 +240,15 @@ $(document).ready(function () {
             $tableBody.append(`
               <tr>
                 <td>${c.PrefixNameTH ?? '-'} ${c.FirstName} ${c.LastName}</td>
-                <td>${c.Mobilephone1 ?? '-'}</td>
-                <td>${c.IDNumber ?? '-'}</td>
+                <td>${c.formatted_mobile ?? '-'}</td>
+                <td>${c.formatted_id_number ?? '-'}</td>
                 <td>
                   <button class="btn btn-sm btn-primary btnSelectCustomer"
                     data-id="${c.id}"
                     data-name="${c.PrefixNameTH ?? '-'} ${c.FirstName} ${c.LastName}"
-                    data-mobile="${c.Mobilephone1 ?? ''}"
-                    data-idnumber="${c.IDNumber ?? ''}">
+                    data-mobile="${c.formatted_mobile ?? ''}"
+                    data-idnumber="${c.formatted_id_number ?? ''}"
+                    data-target="${searchInput}">
                     เลือก
                   </button>
                 </td>
@@ -183,9 +258,6 @@ $(document).ready(function () {
         }
 
         $modal.modal('show');
-      },
-      error: function (xhr) {
-        console.error('Search error:', xhr);
       }
     });
   }
@@ -193,14 +265,71 @@ $(document).ready(function () {
   $(document).on('click', '.btnSelectCustomer', function () {
     const data = $(this).data();
 
-    $('#customerName').val(data.name);
-    $('#customerPhone').val(data.mobile);
-    $('#customerID').val(data.idnumber);
-    $('#CusID').val(data.id);
+    if (data.target === searchInput) {
+      $(nameInput).val(data.name);
+      $(phoneInput).val(data.mobile);
+      $(idInput).val(data.idnumber);
+      $(hiddenId).val(data.id);
 
-    $modal.modal('hide');
+      $modal.modal('hide');
+      $search.val('');
+    }
+  });
+}
 
-    $searchInput.val('');
+//input : radio payment reservation
+document.addEventListener('DOMContentLoaded', function () {
+  const radios = document.querySelectorAll('input[name="reservationCondition"]');
+  const bankSection = document.getElementById('bankSection');
+  const checkSection = document.getElementById('checkSection');
+  const creditSection = document.getElementById('creditSection');
+
+  function toggleSection() {
+    bankSection.style.display = 'none';
+    checkSection.style.display = 'none';
+    creditSection.style.display = 'none';
+
+    const selected = document.querySelector('input[name="reservationCondition"]:checked');
+    if (!selected) return;
+
+    if (selected.value === 'transfer') {
+      bankSection.style.display = 'block';
+    } else if (selected.value === 'check') {
+      checkSection.style.display = 'block';
+    } else if (selected.value === 'credit') {
+      creditSection.style.display = 'block';
+    }
+  }
+
+  radios.forEach(radio => radio.addEventListener('change', toggleSection));
+  toggleSection();
+});
+
+//input : get sub model
+$(document).on('change', '#model_id', function () {
+  const modelId = $(this).val();
+  const $subModelSelect = $('#subModel_id');
+
+  $subModelSelect.empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>');
+
+  if (!modelId) return;
+
+  $.ajax({
+    url: '/api/purchase-order/sub-model/' + modelId,
+    type: 'GET',
+    success: function (data) {
+      console.log('data:', data);
+      if (data.length > 0) {
+        data.forEach(function (sub) {
+          $subModelSelect.append(`<option value="${sub.id}">${sub.name}</option>`);
+        });
+      } else {
+        $subModelSelect.append('<option value="">-- ไม่มีรุ่นย่อย --</option>');
+      }
+    },
+    error: function () {
+      alert('เกิดข้อผิดพลาดในการโหลดข้อมูลรุ่นย่อย');
+    }
   });
 });
 
@@ -273,30 +402,57 @@ document.addEventListener('DOMContentLoaded', function () {
 //edit : next/previous button
 document.addEventListener('DOMContentLoaded', function () {
   //Next
-  document.getElementById('nextDate').addEventListener('click', function (e) {
+  document.getElementById('nextCampaign').addEventListener('click', function (e) {
     e.preventDefault();
-    const nextTabTrigger = document.querySelector('[data-bs-target="#tab-date"]');
-    const nextTab = new bootstrap.Tab(nextTabTrigger);
-    nextTab.show();
+
+    const priceTabTrigger = document.querySelector('[data-bs-target="#tab-price"]');
+    const priceTab = new bootstrap.Tab(priceTabTrigger);
+    priceTab.show();
+
+    setTimeout(() => {
+      const campaignTabTrigger = document.querySelector('[data-bs-target="#tab-campaign"]');
+      const campaignTab = new bootstrap.Tab(campaignTabTrigger);
+      campaignTab.show();
+    }, 200);
   });
 
   document.getElementById('nextAccessory').addEventListener('click', function (e) {
     e.preventDefault();
-    const nextTabTrigger = document.querySelector('[data-bs-target="#tab-accessory-gift"]');
+    const nextTabTrigger = document.querySelector('[data-bs-target="#tab-accessory"]');
     const nextTab = new bootstrap.Tab(nextTabTrigger);
     nextTab.show();
+  });
+
+  document.getElementById('nextExtra').addEventListener('click', function (e) {
+    e.preventDefault();
+    const nextTabTrigger = document.querySelector('[data-bs-target="#tab-extra"]');
+    const nextTab = new bootstrap.Tab(nextTabTrigger);
+    nextTab.show();
+  });
+
+  document.getElementById('nextCar').addEventListener('click', function (e) {
+    e.preventDefault();
+    const nextTabTrigger = document.querySelector('[data-bs-target="#tab-car"]');
+    const nextTab = new bootstrap.Tab(nextTabTrigger);
+    nextTab.show();
+  });
+
+  document.getElementById('nextDate').addEventListener('click', function (e) {
+    e.preventDefault();
+    const moreTabTrigger = document.querySelector('[data-bs-target="#tab-more"]');
+    const moreTab = new bootstrap.Tab(moreTabTrigger);
+    moreTab.show();
+
+    setTimeout(() => {
+      const dateTabTrigger = document.querySelector('[data-bs-target="#tab-date"]');
+      const dateTab = new bootstrap.Tab(dateTabTrigger);
+      dateTab.show();
+    }, 200);
   });
 
   document.getElementById('nextApproved').addEventListener('click', function (e) {
     e.preventDefault();
     const nextTabTrigger = document.querySelector('[data-bs-target="#tab-approved"]');
-    const nextTab = new bootstrap.Tab(nextTabTrigger);
-    nextTab.show();
-  });
-
-  document.getElementById('nextPrice').addEventListener('click', function (e) {
-    e.preventDefault();
-    const nextTabTrigger = document.querySelector('[data-bs-target="#tab-price"]');
     const nextTab = new bootstrap.Tab(nextTabTrigger);
     nextTab.show();
   });
@@ -309,11 +465,39 @@ document.addEventListener('DOMContentLoaded', function () {
     prevTab.show();
   });
 
-  document.getElementById('prevPrice').addEventListener('click', function (e) {
+  document.getElementById('prevCampaign').addEventListener('click', function (e) {
     e.preventDefault();
-    const prevTabTrigger = document.querySelector('[data-bs-target="#tab-price"]');
+    const prevTabTrigger = document.querySelector('[data-bs-target="#tab-campaign"]');
     const prevTab = new bootstrap.Tab(prevTabTrigger);
     prevTab.show();
+  });
+
+  document.getElementById('prevAccessory').addEventListener('click', function (e) {
+    e.preventDefault();
+    const prevTabTrigger = document.querySelector('[data-bs-target="#tab-accessory"]');
+    const prevTab = new bootstrap.Tab(prevTabTrigger);
+    prevTab.show();
+  });
+
+  document.getElementById('prevExtra').addEventListener('click', function (e) {
+    e.preventDefault();
+    const prevTabTrigger = document.querySelector('[data-bs-target="#tab-extra"]');
+    const prevTab = new bootstrap.Tab(prevTabTrigger);
+    prevTab.show();
+  });
+
+  document.getElementById('prevCar').addEventListener('click', function (e) {
+    e.preventDefault();
+
+    const priceTabTrigger = document.querySelector('[data-bs-target="#tab-price"]');
+    const priceTab = new bootstrap.Tab(priceTabTrigger);
+    priceTab.show();
+
+    setTimeout(() => {
+      const carTabTrigger = document.querySelector('[data-bs-target="#tab-car"]');
+      const carTab = new bootstrap.Tab(carTabTrigger);
+      carTab.show();
+    }, 200);
   });
 
   document.getElementById('prevDate').addEventListener('click', function (e) {
@@ -322,45 +506,101 @@ document.addEventListener('DOMContentLoaded', function () {
     const prevTab = new bootstrap.Tab(prevTabTrigger);
     prevTab.show();
   });
-
-  document.getElementById('prevAccessory').addEventListener('click', function (e) {
-    e.preventDefault();
-    const prevTabTrigger = document.querySelector('[data-bs-target="#tab-accessory-gift"]');
-    const prevTab = new bootstrap.Tab(prevTabTrigger);
-    prevTab.show();
-  });
-
-  document.getElementById('prevApproved').addEventListener('click', function (e) {
-    e.preventDefault();
-    const prevTabTrigger = document.querySelector('[data-bs-target="#tab-approved"]');
-    const prevTab = new bootstrap.Tab(prevTabTrigger);
-    prevTab.show();
-  });
 });
 
-document.addEventListener('DOMContentLoaded', function () {
-  const radios = document.querySelectorAll('input[name="paymentCondition"]');
-  const sections = {
-    creditCheck: document.getElementById('creditFields'),
-    cashCheck: document.getElementById('cashFields'),
-    moneyCheck: document.getElementById('moneyFields'),
-    financeCheck: document.getElementById('financeFields')
-  };
+//edit : search car order id
+$(document).ready(function () {
+  const $searchInput = $('#carOrderSearch');
+  const $modal = $('#modalSearchCarOrder');
+  const $tableBody = $('#tableSelectCarOrder tbody');
 
-  function toggleSection() {
-    for (const key in sections) {
-      sections[key].style.display = 'none';
+  $searchInput.on('keypress', function (e) {
+    if (e.which === 13) {
+      e.preventDefault();
+      searchCarOrder($(this).val());
     }
-    const selected = document.querySelector('input[name="paymentCondition"]:checked');
-    if (selected) {
-      const section = sections[selected.id];
-      if (section) section.style.display = 'block';
-    }
+  });
+
+  $('.btnSearchCarOrder').on('click', function () {
+    searchCarOrder($searchInput.val());
+  });
+
+  function searchCarOrder(keyword) {
+    if (!keyword.trim()) return;
+
+    $.ajax({
+      url: '/car-order/search',
+      type: 'GET',
+      data: { keyword },
+      success: function (res) {
+        $tableBody.empty();
+
+        if (res.length === 0) {
+          $tableBody.append(`<tr><td colspan="7" class="text-center">ไม่พบข้อมูล Car Oder</td></tr>`);
+        } else {
+          res.forEach(c => {
+            $tableBody.append(`
+              <tr>
+              <td>${c.order_code ?? '-'}</td>
+                <td>${c.sub_model?.name}</td>
+                <td>${c.vin_number ?? '-'}</td>
+                <td>${c.option ?? '-'}</td>
+                <td>${c.color ?? '-'}</td>
+                <td>${c.year ?? '-'}</td>
+                <td>${c.order_status?.name}</td>
+                <td>
+                  <button class="btn btn-sm btn-primary btnSelectCarOder"
+                    data-id="${c.id}"
+                    data-code="${c.order_code}"
+                    data-model="${c.model?.Name_TH}"
+                    data-sub="${c.sub_model?.name}"
+                    data-vin="${c.vin_number ?? ''}"
+                    data-option="${c.option ?? ''}"
+                    data-color="${c.color ?? ''}"
+                    data-year="${c.year ?? ''}"
+                    data-cost="${c.car_DNP ?? ''}"
+                    data-sale="${c.car_MSRP ?? ''}">
+                    เลือก
+                  </button>
+                </td>
+              </tr>
+            `);
+          });
+        }
+
+        $modal.modal('show');
+      },
+      error: function (xhr) {
+        console.error('Search error:', xhr);
+      }
+    });
   }
 
-  radios.forEach(radio => radio.addEventListener('change', toggleSection));
+  $(document).on('click', '.btnSelectCarOder', function () {
+    const data = $(this).data();
 
-  toggleSection();
+    function formatNumber(num) {
+      if (!num || isNaN(num)) return '';
+      return Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    $('#carOrderCode').val(data.code);
+    $('#carOrderModel').val(data.model);
+    $('#carOrderSubModel').val(data.sub);
+    $('#carOrderVin').val(data.vin);
+    $('#carOrderOption').val(data.option);
+    $('#carOrderColor').val(data.color);
+    $('#carOrderYear').val(data.year);
+    $('#carOrderCost').val(formatNumber(data.cost));
+    $('#carOrderSale').val(formatNumber(data.sale));
+    $('#CarOrderID').val(data.id);
+
+    $modal.modal('hide');
+
+    $searchInput.val('');
+
+    updateSummary();
+  });
 });
 
 //edit : modal remove accessory
@@ -395,79 +635,59 @@ document.addEventListener('DOMContentLoaded', function () {
 
 //edit : accessory and gift
 $(document).ready(function () {
-  /**
-   * Generic function สำหรับทั้ง accessory และ gift
-   * @param {Object} options
-   *   options = {
-   *     type: 'accessory' | 'gift',
-   *     btnOpen: '.btnAccessory' | '.btnGift',
-   *     btnSearch: '.btnAccessorySearch' | '.btnGiftSearch',
-   *     searchInput: '#accessorySearch' | '#giftSearch',
-   *     modal: '.viewAccessory' | '.viewGift',
-   *     tableBody: '#tableAccessoryResult tbody' | '#tableGiftResult tbody',
-   *     mainTable: '#accessoryTablePrice tbody' | '#giftTable tbody',
-   *     hiddenIds: '#accessory_ids' | '#gift_ids',
-   *     hiddenTotal: '#total_accessory_used' | '#total_gift_used',
-   *     totalDisplay: '#total-price' | '#total-price-gift',
-   *     noDataRowId: '#no-data-row' | '#no-data-gift',
-   *     deleteBtnClass: '.btn-delete-accessory' | '.btn-delete-gift'
-   *   }
-   */
-
-  // =========================
-  // ฟังก์ชันดึง selected IDs
-  // =========================
-  function getSelectedAccessoryIds() {
-    const ids = [];
-    $('#accessoryTablePrice tbody tr[data-id]').each(function () {
-      ids.push($(this).data('id'));
-    });
-    return ids;
-  }
-
+  // ฟังก์ชันดึง id ที่เลือก
   function getSelectedGiftIds() {
     const ids = [];
-    $('#giftTable tbody tr[data-id]').each(function () {
+    $('#giftTablePrice tbody tr[data-id]').each(function () {
       ids.push($(this).data('id'));
     });
     return ids;
   }
 
-  // =========================
-  // ฟังก์ชัน update grand totals
-  // =========================
-  function updateGrandTotals() {
-    const giftTotal = parseFloat($('#total-price-gift').text().replace(/,/g, '')) || 0;
-    const accessoryTotal = parseFloat($('#total-price').text().replace(/,/g, '')) || 0;
-
-    $('#TotalAccessoryGift').val(accessoryTotal);
-    $('#TotalAccessoryExtra').val(giftTotal);
+  function getSelectedExtraIds() {
+    const ids = [];
+    $('#extraTable tbody tr[data-id]').each(function () {
+      ids.push($(this).data('id'));
+    });
+    return ids;
   }
 
-  // =========================
+  // ฟังก์ชัน update grand totals
+  function updateGrandTotals() {
+    const extraTotal = parseFloat($('#total-price-extra').text().replace(/,/g, '')) || 0;
+    const giftTotal = parseFloat($('#total-price-gift').text().replace(/,/g, '')) || 0;
+
+    $('#TotalAccessoryGift').val(giftTotal);
+    $('#TotalAccessoryExtra').val(extraTotal);
+
+    $('#summaryExtraTotal').val(
+      extraTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    );
+  }
+
   // ฟังก์ชัน init accessory & gift
-  // =========================
   function initAccessoryGift(options) {
     const $searchInput = $(options.searchInput);
     const $modal = $(options.modal);
     const $tableBody = $(options.tableBody);
     const $mainTable = $(options.mainTable);
 
-    // เปิด modal
     $(options.btnOpen).on('click', function () {
       $modal.modal('show');
-      const CarModelID = $('#CarModelID').val();
       $searchInput.val('');
       $tableBody.empty();
 
-      if (CarModelID) {
-        searchItem('');
-      } else {
+      const subModel_id = $('#subModel_id').val();
+      console.log('ใช้ subModel_id ล่าสุด:', subModel_id);
+
+      if (!subModel_id) {
         $tableBody.append(`<tr><td colspan="5" class="text-center text-danger">กรุณาเลือกรุ่นรถก่อน</td></tr>`);
+      } else {
+        $(options.subModelInput).val(subModel_id);
+        searchItem('');
       }
     });
 
-    // กด Enter ค้นหา
     $searchInput.on('keypress', function (e) {
       if (e.which === 13) {
         e.preventDefault();
@@ -475,24 +695,23 @@ $(document).ready(function () {
       }
     });
 
-    // ปุ่ม search
     $(options.btnSearch).on('click', function () {
       searchItem($searchInput.val());
     });
 
     // ฟังก์ชัน search item
     function searchItem(keyword = '') {
-      const selectedAccessoryIds = getSelectedAccessoryIds();
       const selectedGiftIds = getSelectedGiftIds();
-      const excludeIds = [...selectedAccessoryIds, ...selectedGiftIds];
+      const selectedExtraIds = getSelectedExtraIds();
+      const excludeIds = [...selectedGiftIds, ...selectedExtraIds];
 
-      const CarModelID = $('#CarModelID').val();
-      if (!CarModelID) return;
+      const subModel_id = $('#subModel_id').val();
+      if (!subModel_id) return;
 
       $.ajax({
         url: '/accessory/search',
         type: 'GET',
-        data: { keyword, CarModelID, exclude_ids: excludeIds },
+        data: { keyword, subModel_id, exclude_ids: excludeIds },
         success: function (res) {
           $tableBody.empty();
 
@@ -505,25 +724,23 @@ $(document).ready(function () {
             const costCell = a.accessoryCost
               ? `<input type="radio" name="priceType_${a.id}" value="cost"
                   data-id="${a.id}" data-source="${a.AccessorySource}"
-                  data-detail="${a.AccessoryDetail}" data-price="${a.accessoryCost}"
-                  data-com="${a.AccessoryComCost ?? 0}">
-                <span class="ms-1">${a.accessoryCost}</span>`
+                  data-detail="${a.AccessoryDetail}" data-price="${a.accessoryCost ?? ''}">
+                <span class="ms-1">${formatNumber(a.accessoryCost)}</span>`
               : `<span>-</span>`;
 
             const promoCell = a.AccessoryPromoPrice
               ? `<input type="radio" name="priceType_${a.id}" value="promo"
                   data-id="${a.id}" data-source="${a.AccessorySource}"
-                  data-detail="${a.AccessoryDetail}" data-price="${a.AccessoryPromoPrice}"
-                  data-com="${a.AccessoryComPromo ?? 0}">
-                <span class="ms-1">${a.AccessoryPromoPrice}</span>`
+                  data-detail="${a.AccessoryDetail}" data-price="${a.AccessoryPromoPrice ?? ''}">
+                <span class="ms-1">${formatNumber(a.AccessoryPromoPrice)}</span>`
               : `<span>-</span>`;
 
             const saleCell = a.AccessorySalePrice
               ? `<input type="radio" name="priceType_${a.id}" value="sale"
                   data-id="${a.id}" data-source="${a.AccessorySource}"
-                  data-detail="${a.AccessoryDetail}" data-price="${a.AccessorySalePrice}"
-                  data-com="${a.AccessoryComSale ?? 0}">
-                <span class="ms-1">${a.AccessorySalePrice}</span>`
+                  data-detail="${a.AccessoryDetail}" data-price="${a.AccessorySalePrice ?? ''}"
+                  data-com="${a.AccessoryComSale ?? ''}">
+                <span class="ms-1">${formatNumber(a.AccessorySalePrice) ?? ''}</span>`
               : `<span>-</span>`;
 
             $tableBody.append(`
@@ -532,7 +749,7 @@ $(document).ready(function () {
                 <td>${a.AccessoryDetail ?? '-'}</td>
                 <td class="text-center">${costCell}</td>
                 <td class="text-center">${promoCell}</td>
-                <td class="text-center">${saleCell}</td>
+                <td class="text-center">${saleCell} (${formatNumber(a.AccessoryComSale ?? '-')})</td>
               </tr>
             `);
           });
@@ -552,11 +769,24 @@ $(document).ready(function () {
     // รวมยอดรวม
     function updateTotal() {
       let total = 0;
+      let totalCom = 0;
+
       $mainTable.find(`tr:not(${options.noDataRowId})`).each(function () {
         const price = parseFloat($(this).data('price')) || 0;
+        const com = parseFloat($(this).data('com')) || 0;
         total += price;
+        totalCom += com;
       });
-      $(options.totalDisplay).text(total.toLocaleString());
+
+      // แสดง ราคา (ค่าคอม)
+      $(options.totalDisplay).text(
+        `${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (` +
+          `${totalCom.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
+      );
+
+      $(options.hiddenTotal).val(total);
+      $(options.hiddenCom).val(totalCom);
+
       updateGrandTotals();
     }
 
@@ -566,7 +796,7 @@ $(document).ready(function () {
       if (rows === 0 && $mainTable.find(options.noDataRowId).length === 0) {
         $mainTable.append(`
           <tr id="${options.noDataRowId.replace('#', '')}">
-            <td colspan="7" class="text-center">ยังไม่มีข้อมูล</td>
+            <td colspan="6" class="text-center">ยังไม่มีข้อมูล</td>
           </tr>
         `);
       }
@@ -596,7 +826,7 @@ $(document).ready(function () {
     }
 
     // บันทึก modal
-    $modal.find('button.save-item, #btnSaveAccessory, #btnSaveGift').on('click', function () {
+    $modal.find('button.save-item, #btnSaveGift, #btnSaveExtra').on('click', function () {
       const selected = $tableBody.find('input[type="radio"]:checked');
       if (selected.length === 0) {
         Swal.fire({ icon: 'warning', title: 'กรุณาเลือกราคาอย่างน้อยหนึ่งรายการ', confirmButtonText: 'ตกลง' });
@@ -627,19 +857,21 @@ $(document).ready(function () {
         const source = $radio.data('source');
         const detail = $radio.data('detail');
         const type = $radio.val();
-        const price = $radio.data('price') || '-';
+        const rawPrice = $radio.data('price');
+        const rawCom = $radio.data('com');
+        const price = formatNumber(rawPrice);
+        const comDisplay = rawCom && parseFloat(rawCom) > 0 ? formatNumber(rawCom) : '-';
+
         const typeLabel = { cost: 'ราคาทุน', promo: 'ราคาพิเศษ', sale: 'ราคาขาย' }[type];
-        const com = $radio.data('com') ?? '-';
 
         $mainTable.find(options.noDataRowId).remove();
         $mainTable.append(`
-        <tr data-id="${$radio.data('id')}" data-price="${price}" data-com="${com}">
+        <tr data-id="${$radio.data('id')}" data-price="${rawPrice}" data-com="${rawCom}">
           <td></td>
           <td>${source}</td>
           <td>${detail}</td>
           <td>${typeLabel}</td>
-          <td>${price}</td>
-          <td>${com}</td>
+          <td>${price} (${comDisplay})</td>
           <td>
             <button type="button" class="btn btn-sm btn-danger ${options.deleteBtnClass.replace('.', '')}">
               <i class="bx bx-trash"></i>
@@ -667,24 +899,7 @@ $(document).ready(function () {
     return { updateTotal, updateHiddenInputs };
   }
 
-  // =========================
   // เรียก init ทั้ง 2 ตาราง
-  // =========================
-  const accessoryFuncs = initAccessoryGift({
-    type: 'accessory',
-    btnOpen: '.btnAccessory',
-    btnSearch: '.btnAccessorySearch',
-    searchInput: '#accessorySearch',
-    modal: '.viewAccessory',
-    tableBody: '#tableAccessoryResult tbody',
-    mainTable: '#accessoryTablePrice tbody',
-    hiddenIds: '#accessory_ids',
-    hiddenTotal: '#total_accessory_used',
-    totalDisplay: '#total-price',
-    noDataRowId: '#no-data-row',
-    deleteBtnClass: '.btn-delete-accessory'
-  });
-
   const giftFuncs = initAccessoryGift({
     type: 'gift',
     btnOpen: '.btnGift',
@@ -692,50 +907,55 @@ $(document).ready(function () {
     searchInput: '#giftSearch',
     modal: '.viewGift',
     tableBody: '#tableGiftResult tbody',
-    mainTable: '#giftTable tbody',
+    mainTable: '#giftTablePrice tbody',
     hiddenIds: '#gift_ids',
     hiddenTotal: '#total_gift_used',
+    hiddenCom: '#total_gift_com',
+    subModelInput: '#subModel_id_gift',
     totalDisplay: '#total-price-gift',
-    noDataRowId: '#no-data-gift',
+    noDataRowId: '#no-data-row',
     deleteBtnClass: '.btn-delete-gift'
   });
 
-  // =========================
-  // เมื่อเปลี่ยน CarModel
-  // =========================
-  $('#CarModelID').on('change', function () {
-    $('#accessoryTablePrice tbody').html(
-      `<tr id="no-data-row"><td colspan="7" class="text-center">ยังไม่มีข้อมูล</td></tr>`
-    );
-    $('#accessory_ids').val('');
-    $('#total_accessory_used').val(0);
-    $('#total-price').text('0');
+  const extraFuncs = initAccessoryGift({
+    type: 'extra',
+    btnOpen: '.btnExtra',
+    btnSearch: '.btnExtraSearch',
+    searchInput: '#extraSearch',
+    modal: '.viewExtra',
+    tableBody: '#tableExtraResult tbody',
+    mainTable: '#extraTable tbody',
+    hiddenIds: '#extra_ids',
+    hiddenTotal: '#total_extra_used',
+    hiddenCom: '#total_extra_com',
+    subModelInput: '#subModel_id_extra',
+    totalDisplay: '#total-price-extra',
+    noDataRowId: '#no-data-extra',
+    deleteBtnClass: '.btn-delete-extra'
+  });
 
-    $('#giftTable tbody').html(`<tr id="no-data-gift"><td colspan="7" class="text-center">ยังไม่มีข้อมูล</td></tr>`);
+  // เมื่อเปลี่ยน CarModel
+  $('#subModel_id').on('change', function () {
+    $('#giftTablePrice tbody').html(
+      `<tr id="no-data-row"><td colspan="6" class="text-center">ยังไม่มีข้อมูล</td></tr>`
+    );
     $('#gift_ids').val('');
     $('#total_gift_used').val(0);
     $('#total-price-gift').text('0');
 
+    $('#extraTable tbody').html(`<tr id="no-data-extra"><td colspan="6" class="text-center">ยังไม่มีข้อมูล</td></tr>`);
+    $('#extra_ids').val('');
+    $('#total_extra_used').val(0);
+    $('#total-price-extra').text('0');
+
     updateGrandTotals();
   });
 
-  // =========================
   // ฟังก์ชันคำนวณยอดรวมตอนโหลดหน้า edit
-  // =========================
   function initGrandTotalOnLoad() {
     // accessory
-    let accessoryTotal = 0;
-    $('#accessoryTablePrice tbody tr:not(#no-data-row)').each(function () {
-      accessoryTotal += parseFloat($(this).data('price')) || 0;
-    });
-    $('#total-price').text(
-      accessoryTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    );
-    $('#total_accessory_used').val(accessoryTotal);
-
-    // gift
     let giftTotal = 0;
-    $('#giftTable tbody tr:not(#no-data-gift)').each(function () {
+    $('#giftTablePrice tbody tr:not(#no-data-row)').each(function () {
       giftTotal += parseFloat($(this).data('price')) || 0;
     });
     $('#total-price-gift').text(
@@ -743,28 +963,34 @@ $(document).ready(function () {
     );
     $('#total_gift_used').val(giftTotal);
 
+    // gift
+    let extraTotal = 0;
+    $('#extraTable tbody tr:not(#no-data-extra)').each(function () {
+      extraTotal += parseFloat($(this).data('price')) || 0;
+    });
+    $('#total-price-extra').text(
+      extraTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    );
+    $('#total_extra_used').val(extraTotal);
+
     // update hidden field
     updateGrandTotals();
   }
 
-  // =========================
   // เรียกตอนโหลดหน้า
-  // =========================
   initGrandTotalOnLoad();
 
-  // =========================
   // บันทึกข้อมูล
-  // =========================
   $(document).on('click', '.btnUpdatePurchase', function (e) {
     e.preventDefault();
 
     const $btn = $(this);
-    const $form = $('form');
+    const $form = $('#purchaseForm');
     const actionUrl = $form.attr('action');
     const formData = new FormData($form[0]);
 
     const accessoriesGift = [];
-    $('#accessoryTablePrice tbody tr:not(#no-data-row)').each(function () {
+    $('#giftTablePrice tbody tr:not(#no-data-row)').each(function () {
       accessoriesGift.push({
         id: $(this).data('id'),
         price_type: $(this).find('td').eq(3).text().trim(),
@@ -775,7 +1001,7 @@ $(document).ready(function () {
     });
 
     const accessoriesExtra = [];
-    $('#giftTable tbody tr:not(#no-data-gift)').each(function () {
+    $('#extraTable tbody tr:not(#no-data-extra)').each(function () {
       accessoriesExtra.push({
         id: $(this).data('id'),
         price_type: $(this).find('td').eq(3).text().trim(),
@@ -837,7 +1063,6 @@ $(document).ready(function () {
 
 //edit : campaign
 $(document).ready(function () {
-  // เปิดใช้งาน select2
   $('#CampaignID').select2({
     placeholder: 'เลือกแคมเปญ',
     width: '100%'
@@ -850,7 +1075,9 @@ $(document).ready(function () {
       const cash = parseFloat($(this).data('cashsupport')) || 0;
       total += cash;
     });
-    $('#TotalSaleCampaign').val(total.toFixed(2));
+    $('#TotalSaleCampaign').val(
+      total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    );
   }
 
   // คำนวณเมื่อเปลี่ยนค่า
@@ -859,17 +1086,17 @@ $(document).ready(function () {
   // เรียกคำนวณตอนเปิดหน้า (กรณีมี selected อยู่แล้ว)
   calcTotalCampaign();
 
-  // --- เมื่อเปลี่ยนรุ่นรถ ---
-  $('#CarModelID').on('change', function () {
-    const carModelID = $(this).val();
+  // เมื่อเปลี่ยนรุ่นรถ
+  $('#subModel_id').on('change', function () {
+    const subModel_id = $(this).val();
     $('#CampaignID').empty().trigger('change');
 
-    if (!carModelID) return;
+    if (!subModel_id) return;
 
     $.ajax({
       url: '/purchase-order/get-campaign',
       type: 'GET',
-      data: { CarModelID: carModelID },
+      data: { subModel_id: subModel_id },
       success: function (res) {
         if (res.length === 0) {
           $('#CampaignID').append(new Option('ไม่มีแคมเปญ', '', false, false));
@@ -878,8 +1105,8 @@ $(document).ready(function () {
         }
 
         res.forEach(c => {
-          const option = new Option(`${c.SubCampaignType} - ${c.CashSupport} บาท`, c.id, false, false);
-          $(option).attr('data-cashsupport', c.CashSupport);
+          const option = new Option(`${c.name} - ${c.cashSupport} บาท`, c.id, false, false);
+          $(option).attr('data-cashsupport', c.cashSupport);
           $('#CampaignID').append(option);
         });
 
@@ -891,25 +1118,22 @@ $(document).ready(function () {
 
 //edit : auto value -> บวกหัว (90%), ราคาสุทธิบวกหัว
 document.addEventListener('DOMContentLoaded', function () {
-  const salePriceInput = document.getElementById('CarSalePrice'); // ราคาเงินสด
-  const markupInput = document.getElementById('MarkupPrice'); // บวกหัว
-  const markup90Input = document.querySelector('input[name="Markup90"]'); // ช่องบวกหัว(90%)
-  const finalPriceInput = document.getElementById('CarSalePriceFinal'); // ราคาขายสุทธิ
+  const salePriceInput = document.getElementById('carOrderSale');
+  const markupInput = document.getElementById('MarkupPrice');
+  const markup90Input = document.querySelector('input[name="Markup90"]');
+  const finalPriceInput = document.getElementById('CarSalePriceFinal');
 
   //เงินดาวน์
-  const downPaymentInput = document.getElementById('DownPayment'); // เงินดาวน์
-  const downPaymentPercentInput = document.getElementById('DownPaymentPercentage'); // %
+  const downPaymentInput = document.getElementById('DownPayment');
+  const downPaymentPercentInput = document.getElementById('DownPaymentPercentage');
 
-  //ราคารถ
+  //edit : ราคารถสุทธิรวมบวกหัว
   function calculateCarPrice() {
     const salePrice = parseFloat(salePriceInput.value.replace(/,/g, '')) || 0;
     const markup = parseFloat(markupInput.value.replace(/,/g, '')) || 0;
 
-    // คำนวณบวกหัว (90%)
     const markup90 = markup * 0.9;
-
-    // ราคาขายสุทธิ = ราคาเงินสด + บวกหัว
-    const finalPrice = salePrice + markup;
+    const finalPrice = salePrice + markup90;
 
     // ใส่ค่าในช่อง
     markup90Input.value = markup90.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -926,21 +1150,36 @@ document.addEventListener('DOMContentLoaded', function () {
     return { markup90, finalPrice };
   }
 
-  //เงินดาวน์
+  // edit : บวกหัว 90%
+  function calculateFinalFromManualMarkup90() {
+    const salePrice = parseFloat(salePriceInput.value.replace(/,/g, '')) || 0;
+    const markup90 = parseFloat(markup90Input.value.replace(/,/g, '')) || 0;
+
+    const finalPrice = salePrice + markup90;
+
+    finalPriceInput.value = finalPrice.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    downPaymentInput.value = '';
+    downPaymentPercentInput.value = '';
+    calculateRemaining();
+  }
+
+  //edit : เงินดาวน์ และ %
   function calculateDownPayment() {
     const finalPrice = parseFloat(finalPriceInput.value.replace(/,/g, '')) || 0;
     const downPayment = parseFloat(downPaymentInput.value.replace(/,/g, '')) || 0;
     const downPercent = parseFloat(downPaymentPercentInput.value.replace(/,/g, '')) || 0;
 
     if (document.activeElement === downPaymentInput) {
-      // กรอกเงิน
       const percent = finalPrice > 0 ? (downPayment / finalPrice) * 100 : 0;
       downPaymentPercentInput.value = percent.toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
       });
     } else if (document.activeElement === downPaymentPercentInput) {
-      // กรอก %
       const dp = (finalPrice * downPercent) / 100;
       downPaymentInput.value = dp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -955,66 +1194,825 @@ document.addEventListener('DOMContentLoaded', function () {
   //ราคาขาย
   salePriceInput.addEventListener('input', calculateCarPrice);
   markupInput.addEventListener('input', calculateCarPrice);
+  markup90Input.addEventListener('input', calculateFinalFromManualMarkup90);
 
   //ดาวน์
   downPaymentInput.addEventListener('input', calculateDownPayment);
   downPaymentPercentInput.addEventListener('input', calculateDownPayment);
+
+  calculateRemaining();
 });
 
-//edit : total payment delivery + clone value รุ่นรถ สี เงินจอง + ยอดที่เหลือ
+//edit : total payment delivery ค่าใช้จ่ายวันออกรถ
+function calculateTotalPaymentAtDelivery() {
+  const downPayment = safeNumber('#DownPayment');
+  const downDiscount = safeNumber('#DownPaymentDiscount');
+  const giftTotal = safeNumber('#total_gift_used');
+  const ExtraTotal = safeNumber('#summaryExtraTotal');
+  const turnCost = safeNumber('#summaryTurn');
+  const cashDeposit = safeNumber('#summaryCashDeposit');
+
+  const total = downPayment + ExtraTotal - (downDiscount + turnCost + cashDeposit);
+
+  $('#TotalPaymentatDeliveryCar').val(
+    total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  );
+
+  $('#TotalPaymentatDelivery').val(total);
+
+  calculateRemaining();
+}
+
+//edit : ยอดคงเหลือสำหรับจัดไฟแนนซ์
+function calculateRemaining() {
+  const finalPrice = safeNumber('#CarSalePriceFinal');
+  const downPayment = safeNumber('#DownPayment');
+  const remaining = finalPrice - downPayment;
+
+  // แสดงยอดที่เหลือ
+  $('#balanceFinanceDisplay').val(
+    remaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  );
+
+  // เก็บค่าลง hidden input เพื่อบันทึกเข้าฐาน
+  $('#remaining_cost').val(remaining);
+  $('#balanceFinance').val(remaining);
+}
+
+//edit : ยอดคงเหลือ
+function calculateBalance() {
+  const carSale = safeNumber('#summaryCarSale');
+  const ExtraTotal = safeNumber('#summaryExtraTotal');
+  const turnCost = safeNumber('#summaryTurn');
+  const cashDeposit = safeNumber('#summaryCashDeposit');
+  const discount = safeNumber('#PaymentDiscount');
+
+  const total = carSale + ExtraTotal - (turnCost + cashDeposit + discount);
+
+  $('#balanceDisplay').val(total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+  $('#balance').val(total);
+}
+
+//edit : clone value
+function updateSummary() {
+  const model = $('#carOrderSubModel').val() || '';
+  const turn = safeNumber('#cost_turn');
+  const reserve = safeNumber('#reservation_cost');
+  const sale = safeNumber('#carOrderSale');
+
+  $('#summarySubCarModel').val(model);
+  $('#summaryTurn').val(turn.toLocaleString(undefined, { minimumFractionDigits: 2 }));
+  $('#summaryCashDeposit').val(reserve.toLocaleString(undefined, { minimumFractionDigits: 2 }));
+  $('#summaryCarSale').val(sale.toLocaleString(undefined, { minimumFractionDigits: 2 }));
+
+  calculateTotalPaymentAtDelivery();
+  calculateInstallment();
+}
+
+// edit : ค่างวด (กรณีไม่มี ALP)
+function calculateInstallment() {
+  const financeAmount = safeNumber('#balanceFinanceDisplay');
+  const interestRate = Number($('#remaining_interest').val());
+  const periodMonths = Number($('#remaining_period').val());
+
+  if (!financeAmount || !interestRate || !periodMonths || periodMonths <= 0) {
+    $('#remaining_alp').val('');
+    return;
+  }
+
+  const years = periodMonths / 12;
+  const totalInterest = (financeAmount * interestRate * years) / 100;
+  const totalWithInterest = financeAmount + totalInterest;
+
+  const monthlyPayment = totalWithInterest / periodMonths;
+
+  $('#remaining_alp').val(
+    Number(monthlyPayment).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
+  );
+}
+
+//edit : event update
 $(document).ready(function () {
-  function calculateTotalPaymentAtDelivery() {
-    const downPayment = parseFloat($('#DownPayment').val().replace(/,/g, '')) || 0;
-    const downDiscount = parseFloat($('#DownPaymentDiscount').val().replace(/,/g, '')) || 0;
-    const accessoryTotal = parseFloat($('#total_accessory_used').val().replace(/,/g, '')) || 0;
-    const additionFromCustomer = parseFloat($('#AdditionFromCustomer').val().replace(/,/g, '')) || 0;
-    const tradeinAddition = parseFloat($('#TradeinAddition').val().replace(/,/g, '')) || 0;
-    const cashDeposit = parseFloat($('#summaryCashDeposit').val().replace(/,/g, '')) || 0;
-
-    const total = (downPayment + additionFromCustomer) - (downDiscount + tradeinAddition + cashDeposit);
-
-    $('#TotalPaymentatDeliveryDisplay').text(
-      total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    );
-
-    $('#TotalPaymentatDelivery').val(total);
-
-    calculateRemaining();
-  }
-
-  function updateSummary() {
-    const carModel = $('#CarModelID option:selected').text();
-    const color = $('#Color').val();
-    const cashDeposit = parseFloat($('#CashDeposit').val()) || 0;
-
-    $('#summaryCarModel').val(carModel);
-    $('#summaryColor').val(color);
-    $('#summaryCashDeposit').val(cashDeposit.toLocaleString(undefined, { minimumFractionDigits: 2 }));
-
-    calculateTotalPaymentAtDelivery();
-  }
-
-  function calculateRemaining() {
-    const finalPrice = parseFloat($('#CarSalePriceFinal').val().replace(/,/g, '')) || 0;
-    const downPayment = parseFloat($('#DownPayment').val().replace(/,/g, '')) || 0;
-
-    const remaining = finalPrice - downPayment;
-
-    // แสดงยอดที่เหลือ
-    $('#RemainingAmountDisplay').text(
-      remaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    );
-
-    // เก็บค่าลง hidden input เพื่อบันทึกเข้าฐาน
-    $('#TotalCashSupportUsed').val(remaining);
-  }
-
-  $('#CarModelID, #Color, #CashDeposit').on('input change', updateSummary);
-  $('#DownPayment, #DownPaymentDiscount, #AdditionFromCustomer, #TradeinAddition, #total_accessory_used').on(
+  $('#carOrderSubModel, #cost_turn, #reservation_cost, #carOrderSale').on('input change', updateSummary);
+  $('#DownPayment, #DownPaymentDiscount, #summaryTurn, #total_gift_used, #summaryExtraTotal, #summaryCashDeposit').on(
     'input change',
     calculateTotalPaymentAtDelivery
   );
   $('#CarSalePriceFinal, #DownPayment').on('input change', calculateRemaining);
+  $('#balanceFinanceDisplay, #remaining_interest, #remaining_period').on('input change', calculateInstallment);
+  $('#summaryCarSale, #summaryExtraTotal, #summaryTurn, #summaryCashDeposit, #PaymentDiscount').on(
+    'input change',
+    calculateBalance
+  );
 
   updateSummary();
+});
+
+//edit : radio payment remaining
+// document.addEventListener('DOMContentLoaded', function () {
+//   const radios = document.querySelectorAll('input[name="remainingCondition"]');
+//   const cashRemain = document.getElementById('cashRemain');
+//   const bankRemain = document.getElementById('bankRemain');
+//   const creditRemain = document.getElementById('creditRemain');
+//   const financeRemain = document.getElementById('financeRemain');
+
+//   function toggleSection() {
+//     cashRemain.style.display = 'none';
+//     bankRemain.style.display = 'none';
+//     creditRemain.style.display = 'none';
+//     financeRemain.style.display = 'none';
+
+//     const selected = document.querySelector('input[name="remainingCondition"]:checked');
+//     if (!selected) return;
+
+//     if (selected.value === 'cash') {
+//       cashRemain.style.display = 'block';
+//     } else if (selected.value === 'transfer' || selected.value === 'check') {
+//       bankRemain.style.display = 'block';
+//     } else if (selected.value === 'credit') {
+//       creditRemain.style.display = 'block';
+//     } else if (selected.value === 'finance') {
+//       financeRemain.style.display = 'block';
+//     }
+//   }
+
+//   radios.forEach(radio => radio.addEventListener('change', toggleSection));
+//   toggleSection();
+// });
+
+//edit : radio delivery payment
+// document.addEventListener('DOMContentLoaded', function () {
+//   const radios = document.querySelectorAll('input[name="deliveryCondition"]');
+//   const bankDelivery = document.getElementById('bankDelivery');
+//   const creditDelivery = document.getElementById('creditDelivery');
+
+//   function toggleSection() {
+//     bankDelivery.style.display = 'none';
+//     creditDelivery.style.display = 'none';
+
+//     const selected = document.querySelector('input[name="deliveryCondition"]:checked');
+//     if (!selected) return;
+
+//     if (selected.value === 'transfer' || selected.value === 'check') {
+//       bankDelivery.style.display = 'block';
+//     } else if (selected.value === 'credit') {
+//       creditDelivery.style.display = 'block';
+//     }
+//   }
+
+//   radios.forEach(radio => radio.addEventListener('change', toggleSection));
+//   toggleSection();
+// });
+
+//edit : radio reservation payment
+$(document).ready(function () {
+  $('#bankReservation, #checkReservation, #creditReservation').hide();
+
+  const selected = $('input[name="reservationCondition"]:checked').val();
+  if (selected) {
+    showRemaining(selected);
+  }
+
+  $('input[name="reservationCondition"]').change(function () {
+    const type = $(this).val();
+    showRemaining(type);
+  });
+
+  function showRemaining(type) {
+    $('#bankReservation, #creditReservation').hide();
+
+    if (type === 'credit') $('#creditReservation').show();
+    else if (type === 'check') $('#checkReservation').show();
+    else if (type === 'transfer') $('#bankReservation').show();
+  }
+});
+
+//edit : radio payment remaining
+$(document).ready(function () {
+  $('#cashRemain, #bankRemain, #checkRemain, #creditRemain, #financeRemain').hide();
+
+  const selected = $('input[name="remainingCondition"]:checked').val();
+  if (selected) {
+    showRemaining(selected);
+  }
+
+  $('input[name="remainingCondition"]').change(function () {
+    const type = $(this).val();
+    showRemaining(type);
+  });
+
+  function showRemaining(type) {
+    $('#cashRemain, #bankRemain, #checkRemain, #creditRemain, #financeRemain').hide();
+
+    if (type === 'cash') $('#cashRemain').show();
+    else if (type === 'credit') $('#creditRemain').show();
+    else if (type === 'check') $('#checkRemain').show();
+    else if (type === 'transfer') $('#bankRemain').show();
+    else if (type === 'finance') $('#financeRemain').show();
+  }
+});
+
+//edit : radio delivery payment
+$(document).ready(function () {
+  $('#bankDelivery, #checkDelivery, #creditDelivery').hide();
+
+  const selected = $('input[name="deliveryCondition"]:checked').val();
+  if (selected) {
+    showRemaining(selected);
+  }
+
+  $('input[name="deliveryCondition"]').change(function () {
+    const type = $(this).val();
+    showRemaining(type);
+  });
+
+  function showRemaining(type) {
+    $('#bankDelivery, #checkDelivery, #creditDelivery').hide();
+
+    if (type === 'credit') $('#creditDelivery').show();
+    else if (type === 'check') $('#checkDelivery').show();
+    else if (type === 'transfer') $('#bankDelivery').show();
+  }
+});
+
+//edit : previewPurchase
+document.addEventListener('DOMContentLoaded', function () {
+  const btnPreview = document.getElementById('btnPreview');
+  const modalElement = document.getElementById('previewPurchase');
+  const modal = new bootstrap.Modal(modalElement);
+  const content = document.getElementById('previewPurchaseContent');
+
+  btnPreview?.addEventListener('click', function () {
+    function formatThaiDate(inputId) {
+      const value = document.getElementById(inputId)?.value || '-';
+
+      if (!value || value === '-') return '-';
+
+      const date = new Date(value);
+      return date.toLocaleDateString('th-TH', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+
+    // ข้อมูลลูกค้า
+    const customerName = document.getElementById('CusFullName')?.value || '-';
+    const currentAddress = document.getElementById('CusCurrentAddress')?.value || '-';
+    const documentAddress = document.getElementById('CusDocumentAddress')?.value || '-';
+    const customerMobile = document.getElementById('CusMobile')?.value || '-';
+    let BookingDate = formatThaiDate('BookingDate');
+
+    //ข้อมูลการขาย
+    const model = document.getElementById('carOrderModel')?.value || '-';
+    const subModel = document.getElementById('carOrderSubModel')?.value || '-';
+    const option = document.getElementById('carOrderOption')?.value || '-';
+    const color = document.getElementById('carOrderColor')?.value || '-';
+    const carSale = document.getElementById('carOrderSale')?.value || '-';
+    const extraTotal = document.querySelector('#total-price-extra')?.textContent || '-';
+    const giftTotal = Number(document.querySelector('#total_gift_used')?.value || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    const cashDeposit = document.getElementById('summaryCashDeposit')?.value || '-';
+    const summaryExtraTotal = document.getElementById('summaryExtraTotal')?.value || '-';
+    const turn = document.getElementById('summaryTurn')?.value || '-';
+
+    // รูปแบบการชำระเงิน
+    const paymentType = document.querySelector('input[name="remainingCondition"]:checked')?.value || '-';
+
+    //if
+    // เงินดาวน์
+    const downPayment = document.getElementById('DownPayment')?.value || '-';
+    const downPaymentPercentage = document.getElementById('DownPaymentPercentage')?.value || '-';
+    const downPaymentDiscount = document.getElementById('DownPaymentDiscount')?.value || '-';
+
+    // วันออกรถ
+    const TotalPaymentatDeliveryCar = document.getElementById('TotalPaymentatDeliveryCar')?.value || '-';
+    const financeCompany = document.querySelector('#remaining_finance option:checked')?.textContent || '-';
+    const balanceFinanceDisplay = document.getElementById('balanceFinanceDisplay')?.value || '-';
+    const interest = document.getElementById('remaining_interest')?.value || '-';
+    const period = document.querySelector('#remaining_period option:checked')?.textContent || '-';
+    const alp = document.getElementById('remaining_alp')?.value || '-';
+    const includingAlp = document.getElementById('remaining_including_alp')?.value || '-';
+    const totalAlp = document.getElementById('remaining_total_alp')?.value || '-';
+    const typeCom = document.querySelector('#remaining_type_com option:checked')?.textContent || '-';
+    const totalCom = document.getElementById('remaining_total_com')?.value || '-';
+
+    // const balanceCampaign = totalCampaign + markup90;
+    // document.getElementById('balanceCampaign').value = balanceCampaign;
+
+    // ยอดรวมแคมเปญ
+    const totalCampaign = parseFloat(document.getElementById('TotalSaleCampaign')?.value.replace(/,/g, '') || 0);
+    const markup90 = parseFloat(document.getElementById('Markup90')?.value.replace(/,/g, '') || 0);
+    const totalcam90 = totalCampaign + markup90;
+
+    //หาค่า ยอดรวมรายการที่ใช้
+    const downPay = parseFloat(document.getElementById('DownPaymentDiscount')?.value.replace(/,/g, '') || 0);
+    const gift = parseFloat(document.querySelector('#total-price-gift')?.textContent.replace(/,/g, '') || 0);
+    const totalUseFinance = downPay + gift;
+
+    //หาค่า คงเหลือ
+    const totalBalanceFinance = totalcam90 - totalUseFinance;
+    const totalBalanceFinance2 = Math.max(totalBalanceFinance / 2, 0);
+
+    //else
+    const paymentDiscount = document.getElementById('PaymentDiscount')?.value || '-';
+    const balanceDisplay = document.getElementById('balanceDisplay')?.value || '-';
+
+    const payDis = parseFloat(document.getElementById('PaymentDiscount')?.value.replace(/,/g, '') || 0);
+
+    //หาค่า ยอดรวมรายการที่ใช้
+    const totalUse = payDis + gift;
+
+    //หาค่า คงเหลือ
+    const totalBalance = totalCampaign - totalUse;
+    const totalBalance2 = Math.max(totalBalance / 2, 0);
+
+    let price = '-';
+    let discountHtml = '';
+    let campaignHtml = '';
+
+    // ยอดรวม campaign แบ่งครึ่ง
+    const balanceCampaignInput = document.getElementById('balanceCampaign');
+    if (balanceCampaignInput) {
+      if (paymentType === 'finance') {
+        balanceCampaignInput.value = totalBalanceFinance2.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+      } else {
+        balanceCampaignInput.value = totalBalance2.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+      }
+    }
+
+    if (paymentType === 'finance') {
+      price = document.getElementById('CarSalePriceFinal')?.value || '-';
+
+      discountHtml = `
+          <div class="d-flex justify-content-between mb-2">
+                <strong>เงินดาวน์ :</strong>
+                <span>${downPayment} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>เปอร์เซ็นต์เงินดาวน์ :</strong>
+            <span>${downPaymentPercentage} %</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ส่วนลดเงินดาวน์ :</strong>
+            <span>${downPaymentDiscount} บาท</span>
+          </div>
+
+          <h5 class="pb-2 mb-3"></h5>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>สรุปค่าใช้จ่ายวันออกรถ :</strong>
+            <span>${TotalPaymentatDeliveryCar} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ไฟแนนซ์ :</strong>
+            <span>${financeCompany}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ยอดจัดไฟแนนซ์ :</strong>
+            <span>${balanceFinanceDisplay} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ดอกเบี้ย :</strong>
+            <span>${interest}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>งวดผ่อน :</strong>
+            <span>${period}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ค่างวด (กรณีไม่มี ALP) :</strong>
+            <span>${alp} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ค่างวด (รวม ALP) :</strong>
+            <span>${includingAlp} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ยอดเงิน ALP ที่หักจากใบเสร็จดาวน์ :</strong>
+            <span>${totalAlp} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ดอกเบี้ยคอม :</strong>
+            <span>${typeCom}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ยอดเงินค่าคอม :</strong>
+            <span>${totalCom} บาท</span>
+          </div>
+          
+
+      `;
+
+      campaignHtml = `
+          <div class="d-flex justify-content-between mb-2">
+            <strong>รวมงบแคมเปญ :</strong>
+            <span>${totalCampaign.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>บวกหัว (90%) :</strong>
+            <span>${markup90.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ยอดรวมแคมเปญ (รวมบวกหัว 90%) :</strong>
+            <span>${totalcam90.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ส่วนลดเงินดาวน์ :</strong>
+            <span>${downPaymentDiscount} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ส่วนต่างของแถม :</strong>
+            <span>${giftTotal} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ยอดรวมรายการที่ใช้ :</strong>
+            <span>${totalUseFinance.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>คงเหลือ :</strong>
+            <span>${totalBalanceFinance.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>คงเหลือ(แบ่ง 2 ส่วน) :</strong>
+            <span>${totalBalanceFinance2.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+          </div>
+      `;
+    } else {
+      price = document.getElementById('summaryCarSale')?.value || '-';
+
+      discountHtml = `
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ส่วนลด :</strong>
+            <span>${paymentDiscount}  บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>คงเหลือ :</strong>
+            <span>${balanceDisplay}  บาท</span>
+          </div>
+      `;
+
+      campaignHtml = `
+          <div class="d-flex justify-content-between mb-2">
+            <strong>รวมงบแคมเปญ :</strong>
+            <span>${totalCampaign.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ส่วนลด :</strong>
+            <span>${paymentDiscount} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ส่วนต่างของแถม :</strong>
+            <span>${giftTotal} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ยอดรวมรายการที่ใช้ :</strong>
+            <span>${totalUse.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>คงเหลือ :</strong>
+            <span>${totalBalance.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>คงเหลือ(แบ่ง 2 ส่วน) :</strong>
+            <span>${totalBalance2.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+          </div>
+      `;
+    }
+
+    const customerIDRef = document.getElementById('customerIDRef')?.value || '-';
+    const ReferrerAmount = document.getElementById('ReferrerAmount')?.value || '-';
+
+    //campaign
+    // ดึงชื่อแคมเปญที่เลือกไว้
+    const campaignSelect = document.getElementById('CampaignID');
+    let campaignList = [];
+
+    if (campaignSelect) {
+      const selectedOptions = Array.from(campaignSelect.selectedOptions);
+      campaignList = selectedOptions.map(opt => opt.textContent.trim());
+    }
+
+    // รวมชื่อทั้งหมดคั่นด้วย " + "
+    const campaignText = campaignList.length > 0 ? campaignList.join(' + ') : '-';
+
+    //ของแถม
+    const giftRows = document.querySelectorAll('#giftTablePrice tbody tr');
+    let giftHtml = '';
+    let totalGift = 0;
+    let totalGiftCom = 0;
+
+    if (giftRows.length > 0 && !document.getElementById('no-data-row')) {
+      giftHtml += `<table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>ลำดับ</th>
+          <th>รายละเอียด</th>
+          <th>รหัสสินค้า</th>
+          <th>ราคา (ค่าคอม)</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+      giftRows.forEach((row, index) => {
+        const id = row.dataset.id || '-';
+        const code = row.querySelector('td:nth-child(2)')?.textContent.trim() || '-';
+        const detail = row.querySelector('td:nth-child(3)')?.textContent.trim() || '-';
+        const priceComText = row.querySelector('td:nth-child(5)')?.textContent.trim().replace(/,/g, '') || '0';
+        const match = priceComText.match(/([\d,\.]+)\s*\(?([\d,\.]+)?\)?/);
+
+        let price = 0;
+        let com = 0;
+
+        if (match) {
+          price = parseFloat(match[1].replace(/,/g, '')) || 0;
+          com = parseFloat(match[2]?.replace(/,/g, '') || '0') || 0;
+        }
+
+        totalGift += price;
+        totalGiftCom += com;
+
+        giftHtml += `<tr>
+        <td>${index + 1}</td>
+        <td>${detail}</td>
+        <td>${code}</td>
+        <td>${price.toLocaleString(undefined, { minimumFractionDigits: 2 })} 
+            (${com.toLocaleString(undefined, { minimumFractionDigits: 2 })})
+        </td>
+      </tr>`;
+      });
+
+      giftHtml += `
+      </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="3" class="text-end">ยอดรวมทั้งหมด</th>
+            <th>${totalGift.toLocaleString(undefined, { minimumFractionDigits: 2 })} (${totalGiftCom.toLocaleString(undefined, { minimumFractionDigits: 2 })})</th>
+          </tr>
+        </tfoot>
+      </table>`;
+    } else {
+      giftHtml = `<div class="text-center text-muted pb-2 mb-3">ยังไม่มีข้อมูลแถม</div>`;
+    }
+
+    //ซื้อเพิ่ม
+    const extraRows = document.querySelectorAll('#extraTable tbody tr');
+    let extraHtml = '';
+    let totalExtra = 0;
+    let totalExtraCom = 0;
+
+    if (extraRows.length > 0 && !document.getElementById('no-data-extra')) {
+      extraHtml += `<table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>ลำดับ</th>
+          <th>รายละเอียด</th>
+          <th>รหัสสินค้า</th>
+          <th>ราคา (ค่าคอม)</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+      extraRows.forEach((row, index) => {
+        const id = row.dataset.id || '-';
+        const code = row.querySelector('td:nth-child(2)')?.textContent.trim() || '-';
+        const detail = row.querySelector('td:nth-child(3)')?.textContent.trim() || '-';
+        const priceComText = row.querySelector('td:nth-child(5)')?.textContent.trim().replace(/,/g, '') || '0';
+        const match = priceComText.match(/([\d,\.]+)\s*\(?([\d,\.]+)?\)?/);
+
+        let price = 0;
+        let com = 0;
+
+        if (match) {
+          price = parseFloat(match[1].replace(/,/g, '')) || 0;
+          com = parseFloat(match[2]?.replace(/,/g, '') || '0') || 0;
+        }
+
+        totalExtra += price;
+        totalExtraCom += com;
+
+        extraHtml += `<tr>
+        <td>${index + 1}</td>
+        <td>${detail}</td>
+        <td>${code}</td>
+        <td>${price.toLocaleString(undefined, { minimumFractionDigits: 2 })} 
+            (${com.toLocaleString(undefined, { minimumFractionDigits: 2 })})
+        </td>
+      </tr>`;
+      });
+
+      extraHtml += `
+      </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="3" class="text-end">ยอดรวมทั้งหมด</th>
+            <th>${totalExtra.toLocaleString(undefined, { minimumFractionDigits: 2 })} (${totalExtraCom.toLocaleString(undefined, { minimumFractionDigits: 2 })})</th>
+          </tr>
+        </tfoot>
+      </table>`;
+    } else {
+      extraHtml = `<div class="text-center text-muted pb-2 mb-3">ยังไม่มีข้อมูลซื้อเพิ่ม</div>`;
+    }
+
+    // วันส่งมอบ
+    let KeyInDate = formatThaiDate('KeyInDate');
+    let DeliveryDate = formatThaiDate('DeliveryDate');
+    let DeliveryInDMSDate = formatThaiDate('DeliveryInDMSDate');
+    let DeliveryInCKDate = formatThaiDate('DeliveryInCKDate');
+
+    const AdminSignature = document.querySelector('#AdminSignature option:checked')?.textContent || '-';
+    let AdminCheckedDate = formatThaiDate('AdminCheckedDate');
+    const CheckerID = document.querySelector('#CheckerID option:checked')?.textContent || '-';
+    let CheckerCheckedDate = formatThaiDate('CheckerCheckedDate');
+    const SMSignature = document.querySelector('#SMSignature option:checked')?.textContent || '-';
+    let SMCheckedDate = formatThaiDate('SMCheckedDate');
+
+    const ApprovalSignature = document.querySelector('#ApprovalSignature option:checked')?.textContent || '-';
+    const GMApprovalSignature = document.querySelector('#GMApprovalSignature option:checked')?.textContent || '-';
+
+    // จังหวัดที่จดทะเบียน
+    const payment = document.querySelector('input[name="remainingCondition"]:checked')?.value;
+
+    let RegistrationProvince = '-';
+
+    if (payment) {
+      const section = document.querySelector(`#${payment}Remain`);
+      const selected = section?.querySelector('.registration-province option:checked');
+      RegistrationProvince = selected?.textContent || '-';
+    }
+
+    // สถานะ
+    const con_status = document.querySelector('#con_status option:checked')?.textContent || '-';
+
+    const html = `
+      <div class="row">
+        <!-- ฝั่งซ้าย -->
+        <div class="col-md-6 border-end pe-3">
+          <h5 class="border-bottom pb-2 mb-3">ข้อมูลลูกค้า</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่จอง:</strong>
+            <span>${BookingDate}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ชื่อลูกค้า :</strong>
+            <span>${customerName}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ที่อยู่ปัจจุบัน :</strong>
+            <span style="width:60%; text-align:right;">${currentAddress}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ที่อยู่สำหรับส่งเอกสาร :</strong>
+            <span style="width:60%; text-align:right;">${documentAddress}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>เบอร์มือถือ :</strong>
+            <span>${customerMobile}</span>
+          </div>
+
+          <h5 class="border-bottom pb-2 mb-3">ข้อมูลการขาย</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>รุ่นรถหลัก :</strong>
+            <span>${model}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>รุ่นรถย่อย :</strong>
+            <span>${subModel}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>แบบ :</strong>
+            <span>${option}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>สี :</strong>
+            <span>${color}</span>
+          </div>
+          <!-- <div class="d-flex justify-content-between mb-2">
+            <strong>ประเภทการชำระเงิน :</strong>
+            <span>${paymentType}</span>
+          </div> -->
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ราคา :</strong>
+            <span>${price} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>เงินจอง :</strong>
+            <span>${cashDeposit} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>รถเทิร์น :</strong>
+            <span>${turn} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ลูกค้าจ่ายเพิ่ม :</strong>
+            <span>${summaryExtraTotal} บาท</span>
+          </div>
+          ${discountHtml}
+
+          <h5 class="border-bottom pb-2 mb-3">จังหวัดที่ขึ้นทะเบียน</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>จังหวัดที่ขึ้นทะเบียน :</strong>
+            <span>${RegistrationProvince}</span>
+          </div>
+          
+          <h5 class="border-bottom pb-2 mb-3">แนะนำ</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ผู้แนะนำ :</strong>
+            <span>${customerIDRef}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ยอดเงินค่าแนะนำ :</strong>
+            <span>${ReferrerAmount} บาท</span>
+          </div>
+
+          <h5 class="border-bottom pb-2 mb-3">แคมเปญ</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ข้อมูลแคมเปญ :</strong>
+            <span style="width:60%; text-align:right;">${campaignText}</span>
+          </div>
+          ${campaignHtml}
+        </div>
+
+        <!-- ฝั่งขวา -->
+        <div class="col-md-6 ps-3">
+          <h5 class="border-bottom pb-2 mb-3">รายละเอียดอุปกรณ์ตกแต่ง (แถม)</h5>
+          <div class="table-responsive text-nowrap">
+            ${giftHtml}
+          </div>
+
+          <h5 class="border-bottom pb-2 mb-3">รายการซื้อเพิ่ม</h5>
+          <div class="table-responsive text-nowrap">
+            ${extraHtml}
+          </div>
+
+          <h5 class="border-bottom pb-2 mb-3">ข้อมูลวันส่งมอบ</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่ส่งเอกสารสรุปการขาย :</strong>
+            <span>${KeyInDate}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันส่งมอบจริง (วันล้อหมุนจริง) :</strong>
+            <span>${DeliveryDate}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่ส่งมอบในระบบ DMS :</strong>
+            <span>${DeliveryInDMSDate}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่ส่งมอบตามยอดชูเกียรติ :</strong>
+            <span>${DeliveryInCKDate}</span>
+          </div>
+
+          <h5 class="border-bottom pb-2 mb-3">ผู้อนุมัติ</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ผู้เช็ครายการ (แอดมินขาย) :</strong>
+            <span>${AdminSignature}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่แอดมินเช็ครายการ :</strong>
+            <span>${AdminCheckedDate}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ผู้ตรวจสอบรายการ (IA) :</strong>
+            <span>${CheckerID}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่ฝ่ายตรวจสอบเช็ครายการ :</strong>
+            <span>${CheckerCheckedDate}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ผู้อนุมัติรายการ (ผู้จัดการขาย) :</strong>
+            <span>${SMSignature}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่ผู้จัดการขายอนุมัติ :</strong>
+            <span>${SMCheckedDate}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ผู้อนุมัติการขายกรณีเกินจากงบ :</strong>
+            <span>${ApprovalSignature}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>GM อนุมัติกรณีงบเกิน (N) :</strong>
+            <span>${GMApprovalSignature}</span>
+          </div>
+
+          <h5 class="border-bottom pb-2 mb-3">สถานะ</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>สถานะ :</strong>
+            <span>${con_status}</span>
+          </div>
+
+        </div>
+      </div>
+    `;
+
+    content.innerHTML = html;
+    modal.show();
+  });
 });
