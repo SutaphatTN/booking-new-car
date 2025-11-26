@@ -2,11 +2,16 @@
   <div class="modal-dialog modal-xl" role="document">
     <div class="modal-content">
       <div class="modal-header border-bottom">
-        <h4 class="modal-title mb-2" id="viewCarOrderLabel">ข้อมูลการสั่งรถ</h4>
+        <h4 class="modal-title mb-2" id="viewCarOrderLabel">ข้อมูลรถ</h4>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <div class="row">
+
+          <div class="col-md-2 mb-5">
+            <label for="order_code" class="form-label">ประเภท</label>
+            <input class="form-control" type="text" value="{{ $order->type }}" disabled />
+          </div>
 
           <div class="col-md-3 mb-5">
             <label for="order_code" class="form-label">รหัสการสั่งซื้อ</label>
@@ -23,19 +28,24 @@
             <input class="form-control" type="text" value="{{ $order->subModel->name }}" disabled />
           </div>
 
-          <div class="col-md-2 mb-5">
-            <label for="option" class="form-label">Option</label>
-            <input class="form-control" type="text" value="{{ $order->option }}" disabled />
-          </div>
-
           <div class="col-md-4 mb-5">
             <label for="vin_number" class="form-label">Vin Number</label>
             <input class="form-control" type="text" value="{{ $order->vin_number }}" disabled />
           </div>
 
           <div class="col-md-4 mb-5">
+            <label for="j_number" class="form-label">J-Number</label>
+            <input class="form-control" type="text" value="{{ $order->j_number }}" disabled />
+          </div>
+
+          <div class="col-md-4 mb-5">
             <label for="engine_number" class="form-label">หมายเลขเครื่องยนต์</label>
             <input class="form-control" type="text" value="{{ $order->engine_number }}" disabled />
+          </div>
+
+          <div class="col-md-2 mb-5">
+            <label for="option" class="form-label">Option</label>
+            <input class="form-control" type="text" value="{{ $order->option }}" disabled />
           </div>
 
           <div class="col-md-2 mb-5">
@@ -46,6 +56,20 @@
           <div class="col-md-2 mb-5">
             <label for="year" class="form-label">ปี</label>
             <input class="form-control" type="text" value="{{ $order->year }}" disabled />
+          </div>
+
+          <div class="col-md-3 mb-5">
+            <label for="car_DNP" class="form-label">ราคาทุน</label>
+            <input class="form-control text-end" type="text"
+              value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}"
+              disabled />
+          </div>
+
+          <div class="col-md-3 mb-5">
+            <label for="car_MSRP" class="form-label">ราคาขาย</label>
+            <input class="form-control text-end" type="text"
+              value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}"
+              disabled />
           </div>
 
           <div class="col-md-3 mb-5">
@@ -67,9 +91,20 @@
             <label for="order_status" class="form-label">สถานะ Car Order</label>
             <input class="form-control" type="text" value="{{ $order->orderStatus->name }}" disabled />
           </div>
+
+          <div class="col-md-12 mb-5">
+            <label for="order_status" class="form-label">หมายเหตุ</label>
+            <textarea class="form-control" name="note" disabled>{{ $order->note }}</textarea>
+          </div>
+
           <div class="col-md-2 mb-5">
-            <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
+            <label for="order_date" class="form-label">วันที่ส่งคำขอ</label>
             <input class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
+          </div>
+
+          <div class="col-md-2 mb-5">
+            <label for="system_date" class="form-label">วันที่สั่งซื้อในระบบ</label>
+            <input class="form-control" type="text" value="{{ $order->format_system_date }}" disabled />
           </div>
 
           <div class="col-md-2 mb-5">
@@ -77,10 +112,6 @@
             <input class="form-control" type="text" value="{{ $order->format_order_invoice_date }}" disabled />
           </div>
 
-          <!-- <div class="col-md-2 mb-5">
-            <label for="stock_id" class="form-label">Stock ID</label>
-            <input class="form-control" type="text" value="{{ $order->format_stock_id }}" disabled />
-          </div> -->
 
           <div class="col-md-2 mb-5">
             <label for="order_stock_date" class="form-label">วันที่สต็อค</label>
@@ -92,24 +123,8 @@
             <input class="form-control" type="text" value="{{ $order->format_estimated_stock_date }}" disabled />
           </div>
 
-          <!-- <div class="col-md-2 mb-5">
-            <label for="cancel_date" class="form-label">วันที่ยกเลิก</label>
-            <input class="form-control" type="text" value="{{ $order->format_cancel_date }}" disabled />
-          </div> -->
 
-          <div class="col-md-2 mb-5">
-            <label for="car_DNP" class="form-label">ราคาทุน</label>
-            <input class="form-control text-end" type="text" 
-            value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}"
-            disabled />
-          </div>
 
-          <div class="col-md-2 mb-5">
-            <label for="car_MSRP" class="form-label">ราคาขาย</label>
-            <input class="form-control text-end" type="text" 
-            value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}"
-            disabled />
-          </div>
 
         </div>
       </div>

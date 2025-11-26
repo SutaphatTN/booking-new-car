@@ -14,7 +14,7 @@
         <h4 class="card-header" style="text-align:center;">ข้อมูลรายการจองของลูกค้า</h4>
         <div class="card-body">
 
-          <div class="row mb-3">
+          <!-- <div class="row mb-3">
             <div class="col-md-3">
               <label class="form-label">สถานะ</label>
               <select id="filterStatus" class="form-select">
@@ -24,7 +24,7 @@
                 @endforeach
               </select>
             </div>
-          </div>
+          </div> -->
 
           <div class="table-responsive text-nowrap">
             <table class="table table-bordered" id="purchaseTable">

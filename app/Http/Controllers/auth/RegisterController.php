@@ -23,19 +23,29 @@ class RegisterController extends Controller
             'username' => ['required', 'string', 'max:255', 'unique:users'],
             'cardID' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:6'],
-            'role' => ['required', 'string', 'in:staff,audit,manager,md'],
+            'role' => ['required', 'string', 'in:sale,audit,manager,md'],
         ]);
 
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'username' => $request->username,
-            'cardID' => $request->cardID,
-            'role' => $request->role,
-            'password' => Hash::make($request->password),
-            'password_plain' => $request->password,
-        ]);
+        try {
+            User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'username' => $request->username,
+                'cardID' => $request->cardID,
+                'role' => $request->role,
+                'password' => Hash::make($request->password),
+                'password_plain' => $request->password,
+            ]);
 
-        return redirect()->back()->with('success', 'สร้างบัญชีเรียบร้อยแล้ว');
+            return response()->json([
+                'success' => true,
+                'message' => 'สร้างบัญชีเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

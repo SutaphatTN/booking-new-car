@@ -19,7 +19,7 @@
     },
     {
       "name": "การจอง/ซื้อ",
-      "icon": "menu-icon icon-base bx bx-dock-top",
+      "icon": "menu-icon icon-base bx bx-file",
       "slug": "purchase-order",
       "submenu": [
         {
@@ -31,6 +31,16 @@
           "url": "purchase-order/create",
           "name": "เพิ่มรายการจอง",
           "slug": "purchase-order.create"
+        },
+        {
+          "url": "purchase-order/viewPO",
+          "name": "ข้อมูล PO",
+          "slug": "purchase-order.viewPO"
+        },
+        {
+          "url": "purchase-order/viewBooking",
+          "name": "ข้อมูลการจองรถ",
+          "slug": "purchase-order.viewBooking"
         }
       ]
     },
@@ -52,14 +62,29 @@
       ]
     },
     {
-      "name": "ข้อมูลการสั่งรถ",
+      "name": "ระบบรถ",
       "icon": "menu-icon icon-base bx bx-book-content",
       "slug": "car-order",
       "submenu": [
         {
           "url": "car-order",
-          "name": "รายการสั่งรถ",
+          "name": "รายการรถ",
           "slug": "car-order.index"
+        },
+        {
+          "url": "car-order/pending",
+          "name": "รายการคำขอสั่งรถ",
+          "slug": "car-order.pending"
+        },
+        {
+          "url": "car-order/process",
+          "name": "รออนุมัติ",
+          "slug": "car-order.process"
+        },
+        {
+          "url": "car-order/approve",
+          "name": "ผลการอนุมัติ",
+          "slug": "car-order.approve"
         },
         {
           "url": "car-order/history",
@@ -90,12 +115,6 @@
       "icon": "menu-icon icon-base bx bxs-megaphone",
       "slug": "campaign.index",
       "url": "campaign"
-    },
-    {
-      "name": "Cards",
-      "icon": "menu-icon icon-base bx bx-collection",
-      "slug": "cards-basic",
-      "url": "cards/basic"
     },
     {
       "url": "/",

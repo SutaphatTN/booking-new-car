@@ -139,6 +139,7 @@ class Salecar extends Model
 		'Color',
 		'Year',
 		'option',
+		'payment_mode',
 		'subModel_id',
 		'SaleConsultantID',
 		'FinanceID',

@@ -1,30 +1,27 @@
 @extends('layouts/contentNavbarLayout')
-@section('title', 'Data Car Order')
+@section('title', 'Data Booking Car')
 
 @section('page-script')
-@vite(['resources/assets/js/car-order.js'])
+@vite(['resources/assets/js/purchase-order.js'])
 @endsection
 
 @section('content')
-<div class="viewMoreCarOrder"></div>
-<div class="editCarOrderModal"></div> 
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <h4 class="card-header">รายการรถ</h4>
+      <h4 class="card-header">ข้อมูลการจองรถ</h4>
       <div class="card-body">
         <div class="table-responsive text-nowrap">
-          <table class="table table-bordered carOrderTable">
+          <table class="table table-bordered bookingTable">
             <thead>
               <tr>
                 <th>No.</th>
-                <th>รหัส Car Order</th>
                 <th>รุ่นรถหลัก</th>
                 <th>รุ่นรถย่อย</th>
-                <th>Vin Number</th>
-                <th>สถานะ Car Order</th>
-                <th>สถานะรถ</th>
-                <th width="150px">Action</th>
+                <th>Option</th>
+                <th>รหัส Car Order</th>
+                <th>ชื่อ - นามสกุล ผู้จอง</th>
+                <th>วันที่จอง</th>
               </tr>
             </thead>
           </table>

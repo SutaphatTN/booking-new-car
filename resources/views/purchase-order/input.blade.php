@@ -75,7 +75,7 @@
               <select id="model_id" name="model_id" class="form-select" required>
                 <option value="">-- เลือกรุ่นรถหลัก --</option>
                 @foreach ($model as $m)
-                <option value="{{ @$m->id }}">{{ @$m->Name_TH }}</option>
+                <option value="{{ $m->id }}">{{ $m->Name_TH }}</option>
                 @endforeach
               </select>
 
@@ -155,11 +155,20 @@
               @enderror
             </div>
 
-            <div class="col-md-3">
-              <label class="form-label" for="reservation_cost">เงินจอง</label>
-              <input id="reservation_cost" type="text"
-                class="form-control text-end"
-                name="reservation_cost" required>
+            <div class="col-md-2">
+              <label for="payment_mode" class="form-label">ประเภทการชำระเงิน</label>
+              <select id="payment_mode" name="payment_mode" class="form-select" required>
+                <option value="">-- เลือกประเภท --</option>
+                <option value="finance" {{ old('payment_mode') == 'finance' ? 'selected' : '' }}>ผ่อน (ไฟแนนซ์)</option>
+                <option value="non-finance" {{ old('payment_mode') == 'non-finance' ? 'selected' : '' }}>ไม่ผ่อน</option>
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label" for="CashDeposit">เงินจอง</label>
+              <input id="CashDeposit" type="text"
+                class="form-control text-end money-input"
+                name="CashDeposit" required>
             </div>
 
             <div class="col-md-2">
@@ -169,7 +178,7 @@
                 name="reservation_date" required>
             </div>
 
-            <div class="col-md-7">
+            <div class="col-md-6">
               <label class="form-label d-block">ประเภทการจ่ายเงินจอง</label>
 
               <div class="form-check form-check-inline">
@@ -205,7 +214,7 @@
                 <div class="col-md-2">
                   <label class="form-label" for="reservation_tax_credit">ค่าธรรมเนียม</label>
                   <input id="reservation_tax_credit" type="text"
-                    class="form-control text-end"
+                    class="form-control text-end money-input"
                     name="reservation_tax_credit">
                 </div>
               </div>
@@ -303,13 +312,13 @@
               <div class="col-md-3">
                 <label class="form-label" for="cost_turn">ยอดเทิร์น</label>
                 <input id="cost_turn" type="text"
-                  class="form-control text-end"
+                  class="form-control text-end money-input"
                   name="cost_turn">
               </div>
               <div class="col-md-3">
                 <label class="form-label" for="com_turn">ค่าคอมยอดเทิร์น</label>
                 <input id="com_turn" type="text"
-                  class="form-control text-end"
+                  class="form-control text-end money-input"
                   name="com_turn">
               </div>
             </div>

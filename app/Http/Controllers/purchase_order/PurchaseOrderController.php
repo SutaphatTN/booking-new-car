@@ -146,31 +146,31 @@ class PurchaseOrderController extends Controller
 
         try {
 
-            $request->validate([
-                'reservationCondition' => 'required',
-                'hasTurnCar' => 'required',
-                'reservation_cost' => 'required',
-                'reservation_date' => 'required|date',
-                'reservation_transfer_bank' => 'nullable|required_if:reservationCondition,transfer',
-                'reservation_transfer_branch' => 'nullable|required_if:reservationCondition,transfer',
-                'reservation_transfer_no' => 'nullable|required_if:reservationCondition,transfer',
-                'reservation_check_bank' => 'nullable|required_if:reservationCondition,check',
-                'reservation_check_branch' => 'nullable|required_if:reservationCondition,check',
-                'reservation_check_no' => 'nullable|required_if:reservationCondition,check',
-                'reservation_credit' => 'nullable|required_if:reservationCondition,credit',
-                'reservation_tax_credit' => 'nullable|required_if:reservationCondition,credit',
-            ], [
-                'hasTurnCar.required' => 'กรุณาเลือกประเภทรถเทิร์น',
-                'reservationCondition.required' => 'กรุณาเลือกประเภทการจ่ายเงินจอง',
-                'reservation_transfer_bank.required_if' => 'กรุณากรอกชื่อธนาคาร',
-                'reservation_transfer_branch.required_if' => 'กรุณากรอกสาขาธนาคาร',
-                'reservation_transfer_no.required_if' => 'กรุณากรอกเลขที่บัญชี',
-                'reservation_check_bank.required_if' => 'กรุณากรอกชื่อธนาคาร',
-                'reservation_check_branch.required_if' => 'กรุณากรอกสาขาธนาคาร',
-                'reservation_check_no.required_if' => 'กรุณากรอกเลขที่เช็ค',
-                'reservation_credit.required_if' => 'กรุณากรอกชื่อบัตรเครดิต',
-                'reservation_tax_credit.required_if' => 'กรุณากรอกค่าธรรมเนียมบัตรเครดิต',
-            ]);
+            // $request->validate([
+            //     'reservationCondition' => 'required',
+            //     'hasTurnCar' => 'required',
+            //     'reservation_cost' => 'required',
+            //     'reservation_date' => 'required|date',
+            //     'reservation_transfer_bank' => 'nullable|required_if:reservationCondition,transfer',
+            //     'reservation_transfer_branch' => 'nullable|required_if:reservationCondition,transfer',
+            //     'reservation_transfer_no' => 'nullable|required_if:reservationCondition,transfer',
+            //     'reservation_check_bank' => 'nullable|required_if:reservationCondition,check',
+            //     'reservation_check_branch' => 'nullable|required_if:reservationCondition,check',
+            //     'reservation_check_no' => 'nullable|required_if:reservationCondition,check',
+            //     'reservation_credit' => 'nullable|required_if:reservationCondition,credit',
+            //     'reservation_tax_credit' => 'nullable|required_if:reservationCondition,credit',
+            // ], [
+            //     'hasTurnCar.required' => 'กรุณาเลือกประเภทรถเทิร์น',
+            //     'reservationCondition.required' => 'กรุณาเลือกประเภทการจ่ายเงินจอง',
+            //     'reservation_transfer_bank.required_if' => 'กรุณากรอกชื่อธนาคาร',
+            //     'reservation_transfer_branch.required_if' => 'กรุณากรอกสาขาธนาคาร',
+            //     'reservation_transfer_no.required_if' => 'กรุณากรอกเลขที่บัญชี',
+            //     'reservation_check_bank.required_if' => 'กรุณากรอกชื่อธนาคาร',
+            //     'reservation_check_branch.required_if' => 'กรุณากรอกสาขาธนาคาร',
+            //     'reservation_check_no.required_if' => 'กรุณากรอกเลขที่เช็ค',
+            //     'reservation_credit.required_if' => 'กรุณากรอกชื่อบัตรเครดิต',
+            //     'reservation_tax_credit.required_if' => 'กรุณากรอกค่าธรรมเนียมบัตรเครดิต',
+            // ]);
 
             $turnCarID = null;
 
@@ -182,8 +182,12 @@ class PurchaseOrderController extends Controller
                     'year_turn' => $request->year_turn,
                     'color_turn' => $request->color_turn,
                     'license_plate' => $request->license_plate,
-                    'cost_turn' => str_replace(',', '', $request->cost_turn ?: 0),
-                    'com_turn' => str_replace(',', '', $request->com_turn ?: 0),
+                    'cost_turn' => $request->filled('cost_turn')
+                        ? str_replace(',', '', $request->cost_turn)
+                        : null,
+                    'com_turn' => $request->filled('com_turn')
+                        ? str_replace(',', '', $request->com_turn)
+                        : null,
                 ]);
 
                 $turnCarID = $turnCar->id;
@@ -193,12 +197,17 @@ class PurchaseOrderController extends Controller
                 'SaleID' => $request->SaleID,
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
+                'CashDeposit' => $request->filled('CashDeposit')
+                    ? str_replace(',', '', $request->CashDeposit)
+                    : null,
                 'Color' => $request->Color,
                 'Year' => $request->Year,
                 'option' => $request->option,
+                'payment_mode' => $request->payment_mode,
                 'CusID' => $request->CusID,
                 'BookingDate' => $request->BookingDate,
                 'TurnCarID' => $turnCarID,
+                'con_status' => 1,
             ]);
 
             if ($request->filled('reservationCondition')) {
@@ -206,7 +215,9 @@ class PurchaseOrderController extends Controller
                     'saleCar_id' => $salecar->id,
                     'category' => 'reservation',
                     'type' => $request->reservationCondition,
-                    'cost' => str_replace(',', '', $request->reservation_cost ?: 0),
+                    'cost' => $request->filled('CashDeposit')
+                        ? str_replace(',', '', $request->CashDeposit)
+                        : null,
                     'date' => $request->reservation_date,
                     'userZone' => $request->userZone  ?? null,
                 ];
@@ -238,7 +249,7 @@ class PurchaseOrderController extends Controller
 
                     case 'credit':
                         $data['credit'] = $request->reservation_credit ?? null;
-                        $data['tax_credit'] = $request->reservation_tax_credit ?? null;
+                        $data['tax_credit'] = $request->reservation_tax_credit ? str_replace(',', '', $request->reservation_tax_credit) : null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -441,8 +452,12 @@ class PurchaseOrderController extends Controller
                     'year_turn' => $request->year_turn,
                     'color_turn' => $request->color_turn,
                     'license_plate' => $request->license_plate,
-                    'cost_turn' => $request->cost_turn,
-                    'com_turn' => $request->com_turn,
+                    'cost_turn' => $request->filled('cost_turn')
+                        ? str_replace(',', '', $request->cost_turn)
+                        : null,
+                    'com_turn'  => $request->filled('com_turn')
+                        ? str_replace(',', '', $request->com_turn)
+                        : null,
                 ]);
                 $turnCarID = $turnCar->id;
             }
@@ -465,6 +480,7 @@ class PurchaseOrderController extends Controller
                 'DeliveryDate' => $request->DeliveryDate,
                 'DeliveryInDMSDate' => $request->DeliveryInDMSDate,
                 'DeliveryInCKDate' => $request->DeliveryInCKDate,
+                'RegistrationProvince' => $request->RegistrationProvince,
                 'RedPlateReceived' => $request->RedPlateReceived,
                 'RedPlateAmount' => $request->RedPlateAmount,
                 'CarSalePrice' => $request->filled('CarSalePrice')
@@ -561,36 +577,14 @@ class PurchaseOrderController extends Controller
             $oldCarOrderID = $saleCar->CarOrderID;
             $newCarOrderID = $request->CarOrderID;
 
-            $regProvince = null;
-
-            switch ($request->remainingCondition) {
-                case 'finance':
-                    $regProvince = $request->RegistrationProvince_finance ?? null;
-                    break;
-
-                case 'credit':
-                    $regProvince = $request->RegistrationProvince_credit ?? null;
-                    break;
-
-                case 'transfer':
-                    $regProvince = $request->RegistrationProvince_bank ?? null;
-                    break;
-
-                case 'cash':
-                    $regProvince = $request->RegistrationProvince_cash ?? null;
-                    break;
-
-                case 'check':
-                    $regProvince = $request->RegistrationProvince_check ?? null;
-                    break;
-
-                default:
-                    $regProvince = null;
-            }
-
-            $data['RegistrationProvince'] = $regProvince;
-
             $saleCar->update($data);
+
+            if ($request->con_status == 9) {
+                if ($saleCar->CarOrderID) {
+                    CarOrder::where('id', $saleCar->CarOrderID)
+                        ->update(['car_status' => 'Null']);
+                }
+            }
 
             if ($oldCarOrderID != $newCarOrderID && $newCarOrderID) {
                 CarOrderHistory::create([
@@ -661,8 +655,8 @@ class PurchaseOrderController extends Controller
                     'saleCar_id' => $saleCar->id,
                     'category' => 'reservation',
                     'type' => $request->reservationCondition,
-                    'cost' => $request->filled('reservation_cost')
-                        ? str_replace(',', '', $request->reservation_cost)
+                    'cost' => $request->filled('CashDeposit')
+                        ? str_replace(',', '', $request->CashDeposit)
                         : null,
                     'date' => $request->reservation_date,
                     'userZone' => $request->userZone  ?? null,
@@ -724,13 +718,22 @@ class PurchaseOrderController extends Controller
                 );
             }
 
-            if ($request->filled('remainingCondition')) {
+            if ($request->filled('payment_mode')) {
+
+                if ($request->payment_mode === 'finance') {
+                    $remainingType = 'finance';
+                    $cost = $request->balanceFinance ?? null;
+                } else {
+                    $remainingType = $request->remainingCondition;
+                    $cost = $request->balance ?? null;
+                }
 
                 $data = [
                     'saleCar_id' => $saleCar->id,
+                    'payment_mode' => $request->payment_mode,
                     'category' => 'remaining',
-                    'type' => $request->remainingCondition,
-                    'cost' => $request->balanceFinance ?? '',
+                    'type' => $remainingType,
+                    'cost' => $cost,
                     'date' => $request->remaining_date,
                     'userZone' => $request->userZone ?? null,
                 ];
@@ -752,6 +755,8 @@ class PurchaseOrderController extends Controller
                     'total_alp',
                     'type_com',
                     'total_com',
+                    'po_number',
+                    'po_date',
                 ];
                 foreach ($fieldsToClear as $field) {
                     $data[$field] = null;
@@ -784,6 +789,8 @@ class PurchaseOrderController extends Controller
                         $data['total_alp'] = $request->remaining_total_alp ? str_replace(',', '', $request->remaining_total_alp) : null;
                         $data['type_com'] = $request->remaining_type_com ?? null;
                         $data['total_com'] = $request->remaining_total_com ? str_replace(',', '', $request->remaining_total_com) : null;
+                        $data['po_number'] = $request->remaining_po_number ?? null;
+                        $data['po_date'] = $request->remaining_po_date ?? null;
                         break;
 
                     case 'cash':
@@ -946,5 +953,92 @@ class PurchaseOrderController extends Controller
             ->first();
 
         return view('purchase-order.preview.preview', compact('saleCar', 'model', 'subModels', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances'));
+    }
+
+    public function viewPO()
+    {
+        $saleCar = Salecar::all();
+        return view('purchase-order.po.view', compact('saleCar'));
+    }
+
+    public function listPO()
+    {
+        $saleCar = Salecar::with([
+            'customer.prefix',
+            'model',
+            'subModel',
+            'remainingPayment'
+        ])
+            ->where('payment_mode', 'finance')
+            ->get();
+
+        $data = $saleCar->map(function ($s, $index) {
+            $c = $s->customer;
+            $model = $s->model?->Name_TH ?? '-';
+            $subModel = $s->subModel?->name ?? '-';
+            $number = $s->remainingPayment?->po_number ?? '-';
+
+            $daysRemaining = '-';
+            if ($s->BookingDate) {
+                $bookingDate = Carbon::parse($s->BookingDate);
+                $overdueDays = (int) Carbon::now()->diffInDays($bookingDate->copy()->addDays(5), false);
+
+                if ($overdueDays < 0) {
+                    $daysRemaining = 'เกินกำหนด ' . abs($overdueDays) . ' วัน';
+                } else {
+                    $daysRemaining = $overdueDays . ' วัน';
+                }
+            }
+
+            return [
+                'No' => $index + 1,
+                'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
+                'model' => $model,
+                'subModel' => $subModel,
+                'po' => $number,
+                'date' => $daysRemaining,
+            ];
+        });
+
+        return response()->json(['data' => $data]);
+    }
+
+    public function viewBooking()
+    {
+        $saleCar = Salecar::all();
+        return view('purchase-order.booking-list.view', compact('saleCar'));
+    }
+
+    public function listBooking()
+    {
+        $saleCar = Salecar::with([
+            'customer.prefix',
+            'model',
+            'subModel',
+            'carOrder'
+        ])
+            ->orderBy('model_id')
+            ->orderBy('subModel_id')
+            ->orderBy('option')
+            ->get();
+
+        $data = $saleCar->map(function ($s, $index) {
+            $c = $s->customer;
+            $model = $s->model?->Name_TH ?? '-';
+            $subModel = $s->subModel?->name ?? '-';
+            $orderCode = $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ';
+
+            return [
+                'No' => $index + 1,
+                'model' => $model,
+                'subModel' => $subModel,
+                'option' => $s->option,
+                'order' => $orderCode,
+                'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
+                'date' => $s->BookingDate,
+            ];
+        });
+
+        return response()->json(['data' => $data]);
     }
 }

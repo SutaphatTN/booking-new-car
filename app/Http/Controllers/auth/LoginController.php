@@ -23,7 +23,7 @@ class LoginController extends Controller
         $credentials = $request->only('username', 'password');
 
         if (Auth::attempt($credentials, $request->filled('remember'))) {
-            return redirect()->intended(route('customer.index'));
+            return redirect()->intended(route('home'));
         }
 
         return back()->with('error', 'Username หรือ Password ไม่ถูกต้อง');

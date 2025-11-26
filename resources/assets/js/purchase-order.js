@@ -170,17 +170,15 @@ $(document).on('click', '.btnViewSale', function () {
 //input
 
 //input : open form turn car
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
   const yesRadio = document.getElementById('turnCarYes');
+  if (!yesRadio) return;
+
   const noRadio = document.getElementById('turnCarNo');
   const turnCarFields = document.getElementById('turnCarFields');
 
   function toggleTurnCarFields() {
-    if (yesRadio.checked) {
-      turnCarFields.style.display = 'flex';
-    } else {
-      turnCarFields.style.display = 'none';
-    }
+    turnCarFields.style.display = yesRadio.checked ? 'flex' : 'none';
   }
 
   yesRadio.addEventListener('change', toggleTurnCarFields);
@@ -283,6 +281,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const bankSection = document.getElementById('bankSection');
   const checkSection = document.getElementById('checkSection');
   const creditSection = document.getElementById('creditSection');
+
+  if (!radios.length || !bankSection || !checkSection || !creditSection) return;
 
   function toggleSection() {
     bankSection.style.display = 'none';
@@ -401,110 +401,91 @@ document.addEventListener('DOMContentLoaded', function () {
 
 //edit : next/previous button
 document.addEventListener('DOMContentLoaded', function () {
-  //Next
-  document.getElementById('nextCampaign').addEventListener('click', function (e) {
-    e.preventDefault();
+  function bindClick(id, callback) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', function (e) {
+      e.preventDefault();
+      callback();
+    });
+  }
 
+  // Next
+  bindClick('nextCampaign', () => {
     const priceTabTrigger = document.querySelector('[data-bs-target="#tab-price"]');
-    const priceTab = new bootstrap.Tab(priceTabTrigger);
-    priceTab.show();
+    if (priceTabTrigger) new bootstrap.Tab(priceTabTrigger).show();
 
     setTimeout(() => {
       const campaignTabTrigger = document.querySelector('[data-bs-target="#tab-campaign"]');
-      const campaignTab = new bootstrap.Tab(campaignTabTrigger);
-      campaignTab.show();
+      if (campaignTabTrigger) new bootstrap.Tab(campaignTabTrigger).show();
     }, 200);
   });
 
-  document.getElementById('nextAccessory').addEventListener('click', function (e) {
-    e.preventDefault();
-    const nextTabTrigger = document.querySelector('[data-bs-target="#tab-accessory"]');
-    const nextTab = new bootstrap.Tab(nextTabTrigger);
-    nextTab.show();
+  bindClick('nextAccessory', () => {
+    const trg = document.querySelector('[data-bs-target="#tab-accessory"]');
+    if (trg) new bootstrap.Tab(trg).show();
   });
 
-  document.getElementById('nextExtra').addEventListener('click', function (e) {
-    e.preventDefault();
-    const nextTabTrigger = document.querySelector('[data-bs-target="#tab-extra"]');
-    const nextTab = new bootstrap.Tab(nextTabTrigger);
-    nextTab.show();
+  bindClick('nextExtra', () => {
+    const trg = document.querySelector('[data-bs-target="#tab-extra"]');
+    if (trg) new bootstrap.Tab(trg).show();
   });
 
-  document.getElementById('nextCar').addEventListener('click', function (e) {
-    e.preventDefault();
-    const nextTabTrigger = document.querySelector('[data-bs-target="#tab-car"]');
-    const nextTab = new bootstrap.Tab(nextTabTrigger);
-    nextTab.show();
+  bindClick('nextCar', () => {
+    const trg = document.querySelector('[data-bs-target="#tab-car"]');
+    if (trg) new bootstrap.Tab(trg).show();
   });
 
-  document.getElementById('nextDate').addEventListener('click', function (e) {
-    e.preventDefault();
-    const moreTabTrigger = document.querySelector('[data-bs-target="#tab-more"]');
-    const moreTab = new bootstrap.Tab(moreTabTrigger);
-    moreTab.show();
+  bindClick('nextDate', () => {
+    const trgMore = document.querySelector('[data-bs-target="#tab-more"]');
+    if (trgMore) new bootstrap.Tab(trgMore).show();
 
     setTimeout(() => {
-      const dateTabTrigger = document.querySelector('[data-bs-target="#tab-date"]');
-      const dateTab = new bootstrap.Tab(dateTabTrigger);
-      dateTab.show();
+      const trgDate = document.querySelector('[data-bs-target="#tab-date"]');
+      if (trgDate) new bootstrap.Tab(trgDate).show();
     }, 200);
   });
 
-  document.getElementById('nextApproved').addEventListener('click', function (e) {
-    e.preventDefault();
-    const nextTabTrigger = document.querySelector('[data-bs-target="#tab-approved"]');
-    const nextTab = new bootstrap.Tab(nextTabTrigger);
-    nextTab.show();
+  bindClick('nextApproved', () => {
+    const trg = document.querySelector('[data-bs-target="#tab-approved"]');
+    if (trg) new bootstrap.Tab(trg).show();
   });
 
   //Previous
-  document.getElementById('prevDetail').addEventListener('click', function (e) {
-    e.preventDefault();
-    const prevTabTrigger = document.querySelector('[data-bs-target="#tab-detail"]');
-    const prevTab = new bootstrap.Tab(prevTabTrigger);
-    prevTab.show();
+
+  bindClick('prevDetail', () => {
+    const trg = document.querySelector('[data-bs-target="#tab-detail"]');
+    if (trg) new bootstrap.Tab(trg).show();
   });
 
-  document.getElementById('prevCampaign').addEventListener('click', function (e) {
-    e.preventDefault();
-    const prevTabTrigger = document.querySelector('[data-bs-target="#tab-campaign"]');
-    const prevTab = new bootstrap.Tab(prevTabTrigger);
-    prevTab.show();
+  bindClick('prevCampaign', () => {
+    const trg = document.querySelector('[data-bs-target="#tab-campaign"]');
+    if (trg) new bootstrap.Tab(trg).show();
   });
 
-  document.getElementById('prevAccessory').addEventListener('click', function (e) {
-    e.preventDefault();
-    const prevTabTrigger = document.querySelector('[data-bs-target="#tab-accessory"]');
-    const prevTab = new bootstrap.Tab(prevTabTrigger);
-    prevTab.show();
+  bindClick('prevAccessory', () => {
+    const trg = document.querySelector('[data-bs-target="#tab-accessory"]');
+    if (trg) new bootstrap.Tab(trg).show();
   });
 
-  document.getElementById('prevExtra').addEventListener('click', function (e) {
-    e.preventDefault();
-    const prevTabTrigger = document.querySelector('[data-bs-target="#tab-extra"]');
-    const prevTab = new bootstrap.Tab(prevTabTrigger);
-    prevTab.show();
+  bindClick('prevExtra', () => {
+    const trg = document.querySelector('[data-bs-target="#tab-extra"]');
+    if (trg) new bootstrap.Tab(trg).show();
   });
 
-  document.getElementById('prevCar').addEventListener('click', function (e) {
-    e.preventDefault();
-
-    const priceTabTrigger = document.querySelector('[data-bs-target="#tab-price"]');
-    const priceTab = new bootstrap.Tab(priceTabTrigger);
-    priceTab.show();
+  bindClick('prevCar', () => {
+    const price = document.querySelector('[data-bs-target="#tab-price"]');
+    if (price) new bootstrap.Tab(price).show();
 
     setTimeout(() => {
-      const carTabTrigger = document.querySelector('[data-bs-target="#tab-car"]');
-      const carTab = new bootstrap.Tab(carTabTrigger);
-      carTab.show();
+      const car = document.querySelector('[data-bs-target="#tab-car"]');
+      if (car) new bootstrap.Tab(car).show();
     }, 200);
   });
 
-  document.getElementById('prevDate').addEventListener('click', function (e) {
-    e.preventDefault();
-    const prevTabTrigger = document.querySelector('[data-bs-target="#tab-date"]');
-    const prevTab = new bootstrap.Tab(prevTabTrigger);
-    prevTab.show();
+  bindClick('prevDate', () => {
+    const trg = document.querySelector('[data-bs-target="#tab-date"]');
+    if (trg) new bootstrap.Tab(trg).show();
   });
 });
 
@@ -619,6 +600,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const rejectRadio = document.getElementById('rejectRedPlate');
   const costInput = document.getElementById('redPlateCost');
   const provinceSelect = document.getElementById('province');
+
+  if (!acceptRadio || !rejectRadio || !costInput || !provinceSelect) return;
 
   function toggleRedPlateFields(enable) {
     costInput.disabled = !enable;
@@ -1133,7 +1116,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const markup = parseFloat(markupInput.value.replace(/,/g, '')) || 0;
 
     const markup90 = markup * 0.9;
-    const finalPrice = salePrice + markup90;
+    const finalPrice = salePrice + markup;
 
     // ใส่ค่าในช่อง
     markup90Input.value = markup90.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1192,13 +1175,13 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   //ราคาขาย
-  salePriceInput.addEventListener('input', calculateCarPrice);
-  markupInput.addEventListener('input', calculateCarPrice);
-  markup90Input.addEventListener('input', calculateFinalFromManualMarkup90);
+  if (salePriceInput) salePriceInput.addEventListener('input', calculateCarPrice);
+  if (markupInput) markupInput.addEventListener('input', calculateCarPrice);
+  if (markup90Input) markup90Input.addEventListener('input', calculateFinalFromManualMarkup90);
 
   //ดาวน์
-  downPaymentInput.addEventListener('input', calculateDownPayment);
-  downPaymentPercentInput.addEventListener('input', calculateDownPayment);
+  if (downPaymentInput) downPaymentInput.addEventListener('input', calculateDownPayment);
+  if (downPaymentPercentInput) downPaymentPercentInput.addEventListener('input', calculateDownPayment);
 
   calculateRemaining();
 });
@@ -1249,7 +1232,12 @@ function calculateBalance() {
 
   const total = carSale + ExtraTotal - (turnCost + cashDeposit + discount);
 
-  $('#balanceDisplay').val(total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  $('.balance-display:visible').val(
+    total.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
+  );
 
   $('#balance').val(total);
 }
@@ -1258,7 +1246,7 @@ function calculateBalance() {
 function updateSummary() {
   const model = $('#carOrderSubModel').val() || '';
   const turn = safeNumber('#cost_turn');
-  const reserve = safeNumber('#reservation_cost');
+  const reserve = safeNumber('#CashDeposit');
   const sale = safeNumber('#carOrderSale');
 
   $('#summarySubCarModel').val(model);
@@ -1312,62 +1300,6 @@ $(document).ready(function () {
   updateSummary();
 });
 
-//edit : radio payment remaining
-// document.addEventListener('DOMContentLoaded', function () {
-//   const radios = document.querySelectorAll('input[name="remainingCondition"]');
-//   const cashRemain = document.getElementById('cashRemain');
-//   const bankRemain = document.getElementById('bankRemain');
-//   const creditRemain = document.getElementById('creditRemain');
-//   const financeRemain = document.getElementById('financeRemain');
-
-//   function toggleSection() {
-//     cashRemain.style.display = 'none';
-//     bankRemain.style.display = 'none';
-//     creditRemain.style.display = 'none';
-//     financeRemain.style.display = 'none';
-
-//     const selected = document.querySelector('input[name="remainingCondition"]:checked');
-//     if (!selected) return;
-
-//     if (selected.value === 'cash') {
-//       cashRemain.style.display = 'block';
-//     } else if (selected.value === 'transfer' || selected.value === 'check') {
-//       bankRemain.style.display = 'block';
-//     } else if (selected.value === 'credit') {
-//       creditRemain.style.display = 'block';
-//     } else if (selected.value === 'finance') {
-//       financeRemain.style.display = 'block';
-//     }
-//   }
-
-//   radios.forEach(radio => radio.addEventListener('change', toggleSection));
-//   toggleSection();
-// });
-
-//edit : radio delivery payment
-// document.addEventListener('DOMContentLoaded', function () {
-//   const radios = document.querySelectorAll('input[name="deliveryCondition"]');
-//   const bankDelivery = document.getElementById('bankDelivery');
-//   const creditDelivery = document.getElementById('creditDelivery');
-
-//   function toggleSection() {
-//     bankDelivery.style.display = 'none';
-//     creditDelivery.style.display = 'none';
-
-//     const selected = document.querySelector('input[name="deliveryCondition"]:checked');
-//     if (!selected) return;
-
-//     if (selected.value === 'transfer' || selected.value === 'check') {
-//       bankDelivery.style.display = 'block';
-//     } else if (selected.value === 'credit') {
-//       creditDelivery.style.display = 'block';
-//     }
-//   }
-
-//   radios.forEach(radio => radio.addEventListener('change', toggleSection));
-//   toggleSection();
-// });
-
 //edit : radio reservation payment
 $(document).ready(function () {
   $('#bankReservation, #checkReservation, #creditReservation').hide();
@@ -1393,26 +1325,19 @@ $(document).ready(function () {
 
 //edit : radio payment remaining
 $(document).ready(function () {
-  $('#cashRemain, #bankRemain, #checkRemain, #creditRemain, #financeRemain').hide();
+  $('#financeRemain, #bankRemain, #checkRemain, #creditRemain, #nonFinanceSelect').hide();
 
-  const selected = $('input[name="remainingCondition"]:checked').val();
-  if (selected) {
-    showRemaining(selected);
-  }
+  const mode = $('#payment_mode').val(); // ใช้ hidden field แทน
+  const type = $('#remainingCondition').val(); // ประเภทไม่ผ่อน
 
-  $('input[name="remainingCondition"]').change(function () {
-    const type = $(this).val();
-    showRemaining(type);
-  });
+  if (mode === 'finance') {
+    $('#financeRemain').show();
+  } else if (mode === 'non-finance') {
+    $('#nonFinanceSelect').show();
 
-  function showRemaining(type) {
-    $('#cashRemain, #bankRemain, #checkRemain, #creditRemain, #financeRemain').hide();
-
-    if (type === 'cash') $('#cashRemain').show();
-    else if (type === 'credit') $('#creditRemain').show();
-    else if (type === 'check') $('#checkRemain').show();
-    else if (type === 'transfer') $('#bankRemain').show();
-    else if (type === 'finance') $('#financeRemain').show();
+    if (type === 'credit') $('#creditRemain').show();
+    if (type === 'check') $('#checkRemain').show();
+    if (type === 'transfer') $('#bankRemain').show();
   }
 });
 
@@ -1483,7 +1408,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const turn = document.getElementById('summaryTurn')?.value || '-';
 
     // รูปแบบการชำระเงิน
-    const paymentType = document.querySelector('input[name="remainingCondition"]:checked')?.value || '-';
+    const paymentType = document.querySelector('#payment_mode')?.value || '-';
 
     //if
     // เงินดาวน์
@@ -1521,8 +1446,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const totalBalanceFinance2 = Math.max(totalBalanceFinance / 2, 0);
 
     //else
-    const paymentDiscount = document.getElementById('PaymentDiscount')?.value || '-';
-    const balanceDisplay = document.getElementById('balanceDisplay')?.value || '-';
+    const paymentDiscount = document.getElementById('PaymentDiscount')?.value || '0';
+    const balanceValue = parseFloat(document.getElementById('balance')?.value.replace(/,/g, '') || 0);
+
+    // ฟอร์แมตเป็นเลขไทย/อังกฤษ มี comma และ 2 ทศนิยม
+    const balanceDisplay = balanceValue.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
 
     const payDis = parseFloat(document.getElementById('PaymentDiscount')?.value.replace(/,/g, '') || 0);
 
@@ -1579,7 +1510,7 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
           <div class="d-flex justify-content-between mb-2">
             <strong>ดอกเบี้ย :</strong>
-            <span>${interest}</span>
+            <span>${interest} %</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
             <strong>งวดผ่อน :</strong>
@@ -1605,8 +1536,6 @@ document.addEventListener('DOMContentLoaded', function () {
             <strong>ยอดเงินค่าคอม :</strong>
             <span>${totalCom} บาท</span>
           </div>
-          
-
       `;
 
       campaignHtml = `
@@ -1836,14 +1765,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const GMApprovalSignature = document.querySelector('#GMApprovalSignature option:checked')?.textContent || '-';
 
     // จังหวัดที่จดทะเบียน
-    const payment = document.querySelector('input[name="remainingCondition"]:checked')?.value;
-
     let RegistrationProvince = '-';
 
-    if (payment) {
-      const section = document.querySelector(`#${payment}Remain`);
-      const selected = section?.querySelector('.registration-province option:checked');
-      RegistrationProvince = selected?.textContent || '-';
+    let prov = document.querySelector('#RegistrationProvince_cash option:checked');
+    if (prov && prov.value) {
+      RegistrationProvince = prov.textContent.trim();
+    }
+
+    prov = document.querySelector('#RegistrationProvince_finance option:checked');
+    if (prov && prov.value) {
+      RegistrationProvince = prov.textContent.trim();
     }
 
     // สถานะ
@@ -1956,7 +1887,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <span>${KeyInDate}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
-            <strong>วันส่งมอบจริง (วันล้อหมุนจริง) :</strong>
+            <strong>วันส่งมอบจริง (วันที่แจ้งประกัน) :</strong>
             <span>${DeliveryDate}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
@@ -2014,5 +1945,90 @@ document.addEventListener('DOMContentLoaded', function () {
 
     content.innerHTML = html;
     modal.show();
+  });
+});
+
+// PO
+//view : po table
+let poTable;
+
+$(document).ready(function () {
+  if ($.fn.DataTable.isDataTable('.poTable')) {
+    $('.poTable').DataTable().destroy();
+  }
+
+  poTable = $('.poTable').DataTable({
+    ajax: '/purchase-order/list-po',
+    columns: [
+      { data: 'No' },
+      { data: 'FullName' },
+      { data: 'model' },
+      { data: 'subModel' },
+      { data: 'po' },
+      { data: 'date' }
+    ],
+    paging: true,
+    lengthChange: true,
+    searching: true,
+    ordering: false,
+    info: true,
+    pageLength: 10,
+    autoWidth: false,
+    language: {
+      lengthMenu: 'แสดง _MENU_ แถว',
+      zeroRecords: 'ไม่พบข้อมูล',
+      info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
+      infoEmpty: 'ไม่มีข้อมูล',
+      search: 'ค้นหา:',
+      paginate: {
+        first: '',
+        last: '',
+        next: 'ถัดไป',
+        previous: 'ก่อนหน้า'
+      }
+    }
+  });
+});
+
+// booking
+//view : booking table
+let bookingTable;
+
+$(document).ready(function () {
+  if ($.fn.DataTable.isDataTable('.bookingTable')) {
+    $('.bookingTable').DataTable().destroy();
+  }
+
+  bookingTable = $('.bookingTable').DataTable({
+    ajax: '/purchase-order/list-booking',
+    columns: [
+      { data: 'No' },
+      { data: 'model' },
+      { data: 'subModel' },
+      { data: 'option' },
+      { data: 'order' },
+      { data: 'FullName' },
+      { data: 'date' }
+    ],
+    paging: true,
+    lengthChange: true,
+    searching: true,
+    ordering: false,
+    info: true,
+    pageLength: 10,
+    autoWidth: false,
+    language: {
+      lengthMenu: 'แสดง _MENU_ แถว',
+      zeroRecords: 'ไม่พบข้อมูล',
+      info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
+      infoEmpty: 'ไม่มีข้อมูล',
+      search: 'ค้นหา:',
+      paginate: {
+        first: '',
+        last: '',
+        next: 'ถัดไป',
+        previous: 'ก่อนหน้า'
+      }
+    }
   });
 });

@@ -1,26 +1,31 @@
 @extends('layouts/contentNavbarLayout')
-@section('title', 'Data Car Order')
+@section('title', 'Car Order Pending')
 
 @section('page-script')
 @vite(['resources/assets/js/car-order.js'])
 @endsection
 
 @section('content')
+<!-- <div class="viewMoreCarOrder"></div>  -->
+<div class="inputCarOrderModal"></div>
+<div class="editPendingOrderModal"></div>
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <h4 class="card-header">ประวัติการสั่งรถ</h4>
+      <h4 class="card-header">รายการคำขอสั่งรถ</h4>
       <div class="card-body">
         <div class="table-responsive text-nowrap">
-          <table class="table table-bordered historyCarOrderTable">
+           <div class="d-flex justify-content-end">
+            <button class="btn btn-secondary btnInputCarOrder">เพิ่ม</button>
+          </div>
+          <table class="table table-bordered pendingOrderTable">
             <thead>
               <tr>
                 <th>No.</th>
-                <th>ชื่อ - นามสกุล ลูกค้า</th>
                 <th>รหัส Car Order</th>
                 <th>รุ่นรถหลัก</th>
                 <th>รุ่นรถย่อย</th>
-                <th>วันที่จอง</th>
+                <th width="150px">Action</th>
               </tr>
             </thead>
           </table>

@@ -8,11 +8,13 @@ use App\Models\CarOrderHistory;
 use App\Models\TbCarmodel;
 use App\Models\TbOrderStatus;
 use App\Models\TbSubcarmodel;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 class CarOrderController extends Controller
 {
+    // view all
     public function index()
     {
         $order = CarOrder::all();
@@ -21,7 +23,9 @@ class CarOrderController extends Controller
 
     public function listCarOrder()
     {
-        $order = CarOrder::with('model', 'subModel')->get();
+        $order = CarOrder::with('model', 'subModel')
+            ->where('status', 'finished')
+            ->get();
 
         $data = $order->map(function ($c, $index) {
             $modelOrder = $c->model ? $c->model->Name_TH : '';
@@ -43,44 +47,6 @@ class CarOrderController extends Controller
         return response()->json(['data' => $data]);
     }
 
-    public function history()
-    {
-        $history = CarOrderHistory::all();
-        return view('car-order.history', compact('history'));
-    }
-
-    public function listHistory()
-    {
-        $history = CarOrderHistory::with([
-            'saleCar.customer.prefix',
-            'carOrder.model',
-            'carOrder.subModel'
-        ])->get();
-
-        $data = $history->map(function ($h, $index) {
-
-            $prefix = $h->saleCar?->customer?->prefix?->Name_TH ?? '';
-            $name   = $h->saleCar?->customer?->FirstName ?? '-';
-            $last   = $h->saleCar?->customer?->LastName ?? '';
-
-            $orderCode = $h->carOrder?->order_code ?? '-';
-
-            $model = $h->carOrder?->model?->Name_TH ?? '-';
-            $subModel = $h->carOrder?->subModel?->name ?? '-';
-
-            return [
-                'No' => $index + 1,
-                'full_name' => $prefix . ' ' . $name . ' ' . $last,
-                'order_code' => $orderCode,
-                'model' => $model,
-                'subModel' => $subModel,
-                'booking' => $h->format_booking_date,
-            ];
-        });
-
-        return response()->json(['data' => $data]);
-    }
-
     public function viewMore($id)
     {
         $order = CarOrder::with([
@@ -91,120 +57,15 @@ class CarOrderController extends Controller
         return view('car-order.view-more', compact('order'));
     }
 
-    public function create()
-    {
-        $order = CarOrder::all();
-        $model = TbCarmodel::all();
-        $orderStatus = TbOrderStatus::all();
-
-        return view('car-order.input', compact('order', 'model', 'orderStatus'));
-    }
-
-    function store(Request $request)
-    {
-        try {
-
-            if (!$request->filled('order_date')) {
-                $request->merge(['order_date' => now()]);
-            }
-
-            $request->validate([
-                'order_date' => 'required|date',
-                'model_id' => 'required|integer|exists:tb_carmodels,id',
-            ]);
-
-            $lastOrder = CarOrder::latest('id')->first();
-            $newOrderId = $lastOrder ? $lastOrder->id + 1 : 1;
-
-            $OrderYear = Carbon::parse($request->order_date)->format('Y');
-            $OrderMonth = Carbon::parse($request->order_date)->format('m');
-
-            $model = TbCarmodel::findOrFail($request->model_id);
-
-            $prefix = "{$newOrderId}-{$OrderYear}-{$OrderMonth}-{$model->id}-";
-
-            $lastCode = CarOrder::where('order_code', 'like', $prefix . '%')
-                ->orderBy('order_code', 'desc')
-                ->first();
-
-            if ($lastCode) {
-                $lastNumber = intval(substr($lastCode->order_code, -4));
-                $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-            } else {
-                $newNumber = '0001';
-            }
-
-            $order_code = $prefix . $newNumber;
-
-            $exists = CarOrder::where('order_code', $order_code)->exists();
-            if ($exists) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'รหัส Order Code ถูกสร้างซ้ำ กรุณาบันทึกใหม่'
-                ], 400);
-            }
-
-            $data = [
-                'model_id' => $request->model_id,
-                'subModel_id' => $request->subModel_id,
-                'vin_number' => $request->vin_number,
-                'option' => $request->option,
-                'engine_number' => $request->engine_number,
-                'purchase_source' => $request->purchase_source,
-                'order_code' => $order_code,
-                'order_date' => $request->order_date,
-                'color' => $request->color,
-                'year' => $request->year,
-                'purchase_type' => $request->purchase_type,
-                'order_status' => $request->order_status,
-                'order_invoice_date' => $request->order_invoice_date,
-                'order_stock_date' => $request->order_stock_date,
-                'cancel_date' => $request->cancel_date ?? null,
-                'car_DNP' => $request->filled('car_DNP')
-                    ? str_replace(',', '', $request->car_DNP)
-                    : null,
-                'car_MSRP' => $request->filled('car_MSRP')
-                    ? str_replace(',', '', $request->car_MSRP)
-                    : null,
-                'estimated_stock_date' => $request->estimated_stock_date,
-                'stock_id' => $request->stock_id,
-                'car_status' => $request->car_status,
-                'userZone' => $request->userZone  ?? null,
-
-            ];
-
-            CarOrder::create($data);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'เพิ่มข้อมูลเรียบร้อยแล้ว'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
-            ], 500);
-        }
-    }
-
-    public function getSubModelCarOrder($model_id)
-    {
-        $subModels = TbSubcarmodel::where('model_id', $model_id)
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get();
-
-        return response()->json($subModels);
-    }
-
     public function edit($id)
     {
         $order = CarOrder::findOrFail($id);
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
+        $approvers = User::where('role', 'audit')->get();
 
-        return view('car-order.edit', compact('order', 'model', 'subModels', 'orderStatus'));
+        return view('car-order.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers'));
     }
 
     public function update(Request $request, $id)
@@ -260,6 +121,7 @@ class CarOrderController extends Controller
 
         $order = CarOrder::with(['model', 'subModel', 'orderStatus'])
             ->where('car_status', 'Null')
+            ->whereIn('status', ['approved', 'finished'])
             ->where(function ($query) use ($keyword) {
                 $query->where('vin_number', 'like', "%{$keyword}%")
                     ->orWhere('order_code', 'like', "%{$keyword}%")
@@ -279,5 +141,384 @@ class CarOrderController extends Controller
             ->get();
 
         return response()->json($order);
+    }
+
+    // history
+    public function history()
+    {
+        $history = CarOrderHistory::all();
+        return view('car-order.history.history', compact('history'));
+    }
+
+    public function listHistory()
+    {
+        $history = CarOrderHistory::with([
+            'saleCar.customer.prefix',
+            'carOrder.model',
+            'carOrder.subModel'
+        ])->get();
+
+        $data = $history->map(function ($h, $index) {
+
+            $prefix = $h->saleCar?->customer?->prefix?->Name_TH ?? '';
+            $name   = $h->saleCar?->customer?->FirstName ?? '-';
+            $last   = $h->saleCar?->customer?->LastName ?? '';
+
+            $orderCode = $h->carOrder?->order_code ?? '-';
+
+            $model = $h->carOrder?->model?->Name_TH ?? '-';
+            $subModel = $h->carOrder?->subModel?->name ?? '-';
+
+            $status   = $h->saleCar?->conStatus?->name ?? '';
+
+            return [
+                'No' => $index + 1,
+                'full_name' => $prefix . ' ' . $name . ' ' . $last,
+                'order_code' => $orderCode,
+                'model' => $model,
+                'subModel' => $subModel,
+                'booking' => $h->format_booking_date,
+                'status' => $status,
+            ];
+        });
+
+        return response()->json(['data' => $data]);
+    }
+
+    //pending
+    public function pending()
+    {
+        $pending = CarOrder::all();
+        return view('car-order.pending.view', compact('pending'));
+    }
+
+    public function listPending()
+    {
+        $order = CarOrder::with('model', 'subModel')
+            ->where('status', 'pending')
+            ->get();
+
+        $data = $order->map(function ($p, $index) {
+            $modelOrder = $p->model ? $p->model->Name_TH : '';
+            $subModelOrder = $p->subModel ? $p->subModel->name : '';
+
+            return [
+                'No' => $index + 1,
+                'order_code' => $p->order_code,
+                'model_id' => $modelOrder,
+                'subModel_id' => $subModelOrder,
+                'Action' => view('car-order.pending.button', compact('p'))->render()
+            ];
+        });
+
+        return response()->json(['data' => $data]);
+    }
+
+
+    public function create()
+    {
+        $order = CarOrder::all();
+        $model = TbCarmodel::all();
+        $orderStatus = TbOrderStatus::all();
+        $approvers = User::where('role', 'audit')->get();
+
+        return view('car-order.pending.input', compact('order', 'model', 'orderStatus', 'approvers'));
+    }
+
+    function store(Request $request)
+    {
+        try {
+
+            if (!$request->filled('order_date')) {
+                $request->merge(['order_date' => now()]);
+            }
+
+            $request->validate([
+                'order_date' => 'required|date',
+                'model_id' => 'required|integer|exists:tb_carmodels,id',
+            ]);
+
+            $lastOrder = CarOrder::latest('id')->first();
+            $newOrderId = $lastOrder ? $lastOrder->id + 1 : 1;
+
+            $OrderYear = Carbon::parse($request->order_date)->format('Y');
+            $OrderMonth = Carbon::parse($request->order_date)->format('m');
+
+            $model = TbCarmodel::findOrFail($request->model_id);
+
+            $prefix = "{$newOrderId}-{$OrderYear}-{$OrderMonth}-{$model->id}-";
+
+            $lastCode = CarOrder::where('order_code', 'like', $prefix . '%')
+                ->orderBy('order_code', 'desc')
+                ->first();
+
+            if ($lastCode) {
+                $lastNumber = intval(substr($lastCode->order_code, -4));
+                $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            } else {
+                $newNumber = '0001';
+            }
+
+            $order_code = $prefix . $newNumber;
+
+            $exists = CarOrder::where('order_code', $order_code)->exists();
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'รหัส Order Code ถูกสร้างซ้ำ กรุณาบันทึกใหม่'
+                ], 400);
+            }
+
+            $data = [
+                'model_id' => $request->model_id,
+                'subModel_id' => $request->subModel_id,
+                'option' => $request->option,
+                'purchase_source' => $request->purchase_source,
+                'order_code' => $order_code,
+                'type' => $request->type,
+                'order_date' => $request->order_date,
+                'color' => $request->color,
+                'year' => $request->year,
+                'purchase_type' => $request->purchase_type,
+                'order_status' => 1,
+                'car_DNP' => $request->filled('car_DNP')
+                    ? str_replace(',', '', $request->car_DNP)
+                    : null,
+                'car_MSRP' => $request->filled('car_MSRP')
+                    ? str_replace(',', '', $request->car_MSRP)
+                    : null,
+                'car_status' => 'Null',
+                'approver' => $request->approver,
+                'note' => $request->note,
+                'userZone' => $request->userZone ?? null,
+                'status' => CarOrder::STATUS_PENDING,
+            ];
+
+            CarOrder::create($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'เพิ่มข้อมูลเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
+    }
+
+    public function getSubModelCarOrder($model_id)
+    {
+        $subModels = TbSubcarmodel::where('model_id', $model_id)
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($subModels);
+    }
+
+    public function editPending($id)
+    {
+        $order = CarOrder::findOrFail($id);
+        $model = TbCarmodel::all();
+        $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
+        $orderStatus = TbOrderStatus::all();
+        $approvers = User::where('role', 'audit')->get();
+
+        return view('car-order.pending.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers'));
+    }
+
+    public function updatePending(Request $request, $id)
+    {
+        try {
+            $order = CarOrder::findOrFail($id);
+            $data = $request->except(['_token', '_method']);
+
+            $data['car_DNP'] = $request->car_DNP
+                ? str_replace(',', '', $request->car_DNP)
+                : null;
+
+            $data['car_MSRP'] = $request->car_MSRP
+                ? str_replace(',', '', $request->car_MSRP)
+                : null;
+
+            $order->update($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'แก้ไขข้อมูลเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
+    }
+
+    function destroyPending($id)
+    {
+        try {
+            $order = CarOrder::findOrFail($id);
+            $order->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ลบข้อมูลเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
+    }
+
+    // process
+    public function process()
+    {
+        $process = CarOrder::all();
+        return view('car-order.process.view', compact('process'));
+    }
+
+    public function listProcess()
+    {
+        $order = CarOrder::with('model', 'subModel')
+            ->where('status', 'pending')
+            ->get();
+
+        $data = $order->map(function ($p, $index) {
+            $modelOrder = $p->model ? $p->model->Name_TH : '';
+            $subModelOrder = $p->subModel ? $p->subModel->name : '';
+
+            return [
+                'No' => $index + 1,
+                'order_code' => $p->order_code,
+                'model_id' => $modelOrder,
+                'subModel_id' => $subModelOrder,
+                'Action' => view('car-order.process.button', compact('p'))->render()
+            ];
+        });
+
+        return response()->json(['data' => $data]);
+    }
+
+    public function editProcess($id)
+    {
+        $order = CarOrder::findOrFail($id);
+        $model = TbCarmodel::all();
+        $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
+        $orderStatus = TbOrderStatus::all();
+        $approvers = User::where('role', 'audit')->get();
+
+        return view('car-order.process.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers'));
+    }
+
+    public function updateProcess(Request $request, $id)
+    {
+        try {
+            $order = CarOrder::findOrFail($id);
+
+            if ($request->action_status === 'approve') {
+                $order->status = CarOrder::STATUS_APPROVED;
+            } elseif ($request->action_status === 'reject') {
+                $order->status = CarOrder::STATUS_REJECTED;
+                $order->reason = $request->reason;
+            }
+
+            $order->approver_date = now();
+
+            $order->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
+    }
+
+    // approve
+    public function approve()
+    {
+        $approve = CarOrder::all();
+        return view('car-order.approve.view', compact('approve'));
+    }
+
+    public function listApprove()
+    {
+        $order = CarOrder::with('model', 'subModel')
+            ->whereIn('status', ['approved', 'rejected'])
+            ->get();
+
+        $data = $order->map(function ($a, $index) {
+            $modelOrder = $a->model ? $a->model->Name_TH : '';
+            $subModelOrder = $a->subModel ? $a->subModel->name : '';
+
+            if ($a->status === 'approved') {
+                $statusBadge = '<span class="badge bg-label-success">อนุมัติ</span>';
+            } elseif ($a->status === 'rejected') {
+                $statusBadge = '<span class="badge bg-label-danger">ไม่อนุมัติ</span>';
+            } else {
+                $statusBadge = '<span class="badge bg-label-secondary">' . $a->status . '</span>';
+            }
+
+            return [
+                'No' => $index + 1,
+                'order_code' => $a->order_code,
+                'model_id' => $modelOrder,
+                'subModel_id' => $subModelOrder,
+                'status' => $statusBadge,
+                'Action' => view('car-order.approve.button', compact('a'))->render()
+            ];
+        });
+
+        return response()->json(['data' => $data]);
+    }
+
+    public function editApprove($id)
+    {
+        $order = CarOrder::findOrFail($id);
+        $model = TbCarmodel::all();
+        $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
+        $orderStatus = TbOrderStatus::all();
+        $approvers = User::where('role', 'audit')->get();
+
+        return view('car-order.approve.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers'));
+    }
+
+    public function updateApprove(Request $request, $id)
+    {
+        $request->validate([
+            'system_date' => 'required|date',
+        ], [
+            'system_date.required' => 'กรุณากรอกวันที่',
+            'system_date.date' => 'รูปแบบวันที่ไม่ถูกต้อง',
+        ]);
+
+        try {
+            $order = CarOrder::findOrFail($id);
+
+            $order->update([
+                'system_date' => $request->system_date,
+                'status' => CarOrder::STATUS_FINISHED
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
     }
 }

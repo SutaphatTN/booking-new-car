@@ -1,13 +1,23 @@
-<div class="modal fade editCarOrder" tabindex="-1" role="dialog" data-bs-backdrop="static">
+<div class="modal fade editPendingOrder" tabindex="-1" role="dialog" data-bs-backdrop="static">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header border-bottom">
-        <h4 class="modal-title mb-2" id="CarOrderLabel">แก้ไขข้อมูลการสั่งซื้อ</h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="d-flex justify-content-between w-100 align-items-center">
+          <h4 class="modal-title mb-2" id="editPendingOrderLabel">
+            แก้ไขข้อมูลคำขอสั่งรถ
+          </h4>
+
+          <h5 class="text-secondary mb-0">
+            {{ $order->order_code }}
+          </h5>
+        </div>
+
+        <button type="button" class="btn-close ms-3" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
+
       <div class="modal-body">
-        <form
-          action="{{ route('car-order.update', $order->id) }}"
+        <form id="pendingOrderForm"
+          action="{{ route('car-order.updatePending', $order->id) }}"
           method="POST"
           enctype="multipart/form-data">
           @csrf
@@ -56,45 +66,6 @@
               </select>
 
               @error('subModel_id')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-4 mb-5">
-              <label for="vin_number" class="form-label">Vin Number</label>
-              <input id="vin_number" type="text"
-                class="form-control @error('vin_number') is-invalid @enderror"
-                name="vin_number" value="{{ $order->vin_number }}" required>
-
-              @error('vin_number')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-4 mb-5">
-              <label for="j_number" class="form-label">J-Number</label>
-              <input id="j_number" type="text"
-                class="form-control @error('j_number') is-invalid @enderror"
-                name="j_number" value="{{ $order->j_number }}" required>
-
-              @error('j_number')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-4 mb-5">
-              <label for="engine_number" class="form-label">หมายเลขเครื่องยนต์</label>
-              <input id="engine_number" type="text"
-                class="form-control @error('engine_number') is-invalid @enderror"
-                name="engine_number" value="{{ $order->engine_number }}" required>
-
-              @error('engine_number')
               <span class="invalid-feedback" role="alert">
                 <strong>{{ $message }}</strong>
               </span>
@@ -224,80 +195,11 @@
                 rows="2">{{ $order->note }}</textarea>
             </div>
 
-            <div class="col-md-4 mb-5">
-              <label for="system_date" class="form-label">วันที่สั่งซื้อในระบบ</label>
-              <input id="system_date" type="date"
-                class="form-control"
-                name="system_date"
-                value="{{ $order->system_date }}"
-                required>
-
-              @error('system_date')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-4 mb-5">
-              <label for="car_status" class="form-label">สถานะรถ</label>
-              <select id="car_status" name="car_status" class="form-select" required>
-                <option value="">-- เลือกสถานะ --</option>
-                <option value="Null" {{ $order->car_status == 'Null' ? 'selected' : '' }}>Null</option>
-                <option value="Book" {{ $order->car_status == 'Book' ? 'selected' : '' }}>Book</option>
-                <option value="Send" {{ $order->car_status == 'Send' ? 'selected' : '' }}>Send</option>
-              </select>
-
-              @error('car_status')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-4 mb-5">
-              <label for="order_status" class="form-label">สถานะ Car Order</label>
-              <select id="order_status" name="order_status" class="form-select" required>
-                <option value="">-- เลือกสถานะ --</option>
-                @foreach ($orderStatus as $status)
-                <option value="{{ $status->id }}"
-                  data-name="{{ $status->name }}"
-                  {{ $order->order_status == $status->id ? 'selected' : '' }}>
-                  {{ $status->name }}
-                </option>
-                @endforeach
-              </select>
-
-              @error('order_status')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div id="fieldInvoice" class="col-md-3 mb-5 d-none">
-              <label for="order_invoice_date" class="form-label">วันที่ออกใบกำกับ</label>
-              <input type="date" id="order_invoice_date" name="order_invoice_date" class="form-control" value="{{ $order->order_invoice_date }}">
-            </div>
-
-            <div id="fieldStock" class="col-md-12 row d-none">
-              <div class="col-md-3 mb-3">
-                <label for="order_stock_date" class="form-label">วันที่สต็อก</label>
-                <input type="date" id="order_stock_date" name="order_stock_date" class="form-control" value="{{ $order->order_stock_date }}">
-              </div>
-
-              <div class="col-md-3 mb-3">
-                <label for="estimated_stock_date" class="form-label">วันที่คาดว่าสินค้ามาถึง</label>
-                <input type="date" id="estimated_stock_date" name="estimated_stock_date" class="form-control" value="{{ $order->estimated_stock_date }}">
-              </div>
-
-            </div>
-
           </div>
 
           <div class="d-flex justify-content-end gap-2">
             <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ยกเลิก</button>
-            <button type="button" class="btn btn-primary btnUpdateCarOrder">บันทึก</button>
+            <button type="button" class="btn btn-primary btnUpdatePendingOrder">บันทึก</button>
           </div>
 
         </form>

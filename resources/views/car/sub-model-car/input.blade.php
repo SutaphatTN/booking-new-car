@@ -18,7 +18,7 @@
               <select id="model_id" name="model_id" class="form-select @error('model_id') is-invalid @enderror" required>
                 <option value="">-- เลือกรุ่นรถหลัก --</option>
                 @foreach ($model as $m)
-                <option value="{{ @$m->id }}">{{ @$m->Name_TH }}</option>
+                <option value="{{ $m->id }}">{{ $m->Name_TH }}</option>
                 @endforeach
               </select>
 

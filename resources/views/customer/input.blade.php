@@ -1,5 +1,5 @@
 @extends('layouts/contentNavbarLayout')
-@section('title', 'Data Customer - Add')
+@section('title', 'Data Customer Add')
 
 @section('page-script')
 @vite(['resources/assets/js/customer.js'])

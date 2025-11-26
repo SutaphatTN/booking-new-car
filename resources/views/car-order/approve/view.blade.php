@@ -1,29 +1,26 @@
 @extends('layouts/contentNavbarLayout')
-@section('title', 'Data Car Order')
+@section('title', 'Car Order Approve')
 
 @section('page-script')
 @vite(['resources/assets/js/car-order.js'])
 @endsection
 
 @section('content')
-<div class="viewMoreCarOrder"></div>
-<div class="editCarOrderModal"></div> 
+<div class="editApproveOrderModal"></div>
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <h4 class="card-header">รายการรถ</h4>
+      <h4 class="card-header">ผลการอนุมัติ</h4>
       <div class="card-body">
         <div class="table-responsive text-nowrap">
-          <table class="table table-bordered carOrderTable">
+          <table class="table table-bordered approveOrderTable">
             <thead>
               <tr>
                 <th>No.</th>
                 <th>รหัส Car Order</th>
                 <th>รุ่นรถหลัก</th>
                 <th>รุ่นรถย่อย</th>
-                <th>Vin Number</th>
-                <th>สถานะ Car Order</th>
-                <th>สถานะรถ</th>
+                <th>สถานะ</th>
                 <th width="150px">Action</th>
               </tr>
             </thead>

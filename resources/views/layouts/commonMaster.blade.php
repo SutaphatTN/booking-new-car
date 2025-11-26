@@ -26,7 +26,9 @@
     <!-- Canonical SEO -->
     <link rel="canonical" href="{{ config('variables.productPage') ? config('variables.productPage') : '' }}" />
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('assets/img/favicon/favicon.ico') }}" />
+    <link rel="icon" type="image/png" href="{{ asset('assets/img/Mitsubishi_logoCrop32.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('assets/img/Mitsubishi_logoCrop16.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/img/Mitsubishi_logoCrop180.png') }}">
 
     <!-- Include Styles -->
     @include('layouts/sections/styles')

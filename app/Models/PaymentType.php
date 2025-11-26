@@ -13,6 +13,7 @@ class PaymentType extends Model
 
     protected $fillable = [
         'saleCar_id',
+        'payment_mode',
         'category',
         'type',
         'cost',
@@ -33,6 +34,8 @@ class PaymentType extends Model
         'total_alp',
         'type_com',
         'total_com',
+        'po_number',
+        'po_date',
         'userZone',
     ];
 

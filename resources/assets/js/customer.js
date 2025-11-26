@@ -279,7 +279,8 @@ document.addEventListener('DOMContentLoaded', function () {
     e.preventDefault();
 
     const $btn = $(this);
-    const form = $btn.closest('form')[0];
+    // const form = $btn.closest('form')[0];
+    const form = $('#customerInputForm');
 
     if (!form.checkValidity()) {
       form.reportValidity();

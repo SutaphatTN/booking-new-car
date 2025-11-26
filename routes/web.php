@@ -54,6 +54,7 @@ use App\Http\Controllers\model_car\ModelCarController;
 use App\Http\Controllers\model_car\SubModelCarController;
 use App\Http\Controllers\purchase_order\PurchaseOrderController;
 use App\Http\Controllers\tables\Basic as TablesBasic;
+use App\Models\Salecar;
 use Illuminate\Support\Facades\Log;
 
 Route::get('/', function () {
@@ -65,6 +66,20 @@ Route::get('/home', [HomeController::class, 'index'])->name('home');
 Route::resource('register', RegisterController::class);
 Route::resource('login', LoginController::class);
 Route::resource('forgot', ForgotController::class);
+
+// Route::get('/test-delete-booking', function () {
+//     $results = Salecar::whereNotNull('BookingDate')
+//         ->whereDate('BookingDate', '<=', now()->subDays(5))
+//         ->where(function ($query) {
+//             $query->whereDoesntHave('remainingPayment')
+//                   ->orWhereHas('remainingPayment', function ($sub) {
+//                       $sub->whereNull('po_number');
+//                   });
+//         })
+//         ->get();
+
+//     return $results; // จะเห็นว่า Eloquent Collection มี record ไหนบ้าง
+// });
 
 Route::group(['middleware' => 'auth'], function () {
     // Main Page Route
@@ -86,7 +101,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     // authentication
     Route::get('/auth/login-basic', [LoginBasic::class, 'index'])->name('auth-login-basic');
-    Route::get('/auth/register-basic', [RegisterBasic::class, 'index'])->name('auth-register-basic');
+    // Route::get('/auth/register-basic', [RegisterBasic::class, 'index'])->name('auth-register-basic');
     Route::get('/auth/forgot-password-basic', [ForgotPasswordBasic::class, 'index'])->name('auth-reset-password-basic');
 
     // cards
@@ -144,6 +159,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/summary/{id}', [PurchaseOrderController::class, 'summaryPurchase'])->name('purchase-order.summary');
     Route::get('/api/purchase-order/sub-model/{model_id}', [PurchaseOrderController::class, 'getSubModelPurchase']);
     Route::get('purchase-order/{id}/preview', [PurchaseOrderController::class, 'preview'])->name('purchase-order.preview');
+    Route::get('purchase-order/viewPO', [PurchaseOrderController::class, 'viewPO'])->name('purchase-order.viewPO');
+    Route::get('purchase-order/list-po', [PurchaseOrderController::class, 'listPO']);
+    Route::get('purchase-order/viewBooking', [PurchaseOrderController::class, 'viewBooking'])->name('purchase-order.viewBooking');
+    Route::get('purchase-order/list-booking', [PurchaseOrderController::class, 'listBooking']);
 
     //accessory partner
     Route::get('accessory/partner', [AccessoryController::class, 'viewPartner'])->name('accessory.partner');
@@ -178,11 +197,31 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('car-order/list', [CarOrderController::class, 'listCarOrder']);
     Route::get('car-order/{id}/view-more', [CarOrderController::class, 'viewMore'])->name('car-order.viewMore');
     Route::get('/api/car-order/sub-model/{model_id}', [CarOrderController::class, 'getSubModelCarOrder']);
-    Route::get('/car-order/search', [CarOrderController::class, 'search'])->name('car-order.search'); //search in purchase
-    Route::get('car-order/history', [CarOrderController::class, 'history']);
+    Route::get('/car-order/search', [CarOrderController::class, 'search'])->name('car-order.search');
+    //car-order history
+    Route::get('car-order/history', [CarOrderController::class, 'history'])->name('car-order.history');
     Route::get('car-order/history/list', [CarOrderController::class, 'listHistory']);
+    //car-order pending
+    Route::get('car-order/pending', [CarOrderController::class, 'pending'])->name('car-order.pending');
+    Route::get('car-order/pending/list', [CarOrderController::class, 'listPending']);
+    Route::get('car-order/edit-pending/{id}', [CarOrderController::class, 'editPending'])->name('car-order.editPending');
+    Route::put('car-order/update-pending/{id}', [CarOrderController::class, 'updatePending'])->name('car-order.updatePending');
+    Route::delete('car-order/destroy-pending/{id}', [CarOrderController::class, 'destroyPending']);
+    //car-order process
+    Route::get('car-order/process', [CarOrderController::class, 'process'])->name('car-order.process');
+    Route::get('car-order/process/list', [CarOrderController::class, 'listProcess']);
+    Route::get('car-order/edit-process/{id}', [CarOrderController::class, 'editProcess'])->name('car-order.editProcess');
+    Route::put('car-order/update-process/{id}', [CarOrderController::class, 'updateProcess'])->name('car-order.updateProcess');
+    //car-order approve
+    Route::get('car-order/approve', [CarOrderController::class, 'approve'])->name('car-order.approve');
+    Route::get('car-order/approve/list', [CarOrderController::class, 'listApprove']);
+    Route::get('car-order/edit-approve/{id}', [CarOrderController::class, 'editApprove'])->name('car-order.editApprove');
+    Route::put('car-order/update-approve/{id}', [CarOrderController::class, 'updateApprove'])->name('car-order.updateApprove');
+    Route::delete('car-order/destroy-approve/{id}', [CarOrderController::class, 'destroyApprove']);
+    
+    
+    
     //all resource
-
     Route::resource('customer', CustomerController::class);
     Route::resource('purchase-order', PurchaseOrderController::class);
     Route::resource('accessory', AccessoryController::class);

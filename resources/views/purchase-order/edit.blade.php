@@ -45,8 +45,8 @@
 
           <li class="nav-item mb-1 mb-sm-0">
             <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#tab-more" aria-controls="tab-more" aria-selected="false">
-              <span class="d-none d-sm-inline-flex align-items-center"><i class="icon-base bx bx-book-bookmark icon-sm me-1_5"></i>ข้อมูลเพิ่มเติม</span>
-              <i class="icon-base bx bx-book-bookmark icon-sm d-sm-none"></i>
+              <span class="d-none d-sm-inline-flex align-items-center"><i class="icon-base bx bx-slider icon-sm me-1_5"></i>ข้อมูลเพิ่มเติม</span>
+              <i class="icon-base bx bx-slider icon-sm d-sm-none"></i>
             </button>
           </li>
         </ul>
@@ -103,7 +103,7 @@
                     <select id="model_id" name="model_id" class="form-select" required>
                       <option value="">-- เลือกรุ่นรถหลัก --</option>
                       @foreach ($model as $m)
-                      <option value="{{ @$m->id }}" {{ $saleCar->model_id == $m->id ? 'selected' : '' }}>{{ @$m->Name_TH }}</option>
+                      <option value="{{ $m->id }}" {{ $saleCar->model_id == $m->id ? 'selected' : '' }}>{{ $m->Name_TH }}</option>
                       @endforeach
                     </select>
                   </div>
@@ -139,8 +139,8 @@
 
                   <div class="col-md-2">
                     <label class="form-label">เงินจอง</label>
-                    <input type="text" class="form-control text-end money-input" id="reservation_cost" name="reservation_cost"
-                      value="{{ old('reservation_cost', $reservationPayment?->cost ?? '') }}">
+                    <input type="text" class="form-control text-end money-input" id="CashDeposit" name="CashDeposit"
+                      value="{{ $saleCar->CashDeposit }}">
                   </div>
 
                   <div class="col-md-2">
@@ -587,48 +587,7 @@
                 <div class="tab-pane fade" id="tab-car" role="tabpanel">
                   <h4 class="pb-2 mb-3">สรุปยอด</h4>
                   <div class="row g-6">
-                    @php
-                    $remainingType = $remainingPayment->type ?? '';
-                    @endphp
-
-                    <div class="table-responsive">
-                      <table class="table table-bordered">
-                        <tr>
-                          <td class="text-center">เลือกประเภทการชำระเงิน</td>
-
-                          <td class="text-center">
-                            <input class="form-check-input" type="radio" name="remainingCondition" id="cashCheck" value="cash"
-                              {{ $remainingType === 'cash' ? 'checked' : '' }}>
-                            <label class="form-check-label" for="cashCheck">เงินสด</label>
-                          </td>
-
-                          <td class="text-center">
-                            <input class="form-check-input" type="radio" name="remainingCondition" id="creditCheck" value="credit"
-                              {{ $remainingType === 'credit' ? 'checked' : '' }}>
-                            <label class="form-check-label ms-1" for="creditCheck">บัตรเครดิต</label>
-                          </td>
-
-                          <td class="text-center">
-                            <input class="form-check-input" type="radio" name="remainingCondition" id="ckCheck" value="check"
-                              {{ $remainingType === 'check' ? 'checked' : '' }}>
-                            <label class="form-check-label" for="ckCheck">เช็คธนาคาร</label>
-                          </td>
-
-                          <td class="text-center">
-                            <input class="form-check-input" type="radio" name="remainingCondition" id="tranCheck" value="transfer"
-                              {{ $remainingType === 'transfer' ? 'checked' : '' }}>
-                            <label class="form-check-label" for="tranCheck">เงินโอน</label>
-                          </td>
-
-                          <td class="text-center">
-                            <input class="form-check-input" type="radio" name="remainingCondition" id="financeCheck" value="finance"
-                              {{ $remainingType === 'finance' ? 'checked' : '' }}>
-                            <label class="form-check-label ms-1" for="financeCheck">ไฟแนนซ์</label>
-                          </td>
-                        </tr>
-                      </table>
-                    </div>
-
+                    <input type="hidden" id="payment_mode" name="payment_mode" value="{{ $saleCar->payment_mode ?? '' }}">
 
                     <div class="col-md-3">
                       <label class="form-label">รุ่นรถ</label>
@@ -655,9 +614,68 @@
                       <input id="summaryCarSale" class="form-control text-end money-input" disabled />
                     </div>
 
+                    <input type="hidden" id="remaining_date"
+                      name="remaining_date"
+                      value="{{ old('remaining_date', $remainingPayment->date ?? '') }}">
+
+                    <input type="hidden" id="RegistrationProvince"
+                      name="RegistrationProvince"
+                      value="{{ old('RegistrationProvince', $saleCar->RegistrationProvince ?? '') }}">
+
+                    <input type="hidden" id="balance"
+                      name="balance"
+                      value="{{ old('balance', $saleCar->balance ?? '') }}">
+
+                    <input type="hidden" id="remainingCondition"
+                      name="remainingCondition"
+                      value="{{ old('remainingCondition', $remainingPayment->type ?? '') }}">
+
+                    <div id="nonFinanceSelect" style="display:none">
+                      <div class="row g-6">
+                        <div class="col-md-3">
+                          <label class="form-label">เลือกประเภท</label>
+                          <select id="remainingConditionSelect" class="form-select">
+                            <option value="">-- เลือกประเภท --</option>
+                            <option value="cash" {{ $remainingPayment?->type == 'cash' ? 'selected' : '' }}>เงินสด</option>
+                            <option value="credit" {{ $remainingPayment?->type == 'credit' ? 'selected' : '' }}>บัตรเครดิต</option>
+                            <option value="check" {{ $remainingPayment?->type == 'check' ? 'selected' : '' }}>เช็คธนาคาร</option>
+                            <option value="transfer" {{ $remainingPayment?->type == 'transfer' ? 'selected' : '' }}>เงินโอน</option>
+                          </select>
+                        </div>
+
+                        <div class="col-md-2">
+                          <label for="PaymentDiscount" class="form-label">ส่วนลด</label>
+                          <input class="form-control text-end money-input" type="text" id="PaymentDiscount" name="PaymentDiscount"
+                            value="{{ $saleCar->PaymentDiscount }}" />
+                        </div>
+
+                        <div class="col-md-3">
+                          <label class="form-label">ยอดคงเหลือ</label>
+                          <input class="form-control text-end money-input balance-display" type="text"
+                            value="{{ $saleCar->balance }}" readonly />
+                        </div>
+
+                        <div class="col-md-2">
+                          <label class="form-label">วันที่จ่ายเงิน</label>
+                          <input id="remaining_date_cash" type="date"
+                            class="form-control"
+                            name="remaining_date_cash" value="{{ old('remaining_date', $remainingPayment?->date ?? '') }}">
+                        </div>
+
+                        <div class="col-md-2">
+                          <label class="form-label">จังหวัดที่ขึ้นทะเบียน</label>
+                          <select id="RegistrationProvince_cash" name="RegistrationProvince_cash" class="registration-province form-select" required>
+                            <option value="">-- เลือกจังหวัด --</option>
+                            @foreach ($provinces as $p)
+                            <option value="{{ @$p->id }}" {{ $saleCar->RegistrationProvince == $p->id ? 'selected' : '' }}>{{ @$p->name }}</option>
+                            @endforeach
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
                     <div id="financeRemain">
                       <div class="row g-6">
-                        <!-- กรณีเลือกไฟแนนซ์ -->
                         <div class="col-md-2">
                           <label for="MarkupPrice" class="form-label">บวกหัว</label>
                           <input class="form-control text-end money-input" type="text" id="MarkupPrice" name="MarkupPrice"
@@ -772,18 +790,35 @@
                             value="{{ old('remaining_total_alp', $remainingPayment->total_alp ?? '') }}">
                         </div>
 
-                        <div class="col-md-2">
-                          <label class="form-label">วันที่ไฟแนนซ์จ่ายเงิน</label>
-                          <input id="remaining_date" type="date"
+                        <div class="col-md-3">
+                          <label class="form-label">PO-Number</label>
+                          <input id="remaining_po_number" type="text"
                             class="form-control"
-                            name="remaining_date" value="{{ old('remaining_date', $remainingPayment?->date ?? '') }}">
+                            name="remaining_po_number" value="{{ old('remaining_po_number', $remainingPayment?->po_number ?? '') }}">
+                        </div>
+
+                        <div class="col-md-2">
+                          <label class="form-label">วันที่ PO</label>
+                          <input id="remaining_po_date" type="date"
+                            class="form-control"
+                            name="remaining_po_date" value="{{ old('remaining_po_date', $remainingPayment?->po_date ?? '') }}">
                         </div>
 
                         @php
                         $deliveryType = $deliveryPayment->type ?? '';
                         @endphp
 
-                        <div class="col-md-3">
+                        <div class="col-md-2">
+                          <label class="form-label">จังหวัดที่ขึ้นทะเบียน</label>
+                          <select id="RegistrationProvince_finance" name="RegistrationProvince_finance" class="registration-province form-select" required>
+                            <option value="">-- เลือกจังหวัด --</option>
+                            @foreach ($provinces as $p)
+                            <option value="{{ @$p->id }}" {{ $saleCar->RegistrationProvince == $p->id ? 'selected' : '' }}>{{ @$p->name }}</option>
+                            @endforeach
+                          </select>
+                        </div>
+
+                        <div class="col-md-2">
                           <label class="form-label">สรุปค่าใช้จ่ายวันออกรถ</label>
                           <input class="form-control text-end money-input" type="text" id="TotalPaymentatDeliveryCar" name="delivery_cost"
                             value="{{ old('delivery_cost', $deliveryPayment->cost ?? '') }}" readonly />
@@ -798,17 +833,7 @@
                             name="delivery_date" value="{{ old('delivery_date', $deliveryPayment?->date ?? '') }}">
                         </div>
 
-                        <div class="col-md-3">
-                          <label for="RegistrationProvince" class="form-label">จังหวัดที่ขึ้นทะเบียน</label>
-                          <select name="RegistrationProvince_finance" class="registration-province form-select" required>
-                            <option value="">-- เลือกจังหวัด --</option>
-                            @foreach ($provinces as $p)
-                            <option value="{{ @$p->id }}" {{ $saleCar->RegistrationProvince == $p->id ? 'selected' : '' }}>{{ @$p->name }}</option>
-                            @endforeach
-                          </select>
-                        </div>
-
-                        <div class="col-md-7">
+                        <div class="col-md-6">
                           <label class="form-label d-block">ประเภทการจ่ายเงินวันออกรถ</label>
 
                           <div class="form-check form-check-inline" style="margin-left: 15px">
@@ -908,62 +933,8 @@
                       </div>
                     </div>
 
-                    <input type="hidden" id="balance" name="balance">
-
-                    <div id="cashRemain">
-                      <div class="row">
-                        <div class="col-md-2">
-                          <label for="PaymentDiscount" class="form-label">ส่วนลด</label>
-                          <input class="form-control text-end money-input" type="text" name="PaymentDiscount" id="PaymentDiscount"
-                            value="{{ $saleCar->PaymentDiscount }}" />
-                        </div>
-
-                        <div class="col-md-3">
-                          <label class="form-label">ยอดคงเหลือ</label>
-                          <input class="form-control text-end money-input" type="text" name="remaining_cost" id="balanceDisplay"
-                            value="{{ old('remaining_cost', $remainingPayment->cost ?? '') }}" readonly />
-                        </div>
-
-                        <div class="col-md-2">
-                          <label class="form-label">วันที่จ่ายเงิน</label>
-                          <input id="remaining_date" type="date"
-                            class="form-control"
-                            name="remaining_date" value="{{ old('remaining_date', $remainingPayment?->date ?? '') }}">
-                        </div>
-
-                        <div class="col-md-3">
-                          <label for="RegistrationProvince" class="form-label">จังหวัดที่ขึ้นทะเบียน</label>
-                          <select name="RegistrationProvince_cash" class="registration-province form-select" required>
-                            <option value="">-- เลือกจังหวัด --</option>
-                            @foreach ($provinces as $p)
-                            <option value="{{ @$p->id }}" {{ $saleCar->RegistrationProvince == $p->id ? 'selected' : '' }}>{{ @$p->name }}</option>
-                            @endforeach
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-
                     <div id="creditRemain">
                       <div class="row">
-                        <div class="col-md-2">
-                          <label for="PaymentDiscount" class="form-label">ส่วนลด</label>
-                          <input class="form-control text-end money-input" type="text" name="PaymentDiscount" id="PaymentDiscount"
-                            value="{{ $saleCar->PaymentDiscount }}" />
-                        </div>
-
-                        <div class="col-md-3">
-                          <label class="form-label">ยอดคงเหลือ</label>
-                          <input class="form-control text-end money-input" type="text" name="remaining_cost" id="balanceDisplay"
-                            value="{{ old('remaining_cost', $remainingPayment->cost ?? '') }}" readonly />
-                        </div>
-
-                        <div class="col-md-2">
-                          <label class="form-label">วันที่จ่ายเงิน</label>
-                          <input id="remaining_date" type="date"
-                            class="form-control"
-                            name="remaining_date" value="{{ old('remaining_date', $remainingPayment?->date ?? '') }}">
-                        </div>
-
                         <div class="col-md-3">
                           <label class="form-label">บัตรเครดิต</label>
                           <input type="text"
@@ -980,40 +951,11 @@
                             value="{{ old('remaining_tax_credit', $remainingPayment->tax_credit ?? '') }}">
                         </div>
 
-                        <div class="col-md-3 mt-6">
-                          <label for="RegistrationProvince" class="form-label">จังหวัดที่ขึ้นทะเบียน</label>
-                          <select name="RegistrationProvince_credit" class="registration-province form-select" required>
-                            <option value="">-- เลือกจังหวัด --</option>
-                            @foreach ($provinces as $p)
-                            <option value="{{ @$p->id }}" {{ $saleCar->RegistrationProvince == $p->id ? 'selected' : '' }}>{{ @$p->name }}</option>
-                            @endforeach
-                          </select>
-                        </div>
-
                       </div>
                     </div>
 
                     <div id="checkRemain">
                       <div class="row">
-                        <div class="col-md-2">
-                          <label for="PaymentDiscount" class="form-label">ส่วนลด</label>
-                          <input class="form-control text-end money-input" type="text" name="PaymentDiscount" id="PaymentDiscount"
-                            value="{{ $saleCar->PaymentDiscount }}" />
-                        </div>
-
-                        <div class="col-md-3">
-                          <label class="form-label">ยอดคงเหลือ</label>
-                          <input class="form-control text-end money-input" type="text" name="remaining_cost" id="balanceDisplay"
-                            value="{{ old('remaining_cost', $remainingPayment->cost ?? '') }}" readonly />
-                        </div>
-
-                        <div class="col-md-2">
-                          <label class="form-label">วันที่จ่ายเงิน</label>
-                          <input id="remaining_date" type="date"
-                            class="form-control"
-                            name="remaining_date" value="{{ old('remaining_date', $remainingPayment?->date ?? '') }}">
-                        </div>
-
                         <div class="col-md-3">
                           <label class="form-label">ธนาคาร</label>
                           <input type="text"
@@ -1030,48 +972,18 @@
                             value="{{ old('remaining_check_branch', $remainingPayment->check_branch ?? '') }}">
                         </div>
 
-                        <div class="col-md-3 mt-6">
+                        <div class="col-md-3">
                           <label class="form-label">เลขที่</label>
                           <input type="text"
                             class="form-control"
                             name="remaining_check_no"
                             value="{{ old('remaining_check_no', $remainingPayment->check_no ?? '') }}">
                         </div>
-
-                        <div class="col-md-3 mt-6">
-                          <label for="RegistrationProvince" class="form-label">จังหวัดที่ขึ้นทะเบียน</label>
-                          <select name="RegistrationProvince_check" class="registration-province form-select" required>
-                            <option value="">-- เลือกจังหวัด --</option>
-                            @foreach ($provinces as $p)
-                            <option value="{{ @$p->id }}" {{ $saleCar->RegistrationProvince == $p->id ? 'selected' : '' }}>{{ @$p->name }}</option>
-                            @endforeach
-                          </select>
-                        </div>
-
                       </div>
                     </div>
 
                     <div id="bankRemain">
                       <div class="row">
-                        <div class="col-md-2">
-                          <label for="PaymentDiscount" class="form-label">ส่วนลด</label>
-                          <input class="form-control text-end money-input" type="text" name="PaymentDiscount" id="PaymentDiscount"
-                            value="{{ $saleCar->PaymentDiscount }}" />
-                        </div>
-
-                        <div class="col-md-3">
-                          <label class="form-label">ยอดคงเหลือ</label>
-                          <input class="form-control text-end money-input" type="text" name="remaining_cost" id="balanceDisplay"
-                            value="{{ old('remaining_cost', $remainingPayment->cost ?? '') }}" readonly />
-                        </div>
-
-                        <div class="col-md-2">
-                          <label class="form-label">วันที่จ่ายเงิน</label>
-                          <input id="remaining_date" type="date"
-                            class="form-control"
-                            name="remaining_date" value="{{ old('remaining_date', $remainingPayment?->date ?? '') }}">
-                        </div>
-
                         <div class="col-md-3">
                           <label class="form-label">ธนาคาร</label>
                           <input type="text"
@@ -1088,22 +1000,12 @@
                             value="{{ old('remaining_transfer_branch', $remainingPayment->transfer_branch ?? '') }}">
                         </div>
 
-                        <div class="col-md-3 mt-6">
+                        <div class="col-md-3">
                           <label class="form-label">เลขที่</label>
                           <input type="text"
                             class="form-control"
                             name="remaining_check_no"
                             value="{{ old('remaining_check_no', $remainingPayment->check_no ?? '') }}">
-                        </div>
-
-                        <div class="col-md-3 mt-6">
-                          <label for="RegistrationProvince" class="form-label">จังหวัดที่ขึ้นทะเบียน</label>
-                          <select name="RegistrationProvince_bank" class="registration-province form-select" required>
-                            <option value="">-- เลือกจังหวัด --</option>
-                            @foreach ($provinces as $p)
-                            <option value="{{ @$p->id }}" {{ $saleCar->RegistrationProvince == $p->id ? 'selected' : '' }}>{{ @$p->name }}</option>
-                            @endforeach
-                          </select>
                         </div>
 
                       </div>
@@ -1176,7 +1078,7 @@
                       <input class="form-control" type="date" value="" id="KeyInDate" name="KeyInDate" />
                     </div>
                     <div class="col-md-12">
-                      <label for="DeliveryDate" class="form-label">วันส่งมอบจริง (วันล้อหมุนจริง)</label>
+                      <label for="DeliveryDate" class="form-label">วันส่งมอบจริง (วันที่แจ้งประกัน)</label>
                       <input class="form-control" type="date" value="" id="DeliveryDate" name="DeliveryDate" />
                     </div>
                     <div class="col-md-12">

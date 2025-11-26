@@ -6,25 +6,22 @@
 @endsection
 
 @section('content')
-<div class="viewMoreCarOrder"></div>
-<div class="editCarOrderModal"></div> 
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <h4 class="card-header">รายการรถ</h4>
+      <h4 class="card-header">ประวัติการสั่งรถ</h4>
       <div class="card-body">
         <div class="table-responsive text-nowrap">
-          <table class="table table-bordered carOrderTable">
+          <table class="table table-bordered historyCarOrderTable">
             <thead>
               <tr>
                 <th>No.</th>
+                <th>ชื่อ - นามสกุล ลูกค้า</th>
                 <th>รหัส Car Order</th>
                 <th>รุ่นรถหลัก</th>
                 <th>รุ่นรถย่อย</th>
-                <th>Vin Number</th>
-                <th>สถานะ Car Order</th>
-                <th>สถานะรถ</th>
-                <th width="150px">Action</th>
+                <th>วันที่จอง</th>
+                <th>สถานะใบจอง</th>
               </tr>
             </thead>
           </table>

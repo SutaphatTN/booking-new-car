@@ -18,7 +18,7 @@
               <select id="model_id" name="model_id" class="form-select @error('model_id') is-invalid @enderror" required>
                 <option value="">-- เลือกรุ่นรถหลัก --</option>
                 @foreach ($model as $m)
-                <option value="{{ @$m->id }}">{{ @$m->Name_TH }}</option>
+                <option value="{{ $m->id }}">{{ $m->Name_TH }}</option>
                 @endforeach
               </select>
 
@@ -83,7 +83,7 @@
               </span>
               @enderror
             </div>
-            
+
             <div class="col-md-4 mb-5">
               <label for="cashSupport_deduct" class="form-label">เงินหัก</label>
               <input id="cashSupport_deduct" type="text"

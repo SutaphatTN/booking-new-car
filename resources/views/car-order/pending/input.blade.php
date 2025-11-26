@@ -17,7 +17,7 @@
             <div class="col-md-2 mb-5">
               <label for="type" class="form-label">ประเภท</label>
               <select id="type" name="type" class="form-select" required>
-                <option value="">เลือก</option>
+                <option value="">- เลือก -</option>
                 <option value="ลูกค้า">ลูกค้า</option>
                 <option value="stock">stock</option>
               </select>

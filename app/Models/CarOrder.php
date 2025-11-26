@@ -21,6 +21,9 @@ class CarOrder extends Model
         'model_id',
         'subModel_id',
         'vin_number',
+        'j_number',
+        'type',
+        'system_date',
         'engine_number',
         'option',
         'purchase_source',
@@ -38,10 +41,21 @@ class CarOrder extends Model
         'estimated_stock_date',
         'stock_id',
         'car_status',
+        'approver',
+        'approver_date',
+        'note',
+        'status',
+        'reason',
         'userZone',
     ];
 
     protected $dates = ['deleted_at'];
+
+    const STATUS_PENDING = 'pending';
+    const STATUS_PROCESSING = 'processing';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_REJECTED = 'rejected';
+    const STATUS_FINISHED = 'finished';
 
     public function model()
     {
@@ -51,6 +65,11 @@ class CarOrder extends Model
     public function subModel()
     {
         return $this->belongsTo(TbSubcarmodel::class, 'subModel_id', 'id');
+    }
+
+    public function approvers()
+    {
+        return $this->belongsTo(User::class, 'approver', 'id');
     }
 
     public function salecars()
@@ -66,6 +85,11 @@ class CarOrder extends Model
     public function getFormatOrderDateAttribute()
     {
         return $this->order_date ? Carbon::parse($this->order_date)->format('d-m-Y') : null;
+    }
+
+    public function getFormatSystemDateAttribute()
+    {
+        return $this->system_date ? Carbon::parse($this->system_date)->format('d-m-Y') : null;
     }
 
     public function getFormatOrderInvoiceDateAttribute()
