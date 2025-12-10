@@ -22,8 +22,9 @@
       @csrf
       @method('PUT')
 
-
       <div class="nav-align-top">
+        <input type="hidden" id="userRole" value="{{ $userRole }}">
+
         <ul class="nav nav-pills mb-4 nav-fill" role="tablist">
 
           <li class="nav-item mb-1 mb-sm-0">
@@ -38,17 +39,19 @@
 
           <li class="nav-item mb-1 mb-sm-0">
             <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#tab-price" aria-controls="tab-price" aria-selected="false">
-              <span class="d-none d-sm-inline-flex align-items-center"><i class="icon-base bx bx-credit-card icon-sm me-1_5"></i>ข้อมูลการขาย</span>
+              <span class="d-none d-sm-inline-flex align-items-center"><i class="icon-base bx bx-credit-card icon-sm me-1_5"></i>สรุปการขาย</span>
               <i class="icon-base bx bx-credit-card icon-sm d-sm-none"></i>
             </button>
           </li>
 
+          @if( ($userRole == 'audit' || $userRole == 'manager' || $userRole == 'md') )
           <li class="nav-item mb-1 mb-sm-0">
             <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#tab-more" aria-controls="tab-more" aria-selected="false">
               <span class="d-none d-sm-inline-flex align-items-center"><i class="icon-base bx bx-slider icon-sm me-1_5"></i>ข้อมูลเพิ่มเติม</span>
               <i class="icon-base bx bx-slider icon-sm d-sm-none"></i>
             </button>
           </li>
+          @endif
         </ul>
 
         <div class="tab-content">
@@ -103,7 +106,7 @@
                     <select id="model_id" name="model_id" class="form-select" required>
                       <option value="">-- เลือกรุ่นรถหลัก --</option>
                       @foreach ($model as $m)
-                      <option value="{{ $m->id }}" {{ $saleCar->model_id == $m->id ? 'selected' : '' }}>{{ $m->Name_TH }}</option>
+                      <option value="{{ $m->id }}" data-overbudget="{{ $m->over_budget }}" {{ $saleCar->model_id == $m->id ? 'selected' : '' }}>{{ $m->Name_TH }}</option>
                       @endforeach
                     </select>
                   </div>
@@ -587,11 +590,13 @@
                 <div class="tab-pane fade" id="tab-car" role="tabpanel">
                   <h4 class="pb-2 mb-3">สรุปยอด</h4>
                   <div class="row g-6">
-                    <input type="hidden" id="payment_mode" name="payment_mode" value="{{ $saleCar->payment_mode ?? '' }}">
-
                     <div class="col-md-3">
-                      <label class="form-label">รุ่นรถ</label>
-                      <input id="summarySubCarModel" class="form-control" disabled />
+                      <label for="payment_mode" class="form-label">ประเภทการซื้อ</label>
+                      <select id="payment_mode" name="payment_mode" class="form-select" required>
+                        <option value="">-- เลือกประเภท --</option>
+                        <option value="finance" {{ $saleCar->payment_mode == 'finance' ? 'selected' : '' }}>ผ่อน</option>
+                        <option value="non-finance" {{ $saleCar->payment_mode == 'non-finance' ? 'selected' : '' }}>สด</option>
+                      </select>
                     </div>
 
                     <div class="col-md-2">
@@ -633,7 +638,7 @@
                     <div id="nonFinanceSelect" style="display:none">
                       <div class="row g-6">
                         <div class="col-md-3">
-                          <label class="form-label">เลือกประเภท</label>
+                          <label class="form-label">ประเภทการชำระ</label>
                           <select id="remainingConditionSelect" class="form-select">
                             <option value="">-- เลือกประเภท --</option>
                             <option value="cash" {{ $remainingPayment?->type == 'cash' ? 'selected' : '' }}>เงินสด</option>
@@ -715,6 +720,7 @@
                             <option value="">-- เลือกไฟแนนซ์ --</option>
                             @foreach ($finances as $f)
                             <option value="{{ $f->id }}"
+                              data-max-year="{{ $f->max_year }}"
                               {{ old('remaining_finance', $saleCar->remainingPayment->financeInfo->id ?? '') == $f->id ? 'selected' : '' }}>
                               {{ $f->FinanceCompany }}
                             </option>
@@ -733,7 +739,11 @@
 
                         <div class="col-md-1">
                           <label class="form-label">ดอกเบี้ย</label>
-                          <input class="form-control text-end money-input" type="text" id="remaining_interest" name="remaining_interest"
+                          <input class="form-control text-end"
+                            type="text"
+                            id="remaining_interest"
+                            name="remaining_interest"
+                            oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')"
                             value="{{ old('remaining_interest', $remainingPayment->interest ?? '') }}">
                         </div>
 
@@ -741,29 +751,20 @@
                           <label class="form-label">งวดผ่อน</label>
                           <select id="remaining_period" name="remaining_period" class="form-select" required>
                             <option value="">-- เลือกงวด --</option>
-                            <option value="6" {{ $remainingPayment?->period == '6' ? 'selected' : '' }}>6 งวด</option>
-                            <option value="12" {{ $remainingPayment?->period == '12' ? 'selected' : '' }}>12 งวด</option>
-                            <option value="18" {{ $remainingPayment?->period == '18' ? 'selected' : '' }}>18 งวด</option>
-                            <option value="24" {{ $remainingPayment?->period == '24' ? 'selected' : '' }}>24 งวด</option>
-                            <option value="30" {{ $remainingPayment?->period == '30' ? 'selected' : '' }}>30 งวด</option>
-                            <option value="36" {{ $remainingPayment?->period == '36' ? 'selected' : '' }}>36 งวด</option>
-                            <option value="42" {{ $remainingPayment?->period == '42' ? 'selected' : '' }}>42 งวด</option>
-                            <option value="48" {{ $remainingPayment?->period == '48' ? 'selected' : '' }}>48 งวด</option>
-                            <option value="54" {{ $remainingPayment?->period == '54' ? 'selected' : '' }}>54 งวด</option>
-                            <option value="60" {{ $remainingPayment?->period == '60' ? 'selected' : '' }}>60 งวด</option>
                           </select>
+
                         </div>
 
                         <div class="col-md-2">
                           <label class="form-label">ดอกเบี้ยคอม</label>
                           <select id="remaining_type_com" name="remaining_type_com" class="form-select" required>
                             <option value="">-- เลือก --</option>
-                            <option value="C4" {{ $remainingPayment?->type_com == 'C4' ? 'selected' : '' }}>C4</option>
-                            <option value="C8" {{ $remainingPayment?->type_com == 'C8' ? 'selected' : '' }}>C8</option>
-                            <option value="C10" {{ $remainingPayment?->type_com == 'C10' ? 'selected' : '' }}>C10</option>
-                            <option value="C12" {{ $remainingPayment?->type_com == 'C12' ? 'selected' : '' }}>C12</option>
-                            <option value="C14" {{ $remainingPayment?->type_com == 'C14' ? 'selected' : '' }}>C14</option>
-                            <option value="C16" {{ $remainingPayment?->type_com == 'C16' ? 'selected' : '' }}>C16</option>
+                            <option value="0" {{ $remainingPayment?->type_com == '0' ? 'selected' : '' }}>C4</option>
+                            <option value="8" {{ $remainingPayment?->type_com == '8' ? 'selected' : '' }}>C8</option>
+                            <option value="10" {{ $remainingPayment?->type_com == '10' ? 'selected' : '' }}>C10</option>
+                            <option value="12" {{ $remainingPayment?->type_com == '12' ? 'selected' : '' }}>C12</option>
+                            <option value="14" {{ $remainingPayment?->type_com == '14' ? 'selected' : '' }}>C14</option>
+                            <option value="16" {{ $remainingPayment?->type_com == '16' ? 'selected' : '' }}>C16</option>
                           </select>
                         </div>
 
@@ -784,13 +785,20 @@
                             value="{{ old('remaining_including_alp', $remainingPayment->including_alp ?? '') }}">
                         </div>
 
-                        <div class="col-md-3">
-                          <label class="form-label">ยอดเงิน ALP ที่หักจากใบเสร็จดาวน์</label>
+                        <div class="col-md-2">
+                          <label class="form-label">ยอดเงิน ALP</label>
                           <input class="form-control text-end money-input" type="text" name="remaining_total_alp" id="remaining_total_alp"
                             value="{{ old('remaining_total_alp', $remainingPayment->total_alp ?? '') }}">
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-2">
+                          <label class="form-label">วันที่ไฟแนนซ์จ่ายเงิน</label>
+                          <input id="remaining_date_finance" type="date"
+                            class="form-control"
+                            name="remaining_date_finance" value="{{ old('remaining_date', $remainingPayment?->date ?? '') }}">
+                        </div>
+
+                        <div class="col-md-2">
                           <label class="form-label">PO-Number</label>
                           <input id="remaining_po_number" type="text"
                             class="form-control"
@@ -1011,6 +1019,93 @@
                       </div>
                     </div>
 
+                    <!-- ข้อมูลการจ่ายเงิน -->
+                    <!-- <option value="cash" {{ $remainingPayment?->type == 'cash' ? 'selected' : '' }}>เงินสด</option> -->
+
+                    <div id="paymentSection" style="display:none;">
+
+                      <div class="position-relative pt-2 pb-2 border-bottom text-center">
+                        <h4 class="mb-0">ข้อมูลการจ่ายเงิน</h4>
+
+                        <button type="button" id="btnAddPayment"
+                          class="btn btn-primary position-absolute"
+                          style="right: 0; top: 50%; transform: translateY(-50%);">
+                          <i class="bx bx-plus"></i> เพิ่ม
+                        </button>
+                      </div>
+
+                      <div id="paymentContainer">
+
+                        @if($payments->count() > 0)
+                        @foreach($payments as $p)
+                        <div class="row g-3 mt-3 payment-row">
+                          <input type="hidden" name="payment_id[]" value="{{ $p->id }}">
+
+                          <div class="col-md-4">
+                            <label class="form-label">ประเภท</label>
+                            <select name="payment_type[]" class="form-select">
+                              <option value="">-- เลือกประเภท --</option>
+                              <option value="cash" {{ $p->type == 'cash' ? 'selected' : '' }}>เงินสด</option>
+                              <option value="transfer" {{ $p->type == 'transfer' ? 'selected' : '' }}>เงินโอน</option>
+                            </select>
+                          </div>
+
+                          <div class="col-md-4">
+                            <label class="form-label">จำนวนเงิน</label>
+                            <input type="text" name="payment_cost[]" class="form-control text-end money-input"
+                              value="{{ number_format($p->cost, 0) }}">
+                          </div>
+
+                          <div class="col-md-3">
+                            <label class="form-label">วันที่จ่ายเงิน</label>
+                            <input type="date" name="payment_date[]" class="form-control"
+                              value="{{ $p->date }}">
+                          </div>
+
+                          <div class="col-md-1 d-flex align-items-end">
+                            <button type="button" class="btn btn-danger btnRemove">
+                              <i class="bx bx-trash"></i>
+                            </button>
+                          </div>
+
+                        </div>
+                        @endforeach
+
+                        @else
+                        <div class="row g-3 mt-3 payment-row">
+                          <div class="col-md-4">
+                            <label class="form-label">ประเภท</label>
+                            <select name="payment_type[]" class="form-select">
+                              <option value="">-- เลือกประเภท --</option>
+                              <option value="cash">เงินสด</option>
+                              <option value="transfer">เงินโอน</option>
+                            </select>
+                          </div>
+
+                          <div class="col-md-4">
+                            <label class="form-label">จำนวนเงิน</label>
+                            <input type="text" name="payment_cost[]" class="form-control text-end money-input">
+                          </div>
+
+                          <div class="col-md-3">
+                            <label class="form-label">วันที่จ่ายเงิน</label>
+                            <input type="date" name="payment_date[]" class="form-control">
+                          </div>
+
+                          <div class="col-md-1 d-flex align-items-end">
+                            <button type="button" class="btn btn-danger btnRemove">
+                              <i class="bx bx-trash"></i>
+                            </button>
+                          </div>
+                        </div>
+                        @endif
+
+                      </div>
+
+                      <input type="hidden" id="deletedPayments" name="deletedPayments" value="">
+
+                    </div>
+
                     <h4 class="pt-2 pb-2 border-bottom">แนะนำ</h4>
                     <div class="col-md-3 mt-2">
                       <label class="form-label" for="customerSearchRef">ค้นหาข้อมูล</label>
@@ -1038,12 +1133,47 @@
                         name="ReferrerAmount" value="{{ $saleCar->ReferrerAmount }}" />
                     </div>
 
+                    @if ($userRole === 'sale' && ($saleCar->GMApprovalSignature || $saleCar->ApprovalSignature))
+                    <h4 class="pt-2 pb-2 border-bottom">ข้อมูลวันส่งมอบ</h4>
+
+                    <div class="col-md-12">
+                      <label for="KeyInDate" class="form-label">วันที่ส่งเอกสารสรุปการขาย</label>
+                      <input class="form-control" type="date" id="KeyInDate" name="KeyInDate" />
+                    </div>
+
+                    <div class="col-md-12">
+                      <label for="DeliveryDate" class="form-label">วันส่งมอบจริง (วันที่แจ้งประกัน)</label>
+                      <input class="form-control" type="date" id="DeliveryDate" name="DeliveryDate" />
+                    </div>
+                    @else
+                    <h4 class="pt-2 pb-2 border-bottom">ข้อมูลวันส่งมอบ</h4>
+
+                    <div class="col-md-12">
+                      <label for="KeyInDate" class="form-label">วันที่ส่งเอกสารสรุปการขาย</label>
+                      <input class="form-control" type="date" id="KeyInDate" name="KeyInDate" />
+                    </div>
+
+                    <div class="col-md-12">
+                      <label for="DeliveryDate" class="form-label">วันส่งมอบจริง (วันที่แจ้งประกัน)</label>
+                      <input class="form-control" type="date" id="DeliveryDate" name="DeliveryDate" />
+                    </div>
+                    @endif
+
                   </div>
 
+                  @if ($userRole === 'sale')
+                  <div class="mt-6 d-flex justify-content-end gap-2">
+                    <button id="prevExtra" class="btn btn-danger">ย้อนกลับ</button>
+                    <button type="button" class="btn btn-info" id="btnPreviewCar">
+                      ตรวจสอบ
+                    </button>
+                  </div>
+                  @else
                   <div class="mt-6 d-flex justify-content-end gap-2">
                     <button id="prevExtra" class="btn btn-danger">ย้อนกลับ</button>
                     <button id="nextDate" class="btn btn-primary">ถัดไป</button>
                   </div>
+                  @endif
 
                 </div>
 
@@ -1055,139 +1185,184 @@
           <!-- more : date, approve -->
           <div class="tab-pane fade" id="tab-more" role="tabpanel">
             <div class="nav-align-top">
-              <div class="nav-tabs-wrapper" style="overflow-x: auto; white-space: nowrap;">
-                <ul class="nav nav-tabs flex-nowrap" role="tablist">
-                  <li class="nav-item">
-                    <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#tab-date" aria-controls="tab-date" aria-selected="true">ข้อมูลวันส่งมอบ</button>
-                  </li>
-                  <li class="nav-item">
-                    <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#tab-approved" aria-controls="tab-approved" aria-selected="false">ข้อมูลผู้อนุมัติ</button>
-                  </li>
-                </ul>
-              </div>
-
               <div class="tab-content">
 
-                <!-- date -->
-                <div class="tab-pane fade show active" id="tab-date" role="tabpanel">
-                  <div class="row g-6">
-                    <h4 class="pb-2 mb-3">ข้อมูลวันส่งมอบ</h4>
+                <div class="row g-6">
+                  <h4 class="pt-2 pb-2 border-bottom">วันส่งมอบและผู้อนุมัติ</h4>
 
-                    <div class="col-md-12">
-                      <label for="KeyInDate" class="form-label">วันที่ส่งเอกสารสรุปการขาย</label>
-                      <input class="form-control" type="date" value="" id="KeyInDate" name="KeyInDate" />
-                    </div>
-                    <div class="col-md-12">
-                      <label for="DeliveryDate" class="form-label">วันส่งมอบจริง (วันที่แจ้งประกัน)</label>
-                      <input class="form-control" type="date" value="" id="DeliveryDate" name="DeliveryDate" />
-                    </div>
-                    <div class="col-md-12">
-                      <label for="DeliveryInDMSDate" class="form-label">วันที่ส่งมอบในระบบ DMS</label>
-                      <input class="form-control" type="date" value="" id="DeliveryInDMSDate" name="DeliveryInDMSDate" />
-                    </div>
-                    <div class="col-md-12">
-                      <label for="DeliveryInCKDate" class="form-label">วันที่ส่งมอบตามยอดชูเกียรติ</label>
-                      <input class="form-control" type="date" value="" id="DeliveryInCKDate" name="DeliveryInCKDate" />
-                    </div>
-
+                  <div class="col-md-12">
+                    <label for="DeliveryInDMSDate" class="form-label">วันที่ส่งมอบในระบบ DMS</label>
+                    <input class="form-control" type="date" value="" id="DeliveryInDMSDate" name="DeliveryInDMSDate" />
+                  </div>
+                  <div class="col-md-12">
+                    <label for="DeliveryInCKDate" class="form-label">วันที่ส่งมอบตามยอดชูเกียรติ</label>
+                    <input class="form-control" type="date" value="" id="DeliveryInCKDate" name="DeliveryInCKDate" />
                   </div>
 
-                  <div class="mt-6 d-flex justify-content-end gap-2">
-                    <button id="prevCar" class="btn btn-danger">ย้อนกลับ</button>
-                    <button id="nextApproved" class="btn btn-primary">ถัดไป</button>
+                  <div class="col-md-12">
+                    <label class="form-label">เช็ครายการ (แอดมินขาย)</label>
+                    <div class="d-flex align-items-center justify-content-between p-3 border rounded-3">
+
+                      <div class="form-check m-0">
+                        <input class="form-check-input" type="checkbox" id="AdminSignature" name="AdminSignature"
+                          value="1" {{ $saleCar->AdminSignature ? 'checked' : '' }}>
+                        <label class="form-check-label" for="AdminSignature">
+                          เช็คเรียบร้อยแล้ว
+                        </label>
+                      </div>
+
+                      <div class="ms-3 d-flex align-items-center flex-nowrap">
+                        <label for="AdminCheckedDate"
+                          style="white-space: nowrap; font-size: 1.0rem; color: #1d1c1cff; margin-right: 12px;">
+                          วันที่แอดมินเช็ครายการ :
+                        </label>
+
+                        <input class="form-control"
+                          type="date"
+                          id="AdminCheckedDate"
+                          name="AdminCheckedDate"
+                          style="min-width: 220px; max-width: 260px;"
+                          value="{{ $saleCar->AdminCheckedDate }}">
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <div class="col-md-12">
+                    <label class="form-label">ตรวจสอบรายการ (IA)</label>
+                    <div class="d-flex align-items-center justify-content-between p-3 border rounded-3">
+
+                      <div class="form-check m-0">
+                        <input class="form-check-input" type="checkbox" id="CheckerID" name="CheckerID"
+                          value="1" {{ $saleCar->CheckerID ? 'checked' : '' }}>
+                        <label class="form-check-label" for="CheckerID">
+                          เช็คเรียบร้อยแล้ว
+                        </label>
+                      </div>
+
+                      <div class="ms-3 d-flex align-items-center flex-nowrap">
+                        <label for="CheckerCheckedDate"
+                          style="white-space: nowrap; font-size: 1.0rem; color: #1d1c1cff; margin-right: 12px;">
+                          วันที่ฝ่ายตรวจสอบเช็ครายการ :
+                        </label>
+
+                        <input class="form-control"
+                          type="date"
+                          id="CheckerCheckedDate"
+                          name="CheckerCheckedDate"
+                          style="min-width: 220px; max-width: 260px;"
+                          value="{{ $saleCar->CheckerCheckedDate }}">
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <div class="col-md-12">
+                    <label class="form-label">อนุมัติรายการ (ผู้จัดการขาย)</label>
+                    <div class="d-flex align-items-center justify-content-between p-3 border rounded-3">
+
+                      <div class="form-check m-0">
+                        <input class="form-check-input" type="checkbox" id="SMSignature" name="SMSignature"
+                          value="1" {{ $saleCar->SMSignature ? 'checked' : '' }}>
+                        <label class="form-check-label" for="SMSignature">
+                          เช็คเรียบร้อยแล้ว
+                        </label>
+                      </div>
+
+                      <div class="ms-3 d-flex align-items-center flex-nowrap">
+                        <label for="SMCheckedDate"
+                          style="white-space: nowrap; font-size: 1.0rem; color: #1d1c1cff; margin-right: 12px;">
+                          วันที่ผู้จัดการขายอนุมัติ :
+                        </label>
+
+                        <input class="form-control"
+                          type="date"
+                          id="SMCheckedDate"
+                          name="SMCheckedDate"
+                          style="min-width: 220px; max-width: 260px;"
+                          value="{{ $saleCar->SMCheckedDate }}">
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <div class="col-md-12">
+                    <label class="form-label">ผู้จัดการอนุมัติการขาย</label>
+                    <div class="d-flex align-items-center justify-content-between p-3 border rounded-3">
+
+                      <div class="form-check m-0">
+                        <input class="form-check-input" type="checkbox" id="ApprovalSignature" name="ApprovalSignature"
+                          value="1" {{ $saleCar->ApprovalSignature ? 'checked' : '' }}>
+                        <label class="form-check-label" for="ApprovalSignature">
+                          อนุมัติ
+                        </label>
+                      </div>
+
+                      <div class="ms-3 d-flex align-items-center flex-nowrap">
+                        <label for="ApprovalSignatureDate"
+                          style="white-space: nowrap; font-size: 1.0rem; color: #1d1c1cff; margin-right: 12px;">
+                          วันที่ผู้จัดการอนุมัติการขาย :
+                        </label>
+
+                        <input class="form-control"
+                          type="date"
+                          id="ApprovalSignatureDate"
+                          name="ApprovalSignatureDate"
+                          style="min-width: 220px; max-width: 260px;"
+                          value="{{ $saleCar->ApprovalSignatureDate }}">
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <div class="col-md-12">
+                    <label class="form-label">GM อนุมัติกรณีงบเกิน (N)</label>
+                    <div class="d-flex align-items-center justify-content-between p-3 border rounded-3">
+
+                      <div class="form-check m-0">
+                        <input class="form-check-input" type="checkbox" id="GMApprovalSignature" name="GMApprovalSignature"
+                          value="1" {{ $saleCar->GMApprovalSignature ? 'checked' : '' }}>
+                        <label class="form-check-label fw-semibold" for="GMApprovalSignature">
+                          อนุมัติ
+                        </label>
+                      </div>
+
+                      <div class="ms-3 d-flex align-items-center flex-nowrap">
+                        <label for="GMApprovalSignatureDate"
+                          style="white-space: nowrap; font-size: 1.0rem; color: #1d1c1cff; margin-right: 12px;">
+                          วันที่ GM อนุมัติกรณีงบเกิน :
+                        </label>
+
+                        <input class="form-control"
+                          type="date"
+                          id="GMApprovalSignatureDate"
+                          name="GMApprovalSignatureDate"
+                          style="min-width: 220px; max-width: 260px;"
+                          value="{{ $saleCar->GMApprovalSignatureDate }}">
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <h4 class="pt-2 pb-2 border-bottom">สถานะ</h4>
+                  <div class="col-md-12">
+                    <label for="con_status" class="form-label">สถานะ</label>
+                    <select id="con_status" name="con_status" class="form-select" required>
+                      <option value="">-- เลือกสถานะ --</option>
+                      @foreach ($conStatus as $con)
+                      <option value="{{ @$con->id }}" {{ $saleCar->con_status == $con->id ? 'selected' : '' }}>{{ @$con->name }}</option>
+                      @endforeach
+                    </select>
                   </div>
 
                 </div>
 
-                <!-- approved -->
-                <div class="tab-pane fade" id="tab-approved" role="tabpanel">
-                  <div class="row g-6">
-                    <h4 class="pb-2 mb-3">ผู้อนุมัติ</h4>
-                    <div class="col-md-8">
-                      <label for="AdminSignature" class="form-label">ผู้เช็ครายการ (แอดมินขาย)</label>
-                      <select id="AdminSignature" name="AdminSignature" class="form-select">
-                        <option value="" selected disabled>เลือกผู้เช็ค</option>
-                        <option value="นาย">A</option>
-                        <option value="นาง">B</option>
-                        <option value="นางสาว">C</option>
-                      </select>
-                    </div>
-
-                    <div class="col-md-4">
-                      <label for="AdminCheckedDate" class="form-label">วันที่แอดมินเช็ครายการ</label>
-                      <input class="form-control" type="date" value="" id="AdminCheckedDate" name="AdminCheckedDate" />
-                    </div>
-
-                    <div class="col-md-8">
-                      <label for="CheckerID" class="form-label">ผู้ตรวจสอบรายการ (IA)</label>
-                      <select id="CheckerID" name="CheckerID" class="form-select">
-                        <option value="" selected disabled>เลือกผู้ตรวจสอบ</option>
-                        <option value="นาย">A</option>
-                        <option value="นาง">B</option>
-                        <option value="นางสาว">C</option>
-                      </select>
-                    </div>
-
-                    <div class="col-md-4">
-                      <label for="CheckerCheckedDate" class="form-label">วันที่ฝ่ายตรวจสอบเช็ครายการ</label>
-                      <input class="form-control" type="date" value="" id="CheckerCheckedDate" name="CheckerCheckedDate" />
-                    </div>
-
-                    <div class="col-md-8">
-                      <label for="SMSignature" class="form-label">ผู้อนุมัติรายการ (ผู้จัดการขาย)</label>
-                      <select id="SMSignature" name="SMSignature" class="form-select">
-                        <option value="" selected disabled>เลือกผู้อนุมัติ</option>
-                        <option value="นาย">A</option>
-                        <option value="นาง">B</option>
-                        <option value="นางสาว">C</option>
-                      </select>
-                    </div>
-
-                    <div class="col-md-4">
-                      <label for="SMCheckedDate" class="form-label">วันที่ผู้จัดการขายอนุมัติ</label>
-                      <input class="form-control" type="date" value="" id="SMCheckedDate" name="SMCheckedDate" />
-                    </div>
-
-                    <div class="col-md-12">
-                      <label for="ApprovalSignature" class="form-label">ผู้อนุมัติการขายกรณีเกินจากงบ</label>
-                      <select id="ApprovalSignature" name="ApprovalSignature" class="form-select">
-                        <option value="" selected disabled>เลือกผู้อนุมัติ</option>
-                        <option value="นาย">A</option>
-                        <option value="นาง">B</option>
-                        <option value="นางสาว">C</option>
-                      </select>
-                    </div>
-
-                    <div class="col-md-12">
-                      <label for="GMApprovalSignature" class="form-label">GM อนุมัติกรณีงบเกิน (N)</label>
-                      <select id="GMApprovalSignature" name="GMApprovalSignature" class="form-select">
-                        <option value="" selected disabled>เลือกผู้อนุมัติ</option>
-                        <option value="นาย">A</option>
-                        <option value="นาง">B</option>
-                        <option value="นางสาว">C</option>
-                      </select>
-                    </div>
-
-                    <div class="col-md-12">
-                      <label for="con_status" class="form-label">สถานะ</label>
-                      <select id="con_status" name="con_status" class="form-select" required>
-                        <option value="">-- เลือกสถานะ --</option>
-                        @foreach ($conStatus as $con)
-                        <option value="{{ @$con->id }}" {{ $saleCar->con_status == $con->id ? 'selected' : '' }}>{{ @$con->name }}</option>
-                        @endforeach
-                      </select>
-                    </div>
-
-                  </div>
-
-                  <div class="mt-6 d-flex justify-content-end gap-2">
-                    <button id="prevDate" class="btn btn-danger">ย้อนกลับ</button>
-                    <button type="button" class="btn btn-info" id="btnPreview">
-                      Preview
-                    </button>
-                    <!-- <button type="submit" class="btn btn-primary btnUpdatePurchase">บันทึก</button> -->
-                  </div>
-
+                <div class="mt-6 d-flex justify-content-end gap-2">
+                  <button id="prevCar" class="btn btn-danger">ย้อนกลับ</button>
+                  <button type="button" class="btn btn-info" id="btnPreviewMore">
+                    ตรวจสอบ
+                  </button>
+                  <!-- <button type="submit" class="btn btn-primary btnUpdatePurchase">บันทึก</button> -->
                 </div>
 
               </div>

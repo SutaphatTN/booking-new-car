@@ -12,7 +12,7 @@
             class="img-fluid home-dashboard-logo">
 
           <h2 class="mt-4 fw-bold text-secondary">
-            Welcome to New Caar System
+            Welcome to New Car System
           </h2>
         </div>
       </div>

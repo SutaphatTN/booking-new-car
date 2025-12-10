@@ -6,7 +6,6 @@
 @endsection
 
 @section('content')
-<!-- <div class="viewMoreCarOrder"></div>  -->
 <div class="inputCarOrderModal"></div>
 <div class="editPendingOrderModal"></div>
 <div class="row">
@@ -15,7 +14,7 @@
       <h4 class="card-header">รายการคำขอสั่งรถ</h4>
       <div class="card-body">
         <div class="table-responsive text-nowrap">
-           <div class="d-flex justify-content-end">
+          <div class="d-flex justify-content-end">
             <button class="btn btn-secondary btnInputCarOrder">เพิ่ม</button>
           </div>
           <table class="table table-bordered pendingOrderTable">
@@ -23,6 +22,8 @@
               <tr>
                 <th>No.</th>
                 <th>รหัส Car Order</th>
+                <th>วันที่สั่งซื้อ</th>
+                <th>ประเภทการสั่ง</th>
                 <th>รุ่นรถหลัก</th>
                 <th>รุ่นรถย่อย</th>
                 <th width="150px">Action</th>

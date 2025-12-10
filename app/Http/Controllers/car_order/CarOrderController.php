@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\car_order;
 
 use App\Http\Controllers\Controller;
+use App\Mail\ApproveCarOrderMail;
 use App\Models\CarOrder;
 use App\Models\CarOrderHistory;
 use App\Models\TbCarmodel;
@@ -11,6 +12,7 @@ use App\Models\TbSubcarmodel;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
 
 class CarOrderController extends Controller
 {
@@ -25,6 +27,7 @@ class CarOrderController extends Controller
     {
         $order = CarOrder::with('model', 'subModel')
             ->where('status', 'finished')
+            ->where('car_status', '!=', 'Delivered')
             ->get();
 
         $data = $order->map(function ($c, $index) {
@@ -32,14 +35,16 @@ class CarOrderController extends Controller
             $subModelOrder = $c->subModel ? $c->subModel->name : '';
             $status = $c->orderStatus ? $c->orderStatus->name : '';
 
+            $car = "หลัก : {$modelOrder}<br>ย่อย : {$subModelOrder}<br>สี : {$c->color}<br>ราคาขาย : " . number_format($c->car_MSRP);
+            $statusDisplay = "รถ : {$status}<br>การจอง : {$c->car_status}";
+
             return [
                 'No' => $index + 1,
-                'order_code' => $c->order_code,
-                'model_id' => $modelOrder,
-                'subModel_id' => $subModelOrder,
-                'vin_number' => $c->vin_number,
-                'order_status' => $status,
-                'car_status' => $c->car_status,
+                'date' => $c->format_system_date,
+                'car' => $car,
+                'vin_number' => $c->vin_number ?? '-',
+                'j_number' => $c->j_number ?? '-',
+                'status' => $statusDisplay,
                 'Action' => view('car-order.button', compact('c'))->render()
             ];
         });
@@ -120,7 +125,7 @@ class CarOrderController extends Controller
         $keyword = $request->input('keyword');
 
         $order = CarOrder::with(['model', 'subModel', 'orderStatus'])
-            ->where('car_status', 'Null')
+            ->where('car_status', 'Available')
             ->whereIn('status', ['approved', 'finished'])
             ->where(function ($query) use ($keyword) {
                 $query->where('vin_number', 'like', "%{$keyword}%")
@@ -202,11 +207,15 @@ class CarOrderController extends Controller
             $modelOrder = $p->model ? $p->model->Name_TH : '';
             $subModelOrder = $p->subModel ? $p->subModel->name : '';
 
+            $subModelDisplay = "{$subModelOrder}<br>สี : {$p->color}<br>ราคาขาย : " . number_format($p->car_MSRP);
+
             return [
                 'No' => $index + 1,
                 'order_code' => $p->order_code,
+                'date' => $p->format_order_date,
+                'type' => $p->type,
                 'model_id' => $modelOrder,
-                'subModel_id' => $subModelOrder,
+                'subModel_id' => $subModelDisplay,
                 'Action' => view('car-order.pending.button', compact('p'))->render()
             ];
         });
@@ -287,14 +296,20 @@ class CarOrderController extends Controller
                 'car_MSRP' => $request->filled('car_MSRP')
                     ? str_replace(',', '', $request->car_MSRP)
                     : null,
-                'car_status' => 'Null',
+                'car_status' => 'Available',
                 'approver' => $request->approver,
                 'note' => $request->note,
                 'userZone' => $request->userZone ?? null,
                 'status' => CarOrder::STATUS_PENDING,
             ];
 
-            CarOrder::create($data);
+            $order = CarOrder::create($data);
+
+            $approverUser = User::find($request->approver);
+
+            if ($approverUser && $approverUser->email) {
+                Mail::to($approverUser->email)->send(new ApproveCarOrderMail($order));
+            }
 
             return response()->json([
                 'success' => true,
@@ -303,8 +318,13 @@ class CarOrderController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ], 500);
+            // return response()->json([
+            //     'success' => false,
+            //     'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            // ], 500);
         }
     }
 
@@ -377,10 +397,12 @@ class CarOrderController extends Controller
     }
 
     // process
-    public function process()
+    public function process(Request $request)
     {
         $process = CarOrder::all();
-        return view('car-order.process.view', compact('process'));
+        $openId = $request->query('open_id');
+
+        return view('car-order.process.view', compact('process', 'openId'));
     }
 
     public function listProcess()
@@ -395,9 +417,12 @@ class CarOrderController extends Controller
 
             return [
                 'No' => $index + 1,
-                'order_code' => $p->order_code,
+                'date' => $p->format_order_date,
+                'type' => $p->type,
                 'model_id' => $modelOrder,
                 'subModel_id' => $subModelOrder,
+                'color' => $p->color,
+                'cost' => number_format($p->car_MSRP, 2),
                 'Action' => view('car-order.process.button', compact('p'))->render()
             ];
         });
@@ -471,9 +496,12 @@ class CarOrderController extends Controller
 
             return [
                 'No' => $index + 1,
-                'order_code' => $a->order_code,
+                'date' => $a->format_approver_date,
+                'type' => $a->type,
                 'model_id' => $modelOrder,
                 'subModel_id' => $subModelOrder,
+                'color' => $a->color,
+                'cost' => number_format($a->car_MSRP, 2),
                 'status' => $statusBadge,
                 'Action' => view('car-order.approve.button', compact('a'))->render()
             ];

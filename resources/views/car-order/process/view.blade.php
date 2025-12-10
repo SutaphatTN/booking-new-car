@@ -7,6 +7,7 @@
 
 @section('content')
 <div class="editProcessOrderModal"></div>
+<div id="openIdHolder" data-open-id="{{ $openId ?? '' }}"></div>
 <div class="row">
   <div class="col-12">
     <div class="card">
@@ -17,9 +18,12 @@
             <thead>
               <tr>
                 <th>No.</th>
-                <th>รหัส Car Order</th>
+                <th>วันที่สั่งซื้อ</th>
+                <th>ประเภทการสั่ง</th>
                 <th>รุ่นรถหลัก</th>
                 <th>รุ่นรถย่อย</th>
+                <th>สี</th>
+                <th>ราคาขาย</th>
                 <th width="150px">Action</th>
               </tr>
             </thead>

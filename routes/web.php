@@ -44,6 +44,7 @@ use App\Http\Controllers\user_interface\TooltipsPopovers;
 use App\Http\Controllers\user_interface\Typography;
 use App\Http\Controllers\extended_ui\PerfectScrollbar;
 use App\Http\Controllers\extended_ui\TextDivider;
+use App\Http\Controllers\finance\FinanceController;
 use App\Http\Controllers\icons\Boxicons;
 use App\Http\Controllers\form_elements\BasicInput;
 use App\Http\Controllers\form_elements\InputGroups;
@@ -163,6 +164,16 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/list-po', [PurchaseOrderController::class, 'listPO']);
     Route::get('purchase-order/viewBooking', [PurchaseOrderController::class, 'viewBooking'])->name('purchase-order.viewBooking');
     Route::get('purchase-order/list-booking', [PurchaseOrderController::class, 'listBooking']);
+    Route::get('purchase-order/history', [PurchaseOrderController::class, 'history'])->name('purchase-order.history');
+    Route::get('purchase-order/list-history', [PurchaseOrderController::class, 'listHistory']);
+    Route::get('purchase-order/view-more-history/{id}', [PurchaseOrderController::class, 'viewMoreHistory']);
+    Route::get('purchase-order/viewFN', [FinanceController::class, 'viewFN'])->name('purchase-order.viewFN');
+    Route::get('purchase-order/{id}/view-more', [FinanceController::class, 'viewMoreFN'])->name('purchase-order.viewMoreFN');
+    Route::get('purchase-order/list-fn', [FinanceController::class, 'listFN']);
+    Route::get('purchase-order/edit-fn/{id}', [FinanceController::class, 'editFN'])->name('purchase-order.editFN');
+    Route::put('purchase-order/update-fn/{id}', [FinanceController::class, 'updateFN'])->name('purchase-order.updateFN');
+    Route::delete('purchase-order/destroy-fn/{id}', [FinanceController::class, 'destroyFN'])->name('purchase-order.destroyFN');
+    Route::get('/purchase-order/booking-export', [PurchaseOrderController::class, 'exportBooking'])->name('purchase-order.booking-export');
 
     //accessory partner
     Route::get('accessory/partner', [AccessoryController::class, 'viewPartner'])->name('accessory.partner');
@@ -183,6 +194,17 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('campaign/{id}/view-more', [CampaignController::class, 'viewMore'])->name('campaign.viewMore');
     Route::post('/campaign/status-cam', [CampaignController::class, 'statusCam'])->name('campaign.status-cam');
     Route::get('/api/campaign/sub-model/{model_id}', [CampaignController::class, 'getSubModelCam']);
+
+    //finance
+    Route::get('finance/list', [FinanceController::class, 'listFinance']);
+    //finance extra com
+    Route::get('finance/extra-com', [FinanceController::class, 'viewExtraCom'])->name('finance.extra-com');
+    Route::get('finance/extra-com/list', [FinanceController::class, 'listExtraCom']);
+    Route::get('finance/create-extra-com', [FinanceController::class, 'createExtraCom']);
+    Route::post('finance/store-extra-com', [FinanceController::class, 'storeExtraCom'])->name('finance.store-extra-com');
+    Route::get('finance/edit-extra-com/{id}', [FinanceController::class, 'editExtraCom'])->name('finance.edit-extra-com');
+    Route::put('finance/update-extra-com/{id}', [FinanceController::class, 'updateExtraCom'])->name('finance.update-extra-com');
+    Route::delete('finance/destroy-extra-com/{id}', [FinanceController::class, 'destroyExtraCom'])->name('finance.destroy-extra-com');
 
     //car
     Route::get('model-car/list', [ModelCarController::class, 'listCar']);
@@ -218,14 +240,13 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('car-order/edit-approve/{id}', [CarOrderController::class, 'editApprove'])->name('car-order.editApprove');
     Route::put('car-order/update-approve/{id}', [CarOrderController::class, 'updateApprove'])->name('car-order.updateApprove');
     Route::delete('car-order/destroy-approve/{id}', [CarOrderController::class, 'destroyApprove']);
-    
-    
-    
+
     //all resource
     Route::resource('customer', CustomerController::class);
     Route::resource('purchase-order', PurchaseOrderController::class);
     Route::resource('accessory', AccessoryController::class);
     Route::resource('campaign', CampaignController::class);
+    Route::resource('finance', FinanceController::class);
     Route::resource('car-order', CarOrderController::class);
 
     Route::resource('model-car', ModelCarController::class)->names([

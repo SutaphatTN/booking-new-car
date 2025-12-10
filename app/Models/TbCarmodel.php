@@ -32,6 +32,7 @@ class TbCarmodel extends Model
 		'Name_TH',
 		'Name_EN',
 		'Active',
+		'over_budget',
 		'userZone'
 	];
 

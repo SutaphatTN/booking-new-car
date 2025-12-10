@@ -179,6 +179,7 @@ class Salecar extends Model
 		'TradeinComAmount',
 		'CommissionDeduct',
 		'ApprovalSignature',
+		'ApprovalSignatureDate',
 		'FinanceAmount',
 		'InterestRate',
 		'InterestCampaignID',
@@ -193,6 +194,7 @@ class Salecar extends Model
 		'CheckerID',
 		'CheckerCheckedDate',
 		'GMApprovalSignature',
+		'GMApprovalSignatureDate',
 		'Note',
 		'ReferrerID',
 		'ReferrerAmount',
@@ -222,6 +224,12 @@ class Salecar extends Model
 	{
 		return $this->belongsTo(CarOrder::class, 'CarOrderID', 'id');
 	}
+
+	public function carOrderHistories()
+	{
+		return $this->hasOne(CarOrderHistory::class, 'SaleID')->latest();
+	}
+
 
 	public function accessories()
 	{
@@ -283,5 +291,30 @@ class Salecar extends Model
 	public function getFormatBookingDateAttribute()
 	{
 		return $this->BookingDate ? Carbon::parse($this->BookingDate)->format('d-m-Y') : null;
+	}
+
+	public function getAdminCheckedDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getCheckerCheckedDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getSMCheckedDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getApprovalSignatureDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getGMApprovalSignatureDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
 	}
 }

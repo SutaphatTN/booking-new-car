@@ -156,11 +156,11 @@
             </div>
 
             <div class="col-md-2">
-              <label for="payment_mode" class="form-label">ประเภทการชำระเงิน</label>
+              <label for="payment_mode" class="form-label">ประเภทการซื้อ</label>
               <select id="payment_mode" name="payment_mode" class="form-select" required>
                 <option value="">-- เลือกประเภท --</option>
-                <option value="finance" {{ old('payment_mode') == 'finance' ? 'selected' : '' }}>ผ่อน (ไฟแนนซ์)</option>
-                <option value="non-finance" {{ old('payment_mode') == 'non-finance' ? 'selected' : '' }}>ไม่ผ่อน</option>
+                <option value="finance" {{ old('payment_mode') == 'finance' ? 'selected' : '' }}>ผ่อน</option>
+                <option value="non-finance" {{ old('payment_mode') == 'non-finance' ? 'selected' : '' }}>สด</option>
               </select>
             </div>
 

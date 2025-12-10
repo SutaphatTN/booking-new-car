@@ -72,7 +72,7 @@
               @enderror
             </div>
 
-            <div class="col-md-2 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="option" class="form-label">Option</label>
               <input id="option" type="text"
                 class="form-control @error('option') is-invalid @enderror"
@@ -85,7 +85,7 @@
               @enderror
             </div>
 
-            <div class="col-md-2 mb-5">
+            <div class="col-md-4 mb-5">
               <label for="color" class="form-label">สี</label>
               <input id="color" type="text"
                 class="form-control @error('color') is-invalid @enderror"
@@ -112,6 +112,11 @@
             </div>
 
             <div class="col-md-3 mb-5">
+              <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
+              <input class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
+            </div>
+
+            <div class="col-md-4 mb-5">
               <label for="car_DNP" class="form-label">ราคาทุน</label>
               <input id="car_DNP" type="text"
                 class="form-control text-end money-input @error('car_DNP') is-invalid @enderror"
@@ -126,7 +131,7 @@
               @enderror
             </div>
 
-            <div class="col-md-3 mb-5">
+            <div class="col-md-4 mb-5">
               <label for="car_MSRP" class="form-label">ราคาขาย</label>
               <input id="car_MSRP" type="text"
                 class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror"
@@ -156,7 +161,7 @@
               @enderror
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-5 mb-5">
               <label for="purchase_type" class="form-label">ประเภทการซื้อรถ</label>
               <select id="purchase_type" name="purchase_type" class="form-select" required>
                 <option value="">-- เลือกประเภท --</option>
@@ -172,7 +177,7 @@
               @enderror
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-7 mb-5">
               <label for="approver" class="form-label">ผู้อนุมัติ</label>
               <select id="approver" name="approver" class="form-select" readonly>
                 @foreach ($approvers as $u)

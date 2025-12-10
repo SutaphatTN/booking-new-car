@@ -16,12 +16,11 @@ $(document).ready(function () {
     ajax: '/car-order/list',
     columns: [
       { data: 'No' },
-      { data: 'order_code' },
-      { data: 'model_id' },
-      { data: 'subModel_id' },
+      { data: 'date' },
+      { data: 'car' },
       { data: 'vin_number' },
-      { data: 'order_status' },
-      { data: 'car_status' },
+      { data: 'j_number' },
+      { data: 'status' },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
@@ -287,6 +286,8 @@ $(document).ready(function () {
     columns: [
       { data: 'No' },
       { data: 'order_code' },
+      { data: 'date' },
+      { data: 'type' },
       { data: 'model_id' },
       { data: 'subModel_id' },
       { data: 'Action', orderable: false, searchable: false }
@@ -544,9 +545,12 @@ $(document).ready(function () {
     ajax: '/car-order/process/list',
     columns: [
       { data: 'No' },
-      { data: 'order_code' },
+      { data: 'date' },
+      { data: 'type' },
       { data: 'model_id' },
       { data: 'subModel_id' },
+      { data: 'color' },
+      { data: 'cost' },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
@@ -572,84 +576,195 @@ $(document).ready(function () {
   });
 });
 
+// edit process car-order old
+
+// $(document).ready(function () {
+//   // --- ตรวจสอบ openId จาก div ---
+//   const openId = $('#openIdHolder').data('open-id');
+//   if (openId) {
+//     openProcessModal(openId);
+//   }
+
+//   // --- ฟังก์ชันเดิม กดปุ่มในตาราง ---
+//   $(document).on('click', '.btnProcessCarOrder', function () {
+//     const id = $(this).data('id');
+//     openProcessModal(id);
+//   });
+
+//   // --- ฟังก์ชันเปิด modal ---
+//   function openProcessModal(id) {
+//     $.get('/car-order/edit-process/' + id, function (html) {
+//       $('.editProcessOrderModal').html(html);
+//       const $modal = $('.editProcessOrder');
+
+//       $modal.modal('show');
+
+//       const $form = $modal.find('#processOrderForm');
+
+//       // ปุ่มอนุมัติ
+//       $modal.find('.btnApproverOrder').on('click', function () {
+//         $('#action_status').val('approve');
+//         $modal.modal('hide');
+//         Swal.fire({
+//           title: 'ยืนยันการอนุมัติ?',
+//           text: 'คุณแน่ใจใช่หรือไม่ว่าต้องการอนุมัติคำขอนี้',
+//           icon: 'question',
+//           showCancelButton: true,
+//           confirmButtonColor: '#6c5ffc',
+//           cancelButtonColor: '#d33',
+//           confirmButtonText: 'ใช่, อนุมัติ',
+//           cancelButtonText: 'ยกเลิก'
+//         }).then(result => {
+//           if (result.isConfirmed) {
+//             submitProcessForm($form, $modal);
+//           }
+//         });
+//       });
+
+//       // ปุ่มไม่อนุมัติ
+//       $modal.find('.btnRejectOrder').on('click', function () {
+//         $('#action_status').val('reject');
+//         $modal.modal('hide');
+//         Swal.fire({
+//           title: 'ระบุเหตุผลที่ไม่อนุมัติ',
+//           input: 'textarea',
+//           inputPlaceholder: 'กรอกเหตุผลที่ไม่อนุมัติ...',
+//           inputAttributes: { 'aria-label': 'เหตุผลที่ไม่อนุมัติ' },
+//           showCancelButton: true,
+//           confirmButtonColor: '#6c5ffc',
+//           cancelButtonColor: '#d33',
+//           confirmButtonText: 'บันทึก',
+//           cancelButtonText: 'ยกเลิก',
+//           preConfirm: reason => {
+//             if (!reason || reason.trim() === '') {
+//               Swal.showValidationMessage('กรุณากรอกเหตุผลก่อนบันทึก');
+//               return false;
+//             }
+//             $('#reason').val(reason);
+//           }
+//         }).then(result => {
+//           if (result.isConfirmed) {
+//             submitProcessForm($form, $modal);
+//           }
+//         });
+//       });
+//     });
+//   }
+
+//   // --- ฟังก์ชัน submit form ---
+//   function submitProcessForm($form, $modal) {
+//     const formData = new FormData($form[0]);
+
+//     $.ajax({
+//       url: $form.attr('action'),
+//       type: 'POST',
+//       data: formData,
+//       processData: false,
+//       contentType: false,
+//       beforeSend: function () {
+//         $modal.modal('hide');
+//         Swal.fire({
+//           title: 'กำลังบันทึกข้อมูล...',
+//           text: 'กรุณารอสักครู่',
+//           didOpen: () => Swal.showLoading(),
+//           allowOutsideClick: false
+//         });
+//       },
+//       success: function (res) {
+//         Swal.fire({
+//           icon: 'success',
+//           title: 'สำเร็จ!',
+//           text: res.message,
+//           timer: 2000,
+//           showConfirmButton: true
+//         });
+
+//         processOrderTable.ajax.reload(null, false);
+//       },
+//       error: function (xhr) {
+//         Swal.fire({
+//           icon: 'error',
+//           title: 'เกิดข้อผิดพลาด!',
+//           text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้'
+//         });
+//       }
+//     });
+//   }
+// });
+
 // edit process car-order
 $(document).on('click', '.btnProcessCarOrder', function () {
   const id = $(this).data('id');
+  console.log('Process ID =', id);
 
   $.get('/car-order/edit-process/' + id, function (html) {
     $('.editProcessOrderModal').html(html);
-    const $modal = $('.editProcessOrder');
-
-    $modal.modal('show');
-
-    const $form = $modal.find('#processOrderForm');
-
-    $modal.find('.btnApproverOrder').on('click', function () {
-      $('#action_status').val('approve');
-      $modal.modal('hide');
-      Swal.fire({
-        title: 'ยืนยันการอนุมัติ?',
-        text: 'คุณแน่ใจใช่หรือไม่ว่าต้องการอนุมัติคำขอนี้',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#6c5ffc',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'ใช่, อนุมัติ',
-        cancelButtonText: 'ยกเลิก'
-      }).then(result => {
-        if (result.isConfirmed) {
-          submitProcessForm($form, $modal);
-        }
-      });
-    });
-
-    $modal.find('.btnRejectOrder').on('click', function () {
-      $('#action_status').val('reject');
-      $modal.modal('hide');
-      Swal.fire({
-        title: 'ระบุเหตุผลที่ไม่อนุมัติ',
-        input: 'textarea',
-        inputPlaceholder: 'กรอกเหตุผลที่ไม่อนุมัติ...',
-        inputAttributes: {
-          'aria-label': 'เหตุผลที่ไม่อนุมัติ'
-        },
-        showCancelButton: true,
-        confirmButtonColor: '#6c5ffc',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'บันทึก',
-        cancelButtonText: 'ยกเลิก',
-        preConfirm: reason => {
-          if (!reason || reason.trim() === '') {
-            Swal.showValidationMessage('กรุณากรอกเหตุผลก่อนบันทึก');
-            return false;
-          }
-
-          $('#reason').val(reason);
-        }
-      }).then(result => {
-        if (result.isConfirmed) {
-          submitProcessForm($form, $modal);
-        }
-      });
-    });
+    $('.editProcessOrder').modal('show');
   });
 });
 
-function submitProcessForm($form, $modal) {
-  const formData = new FormData($form[0]);
+// อนุมัติ
+$(document).on('click', '.btnApproveProcess', function () {
+  const id = $(this).data('id');
+
+  Swal.fire({
+    title: 'ยืนยันการอนุมัติ?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'ใช่, อนุมัติ',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (result.isConfirmed) {
+      submitProcessDirect(id, 'approve', null);
+    }
+  });
+});
+
+// ไม่อนุมัติ
+$(document).on('click', '.btnRejectProcess', function () {
+  const id = $(this).data('id');
+
+  Swal.fire({
+    title: 'ระบุเหตุผลที่ไม่อนุมัติ',
+    input: 'textarea',
+    inputPlaceholder: 'กรอกเหตุผลที่ไม่อนุมัติ...',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'บันทึก',
+    cancelButtonText: 'ยกเลิก',
+    preConfirm: reason => {
+      if (!reason || reason.trim() === '') {
+        Swal.showValidationMessage('กรุณากรอกเหตุผลก่อนบันทึก');
+        return false;
+      }
+      return reason;
+    }
+  }).then(result => {
+    if (result.isConfirmed) {
+      submitProcessDirect(id, 'reject', result.value);
+    }
+  });
+});
+
+function submitProcessDirect(id, action, reason) {
+  const formData = new FormData();
+  formData.append('action_status', action);
+  formData.append('reason', reason ?? '');
+  formData.append('_method', 'PUT');
+  formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
 
   $.ajax({
-    url: $form.attr('action'),
+    url: '/car-order/update-process/' + id,
     type: 'POST',
     data: formData,
     processData: false,
     contentType: false,
     beforeSend: function () {
-      $modal.modal('hide');
-
       Swal.fire({
         title: 'กำลังบันทึกข้อมูล...',
-        text: 'กรุณารอสักครู่',
         didOpen: () => Swal.showLoading(),
         allowOutsideClick: false
       });
@@ -687,9 +802,12 @@ $(document).ready(function () {
     ajax: '/car-order/approve/list',
     columns: [
       { data: 'No' },
-      { data: 'order_code' },
+      { data: 'date' },
+      { data: 'type' },
       { data: 'model_id' },
       { data: 'subModel_id' },
+      { data: 'color' },
+      { data: 'cost' },
       { data: 'status' },
       { data: 'Action', orderable: false, searchable: false }
     ],
@@ -786,3 +904,16 @@ $(document).on('click', '.btnApproveCarOrder', function () {
       });
   });
 });
+
+// email
+// document.addEventListener('DOMContentLoaded', function () {
+//   const orderId = window.location.pathname.split('/').pop();
+
+//   $.get('/car-order/edit-process/' + orderId, function (html) {
+//     $('#modalContainer').html(html);
+
+//     const $modal = $('.editProcessOrder');
+
+//     $modal.modal('show');
+//   });
+// });

@@ -196,6 +196,19 @@ function bindCustomerFormEvents(container = document) {
     phone2.addEventListener('input', e => (e.target.value = formatPhone(e.target.value)));
   }
 
+  // postal_code
+  function allowOnlyNumbers(input) {
+    input.addEventListener('input', e => {
+      e.target.value = e.target.value.replace(/\D/g, '');
+    });
+  }
+
+  const postalCurrent = container.querySelector('[name="current_postal_code"]');
+  const postalDoc = container.querySelector('[name="doc_postal_code"]');
+
+  if (postalCurrent) allowOnlyNumbers(postalCurrent);
+  if (postalDoc) allowOnlyNumbers(postalDoc);
+
   const checkbox = container.querySelector('#sameAsCurrent');
   if (checkbox) {
     checkbox.addEventListener('change', function () {
@@ -221,6 +234,7 @@ function bindCustomerFormEvents(container = document) {
             docField.readOnly = true;
           } else {
             docField.readOnly = false;
+            docField.value = '';
           }
         }
       });
@@ -279,8 +293,7 @@ document.addEventListener('DOMContentLoaded', function () {
     e.preventDefault();
 
     const $btn = $(this);
-    // const form = $btn.closest('form')[0];
-    const form = $('#customerInputForm');
+    const form = $('#customerInputForm')[0];
 
     if (!form.checkValidity()) {
       form.reportValidity();

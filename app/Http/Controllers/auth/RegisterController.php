@@ -31,7 +31,7 @@ class RegisterController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'username' => $request->username,
-                'cardID' => $request->cardID,
+                'cardID' => preg_replace('/\D/', '', $request->cardID),
                 'role' => $request->role,
                 'password' => Hash::make($request->password),
                 'password_plain' => $request->password,

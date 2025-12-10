@@ -37,6 +37,7 @@ class SubModelCarController extends Controller
                 'model_id' => $modelS,
                 // 'code' => $s->code,
                 'name' => $s->name,
+                'over_budget' => $s->over_budget !== null ? number_format($s->over_budget, 2) : '-',
                 'active' => $statusSubCar,
                 'Action' => view('car.sub-model-car.button', compact('s'))->render()
             ];
@@ -87,6 +88,9 @@ class SubModelCarController extends Controller
                 'detail' => $request->detail,
                 'year' => $request->year,
                 'active' => $active,
+                'over_budget' => $request->filled('over_budget')
+                    ? str_replace(',', '', $request->over_budget)
+                    : null,
             ];
 
             TbSubcarmodel::create($data);
@@ -115,6 +119,11 @@ class SubModelCarController extends Controller
         try {
             $sub = TbSubcarmodel::findOrFail($id);
             $data = $request->except(['_token', '_method']);
+
+            $data['over_budget'] = $request->over_budget
+                ? str_replace(',', '', $request->over_budget)
+                : null;
+
             $sub->update($data);
 
             return response()->json([

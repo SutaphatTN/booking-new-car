@@ -16,6 +16,7 @@ class CarOrderHistory extends Model
         'SaleID',
         'CarOrderID',
         'BookingDate',
+        'changed_at',
         'userZone',
     ];
 

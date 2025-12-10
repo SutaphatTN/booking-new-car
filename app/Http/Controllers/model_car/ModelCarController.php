@@ -24,6 +24,7 @@ class ModelCarController extends Controller
                 'No' => $index + 1,
                 'Name_TH' => $c->Name_TH,
                 'Name_EN' => $c->Name_EN,
+                'over_budget' => $c->over_budget !== null ? number_format($c->over_budget, 2) : '-',
                 'Action' => view('car.model-car.button', compact('c'))->render()
             ];
         });
@@ -40,11 +41,15 @@ class ModelCarController extends Controller
     function store(Request $request)
     {
         try {
-
+            
             $data = [
                 'Name_TH' => $request->Name_TH,
                 'Name_EN' => $request->Name_EN,
                 'userZone' => $request->userZone  ?? null,
+                'Active' => 'active',
+                'over_budget' => $request->filled('over_budget')
+                    ? str_replace(',', '', $request->over_budget)
+                    : null,
             ];
 
             TbCarmodel::create($data);
@@ -72,6 +77,11 @@ class ModelCarController extends Controller
         try {
             $car = TbCarmodel::findOrFail($id);
             $data = $request->except(['_token', '_method']);
+
+            $data['over_budget'] = $request->over_budget
+                ? str_replace(',', '', $request->over_budget)
+                : null;
+
             $car->update($data);
 
             return response()->json([

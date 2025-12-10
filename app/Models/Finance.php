@@ -26,6 +26,13 @@ class Finance extends Model
 
 	protected $fillable = [
 		'FinanceCompany',
+		'tax',
+		'max_year',
 		'Active'
 	];
+
+	public function getFormatUpdatedAttribute()
+	{
+		return $this->updated_at ? Carbon::parse($this->updated_at)->format('d-m-Y') : null;
+	}
 }

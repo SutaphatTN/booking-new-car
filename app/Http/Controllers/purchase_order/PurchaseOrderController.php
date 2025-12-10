@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\purchase_order;
 
+use App\Exports\BookingExport;
 use App\Http\Controllers\Controller;
+use App\Mail\SaleRequestMail;
 use App\Models\TbCarmodel;
 use App\Models\Accessory;
 use App\Models\Accessorycost;
@@ -19,6 +21,7 @@ use App\Models\Finance;
 use App\Models\PaymentType;
 use App\Models\Salecampaign;
 use App\Models\Salecar;
+use App\Models\SaleCarPayment;
 use App\Models\TbConStatus;
 use App\Models\TbPrefixname;
 use App\Models\TbProvinces;
@@ -30,6 +33,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PurchaseOrderController extends Controller
 {
@@ -111,7 +116,7 @@ class PurchaseOrderController extends Controller
     {
         $statusFilter = $request->con_status;
 
-        $query = Salecar::with('customer.prefix', 'conStatus');
+        $query = Salecar::with('customer.prefix', 'conStatus')->whereNotIn('con_status', [5, 9]);
 
         if ($statusFilter) {
             $query->whereHas('conStatus', function ($q) use ($statusFilter) {
@@ -123,16 +128,39 @@ class PurchaseOrderController extends Controller
 
         $data = $saleCar->map(function ($s, $index) {
             $c = $s->customer;
+            $model = $s->model ? $s->model->Name_TH : '';
             $subModelSale = $s->subModel ? $s->subModel->name : '';
             $statusSale = $s->conStatus ? $s->conStatus->name : '';
+
+            if (!empty($s->GMApprovalSignature)) {
+                $approver = 'GM อนุมัติแล้ว';
+            } elseif (!empty($s->ApprovalSignature)) {
+                $approver = 'ผู้จัดการอนุมัติแล้ว';
+            } elseif (!empty($s->balanceCampaign)) {
+                $approver = 'รออนุมัติ';
+            } else {
+                $approver = 'รอดำเนินการ';
+            }
+
+            //             if (!empty($s->GMApprovalSignature) && !empty($s->balanceCampaign)) {
+            //     $approver = 'GM อนุมัติแล้ว';
+            // } elseif (!empty($s->ApprovalSignature) && !empty($s->balanceCampaign)) {
+            //     $approver = 'ผู้จัดการอนุมัติแล้ว';
+            // } elseif (!empty($s->balanceCampaign)) {
+            //     $approver = 'รออนุมัติ';
+            // } else {
+            //     $approver = 'รอดำเนินการ';
+            // }
 
             return [
                 'No' => $index + 1,
                 'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
-                'IDNumber' => $c->formatted_id_number,
-                'Mobilephone' => $c->formatted_mobile,
+                'model' => $model,
                 'subSale' => $subModelSale,
+                'option' => $s->option,
+                'order' => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
                 'statusSale' => $statusSale,
+                'approver' => $approver,
                 'Action' => view('purchase-order.button', compact('s'))->render()
             ];
         });
@@ -327,6 +355,8 @@ class PurchaseOrderController extends Controller
         $subModels = TbSubcarmodel::where('model_id', $saleCar->model_id)->get();
         $conStatus = TbConStatus::all();
         $provinces = TbProvinces::all();
+        $payments = SaleCarPayment::where('SaleID', $id)->get();
+        $userRole = Auth::user()->role;
 
         $subModel_id = $saleCar->subModel_id;
 
@@ -355,7 +385,7 @@ class PurchaseOrderController extends Controller
 
         $selected_campaigns = $saleCar->campaigns->pluck('CampaignID')->toArray();
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'provinces'));
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'provinces', 'payments', 'userRole'));
     }
 
     public function update(Request $request, $id)
@@ -437,6 +467,7 @@ class PurchaseOrderController extends Controller
             //     'delivery_tax_credit.required_if' => 'กรุณากรอกค่าธรรมเนียมบัตรเครดิต',
             // ]);
 
+
             $saleCar = Salecar::with('accessories')->findOrFail($id);
 
             $turnCarID = $saleCar->TurnCarID;
@@ -467,8 +498,10 @@ class PurchaseOrderController extends Controller
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
                 'Color' => $request->Color,
+                'Year' => $request->Year,
                 'CarOrderID' => $request->CarOrderID,
                 'option' => $request->option,
+                'payment_mode' => $request->payment_mode,
                 'CusID' => $request->CusID,
                 'FinanceID' => $request->FinanceID,
                 'SaleConsultantID' => $request->SaleConsultantID,
@@ -546,6 +579,7 @@ class PurchaseOrderController extends Controller
                 'TradeinComAmount' => $request->TradeinComAmount,
                 'CommissionDeduct' => $request->CommissionDeduct,
                 'ApprovalSignature' => $request->ApprovalSignature,
+                'ApprovalSignatureDate' => $request->ApprovalSignatureDate,
                 'FinanceAmount' => $request->FinanceAmount,
                 'InterestRate' => $request->InterestRate,
                 'InterestCampaignID' => $request->InterestCampaignID,
@@ -560,6 +594,7 @@ class PurchaseOrderController extends Controller
                 'CheckerID' => $request->CheckerID,
                 'CheckerCheckedDate' => $request->CheckerCheckedDate,
                 'GMApprovalSignature' => $request->GMApprovalSignature,
+                'GMApprovalSignatureDate' => $request->GMApprovalSignatureDate,
                 'Note' => $request->Note,
                 'ReferrerID' => $request->ReferrerID,
                 'ReferrerAmount' => $request->filled('ReferrerAmount')
@@ -582,7 +617,7 @@ class PurchaseOrderController extends Controller
             if ($request->con_status == 9) {
                 if ($saleCar->CarOrderID) {
                     CarOrder::where('id', $saleCar->CarOrderID)
-                        ->update(['car_status' => 'Null']);
+                        ->update(['car_status' => 'Available']);
                 }
             }
 
@@ -591,19 +626,20 @@ class PurchaseOrderController extends Controller
                     'SaleID' => $saleCar->id,
                     'CarOrderID' => $newCarOrderID,
                     'BookingDate' => $request->BookingDate,
+                    'changed_at' => now(),
                 ]);
 
                 if ($oldCarOrderID) {
-                    CarOrder::where('id', $oldCarOrderID)->update(['car_status' => 'Null']);
+                    CarOrder::where('id', $oldCarOrderID)->update(['car_status' => 'Available']);
                 }
-                CarOrder::where('id', $newCarOrderID)->update(['car_status' => 'Book']);
+                CarOrder::where('id', $newCarOrderID)->update(['car_status' => 'Booked']);
             }
 
             if ($request->con_status == 5) {
 
                 if ($newCarOrderID) {
                     CarOrder::where('id', $newCarOrderID)->update([
-                        'car_status' => 'Send'
+                        'car_status' => 'Delivered'
                     ]);
                 }
             }
@@ -872,11 +908,75 @@ class PurchaseOrderController extends Controller
                 );
             }
 
+            // ลบรายการที่ user กดลบจริง
+            if ($request->deletedPayments) {
+                $deleteIds = explode(',', rtrim($request->deletedPayments, ','));
+                SaleCarPayment::whereIn('id', $deleteIds)->delete();
+            }
+
+
+            if ($request->filled('payment_type')) {
+                $ids = $request->payment_id ?? [];
+
+                SaleCarPayment::where('SaleID', $saleCar->id)
+                    ->whereNotIn('id', array_filter($ids))
+                    ->delete();
+
+                $types   = $request->payment_type;
+                $costs = $request->payment_cost;
+                $dates   = $request->payment_date;
+
+                foreach ($types as $index => $type) {
+
+                    if (!$type && !$costs[$index] && !$dates[$index]) {
+                        continue;
+                    }
+
+                    $paymentId = $ids[$index] ?? null;
+
+                    if ($paymentId) {
+                        // UPDATE
+                        SaleCarPayment::where('id', $paymentId)->update([
+                            'type' => $type,
+                            'cost' => $costs[$index] ? str_replace(',', '', $costs[$index]) : null,
+                            'date' => $dates[$index] ?? null,
+                        ]);
+                    } else {
+                        // CREATE
+                        SaleCarPayment::create([
+                            'SaleID' => $saleCar->id,
+                            'type'   => $type,
+                            'cost'   => $costs[$index] ? str_replace(',', '', $costs[$index]) : null,
+                            'date'   => $dates[$index] ?? null,
+                        ]);
+                    }
+                }
+            }
+
+
+            $action = $request->action_type;
+            Log::info('ACTION TYPE = ' . $request->action_type);
+
+            if ($action === 'request_normal') {
+                Log::info('SENDING NORMAL MAIL');
+                // ส่งเมลแบบยอดปกติ
+                Mail::to('mitsuchookiat.programmer@gmail.com')
+                    ->send(new SaleRequestMail($saleCar, 'normal'));
+            }
+
+            if ($action === 'request_over') {
+                Log::info('SENDING over MAIL');
+                // ส่งเมลแบบเกินงบ
+                Mail::to('sutaphat.thongnui@gmail.com')
+                    ->cc('mitsuchookiat.programmer@gmail.com')
+                    ->send(new SaleRequestMail($saleCar, 'over'));
+            }
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'แก้ไขข้อมูลเรียบร้อยแล้ว'
+                'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1006,39 +1106,101 @@ class PurchaseOrderController extends Controller
     public function viewBooking()
     {
         $saleCar = Salecar::all();
-        return view('purchase-order.booking-list.view', compact('saleCar'));
+        $models = TbCarmodel::orderBy('Name_TH')->get();
+        $statuses = TbConStatus::all();
+        return view('purchase-order.booking-list.view', compact('saleCar', 'models', 'statuses'));
     }
 
-    public function listBooking()
+    public function listBooking(Request $request)
     {
-        $saleCar = Salecar::with([
-            'customer.prefix',
-            'model',
-            'subModel',
-            'carOrder'
-        ])
-            ->orderBy('model_id')
+        $query = Salecar::with(['customer.prefix', 'model', 'subModel', 'carOrder', 'carOrderHistories'])
+            ->when($request->model_id, fn($q) => $q->where('model_id', $request->model_id))
+            ->when($request->sub_model_id, fn($q) => $q->where('subModel_id', $request->sub_model_id))
+            ->whereNotIn('con_status', [5, 9]);
+
+        if ($request->status_id) {
+            $query->where('con_status', $request->status_id);
+        }
+
+        if ($request->booking_start) {
+            $query->whereDate('BookingDate', '>=', $request->booking_start);
+        }
+        if ($request->booking_end) {
+            $query->whereDate('BookingDate', '<=', $request->booking_end);
+        }
+
+        $saleCar = $query->orderBy('model_id')
             ->orderBy('subModel_id')
             ->orderBy('option')
+            ->orderBy('BookingDate')
             ->get();
 
         $data = $saleCar->map(function ($s, $index) {
             $c = $s->customer;
-            $model = $s->model?->Name_TH ?? '-';
-            $subModel = $s->subModel?->name ?? '-';
-            $orderCode = $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ';
+
+            $changedAt = $s->carOrderHistories?->changed_at;
+            $days = $changedAt
+                ? Carbon::parse($changedAt)->startOfDay()->diffInDays(now()->startOfDay()) . ' วัน'
+                : '-';
+
 
             return [
                 'No' => $index + 1,
-                'model' => $model,
-                'subModel' => $subModel,
+                'model' => $s->model?->Name_TH ?? '-',
+                'subModel' => $s->subModel?->name ?? '-',
                 'option' => $s->option,
-                'order' => $orderCode,
+                'order' => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
                 'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
+                'sale' => $s->saleUser->name ?? '-',
                 'date' => $s->BookingDate,
+                'status' => $s->conStatus?->name ?? '',
+                'daysBind' => $days,
             ];
         });
 
         return response()->json(['data' => $data]);
+    }
+
+    // history
+    public function history()
+    {
+        $saleCar = Salecar::all();
+        return view('purchase-order.history.view', compact('saleCar'));
+    }
+
+    public function listHistory(Request $request)
+    {
+        $saleCar = Salecar::with([
+            'customer.prefix',
+            'carOrder'
+        ])->get();
+
+        $data = $saleCar->map(function ($s, $index) {
+            $c = $s->customer;
+
+            return [
+                'No' => $index + 1,
+                'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
+                'code' => $s->carOrder->order_code ?? '-',
+                'Action' => view('purchase-order.history.button', compact('s'))->render()
+            ];
+        });
+
+        return response()->json(['data' => $data]);
+    }
+
+    public function viewMoreHistory($id)
+    {
+        $saleCar = SaleCar::with([
+            'customer.prefix',
+            'model',
+        ])->find($id);
+
+        return view('purchase-order.history.view-more-history', compact('saleCar'));
+    }
+
+    public function exportBooking(Request $request)
+    {
+        return Excel::download(new BookingExport($request), 'booking.xlsx');
     }
 }

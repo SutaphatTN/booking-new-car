@@ -7,10 +7,38 @@
       </div>
       <div class="modal-body" id="previewPurchaseContent">
       </div>
+
+      @php
+      $hasApproval = $saleCar->ApprovalSignature || $saleCar->GMApprovalSignature;
+      @endphp
+
       <div class="modal-footer">
         <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ปิด</button>
-        <button type="submit" class="btn btn-primary btnUpdatePurchase" form="purchaseForm">บันทึก</button>
+
+        <button type="submit"
+          class="btn btn-primary d-none"
+          id="btnUpdatePurchase"
+          form="purchaseForm">
+          บันทึก
+        </button>
+
+        <button type="button"
+          class="btn btn-warning d-none"
+          id="btnRequestNormal">
+          ขออนุมัติ
+        </button>
+
+        <button type="button"
+          class="btn btn-warning d-none"
+          id="btnRequestOverBudget">
+          ขออนุมัติเกินงบ
+        </button>
+
+        <input type="hidden" id="userRole" value="{{ $userRole }}">
+        <input type="hidden" id="hasApproval" value="{{ $hasApproval ? 1 : 0 }}">
+        <input type="hidden" name="action_type" id="action_type" value="">
       </div>
+
     </div>
   </div>
 </div>

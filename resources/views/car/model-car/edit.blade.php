@@ -40,6 +40,13 @@
               @enderror
             </div>
 
+            <div class="col-md-12 mb-5">
+              <label for="over_budget" class="form-label">ยอดเงินเกินงบ</label>
+              <input id="over_budget" type="text"
+                class="form-control text-end money-input"
+                name="over_budget" value="{{ $car->over_budget }}">
+            </div>
+
           </div>
 
           <div class="d-flex justify-content-end gap-2">

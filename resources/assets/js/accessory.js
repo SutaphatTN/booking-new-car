@@ -145,7 +145,7 @@ $(document).on('change', '#model_id', function () {
   if (!modelId) return;
 
   $.ajax({
-    url: 'api/accessory/sub-model/' + modelId,
+    url: '/api/accessory/sub-model/' + modelId,
     type: 'GET',
     success: function (data) {
       console.log('data:', data);

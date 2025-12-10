@@ -77,6 +77,11 @@ class CarOrder extends Model
 		return $this->hasMany(Salecar::class, 'CarOrderID', 'id');
 	}
 
+    public function historyCar()
+	{
+		return $this->hasMany(CarOrderHistory::class, 'CarOrderID', 'id');
+	}
+
     public function orderStatus()
 	{
 		return $this->belongsTo(TbOrderStatus::class, 'order_status', 'id');
@@ -128,6 +133,21 @@ class CarOrder extends Model
 	}
 
 	public function getEstimatedStockDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+    public function getFormatApproverDateAttribute()
+    {
+        return $this->approver_date ? Carbon::parse($this->approver_date)->format('d-m-Y') : null;
+    }
+
+    public function getOrderDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+    public function getApproverDateAttribute($value)
 	{
 		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
 	}

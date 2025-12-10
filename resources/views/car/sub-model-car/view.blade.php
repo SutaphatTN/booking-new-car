@@ -26,8 +26,9 @@
             <thead>
               <tr>
                 <th>No.</th>
-                <th>รุ่นรถหลัก</th>\
+                <th>รุ่นรถหลัก</th>
                 <th>รุ่นรถย่อย</th>
+                <th>ยอดเงินเกินงบ</th>
                 <th>สถานะ</th>
                 <th width="150px">Action</th>
               </tr>

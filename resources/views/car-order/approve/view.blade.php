@@ -17,9 +17,12 @@
             <thead>
               <tr>
                 <th>No.</th>
-                <th>รหัส Car Order</th>
+                <th>วันที่อนุมัติ</th>
+                <th>ประเภทการสั่ง</th>
                 <th>รุ่นรถหลัก</th>
                 <th>รุ่นรถย่อย</th>
+                <th>สี</th>
+                <th>ราคาขาย</th>
                 <th>สถานะ</th>
                 <th width="150px">Action</th>
               </tr>

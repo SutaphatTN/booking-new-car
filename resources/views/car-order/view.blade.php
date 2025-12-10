@@ -18,12 +18,11 @@
             <thead>
               <tr>
                 <th>No.</th>
-                <th>รหัส Car Order</th>
-                <th>รุ่นรถหลัก</th>
-                <th>รุ่นรถย่อย</th>
+                <th>วันที่สั่งซื้อในระบบ</th>
+                <th>รุ่นรถ</th>
                 <th>Vin Number</th>
-                <th>สถานะ Car Order</th>
-                <th>สถานะรถ</th>
+                <th>J Number</th>
+                <th>สถานะ</th>
                 <th width="150px">Action</th>
               </tr>
             </thead>

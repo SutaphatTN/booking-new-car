@@ -201,7 +201,7 @@ $(document).on('change', '#model_id', function () {
   if (!modelId) return;
 
   $.ajax({
-    url: 'api/campaign/sub-model/' + modelId,
+    url: '/api/campaign/sub-model/' + modelId,
     type: 'GET',
     success: function (data) {
       console.log('data:', data);

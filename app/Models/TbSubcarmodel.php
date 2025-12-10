@@ -19,6 +19,7 @@ class TbSubcarmodel extends Model
 		'detail',
 		'userZone',
 		'active',
+		'over_budget'
 	];
 
 	protected $dates = ['deleted_at'];

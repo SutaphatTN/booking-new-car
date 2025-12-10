@@ -72,12 +72,12 @@
               <input class="form-control" type="text" value="{{ $order->subModel->name }}" disabled />
             </div>
 
-            <div class="col-md-2 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="option" class="form-label">Option</label>
               <input class="form-control" type="text" value="{{ $order->option }}" disabled />
             </div>
 
-            <div class="col-md-2 mb-5">
+            <div class="col-md-4 mb-5">
               <label for="color" class="form-label">สี</label>
               <input class="form-control" type="text" value="{{ $order->color }}" disabled />
             </div>
@@ -88,12 +88,17 @@
             </div>
 
             <div class="col-md-3 mb-5">
+              <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
+              <input class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
+            </div>
+
+            <div class="col-md-4 mb-5">
               <label for="car_DNP" class="form-label">ราคาทุน</label>
               <input class="form-control text-end" type="text" 
               value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}" disabled />
             </div>
 
-            <div class="col-md-3 mb-5">
+            <div class="col-md-4 mb-5">
               <label for="car_MSRP" class="form-label">ราคาขาย</label>
               <input class="form-control text-end" type="text" 
               value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}" disabled />
@@ -109,9 +114,14 @@
               <input class="form-control" type="text" value="{{ $order->purchase_type }}" disabled />
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-5 mb-5">
               <label for="approver" class="form-label">ผู้อนุมัติ</label>
               <input class="form-control" type="text" value="{{ $order->approvers->name ?? '-' }}" disabled />
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="approver_date" class="form-label">วันที่อนุมัติ</label>
+              <input class="form-control" type="text" value="{{ $order->format_approver_date }}" disabled />
             </div>
 
             <div class="col-md-12 mb-5">

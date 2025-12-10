@@ -1,6 +1,6 @@
-<button class="btn btn-icon btn-info btnViewSale" data-id="{{ $s->id }}" title="ดูข้อมูล">
+<!-- <button class="btn btn-icon btn-info btnViewSale" data-id="{{ $s->id }}" title="ดูข้อมูล">
   <i class="bx bx-show"></i></a>
-</button>
+</button> -->
 <a href="{{ route('purchase-order.edit', $s->id) }}"
   class="btn btn-icon btn-warning"
   title="แก้ไข">

@@ -1,9 +1,9 @@
-<div class="modal fade editProcessOrder" tabindex="-1" role="dialog" data-bs-backdrop="static">
+<div class="modal fade editProcessOrder" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header border-bottom">
         <div class="d-flex justify-content-between w-100 align-items-center">
-          <h4 class="modal-title mb-2" id="editPendingOrderLabel">
+          <h4 class="modal-title mb-2" id="editProcessOrderLabel">
             รออนุมัติคำขอสั่งรถ
           </h4>
 
@@ -42,12 +42,12 @@
               <input class="form-control" type="text" value="{{ $order->subModel->name }}" disabled />
             </div>
 
-            <div class="col-md-2 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="option" class="form-label">Option</label>
               <input class="form-control" type="text" value="{{ $order->option }}" disabled />
             </div>
 
-            <div class="col-md-2 mb-5">
+            <div class="col-md-4 mb-5">
               <label for="color" class="form-label">สี</label>
               <input class="form-control" type="text" value="{{ $order->color }}" disabled />
             </div>
@@ -58,12 +58,17 @@
             </div>
 
             <div class="col-md-3 mb-5">
+              <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
+              <input class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
+            </div>
+
+            <div class="col-md-4 mb-5">
               <label for="car_DNP" class="form-label">ราคาทุน</label>
               <input class="form-control text-end" type="text" 
               value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}" disabled />
             </div>
 
-            <div class="col-md-3 mb-5">
+            <div class="col-md-4 mb-5">
               <label for="car_MSRP" class="form-label">ราคาขาย</label>
               <input class="form-control text-end" type="text" 
               value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}" disabled />
@@ -74,12 +79,12 @@
               <input class="form-control" type="text" value="{{ $order->purchase_source }}" disabled />
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-5 mb-5">
               <label for="purchase_type" class="form-label">ประเภทการซื้อรถ</label>
               <input class="form-control" type="text" value="{{ $order->purchase_type }}" disabled />
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-7 mb-5">
               <label for="approver" class="form-label">ผู้อนุมัติ</label>
               <input class="form-control" type="text" value="{{ $order->approvers->name ?? '-' }}" disabled />
             </div>
@@ -96,12 +101,10 @@
           <textarea class="form-control d-none" name="reason" id="reason"></textarea>
           <input type="hidden" name="action_status" id="action_status">
 
-          <div class="d-flex justify-content-end gap-2">
+          <!-- <div class="d-flex justify-content-end gap-2">
             <button type="button" class="btn btn-danger btnRejectOrder" data-value="reject">ไม่อนุมัติ</button>
             <button type="button" class="btn btn-success btnApproverOrder" data-value="approve">อนุมัติ</button>
-          </div>
-
-
+          </div> -->
 
         </form>
       </div>

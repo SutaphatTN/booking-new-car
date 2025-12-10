@@ -32,7 +32,7 @@
 
             <div class="col-md-6 mb-5">
               <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
-              <select id="subModel_id" name="subModel_id" class="form-select @error('subModel_id') is-invalid @enderror" required>
+              <select id="subModel_id" name="subModel_id" class="form-select" required>
                 @foreach ($subModels as $s)
                 <option value="{{ $s->id }}" {{ $cam->subModel_id == $s->id ? 'selected' : '' }}>
                   {{ $s->name }}

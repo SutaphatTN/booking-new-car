@@ -11,7 +11,7 @@
     <div class="card">
       <h4 class="card-header">เพิ่มข้อมูลลูกค้าใหม่</h4>
       <div class="card-body">
-        <form action="{{ route('customer.store') }}" method="POST" enctype="multipart/form-data">
+        <form id="customerInputForm" action="{{ route('customer.store') }}" method="POST" enctype="multipart/form-data">
           @csrf
 
           <div class="row mb-6">
@@ -182,7 +182,7 @@
             </div>
 
             <div class="row mt-5">
-              <label class="form-label mb-4 fs-5" for="Address">ที่อยู่ปัจจุบัน</label>
+              <label class="form-label mb-4 fs-5">ที่อยู่ปัจจุบัน</label>
 
               <div class="col-md-2 mb-5">
                 <label class="form-label">เลขที่</label>

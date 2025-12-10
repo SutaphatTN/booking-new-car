@@ -1,5 +1,5 @@
 <button class="btn btn-icon btn-warning btnApproveCarOrder" data-id="{{ $a->id }}" title="แก้ไข">
-    <i class="bx bx-pencil"></i>
+    <i class="bx bx-edit"></i>
 </button>
 
 <style>

@@ -243,9 +243,9 @@
               <label for="car_status" class="form-label">สถานะรถ</label>
               <select id="car_status" name="car_status" class="form-select" required>
                 <option value="">-- เลือกสถานะ --</option>
-                <option value="Null" {{ $order->car_status == 'Null' ? 'selected' : '' }}>Null</option>
-                <option value="Book" {{ $order->car_status == 'Book' ? 'selected' : '' }}>Book</option>
-                <option value="Send" {{ $order->car_status == 'Send' ? 'selected' : '' }}>Send</option>
+                <option value="Available" {{ $order->car_status == 'Available' ? 'selected' : '' }}>Available</option>
+                <option value="Booked" {{ $order->car_status == 'Booked' ? 'selected' : '' }}>Booked</option>
+                <option value="Delivered" {{ $order->car_status == 'Delivered' ? 'selected' : '' }}>Delivered</option>
               </select>
 
               @error('car_status')

@@ -72,8 +72,12 @@ $(document).ready(function () {
     columns: [
       { data: 'No' },
       { data: 'FullName' },
+      { data: 'model' },
       { data: 'subSale' },
+      { data: 'option' },
+      { data: 'order' },
       { data: 'statusSale' },
+      { data: 'approver' },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
@@ -964,13 +968,14 @@ $(document).ready(function () {
   initGrandTotalOnLoad();
 
   // บันทึกข้อมูล
-  $(document).on('click', '.btnUpdatePurchase', function (e) {
+  $(document).on('click', '#btnUpdatePurchase', function (e) {
     e.preventDefault();
 
     const $btn = $(this);
     const $form = $('#purchaseForm');
     const actionUrl = $form.attr('action');
     const formData = new FormData($form[0]);
+    formData.append('action_type', $('#action_type').val());
 
     const accessoriesGift = [];
     $('#giftTablePrice tbody tr:not(#no-data-row)').each(function () {
@@ -1042,6 +1047,18 @@ $(document).ready(function () {
       }
     });
   });
+});
+
+// ปุ่มขออนุมัติ (ยอดปกติ)
+$(document).on('click', '#btnRequestNormal', function () {
+  $('#action_type').val('request_normal');
+  $('#btnUpdatePurchase').trigger('click');
+});
+
+// ปุ่มขออนุมัติเกินงบ
+$(document).on('click', '#btnRequestOverBudget', function () {
+  $('#action_type').val('request_over');
+  $('#btnUpdatePurchase').trigger('click');
 });
 
 //edit : campaign
@@ -1222,6 +1239,16 @@ function calculateRemaining() {
   $('#balanceFinance').val(remaining);
 }
 
+// edit : ยอดรวมการชำระเงินแต่ละครั้ง
+function calculatePaymentTotal() {
+  let total = 0;
+  document.querySelectorAll('input[name="payment_cost[]"]').forEach(input => {
+    const value = parseFloat((input.value || '0').replace(/,/g, ''));
+    if (!isNaN(value)) total += value;
+  });
+  return total;
+}
+
 //edit : ยอดคงเหลือ
 function calculateBalance() {
   const carSale = safeNumber('#summaryCarSale');
@@ -1229,8 +1256,9 @@ function calculateBalance() {
   const turnCost = safeNumber('#summaryTurn');
   const cashDeposit = safeNumber('#summaryCashDeposit');
   const discount = safeNumber('#PaymentDiscount');
+  const paymentTotal = calculatePaymentTotal();
 
-  const total = carSale + ExtraTotal - (turnCost + cashDeposit + discount);
+  const total = carSale + ExtraTotal - (turnCost + cashDeposit + discount + paymentTotal);
 
   $('.balance-display:visible').val(
     total.toLocaleString(undefined, {
@@ -1274,9 +1302,33 @@ function calculateInstallment() {
   const totalWithInterest = financeAmount + totalInterest;
 
   const monthlyPayment = totalWithInterest / periodMonths;
+  const interPayment = Math.ceil(monthlyPayment);
 
   $('#remaining_alp').val(
-    Number(monthlyPayment).toLocaleString(undefined, {
+    Number(interPayment).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
+  );
+}
+
+function calculateCommission() {
+  const interest = parseFloat($('#remaining_interest').val()) || 0;
+  const typeCom = $('#remaining_type_com').val();
+  let commission = 0;
+
+  const comNumber = typeCom ? parseInt(typeCom.replace('C', '')) : 0;
+
+  if (interest >= 3 && comNumber >= 10) {
+    commission = 500;
+  } else if (interest < 3 && comNumber < 10) {
+    commission = 0;
+  } else {
+    commission = 0;
+  }
+
+  $('#remaining_total_com').val(
+    commission.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     })
@@ -1284,6 +1336,8 @@ function calculateInstallment() {
 }
 
 //edit : event update
+$(document).on('input', 'input[name="payment_cost[]"]', calculateBalance);
+
 $(document).ready(function () {
   $('#carOrderSubModel, #cost_turn, #reservation_cost, #carOrderSale').on('input change', updateSummary);
   $('#DownPayment, #DownPaymentDiscount, #summaryTurn, #total_gift_used, #summaryExtraTotal, #summaryCashDeposit').on(
@@ -1296,6 +1350,7 @@ $(document).ready(function () {
     'input change',
     calculateBalance
   );
+  $('#remaining_interest, #remaining_type_com').on('input change', calculateCommission);
 
   updateSummary();
 });
@@ -1327,18 +1382,93 @@ $(document).ready(function () {
 $(document).ready(function () {
   $('#financeRemain, #bankRemain, #checkRemain, #creditRemain, #nonFinanceSelect').hide();
 
-  const mode = $('#payment_mode').val(); // ใช้ hidden field แทน
-  const type = $('#remainingCondition').val(); // ประเภทไม่ผ่อน
+  function showCorrectSection() {
+    const mode = $('#payment_mode').val();
+    const type = $('#remainingConditionSelect').val();
 
-  if (mode === 'finance') {
-    $('#financeRemain').show();
-  } else if (mode === 'non-finance') {
-    $('#nonFinanceSelect').show();
+    $('#financeRemain, #bankRemain, #checkRemain, #creditRemain, #nonFinanceSelect').hide();
 
-    if (type === 'credit') $('#creditRemain').show();
-    if (type === 'check') $('#checkRemain').show();
-    if (type === 'transfer') $('#bankRemain').show();
+    if (mode === 'finance') {
+      $('#financeRemain').show();
+      $('#remainingCondition').val('finance');
+    } else if (mode === 'non-finance') {
+      $('#nonFinanceSelect').show();
+      $('#remainingCondition').val(type || '');
+
+      if (type === 'credit') $('#creditRemain').show();
+      if (type === 'check') $('#checkRemain').show();
+      if (type === 'transfer') $('#bankRemain').show();
+    } else {
+      $('#remainingCondition').val('');
+    }
+
+    updateProvince();
+    updateRemainingDate();
   }
+
+  // province
+  function updateProvince() {
+    const mode = $('#payment_mode').val();
+    let province = '';
+
+    if (mode === 'finance') {
+      province = $('#RegistrationProvince_finance').val();
+    } else {
+      province = $('#RegistrationProvince_cash').val();
+    }
+
+    $('#RegistrationProvince').val(province);
+  }
+
+  $('#RegistrationProvince_finance').on('change', updateProvince);
+  $('#RegistrationProvince_cash').on('change', updateProvince);
+
+  // วันที่จ่ายเงิน
+  function updateRemainingDate() {
+    const mode = $('#payment_mode').val();
+    let dateValue = '';
+
+    if (mode === 'finance') {
+      dateValue = $('#remaining_date_finance').val();
+    } else {
+      dateValue = $('#remaining_date_cash').val();
+    }
+
+    $('#remaining_date').val(dateValue); // hidden input
+  }
+
+  $('#remaining_date_finance').on('change', updateRemainingDate);
+  $('#remaining_date_cash').on('change', updateRemainingDate);
+
+  // เงินสด
+  function togglePaymentSection() {
+    const mode = $('#payment_mode').val();
+
+    if (mode === 'non-finance') {
+      $('#paymentSection').show();
+    } else {
+      $('#paymentSection').hide();
+    }
+  }
+
+  togglePaymentSection();
+
+  $('#payment_mode').on('change', togglePaymentSection);
+
+  showCorrectSection();
+
+  $('#payment_mode').on('change', showCorrectSection);
+
+  $('#remainingConditionSelect').on('change', function () {
+    $('#remainingCondition').val($(this).val());
+    showCorrectSection();
+  });
+
+  $('#purchaseForm').on('submit', function () {
+    showCorrectSection();
+    updateProvince();
+    updateRemainingDate();
+  });
 });
 
 //edit : radio delivery payment
@@ -1364,14 +1494,62 @@ $(document).ready(function () {
   }
 });
 
+//edit : เลือกไฟแนนซ์ แล้วแสดงปีตาม max year
+function renderPeriods(maxYear, selectedPeriod = null) {
+  let $period = $('#remaining_period');
+  $period.empty();
+
+  // เพิ่ม Placeholder
+  $period.append(`<option value="">-- เลือกงวด --</option>`);
+
+  // ถ้า maxYear ไม่มี ให้จบ
+  if (!maxYear || isNaN(maxYear)) return;
+
+  let maxMonth = maxYear * 12;
+
+  for (let m = 12; m <= maxMonth; m += 12) {
+    let selected = selectedPeriod == m ? 'selected' : '';
+    $period.append(`<option value="${m}" ${selected}>${m} งวด</option>`);
+  }
+}
+
+// เมื่อเลือกไฟแนนซ์ใหม่
+$('#remaining_finance').on('change', function () {
+  let maxYear = $('option:selected', this).data('max-year') || 0;
+  renderPeriods(maxYear);
+});
+
+// โหลดหน้า: ทำให้เลือกงวดตรงกับค่าที่มีใน DB
+$(document).ready(function () {
+  let finance = $('#remaining_finance option:selected');
+  if (finance.length) {
+    let maxYear = finance.data('max-year');
+    let selectedPeriod = "{{ $remainingPayment->period ?? '' }}";
+    renderPeriods(maxYear, selectedPeriod);
+  }
+});
+
 //edit : previewPurchase
 document.addEventListener('DOMContentLoaded', function () {
-  const btnPreview = document.getElementById('btnPreview');
   const modalElement = document.getElementById('previewPurchase');
+  if (!modalElement) return;
+
   const modal = new bootstrap.Modal(modalElement);
   const content = document.getElementById('previewPurchaseContent');
 
-  btnPreview?.addEventListener('click', function () {
+  const btnPreviewCar = document.getElementById('btnPreviewCar');
+  const btnPreviewMore = document.getElementById('btnPreviewMore');
+
+  // check role
+  const userRole = document.getElementById('userRole')?.value || '';
+  const hasApproval = document.getElementById('hasApproval').value === '1';
+
+  // button
+  const btnSave = document.getElementById('btnUpdatePurchase');
+  const btnRequestNormal = document.getElementById('btnRequestNormal');
+  const btnRequestOverBudget = document.getElementById('btnRequestOverBudget');
+
+  function handlePreview() {
     function formatThaiDate(inputId) {
       const value = document.getElementById(inputId)?.value || '-';
 
@@ -1393,10 +1571,15 @@ document.addEventListener('DOMContentLoaded', function () {
     let BookingDate = formatThaiDate('BookingDate');
 
     //ข้อมูลการขาย
-    const model = document.getElementById('carOrderModel')?.value || '-';
-    const subModel = document.getElementById('carOrderSubModel')?.value || '-';
-    const option = document.getElementById('carOrderOption')?.value || '-';
-    const color = document.getElementById('carOrderColor')?.value || '-';
+    const model = document.querySelector('#model_id option:checked')?.textContent || '-';
+    const selectedModel = document.querySelector('#model_id option:checked');
+    const overBudget = selectedModel?.dataset.overbudget || '-';
+
+    console.log('over budget:', overBudget);
+    const subModel = document.querySelector('#subModel_id option:checked')?.textContent || '-';
+    const option = document.getElementById('option')?.value || '-';
+    const color = document.getElementById('Color')?.value || '-';
+
     const carSale = document.getElementById('carOrderSale')?.value || '-';
     const extraTotal = document.querySelector('#total-price-extra')?.textContent || '-';
     const giftTotal = Number(document.querySelector('#total_gift_used')?.value || 0).toLocaleString(undefined, {
@@ -1417,6 +1600,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const downPaymentDiscount = document.getElementById('DownPaymentDiscount')?.value || '-';
 
     // วันออกรถ
+    const poNumber = document.getElementById('remaining_po_number')?.value || '-';
     const TotalPaymentatDeliveryCar = document.getElementById('TotalPaymentatDeliveryCar')?.value || '-';
     const financeCompany = document.querySelector('#remaining_finance option:checked')?.textContent || '-';
     const balanceFinanceDisplay = document.getElementById('balanceFinanceDisplay')?.value || '-';
@@ -1439,11 +1623,18 @@ document.addEventListener('DOMContentLoaded', function () {
     //หาค่า ยอดรวมรายการที่ใช้
     const downPay = parseFloat(document.getElementById('DownPaymentDiscount')?.value.replace(/,/g, '') || 0);
     const gift = parseFloat(document.querySelector('#total-price-gift')?.textContent.replace(/,/g, '') || 0);
-    const totalUseFinance = downPay + gift;
+    const refA = parseFloat(document.getElementById('ReferrerAmount')?.value.replace(/,/g, '') || 0);
+
+    //แนะนำ
+    const customerIDRef = document.getElementById('customerIDRef')?.value || '-';
+    const ReferrerAmount = document.getElementById('ReferrerAmount')?.value || '-';
+
+    const totalUseFinance = downPay + gift + refA;
 
     //หาค่า คงเหลือ
     const totalBalanceFinance = totalcam90 - totalUseFinance;
-    const totalBalanceFinance2 = Math.max(totalBalanceFinance / 2, 0);
+    const totalBalanceFinance2 = totalBalanceFinance / 2;
+    // const totalBalanceFinance2 = Math.max(totalBalanceFinance / 2, 0); ให้เป็น 0 ถ้าติดลบ
 
     //else
     const paymentDiscount = document.getElementById('PaymentDiscount')?.value || '0';
@@ -1458,11 +1649,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const payDis = parseFloat(document.getElementById('PaymentDiscount')?.value.replace(/,/g, '') || 0);
 
     //หาค่า ยอดรวมรายการที่ใช้
-    const totalUse = payDis + gift;
+    const totalUse = payDis + gift + refA;
 
     //หาค่า คงเหลือ
     const totalBalance = totalCampaign - totalUse;
-    const totalBalance2 = Math.max(totalBalance / 2, 0);
+    const totalBalance2 = totalBalance / 2;
+    // const totalBalance2 = Math.max(totalBalance / 2, 0); ให้เป็น 0 ถ้าติดลบ
 
     let price = '-';
     let discountHtml = '';
@@ -1499,6 +1691,10 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="d-flex justify-content-between mb-2">
             <strong>สรุปค่าใช้จ่ายวันออกรถ :</strong>
             <span>${TotalPaymentatDeliveryCar} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>Po Number :</strong>
+            <span>${poNumber}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
             <strong>ไฟแนนซ์ :</strong>
@@ -1560,6 +1756,10 @@ document.addEventListener('DOMContentLoaded', function () {
             <span>${giftTotal} บาท</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
+            <strong>ค่าแนะนำ :</strong>
+            <span>${ReferrerAmount} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
             <strong>ยอดรวมรายการที่ใช้ :</strong>
             <span>${totalUseFinance.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
           </div>
@@ -1600,6 +1800,10 @@ document.addEventListener('DOMContentLoaded', function () {
             <span>${giftTotal} บาท</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
+            <strong>ค่าแนะนำ :</strong>
+            <span>${ReferrerAmount} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
             <strong>ยอดรวมรายการที่ใช้ :</strong>
             <span>${totalUse.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
           </div>
@@ -1613,9 +1817,6 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
       `;
     }
-
-    const customerIDRef = document.getElementById('customerIDRef')?.value || '-';
-    const ReferrerAmount = document.getElementById('ReferrerAmount')?.value || '-';
 
     //campaign
     // ดึงชื่อแคมเปญที่เลือกไว้
@@ -1754,15 +1955,23 @@ document.addEventListener('DOMContentLoaded', function () {
     let DeliveryInDMSDate = formatThaiDate('DeliveryInDMSDate');
     let DeliveryInCKDate = formatThaiDate('DeliveryInCKDate');
 
-    const AdminSignature = document.querySelector('#AdminSignature option:checked')?.textContent || '-';
+    const AdminSignature = document.querySelector('#AdminSignature').checked
+      ? 'เช็ครายการเรียบร้อยแล้ว'
+      : 'ยังไม่ได้เช็ค';
     let AdminCheckedDate = formatThaiDate('AdminCheckedDate');
-    const CheckerID = document.querySelector('#CheckerID option:checked')?.textContent || '-';
+    const CheckerID = document.querySelector('#CheckerID').checked ? 'เช็ครายการเรียบร้อยแล้ว' : 'ยังไม่ได้เช็ค';
     let CheckerCheckedDate = formatThaiDate('CheckerCheckedDate');
-    const SMSignature = document.querySelector('#SMSignature option:checked')?.textContent || '-';
+    const SMSignature = document.querySelector('#SMSignature').checked ? 'เช็ครายการเรียบร้อยแล้ว' : 'ยังไม่ได้เช็ค';
     let SMCheckedDate = formatThaiDate('SMCheckedDate');
 
-    const ApprovalSignature = document.querySelector('#ApprovalSignature option:checked')?.textContent || '-';
-    const GMApprovalSignature = document.querySelector('#GMApprovalSignature option:checked')?.textContent || '-';
+    const ApprovalSignature = document.querySelector('#ApprovalSignature').checked
+      ? 'เช็ครายการเรียบร้อยแล้ว'
+      : 'ยังไม่ได้เช็ค';
+    let ApprovalSignatureDate = formatThaiDate('ApprovalSignatureDate');
+    const GMApprovalSignature = document.querySelector('#GMApprovalSignature').checked
+      ? 'เช็ครายการเรียบร้อยแล้ว'
+      : 'ยังไม่ได้เช็ค';
+    let GMApprovalSignatureDate = formatThaiDate('GMApprovalSignatureDate');
 
     // จังหวัดที่จดทะเบียน
     let RegistrationProvince = '-';
@@ -1779,6 +1988,68 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // สถานะ
     const con_status = document.querySelector('#con_status option:checked')?.textContent || '-';
+
+    let dateAppHtml = '';
+    if (userRole === 'audit' || userRole === 'manager' || userRole === 'md') {
+      dateAppHtml = `
+      <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่ส่งมอบในระบบ DMS :</strong>
+            <span>${DeliveryInDMSDate}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่ส่งมอบตามยอดชูเกียรติ :</strong>
+            <span>${DeliveryInCKDate}</span>
+          </div>
+
+          <h5 class="border-bottom pb-2 mb-3">ผู้อนุมัติ</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ผู้เช็ครายการ (แอดมินขาย) :</strong>
+            <span>${AdminSignature}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่แอดมินเช็ครายการ :</strong>
+            <span>${AdminCheckedDate}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ผู้ตรวจสอบรายการ (IA) :</strong>
+            <span>${CheckerID}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่ฝ่ายตรวจสอบเช็ครายการ :</strong>
+            <span>${CheckerCheckedDate}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ผู้อนุมัติรายการ (ผู้จัดการขาย) :</strong>
+            <span>${SMSignature}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่ผู้จัดการขายอนุมัติ :</strong>
+            <span>${SMCheckedDate}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ผู้อนุมัติการขายกรณีเกินจากงบ :</strong>
+            <span>${ApprovalSignature}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่ผู้จัดการอนุมัติการขาย :</strong>
+            <span>${ApprovalSignatureDate}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>GM อนุมัติกรณีงบเกิน (N) :</strong>
+            <span>${GMApprovalSignature}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>วันที่ GM อนุมัติกรณีงบเกิน :</strong>
+            <span>${GMApprovalSignatureDate}</span>
+          </div>
+
+          <h5 class="border-bottom pb-2 mb-3">สถานะ</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>สถานะ :</strong>
+            <span>${con_status}</span>
+          </div>
+    `;
+    }
 
     const html = `
       <div class="row">
@@ -1890,62 +2161,53 @@ document.addEventListener('DOMContentLoaded', function () {
             <strong>วันส่งมอบจริง (วันที่แจ้งประกัน) :</strong>
             <span>${DeliveryDate}</span>
           </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ส่งมอบในระบบ DMS :</strong>
-            <span>${DeliveryInDMSDate}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ส่งมอบตามยอดชูเกียรติ :</strong>
-            <span>${DeliveryInCKDate}</span>
-          </div>
-
-          <h5 class="border-bottom pb-2 mb-3">ผู้อนุมัติ</h5>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้เช็ครายการ (แอดมินขาย) :</strong>
-            <span>${AdminSignature}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่แอดมินเช็ครายการ :</strong>
-            <span>${AdminCheckedDate}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้ตรวจสอบรายการ (IA) :</strong>
-            <span>${CheckerID}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ฝ่ายตรวจสอบเช็ครายการ :</strong>
-            <span>${CheckerCheckedDate}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้อนุมัติรายการ (ผู้จัดการขาย) :</strong>
-            <span>${SMSignature}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ผู้จัดการขายอนุมัติ :</strong>
-            <span>${SMCheckedDate}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้อนุมัติการขายกรณีเกินจากงบ :</strong>
-            <span>${ApprovalSignature}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>GM อนุมัติกรณีงบเกิน (N) :</strong>
-            <span>${GMApprovalSignature}</span>
-          </div>
-
-          <h5 class="border-bottom pb-2 mb-3">สถานะ</h5>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>สถานะ :</strong>
-            <span>${con_status}</span>
-          </div>
+          
+          ${dateAppHtml}
 
         </div>
       </div>
     `;
 
+    //ต้องเก็บรายละเอียดเรื่องรุ่นรถเพิ่ม เพราะข้อมูลรุ่นรถมีเยอะ อันนี้เช็คแค่
+    const raw = document.getElementById('balanceCampaign')?.value || '';
+    const balanceCam = parseFloat(raw.replace(/,/g, '')) || 0;
+
+    const budget = document.querySelector('#model_id option:checked')?.dataset.overbudget || '-';
+
+    //เกินงบบ
+    if (balanceCam > budget) {
+      if (!hasApproval) {
+        if (userRole === 'sale') {
+          btnRequestOverBudget.classList.remove('d-none');
+        } else {
+          btnSave.classList.remove('d-none');
+        }
+      } else {
+        btnSave.classList.remove('d-none');
+      }
+    }
+
+    //ยอดปกติ
+    else {
+      if (!hasApproval) {
+        // ยังไม่มีอนุมัติ
+        if (userRole === 'sale') {
+          btnRequestNormal.classList.remove('d-none'); // ขออนุมัติ
+        } else {
+          btnSave.classList.remove('d-none'); // role อื่น → บันทึก
+        }
+      } else {
+        // มีอนุมัติแล้ว → บันทึกได้ทุก role
+        btnSave.classList.remove('d-none');
+      }
+    }
+
     content.innerHTML = html;
     modal.show();
-  });
+  }
+
+  btnPreviewCar?.addEventListener('click', handlePreview);
+  btnPreviewMore?.addEventListener('click', handlePreview);
 });
 
 // PO
@@ -1995,12 +2257,33 @@ $(document).ready(function () {
 let bookingTable;
 
 $(document).ready(function () {
-  if ($.fn.DataTable.isDataTable('.bookingTable')) {
-    $('.bookingTable').DataTable().destroy();
-  }
+  $('#filterModel').on('change', function () {
+    const modelId = $(this).val();
+
+    $('#filterSubModel').prop('disabled', true).html('<option value="">-- เลือกรุ่นรถย่อย --</option>');
+
+    if (!modelId) return;
+
+    $.get('/api/purchase-order/sub-model/' + modelId, function (res) {
+      $('#filterSubModel').prop('disabled', false);
+
+      res.forEach(item => {
+        $('#filterSubModel').append(`<option value="${item.id}">${item.name}</option>`);
+      });
+    });
+  });
 
   bookingTable = $('.bookingTable').DataTable({
-    ajax: '/purchase-order/list-booking',
+    ajax: {
+      url: '/purchase-order/list-booking',
+      data: function (d) {
+        d.model_id = $('#filterModel').val();
+        d.sub_model_id = $('#filterSubModel').val();
+        d.status_id = $('#filterStatus').val();
+        d.booking_start = $('#filterBookingStart').val();
+        d.booking_end = $('#filterBookingEnd').val();
+      }
+    },
     columns: [
       { data: 'No' },
       { data: 'model' },
@@ -2008,7 +2291,44 @@ $(document).ready(function () {
       { data: 'option' },
       { data: 'order' },
       { data: 'FullName' },
-      { data: 'date' }
+      { data: 'sale' },
+      { data: 'date' },
+      { data: 'daysBind' },
+      { data: 'status' }
+    ],
+    paging: true,
+    searching: true,
+    ordering: false,
+    pageLength: 10,
+    language: {
+      lengthMenu: 'แสดง _MENU_ แถว',
+      zeroRecords: 'ไม่พบข้อมูล',
+      info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
+      infoEmpty: 'ไม่มีข้อมูล',
+      paginate: { next: 'ถัดไป', previous: 'ก่อนหน้า' }
+    }
+  });
+
+  $('#btnSearch').on('click', function () {
+    bookingTable.ajax.reload();
+  });
+});
+
+// history
+let historyFinalTable;
+
+$(document).ready(function () {
+  if ($.fn.DataTable.isDataTable('.historyFinalTable')) {
+    $('.historyFinalTable').DataTable().destroy();
+  }
+
+  historyFinalTable = $('.historyFinalTable').DataTable({
+    ajax: '/purchase-order/list-history',
+    columns: [
+      { data: 'No' },
+      { data: 'FullName' },
+      { data: 'code' },
+      { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
     lengthChange: true,
@@ -2029,6 +2349,79 @@ $(document).ready(function () {
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
+    }
+  });
+});
+
+//view more history : modal
+$(document).on('click', '.btnViewHistory', function () {
+  const id = $(this).data('id');
+
+  $.get('/purchase-order/view-more-history/' + id, function (html) {
+    $('.viewMoreHistory').html(html);
+    $('.viewPurchaseHistory').modal('show');
+  });
+});
+
+// add payment for cash money
+document.addEventListener('DOMContentLoaded', function () {
+  const container = document.getElementById('paymentContainer');
+  const btnAdd = document.getElementById('btnAddPayment');
+
+  if (!container || !btnAdd) {
+    return;
+  }
+
+  btnAdd.addEventListener('click', function () {
+    const newRow = `
+      <div class="row g-3 mt-2 payment-row">
+      <input type="hidden" name="payment_id[]" value="">
+
+        <div class="col-md-4">
+          <label class="form-label">ประเภท</label>
+          <select name="payment_type[]" class="form-select">
+            <option value="">-- เลือกประเภท --</option>
+            <option value="cash">เงินสด</option>
+            <option value="transfer">เงินโอน</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">จำนวนเงิน</label>
+          <input type="text" name="payment_cost[]" class="form-control text-end money-input">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">วันที่จ่ายเงิน</label>
+          <input type="date" name="payment_date[]" class="form-control">
+        </div>
+
+        <div class="col-md-1 d-flex align-items-end">
+          <button type="button" class="btn btn-danger btnRemove">
+            <i class="bx bx-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+
+    container.insertAdjacentHTML('beforeend', newRow);
+    calculateBalance();
+  });
+
+  // ลบแถว
+  container.addEventListener('click', function (e) {
+    if (e.target.closest('.btnRemove')) {
+      const row = e.target.closest('.payment-row');
+      const id = row.querySelector('input[name="payment_id[]"]').value;
+
+      if (id) {
+        // ถ้าแถวนี้มี ID เก็บไว้ก่อน
+        let deleted = document.getElementById('deletedPayments');
+        deleted.value += id + ',';
+      }
+
+      row.remove();
+      calculateBalance();
     }
   });
 });
