@@ -4,7 +4,7 @@
 
 <!-- Page Scripts -->
 @section('page-script')
-@vite(['resources/assets/js/ui-modals.js'])
+@vite(['resources/js/pages/ui-modals.js'])
 @endsection
 
 @section('content')

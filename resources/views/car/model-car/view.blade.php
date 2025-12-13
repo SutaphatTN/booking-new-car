@@ -2,12 +2,12 @@
 @section('title', 'Data Model Car')
 
 @section('page-script')
-@vite(['resources/assets/js/car.js'])
+@vite(['resources/js/pages/car.js'])
 @endsection
 
 @section('content')
 <div class="inputCarModal"></div>
-<div class="editCarModal"></div> 
+<div class="editCarModal"></div>
 <div class="row">
   <div class="col-12">
     <div class="card">

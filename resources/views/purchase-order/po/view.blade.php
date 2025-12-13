@@ -2,7 +2,7 @@
 @section('title', 'Date Booking PO')
 
 @section('page-script')
-@vite(['resources/assets/js/purchase-order.js'])
+@vite(['resources/js/pages/purchase-order.js'])
 @endsection
 
 @section('content')

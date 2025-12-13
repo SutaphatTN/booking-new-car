@@ -2,12 +2,12 @@
 @section('title', 'Data Car Order')
 
 @section('page-script')
-@vite(['resources/assets/js/car-order.js'])
+@vite(['resources/js/pages/car-order.js'])
 @endsection
 
 @section('content')
 <div class="viewMoreCarOrder"></div>
-<div class="editCarOrderModal"></div> 
+<div class="editCarOrderModal"></div>
 <div class="row">
   <div class="col-12">
     <div class="card">

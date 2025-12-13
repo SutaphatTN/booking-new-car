@@ -4,7 +4,7 @@
 
 <!-- Page Script -->
 @section('page-script')
-@vite(['resources/assets/js/ui-toasts.js'])
+@vite(['resources/js/pages/ui-toasts.js'])
 @endsection
 
 @section('content')

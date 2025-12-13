@@ -7,7 +7,7 @@
 @endsection
 
 @section('page-script')
-@vite(['resources/assets/js/auth.js'])
+@vite(['resources/js/pages/auth.js'])
 @endsection
 
 @section('content')

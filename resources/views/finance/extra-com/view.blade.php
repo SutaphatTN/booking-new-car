@@ -2,12 +2,12 @@
 @section('title', 'Data Finance')
 
 @section('page-script')
-@vite(['resources/assets/js/finance.js'])
+@vite(['resources/js/pages/finance.js'])
 @endsection
 
 @section('content')
 <div class="inputFinExtraComModal"></div>
-<div class="editFinExtraComModal"></div> 
+<div class="editFinExtraComModal"></div>
 <div class="row">
   <div class="col-12">
     <div class="card">

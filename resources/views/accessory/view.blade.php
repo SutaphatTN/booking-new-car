@@ -2,13 +2,13 @@
 @section('title', 'Data Accessory')
 
 @section('page-script')
-@vite(['resources/assets/js/accessory.js'])
+@vite(['resources/js/pages/accessory.js'])
 @endsection
 
 @section('content')
 <div class="viewMoreAccModal"></div>
 <div class="inputAccModal"></div>
-<div class="editAccModal"></div> 
+<div class="editAccModal"></div>
 <div class="row">
   <div class="col-12">
     <div class="card">

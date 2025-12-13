@@ -2,12 +2,12 @@
 @section('title', 'Partner Accessory')
 
 @section('page-script')
-@vite(['resources/assets/js/accessory.js'])
+@vite(['resources/js/pages/accessory.js'])
 @endsection
 
 @section('content')
 <div class="inputPartModal"></div>
-<div class="editPartModal"></div> 
+<div class="editPartModal"></div>
 <div class="row">
   <div class="col-12">
     <div class="card">

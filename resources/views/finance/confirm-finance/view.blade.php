@@ -2,11 +2,11 @@
 @section('title', 'Date Booking Finance')
 
 @section('page-script')
-@vite(['resources/assets/js/finance.js'])
+@vite(['resources/js/pages/finance.js'])
 @endsection
 
 @section('content')
-<div class="editFinConfirmModal"></div> 
+<div class="editFinConfirmModal"></div>
 <div class="viewMoreFinConfirmModal"></div>
 <div class="row">
   <div class="col-12">

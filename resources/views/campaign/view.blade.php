@@ -2,13 +2,13 @@
 @section('title', 'Data Campaign')
 
 @section('page-script')
-@vite(['resources/assets/js/campaign.js'])
+@vite(['resources/js/pages/campaign.js'])
 @endsection
 
 @section('content')
 <div class="viewMoreCamModal"></div>
 <div class="inputCamModal"></div>
-<div class="editCamModal"></div> 
+<div class="editCamModal"></div>
 <div class="row">
   <div class="col-12">
     <div class="card">
