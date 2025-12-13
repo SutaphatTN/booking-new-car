@@ -11,3 +11,7 @@
 
 /* Fonts Icons */
 @import "../assets/vendor/fonts/iconify/iconify.css";
+
+/* Vendor CSS */
+@import "../assets/vendor/libs/datatables/datatables.min.css";
+@import "../assets/vendor/libs/select2/select2.min.css";
