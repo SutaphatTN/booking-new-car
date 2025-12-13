@@ -2,7 +2,7 @@
 @section('title', 'Data Accessory')
 
 @section('page-script')
-@vite(['resources/js/pages/accessory.js'])
+@vite(['resources/js/app.js'])
 @endsection
 
 @section('content')

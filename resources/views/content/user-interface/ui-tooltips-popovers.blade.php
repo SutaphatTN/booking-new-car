@@ -4,7 +4,7 @@
 
 <!-- Page Script -->
 @section('page-script')
-@vite(['resources/js/pages/ui-popover.js'])
+@vite(['resources/js/app.js'])
 @endsection
 
 @section('content')

@@ -4,7 +4,7 @@
 
 <!-- Page Scripts -->
 @section('page-script')
-@vite(['resources/js/pages/pages-account-settings-account.js'])
+@vite(['resources/js/app.js'])
 @endsection
 
 @section('content')
