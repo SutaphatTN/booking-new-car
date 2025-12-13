@@ -8,61 +8,61 @@
       <div class="modal-body">
         <div class="row">
           <div class="col-md-4 mb-5">
-            <label class="form-label">ชื่อ - นามสกุล</label>
-            <input class="form-control" type="text" value="{{ $sale->customer->prefix->Name_TH ?? '' }} {{ $sale->customer->FirstName ?? '-' }} {{ $sale->customer->LastName ?? '-' }}" disabled />
+            <label for="customer_fullname" class="form-label">ชื่อ - นามสกุล</label>
+            <input id="customer_fullname" class="form-control" type="text" value="{{ $sale->customer->prefix->Name_TH ?? '' }} {{ $sale->customer->FirstName ?? '-' }} {{ $sale->customer->LastName ?? '-' }}" disabled />
           </div>
 
           <div class="col-md-3 mb-5">
-            <label class="form-label">รุ่นรถหลัก</label>
-            <input type="text"
+            <label for="model_id" class="form-label">รุ่นรถหลัก</label>
+            <input id="model_id" type="text"
               class="form-control"
               value="{{ $sale->model->Name_TH ?? '-' }}" disabled>
           </div>
 
           <div class="col-md-5 mb-5">
-            <label lass="form-label">รุ่นรถย่อย</label>
-            <input type="text"
+            <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
+            <input id="subModel_id" type="text"
               class="form-control"
               value="{{ $sale->subModel->name ?? '-' }}" disabled>
           </div>
 
           <div class="col-md-3 mb-5">
-            <label class="form-label">Option</label>
-            <input type="text"
+            <label for="option" class="form-label">Option</label>
+            <input id="option" type="text"
               class="form-control"
               value="{{ $sale->option ?? '-' }}" disabled>
           </div>
 
           <div class="col-md-3 mb-5">
-            <label class="form-label">สี</label>
-            <input type="text"
+            <label for="Color" class="form-label">สี</label>
+            <input id="Color" type="text"
               class="form-control"
               value="{{ $sale->Color ?? '-' }}" disabled>
           </div>
 
           <div class="col-md-3 mb-5">
-            <label class="form-label">ปี</label>
-            <input type="text"
+            <label for="Year" class="form-label">ปี</label>
+            <input id="Year" type="text"
               class="form-control"
               value="{{ $sale->Year ?? '-' }}" disabled>
           </div>
 
           <div class="col-md-3 mb-5">
-            <label class="form-label">ดอกเบี้ย</label>
-            <input type="text"
+            <label for="interest" class="form-label">ดอกเบี้ย</label>
+            <input id="interest" type="text"
               class="form-control"
               value="{{ $sale->remainingPayment->interest . '%' ?? '-' }}" disabled>
           </div>
 
           <div class="col-md-4 mb-5">
-            <label class="form-label">ประเภทคอม</label>
-            <input type="text"
+            <label for="type_com" class="form-label">ประเภทคอม</label>
+            <input id="type_com" type="text"
               class="form-control"
               value="C{{ $sale->remainingPayment->type_com ?? '-' }}" disabled>
           </div>
 
           <div class="col-md-4 mb-5">
-            <label class="form-label">จำนวนปีที่ผ่อน</label>
+            <label for="period" class="form-label">จำนวนปีที่ผ่อน</label>
 
             @php
             $years = $sale->remainingPayment?->period
@@ -70,14 +70,14 @@
             : null;
             @endphp
 
-            <input type="text"
+            <input id="period" type="text"
               class="form-control"
               value="{{ $years ?? '-' }}" disabled>
           </div>
 
           <div class="col-md-4 mb-5">
-            <label class="form-label">ภาษีหัก ณ ที่จ่าย</label>
-            <input type="text"
+            <label for="tax" class="form-label">ภาษีหัก ณ ที่จ่าย</label>
+            <input id="tax" type="text"
               class="form-control"
               value="{{ $sale->remainingPayment?->financeInfo?->tax . '%' ?? '-' }}" disabled>
           </div>
@@ -149,7 +149,7 @@
 
           <div class="col-md-4 mb-5">
             <label for="date" class="form-label">วันที่ได้รับเงิน</label>
-            <input id="date" type="date"
+            <input id="date" type="text"
               class="form-control"
               name="date" value="{{ $fnCon->format_date ?? '-' }}" disabled>
           </div>

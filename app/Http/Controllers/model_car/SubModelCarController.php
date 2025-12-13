@@ -25,7 +25,10 @@ class SubModelCarController extends Controller
             $statusSubCar = '
             <div class="d-flex justify-content-center align-items-center">
                 <div class="form-check form-switch m-0">
-                    <input class="form-check-input status-sub-car" type="checkbox"
+                    <input class="form-check-input status-sub-car" 
+                        type="checkbox"
+                        id="status_sub_car_' . $s->id . '"
+                        name="status_sub_car_' . $s->id . '"
                         data-id="' . $s->id . '"
                         ' . ($s->active === 'active' ? 'checked' : '') . '>
                 </div>

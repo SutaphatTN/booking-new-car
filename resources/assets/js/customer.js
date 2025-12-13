@@ -46,6 +46,14 @@ $(document).ready(function () {
   });
 });
 
+// blur focus viewCust
+$(document).on('hide.bs.modal', '.viewCust', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //view : modal view-more
 $(document).on('click', '.btnViewCust', function () {
   const id = $(this).data('id');
@@ -54,6 +62,14 @@ $(document).on('click', '.btnViewCust', function () {
     $('#viewMore').html(html);
     $('.viewCust').modal('show');
   });
+});
+
+// blur focus editCust
+$(document).on('hide.bs.modal', '.editCust', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //view : modal edit

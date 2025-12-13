@@ -34,7 +34,7 @@
               <label for="name" class="form-label">ชื่อรุ่นรถย่อย</label>
               <input id="name" type="text"
                 class="form-control @error('name') is-invalid @enderror"
-                name="name" value="{{ $sub->name }}" required>
+                name="name" value="{{ $sub->name }}" autocomplete="off" required>
 
               @error('name')
               <span class="invalid-feedback" role="alert">
@@ -74,7 +74,7 @@
               <label for="over_budget" class="form-label">ยอดเงินเกินงบ</label>
               <input id="over_budget" type="text"
                 class="form-control text-end money-input"
-                name="over_budget" value="{{ $sub->over_budget }}">
+                name="over_budget" value="{{ $sub->over_budget !== null ? number_format($sub->over_budget, 2) : '' }}">
             </div>
 
           </div>

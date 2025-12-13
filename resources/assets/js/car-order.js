@@ -46,6 +46,14 @@ $(document).ready(function () {
   });
 });
 
+// blur focus viewCarOrder
+$(document).on('hide.bs.modal', '.viewCarOrder', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //view-more car-order
 $(document).on('click', '.btnViewCarOrder', function () {
   const id = $(this).data('id');
@@ -104,6 +112,14 @@ function toggleOrderStatusFields($modal) {
 $(document).on('change', '#order_status', function () {
   const $modal = $(this).closest('.modal');
   toggleOrderStatusFields($modal);
+});
+
+// blur focus editCarOrder
+$(document).on('hide.bs.modal', '.editCarOrder', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //edit : car-order
@@ -315,6 +331,14 @@ $(document).ready(function () {
   });
 });
 
+// blur focus inputCarOrder
+$(document).on('hide.bs.modal', '.inputCarOrder', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //input : modal car-order
 $(document).on('click', '.btnInputCarOrder', function () {
   $.get('/car-order/create', function (html) {
@@ -407,6 +431,14 @@ $(document).on('change', '#model_id', function () {
       alert('เกิดข้อผิดพลาดในการโหลดข้อมูลรุ่นย่อย');
     }
   });
+});
+
+// blur focus editPendingOrder
+$(document).on('hide.bs.modal', '.editPendingOrder', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //edit pending car-order
@@ -692,6 +724,14 @@ $(document).ready(function () {
 //   }
 // });
 
+// blur focus editProcessOrder
+$(document).on('hide.bs.modal', '.editProcessOrder', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 // edit process car-order
 $(document).on('click', '.btnProcessCarOrder', function () {
   const id = $(this).data('id');
@@ -832,6 +872,14 @@ $(document).ready(function () {
       }
     }
   });
+});
+
+// blur focus editApproveOrder
+$(document).on('hide.bs.modal', '.editApproveOrder', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 // edit approve car-order

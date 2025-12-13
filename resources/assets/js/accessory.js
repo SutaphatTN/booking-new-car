@@ -117,6 +117,14 @@ $(document).on('change', '.status-acc', function () {
   });
 });
 
+// blur focus viewAcc
+$(document).on('hide.bs.modal', '.viewAcc', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //view-more acc
 $(document).on('click', '.btnViewAcc', function () {
   const id = $(this).data('id');
@@ -125,6 +133,14 @@ $(document).on('click', '.btnViewAcc', function () {
     $('.viewMoreAccModal').html(html);
     $('.viewAcc').modal('show');
   });
+});
+
+// blur focus inputAcc
+$(document).on('hide.bs.modal', '.inputAcc', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //input : modal acc
@@ -219,6 +235,14 @@ $(document).on('click', '.btnStoreAccessory', function (e) {
       $btn.prop('disabled', false);
     }
   });
+});
+
+// blur focus editAcc
+$(document).on('hide.bs.modal', '.editAcc', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //edit acc
@@ -378,6 +402,14 @@ $(document).ready(function () {
   });
 });
 
+// blur focus inputPart
+$(document).on('hide.bs.modal', '.inputPart', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //input partner
 $(document).on('click', '.btnInputPart', function () {
   $.get('/accessory/create-partner', function (html) {
@@ -441,6 +473,14 @@ $(document).on('click', '.btnStorePartner', function (e) {
       $btn.prop('disabled', false);
     }
   });
+});
+
+// blur focus editPart
+$(document).on('hide.bs.modal', '.editPart', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //edit partner

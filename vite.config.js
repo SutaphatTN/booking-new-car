@@ -40,8 +40,10 @@ export default defineConfig({
     laravel({
       input: [
         'resources/css/app.css',
+        'resources/assets/vendor/scss/core.scss',
         'resources/assets/css/demo.css',
         'resources/js/app.js',
+        'resources/assets/vendor/fonts/iconify/iconify.css',
         ...pageJsFiles,
         ...vendorJsFiles,
         ...LibsJsFiles,

@@ -20,12 +20,12 @@
           <div class="row g-5">
 
             <div class="col-md-3">
-              <label class="form-label">รหัสผู้ขาย</label>
-              <input type="text" class="form-control" value="{{ Auth::user()->format_card_id }}" readonly>
+              <label for="sale_card" class="form-label">รหัสผู้ขาย</label>
+              <input id="sale_card" type="text" class="form-control" value="{{ Auth::user()->format_card_id }}" readonly>
             </div>
             <div class="col-md-4">
-              <label class="form-label">ชื่อ - นามสกุล ผู้ขาย</label>
-              <input type="text" class="form-control" value="{{ Auth::user()->name }}" readonly>
+              <label for="sale_name" class="form-label">ชื่อ - นามสกุล ผู้ขาย</label>
+              <input id="sale_name" type="text" class="form-control" value="{{ Auth::user()->name }}" readonly>
             </div>
 
             <input type="hidden"
@@ -33,7 +33,7 @@
               value="{{ Auth::user()->id }}">
 
             <div class="col-md-2">
-              <label class="form-label" for="BookingDate">วันที่จอง</label>
+              <label for="BookingDate" class="form-label" for="BookingDate">วันที่จอง</label>
               <input id="BookingDate" type="date"
                 class="form-control @error('BookingDate') is-invalid @enderror"
                 name="BookingDate" required>
@@ -58,15 +58,15 @@
             <input type="hidden" id="CusID" name="CusID">
 
             <div class="col-md-4">
-              <label class="form-label">ชื่อ - นามสกุล</label>
+              <label for="customerName" class="form-label">ชื่อ - นามสกุล</label>
               <input id="customerName" type="text" class="form-control" readonly>
             </div>
             <div class="col-md-4">
-              <label class="form-label" for="">เลขบัตรประชาชน</label>
+              <label for="customerID" class="form-label" for="">เลขบัตรประชาชน</label>
               <input id="customerID" type="text" class="form-control" readonly>
             </div>
             <div class="col-md-4">
-              <label class="form-label" for="">เบอร์โทรศัพท์</label>
+              <label for="customerPhone" class="form-label" for="">เบอร์โทรศัพท์</label>
               <input id="customerPhone" type="text" class="form-control" readonly>
             </div>
 
@@ -160,7 +160,7 @@
               <select id="payment_mode" name="payment_mode" class="form-select" required>
                 <option value="">-- เลือกประเภท --</option>
                 <option value="finance" {{ old('payment_mode') == 'finance' ? 'selected' : '' }}>ผ่อน</option>
-                <option value="non-finance" {{ old('payment_mode') == 'non-finance' ? 'selected' : '' }}>สด</option>
+                <option value="non-finance" {{ old('payment_mode') == 'non-finance' ? 'selected' : '' }}>เงินสด</option>
               </select>
             </div>
 

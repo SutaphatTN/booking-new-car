@@ -26,13 +26,16 @@ class CampaignController extends Controller
             $typeC = $c->type ? $c->type->name : '';
 
             $statusSwitch = '
-            <div class="d-flex justify-content-center align-items-center">
-                <div class="form-check form-switch m-0">
-                    <input class="form-check-input status-cam" type="checkbox"
-                        data-id="' . $c->id . '"
-                        ' . ($c->active === 'active' ? 'checked' : '') . '>
+                <div class="d-flex justify-content-center align-items-center">
+                    <div class="form-check form-switch m-0">
+                        <input class="form-check-input status-cam"
+                            type="checkbox"
+                            id="status_cam_' . $c->id . '"
+                            name="status_cam_' . $c->id . '"
+                            data-id="' . $c->id . '"
+                            ' . ($c->active === 'active' ? 'checked' : '') . '>
+                    </div>
                 </div>
-            </div>
             ';
 
             return [

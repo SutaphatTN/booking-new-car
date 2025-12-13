@@ -1,5 +1,5 @@
 <div class="modal fade editCar" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-md" role="document">
+  <div class="modal-dialog modal-sm" role="document">
     <div class="modal-content">
       <div class="modal-header border-bottom">
         <h4 class="modal-title mb-2" id="editCarLabel">แก้ไขข้อมูลรถรุ่นหลัก</h4>
@@ -44,7 +44,7 @@
               <label for="over_budget" class="form-label">ยอดเงินเกินงบ</label>
               <input id="over_budget" type="text"
                 class="form-control text-end money-input"
-                name="over_budget" value="{{ $car->over_budget }}">
+                name="over_budget" value="{{ $car->over_budget !== null ? number_format($car->over_budget, 2) : '' }}">
             </div>
 
           </div>

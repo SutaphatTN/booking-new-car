@@ -51,7 +51,7 @@
             @else
             <div class="col-md-12 mb-5">
               <label for="reason" class="form-label">เหตุผลที่ไม่ผ่านการอนุมัติ</label>
-              <textarea name="reason"
+              <textarea id="reason" name="reason"
                 class="form-control"
                 disabled>{{ $order->reason ?? '-' }}</textarea>
             </div>
@@ -59,74 +59,74 @@
 
             <div class="col-md-2 mb-5">
               <label for="type" class="form-label">ประเภท</label>
-              <input class="form-control" type="text" value="{{ $order->type }}" disabled />
+              <input id="type" class="form-control" type="text" value="{{ $order->type }}" disabled />
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="model_id" class="form-label">รุ่นรถหลัก</label>
-              <input class="form-control" type="text" value="{{ $order->model->Name_TH }}" disabled />
+              <input id="model_id" class="form-control" type="text" value="{{ $order->model->Name_TH }}" disabled />
             </div>
 
             <div class="col-md-6 mb-5">
               <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
-              <input class="form-control" type="text" value="{{ $order->subModel->name }}" disabled />
+              <input id="subModel_id" class="form-control" type="text" value="{{ $order->subModel->name }}" disabled />
             </div>
 
             <div class="col-md-3 mb-5">
               <label for="option" class="form-label">Option</label>
-              <input class="form-control" type="text" value="{{ $order->option }}" disabled />
+              <input id="option" class="form-control" type="text" value="{{ $order->option }}" disabled />
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="color" class="form-label">สี</label>
-              <input class="form-control" type="text" value="{{ $order->color }}" disabled />
+              <input id="color" class="form-control" type="text" value="{{ $order->color }}" disabled />
             </div>
 
             <div class="col-md-2 mb-5">
               <label for="year" class="form-label">ปี</label>
-              <input class="form-control" type="text" value="{{ $order->year }}" disabled />
+              <input id="year" class="form-control" type="text" value="{{ $order->year }}" disabled />
             </div>
 
             <div class="col-md-3 mb-5">
               <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
-              <input class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
+              <input id="order_date" class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="car_DNP" class="form-label">ราคาทุน</label>
-              <input class="form-control text-end" type="text" 
+              <input id="car_DNP" class="form-control text-end" type="text" 
               value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}" disabled />
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="car_MSRP" class="form-label">ราคาขาย</label>
-              <input class="form-control text-end" type="text" 
+              <input id="car_MSRP" class="form-control text-end" type="text" 
               value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}" disabled />
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="purchase_source" class="form-label">แหล่งที่มา</label>
-              <input class="form-control" type="text" value="{{ $order->purchase_source }}" disabled />
+              <input id="purchase_source" class="form-control" type="text" value="{{ $order->purchase_source }}" disabled />
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="purchase_type" class="form-label">ประเภทการซื้อรถ</label>
-              <input class="form-control" type="text" value="{{ $order->purchase_type }}" disabled />
+              <input id="purchase_type" class="form-control" type="text" value="{{ $order->purchase_type }}" disabled />
             </div>
 
             <div class="col-md-5 mb-5">
               <label for="approver" class="form-label">ผู้อนุมัติ</label>
-              <input class="form-control" type="text" value="{{ $order->approvers->name ?? '-' }}" disabled />
+              <input id="approver" class="form-control" type="text" value="{{ $order->approvers->name ?? '-' }}" disabled />
             </div>
 
             <div class="col-md-3 mb-5">
               <label for="approver_date" class="form-label">วันที่อนุมัติ</label>
-              <input class="form-control" type="text" value="{{ $order->format_approver_date }}" disabled />
+              <input id="approver_date" class="form-control" type="text" value="{{ $order->format_approver_date }}" disabled />
             </div>
 
             <div class="col-md-12 mb-5">
               <label for="note" class="form-label">หมายเหตุ</label>
-              <textarea name="note"
+              <textarea id="note" name="note"
                 class="form-control"
                 disabled>{{ $order->note ?? '-' }}</textarea>
             </div>

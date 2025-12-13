@@ -17,7 +17,7 @@
               <label for="name" class="form-label">ชื่อแหล่งที่มา</label>
               <input id="name" type="text"
                 class="form-control @error('name') is-invalid @enderror"
-                name="name" required>
+                name="name" autocomplete="off" required>
 
               @error('name')
               <span class="invalid-feedback" role="alert">
@@ -27,7 +27,8 @@
             </div>
           </div>
 
-          <div class="d-flex justify-content-end">
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ยกเลิก</button>
             <button type="button" class="btn btn-primary btnStorePartner">บันทึก</button>
           </div>
 

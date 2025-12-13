@@ -29,7 +29,10 @@ class AccessoryController extends Controller
             $statusSwitch = '
             <div class="d-flex justify-content-center align-items-center">
                 <div class="form-check form-switch m-0">
-                    <input class="form-check-input status-acc" type="checkbox"
+                    <input class="form-check-input status-acc" 
+                        type="checkbox"
+                        id="status_acc_' . $a->id . '"
+                        name="status_acc_' . $a->id . '"
                         data-id="' . $a->id . '"
                         ' . ($a->active === 'active' ? 'checked' : '') . '>
                 </div>

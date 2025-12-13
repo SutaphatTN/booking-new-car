@@ -33,7 +33,7 @@
               <label for="name" class="form-label">ชื่อรุ่นรถย่อย</label>
               <input id="name" type="text"
                 class="form-control @error('name') is-invalid @enderror"
-                name="name" required>
+                name="name" autocomplete="off" required>
 
               @error('name')
               <span class="invalid-feedback" role="alert">

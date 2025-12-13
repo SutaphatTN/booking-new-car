@@ -24,122 +24,68 @@
                 </option>
                 @endforeach
               </select>
-
-              @error('PrefixName')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
             </div>
 
             <div class="col-md-5 mb-5">
-              <label class="form-label" for="FirstName">ชื่อ</label>
+              <label for="FirstName" class="form-label">ชื่อ</label>
               <input id="FirstName" type="text"
-                class="form-control @error('FirstName') is-invalid @enderror"
+                class="form-control"
                 name="FirstName" value="{{ $customers->FirstName }}" required>
-
-              @error('FirstName')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
             </div>
 
             <div class="col-md-5 mb-5">
-              <label class="form-label" for="LastName">นามสกุล</label>
+              <label for="LastName" class="form-label">นามสกุล</label>
               <input id="LastName" type="text"
-                class="form-control @error('LastName') is-invalid @enderror"
+                class="form-control"
                 name="LastName" value="{{ $customers->LastName }}" required>
-
-              @error('LastName')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
             </div>
 
             <div class="col-md-4 mb-5">
-              <label class="form-label" for="IDNumber">เลขบัตรประชาชน</label>
+              <label for="IDNumber" class="form-label">เลขบัตรประชาชน</label>
               <input id="IDNumber" type="text"
-                class="form-control @error('IDNumber') is-invalid @enderror"
+                class="form-control"
                 name="IDNumber" maxlength="17" value="{{ $customers->formatted_id_number }}" required>
-
-              @error('IDNumber')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
             </div>
 
             <div class="col-md-4 mb-5">
-              <label class="form-label" for="NewCardDate">วันออกบัตรประชาชน</label>
+              <label for="NewCardDate" class="form-label">วันออกบัตรประชาชน</label>
               <input id="NewCardDate" type="date"
-                class="form-control @error('NewCardDate') is-invalid @enderror"
+                class="form-control"
                 name="NewCardDate" value="{{ $customers->NewCardDate }}" required>
-
-              @error('NewCardDate')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
             </div>
 
             <div class="col-md-4 mb-5">
-              <label class="form-label" for="ExpireCard">วันที่บัตรประชาชนหมดอายุ</label>
+              <label for="ExpireCard" class="form-label">วันที่บัตรประชาชนหมดอายุ</label>
               <input id="ExpireCard" type="date"
-                class="form-control @error('ExpireCard') is-invalid @enderror"
+                class="form-control"
                 name="ExpireCard" value="{{ $customers->ExpireCard }}" required>
-
-              @error('ExpireCard')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
             </div>
 
             <div class="col-md-4 mb-5">
-              <label class="form-label" for="Birthday">วัน/เดือน/ปีเกิด</label>
+              <label for="Birthday" class="form-label">วัน/เดือน/ปีเกิด</label>
               <input id="Birthday" type="date"
-                class="form-control @error('Birthday') is-invalid @enderror"
+                class="form-control"
                 name="Birthday" max="{{ date('Y-m-d') }}" value="{{ $customers->Birthday }}" required>
-
-              @error('Birthday')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
             </div>
 
             <div class="col-md-4 mb-5">
-              <label class="form-label" for="Gender">เพศ</label>
+              <label for="Gender" class="form-label">เพศ</label>
               <select id="Gender" name="Gender" class="form-select" required>
                 <option value="">-- เลือกเพศ --</option>
                 <option value="Female" {{ $customers->Gender == 'Female' ? 'selected' : '' }}>หญิง</option>
                 <option value="Male" {{ $customers->Gender == 'Male' ? 'selected' : '' }}>ชาย</option>
               </select>
-
-              @error('Gender')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
             </div>
 
             <div class="col-md-4 mb-5">
-              <label class="form-label" for="Nationality">สัญชาติ</label>
+              <label for="Nationality" class="form-label">สัญชาติ</label>
               <input id="Nationality" type="text"
-                class="form-control @error('Nationality') is-invalid @enderror"
+                class="form-control"
                 name="Nationality" value="{{ $customers->Nationality }}" required>
-
-              @error('Nationality')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
             </div>
 
             <div class="col-md-4 mb-5">
-              <label class="form-label" for="religion">ศาสนา</label>
+              <label for="religion" class="form-label">ศาสนา</label>
               <select id="religion" name="religion" class="form-select" required>
                 <option value="">-- เลือกศาสนา --</option>
                 <option value="buddhist" {{ $customers->religion == 'buddhist' ? 'selected' : '' }}>พุทธ</option>
@@ -147,81 +93,64 @@
                 <option value="christian" {{ $customers->religion == 'Female' ? 'selected' : '' }}>คริสต์</option>
                 <option value="other" {{ $customers->religion == 'Male' ? 'selected' : '' }}>อื่นๆ</option>
               </select>
-
-              @error('religion')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
             </div>
 
             <div class="col-md-4 mb-5">
-              <label class="form-label" for="Mobilephone1">เบอร์โทรหลัก</label>
+              <label for="Mobilephone1" class="form-label">เบอร์โทรหลัก</label>
               <input id="Mobilephone1" type="text"
-                class="form-control @error('Mobilephone1') is-invalid @enderror"
+                class="form-control"
                 name="Mobilephone1" maxlength="12" value="{{ $customers->formatted_mobile }}" required>
-
-              @error('Mobilephone1')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
             </div>
 
             <div class="col-md-4 mb-5">
-              <label class="form-label" for="Mobilephone2">เบอร์โทรสำรอง</label>
+              <label for="Mobilephone2" class="form-label">เบอร์โทรสำรอง</label>
               <input id="Mobilephone2" type="text"
-                class="form-control @error('Mobilephone2') is-invalid @enderror"
+                class="form-control"
                 name="Mobilephone2" maxlength="12" value="{{ $customers->formatted_mobile_up}}">
-
-              @error('Mobilephone2')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
             </div>
 
             <div class="row mt-5">
-              <label class="form-label mb-4 fs-5" for="Address">ที่อยู่ปัจจุบัน</label>
+              <h3 class="form-label mb-4 fs-5" for="Address">ที่อยู่ปัจจุบัน</h3>
 
               <div class="col-md-2 mb-5">
-                <label class="form-label">เลขที่</label>
-                <input type="text" name="current_house_number"
+                <label for="current_house_number" class="form-label">เลขที่</label>
+                <input id="current_house_number" type="text" name="current_house_number"
                   class="form-control"
-                  value="{{ old('current_house_number', $currentAddress->house_number ?? '') }}">
+                  value="{{ old('current_house_number', $currentAddress->house_number ?? '') }}"
+                  required>
               </div>
 
               <div class="col-md-2 mb-5">
-                <label class="form-label">หมู่ที่</label>
-                <input type="text" name="current_group"
+                <label for="current_group" class="form-label">หมู่ที่</label>
+                <input id="current_group" type="text" name="current_group"
                   class="form-control"
                   value="{{ old('current_group', $currentAddress->group ?? '') }}">
               </div>
 
               <div class="col-md-4 mb-5">
-                <label class="form-label">หมู่บ้าน</label>
-                <input type="text" name="current_village"
+                <label for="current_village" class="form-label">หมู่บ้าน</label>
+                <input id="current_village" type="text" name="current_village"
                   class="form-control"
                   value="{{ old('current_village', $currentAddress->village ?? '') }}">
               </div>
 
               <div class="col-md-4 mb-5">
-                <label class="form-label">ซอย</label>
-                <input type="text" name="current_alley"
+                <label for="current_alley" class="form-label">ซอย</label>
+                <input id="current_alley" type="text" name="current_alley"
                   class="form-control"
                   value="{{ old('current_alley', $currentAddress->alley ?? '') }}">
               </div>
 
               <div class="col-md-4 mb-5">
-                <label class="form-label">ถนน</label>
-                <input type="text" name="current_road"
+                <label for="current_road" class="form-label">ถนน</label>
+                <input id="current_road" type="text" name="current_road"
                   class="form-control"
                   value="{{ old('current_road', $currentAddress->road ?? '') }}">
               </div>
 
               <div class="col-md-4 mb-5">
-                <label class="form-label">ตำบล/แขวง</label>
-                <input type="text" name="current_subdistrict"
+                <label for="current_subdistrict" class="form-label">ตำบล/แขวง</label>
+                <input id="current_subdistrict" type="text" name="current_subdistrict"
                   class="form-control @error('current_subdistrict') is-invalid @enderror"
                   value="{{ old('current_subdistrict', $currentAddress->subdistrict ?? '') }}" required>
 
@@ -233,8 +162,8 @@
               </div>
 
               <div class="col-md-4 mb-5">
-                <label class="form-label">อำเภอ/เขต</label>
-                <input type="text" name="current_district"
+                <label for="current_district" class="form-label">อำเภอ/เขต</label>
+                <input id="current_district" type="text" name="current_district"
                   class="form-control @error('current_district') is-invalid @enderror"
                   value="{{ old('current_district', $currentAddress->district ?? '') }}" required>
 
@@ -246,8 +175,8 @@
               </div>
 
               <div class="col-md-3 mb-5">
-                <label class="form-label">จังหวัด</label>
-                <input type="text" name="current_province"
+                <label for="current_province" class="form-label">จังหวัด</label>
+                <input id="current_province" type="text" name="current_province"
                   class="form-control @error('current_province') is-invalid @enderror"
                   value="{{ old('current_province', $currentAddress->province ?? '') }}" required>
 
@@ -259,8 +188,8 @@
               </div>
 
               <div class="col-md-2 mb-5">
-                <label class="form-label">เลขไปรษณีย์</label>
-                <input type="text" name="current_postal_code"
+                <label for="current_postal_code" class="form-label">เลขไปรษณีย์</label>
+                <input id="current_postal_code" type="text" name="current_postal_code"
                   class="form-control @error('current_postal_code') is-invalid @enderror"
                   value="{{ old('current_postal_code', $currentAddress->postal_code ?? '') }}" required>
 
@@ -296,7 +225,7 @@
                       type="checkbox"
                       id="sameAsCurrent"
                       {{ $isSameAddress ? 'checked' : '' }}>
-                    <label class="form-check-label fs-6" for="sameAsCurrent">
+                    <label for="sameAsCurrent" class="form-check-label fs-6">
                       ใช้ที่อยู่เดียวกับที่อยู่ปัจจุบัน
                     </label>
                   </div>
@@ -304,43 +233,43 @@
               </label>
 
               <div class="col-md-2 mb-5">
-                <label class="form-label">เลขที่</label>
-                <input type="text" name="doc_house_number"
+                <label for="doc_house_number" class="form-label">เลขที่</label>
+                <input id="doc_house_number" type="text" name="doc_house_number"
                   class="form-control"
                   value="{{ old('doc_house_number', $docAddress->house_number ?? '') }}">
               </div>
 
               <div class="col-md-2 mb-5">
-                <label class="form-label">หมู่ที่</label>
-                <input type="text" name="doc_group"
+                <label for="doc_group" class="form-label">หมู่ที่</label>
+                <input id="doc_group" type="text" name="doc_group"
                   class="form-control"
                   value="{{ old('doc_group', $docAddress->group ?? '') }}">
               </div>
 
               <div class="col-md-4 mb-5">
-                <label class="form-label">หมู่บ้าน</label>
-                <input type="text" name="doc_village"
+                <label for="doc_village" class="form-label">หมู่บ้าน</label>
+                <input id="doc_village" type="text" name="doc_village"
                   class="form-control"
                   value="{{ old('doc_village', $docAddress->village ?? '') }}">
               </div>
 
               <div class="col-md-4 mb-5">
-                <label class="form-label">ซอย</label>
-                <input type="text" name="doc_alley"
+                <label for="doc_alley" class="form-label">ซอย</label>
+                <input id="doc_alley" type="text" name="doc_alley"
                   class="form-control"
                   value="{{ old('doc_alley', $docAddress->alley ?? '') }}">
               </div>
 
               <div class="col-md-4 mb-5">
-                <label class="form-label">ถนน</label>
-                <input type="text" name="doc_road"
+                <label for="doc_road" class="form-label">ถนน</label>
+                <input id="doc_road" type="text" name="doc_road"
                   class="form-control"
                   value="{{ old('doc_road', $docAddress->road ?? '') }}">
               </div>
 
               <div class="col-md-4 mb-5">
-                <label class="form-label">ตำบล/แขวง</label>
-                <input type="text" name="doc_subdistrict"
+                <label for="doc_subdistrict" class="form-label">ตำบล/แขวง</label>
+                <input id="doc_subdistrict" type="text" name="doc_subdistrict"
                   class="form-control @error('doc_subdistrict') is-invalid @enderror"
                   value="{{ old('doc_subdistrict', $docAddress->subdistrict ?? '') }}" required>
 
@@ -352,8 +281,8 @@
               </div>
 
               <div class="col-md-4 mb-5">
-                <label class="form-label">อำเภอ/เขต</label>
-                <input type="text" name="doc_district"
+                <label for="doc_district" class="form-label">อำเภอ/เขต</label>
+                <input id="doc_district" type="text" name="doc_district"
                   class="form-control @error('doc_district') is-invalid @enderror"
                   value="{{ old('doc_district', $docAddress->district ?? '') }}" required>
 
@@ -365,8 +294,8 @@
               </div>
 
               <div class="col-md-3 mb-5">
-                <label class="form-label">จังหวัด</label>
-                <input type="text" name="doc_province"
+                <label for="doc_province" class="form-label">จังหวัด</label>
+                <input id="doc_province" type="text" name="doc_province"
                   class="form-control @error('doc_province') is-invalid @enderror"
                   value="{{ old('doc_province', $docAddress->province ?? '') }}" required>
 
@@ -378,8 +307,8 @@
               </div>
 
               <div class="col-md-2 mb-5">
-                <label class="form-label">เลขไปรษณีย์</label>
-                <input type="text" name="doc_postal_code"
+                <label for="doc_postal_code" class="form-label">เลขไปรษณีย์</label>
+                <input id="doc_postal_code" type="text" name="doc_postal_code"
                   class="form-control @error('doc_postal_code') is-invalid @enderror"
                   value="{{ old('doc_postal_code', $docAddress->postal_code ?? '') }}" required>
 
@@ -393,7 +322,8 @@
 
           </div>
 
-          <div class="d-flex justify-content-end">
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ยกเลิก</button>
             <button type="button" id="btnUpdateCustomer" class="btn btn-primary">บันทึก</button>
           </div>
 

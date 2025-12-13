@@ -51,7 +51,7 @@
               <label for="name" class="form-label">ชื่อแคมเปญ</label>
               <input id="name" type="text"
                 class="form-control @error('name') is-invalid @enderror"
-                name="name" value="{{ $cam->name }}" required>
+                name="name" value="{{ $cam->name }}" autocomplete="off" required>
 
               @error('name')
               <span class="invalid-feedback" role="alert">

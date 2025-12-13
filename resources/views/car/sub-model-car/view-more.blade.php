@@ -9,22 +9,17 @@
         <div class="row">
           <div class="col-md-12 mb-5">
             <label for="model_id" class="form-label">รุ่นรถหลัก</label>
-            <input class="form-control" type="text" value="{{ $sub->model->Name_TH }}" disabled />
+            <input id="model_id" class="form-control" type="text" value="{{ $sub->model->Name_TH }}" disabled />
           </div>
 
           <div class="col-md-12 mb-5">
             <label for="name" class="form-label">ชื่อรุ่นรถย่อย</label>
-            <input class="form-control" type="text" value="{{ $sub->name }}" disabled />
+            <input id="name" class="form-control" type="text" value="{{ $sub->name }}" autocomplete="off" disabled />
           </div>
-
-          <!-- <div class="col-md-8 mb-5">
-            <label for="code" class="form-label">รหัสรถ</label>
-            <input class="form-control" type="text" value="{{ $sub->code }}" disabled />
-          </div> -->
 
           <div class="col-md-12 mb-5">
             <label for="detail" class="form-label">รายละเอียด</label>
-            <textarea name="detail" class="form-control" disabled>{{ $sub->detail ?: '-' }}</textarea>
+            <textarea id="detail" name="detail" class="form-control" disabled>{{ $sub->detail ?: '-' }}</textarea>
           </div>
 
         </div>

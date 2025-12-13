@@ -75,6 +75,14 @@ $(document).on('blur', '.money-input', function () {
   }
 });
 
+// blur focus inputCar
+$(document).on('hide.bs.modal', '.inputCar', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //input : modal model-car
 $(document).on('click', '.btnInputCar', function () {
   $.get('/model-car/create', function (html) {
@@ -139,6 +147,14 @@ $(document).on('click', '.btnStoreCar', function (e) {
       $btn.prop('disabled', false);
     }
   });
+});
+
+// blur focus editCar
+$(document).on('hide.bs.modal', '.editCar', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //edit : model-car
@@ -342,6 +358,14 @@ $(document).on('change', '.status-sub-car', function () {
   });
 });
 
+// blur focus viewSubCar
+$(document).on('hide.bs.modal', '.viewSubCar', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //view-more sub-car
 $(document).on('click', '.btnViewSubCar', function () {
   const id = $(this).data('id');
@@ -350,6 +374,14 @@ $(document).on('click', '.btnViewSubCar', function () {
     $('.viewMoreSubCarModal').html(html);
     $('.viewSubCar').modal('show');
   });
+});
+
+// blur focus inputSubCar
+$(document).on('hide.bs.modal', '.inputSubCar', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //input : modal sub-model-car
@@ -416,6 +448,14 @@ $(document).on('click', '.btnStoreSubCar', function (e) {
       $btn.prop('disabled', false);
     }
   });
+});
+
+// blur focus editSubCar
+$(document).on('hide.bs.modal', '.editSubCar', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //edit : sub-model-car

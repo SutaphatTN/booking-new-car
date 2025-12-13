@@ -45,6 +45,14 @@ $(document).ready(function () {
   });
 });
 
+// blur focus inputFin
+$(document).on('hide.bs.modal', '.inputFin', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //input : modal fin
 $(document).on('click', '.btnInputFin', function () {
   $.get('/finance/create', function (html) {
@@ -109,6 +117,14 @@ $(document).on('click', '.btnStoreFinance', function (e) {
       $btn.prop('disabled', false);
     }
   });
+});
+
+// blur focus inputFin
+$(document).on('hide.bs.modal', '.editFin', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //edit : fin
@@ -308,6 +324,14 @@ $(document).on('blur', '.money-input', function () {
   this.value = formatMoney(val);
 });
 
+// blur focus inputFinExtraCom
+$(document).on('hide.bs.modal', '.inputFinExtraCom', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //input : modal fin
 $(document).on('click', '.btnInputFinExtraCom', function () {
   $.get('/finance/create-extra-com', function (html) {
@@ -372,6 +396,14 @@ $(document).on('click', '.btnStoreFinanceExtraCom', function (e) {
       $btn.prop('disabled', false);
     }
   });
+});
+
+// blur focus editFinExtraCom
+$(document).on('hide.bs.modal', '.editFinExtraCom', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //edit : fin extra com
@@ -535,6 +567,14 @@ $(document).ready(function () {
   });
 });
 
+// blur focus viewFinConfirm
+$(document).on('hide.bs.modal', '.viewFinConfirm', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //view-more fin confirm
 $(document).on('click', '.btnViewFNConfirm', function () {
   const id = $(this).data('id');
@@ -543,6 +583,14 @@ $(document).on('click', '.btnViewFNConfirm', function () {
     $('.viewMoreFinConfirmModal').html(html);
     $('.viewFinConfirm').modal('show');
   });
+});
+
+// blur focus editFinConfirm
+$(document).on('hide.bs.modal', '.editFinConfirm', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //edit : fin confirm

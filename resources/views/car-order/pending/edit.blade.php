@@ -113,7 +113,7 @@
 
             <div class="col-md-3 mb-5">
               <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
-              <input class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
+              <input id="order_date" class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
             </div>
 
             <div class="col-md-4 mb-5">

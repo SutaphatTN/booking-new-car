@@ -115,6 +115,14 @@ $(document).on('change', '.status-cam', function () {
   });
 });
 
+// blur focus viewCam
+$(document).on('hide.bs.modal', '.viewCam', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //view-more cam
 $(document).on('click', '.btnViewCam', function () {
   const id = $(this).data('id');
@@ -123,6 +131,14 @@ $(document).on('click', '.btnViewCam', function () {
     $('.viewMoreCamModal').html(html);
     $('.viewCam').modal('show');
   });
+});
+
+// blur focus inputCam
+$(document).on('hide.bs.modal', '.inputCam', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //input : modal cam
@@ -219,6 +235,13 @@ $(document).on('change', '#model_id', function () {
   });
 });
 
+// blur focus editCam
+$(document).on('hide.bs.modal', '.editCam', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
 
 //edit : cam
 $(document).on('click', '.btnEditCam', function () {
@@ -289,18 +312,19 @@ $(document).on('click', '.btnEditCam', function () {
 
 //calculate
 function updateCashSupportFinal() {
-    let cashSupport = parseFloat($('#cashSupport').val().replace(/,/g, '')) || 0;
-    let cashSupportDeduct = parseFloat($('#cashSupport_deduct').val().replace(/,/g, '')) || 0;
+  let cashSupport = parseFloat($('#cashSupport').val().replace(/,/g, '')) || 0;
+  let cashSupportDeduct = parseFloat($('#cashSupport_deduct').val().replace(/,/g, '')) || 0;
 
-    let cashSupportFinal = cashSupport - cashSupportDeduct;
+  let cashSupportFinal = cashSupport - cashSupportDeduct;
 
-    $('#cashSupport_final').val(cashSupportFinal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  $('#cashSupport_final').val(
+    cashSupportFinal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  );
 }
 
 $(document).on('input', '#cashSupport, #cashSupport_deduct', function () {
-    updateCashSupportFinal();
+  updateCashSupportFinal();
 });
-
 
 //delete cam
 $(document).on('click', '.btnDeleteCam', function () {

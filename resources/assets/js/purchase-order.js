@@ -161,6 +161,14 @@ $(document).on('click', '.btnDeleteSale', function () {
 
 //view more
 
+// blur focus viewPurchase
+$(document).on('hide.bs.modal', '.viewPurchase', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //view more : modal
 $(document).on('click', '.btnViewSale', function () {
   const id = $(this).data('id');
@@ -2351,6 +2359,14 @@ $(document).ready(function () {
       }
     }
   });
+});
+
+// blur focus viewPurchaseHistory
+$(document).on('hide.bs.modal', '.viewPurchaseHistory', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //view more history : modal
