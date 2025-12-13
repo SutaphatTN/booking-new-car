@@ -1,4 +1,13 @@
 @import '../assets/css/fonts.css';
 @import '../assets/css/inputs.css';
 @import '../assets/css/tables.css';
+
+/* Fonts */
+@import "../assets/vendor/scss/core.scss";
+@import "../assets/css/demo.css";
+
+/* Vendor Styles */
+@import "../assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.scss";
+
+/* Fonts Icons */
 @import "../assets/vendor/fonts/iconify/iconify.css";
