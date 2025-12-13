@@ -43,7 +43,6 @@ export default defineConfig({
         'resources/assets/vendor/scss/core.scss',
         'resources/assets/css/demo.css',
         'resources/js/app.js',
-        'resources/assets/vendor/fonts/iconify/iconify.css',
         ...pageJsFiles,
         ...vendorJsFiles,
         ...LibsJsFiles,
