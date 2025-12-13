@@ -1,8 +1,8 @@
-@php
-use Illuminate\Support\Facades\Vite;
-@endphp
+<!-- Sneat Helpers -->
+<script src="{{ asset('assets/vendor/js/helpers.js') }}"></script>
 
-@vite(['resources/css/app.css', 'resources/js/app.js'])
+<!-- Sneat Config -->
+<script src="{{ asset('assets/js/config.js') }}"></script>
 
-<!-- Place this tag in your head or just before your close body tag. -->
+<!-- External -->
 <script async defer src="https://buttons.github.io/buttons.js"></script>

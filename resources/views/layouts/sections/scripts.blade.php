@@ -1,15 +1,17 @@
 @yield('vendor-script')
-<!-- END: Page Vendor JS-->
-<!-- BEGIN: Theme JS-->
 
-<!-- END: Theme JS-->
-<!-- Pricing Modal JS-->
+<!-- Sneat Vendor JS -->
+<script src="{{ asset('assets/vendor/libs/jquery/jquery.js') }}"></script>
+<script src="{{ asset('assets/vendor/libs/popper/popper.js') }}"></script>
+<script src="{{ asset('assets/vendor/js/bootstrap.js') }}"></script>
+<script src="{{ asset('assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js') }}"></script>
+
+<!-- Sneat Main -->
+<script src="{{ asset('assets/vendor/js/menu.js') }}"></script>
+<script src="{{ asset('assets/js/main.js') }}"></script>
+
 @stack('pricing-script')
-<!-- END: Pricing Modal JS-->
-<!-- BEGIN: Page JS-->
 @yield('page-script')
-<!-- END: Page JS-->
 
-<!-- app JS -->
+<!-- Your App JS (Vite only) -->
 @vite(['resources/js/app.js'])
-<!-- END: app JS-->
