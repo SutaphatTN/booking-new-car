@@ -2,7 +2,7 @@
 @section('title', 'Data Car Order')
 
 @section('page-script')
-@vite(['resources/js/app.js'])
+@vite(['resources/assets/js/car-order.js'])
 @endsection
 
 @section('content')

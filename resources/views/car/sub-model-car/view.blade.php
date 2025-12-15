@@ -6,7 +6,7 @@
   window.routeSubModelCreate = "{{ route('model.sub-model.create') }}";
   window.routeSubModelEdit = "{{ route('model.sub-model.edit', ['sub_model_car' => ':id']) }}";
 </script>
-@vite(['resources/js/app.js'])
+@vite(['resources/assets/js/car.js'])
 @endsection
 
 @section('content')

@@ -2,7 +2,7 @@
 @section('title', 'Purchase Order History')
 
 @section('page-script')
-@vite(['resources/js/app.js'])
+@vite(['resources/assets/js/purchase-order.js'])
 @endsection
 
 @section('content')

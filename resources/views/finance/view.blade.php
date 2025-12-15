@@ -2,7 +2,7 @@
 @section('title', 'Data Finance Com Extra')
 
 @section('page-script')
-@vite(['resources/js/app.js'])
+@vite(['resources/assets/js/finance.js'])
 @endsection
 
 @section('content')

@@ -1,8 +1,8 @@
 @extends('layouts/contentNavbarLayout')
-@section('title', 'Date Booking Finance')
+@section('title', 'Data Booking Finance')
 
 @section('page-script')
-@vite(['resources/js/app.js'])
+@vite(['resources/assets/js/finance.js'])
 @endsection
 
 @section('content')
