@@ -1159,6 +1159,20 @@
                     </div>
                     @endif
 
+                    <h4 class="pt-2 pb-2 border-bottom">ยอดค่าคอม sale</h4>
+
+                    <div class="col-md-3">
+                      <label class="form-label">Commission Sale</label>
+                      <input type="text"
+                        class="form-control text-end money-input"
+                        id="CommissionSaleDisplay"
+                        value="{{ $saleCar->CommissionSale }}"
+                        readonly>
+                    </div>
+
+                    <input type="hidden" name="CommissionSale" id="CommissionSale"
+                      value="{{ old('CommissionSale', $saleCar->CommissionSale ?? '') }}">
+
                   </div>
 
                   @if ($userRole === 'sale')

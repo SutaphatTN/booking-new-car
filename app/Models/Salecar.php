@@ -177,6 +177,7 @@ class Salecar extends Model
 		'RemainingCashSuuportShared',
 		'SCCommissionIntPlus',
 		'TradeinComAmount',
+		'CommissionSale',
 		'CommissionDeduct',
 		'ApprovalSignature',
 		'ApprovalSignatureDate',

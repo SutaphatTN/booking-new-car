@@ -783,6 +783,8 @@ $(document).ready(function () {
       $(options.hiddenCom).val(totalCom);
 
       updateGrandTotals();
+      calculateCommissionSale();
+      calculateBalanceCampaign();
     }
 
     // ซ่อน/โชว์แถวว่าง
@@ -1086,6 +1088,8 @@ $(document).ready(function () {
     $('#TotalSaleCampaign').val(
       total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     );
+
+    calculateBalanceCampaign();
   }
 
   // คำนวณเมื่อเปลี่ยนค่า
@@ -1154,6 +1158,7 @@ document.addEventListener('DOMContentLoaded', function () {
     downPaymentPercentInput.value = '';
 
     calculateRemaining();
+    calculateBalanceCampaign();
 
     return { markup90, finalPrice };
   }
@@ -1320,6 +1325,7 @@ function calculateInstallment() {
   );
 }
 
+//edit : com C
 function calculateCommission() {
   const interest = parseFloat($('#remaining_interest').val()) || 0;
   const typeCom = $('#remaining_type_com').val();
@@ -1341,10 +1347,68 @@ function calculateCommission() {
       maximumFractionDigits: 2
     })
   );
+
+  calculateCommissionSale();
+}
+
+//edit : com sale
+function calculateCommissionSale() {
+  const balanceCam = safeNumber('#balanceCampaign');
+  const giftCom = safeNumber('#total_gift_com');
+  const extraCom = safeNumber('#total_extra_com');
+  const fiCom = safeNumber('#remaining_total_com');
+
+  const totalCommission = balanceCam + giftCom + extraCom + fiCom;
+
+  const formatted = totalCommission.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  $('#CommissionSaleDisplay').val(formatted);
+
+  $('#CommissionSale').val(totalCommission.toFixed(2));
+}
+
+// edit : cal balance cam
+function calculateBalanceCampaign() {
+  const paymentType = document.querySelector('#payment_mode')?.value || '-';
+
+  const totalCampaign = safeNumber('#TotalSaleCampaign');
+  const markup90 = safeNumber('#Markup90');
+
+  const downPay = safeNumber('#DownPaymentDiscount');
+  const gift = safeNumber('#total-price-gift');
+  const refA = safeNumber('#ReferrerAmount');
+
+  const payDis = safeNumber('#PaymentDiscount');
+
+  const totalCam90 = totalCampaign + markup90;
+  const totalUseFinance = downPay + gift + refA;
+  const totalUseNon = payDis + gift + refA;
+
+  let balance = 0;
+
+  if (paymentType === 'finance') {
+    balance = (totalCam90 - totalUseFinance) / 2;
+  } else {
+    balance = (totalCampaign - totalUseNon) / 2;
+  }
+
+  const balanceCampaignInput = document.getElementById('balanceCampaign');
+  if (balanceCampaignInput) {
+    balanceCampaignInput.value = formatNumber(balance);
+  }
+
+  calculateCommissionSale();
 }
 
 //edit : event update
 $(document).on('input', 'input[name="payment_cost[]"]', calculateBalance);
+
+$(document).on('input change', '#payment_type, #TotalSaleCampaign, #Markup90, #DownPaymentDiscount, #total-price-gift, #PaymentDiscount, #ReferrerAmount', calculateBalanceCampaign);
+
+$(document).on('input change', '#remaining_total_com', calculateCommissionSale);
 
 $(document).ready(function () {
   $('#carOrderSubModel, #cost_turn, #reservation_cost, #carOrderSale').on('input change', updateSummary);
@@ -1359,6 +1423,9 @@ $(document).ready(function () {
     calculateBalance
   );
   $('#remaining_interest, #remaining_type_com').on('input change', calculateCommission);
+
+  calculateBalanceCampaign();
+  calculateCommissionSale();
 
   updateSummary();
 });
@@ -1412,6 +1479,7 @@ $(document).ready(function () {
 
     updateProvince();
     updateRemainingDate();
+    calculateBalanceCampaign();
   }
 
   // province
@@ -1583,7 +1651,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectedModel = document.querySelector('#model_id option:checked');
     const overBudget = selectedModel?.dataset.overbudget || '-';
 
-    console.log('over budget:', overBudget);
     const subModel = document.querySelector('#subModel_id option:checked')?.textContent || '-';
     const option = document.getElementById('option')?.value || '-';
     const color = document.getElementById('Color')?.value || '-';
@@ -1648,7 +1715,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const paymentDiscount = document.getElementById('PaymentDiscount')?.value || '0';
     const balanceValue = parseFloat(document.getElementById('balance')?.value.replace(/,/g, '') || 0);
 
-    // ฟอร์แมตเป็นเลขไทย/อังกฤษ มี comma และ 2 ทศนิยม
+    // ฟอร์แมตเป็นเลขไทย มี comma และ 2 ทศนิยม
     const balanceDisplay = balanceValue.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
@@ -1669,14 +1736,21 @@ document.addEventListener('DOMContentLoaded', function () {
     let campaignHtml = '';
 
     // ยอดรวม campaign แบ่งครึ่ง
-    const balanceCampaignInput = document.getElementById('balanceCampaign');
-    if (balanceCampaignInput) {
-      if (paymentType === 'finance') {
-        balanceCampaignInput.value = totalBalanceFinance2.toLocaleString('th-TH', { minimumFractionDigits: 2 });
-      } else {
-        balanceCampaignInput.value = totalBalance2.toLocaleString('th-TH', { minimumFractionDigits: 2 });
-      }
-    }
+    // const balanceCampaignInput = document.getElementById('balanceCampaign');
+    // if (balanceCampaignInput) {
+    //   if (paymentType === 'finance') {
+    //     balanceCampaignInput.value = totalBalanceFinance2.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+    //   } else {
+    //     balanceCampaignInput.value = totalBalance2.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+    //   }
+    // }
+
+    const balanceCampaignValue = safeNumber('#balanceCampaign');
+
+    const balanceCampaignDisplay = balanceCampaignValue.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
 
     if (paymentType === 'finance') {
       price = document.getElementById('CarSalePriceFinal')?.value || '-';
@@ -1777,7 +1851,7 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
           <div class="d-flex justify-content-between mb-2">
             <strong>คงเหลือ(แบ่ง 2 ส่วน) :</strong>
-            <span>${totalBalanceFinance2.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+            <span>${balanceCampaignDisplay} บาท</span>
           </div>
       `;
     } else {
@@ -1821,7 +1895,7 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
           <div class="d-flex justify-content-between mb-2">
             <strong>คงเหลือ(แบ่ง 2 ส่วน) :</strong>
-            <span>${totalBalance2.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+            <span>${balanceCampaignDisplay} บาท</span>
           </div>
       `;
     }

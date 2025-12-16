@@ -577,6 +577,9 @@ class PurchaseOrderController extends Controller
                 'RemainingCashSuuportShared' => $request->RemainingCashSuuportShared,
                 'SCCommissionIntPlus' => $request->SCCommissionIntPlus,
                 'TradeinComAmount' => $request->TradeinComAmount,
+                'CommissionSale' => $request->filled('CommissionSale')
+                    ? str_replace(',', '', $request->CommissionSale)
+                    : null,
                 'CommissionDeduct' => $request->CommissionDeduct,
                 'ApprovalSignature' => $request->ApprovalSignature,
                 'ApprovalSignatureDate' => $request->ApprovalSignatureDate,
