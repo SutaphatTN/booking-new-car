@@ -1194,12 +1194,10 @@ class PurchaseOrderController extends Controller
 
     public function viewMoreHistory($id)
     {
-        $saleCar = SaleCar::with([
-            'customer.prefix',
-            'model',
-        ])->find($id);
+        $saleCar = Salecar::with(['customer.prefix', 'customer.currentAddress', 'customer.documentAddress', 'customerReferrer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'conStatus', 'provinces', 'remainingPayment.financeInfo', 'campaigns.campaign.type', 'reservationPayment', 'remainingPayment', 'deliveryPayment'])->findOrFail($id);
+        $campaignText = $saleCar->campaigns->pluck('CampaignName')->join(' + ');
 
-        return view('purchase-order.history.view-more-history', compact('saleCar'));
+        return view('purchase-order.history.view-more-history', compact('saleCar', 'campaignText'));
     }
 
     public function exportBooking(Request $request)

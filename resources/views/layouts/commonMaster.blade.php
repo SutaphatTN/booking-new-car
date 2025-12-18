@@ -35,6 +35,13 @@
 
     <!-- Include Scripts for customizer, helper, analytics, config -->
     @include('layouts/sections/scriptsIncludes')
+
+    <style>
+        .loading-spinner {
+            width: 4.5rem;
+            height: 4.5rem;
+        }
+    </style>
 </head>
 
 <body>
@@ -42,10 +49,159 @@
     @yield('layoutContent')
     <!--/ Layout Content -->
 
-
-
     <!-- Include Scripts -->
     @include('layouts/sections/scripts')
+
+    @auth
+    <div class="modal fade" id="idleModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ยังใช้งานอยู่หรือไม่</h5>
+                </div>
+                <div class="modal-body">
+                    ระบบตรวจพบว่าไม่มีการใช้งานสักพัก
+                    หากไม่กดปุ่ม ระบบจะออกจากระบบอัตโนมัติ
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="stayBtn" class="btn btn-primary">
+                        ยังอยู่
+                    </button>
+                    <button type="button" id="logoutBtn" class="btn btn-danger">
+                        ออกจากระบบ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const IDLE_LIMIT = 3 * 60;
+        const LOGOUT_LIMIT = 15 * 60;
+
+        let idleTime = 0;
+        let countdownInterval = null;
+
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            .getAttribute('content');
+
+        function resetIdleTime() {
+            idleTime = 0;
+        }
+
+        ['mousemove', 'keydown', 'click', 'scroll'].forEach(event => {
+            document.addEventListener(event, resetIdleTime);
+        });
+
+        $(document).ajaxComplete(() => resetIdleTime());
+
+        function doLogout() {
+            fetch("{{ route('logout') }}", {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": csrfToken,
+                    "Accept": "application/json"
+                }
+            }).finally(() => {
+                window.location.href = "{{ route('login.index') }}";
+            });
+        }
+
+        function keepAlive() {
+            fetch('/keep-alive');
+        }
+
+        function showIdleModal() {
+            const modal = new bootstrap.Modal(document.getElementById('idleModal'));
+            modal.show();
+        }
+
+        setInterval(() => {
+            idleTime++;
+
+            if (idleTime === IDLE_LIMIT) {
+                showIdleModal();
+            }
+
+            if (idleTime >= LOGOUT_LIMIT) {
+                doLogout();
+            }
+        }, 1000);
+
+        document.getElementById('stayBtn')?.addEventListener('click', function() {
+            idleTime = 0;
+            bootstrap.Modal
+                .getInstance(document.getElementById('idleModal'))
+                .hide();
+
+            keepAlive();
+        });
+
+        document.getElementById('logoutBtn')?.addEventListener('click', function() {
+            doLogout();
+        });
+    </script>
+    @endauth
+
+    <div class="modal fade" id="loadingModal"
+        tabindex="-1"
+        data-bs-backdrop="static"
+        data-bs-keyboard="false"
+        aria-hidden="true">
+
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content bg-transparent border-0 d-flex align-items-center justify-content-center">
+
+                <div class="text-center">
+                    <div class="spinner-grow text-white loading-spinner" role="status"></div>
+                    <div class="mt-3 text-white fw-semibold fs-5">
+                        กำลังโหลดข้อมูล
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
 </body>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        const loadingModal = new bootstrap.Modal(
+            document.getElementById('loadingModal'), {
+                backdrop: 'static',
+                keyboard: false
+            }
+        );
+
+        let ajaxCount = 0;
+
+        $(document).ajaxSend(function(event, jqxhr, settings) {
+            if (settings.skipLoading === true || window.SKIP_NEXT_LOADING === true) {
+                return;
+            }
+
+            ajaxCount++;
+            loadingModal.show();
+        });
+
+        $(document).ajaxComplete(function(event, jqxhr, settings) {
+            if (settings.skipLoading === true || window.SKIP_NEXT_LOADING === true) {
+                window.SKIP_NEXT_LOADING = false;
+                return;
+            }
+
+            ajaxCount--;
+            if (ajaxCount <= 0) {
+                ajaxCount = 0;
+                loadingModal.hide();
+            }
+        });
+    });
+    
+</script>
+
 
 </html>

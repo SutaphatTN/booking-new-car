@@ -10,8 +10,13 @@ class LoginController extends Controller
 {
     public function index()
     {
+        if (Auth::check()) {
+            return redirect()->route('home');
+        }
+
         return view('auth.login');
     }
+
 
     public function store(Request $request)
     {
@@ -29,9 +34,13 @@ class LoginController extends Controller
         return back()->with('error', 'Username หรือ Password ไม่ถูกต้อง');
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
         Auth::logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         return redirect()->route('login.index');
     }
 }

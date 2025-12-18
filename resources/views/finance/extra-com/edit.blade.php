@@ -62,7 +62,7 @@
 
           <div class="d-flex justify-content-end gap-2">
             <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ยกเลิก</button>
-            <button type="button" class="btn btn-primary btnUpdateFinance">บันทึก</button>
+            <button type="button" class="btn btn-primary btnUpdateFinanceExtraCom">บันทึก</button>
           </div>
 
         </form>

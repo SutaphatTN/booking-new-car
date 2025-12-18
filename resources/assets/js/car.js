@@ -130,6 +130,8 @@ $(document).on('click', '.btnStoreCar', function (e) {
         timer: 2000,
         showConfirmButton: true
       });
+
+      window.SKIP_NEXT_LOADING = true;
       carTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -184,6 +186,7 @@ $(document).on('click', '.btnEditCar', function () {
           data: formData,
           processData: false,
           contentType: false,
+          skipLoading: true,
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -206,6 +209,7 @@ $(document).on('click', '.btnEditCar', function () {
               showConfirmButton: true
             });
 
+            window.SKIP_NEXT_LOADING = true;
             carTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -242,6 +246,7 @@ $(document).on('click', '.btnDeleteCar', function () {
       $.ajax({
         url: '/model-car/' + id,
         type: 'DELETE',
+        skipLoading: true,
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -251,6 +256,8 @@ $(document).on('click', '.btnDeleteCar', function () {
               timer: 2000,
               showConfirmButton: true
             });
+
+            window.SKIP_NEXT_LOADING = true;
             carTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -431,6 +438,8 @@ $(document).on('click', '.btnStoreSubCar', function (e) {
         timer: 2000,
         showConfirmButton: true
       });
+
+      window.SKIP_NEXT_LOADING = true;
       subCarTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -487,6 +496,7 @@ $(document).on('click', '.btnEditSubCar', function () {
           data: formData,
           processData: false,
           contentType: false,
+          skipLoading: true,
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -509,6 +519,7 @@ $(document).on('click', '.btnEditSubCar', function () {
               showConfirmButton: true
             });
 
+            window.SKIP_NEXT_LOADING = true;
             subCarTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -545,6 +556,7 @@ $(document).on('click', '.btnDeleteSubCar', function () {
       $.ajax({
         url: '/sub-model-car/' + id,
         type: 'DELETE',
+        skipLoading: true,
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -554,6 +566,8 @@ $(document).on('click', '.btnDeleteSubCar', function () {
               timer: 2000,
               showConfirmButton: true
             });
+
+            window.SKIP_NEXT_LOADING = true;
             subCarTable.ajax.reload(null, false);
           } else {
             Swal.fire({

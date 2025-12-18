@@ -214,6 +214,9 @@ Route::group(['middleware' => 'auth'], function () {
 
     //logout
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    Route::get('/keep-alive', function () {
+        return response()->json(['status' => 'ok']);
+    });
 
     //car-order
     Route::get('car-order/list', [CarOrderController::class, 'listCarOrder']);

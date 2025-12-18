@@ -119,7 +119,7 @@
     {
       "name": "ไฟแนนซ์",
       "icon": "menu-icon icon-base bx bx-buildings",
-      "slug": "model",
+      "slug": "finance",
       "submenu": [
         {
           "url": "finance",

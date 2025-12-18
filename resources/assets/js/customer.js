@@ -103,6 +103,7 @@ $(document).on('click', '.btnEditCust', function () {
           data: formData,
           processData: false,
           contentType: false,
+          skipLoading: true,
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -122,9 +123,10 @@ $(document).on('click', '.btnEditCust', function () {
               title: 'สำเร็จ!',
               text: res.message,
               timer: 2000,
-              showConfirmButton: true
+              showConfirmButton: true,
             });
 
+            window.SKIP_NEXT_LOADING = true;
             customerTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -161,6 +163,8 @@ $(document).on('click', '.btnDeleteCust', function () {
       $.ajax({
         url: '/customer/' + id,
         type: 'DELETE',
+        skipLoading: true,
+        skipLoading: true,
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -170,6 +174,8 @@ $(document).on('click', '.btnDeleteCust', function () {
               timer: 2000,
               showConfirmButton: true
             });
+
+            window.SKIP_NEXT_LOADING = true;
             customerTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -324,6 +330,7 @@ document.addEventListener('DOMContentLoaded', function () {
       type: 'POST',
       data: formData,
       contentType: false,
+      skipLoading: true,
       processData: false,
       beforeSend: function () {
         Swal.fire({

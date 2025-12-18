@@ -100,6 +100,8 @@ $(document).on('click', '.btnStoreFinance', function (e) {
         timer: 2000,
         showConfirmButton: true
       });
+
+      window.SKIP_NEXT_LOADING = true;
       financeTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -154,6 +156,7 @@ $(document).on('click', '.btnEditFin', function () {
           data: formData,
           processData: false,
           contentType: false,
+          skipLoading: true,
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -176,6 +179,7 @@ $(document).on('click', '.btnEditFin', function () {
               showConfirmButton: true
             });
 
+            window.SKIP_NEXT_LOADING = true;
             financeTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -212,6 +216,7 @@ $(document).on('click', '.btnDeleteFin', function () {
       $.ajax({
         url: '/finance/' + id,
         type: 'DELETE',
+        skipLoading: true,
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -221,6 +226,8 @@ $(document).on('click', '.btnDeleteFin', function () {
               timer: 2000,
               showConfirmButton: true
             });
+
+            window.SKIP_NEXT_LOADING = true;
             financeTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -379,6 +386,8 @@ $(document).on('click', '.btnStoreFinanceExtraCom', function (e) {
         timer: 2000,
         showConfirmButton: true
       });
+
+      window.SKIP_NEXT_LOADING = true;
       financeExtraComTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -433,6 +442,7 @@ $(document).on('click', '.btnEditFinExtraCom', function () {
           data: formData,
           processData: false,
           contentType: false,
+          skipLoading: true,
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -455,6 +465,7 @@ $(document).on('click', '.btnEditFinExtraCom', function () {
               showConfirmButton: true
             });
 
+            window.SKIP_NEXT_LOADING = true;
             financeExtraComTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -491,6 +502,7 @@ $(document).on('click', '.btnDeleteFinExtraCom', function () {
       $.ajax({
         url: '/finance/destroy-extra-com/' + id,
         type: 'DELETE',
+        skipLoading: true,
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -500,6 +512,8 @@ $(document).on('click', '.btnDeleteFinExtraCom', function () {
               timer: 2000,
               showConfirmButton: true
             });
+
+            window.SKIP_NEXT_LOADING = true;
             financeExtraComTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -625,6 +639,7 @@ $(document).on('click', '.btnEditFNConfirm', function () {
           data: formData,
           processData: false,
           contentType: false,
+          skipLoading: true,
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -647,6 +662,7 @@ $(document).on('click', '.btnEditFNConfirm', function () {
               showConfirmButton: true
             });
 
+            window.SKIP_NEXT_LOADING = true;
             confirmFNTable.ajax.reload(null, false);
           },
           error: function (xhr) {

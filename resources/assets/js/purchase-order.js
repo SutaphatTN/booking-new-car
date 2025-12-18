@@ -125,6 +125,7 @@ $(document).on('click', '.btnDeleteSale', function () {
       $.ajax({
         url: '/purchase-order/' + id,
         type: 'DELETE',
+        skipLoading: true,
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -134,6 +135,8 @@ $(document).on('click', '.btnDeleteSale', function () {
               timer: 2000,
               showConfirmButton: true
             });
+
+            window.SKIP_NEXT_LOADING = true;
             purchaseTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -366,6 +369,7 @@ document.addEventListener('DOMContentLoaded', function () {
       type: 'POST',
       data: formData,
       contentType: false,
+      skipLoading: true,
       processData: false,
       beforeSend: function () {
         Swal.fire({
@@ -1018,6 +1022,7 @@ $(document).ready(function () {
       data: formData,
       processData: false,
       contentType: false,
+      skipLoading: true,
       beforeSend: function () {
         Swal.fire({
           title: 'กำลังบันทึกข้อมูล...',
@@ -1353,10 +1358,12 @@ function calculateCommission() {
 
 //edit : com sale
 function calculateCommissionSale() {
-  const balanceCam = safeNumber('#balanceCampaign');
+  let balanceCam = safeNumber('#balanceCampaign');
   const giftCom = safeNumber('#total_gift_com');
   const extraCom = safeNumber('#total_extra_com');
   const fiCom = safeNumber('#remaining_total_com');
+
+  balanceCam = Math.min(balanceCam, 2500);
 
   const totalCommission = balanceCam + giftCom + extraCom + fiCom;
 
@@ -1406,7 +1413,11 @@ function calculateBalanceCampaign() {
 //edit : event update
 $(document).on('input', 'input[name="payment_cost[]"]', calculateBalance);
 
-$(document).on('input change', '#payment_type, #TotalSaleCampaign, #Markup90, #DownPaymentDiscount, #total-price-gift, #PaymentDiscount, #ReferrerAmount', calculateBalanceCampaign);
+$(document).on(
+  'input change',
+  '#payment_type, #TotalSaleCampaign, #Markup90, #DownPaymentDiscount, #total-price-gift, #PaymentDiscount, #ReferrerAmount',
+  calculateBalanceCampaign
+);
 
 $(document).on('input change', '#remaining_total_com', calculateCommissionSale);
 
@@ -1603,6 +1614,25 @@ $(document).ready(function () {
     let selectedPeriod = "{{ $remainingPayment->period ?? '' }}";
     renderPeriods(maxYear, selectedPeriod);
   }
+});
+
+//edit preview : all campaign
+function getSelectedCampaignText() {
+  const campaignSelect = document.getElementById('CampaignID');
+  if (!campaignSelect) return '-';
+
+  const selectedOptions = Array.from(campaignSelect.selectedOptions || []);
+  if (selectedOptions.length === 0) return '-';
+
+  return selectedOptions.map(opt => opt.textContent.trim()).join(' + ');
+}
+
+// blur focus previewPurchase
+$(document).on('hide.bs.modal', '#previewPurchase', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //edit : previewPurchase
@@ -1902,16 +1932,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     //campaign
     // ดึงชื่อแคมเปญที่เลือกไว้
-    const campaignSelect = document.getElementById('CampaignID');
-    let campaignList = [];
+    // const campaignSelect = document.getElementById('CampaignID');
+    // let campaignList = [];
 
-    if (campaignSelect) {
-      const selectedOptions = Array.from(campaignSelect.selectedOptions);
-      campaignList = selectedOptions.map(opt => opt.textContent.trim());
-    }
+    // if (campaignSelect) {
+    //   const selectedOptions = Array.from(campaignSelect.selectedOptions);
+    //   campaignList = selectedOptions.map(opt => opt.textContent.trim());
+    // }
+    const campaignText = getSelectedCampaignText();
 
     // รวมชื่อทั้งหมดคั่นด้วย " + "
-    const campaignText = campaignList.length > 0 ? campaignList.join(' + ') : '-';
+    // const campaignText = campaignList.length > 0 ? campaignList.join(' + ') : '-';
 
     //ของแถม
     const giftRows = document.querySelectorAll('#giftTablePrice tbody tr');
@@ -2139,7 +2170,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="col-md-6 border-end pe-3">
           <h5 class="border-bottom pb-2 mb-3">ข้อมูลลูกค้า</h5>
           <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่จอง:</strong>
+            <strong>วันที่จอง :</strong>
             <span>${BookingDate}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
@@ -2452,6 +2483,15 @@ $(document).on('click', '.btnViewHistory', function () {
     $('.viewPurchaseHistory').modal('show');
   });
 });
+
+//history ส่งมอบ แสดง campaign
+function updateViewMoreCampaign() {
+  const el = document.getElementById('viewMoreCampaignText');
+  if (!el) return;
+
+  const text = el.dataset.campaign || '-';
+  el.textContent = text;
+}
 
 // add payment for cash money
 document.addEventListener('DOMContentLoaded', function () {

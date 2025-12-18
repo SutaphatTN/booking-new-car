@@ -231,7 +231,6 @@ class Salecar extends Model
 		return $this->hasOne(CarOrderHistory::class, 'SaleID')->latest();
 	}
 
-
 	public function accessories()
 	{
 		return $this->belongsToMany(AccessoryPrice::class, 'saleaccessory', 'salecar_id', 'accessory_id')
@@ -317,5 +316,50 @@ class Salecar extends Model
 	public function getGMApprovalSignatureDateAttribute($value)
 	{
 		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getFormatDmsDateAttribute()
+	{
+		return $this->DeliveryInDMSDate ? Carbon::parse($this->DeliveryInDMSDate)->format('d-m-Y') : null;
+	}
+
+	public function getFormatCkDateAttribute()
+	{
+		return $this->DeliveryInCKDate ? Carbon::parse($this->DeliveryInCKDate)->format('d-m-Y') : null;
+	}
+
+	public function getFormatAdminCheckDateAttribute()
+	{
+		return $this->AdminCheckedDate ? Carbon::parse($this->AdminCheckedDate)->format('d-m-Y') : null;
+	}
+
+	public function getFormatCheckerDateAttribute()
+	{
+		return $this->CheckerCheckedDate ? Carbon::parse($this->CheckerCheckedDate)->format('d-m-Y') : null;
+	}
+
+	public function getFormatSmDateAttribute()
+	{
+		return $this->SMCheckedDate ? Carbon::parse($this->SMCheckedDate)->format('d-m-Y') : null;
+	}
+
+	public function getFormatApprovalDateAttribute()
+	{
+		return $this->ApprovalSignatureDate ? Carbon::parse($this->ApprovalSignatureDate)->format('d-m-Y') : null;
+	}
+
+	public function getFormatGmDateAttribute()
+	{
+		return $this->GMApprovalSignatureDate ? Carbon::parse($this->GMApprovalSignatureDate)->format('d-m-Y') : null;
+	}
+
+	public function getFormatKeyDateAttribute()
+	{
+		return $this->KeyInDate ? Carbon::parse($this->KeyInDate)->format('d-m-Y') : null;
+	}
+
+	public function getFormatDeliveryDateAttribute()
+	{
+		return $this->DeliveryDate ? Carbon::parse($this->DeliveryDate)->format('d-m-Y') : null;
 	}
 }

@@ -153,6 +153,7 @@ $(document).on('click', '.btnEditCarOrder', function () {
           data: formData,
           processData: false,
           contentType: false,
+          skipLoading: true,
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -175,6 +176,7 @@ $(document).on('click', '.btnEditCarOrder', function () {
               showConfirmButton: true
             });
 
+            window.SKIP_NEXT_LOADING = true;
             carOrderTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -211,6 +213,7 @@ $(document).on('click', '.btnDeleteCarOrder', function () {
       $.ajax({
         url: '/car-order/' + id,
         type: 'DELETE',
+        skipLoading: true,
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -220,6 +223,8 @@ $(document).on('click', '.btnDeleteCarOrder', function () {
               timer: 2000,
               showConfirmButton: true
             });
+
+            window.SKIP_NEXT_LOADING = true;
             carOrderTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -386,6 +391,8 @@ $(document).on('click', '.btnStoreCarOrder', function (e) {
         timer: 2000,
         showConfirmButton: true
       });
+
+      window.SKIP_NEXT_LOADING = true;
       pendingOrderTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -472,6 +479,7 @@ $(document).on('click', '.btnPendingOrder', function () {
           data: formData,
           processData: false,
           contentType: false,
+          skipLoading: true,
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -494,6 +502,7 @@ $(document).on('click', '.btnPendingOrder', function () {
               showConfirmButton: true
             });
 
+            window.SKIP_NEXT_LOADING = true;
             pendingOrderTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -530,6 +539,7 @@ $(document).on('click', '.btnDeletePendingOrder', function () {
       $.ajax({
         url: '/car-order/destroy-pending/' + id,
         type: 'DELETE',
+        skipLoading: true,
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -539,6 +549,8 @@ $(document).on('click', '.btnDeletePendingOrder', function () {
               timer: 2000,
               showConfirmButton: true
             });
+
+            window.SKIP_NEXT_LOADING = true;
             pendingOrderTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -818,6 +830,7 @@ function submitProcessDirect(id, action, reason) {
         showConfirmButton: true
       });
 
+      window.SKIP_NEXT_LOADING = true;
       processOrderTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -913,6 +926,7 @@ $(document).on('click', '.btnApproveCarOrder', function () {
           data: formData,
           processData: false,
           contentType: false,
+          skipLoading: true,
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -935,6 +949,7 @@ $(document).on('click', '.btnApproveCarOrder', function () {
               showConfirmButton: true
             });
 
+            window.SKIP_NEXT_LOADING = true;
             approveOrderTable.ajax.reload(null, false);
           },
           error: function (xhr) {

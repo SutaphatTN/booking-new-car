@@ -188,6 +188,8 @@ $(document).on('click', '.btnStoreCampaign', function (e) {
         timer: 2000,
         showConfirmButton: true
       });
+
+      window.SKIP_NEXT_LOADING = true;
       campaignTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -270,6 +272,7 @@ $(document).on('click', '.btnEditCam', function () {
           data: formData,
           processData: false,
           contentType: false,
+          skipLoading: true,
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -292,6 +295,7 @@ $(document).on('click', '.btnEditCam', function () {
               showConfirmButton: true
             });
 
+            window.SKIP_NEXT_LOADING = true;
             campaignTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -344,6 +348,7 @@ $(document).on('click', '.btnDeleteCam', function () {
       $.ajax({
         url: '/campaign/' + id,
         type: 'DELETE',
+        skipLoading: true,
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -353,6 +358,8 @@ $(document).on('click', '.btnDeleteCam', function () {
               timer: 2000,
               showConfirmButton: true
             });
+
+            window.SKIP_NEXT_LOADING = true;
             campaignTable.ajax.reload(null, false);
           } else {
             Swal.fire({
