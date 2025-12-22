@@ -29,8 +29,8 @@ class BookingExport implements FromView
             'salecars.saleUser',
             'salecars.carOrderHistories'
         ])
-            ->whereIn('car_status', ['Available', 'Booked'])
             ->whereIn('status', ['approved', 'finished'])
+            ->whereNot('car_status', 'Delivered')
             ->get();
 
         // -------------------------------

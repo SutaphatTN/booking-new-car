@@ -27,16 +27,16 @@
 
             <div class="mb-3">
               <label for="name" class="form-label">Name</label>
-              <input type="text" class="form-control" id="name" name="name" required>
+              <input type="text" class="form-control" id="name" name="name" autocomplete="off" required>
             </div>
 
             <div class="mb-3">
               <label for="username" class="form-label">Username</label>
-              <input type="text" class="form-control" id="username" name="username" required>
+              <input type="text" class="form-control" id="username" name="username" autocomplete="off" required>
             </div>
             <div class="mb-3">
               <label for="email" class="form-label">Email</label>
-              <input type="email" class="form-control" id="email" name="email" required>
+              <input type="email" class="form-control" id="email" name="email" autocomplete="off" required>
             </div>
 
             <div class="mb-3">
@@ -46,7 +46,7 @@
 
             <div class="mb-3">
               <label for="role" class="form-label">Role</label>
-              <select name="role" class="form-select" required>
+              <select id="role" name="role" class="form-select" required>
                 <option value="">-- เลือก Role --</option>
                 <option value="sale">Sale</option>
                 <option value="audit">Audit</option>

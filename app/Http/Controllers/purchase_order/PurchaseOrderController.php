@@ -1176,7 +1176,9 @@ class PurchaseOrderController extends Controller
         $saleCar = Salecar::with([
             'customer.prefix',
             'carOrder'
-        ])->get();
+        ])
+            ->where('con_status', '5')
+            ->get();
 
         $data = $saleCar->map(function ($s, $index) {
             $c = $s->customer;

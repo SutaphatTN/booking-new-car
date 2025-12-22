@@ -2287,6 +2287,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const budget = document.querySelector('#model_id option:checked')?.dataset.overbudget || '-';
 
+    if (userRole === 'sale' && hasApproval) {
+      content.innerHTML = html;
+      modal.show();
+      return;
+    }
+
     //เกินงบบ
     if (balanceCam > budget) {
       if (!hasApproval) {
