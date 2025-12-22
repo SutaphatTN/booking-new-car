@@ -147,69 +147,78 @@
     <div class="modal fade" id="loadingModal"
         tabindex="-1"
         data-bs-backdrop="static"
-        data-bs-keyboard="false"
-        aria-hidden="true">
+        data-bs-keyboard="false">
 
         <div class="modal-dialog modal-fullscreen">
             <div class="modal-content bg-transparent border-0 d-flex align-items-center justify-content-center">
 
                 <div class="text-center">
-                    <div class="spinner-grow text-white loading-spinner" role="status"></div>
+                    <div class="spinner-grow text-white loading-spinner"></div>
                     <div class="mt-3 text-white fw-semibold fs-5">
                         กำลังโหลดข้อมูล
                     </div>
                 </div>
-
             </div>
+
         </div>
     </div>
 
-</body>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-
-        const loadingModal = new bootstrap.Modal(
-            document.getElementById('loadingModal'), {
+            const loadingModalEl = document.getElementById('loadingModal');
+            const loadingModal = new bootstrap.Modal(loadingModalEl, {
                 backdrop: 'static',
                 keyboard: false
-            }
-        );
+            });
 
-        let ajaxCount = 0;
+            let ajaxCount = 0;
 
-        $(document).ajaxSend(function(event, jqxhr, settings) {
-            if (settings.skipLoading || window.SKIP_NEXT_LOADING) return;
-
-            ajaxCount++;
-            loadingModal.show();
-        });
-
-        $(document).ajaxComplete(function(event, jqxhr, settings) {
-            if (!settings.skipLoading && !window.SKIP_NEXT_LOADING) {
-                ajaxCount--;
+            function showLoading() {
+                loadingModal.show();
             }
 
-            window.SKIP_NEXT_LOADING = false;
+            function hideLoading() {
+                if (document.activeElement) {
+                    document.activeElement.blur();
+                }
 
-            if (ajaxCount <= 0) {
-                ajaxCount = 0;
                 loadingModal.hide();
             }
+
+            $(document).ajaxSend(function(event, jqxhr, settings) {
+                if (settings.skipLoading || window.SKIP_NEXT_LOADING) return;
+
+                ajaxCount++;
+                showLoading();
+            });
+
+            $(document).ajaxComplete(function(event, jqxhr, settings) {
+                if (!settings.skipLoading && !window.SKIP_NEXT_LOADING) {
+                    ajaxCount--;
+                }
+
+                window.SKIP_NEXT_LOADING = false;
+
+                if (ajaxCount <= 0) {
+                    ajaxCount = 0;
+                    hideLoading();
+                }
+            });
+
+            $(document).ajaxStop(function() {
+                ajaxCount = 0;
+                hideLoading();
+            });
+
+            $(document).ajaxError(function() {
+                ajaxCount = 0;
+                hideLoading();
+            });
+
         });
+    </script>
 
-        $(document).ajaxStop(function() {
-            ajaxCount = 0;
-            loadingModal.hide();
-        });
-
-        $(document).ajaxError(function() {
-            ajaxCount = 0;
-            loadingModal.hide();
-        });
-
-    });
-</script>
-
+</body>
 
 </html>
