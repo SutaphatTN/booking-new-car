@@ -15,7 +15,16 @@ $(document).ready(function () {
   }
 
   customerTable = $('#customerTable').DataTable({
-    ajax: '/customer/list',
+    processing: true,
+    ajax: {
+      url: '/customer/list',
+      beforeSend: function () {
+        window.SKIP_NEXT_LOADING = true;
+      },
+      complete: function () {
+        window.SKIP_NEXT_LOADING = true;
+      }
+    },
     columns: [
       { data: 'No' },
       { data: 'FullName' },
@@ -24,21 +33,19 @@ $(document).ready(function () {
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
-    lengthChange: true,
     searching: true,
     ordering: false,
     info: true,
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }

@@ -20,15 +20,25 @@ class LoginController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'username' => 'required',
-            'password' => 'required'
-        ]);
-
         $credentials = $request->only('username', 'password');
 
         if (Auth::attempt($credentials, $request->filled('remember'))) {
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'redirect' => route('home')
+                ]);
+            }
+
             return redirect()->intended(route('home'));
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Username หรือ Password ไม่ถูกต้อง'
+            ], 422);
         }
 
         return back()->with('error', 'Username หรือ Password ไม่ถูกต้อง');
@@ -37,9 +47,13 @@ class LoginController extends Controller
     public function logout(Request $request)
     {
         Auth::logout();
-
+        
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()->route('login.index');
     }
