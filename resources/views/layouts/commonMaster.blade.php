@@ -179,28 +179,36 @@
         let ajaxCount = 0;
 
         $(document).ajaxSend(function(event, jqxhr, settings) {
-            if (settings.skipLoading === true || window.SKIP_NEXT_LOADING === true) {
-                return;
-            }
+            if (settings.skipLoading || window.SKIP_NEXT_LOADING) return;
 
             ajaxCount++;
             loadingModal.show();
         });
 
         $(document).ajaxComplete(function(event, jqxhr, settings) {
-            if (settings.skipLoading === true || window.SKIP_NEXT_LOADING === true) {
-                window.SKIP_NEXT_LOADING = false;
-                return;
+            if (!settings.skipLoading && !window.SKIP_NEXT_LOADING) {
+                ajaxCount--;
             }
 
-            ajaxCount--;
+            window.SKIP_NEXT_LOADING = false;
+
             if (ajaxCount <= 0) {
                 ajaxCount = 0;
                 loadingModal.hide();
             }
         });
+
+        $(document).ajaxStop(function() {
+            ajaxCount = 0;
+            loadingModal.hide();
+        });
+
+        $(document).ajaxError(function() {
+            ajaxCount = 0;
+            loadingModal.hide();
+        });
+
     });
-    
 </script>
 
 
