@@ -62,29 +62,13 @@ Route::get('/', function () {
     return redirect()->route('login.index');
 });
 
-Route::get('/home', [HomeController::class, 'index'])->name('home');
 
 Route::resource('register', RegisterController::class);
 Route::resource('login', LoginController::class);
 Route::resource('forgot', ForgotController::class);
 
-// Route::get('/test-delete-booking', function () {
-//     $results = Salecar::whereNotNull('BookingDate')
-//         ->whereDate('BookingDate', '<=', now()->subDays(5))
-//         ->where(function ($query) {
-//             $query->whereDoesntHave('remainingPayment')
-//                   ->orWhereHas('remainingPayment', function ($sub) {
-//                       $sub->whereNull('po_number');
-//                   });
-//         })
-//         ->get();
-
-//     return $results; // จะเห็นว่า Eloquent Collection มี record ไหนบ้าง
-// });
-
 Route::group(['middleware' => 'auth'], function () {
-    // Main Page Route
-    // Route::get('/', [Analytics::class, 'index'])->name('dashboard-analytics');
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
 
     // layout
     Route::get('/layouts/without-menu', [WithoutMenu::class, 'index'])->name('layouts-without-menu');
@@ -215,7 +199,8 @@ Route::group(['middleware' => 'auth'], function () {
     //logout
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/keep-alive', function () {
-        return response()->json(['status' => 'ok']);
+        return response()->json(['status' => 'ok'])
+            ->header('Cache-Control', 'no-store');
     });
 
     //car-order
@@ -269,8 +254,5 @@ Route::group(['middleware' => 'auth'], function () {
         'update' => 'model.sub-model.update',
         'destroy' => 'model.sub-model.destroy',
     ]);
-
-    // Route::get('/customer/input', [CustomerController::class, 'create'])->name('customer-input');
-    // Route::post('/customer/customer-update', [CustomerController::class, 'insert'])->name('customer-update');
 
 });

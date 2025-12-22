@@ -211,7 +211,14 @@
                 hideLoading();
             });
 
-            $(document).ajaxError(function() {
+            $(document).ajaxError(function(event, jqxhr) {
+                if ([401, 419, 302].includes(jqxhr.status)) {
+                    ajaxCount = 0;
+                    hideLoading();
+                    window.location.href = '/login';
+                    return;
+                }
+
                 ajaxCount = 0;
                 hideLoading();
             });
