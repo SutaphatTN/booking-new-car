@@ -13,7 +13,11 @@ $(document).ready(function () {
   }
 
   campaignTable = $('.campaignTable').DataTable({
-    ajax: '/campaign/list',
+    ajax: {
+      url: '/campaign/list',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'model_id' },
