@@ -13,7 +13,12 @@ $(document).ready(function () {
   }
 
   financeTable = $('.financeTable').DataTable({
-    ajax: '/finance/list',
+    processing: true,
+    ajax: {
+      url: '/finance/list',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'name' },
@@ -30,6 +35,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -264,7 +270,12 @@ $(document).ready(function () {
   }
 
   financeExtraComTable = $('.financeExtraComTable').DataTable({
-    ajax: '/finance/extra-com/list',
+    processing: true,
+    ajax: {
+      url: '/finance/extra-com/list',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'financeID' },
@@ -281,6 +292,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -549,7 +561,12 @@ $(document).ready(function () {
   }
 
   confirmFNTable = $('.confirmFNTable').DataTable({
-    ajax: '/purchase-order/list-fn',
+    processing: true,
+    ajax: {
+      url: '/purchase-order/list-fn',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'FullName' },
@@ -566,6 +583,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',

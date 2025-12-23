@@ -13,7 +13,12 @@ $(document).ready(function () {
   }
 
   carTable = $('.carTable').DataTable({
-    ajax: '/model-car/list',
+    processing: true,
+    ajax: {
+      url: '/model-car/list',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'Name_TH' },
@@ -29,6 +34,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -294,7 +300,12 @@ $(document).ready(function () {
   }
 
   subCarTable = $('.subCarTable').DataTable({
-    ajax: '/sub-model-car/list',
+    processing: true,
+    ajax: {
+      url: '/sub-model-car/list',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'model_id' },
@@ -312,6 +323,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',

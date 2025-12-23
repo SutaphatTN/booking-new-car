@@ -13,6 +13,7 @@ $(document).ready(function () {
   }
 
   campaignTable = $('.campaignTable').DataTable({
+    processing: true,
     ajax: {
       url: '/campaign/list',
       type: 'GET',
@@ -35,6 +36,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',

@@ -13,7 +13,12 @@ $(document).ready(function () {
   }
 
   carOrderTable = $('.carOrderTable').DataTable({
-    ajax: '/car-order/list',
+    processing: true,
+    ajax: {
+      url: '/car-order/list',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'date' },
@@ -31,6 +36,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -260,7 +266,12 @@ $(document).ready(function () {
   }
 
   historyCarOrderTable = $('.historyCarOrderTable').DataTable({
-    ajax: '/car-order/history/list',
+    processing: true,
+    ajax: {
+      url: '/car-order/history/list',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'full_name' },
@@ -278,6 +289,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -303,7 +315,12 @@ $(document).ready(function () {
   }
 
   pendingOrderTable = $('.pendingOrderTable').DataTable({
-    ajax: '/car-order/pending/list',
+    processing: true,
+    ajax: {
+      url: '/car-order/pending/list',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'order_code' },
@@ -321,6 +338,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -586,7 +604,12 @@ $(document).ready(function () {
   }
 
   processOrderTable = $('.processOrderTable').DataTable({
-    ajax: '/car-order/process/list',
+    processing: true,
+    ajax: {
+      url: '/car-order/process/list',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'date' },
@@ -605,6 +628,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -852,7 +876,12 @@ $(document).ready(function () {
   }
 
   approveOrderTable = $('.approveOrderTable').DataTable({
-    ajax: '/car-order/approve/list',
+    processing: true,
+    ajax: {
+      url: '/car-order/approve/list',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'date' },
@@ -872,6 +901,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',

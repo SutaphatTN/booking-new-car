@@ -14,7 +14,12 @@ $(document).ready(function () {
   }
 
   accessoryTable = $('.accessoryTable').DataTable({
-    ajax: '/accessory/list',
+    processing: true,
+    ajax: {
+      url: '/accessory/list',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'accessoryPartner_id' },
@@ -33,6 +38,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -384,7 +390,12 @@ $(document).ready(function () {
   }
 
   partnerTable = $('.partnerTable').DataTable({
-    ajax: '/accessory/partner/list',
+    processing: true,
+    ajax: {
+      url: '/accessory/partner/list',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [{ data: 'No' }, { data: 'name' }, { data: 'Action', orderable: false, searchable: false }],
     paging: true,
     lengthChange: true,
@@ -394,6 +405,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',

@@ -63,11 +63,14 @@ $(document).ready(function () {
   }
 
   purchaseTable = $('#purchaseTable').DataTable({
+    processing: true,
     ajax: {
       url: '/purchase-order/list',
       data: function (d) {
         d.status = $('#filterStatus').val();
-      }
+      },
+      type: 'GET',
+      skipLoading: true
     },
     columns: [
       { data: 'No' },
@@ -88,6 +91,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -2339,7 +2343,12 @@ $(document).ready(function () {
   }
 
   poTable = $('.poTable').DataTable({
-    ajax: '/purchase-order/list-po',
+    processing: true,
+    ajax: {
+      url: '/purchase-order/list-po',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'FullName' },
@@ -2356,6 +2365,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -2442,7 +2452,12 @@ $(document).ready(function () {
   }
 
   historyFinalTable = $('.historyFinalTable').DataTable({
-    ajax: '/purchase-order/list-history',
+    processing: true,
+    ajax: {
+      url: '/purchase-order/list-history',
+      type: 'GET',
+      skipLoading: true
+    },
     columns: [
       { data: 'No' },
       { data: 'FullName' },
@@ -2457,6 +2472,7 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
+      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
