@@ -144,82 +144,27 @@
     </script>
     @endauth
 
-    <div class="modal fade" id="loadingModal"
-        tabindex="-1"
-        data-bs-backdrop="static"
-        data-bs-keyboard="false"
-        aria-hidden="true">
-
-        <div class="modal-dialog modal-fullscreen">
-            <div class="modal-content bg-transparent border-0 d-flex align-items-center justify-content-center">
-
-                <div class="text-center">
-                    <div class="spinner-grow text-white loading-spinner" role="status"></div>
-                    <div class="mt-3 text-white fw-semibold fs-5">
-                        กำลังโหลดข้อมูล
-                    </div>
-                </div>
-
-            </div>
+    <div id="appSpinner"
+        class="position-fixed top-0 start-0 w-100 h-100 d-none
+            d-flex align-items-center justify-content-center"
+        style="background: rgba(255,255,255,0.6); z-index: 2000;">
+        <div class="spinner-grow text-warning" role="status">
+            <span class="visually-hidden">Loading...</span>
         </div>
     </div>
 
+    <script>
+        window.AppSpinner = {
+            show() {
+                document.getElementById('appSpinner')?.classList.remove('d-none');
+            },
+            hide() {
+                document.getElementById('appSpinner')?.classList.add('d-none');
+            }
+        };
+    </script>
+
+
 </body>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-
-        const loadingModal = new bootstrap.Modal(
-            document.getElementById('loadingModal'), {
-                backdrop: 'static',
-                keyboard: false
-            }
-        );
-
-        let ajaxCount = 0;
-
-        $(document).ajaxSend(function(event, jqxhr, settings) {
-            if (settings.url && settings.url.includes('/customer/list')) {
-                return;
-            }
-
-            if (settings.skipLoading === true || window.SKIP_NEXT_LOADING === true) {
-                return;
-            }
-
-            ajaxCount++;
-            loadingModal.show();
-        });
-
-        $(document).ajaxComplete(function(event, jqxhr, settings) {
-            if (settings.url && settings.url.includes('/customer/list')) {
-                return;
-            }
-
-            if (settings.skipLoading === true || window.SKIP_NEXT_LOADING === true) {
-                window.SKIP_NEXT_LOADING = false;
-                return;
-            }
-
-            ajaxCount--;
-            if (ajaxCount <= 0) {
-                ajaxCount = 0;
-                loadingModal.hide();
-            }
-        });
-
-        $(document).ajaxError(function() {
-            ajaxCount = 0;
-            loadingModal.hide();
-        });
-
-        $(document).ajaxStop(function() {
-            ajaxCount = 0;
-            loadingModal.hide();
-        });
-
-    });
-</script>
-
 
 </html>

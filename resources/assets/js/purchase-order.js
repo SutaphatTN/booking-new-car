@@ -63,15 +63,7 @@ $(document).ready(function () {
   }
 
   purchaseTable = $('#purchaseTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/purchase-order/list',
-      data: function (d) {
-        d.status = $('#filterStatus').val();
-      },
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/purchase-order/list',
     columns: [
       { data: 'No' },
       { data: 'FullName' },
@@ -129,7 +121,7 @@ $(document).on('click', '.btnDeleteSale', function () {
       $.ajax({
         url: '/purchase-order/' + id,
         type: 'DELETE',
-        skipLoading: true,
+
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -140,7 +132,6 @@ $(document).on('click', '.btnDeleteSale', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             purchaseTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -373,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function () {
       type: 'POST',
       data: formData,
       contentType: false,
-      skipLoading: true,
+
       processData: false,
       beforeSend: function () {
         Swal.fire({
@@ -1026,7 +1017,7 @@ $(document).ready(function () {
       data: formData,
       processData: false,
       contentType: false,
-      skipLoading: true,
+
       beforeSend: function () {
         Swal.fire({
           title: 'กำลังบันทึกข้อมูล...',
@@ -2343,12 +2334,7 @@ $(document).ready(function () {
   }
 
   poTable = $('.poTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/purchase-order/list-po',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/purchase-order/list-po',
     columns: [
       { data: 'No' },
       { data: 'FullName' },
@@ -2452,12 +2438,7 @@ $(document).ready(function () {
   }
 
   historyFinalTable = $('.historyFinalTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/purchase-order/list-history',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/purchase-order/list-history',
     columns: [
       { data: 'No' },
       { data: 'FullName' },

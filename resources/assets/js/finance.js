@@ -13,12 +13,7 @@ $(document).ready(function () {
   }
 
   financeTable = $('.financeTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/finance/list',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/finance/list',
     columns: [
       { data: 'No' },
       { data: 'name' },
@@ -35,7 +30,6 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
-      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -107,7 +101,6 @@ $(document).on('click', '.btnStoreFinance', function (e) {
         showConfirmButton: true
       });
 
-      window.SKIP_NEXT_LOADING = true;
       financeTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -162,7 +155,7 @@ $(document).on('click', '.btnEditFin', function () {
           data: formData,
           processData: false,
           contentType: false,
-          skipLoading: true,
+
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -185,7 +178,6 @@ $(document).on('click', '.btnEditFin', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             financeTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -222,7 +214,7 @@ $(document).on('click', '.btnDeleteFin', function () {
       $.ajax({
         url: '/finance/' + id,
         type: 'DELETE',
-        skipLoading: true,
+
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -233,7 +225,6 @@ $(document).on('click', '.btnDeleteFin', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             financeTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -270,12 +261,7 @@ $(document).ready(function () {
   }
 
   financeExtraComTable = $('.financeExtraComTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/finance/extra-com/list',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/finance/extra-com/list',
     columns: [
       { data: 'No' },
       { data: 'financeID' },
@@ -292,7 +278,6 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
-      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -399,7 +384,6 @@ $(document).on('click', '.btnStoreFinanceExtraCom', function (e) {
         showConfirmButton: true
       });
 
-      window.SKIP_NEXT_LOADING = true;
       financeExtraComTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -454,7 +438,7 @@ $(document).on('click', '.btnEditFinExtraCom', function () {
           data: formData,
           processData: false,
           contentType: false,
-          skipLoading: true,
+
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -477,7 +461,6 @@ $(document).on('click', '.btnEditFinExtraCom', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             financeExtraComTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -514,7 +497,7 @@ $(document).on('click', '.btnDeleteFinExtraCom', function () {
       $.ajax({
         url: '/finance/destroy-extra-com/' + id,
         type: 'DELETE',
-        skipLoading: true,
+
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -525,7 +508,6 @@ $(document).on('click', '.btnDeleteFinExtraCom', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             financeExtraComTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -561,12 +543,7 @@ $(document).ready(function () {
   }
 
   confirmFNTable = $('.confirmFNTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/purchase-order/list-fn',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/purchase-order/list-fn',
     columns: [
       { data: 'No' },
       { data: 'FullName' },
@@ -583,7 +560,6 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
-      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -657,7 +633,7 @@ $(document).on('click', '.btnEditFNConfirm', function () {
           data: formData,
           processData: false,
           contentType: false,
-          skipLoading: true,
+
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -680,7 +656,6 @@ $(document).on('click', '.btnEditFNConfirm', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             confirmFNTable.ajax.reload(null, false);
           },
           error: function (xhr) {

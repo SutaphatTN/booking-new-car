@@ -13,12 +13,7 @@ $(document).ready(function () {
   }
 
   carOrderTable = $('.carOrderTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/car-order/list',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/car-order/list',
     columns: [
       { data: 'No' },
       { data: 'date' },
@@ -36,7 +31,6 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
-      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -159,7 +153,7 @@ $(document).on('click', '.btnEditCarOrder', function () {
           data: formData,
           processData: false,
           contentType: false,
-          skipLoading: true,
+
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -182,7 +176,6 @@ $(document).on('click', '.btnEditCarOrder', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             carOrderTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -219,7 +212,7 @@ $(document).on('click', '.btnDeleteCarOrder', function () {
       $.ajax({
         url: '/car-order/' + id,
         type: 'DELETE',
-        skipLoading: true,
+
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -230,7 +223,6 @@ $(document).on('click', '.btnDeleteCarOrder', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             carOrderTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -266,12 +258,7 @@ $(document).ready(function () {
   }
 
   historyCarOrderTable = $('.historyCarOrderTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/car-order/history/list',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/car-order/history/list',
     columns: [
       { data: 'No' },
       { data: 'full_name' },
@@ -289,7 +276,6 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
-      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -315,12 +301,7 @@ $(document).ready(function () {
   }
 
   pendingOrderTable = $('.pendingOrderTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/car-order/pending/list',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/car-order/pending/list',
     columns: [
       { data: 'No' },
       { data: 'order_code' },
@@ -338,7 +319,6 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
-      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -410,7 +390,6 @@ $(document).on('click', '.btnStoreCarOrder', function (e) {
         showConfirmButton: true
       });
 
-      window.SKIP_NEXT_LOADING = true;
       pendingOrderTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -497,7 +476,7 @@ $(document).on('click', '.btnPendingOrder', function () {
           data: formData,
           processData: false,
           contentType: false,
-          skipLoading: true,
+
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -520,7 +499,6 @@ $(document).on('click', '.btnPendingOrder', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             pendingOrderTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -557,7 +535,7 @@ $(document).on('click', '.btnDeletePendingOrder', function () {
       $.ajax({
         url: '/car-order/destroy-pending/' + id,
         type: 'DELETE',
-        skipLoading: true,
+
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -568,7 +546,6 @@ $(document).on('click', '.btnDeletePendingOrder', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             pendingOrderTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -604,12 +581,7 @@ $(document).ready(function () {
   }
 
   processOrderTable = $('.processOrderTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/car-order/process/list',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/car-order/process/list',
     columns: [
       { data: 'No' },
       { data: 'date' },
@@ -628,7 +600,6 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
-      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -854,7 +825,6 @@ function submitProcessDirect(id, action, reason) {
         showConfirmButton: true
       });
 
-      window.SKIP_NEXT_LOADING = true;
       processOrderTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -876,12 +846,7 @@ $(document).ready(function () {
   }
 
   approveOrderTable = $('.approveOrderTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/car-order/approve/list',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/car-order/approve/list',
     columns: [
       { data: 'No' },
       { data: 'date' },
@@ -901,7 +866,6 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
-      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -956,7 +920,7 @@ $(document).on('click', '.btnApproveCarOrder', function () {
           data: formData,
           processData: false,
           contentType: false,
-          skipLoading: true,
+
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -979,7 +943,6 @@ $(document).on('click', '.btnApproveCarOrder', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             approveOrderTable.ajax.reload(null, false);
           },
           error: function (xhr) {

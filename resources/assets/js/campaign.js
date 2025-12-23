@@ -13,12 +13,7 @@ $(document).ready(function () {
   }
 
   campaignTable = $('.campaignTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/campaign/list',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/campaign/list',
     columns: [
       { data: 'No' },
       { data: 'model_id' },
@@ -36,7 +31,6 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
-      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -195,7 +189,6 @@ $(document).on('click', '.btnStoreCampaign', function (e) {
         showConfirmButton: true
       });
 
-      window.SKIP_NEXT_LOADING = true;
       campaignTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -278,7 +271,7 @@ $(document).on('click', '.btnEditCam', function () {
           data: formData,
           processData: false,
           contentType: false,
-          skipLoading: true,
+
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -301,7 +294,6 @@ $(document).on('click', '.btnEditCam', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             campaignTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -354,7 +346,7 @@ $(document).on('click', '.btnDeleteCam', function () {
       $.ajax({
         url: '/campaign/' + id,
         type: 'DELETE',
-        skipLoading: true,
+
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -365,7 +357,6 @@ $(document).on('click', '.btnDeleteCam', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             campaignTable.ajax.reload(null, false);
           } else {
             Swal.fire({

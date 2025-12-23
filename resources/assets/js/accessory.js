@@ -14,12 +14,7 @@ $(document).ready(function () {
   }
 
   accessoryTable = $('.accessoryTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/accessory/list',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/accessory/list',
     columns: [
       { data: 'No' },
       { data: 'accessoryPartner_id' },
@@ -38,7 +33,6 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
-      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -225,7 +219,6 @@ $(document).on('click', '.btnStoreAccessory', function (e) {
         showConfirmButton: true
       });
 
-      window.SKIP_NEXT_LOADING = true;
       accessoryTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -280,7 +273,6 @@ $(document).on('click', '.btnEditAcc', function () {
           data: formData,
           processData: false,
           contentType: false,
-          skipLoading: true,
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -303,7 +295,6 @@ $(document).on('click', '.btnEditAcc', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             accessoryTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -340,7 +331,6 @@ $(document).on('click', '.btnDeleteAcc', function () {
       $.ajax({
         url: '/accessory/' + id,
         type: 'DELETE',
-        skipLoading: true,
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -351,7 +341,6 @@ $(document).on('click', '.btnDeleteAcc', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             accessoryTable.ajax.reload(null, false);
           } else {
             Swal.fire({
@@ -390,12 +379,7 @@ $(document).ready(function () {
   }
 
   partnerTable = $('.partnerTable').DataTable({
-    processing: true,
-    ajax: {
-      url: '/accessory/partner/list',
-      type: 'GET',
-      skipLoading: true
-    },
+    ajax: '/accessory/partner/list',
     columns: [{ data: 'No' }, { data: 'name' }, { data: 'Action', orderable: false, searchable: false }],
     paging: true,
     lengthChange: true,
@@ -405,7 +389,6 @@ $(document).ready(function () {
     pageLength: 10,
     autoWidth: false,
     language: {
-      processing: 'กำลังโหลดข้อมูล...',
       lengthMenu: 'แสดง _MENU_ แถว',
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
@@ -476,7 +459,6 @@ $(document).on('click', '.btnStorePartner', function (e) {
         showConfirmButton: true
       });
 
-      window.SKIP_NEXT_LOADING = true;
       partnerTable.ajax.reload(null, false);
     },
     error: function (xhr) {
@@ -531,7 +513,6 @@ $(document).on('click', '.btnEditPart', function () {
           data: formData,
           processData: false,
           contentType: false,
-          skipLoading: true,
           beforeSend: function () {
             $modal.modal('hide');
 
@@ -554,7 +535,6 @@ $(document).on('click', '.btnEditPart', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             partnerTable.ajax.reload(null, false);
           },
           error: function (xhr) {
@@ -591,7 +571,6 @@ $(document).on('click', '.btnDeletePart', function () {
       $.ajax({
         url: '/accessory/destroy-partner/' + id,
         type: 'DELETE',
-        skipLoading: true,
         success: function (res) {
           if (res.success) {
             Swal.fire({
@@ -602,7 +581,6 @@ $(document).on('click', '.btnDeletePart', function () {
               showConfirmButton: true
             });
 
-            window.SKIP_NEXT_LOADING = true;
             partnerTable.ajax.reload(null, false);
           } else {
             Swal.fire({
