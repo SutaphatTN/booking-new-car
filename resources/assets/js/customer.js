@@ -15,16 +15,7 @@ $(document).ready(function () {
   }
 
   customerTable = $('#customerTable').DataTable({
-    ajax: {
-      url: '/customer/list',
-      beforeSend() {
-        AppSpinner.show();
-      },
-      complete() {
-        AppSpinner.hide();
-      }
-    },
-    processing: false,
+    ajax: '/customer/list',
     columns: [
       { data: 'No' },
       { data: 'FullName' },

@@ -144,7 +144,7 @@
     </script>
     @endauth
 
-    <div id="appSpinner"
+    <!-- <div id="appSpinner"
         class="position-fixed top-0 start-0 w-100 h-100 d-none
             d-flex align-items-center justify-content-center"
         style="background: rgba(255,255,255,0.6); z-index: 2000;">
@@ -162,7 +162,7 @@
                 document.getElementById('appSpinner')?.classList.add('d-none');
             }
         };
-    </script>
+    </script> -->
 
 
 </body>
