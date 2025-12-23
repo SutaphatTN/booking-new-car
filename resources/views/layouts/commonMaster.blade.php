@@ -147,75 +147,79 @@
     <div class="modal fade" id="loadingModal"
         tabindex="-1"
         data-bs-backdrop="static"
-        data-bs-keyboard="false">
+        data-bs-keyboard="false"
+        aria-hidden="true">
 
         <div class="modal-dialog modal-fullscreen">
             <div class="modal-content bg-transparent border-0 d-flex align-items-center justify-content-center">
 
                 <div class="text-center">
-                    <div class="spinner-grow text-white loading-spinner"></div>
+                    <div class="spinner-grow text-white loading-spinner" role="status"></div>
                     <div class="mt-3 text-white fw-semibold fs-5">
                         กำลังโหลดข้อมูล
                     </div>
                 </div>
-            </div>
 
+            </div>
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
+</body>
 
-            const loadingModalEl = document.getElementById('loadingModal');
-            const loadingModal = new bootstrap.Modal(loadingModalEl, {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        const loadingModal = new bootstrap.Modal(
+            document.getElementById('loadingModal'), {
                 backdrop: 'static',
                 keyboard: false
-            });
+            }
+        );
 
-            let ajaxCount = 0;
+        let ajaxCount = 0;
 
-            function showLoading() {
-                loadingModal.show();
+        $(document).ajaxSend(function(event, jqxhr, settings) {
+            if (settings.url && settings.url.includes('/customer/list')) {
+                return;
             }
 
-            function hideLoading() {
-                if (document.activeElement) {
-                    document.activeElement.blur();
-                }
+            if (settings.skipLoading === true || window.SKIP_NEXT_LOADING === true) {
+                return;
+            }
 
+            ajaxCount++;
+            loadingModal.show();
+        });
+
+        $(document).ajaxComplete(function(event, jqxhr, settings) {
+            if (settings.url && settings.url.includes('/customer/list')) {
+                return;
+            }
+
+            if (settings.skipLoading === true || window.SKIP_NEXT_LOADING === true) {
+                window.SKIP_NEXT_LOADING = false;
+                return;
+            }
+
+            ajaxCount--;
+            if (ajaxCount <= 0) {
+                ajaxCount = 0;
                 loadingModal.hide();
             }
-
-            $(document).ajaxSend(function(event, jqxhr, settings) {
-                if (settings.skipLoading === true) return;
-
-                ajaxCount++;
-                showLoading();
-            });
-
-            $(document).ajaxComplete(function(event, jqxhr, settings) {
-                if (settings.skipLoading === true) return;
-
-                ajaxCount--;
-                if (ajaxCount <= 0) {
-                    ajaxCount = 0;
-                    hideLoading();
-                }
-            });
-
-            $(document).ajaxStop(function() {
-                ajaxCount = 0;
-                hideLoading();
-            });
-
-            $(document).ajaxError(function() {
-                ajaxCount = 0;
-                hideLoading();
-            });
-
         });
-    </script>
 
-</body>
+        $(document).ajaxError(function() {
+            ajaxCount = 0;
+            loadingModal.hide();
+        });
+
+        $(document).ajaxStop(function() {
+            ajaxCount = 0;
+            loadingModal.hide();
+        });
+
+    });
+</script>
+
 
 </html>
