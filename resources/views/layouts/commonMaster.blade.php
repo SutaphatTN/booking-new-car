@@ -187,19 +187,16 @@
             }
 
             $(document).ajaxSend(function(event, jqxhr, settings) {
-                if (settings.skipLoading || window.SKIP_NEXT_LOADING) return;
+                if (settings.skipLoading === true) return;
 
                 ajaxCount++;
                 showLoading();
             });
 
             $(document).ajaxComplete(function(event, jqxhr, settings) {
-                if (!settings.skipLoading && !window.SKIP_NEXT_LOADING) {
-                    ajaxCount--;
-                }
+                if (settings.skipLoading === true) return;
 
-                window.SKIP_NEXT_LOADING = false;
-
+                ajaxCount--;
                 if (ajaxCount <= 0) {
                     ajaxCount = 0;
                     hideLoading();
@@ -211,14 +208,7 @@
                 hideLoading();
             });
 
-            $(document).ajaxError(function(event, jqxhr) {
-                if ([401, 419, 302].includes(jqxhr.status)) {
-                    ajaxCount = 0;
-                    hideLoading();
-                    window.location.href = '/login';
-                    return;
-                }
-
+            $(document).ajaxError(function() {
                 ajaxCount = 0;
                 hideLoading();
             });

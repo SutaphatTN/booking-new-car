@@ -18,12 +18,8 @@ $(document).ready(function () {
     processing: true,
     ajax: {
       url: '/customer/list',
-      beforeSend: function () {
-        window.SKIP_NEXT_LOADING = true;
-      },
-      complete: function () {
-        window.SKIP_NEXT_LOADING = true;
-      }
+      type: 'GET',
+      skipLoading: true
     },
     columns: [
       { data: 'No' },
@@ -130,7 +126,7 @@ $(document).on('click', '.btnEditCust', function () {
               title: 'สำเร็จ!',
               text: res.message,
               timer: 2000,
-              showConfirmButton: true,
+              showConfirmButton: true
             });
 
             window.SKIP_NEXT_LOADING = true;
