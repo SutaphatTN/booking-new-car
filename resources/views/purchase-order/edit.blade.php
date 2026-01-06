@@ -412,9 +412,9 @@
                       <select name="CampaignID[]" id="CampaignID" multiple class="form-select">
                         @foreach ($campaigns as $camp)
                         <option value="{{ $camp->id }}"
-                          data-cashsupport="{{ $camp->cashSupport }}"
+                          data-cashSupport_final="{{ $camp->cashSupport_final }}"
                           {{ in_array($camp->id, $selected_campaigns ?? []) ? 'selected' : '' }}>
-                          ({{ $camp->type->name ?? '-' }}) {{ $camp->name ?? '-' }} - {{ number_format($camp->cashSupport, 2) }}
+                          ({{ $camp->type->name ?? '-' }}) {{ $camp->name ?? '-' }} - {{ number_format((float) $camp->cashSupport_final, 2, '.', ',') }}
                         </option>
                         @endforeach
                       </select>

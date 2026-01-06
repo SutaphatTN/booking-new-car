@@ -52,6 +52,13 @@ $(document).on('blur', '.money-input', function () {
   }
 });
 
+function formatMoney(value) {
+  return Number(value).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
 //view
 
 //view : table
@@ -1081,7 +1088,7 @@ $(document).ready(function () {
   function calcTotalCampaign() {
     let total = 0;
     $('#CampaignID option:selected').each(function () {
-      const cash = parseFloat($(this).data('cashsupport')) || 0;
+      const cash = parseFloat($(this).data('cashSupport_final')) || 0;
       total += cash;
     });
     $('#TotalSaleCampaign').val(
@@ -1116,8 +1123,11 @@ $(document).ready(function () {
         }
 
         res.forEach(c => {
-          const option = new Option(`${c.name} - ${c.cashSupport} บาท`, c.id, false, false);
-          $(option).attr('data-cashsupport', c.cashSupport);
+          const amount = formatMoney(c.cashSupport_final);
+
+          const option = new Option(`${c.name} - ${amount} บาท`, c.id, false, false);
+
+          $(option).attr('data-cashSupport_final', c.cashSupport_final); // เก็บ raw ไว้คำนวณ
           $('#CampaignID').append(option);
         });
 

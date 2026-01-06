@@ -12,6 +12,10 @@ class Campaign extends Model
 
 	protected $table = 'campaign';
 
+	protected $casts = [
+		'cashSupport_final' => 'float',
+	];
+
 	protected $fillable = [
 		'model_id',
 		'subModel_id',
@@ -52,7 +56,7 @@ class Campaign extends Model
 	{
 		return $this->endDate ? Carbon::parse($this->endDate)->format('d-m-Y') : null;
 	}
-	
+
 	public function getStartDateAttribute($value)
 	{
 		return $value ? Carbon::parse($value)->format('Y-m-d') : null;

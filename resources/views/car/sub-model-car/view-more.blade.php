@@ -22,6 +22,18 @@
             <textarea id="detail" name="detail" class="form-control" disabled>{{ $sub->detail ?: '-' }}</textarea>
           </div>
 
+          <!-- <div class="col-md-6 mb-5">
+            <label for="year" class="form-label">ปี</label>
+            <input id="year" class="form-control" type="text" value="{{ $sub->year ?? '-' }}" autocomplete="off" disabled />
+          </div> -->
+
+          <div class="col-md-12 mb-5">
+            <label for="over_budget" class="form-label">ยอดเงินเกินงบ</label>
+            <input id="over_budget" class="form-control text-end" type="text" 
+            value="{{ $sub->over_budget !== null ? number_format($sub->over_budget, 2) : '-' }}"
+            autocomplete="off" disabled />
+          </div>
+
         </div>
       </div>
     </div>

@@ -62,10 +62,21 @@ Route::get('/', function () {
     return redirect()->route('login.index');
 });
 
+Route::get('/login', function () {
+    return redirect()->route('login.index');
+})->name('login');
 
-Route::resource('register', RegisterController::class);
 Route::resource('login', LoginController::class);
+Route::resource('register', RegisterController::class);
 Route::resource('forgot', ForgotController::class);
+
+
+Route::get('/keep-alive', function () {
+    session()->put('last_keep_alive', now());
+    return response()->json(['status' => 'ok'])
+        ->header('Cache-Control', 'no-store');
+})->middleware('auth');
+
 
 Route::group(['middleware' => 'auth'], function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
@@ -198,10 +209,6 @@ Route::group(['middleware' => 'auth'], function () {
 
     //logout
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-    Route::get('/keep-alive', function () {
-        return response()->json(['status' => 'ok'])
-            ->header('Cache-Control', 'no-store');
-    });
 
     //car-order
     Route::get('car-order/list', [CarOrderController::class, 'listCarOrder']);
@@ -254,5 +261,4 @@ Route::group(['middleware' => 'auth'], function () {
         'update' => 'model.sub-model.update',
         'destroy' => 'model.sub-model.destroy',
     ]);
-
 });

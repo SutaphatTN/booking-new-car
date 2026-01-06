@@ -17,6 +17,7 @@ class TbSubcarmodel extends Model
 		'code',
 		'name',
 		'detail',
+		'year',
 		'userZone',
 		'active',
 		'over_budget'

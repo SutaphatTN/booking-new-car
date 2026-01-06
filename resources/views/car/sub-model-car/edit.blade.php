@@ -70,6 +70,19 @@
               @enderror
             </div>
 
+            <!-- <div class="col-md-5 mb-5">
+              <label for="year" class="form-label">ปี</label>
+              <input id="year" type="text"
+                class="form-control @error('year') is-invalid @enderror"
+                name="year" value="{{ $sub->year }}" autocomplete="off" required>
+
+              @error('year')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div> -->
+
             <div class="col-md-12 mb-5">
               <label for="over_budget" class="form-label">ยอดเงินเกินงบ</label>
               <input id="over_budget" type="text"

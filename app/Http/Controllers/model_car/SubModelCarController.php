@@ -40,7 +40,8 @@ class SubModelCarController extends Controller
                 'model_id' => $modelS,
                 // 'code' => $s->code,
                 'name' => $s->name,
-                'over_budget' => $s->over_budget !== null ? number_format($s->over_budget, 2) : '-',
+                // 'year' => $s->year ?? '-',
+                'over_budget' => $s->over_budget !== null ? number_format($s->over_budget, 2) : '-', 
                 'active' => $statusSubCar,
                 'Action' => view('car.sub-model-car.button', compact('s'))->render()
             ];

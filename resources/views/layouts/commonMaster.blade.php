@@ -76,8 +76,8 @@
     </div>
 
     <script>
-        const IDLE_LIMIT = 3 * 60;
-        const LOGOUT_LIMIT = 15 * 60;
+        const IDLE_LIMIT = 10 * 60;
+        const LOGOUT_LIMIT = 14 * 60;
 
         let idleTime = 0;
         let countdownInterval = null;
@@ -109,7 +109,17 @@
         }
 
         function keepAlive() {
-            fetch('/keep-alive');
+            fetch('/keep-alive', {
+                    credentials: 'same-origin'
+                })
+                .then(res => {
+                    if (res.status === 401 || res.status === 419) {
+                        window.location.href = "{{ route('login.index') }}";
+                    }
+                })
+                .catch(() => {
+                    window.location.href = "{{ route('login.index') }}";
+                });
         }
 
         function showIdleModal() {

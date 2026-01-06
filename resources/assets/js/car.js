@@ -297,6 +297,7 @@ $(document).ready(function () {
       { data: 'model_id' },
       // { data: 'code' },
       { data: 'name' },
+      // { data: 'year' },
       { data: 'over_budget' },
       { data: 'active', orderable: false, searchable: false },
       { data: 'Action', orderable: false, searchable: false }
