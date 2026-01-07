@@ -721,27 +721,52 @@ $(document).ready(function () {
           }
 
           res.forEach(a => {
-            const costCell = a.accessoryCost
-              ? `<input type="radio" name="priceType_${a.id}" value="cost"
+            // const costCell = a.accessoryCost
+            //   ? `<input type="radio" name="priceType_${a.id}" value="cost"
+            //       data-id="${a.id}" data-source="${a.AccessorySource}"
+            //       data-detail="${a.AccessoryDetail}" data-price="${a.accessoryCost ?? ''}">
+            //     <span class="ms-1">${formatNumber(a.accessoryCost)}</span>`
+            //   : `<span>-</span>`;
+
+            // const promoCell = a.AccessoryPromoPrice
+            //   ? `<input type="radio" name="priceType_${a.id}" value="promo"
+            //       data-id="${a.id}" data-source="${a.AccessorySource}"
+            //       data-detail="${a.AccessoryDetail}" data-price="${a.AccessoryPromoPrice ?? ''}">
+            //     <span class="ms-1">${formatNumber(a.AccessoryPromoPrice)}</span>`
+            //   : `<span>-</span>`;
+
+            // const saleCell = a.AccessorySalePrice
+            //   ? `<input type="radio" name="priceType_${a.id}" value="sale"
+            //       data-id="${a.id}" data-source="${a.AccessorySource}"
+            //       data-detail="${a.AccessoryDetail}" data-price="${a.AccessorySalePrice ?? ''}"
+            //       data-com="${a.AccessoryComSale ?? ''}">
+            //     <span class="ms-1">${formatNumber(a.AccessorySalePrice) ?? ''}</span>`
+            //   : `<span>-</span>`;
+
+            const costCell =
+              a.accessoryCost !== null && a.accessoryCost !== undefined
+                ? `<input type="radio" name="priceType_${a.id}" value="cost"
                   data-id="${a.id}" data-source="${a.AccessorySource}"
                   data-detail="${a.AccessoryDetail}" data-price="${a.accessoryCost ?? ''}">
                 <span class="ms-1">${formatNumber(a.accessoryCost)}</span>`
-              : `<span>-</span>`;
+                : `<span>-</span>`;
 
-            const promoCell = a.AccessoryPromoPrice
-              ? `<input type="radio" name="priceType_${a.id}" value="promo"
+            const promoCell =
+              a.AccessoryPromoPrice !== null && a.AccessoryPromoPrice !== undefined
+                ? `<input type="radio" name="priceType_${a.id}" value="promo"
                   data-id="${a.id}" data-source="${a.AccessorySource}"
                   data-detail="${a.AccessoryDetail}" data-price="${a.AccessoryPromoPrice ?? ''}">
                 <span class="ms-1">${formatNumber(a.AccessoryPromoPrice)}</span>`
-              : `<span>-</span>`;
+                : `<span>-</span>`;
 
-            const saleCell = a.AccessorySalePrice
-              ? `<input type="radio" name="priceType_${a.id}" value="sale"
+            const saleCell =
+              a.AccessorySalePrice !== null && a.AccessorySalePrice !== undefined
+                ? `<input type="radio" name="priceType_${a.id}" value="sale"
                   data-id="${a.id}" data-source="${a.AccessorySource}"
                   data-detail="${a.AccessoryDetail}" data-price="${a.AccessorySalePrice ?? ''}"
                   data-com="${a.AccessoryComSale ?? ''}">
                 <span class="ms-1">${formatNumber(a.AccessorySalePrice) ?? ''}</span>`
-              : `<span>-</span>`;
+                : `<span>-</span>`;
 
             $tableBody.append(`
               <tr>
