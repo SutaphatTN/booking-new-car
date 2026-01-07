@@ -4,6 +4,7 @@ use App\Http\Controllers\accessory\AccessoryController;
 use App\Http\Controllers\auth\ForgotController;
 use App\Http\Controllers\auth\LoginController;
 use App\Http\Controllers\auth\RegisterController;
+use App\Http\Controllers\auth\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\dashboard\Analytics;
 use App\Http\Controllers\layouts\WithoutMenu;
@@ -58,25 +59,25 @@ use App\Http\Controllers\tables\Basic as TablesBasic;
 use App\Models\Salecar;
 use Illuminate\Support\Facades\Log;
 
-Route::get('/', function () {
-    return redirect()->route('login.index');
-});
+Route::get('/', fn () => redirect()->route('login'));
 
-Route::get('/login', function () {
-    return redirect()->route('login.index');
-})->name('login');
+Route::get('/login', [LoginController::class, 'index'])
+    ->name('login');
 
-Route::resource('login', LoginController::class);
+Route::post('/login', [LoginController::class, 'store'])
+    ->name('login.store');
+
+Route::post('/logout', [LoginController::class, 'logout'])
+    ->name('logout');
+
 Route::resource('register', RegisterController::class);
 Route::resource('forgot', ForgotController::class);
-
 
 Route::get('/keep-alive', function () {
     session()->put('last_keep_alive', now());
     return response()->json(['status' => 'ok'])
         ->header('Cache-Control', 'no-store');
 })->middleware('auth');
-
 
 Route::group(['middleware' => 'auth'], function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
@@ -190,6 +191,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/campaign/status-cam', [CampaignController::class, 'statusCam'])->name('campaign.status-cam');
     Route::get('/api/campaign/sub-model/{model_id}', [CampaignController::class, 'getSubModelCam']);
 
+    // user
+    Route::get('user/list', [UserController::class, 'listUser']);
+    Route::get('user/{id}/view-more', [UserController::class, 'viewMore'])->name('user.viewMore');
+    
     //finance
     Route::get('finance/list', [FinanceController::class, 'listFinance']);
     //finance extra com
@@ -241,6 +246,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::resource('purchase-order', PurchaseOrderController::class);
     Route::resource('accessory', AccessoryController::class);
     Route::resource('campaign', CampaignController::class);
+    Route::resource('user', UserController::class);
     Route::resource('finance', FinanceController::class);
     Route::resource('car-order', CarOrderController::class);
 

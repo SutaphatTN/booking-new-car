@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\Route;
         </li> -->
 
         <!-- User -->
+        @auth
         <li class="nav-item navbar-dropdown dropdown-user dropdown">
             <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);" data-bs-toggle="dropdown">
                 <a class="nav-link dropdown-toggle hide-arrow d-flex align-items-center" href="#" data-bs-toggle="dropdown">
@@ -66,7 +67,7 @@ use Illuminate\Support\Facades\Route;
                 <li>
                     <div class="dropdown-divider my-1"></div>
                 </li>
-                <li>
+                <!-- <li>
                     <a class="dropdown-item" href="javascript:void(0);">
                         <i class="icon-base bx bx-user-circle icon-md me-3"></i><span>My Profile</span>
                     </a>
@@ -75,17 +76,19 @@ use Illuminate\Support\Facades\Route;
                     <a class="dropdown-item" href="javascript:void(0);">
                         <i class="icon-base bx bx-cog icon-md me-3"></i><span>Settings</span>
                     </a>
-                </li>
+                </li> -->
+                @if(Auth::user()->role == 'audit')
                 <li>
                     <a class="dropdown-item" href="{{ route('register.index') }}">
                         <i class="icon-base bx bx-id-card icon-md me-3"></i><span>ลงทะเบียน</span>
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item" href="javascript:void(0);">
+                    <a class="dropdown-item" href="{{ route('user.index') }}">
                         <i class="icon-base bx bx-group icon-md me-3"></i><span>รายชื่อผู้ใช้งาน</span>
                     </a>
                 </li>
+                
                 <!-- <li>
                     <a class="dropdown-item" href="javascript:void(0);">
                         <span class="d-flex align-items-center align-middle">
@@ -97,6 +100,7 @@ use Illuminate\Support\Facades\Route;
                 <li>
                     <div class="dropdown-divider my-1"></div>
                 </li>
+                @endif
                 <li>
                     <a href="#" class="dropdown-item"
                         onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
@@ -112,5 +116,6 @@ use Illuminate\Support\Facades\Route;
             </ul>
         </li>
         <!--/ User -->
+        @endauth
     </ul>
 </div>

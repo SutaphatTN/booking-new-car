@@ -16,13 +16,14 @@ class LoginController extends Controller
 
         return view('auth.login');
     }
-
+    
 
     public function store(Request $request)
     {
         $credentials = $request->only('username', 'password');
 
         if (Auth::attempt($credentials, $request->filled('remember'))) {
+            $request->session()->regenerate();
 
             if ($request->expectsJson()) {
                 return response()->json([
@@ -41,13 +42,15 @@ class LoginController extends Controller
             ], 422);
         }
 
-        return back()->with('error', 'Username หรือ Password ไม่ถูกต้อง');
+        return back()->withErrors([
+            'username' => 'Username หรือ Password ไม่ถูกต้อง'
+        ]);
     }
 
     public function logout(Request $request)
     {
         Auth::logout();
-        
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
@@ -55,6 +58,6 @@ class LoginController extends Controller
             return response()->json(['success' => true]);
         }
 
-        return redirect()->route('login.index');
+        return redirect()->route('login');
     }
 }

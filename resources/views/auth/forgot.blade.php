@@ -44,7 +44,7 @@
                         {{-- Submit --}}
                         <div class="d-grid mt-4">
                             <button type="submit" class="btn btn-primary mb-3">{{ __('Reset Password') }}</button>
-                            <a href="{{ route('login.index') }}" class="btn btn-secondary text-center">ย้อนกลับ</a>
+                            <a href="{{ route('login') }}" class="btn btn-secondary text-center">ย้อนกลับ</a>
                         </div>
 
                     </form>

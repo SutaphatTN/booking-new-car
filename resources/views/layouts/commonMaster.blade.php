@@ -104,7 +104,7 @@
                     "Accept": "application/json"
                 }
             }).finally(() => {
-                window.location.href = "{{ route('login.index') }}";
+                window.location.href = "{{ route('login') }}";
             });
         }
 
@@ -114,11 +114,11 @@
                 })
                 .then(res => {
                     if (res.status === 401 || res.status === 419) {
-                        window.location.href = "{{ route('login.index') }}";
+                        window.location.href = "{{ route('login') }}";
                     }
                 })
                 .catch(() => {
-                    window.location.href = "{{ route('login.index') }}";
+                    window.location.href = "{{ route('login') }}";
                 });
         }
 
