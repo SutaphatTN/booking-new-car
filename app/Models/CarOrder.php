@@ -42,6 +42,7 @@ class CarOrder extends Model
         'stock_id',
         'car_status',
         'approver',
+        'approved_by',
         'approver_date',
         'note',
         'status',

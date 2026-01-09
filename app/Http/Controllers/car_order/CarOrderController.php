@@ -12,6 +12,7 @@ use App\Models\TbSubcarmodel;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
 class CarOrderController extends Controller
@@ -453,6 +454,7 @@ class CarOrderController extends Controller
                 $order->reason = $request->reason;
             }
 
+            $order->approved_by = Auth::id();
             $order->approver_date = now();
 
             $order->save();
