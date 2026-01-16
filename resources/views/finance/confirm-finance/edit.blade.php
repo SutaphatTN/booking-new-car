@@ -24,25 +24,25 @@
             <input type="hidden" id="period" value="{{ $sale->remainingPayment->period }}">
             <input type="hidden" id="tax" value="{{ $sale->remainingPayment?->financeInfo?->tax }}">
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-6 mb-5">
               <label for="customer_fullname" class="form-label">ชื่อ - นามสกุล</label>
               <input id="customer_fullname" type="text"
                 class="form-control"
                 value="{{ $sale->customer->prefix->Name_TH ?? '' }} {{ $sale->customer->FirstName ?? '-' }} {{ $sale->customer->LastName ?? '-' }}" readonly>
             </div>
 
-            <div class="col-md-3 mb-5">
+            <div class="col-md-6 mb-5">
               <label for="model_id" class="form-label">รุ่นรถหลัก</label>
               <input id="model_id" type="text"
                 class="form-control"
                 value="{{ $sale->model->Name_TH ?? '-' }}" readonly>
             </div>
 
-            <div class="col-md-5 mb-5">
+            <div class="col-md-6 mb-5">
               <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
               <input id="subModel_id" type="text"
                 class="form-control"
-                value="{{ $sale->subModel->name ?? '-' }}" readonly>
+                value="{{ $sale->subModel->detail ?? '-' }} - {{ $sale->subModel->name ?? '-' }}" readonly>
             </div>
 
             <div class="col-md-3 mb-5">
@@ -59,7 +59,7 @@
                 value="{{ $sale->Color ?? '-' }}" readonly>
             </div>
 
-            <div class="col-md-3 mb-5">
+            <div class="col-md-2 mb-5">
               <label for="Year" class="form-label">ปี</label>
               <input id="Year" type="text"
                 class="form-control"
@@ -80,7 +80,7 @@
                 readonly>
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="period_show" class="form-label">จำนวนปีที่ผ่อน</label>
 
               @php
@@ -95,21 +95,21 @@
                 readonly>
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="tax_show" class="form-label">ภาษีหัก ณ ที่จ่าย</label>
               <input id="tax_show" type="text" class="form-control"
                 value="{{ $sale->remainingPayment?->financeInfo?->tax !== null ? $sale->remainingPayment->financeInfo->tax . '%' : '-' }}"
                 readonly>
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="down_show" class="form-label">เงินดาวน์</label>
               <input id="down_show" type="text"
                 class="form-control text-end money-input"
                 name="down" value="{{ old('down', $fnCon->down) }}" required>
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="excellent_show" class="form-label">ยอดจัด</label>
               <input id="excellent_show" type="text"
                 class="form-control text-end money-input"
@@ -117,7 +117,7 @@
             </div>
 
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="com_fin" class="form-label">Com Fin</label>
               <input id="com_fin" type="text"
                 class="form-control text-end money-input"

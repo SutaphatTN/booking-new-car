@@ -1,5 +1,5 @@
 <div class="modal fade editCam" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-md" role="document">
+  <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header border-bottom">
         <h4 class="modal-title mb-2" id="editCamLabel">แก้ไขข้อมูลแคมเปญ</h4>
@@ -14,7 +14,7 @@
           @method('PUT')
 
           <div class="row">
-            <div class="col-md-6 mb-5">
+            <div class="col-md-5 mb-5">
               <label for="model_id" class="form-label">รุ่นรถหลัก</label>
               <select id="model_id" name="model_id" class="form-select @error('model_id') is-invalid @enderror" required>
                 <option value="">-- เลือกรุ่นรถหลัก --</option>
@@ -30,7 +30,7 @@
               @enderror
             </div>
 
-            <div class="col-md-6 mb-5">
+            <div class="col-md-7 mb-5">
               <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
               <select id="subModel_id" name="subModel_id" class="form-select" required>
                 @foreach ($subModels as $s)
@@ -48,12 +48,17 @@
             </div>
 
             <div class="col-md-7 mb-5">
-              <label for="name" class="form-label">ชื่อแคมเปญ</label>
-              <input id="name" type="text"
-                class="form-control @error('name') is-invalid @enderror"
-                name="name" value="{{ $cam->name }}" autocomplete="off" required>
+              <label for="camName_id" class="form-label">ชื่อแคมเปญ</label>
+              <select id="camName_id" name="camName_id" class="form-select" required>
+                <option value="">-- เลือกแคมเปญ --</option>
+                @foreach ($camApp as $item)
+                <option value="{{ @$item->id }}" {{ $cam->camName_id == $item->id ? 'selected' : '' }}>
+                  {{ @$item->name }}
+                </option>
+                @endforeach
+              </select>
 
-              @error('name')
+              @error('camName_id')
               <span class="invalid-feedback" role="alert">
                 <strong>{{ $message }}</strong>
               </span>
@@ -115,7 +120,32 @@
               @enderror
             </div>
 
-            <div class="col-md-6 mb-5">
+            <div class="col-md-3 mb-5">
+              <label for="startYear" class="form-label">ตั้งแต่ปี</label>
+              <input id="startYear" type="number"
+                class="form-control @error('startYear') is-invalid @enderror"
+                name="startYear" value="{{ $cam->startYear }}" required>
+
+              @error('startYear')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+            <div class="col-md-3 mb-5">
+              <label for="endYear" class="form-label">ถึงปี</label>
+              <input id="endYear" type="number"
+                class="form-control @error('endYear') is-invalid @enderror"
+                name="endYear" value="{{ $cam->endYear }}" required>
+
+              @error('endYear')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-3 mb-5">
               <label for="startDate" class="form-label">วันที่เริ่ม</label>
               <input id="startDate" type="date"
                 class="form-control @error('startDate') is-invalid @enderror"
@@ -127,7 +157,7 @@
               </span>
               @enderror
             </div>
-            <div class="col-md-6 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="endDate" class="form-label">วันที่สิ้นสุด</label>
               <input id="endDate" type="date"
                 class="form-control @error('endDate') is-invalid @enderror"

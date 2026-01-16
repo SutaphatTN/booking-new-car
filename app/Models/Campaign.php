@@ -19,7 +19,7 @@ class Campaign extends Model
 	protected $fillable = [
 		'model_id',
 		'subModel_id',
-		'name',
+		'camName_id',
 		'campaign_type',
 		'cashSupport',
 		'cashSupport_deduct',
@@ -27,6 +27,8 @@ class Campaign extends Model
 		'userZone',
 		'startDate',
 		'endDate',
+		'startYear',
+		'endYear',
 		'active'
 	];
 
@@ -45,6 +47,11 @@ class Campaign extends Model
 	public function type()
 	{
 		return $this->belongsTo(TbCampaignType::class, 'campaign_type', 'id');
+	}
+
+	public function appellation()
+	{
+		return $this->belongsTo(CampaignName::class, 'camName_id', 'id');
 	}
 
 	public function getFormatStartDateAttribute()

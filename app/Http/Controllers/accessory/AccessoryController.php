@@ -9,7 +9,6 @@ use App\Models\AccessoryType;
 use App\Models\TbCarmodel;
 use App\Models\TbSubcarmodel;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class AccessoryController extends Controller
 {
@@ -90,7 +89,7 @@ class AccessoryController extends Controller
     public function getSubModelAcc($model_id)
     {
         $subModels = TbSubcarmodel::where('model_id', $model_id)
-            ->select('id', 'name')
+            ->select('id', 'name', 'detail')
             ->orderBy('name')
             ->get();
 

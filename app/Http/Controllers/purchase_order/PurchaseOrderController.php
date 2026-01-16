@@ -6,24 +6,16 @@ use App\Exports\BookingExport;
 use App\Http\Controllers\Controller;
 use App\Mail\SaleRequestMail;
 use App\Models\TbCarmodel;
-use App\Models\Accessory;
-use App\Models\Accessorycost;
-use App\Models\Accessorypromoprice;
-use App\Models\Accessorysaleprice;
-use App\Models\Accessorybuymore;
 use App\Models\AccessoryPrice;
 use App\Models\Campaign;
-use App\Models\Campaigncar;
 use App\Models\CarOrder;
 use App\Models\CarOrderHistory;
-use App\Models\Customer;
 use App\Models\Finance;
 use App\Models\PaymentType;
 use App\Models\Salecampaign;
 use App\Models\Salecar;
 use App\Models\SaleCarPayment;
 use App\Models\TbConStatus;
-use App\Models\TbPrefixname;
 use App\Models\TbProvinces;
 use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
@@ -66,7 +58,7 @@ class PurchaseOrderController extends Controller
     public function searchAccessory(Request $request)
     {
         $keyword = $request->get('keyword');
-        $subModel_id = $request->get('subModel_id');
+        $model_id = $request->get('model_id');
         $today = Carbon::today();
 
         $query = AccessoryPrice::query();
@@ -78,8 +70,8 @@ class PurchaseOrderController extends Controller
             });
         }
 
-        if ($subModel_id) {
-            $query->where('subModel_id', $subModel_id);
+        if ($model_id) {
+            $query->where('model_id', $model_id);
         }
 
         $query->where('active', 'active');
@@ -130,7 +122,10 @@ class PurchaseOrderController extends Controller
             $c = $s->customer;
             $model = $s->model ? $s->model->Name_TH : '';
             $subModelSale = $s->subModel ? $s->subModel->name : '';
+            $subDetail = $s->subModel ? $s->subModel->detail : '';
             $statusSale = $s->conStatus ? $s->conStatus->name : '';
+
+            $subModelData = "{$subModelSale}<br>{$subDetail}";
 
             if (!empty($s->GMApprovalSignature)) {
                 $approver = 'GM อนุมัติแล้ว';
@@ -156,8 +151,7 @@ class PurchaseOrderController extends Controller
                 'No' => $index + 1,
                 'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
                 'model' => $model,
-                'subSale' => $subModelSale,
-                'option' => $s->option,
+                'subSale' => $subModelData,
                 'order' => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
                 'statusSale' => $statusSale,
                 'approver' => $approver,
@@ -327,7 +321,7 @@ class PurchaseOrderController extends Controller
     public function getSubModelPurchase($model_id)
     {
         $subModels = TbSubcarmodel::where('model_id', $model_id)
-            ->select('id', 'name')
+            ->select('id', 'name', 'detail')
             ->orderBy('name')
             ->get();
 
@@ -337,9 +331,17 @@ class PurchaseOrderController extends Controller
     public function getCampaign(Request $request)
     {
         $subModel_id = $request->subModel_id;
+        $year = (int) $request->year;
         $today = Carbon::today();
 
-        $campaigns = Campaign::where('subModel_id', $subModel_id)
+        if (!$subModel_id || !$year) {
+            return response()->json([]);
+        }
+
+        $campaigns = Campaign::with('appellation', 'type')
+            ->where('subModel_id', $request->subModel_id)
+            ->where('startYear', '<=', $year)
+            ->where('endYear', '>=', $year)
             ->whereDate('startDate', '<=', $today)
             ->whereDate('endDate', '>=', $today)
             ->get();
@@ -349,7 +351,7 @@ class PurchaseOrderController extends Controller
 
     public function edit($id)
     {
-        $saleCar = Salecar::with(['customer.prefix', 'customer.currentAddress', 'customer.documentAddress', 'customerReferrer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'conStatus', 'provinces', 'remainingPayment.financeInfo', 'campaigns.campaign.type'])->findOrFail($id);
+        $saleCar = Salecar::with(['customer.prefix', 'customer.currentAddress', 'customer.documentAddress', 'customerReferrer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'conStatus', 'provinces', 'remainingPayment.financeInfo', 'campaigns.campaign.type', 'campaigns.campaign.appellation',])->findOrFail($id);
         $model = TbCarmodel::all();
         $finances = Finance::all();
         $subModels = TbSubcarmodel::where('model_id', $saleCar->model_id)->get();
@@ -376,7 +378,8 @@ class PurchaseOrderController extends Controller
 
         $campaigns = [];
         if ($subModel_id) {
-            $campaigns = Campaign::where('subModel_id', $subModel_id)
+            $campaigns = Campaign::with(['appellation', 'type'])
+                ->where('subModel_id', $subModel_id)
                 ->where('active', 'active')
                 ->whereDate('startDate', '<=', $today)
                 ->whereDate('endDate', '>=', $today)
@@ -474,24 +477,44 @@ class PurchaseOrderController extends Controller
 
             if ($request->hasTurnCar === 'yes') {
 
-                $turnCar = TurnCar::find($turnCarID);
+                if (!$turnCarID) {
+                    $turnCar = TurnCar::create([
+                        'brand' => $request->brand,
+                        'model' => $request->model,
+                        'machine' => $request->machine,
+                        'year_turn' => $request->year_turn,
+                        'color_turn' => $request->color_turn,
+                        'license_plate' => $request->license_plate,
+                        'cost_turn' => $request->filled('cost_turn')
+                            ? str_replace(',', '', $request->cost_turn)
+                            : null,
+                        'com_turn' => $request->filled('com_turn')
+                            ? str_replace(',', '', $request->com_turn)
+                            : null,
+                    ]);
 
-                $turnCar->update([
-                    'brand' => $request->brand,
-                    'model' => $request->model,
-                    'machine' => $request->machine,
-                    'year_turn' => $request->year_turn,
-                    'color_turn' => $request->color_turn,
-                    'license_plate' => $request->license_plate,
-                    'cost_turn' => $request->filled('cost_turn')
-                        ? str_replace(',', '', $request->cost_turn)
-                        : null,
-                    'com_turn'  => $request->filled('com_turn')
-                        ? str_replace(',', '', $request->com_turn)
-                        : null,
-                ]);
-                $turnCarID = $turnCar->id;
+                    $turnCarID = $turnCar->id;
+                } else {
+                    $turnCar = TurnCar::findOrFail($turnCarID);
+                    $turnCar->update([
+                        'brand' => $request->brand,
+                        'model' => $request->model,
+                        'machine' => $request->machine,
+                        'year_turn' => $request->year_turn,
+                        'color_turn' => $request->color_turn,
+                        'license_plate' => $request->license_plate,
+                        'cost_turn' => $request->filled('cost_turn')
+                            ? str_replace(',', '', $request->cost_turn)
+                            : null,
+                        'com_turn' => $request->filled('com_turn')
+                            ? str_replace(',', '', $request->com_turn)
+                            : null,
+                    ]);
+                }
+            } else {
+                $turnCarID = null;
             }
+
 
             $data = [
                 'SaleID' => $request->SaleID,
@@ -680,7 +703,7 @@ class PurchaseOrderController extends Controller
                     Salecampaign::create([
                         'SaleID' => $saleCar->id,
                         'CampaignID' => $campId,
-                        'CampaignName' => $campaign->name ?? '',
+                        'CampaignName' => $campaign->camName_id ?? '',
                         'CampaignType' => $campaign->campaign_type ?? '',
                         'CashSupport' => $campaign->cashSupport ?? '',
                         'CashSupportDeduct' => $campaign->cashSupport_deduct ?? '',
@@ -1021,7 +1044,7 @@ class PurchaseOrderController extends Controller
 
     public function summaryPurchase($id)
     {
-        $saleCar = Salecar::with(['customer.prefix', 'model', 'campaigns.campaign.type', 'reservationPayment', 'remainingPayment.financeInfo', 'deliveryPayment', 'turnCar', 'provinces'])->findOrFail($id);
+        $saleCar = Salecar::with(['customer.prefix', 'model', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'reservationPayment', 'remainingPayment.financeInfo', 'deliveryPayment', 'turnCar', 'provinces'])->findOrFail($id);
         $model = TbCarmodel::all();
 
         $pdf = Pdf::loadView('purchase-order.report.summary', compact('saleCar', 'model'))
@@ -1196,8 +1219,13 @@ class PurchaseOrderController extends Controller
 
     public function viewMoreHistory($id)
     {
-        $saleCar = Salecar::with(['customer.prefix', 'customer.currentAddress', 'customer.documentAddress', 'customerReferrer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'conStatus', 'provinces', 'remainingPayment.financeInfo', 'campaigns.campaign.type', 'reservationPayment', 'remainingPayment', 'deliveryPayment'])->findOrFail($id);
-        $campaignText = $saleCar->campaigns->pluck('CampaignName')->join(' + ');
+        $saleCar = Salecar::with(['customer.prefix', 'customer.currentAddress', 'customer.documentAddress', 'customerReferrer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'conStatus', 'provinces', 'remainingPayment.financeInfo', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'reservationPayment', 'remainingPayment', 'deliveryPayment'])->findOrFail($id);
+        $campaignText = $saleCar->campaigns
+            ->map(function ($saleCampaign) {
+                return $saleCampaign->campaign?->appellation?->name;
+            })
+            ->filter() // ป้องกัน null
+            ->join(' + ');
 
         return view('purchase-order.history.view-more-history', compact('saleCar', 'campaignText'));
     }

@@ -13,7 +13,7 @@
             <input id="type" class="form-control" type="text" value="{{ $order->type }}" disabled />
           </div>
 
-          <div class="col-md-3 mb-5">
+          <div class="col-md-2 mb-5">
             <label for="order_code" class="form-label">รหัสการสั่งซื้อ</label>
             <input id="order_code" class="form-control" type="text" value="{{ $order->order_code }}" disabled />
           </div>
@@ -23,9 +23,9 @@
             <input id="model_id" class="form-control" type="text" value="{{ $order->model->Name_TH }}" disabled />
           </div>
 
-          <div class="col-md-4 mb-5">
+          <div class="col-md-5 mb-5">
             <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
-            <input id="subModel_id" class="form-control" type="text" value="{{ $order->subModel->name }}" disabled />
+            <input id="subModel_id" class="form-control" type="text" value="{{ $order->subModel->detail }} - {{ $order->subModel->name }}" disabled />
           </div>
 
           <div class="col-md-4 mb-5">

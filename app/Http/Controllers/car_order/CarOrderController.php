@@ -34,9 +34,10 @@ class CarOrderController extends Controller
         $data = $order->map(function ($c, $index) {
             $modelOrder = $c->model ? $c->model->Name_TH : '';
             $subModelOrder = $c->subModel ? $c->subModel->name : '';
+            $subDetail = $c->subModel ? $c->subModel->detail : '';
             $status = $c->orderStatus ? $c->orderStatus->name : '';
 
-            $car = "หลัก : {$modelOrder}<br>ย่อย : {$subModelOrder}<br>สี : {$c->color}<br>ราคาขาย : " . number_format($c->car_MSRP);
+            $car = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$c->color}<br>ราคาขาย : " . number_format($c->car_MSRP);
             $statusDisplay = "รถ : {$status}<br>การจอง : {$c->car_status}";
 
             return [
@@ -138,7 +139,8 @@ class CarOrderController extends Controller
                         $q->where('Name_TH', 'like', "%{$keyword}%");
                     })
                     ->orWhereHas('subModel', function ($q) use ($keyword) {
-                        $q->where('name', 'like', "%{$keyword}%");
+                        $q->where('name', 'like', "%{$keyword}%")
+                            ->orWhere('detail', 'like', "%{$keyword}%");
                     });
             })
             ->orderByRaw("CASE WHEN order_status = 5 THEN 0 ELSE 1 END")
@@ -207,16 +209,16 @@ class CarOrderController extends Controller
         $data = $order->map(function ($p, $index) {
             $modelOrder = $p->model ? $p->model->Name_TH : '';
             $subModelOrder = $p->subModel ? $p->subModel->name : '';
+            $subDetail = $p->subModel ? $p->subModel->detail : '';
 
-            $subModelDisplay = "{$subModelOrder}<br>สี : {$p->color}<br>ราคาขาย : " . number_format($p->car_MSRP);
+            $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$p->color}<br>ราคาขาย : " . number_format($p->car_MSRP);
 
             return [
                 'No' => $index + 1,
                 'order_code' => $p->order_code,
                 'date' => $p->format_order_date,
                 'type' => $p->type,
-                'model_id' => $modelOrder,
-                'subModel_id' => $subModelDisplay,
+                'model' => $modelDisplay,
                 'Action' => view('car-order.pending.button', compact('p'))->render()
             ];
         });
@@ -332,7 +334,7 @@ class CarOrderController extends Controller
     public function getSubModelCarOrder($model_id)
     {
         $subModels = TbSubcarmodel::where('model_id', $model_id)
-            ->select('id', 'name')
+            ->select('id', 'name', 'detail')
             ->orderBy('name')
             ->get();
 
@@ -415,13 +417,15 @@ class CarOrderController extends Controller
         $data = $order->map(function ($p, $index) {
             $modelOrder = $p->model ? $p->model->Name_TH : '';
             $subModelOrder = $p->subModel ? $p->subModel->name : '';
+            $subDetail = $p->subModel ? $p->subModel->detail : '';
+            $subModelFull = "{$subModelOrder}<br>{$subDetail}";
 
             return [
                 'No' => $index + 1,
                 'date' => $p->format_order_date,
                 'type' => $p->type,
                 'model_id' => $modelOrder,
-                'subModel_id' => $subModelOrder,
+                'subModel_id' => $subModelFull,
                 'color' => $p->color,
                 'cost' => number_format($p->car_MSRP, 2),
                 'Action' => view('car-order.process.button', compact('p'))->render()
@@ -487,6 +491,8 @@ class CarOrderController extends Controller
         $data = $order->map(function ($a, $index) {
             $modelOrder = $a->model ? $a->model->Name_TH : '';
             $subModelOrder = $a->subModel ? $a->subModel->name : '';
+            $subDetail = $a->subModel ? $a->subModel->detail : '';
+            $subModelFull = "{$subModelOrder}<br>{$subDetail}";
 
             if ($a->status === 'approved') {
                 $statusBadge = '<span class="badge bg-label-success">อนุมัติ</span>';
@@ -501,7 +507,7 @@ class CarOrderController extends Controller
                 'date' => $a->format_approver_date,
                 'type' => $a->type,
                 'model_id' => $modelOrder,
-                'subModel_id' => $subModelOrder,
+                'subModel_id' => $subModelFull,
                 'color' => $a->color,
                 'cost' => number_format($a->car_MSRP, 2),
                 'status' => $statusBadge,

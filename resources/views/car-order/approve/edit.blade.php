@@ -69,7 +69,7 @@
 
             <div class="col-md-6 mb-5">
               <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
-              <input id="subModel_id" class="form-control" type="text" value="{{ $order->subModel->name }}" disabled />
+              <input id="subModel_id" class="form-control" type="text" value="{{ $order->subModel->detail }} - {{ $order->subModel->name }}" disabled />
             </div>
 
             <div class="col-md-3 mb-5">

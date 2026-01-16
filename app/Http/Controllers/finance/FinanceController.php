@@ -252,6 +252,8 @@ class FinanceController extends Controller
             $c = $s->customer;
             $model = $s->model?->Name_TH ?? '-';
             $subModel = $s->subModel?->name ?? '-';
+            $subDetail = $s->subModel ? $s->subModel->detail : '';
+            $subModelFull = "{$subModel}<br>{$subDetail}";
             $number = $s->remainingPayment?->po_number ?? '-';
 
             $daysRemaining = '-';
@@ -270,7 +272,7 @@ class FinanceController extends Controller
                 'No' => $index + 1,
                 'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
                 'model' => $model,
-                'subModel' => $subModel,
+                'subModel' => $subModelFull,
                 'po' => $number,
                 'Action' => view('finance.confirm-finance.button', compact('s'))->render()
             ];

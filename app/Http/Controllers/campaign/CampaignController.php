@@ -4,6 +4,7 @@ namespace App\Http\Controllers\campaign;
 
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
+use App\Models\CampaignName;
 use App\Models\TbCampaignType;
 use App\Models\TbCarmodel;
 use App\Models\TbSubcarmodel;
@@ -19,11 +20,19 @@ class CampaignController extends Controller
 
     public function listCampaign()
     {
-        $cam = Campaign::with('model', 'type')->get();
+        $cam = Campaign::with('model', 'type', 'appellation')->get();
 
         $data = $cam->map(function ($c, $index) {
+            $name = $c->appellation ? $c->appellation->name : '';
             $modelC = $c->model ? $c->model->Name_TH : '';
+            $subModel = $c->subModel?->name ?? '-';
+            $subDetail = $c->subModel ? $c->subModel->detail : '';
+            $subModelFull = "{$modelC}<br>{$subModel}<br>{$subDetail}";
             $typeC = $c->type ? $c->type->name : '';
+
+            $startY = $c->startYear ?? '';
+            $endY = $c->endYear ?? '';
+            $yearFull = "{$startY} - {$endY}";
 
             $statusSwitch = '
                 <div class="d-flex justify-content-center align-items-center">
@@ -40,8 +49,9 @@ class CampaignController extends Controller
 
             return [
                 'No' => $index + 1,
-                'model_id' => $modelC,
-                'name' => $c->name,
+                'model_id' => $subModelFull,
+                'name' => $name,
+                'year' => $yearFull,
                 'campaign_type' => $typeC,
                 'cashSupport_final' => $c->cashSupport_final !== null ? number_format($c->cashSupport_final, 2) : '-',
                 'active' => $statusSwitch,
@@ -58,6 +68,7 @@ class CampaignController extends Controller
             'model',
             'subModel',
             'type',
+            'appellation'
         ])->find($id);
 
         return view('campaign.view-more', compact('cam'));
@@ -84,7 +95,8 @@ class CampaignController extends Controller
         $cam = Campaign::all();
         $model = TbCarmodel::all();
         $type = TbCampaignType::all();
-        return view('campaign.input', compact('cam', 'model', 'type'));
+        $camApp = CampaignName::all();
+        return view('campaign.input', compact('cam', 'model', 'type', 'camApp'));
     }
 
     function store(Request $request)
@@ -95,7 +107,7 @@ class CampaignController extends Controller
             $data = [
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
-                'name' => $request->name,
+                'camName_id' => $request->camName_id,
                 'campaign_type' => $request->campaign_type,
                 'cashSupport' => $request->filled('cashSupport')
                     ? str_replace(',', '', $request->cashSupport)
@@ -109,6 +121,8 @@ class CampaignController extends Controller
                 'userZone' => $request->userZone  ?? null,
                 'startDate' => $request->startDate,
                 'endDate' => $request->endDate,
+                'startYear' => $request->startYear,
+                'endYear' => $request->endYear,
                 'active' => $active,
             ];
 
@@ -129,7 +143,7 @@ class CampaignController extends Controller
     public function getSubModelCam($model_id)
     {
         $subModels = TbSubcarmodel::where('model_id', $model_id)
-            ->select('id', 'name')
+            ->select('id', 'name', 'detail')
             ->orderBy('name')
             ->get();
 
@@ -142,7 +156,8 @@ class CampaignController extends Controller
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $cam->model_id)->get();
         $type = TbCampaignType::all();
-        return view('campaign.edit', compact('cam', 'model', 'subModels', 'type'));
+        $camApp = CampaignName::all();
+        return view('campaign.edit', compact('cam', 'model', 'subModels', 'type', 'camApp'));
     }
 
     public function update(Request $request, $id)
@@ -182,6 +197,100 @@ class CampaignController extends Controller
         try {
             $cam = Campaign::findOrFail($id);
             $cam->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ลบข้อมูลเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
+    }
+
+    // campaign name
+    public function viewAppellation()
+    {
+        $camApp = CampaignName::all();
+        return view('campaign.Appellation.view', compact('camApp'));
+    }
+
+    public function listAppellation()
+    {
+        $camApp = CampaignName::all();
+
+        $data = $camApp->map(function ($c, $index) {
+            return [
+                'No' => $index + 1,
+                'name' => $c->name,
+                'Action' => view('campaign.Appellation.button', compact('c'))->render()
+            ];
+        });
+
+        return response()->json(['data' => $data]);
+    }
+
+    public function createAppellation()
+    {
+        $camApp = CampaignName::all();
+        return view('campaign.Appellation.input', compact('camApp'));
+    }
+
+    function storeAppellation(Request $request)
+    {
+        try {
+            $data = [
+                'name' => $request->name
+            ];
+
+            CampaignName::create($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'เพิ่มข้อมูลเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
+    }
+
+    public function editAppellation($id)
+    {
+        $camApp = CampaignName::findOrFail($id);
+        return view('campaign.Appellation.edit', compact('camApp'));
+    }
+
+    public function updateAppellation(Request $request, $id)
+    {
+        try {
+            $camApp = CampaignName::findOrFail($id);
+            $data = $request->except(['_token', '_method']);
+
+            $camApp->update($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'แก้ไขข้อมูลเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
+    }
+
+    function destroyAppellation($id)
+    {
+        try {
+            $camApp = CampaignName::findOrFail($id);
+            $camApp->delete();
 
             return response()->json([
                 'success' => true,

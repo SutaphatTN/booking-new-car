@@ -52,13 +52,6 @@ $(document).on('blur', '.money-input', function () {
   }
 });
 
-function formatMoney(value) {
-  return Number(value).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
-}
-
 //view
 
 //view : table
@@ -76,7 +69,6 @@ $(document).ready(function () {
       { data: 'FullName' },
       { data: 'model' },
       { data: 'subSale' },
-      { data: 'option' },
       { data: 'order' },
       { data: 'statusSale' },
       { data: 'approver' },
@@ -194,6 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const turnCarFields = document.getElementById('turnCarFields');
 
   function toggleTurnCarFields() {
+    if (!turnCarFields) return;
     turnCarFields.style.display = yesRadio.checked ? 'flex' : 'none';
   }
 
@@ -334,10 +327,10 @@ $(document).on('change', '#model_id', function () {
     url: '/api/purchase-order/sub-model/' + modelId,
     type: 'GET',
     success: function (data) {
-      console.log('data:', data);
+      // console.log('data:', data);
       if (data.length > 0) {
         data.forEach(function (sub) {
-          $subModelSelect.append(`<option value="${sub.id}">${sub.name}</option>`);
+          $subModelSelect.append(`<option value="${sub.id}">${sub.detail} - ${sub.name}</option>`);
         });
       } else {
         $subModelSelect.append('<option value="">-- ไม่มีรุ่นย่อย --</option>');
@@ -540,7 +533,12 @@ $(document).ready(function () {
             $tableBody.append(`
               <tr>
               <td>${c.order_code ?? '-'}</td>
-                <td>${c.sub_model?.name}</td>
+                <td>
+                  <div>
+                    ${c.sub_model?.name ?? '-'}<br>
+                      ${c.sub_model?.detail ?? ''}
+                  </div>
+                </td>
                 <td>${c.vin_number ?? '-'}</td>
                 <td>${c.option ?? '-'}</td>
                 <td>${c.color ?? '-'}</td>
@@ -551,7 +549,8 @@ $(document).ready(function () {
                     data-id="${c.id}"
                     data-code="${c.order_code}"
                     data-model="${c.model?.Name_TH}"
-                    data-sub="${c.sub_model?.name}"
+                    data-sub="${c.sub_model?.name ?? ''}"
+                    data-sub-detail="${c.sub_model?.detail ?? ''}"
                     data-vin="${c.vin_number ?? ''}"
                     data-option="${c.option ?? ''}"
                     data-color="${c.color ?? ''}"
@@ -584,7 +583,7 @@ $(document).ready(function () {
 
     $('#carOrderCode').val(data.code);
     $('#carOrderModel').val(data.model);
-    $('#carOrderSubModel').val(data.sub);
+    $('#carOrderSubModel').val(data.sub + (data.subDetail ? ' - ' + data.subDetail : ''));
     $('#carOrderVin').val(data.vin);
     $('#carOrderOption').val(data.option);
     $('#carOrderColor').val(data.color);
@@ -677,15 +676,15 @@ $(document).ready(function () {
       $searchInput.val('');
       $tableBody.empty();
 
-      const subModel_id = $('#subModel_id').val();
-      console.log('ใช้ subModel_id ล่าสุด:', subModel_id);
+      const model_id = $('#model_id').val();
 
-      if (!subModel_id) {
-        $tableBody.append(`<tr><td colspan="5" class="text-center text-danger">กรุณาเลือกรุ่นรถก่อน</td></tr>`);
-      } else {
-        $(options.subModelInput).val(subModel_id);
-        searchItem('');
+      if (!model_id) {
+        $tableBody.append(`<tr><td colspan="5" class="text-center text-danger">กรุณาเลือกรุ่นรถหลักก่อน</td></tr>`);
+        return;
       }
+
+      $(options.modelInput).val(model_id);
+      searchItem('');
     });
 
     $searchInput.on('keypress', function (e) {
@@ -705,13 +704,13 @@ $(document).ready(function () {
       const selectedExtraIds = getSelectedExtraIds();
       const excludeIds = [...selectedGiftIds, ...selectedExtraIds];
 
-      const subModel_id = $('#subModel_id').val();
-      if (!subModel_id) return;
+      const model_id = $('#model_id').val();
+      if (!model_id) return;
 
       $.ajax({
         url: '/accessory/search',
         type: 'GET',
-        data: { keyword, subModel_id, exclude_ids: excludeIds },
+        data: { keyword, model_id, exclude_ids: excludeIds },
         success: function (res) {
           $tableBody.empty();
 
@@ -721,28 +720,6 @@ $(document).ready(function () {
           }
 
           res.forEach(a => {
-            // const costCell = a.accessoryCost
-            //   ? `<input type="radio" name="priceType_${a.id}" value="cost"
-            //       data-id="${a.id}" data-source="${a.AccessorySource}"
-            //       data-detail="${a.AccessoryDetail}" data-price="${a.accessoryCost ?? ''}">
-            //     <span class="ms-1">${formatNumber(a.accessoryCost)}</span>`
-            //   : `<span>-</span>`;
-
-            // const promoCell = a.AccessoryPromoPrice
-            //   ? `<input type="radio" name="priceType_${a.id}" value="promo"
-            //       data-id="${a.id}" data-source="${a.AccessorySource}"
-            //       data-detail="${a.AccessoryDetail}" data-price="${a.AccessoryPromoPrice ?? ''}">
-            //     <span class="ms-1">${formatNumber(a.AccessoryPromoPrice)}</span>`
-            //   : `<span>-</span>`;
-
-            // const saleCell = a.AccessorySalePrice
-            //   ? `<input type="radio" name="priceType_${a.id}" value="sale"
-            //       data-id="${a.id}" data-source="${a.AccessorySource}"
-            //       data-detail="${a.AccessoryDetail}" data-price="${a.AccessorySalePrice ?? ''}"
-            //       data-com="${a.AccessoryComSale ?? ''}">
-            //     <span class="ms-1">${formatNumber(a.AccessorySalePrice) ?? ''}</span>`
-            //   : `<span>-</span>`;
-
             const costCell =
               a.accessoryCost !== null && a.accessoryCost !== undefined
                 ? `<input type="radio" name="priceType_${a.id}" value="cost"
@@ -961,8 +938,12 @@ $(document).ready(function () {
     deleteBtnClass: '.btn-delete-extra'
   });
 
-  // เมื่อเปลี่ยน CarModel
-  $('#subModel_id').on('change', function () {
+  // เมื่อเปลี่ยนรุ่นรถ
+  $('#model_id').on('change', function () {
+    resetGiftAndExtraTable();
+  });
+
+  function resetGiftAndExtraTable() {
     $('#giftTablePrice tbody').html(
       `<tr id="no-data-row"><td colspan="6" class="text-center">ยังไม่มีข้อมูล</td></tr>`
     );
@@ -976,7 +957,7 @@ $(document).ready(function () {
     $('#total-price-extra').text('0');
 
     updateGrandTotals();
-  });
+  }
 
   // ฟังก์ชันคำนวณยอดรวมตอนโหลดหน้า edit
   function initGrandTotalOnLoad() {
@@ -1109,57 +1090,142 @@ $(document).ready(function () {
     width: '100%'
   });
 
-  //ยอดรวม
-  function calcTotalCampaign() {
-    let total = 0;
-    $('#CampaignID option:selected').each(function () {
-      const cash = parseFloat($(this).data('cashSupport_final')) || 0;
-      total += cash;
-    });
-    $('#TotalSaleCampaign').val(
-      total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    );
+  // ล้างค่ายอดรวม
+  function clearCampaignSelection() {
+    $('#CampaignID').val(null).empty().prop('disabled', true).trigger('change.select2');
 
-    calculateBalanceCampaign();
+    $('#TotalSaleCampaign').val('0.00');
+    calculateBalanceCampaign?.();
   }
 
-  // คำนวณเมื่อเปลี่ยนค่า
-  $('#CampaignID').on('change', calcTotalCampaign);
+  // ล้างแคมเปญที่เลือก
+  function resetCampaign(message = '') {
+    clearCampaignSelection();
 
-  // เรียกคำนวณตอนเปิดหน้า (กรณีมี selected อยู่แล้ว)
-  calcTotalCampaign();
+    if (message) {
+      showCampaignWarning(message);
+    }
+  }
 
-  // เมื่อเปลี่ยนรุ่นรถ
-  $('#subModel_id').on('change', function () {
-    const subModel_id = $(this).val();
-    $('#CampaignID').empty().trigger('change');
+  // format money
+  function formatMoney(num) {
+    if (!num || isNaN(num)) return '0.00';
+    return Number(num).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
 
-    if (!subModel_id) return;
+  // แจ้งเตือนเลือกฟิลด์ไม่ครบ ไม่แสดงแคมเปญ
+  function showCampaignWarning(message) {
+    $('#campaignWarning').removeClass('d-none').text(message);
+  }
+
+  function hideCampaignWarning() {
+    $('#campaignWarning').addClass('d-none').text('');
+  }
+
+  function loadCampaign() {
+    const model_id = $('#model_id').val();
+    const subModel_id = $('#subModel_id').val();
+    const year = $('#Year').val();
+
+    if (!model_id) {
+      showCampaignWarning('กรุณาเลือกรถรุ่นหลักก่อน');
+      return;
+    }
+
+    if (!subModel_id) {
+      showCampaignWarning('กรุณาเลือกรถรุ่นย่อยก่อน');
+      return;
+    }
+
+    if (!year) {
+      showCampaignWarning('กรุณาระบุปีรถก่อน');
+      return;
+    }
+
+    hideCampaignWarning();
+    $('#CampaignID').prop('disabled', false);
 
     $.ajax({
       url: '/purchase-order/get-campaign',
       type: 'GET',
-      data: { subModel_id: subModel_id },
+      data: {
+        subModel_id: subModel_id,
+        year: year
+      },
       success: function (res) {
-        if (res.length === 0) {
-          $('#CampaignID').append(new Option('ไม่มีแคมเปญ', '', false, false));
-          $('#CampaignID').trigger('change');
+        $('#CampaignID').empty();
+
+        if (!res || res.length === 0) {
+          resetCampaign('ไม่มีแคมเปญสำหรับรุ่นและปีนี้');
           return;
         }
 
         res.forEach(c => {
-          const amount = formatMoney(c.cashSupport_final);
+          const appellation = c.appellation?.name ?? c.camName_id;
+          const typeName = c.type?.name ?? '-';
+          const option = new Option(
+            `(${typeName}) ${appellation} - ${formatMoney(c.cashSupport_final)} บาท`,
+            c.id,
+            false,
+            false
+          );
 
-          const option = new Option(`${c.name} - ${amount} บาท`, c.id, false, false);
-
-          $(option).attr('data-cashSupport_final', c.cashSupport_final); // เก็บ raw ไว้คำนวณ
+          $(option).attr('data-cash-support-final', c.cashSupport_final);
           $('#CampaignID').append(option);
         });
 
-        $('#CampaignID').trigger('change');
+        $('#CampaignID').trigger('change.select2');
+      },
+      error: function () {
+        resetCampaign('เกิดข้อผิดพลาดในการโหลดแคมเปญ');
       }
     });
+  }
+
+  // รวมค่าแคมเปญ
+  function calcTotalCampaign() {
+    let total = 0;
+
+    $('#CampaignID option:selected').each(function () {
+      const cash = parseFloat($(this).data('cashSupportFinal')) || 0;
+      total += cash;
+    });
+
+    $('#TotalSaleCampaign').val(formatMoney(total));
+    calculateBalanceCampaign?.();
+  }
+
+  $('#CampaignID').on('select2:select select2:unselect', function () {
+    calcTotalCampaign();
   });
+
+  $('#model_id').on('change', function () {
+    clearCampaignSelection();
+    loadCampaign();
+  });
+
+  $('#subModel_id').on('change', function () {
+    clearCampaignSelection();
+    loadCampaign();
+  });
+
+  $('#Year').on('keyup change', function () {
+    clearCampaignSelection();
+    loadCampaign();
+  });
+
+  const isEditPage = $('#CampaignID option:selected').length > 0;
+
+  if (isEditPage) {
+    calcTotalCampaign();
+  } else if ($('#subModel_id').val() && $('#Year').val()) {
+    loadCampaign();
+  } else {
+    resetCampaign();
+  }
 });
 
 //edit : auto value -> บวกหัว (90%), ราคาสุทธิบวกหัว

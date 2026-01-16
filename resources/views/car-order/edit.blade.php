@@ -1,5 +1,5 @@
 <div class="modal fade editCarOrder" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-lg" role="document">
+  <div class="modal-dialog modal-xl" role="document">
     <div class="modal-content">
       <div class="modal-header border-bottom">
         <h4 class="modal-title mb-2" id="CarOrderLabel">แก้ไขข้อมูลการสั่งซื้อ</h4>
@@ -50,7 +50,7 @@
               <select id="subModel_id" name="subModel_id" class="form-select @error('subModel_id') is-invalid @enderror" required>
                 @foreach ($subModels as $s)
                 <option value="{{ $s->id }}" {{ $order->subModel_id == $s->id ? 'selected' : '' }}>
-                  {{ $s->name }}
+                  {{ $s->detail }} - {{ $s->name }}
                 </option>
                 @endforeach
               </select>

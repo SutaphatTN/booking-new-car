@@ -49,7 +49,7 @@
               <label class="form-label" for="customerSearch">ค้นหาข้อมูลลูกค้า</label>
               <div class="input-group">
                 <input id="customerSearch" type="text" class="form-control" name="customerSearch" placeholder="พิมพ์ข้อมูลลูกค้า">
-                <span class="input-group-text btnSearchCustomer" style="cursor:pointer;">
+                <span class="btn btn-outline-secondary btnSearchCustomer" style="cursor:pointer;">
                   <i class="bx bx-search"></i>
                 </span>
               </div>
@@ -61,13 +61,32 @@
               <label for="customerName" class="form-label">ชื่อ - นามสกุล</label>
               <input id="customerName" type="text" class="form-control" readonly>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label for="customerID" class="form-label" for="">เลขบัตรประชาชน</label>
               <input id="customerID" type="text" class="form-control" readonly>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label for="customerPhone" class="form-label" for="">เบอร์โทรศัพท์</label>
               <input id="customerPhone" type="text" class="form-control" readonly>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label d-block">รถเทิร์น</label>
+
+              <div class="form-check form-check-inline">
+                <input class="form-check-input @error('hasTurnCar') is-invalid @enderror" type="radio" name="hasTurnCar" id="turnCarYes" value="yes" {{ old('hasTurnCar') == 'yes' ? 'checked' : '' }}>
+                <label class="form-check-label" for="turnCarYes">มี</label>
+              </div>
+
+              <div class="form-check form-check-inline" style="margin-left: 10px">
+                <input class="form-check-input @error('hasTurnCar') is-invalid @enderror" type="radio" name="hasTurnCar" id="turnCarNo" value="no" {{ old('hasTurnCar') == 'no' ? 'checked' : '' }}>
+                <label class="form-check-label" for="turnCarNo">ไม่มี</label>
+              </div>
+
+              @error('hasTurnCar')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
             </div>
 
             <div class="col-md-3">
@@ -122,33 +141,13 @@
               </span>
               @enderror
             </div>
-            <div class="col-md-1">
+            <div class="col-md-3">
               <label class="form-label" for="Color">สี</label>
               <input id="Color" type="text"
                 class="form-control @error('Color') is-invalid @enderror"
                 name="Color" required>
 
               @error('Color')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-2">
-              <label class="form-label d-block">รถเทิร์น</label>
-
-              <div class="form-check form-check-inline">
-                <input class="form-check-input @error('hasTurnCar') is-invalid @enderror" type="radio" name="hasTurnCar" id="turnCarYes" value="yes" {{ old('hasTurnCar') == 'yes' ? 'checked' : '' }}>
-                <label class="form-check-label" for="turnCarYes">มี</label>
-              </div>
-
-              <div class="form-check form-check-inline" style="margin-left: 10px">
-                <input class="form-check-input @error('hasTurnCar') is-invalid @enderror" type="radio" name="hasTurnCar" id="turnCarNo" value="no" {{ old('hasTurnCar') == 'no' ? 'checked' : '' }}>
-                <label class="form-check-label" for="turnCarNo">ไม่มี</label>
-              </div>
-
-              @error('hasTurnCar')
               <span class="invalid-feedback" role="alert">
                 <strong>{{ $message }}</strong>
               </span>

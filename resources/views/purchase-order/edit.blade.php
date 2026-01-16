@@ -62,11 +62,11 @@
               <div class="col-md-12">
                 <div class="row g-6">
                   <h4 class="pb-2 mb-3 border-bottom">ข้อมูลลูกค้า</h4>
-                  <div class="col-md-3">
+                  <div class="col-md-2">
                     <label for="sale_card" class="form-label">รหัสผู้ขาย</label>
                     <input id="sale_card" class="form-control" type="text" value="{{ $saleCar->saleUser->format_card_id }}" readonly>
                   </div>
-                  <div class="col-md-4">
+                  <div class="col-md-3">
                     <label for="sale_name" class="form-label">ชื่อ - นามสกุล ผู้ขาย</label>
                     <input id="sale_name" class="form-control" type="text" value="{{ $saleCar->saleUser->name }}" readonly>
                   </div>
@@ -91,6 +91,30 @@
                       readonly>
                   </div>
                   <div class="col-md-2">
+                    <label class="form-label d-block">รถเทิร์น</label>
+
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input"
+                        type="radio"
+                        name="hasTurnCar"
+                        id="turnCarYes"
+                        value="yes"
+                        {{ old('hasTurnCar', $saleCar->TurnCarID ? 'yes' : 'no') === 'yes' ? 'checked' : '' }}>
+                      <label class="form-check-label" for="turnCarYes">มี</label>
+                    </div>
+
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input"
+                        type="radio"
+                        name="hasTurnCar"
+                        id="turnCarNo"
+                        value="no"
+                        {{ old('hasTurnCar', $saleCar->TurnCarID ? 'yes' : 'no') === 'no' ? 'checked' : '' }}>
+                      <label class="form-check-label" for="turnCarNo">ไม่มี</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-2">
                     <label for="CusMobile" class="form-label">เบอร์โทรศัพท์</label>
                     <input class="form-control" id="CusMobile" type="text" name="Mobilephone1" id="Mobilephone1"
                       value="{{ $saleCar->customer->formatted_mobile }}" readonly>
@@ -110,19 +134,19 @@
                       @endforeach
                     </select>
                   </div>
-                  <div class="col-md-3">
+                  <div class="col-md-4">
                     <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
                     <select id="subModel_id" name="subModel_id" class="form-select" required>
                       <option value="">-- เลือกรุ่นรถย่อย --</option>
                       @foreach ($subModels as $s)
                       <option value="{{ $s->id }}" {{ $saleCar->subModel_id == $s->id ? 'selected' : '' }}>
-                        {{ $s->name }}
+                        {{ $s->detail }} - {{ $s->name }}
                       </option>
                       @endforeach
                     </select>
                   </div>
 
-                  <div class="col-md-2">
+                  <div class="col-md-1">
                     <label class="form-label" for="option">Option</label>
                     <input id="option" type="text"
                       class="form-control"
@@ -131,7 +155,7 @@
 
                   <div class="col-md-1">
                     <label for="Year" class="form-label">ปี</label>
-                    <input class="form-control" type="text" name="Year" id="Year"
+                    <input class="form-control" type="number" name="Year" id="Year" min="2020" max="2100"
                       value="{{ $saleCar->Year }}" required>
                   </div>
                   <div class="col-md-2">
@@ -261,12 +285,13 @@
                     </div>
                   </div>
 
+                  @if ($userRole !== 'sale')
                   <h4 class="pt-2 pb-2 border-bottom">ข้อมูล Car Order</h4>
                   <div class="col-md-2 mt-2">
                     <label class="form-label" for="carOrderSearch">ค้นหา Car Order ID</label>
                     <div class="input-group">
                       <input id="carOrderSearch" type="text" class="form-control" name="carOrderSearch" placeholder="ค้นหา Car Order ID">
-                      <span class="input-group-text btnSearchCarOrder" style="cursor:pointer;">
+                      <span class="btn btn-outline-secondary btnSearchCarOrder" style="cursor:pointer;">
                         <i class="bx bx-search"></i>
                       </span>
                     </div>
@@ -282,15 +307,15 @@
                     <label for="carOrderModel" class="form-label">รุ่นรถหลัก</label>
                     <input id="carOrderModel" type="text" class="form-control" value="{{ $saleCar->carOrder->model->Name_TH ?? '' }}" readonly>
                   </div>
-                  <div class="col-md-3 mt-2">
+                  <div class="col-md-5 mt-2">
                     <label for="carOrderSubModel" class="form-label">รุ่นรถย่อย</label>
-                    <input id="carOrderSubModel" type="text" class="form-control" value="{{ $saleCar->carOrder->subModel->name ?? '' }}" readonly>
+                    <input id="carOrderSubModel" type="text" class="form-control" value="{{ $saleCar->carOrder->subModel->detail ?? '' }} - {{ $saleCar->carOrder->subModel->name ?? '' }}" readonly>
                   </div>
-                  <div class="col-md-2 mt-2">
+                  <div class="col-md-2">
                     <label for="carOrderOption" class="form-label">Option</label>
                     <input id="carOrderOption" type="text" class="form-control" value="{{ $saleCar->carOrder->option ?? '' }}" readonly>
                   </div>
-                  <div class="col-md-4">
+                  <div class="col-md-2">
                     <label for="carOrderVin" class="form-label">Vin-Number</label>
                     <input id="carOrderVin" type="text" class="form-control" value="{{ $saleCar->carOrder->vin_number ?? '' }}" readonly>
                   </div>
@@ -318,50 +343,64 @@
                       value="{{ $saleCar->carOrder?->car_MSRP !== null ? number_format($saleCar->carOrder->car_MSRP, 2) : '' }}"
                       readonly>
                   </div>
-
-                  @if($saleCar->TurnCarID)
-                  <h4 class="pt-2 pb-2 border-bottom">ข้อมูลรถเทิร์น</h4>
-                  <div class="col-md-3 mt-2">
-                    <label for="brand" class="form-label">ยี่ห้อ</label>
-                    <input class="form-control" type="text" id="brand" name="brand"
-                      value="{{ $saleCar->turnCar->brand }}" />
-                  </div>
-                  <div class="col-md-4 mt-2">
-                    <label for="model" class="form-label">รุ่น</label>
-                    <input class="form-control" type="text" name="model" id="model"
-                      value="{{ $saleCar->turnCar->model }}" />
-                  </div>
-                  <div class="col-md-3 mt-2">
-                    <label for="machine" class="form-label">เครื่องยนต์</label>
-                    <input class="form-control" type="text" name="machine" id="machine"
-                      value="{{ $saleCar->turnCar->machine }}" />
-                  </div>
-                  <div class="col-md-2 mt-2">
-                    <label for="license_plate" class="form-label">ทะเบียน</label>
-                    <input class="form-control" type="text" name="license_plate" id="license_plate"
-                      value="{{ $saleCar->turnCar->license_plate }}" />
-                  </div>
-                  <div class="col-md-2">
-                    <label for="year_turn" class="form-label">ปี</label>
-                    <input class="form-control" type="text" id="year_turn" name="year_turn"
-                      value="{{ $saleCar->turnCar->year_turn }}" />
-                  </div>
-                  <div class="col-md-2">
-                    <label for="color_turn" class="form-label">สี</label>
-                    <input class="form-control" type="text" id="color_turn" name="color_turn"
-                      value="{{ $saleCar->turnCar->color_turn }}" />
-                  </div>
-                  <div class="col-md-3">
-                    <label for="cost_turn" class="form-label">ยอดเทิร์น</label>
-                    <input class="form-control text-end money-input" type="text" id="cost_turn" name="cost_turn"
-                      value="{{ $saleCar->turnCar?->cost_turn !== null ? number_format($saleCar->turnCar->cost_turn, 2) : '' }}" />
-                  </div>
-                  <div class="col-md-3">
-                    <label for="com_turn" class="form-label">ค่าคอมยอดเทิร์น</label>
-                    <input class="form-control text-end money-input" type="text" id="com_turn" name="com_turn"
-                      value="{{ $saleCar->turnCar?->com_turn !== null ? number_format($saleCar->turnCar->com_turn, 2) : '' }}" />
-                  </div>
                   @endif
+
+                  <div id="turnCarFields"
+                    class="row mt-6 g-5"
+                    @style([ 'display:flex'=> $saleCar->TurnCarID,
+                    'display:none' => !$saleCar->TurnCarID,
+                    ])>
+
+                    <h4>ข้อมูลรถเทิร์น</h4>
+
+                    <div class="col-md-3">
+                      <label class="form-label">ยี่ห้อ</label>
+                      <input class="form-control" name="brand"
+                        value="{{ old('brand', $saleCar->turnCar->brand ?? '') }}">
+                    </div>
+
+                    <div class="col-md-4">
+                      <label class="form-label">รุ่น</label>
+                      <input class="form-control" name="model"
+                        value="{{ old('model', $saleCar->turnCar->model ?? '') }}">
+                    </div>
+
+                    <div class="col-md-3">
+                      <label class="form-label">เครื่องยนต์</label>
+                      <input class="form-control" name="machine"
+                        value="{{ old('machine', $saleCar->turnCar->machine ?? '') }}">
+                    </div>
+
+                    <div class="col-md-2">
+                      <label class="form-label">ทะเบียน</label>
+                      <input class="form-control" name="license_plate"
+                        value="{{ old('license_plate', $saleCar->turnCar->license_plate ?? '') }}">
+                    </div>
+
+                    <div class="col-md-2">
+                      <label class="form-label">ปี</label>
+                      <input class="form-control" name="year_turn"
+                        value="{{ old('year_turn', $saleCar->turnCar->year_turn ?? '') }}">
+                    </div>
+
+                    <div class="col-md-2">
+                      <label class="form-label">สี</label>
+                      <input class="form-control" name="color_turn"
+                        value="{{ old('color_turn', $saleCar->turnCar->color_turn ?? '') }}">
+                    </div>
+
+                    <div class="col-md-3">
+                      <label class="form-label">ยอดเทิร์น</label>
+                      <input class="form-control text-end money-input" name="cost_turn"
+                        value="{{ old('cost_turn', isset($saleCar->turnCar) ? number_format($saleCar->turnCar->cost_turn, 2) : '') }}">
+                    </div>
+
+                    <div class="col-md-3">
+                      <label class="form-label">ค่าคอมยอดเทิร์น</label>
+                      <input class="form-control text-end money-input" name="com_turn"
+                        value="{{ old('com_turn', isset($saleCar->turnCar) ? number_format($saleCar->turnCar->com_turn, 2) : '') }}">
+                    </div>
+                  </div>
 
                 </div>
 
@@ -412,12 +451,13 @@
                       <select name="CampaignID[]" id="CampaignID" multiple class="form-select">
                         @foreach ($campaigns as $camp)
                         <option value="{{ $camp->id }}"
-                          data-cashSupport_final="{{ $camp->cashSupport_final }}"
+                          data-cash-support-final="{{ $camp->cashSupport_final }}"
                           {{ in_array($camp->id, $selected_campaigns ?? []) ? 'selected' : '' }}>
-                          ({{ $camp->type->name ?? '-' }}) {{ $camp->name ?? '-' }} - {{ number_format((float) $camp->cashSupport_final, 2, '.', ',') }}
+                          ({{ $camp->type->name ?? '-' }}) {{ $camp->appellation->name ?? '-' }} - {{ number_format((float) $camp->cashSupport_final, 2, '.', ',') }}
                         </option>
                         @endforeach
                       </select>
+                      <div id="campaignWarning" class="mt-2 text-danger"></div>
                     </div>
                     <div class="col-md-2">
                       <label for="TotalSaleCampaign" class="form-label">ยอดรวมค่าแคมเปญ</label>
@@ -1111,9 +1151,9 @@
                       <label class="form-label" for="customerSearchRef">ค้นหาข้อมูล</label>
                       <div class="input-group">
                         <input id="customerSearchRef" type="text" class="form-control" name="customerSearchRef" placeholder="พิมพ์ข้อมูล">
-                        <span class="input-group-text btnSearchCustomer" style="cursor:pointer;">
+                        <button type="button"  class="btn btn-outline-secondary btnSearchCustomer" style="cursor:pointer;">
                           <i class="bx bx-search"></i>
-                        </span>
+                        </button>
                       </div>
                     </div>
 

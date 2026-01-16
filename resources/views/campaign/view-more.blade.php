@@ -1,5 +1,5 @@
 <div class="modal fade viewCam" tabindex="-1" role="dialog">
-  <div class="modal-dialog modal-md" role="document">
+  <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header border-bottom">
         <h4 class="modal-title mb-2" id="viewCamLabel">ข้อมูลแคมเปญ</h4>
@@ -7,19 +7,19 @@
       </div>
       <div class="modal-body">
         <div class="row">
-          <div class="col-md-6 mb-5">
+          <div class="col-md-5 mb-5">
             <label for="model_id" class="form-label">รุ่นรถหลัก</label>
             <input id="model_id" class="form-control" type="text" value="{{ $cam->model->Name_TH }}" disabled />
           </div>
 
-          <div class="col-md-6 mb-5">
+          <div class="col-md-7 mb-5">
             <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
             <input id="subModel_id" class="form-control" type="text" value="{{ $cam->subModel->name }}" disabled />
           </div>
 
           <div class="col-md-7 mb-5">
             <label for="name" class="form-label">ชื่อแคมเปญ</label>
-            <input id="name" class="form-control" type="text" value="{{ $cam->name }}" autocomplete="off" disabled />
+            <input id="name" class="form-control" type="text" value="{{ $cam->appellation->name }}" autocomplete="off" disabled />
           </div>
 
           <div class="col-md-5 mb-5">
@@ -48,11 +48,20 @@
             disabled />
           </div>
 
-          <div class="col-md-6 mb-5">
+          <div class="col-md-3 mb-5">
+            <label for="startYear" class="form-label">ตั้งแต่ปี</label>
+            <input id="startYear" class="form-control" type="text" value="{{ $cam->startYear }}" disabled />
+          </div>
+          <div class="col-md-3 mb-5">
+            <label for="endYear" class="form-label">ถึงปี</label>
+            <input id="endYear" class="form-control" type="text" value="{{ $cam->endYear }}" disabled />
+          </div>
+
+          <div class="col-md-3 mb-5">
             <label for="startDate" class="form-label">วันที่เริ่ม</label>
             <input id="startDate" class="form-control" type="text" value="{{ $cam->format_start_date }}" disabled />
           </div>
-          <div class="col-md-6 mb-5">
+          <div class="col-md-3 mb-5">
             <label for="endDate" class="form-label">วันที่สิ้นสุด</label>
             <input id="endDate" class="form-control" type="text" value="{{ $cam->format_end_date }}" disabled />
           </div>

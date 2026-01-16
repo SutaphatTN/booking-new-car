@@ -60,7 +60,7 @@
               <select id="subModel_id" name="subModel_id" class="form-select @error('subModel_id') is-invalid @enderror" required>
                 @foreach ($subModels as $s)
                 <option value="{{ $s->id }}" {{ $order->subModel_id == $s->id ? 'selected' : '' }}>
-                  {{ $s->name }}
+                  {{ $s->detail }} - {{ $s->name }}
                 </option>
                 @endforeach
               </select>

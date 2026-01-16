@@ -307,8 +307,7 @@ $(document).ready(function () {
       { data: 'order_code' },
       { data: 'date' },
       { data: 'type' },
-      { data: 'model_id' },
-      { data: 'subModel_id' },
+      { data: 'model' },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
@@ -425,7 +424,7 @@ $(document).on('change', '#model_id', function () {
       console.log('data:', data);
       if (data.length > 0) {
         data.forEach(function (sub) {
-          $subModelSelect.append(`<option value="${sub.id}">${sub.name}</option>`);
+          $subModelSelect.append(`<option value="${sub.id}">${sub.detail} - ${sub.name}</option>`);
         });
       } else {
         $subModelSelect.append('<option value="">-- ไม่มีรุ่นย่อย --</option>');

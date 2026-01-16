@@ -113,8 +113,19 @@
     {
       "name": "แคมเปญ",
       "icon": "menu-icon icon-base bx bxs-megaphone",
-      "slug": "campaign.index",
-      "url": "campaign"
+      "slug": "campaign",
+      "submenu": [
+        {
+          "url": "campaign/appellation",
+          "name": "ชื่อแคมเปญ",
+          "slug": "campaign.appellation"
+        },
+        {
+          "url": "campaign",
+          "name": "ข้อมูลแคมเปญ",
+          "slug": "campaign.index"
+        }
+      ]
     },
     {
       "name": "ไฟแนนซ์",

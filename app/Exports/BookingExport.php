@@ -158,7 +158,7 @@ class BookingExport implements FromView
                 $data->push([
                     'No'       => $isFirstRow ? $no : '',
                     'model'    => $isFirstRow ? ($first->model->Name_TH ?? '-') : '',
-                    'subModel' => $isFirstRow ? ($first->subModel->name ?? '-') : '',
+                    'subModel' => $isFirstRow ? ($first->subModel->detail . ' - ' . $first->subModel->name) : '',
                     'vin_number' => $order?->vin_number ?? '-',
                     'j_number'   => $order?->j_number ?? '-',
                     'option'   => $isFirstRow ? ($first->option ?? '-') : '',

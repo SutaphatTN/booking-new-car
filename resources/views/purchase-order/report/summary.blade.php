@@ -313,7 +313,7 @@
           @if($saleCar->campaigns && $saleCar->campaigns->count() > 0)
           @foreach($saleCar->campaigns as $index => $camp)
           ({{ $camp->campaign->type->name ?? '-' }})
-          {{ $camp->campaign->name ?? '-' }} - {{ number_format($camp->cashSupport_final, 2) }}
+          {{ $camp->campaign->appellation->name ?? '-' }} - {{ number_format($camp->campaign->cashSupport_final, 2) }}
           @if(!$loop->last)
           +
           @endif

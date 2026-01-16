@@ -37,7 +37,7 @@
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>รุ่นรถย่อย :</strong>
-              <span>{{ $saleCar->subModel?->name }}</span>
+              <span>{{ $saleCar->subModel?->detail }} - {{ $saleCar->subModel?->name }}</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>แบบ :</strong>

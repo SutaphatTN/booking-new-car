@@ -13,7 +13,7 @@
             <div class="input-group">
               <input id="giftSearch" type="text" class="form-control" placeholder="พิมพ์รหัสหรือชื่อ...">
               <input type="hidden" id="subModel_id_gift" value="{{ $saleCar->subModel_id }}">
-              <span class="input-group-text btnGiftSearch" style="cursor:pointer;">
+              <span class="btn btn-outline-secondary btnGiftSearch" style="cursor:pointer;">
                 <i class="bx bx-search"></i>
               </span>
             </div>
