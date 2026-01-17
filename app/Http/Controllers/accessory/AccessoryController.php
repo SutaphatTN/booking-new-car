@@ -24,6 +24,7 @@ class AccessoryController extends Controller
 
         $data = $acc->map(function ($a, $index) {
             $partnerA = $a->partner ? $a->partner->name : '';
+            $modelC = $a->model ? $a->model->Name_TH : '';
 
             $statusSwitch = '
             <div class="d-flex justify-content-center align-items-center">
@@ -46,13 +47,20 @@ class AccessoryController extends Controller
                 }
             }
 
+            $fullName = "รหัส : {$a->accessory_id}<br>ชื่อ : {$a->detail}";
+
+            $cost = $a->cost !== null ? number_format($a->cost, 2) : '-';
+            $sale = $a->sale !== null ? number_format($a->sale, 2) : '-';
+            $promo = $a->promo !== null ? number_format($a->promo, 2) : '-';
+
+            $fullCost = "ราคาทุน : {$cost}<br>ราคาขาย : {$sale}<br>ราคาพิเศษ : {$promo}";
+
             return [
                 'No' => $index + 1,
                 'accessoryPartner_id' => $partnerA,
-                'accessory_id' => $a->accessory_id,
-                'cost' => $a->cost !== null ? number_format($a->cost, 2) : '-',
-                'sale' => $saleText,
-                'promo' => $a->promo !== null ? number_format($a->promo, 2) : '-',
+                'name' => $fullName,
+                'model' => $modelC, 
+                'cost' => $fullCost,
                 'active' => $statusSwitch,
                 'Action' => view('accessory.button', compact('a'))->render()
             ];
@@ -103,7 +111,6 @@ class AccessoryController extends Controller
 
             $data = [
                 'model_id' => $request->model_id,
-                'subModel_id' => $request->subModel_id,
                 'accessory_id' => $request->accessory_id,
                 'detail' => $request->detail,
                 'accessoryType_id' => $request->accessoryType_id,

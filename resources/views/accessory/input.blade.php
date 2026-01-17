@@ -30,19 +30,6 @@
             </div>
 
             <div class="col-md-6 mb-5">
-              <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
-              <select id="subModel_id" name="subModel_id" class="form-select @error('subModel_id') is-invalid @enderror" required>
-                <option value="">-- เลือกรุ่นรถย่อย --</option>
-              </select>
-
-              @error('subModel_id')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-12 mb-5">
               <label for="accessory_id" class="form-label">รหัสเครื่องประดับ</label>
               <input id="accessory_id" type="text"
                 class="form-control @error('accessory_id') is-invalid @enderror"

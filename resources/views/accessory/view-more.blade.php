@@ -13,11 +13,6 @@
           </div>
 
           <div class="col-md-6 mb-5">
-            <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
-            <input id="subModel_id" class="form-control" type="text" value="{{ $acc->subModel->name }}" disabled />
-          </div>
-
-          <div class="col-md-12 mb-5">
             <label for="accessory_id" class="form-label">รหัสเครื่องประดับ</label>
             <input id="accessory_id" class="form-control" type="text" value="{{ $acc->accessory_id }}" disabled />
           </div>

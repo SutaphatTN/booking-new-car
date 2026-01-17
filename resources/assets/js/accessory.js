@@ -18,10 +18,9 @@ $(document).ready(function () {
     columns: [
       { data: 'No' },
       { data: 'accessoryPartner_id' },
-      { data: 'accessory_id' },
+      { data: 'name' },
+      { data: 'model' },
       { data: 'cost' },
-      { data: 'sale' },
-      { data: 'promo' },
       { data: 'active', orderable: false, searchable: false },
       { data: 'Action', orderable: false, searchable: false }
     ],
