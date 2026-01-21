@@ -7,7 +7,7 @@
     <div class="col-12">
       <div class="card shadow-lg border-0 text-center" style="border-radius: 20px; min-height: 70vh;">
         <div class="card-body d-flex flex-column justify-content-center align-items-center px-3">
-          <img src="{{ asset('assets/img/car.jpg') }}"
+          <img src="{{ asset('assets/img/car.png') }}"
             alt="Logo"
             class="img-fluid home-dashboard-logo">
 
