@@ -9,14 +9,16 @@
       <div class="modal-body">
         <div class="row mb-3">
           <div class="col-12">
-            <label class="form-label">ค้นหาชื่อหรือรหัส</label>
-            <div class="input-group">
-              <input id="extraSearch" type="text" class="form-control" placeholder="พิมพ์รหัสหรือชื่อ...">
-              <input type="hidden" id="subModel_id_extra" value="{{ $saleCar->subModel_id }}">
-              <span class="btn btn-outline-secondary btnExtraSearch" style="cursor:pointer;">
-                <i class="bx bx-search"></i>
-              </span>
-            </div>
+            <fieldset class="mb-0">
+              <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">ค้นหาชื่อหรือรหัส</legend>
+              <div class="input-group">
+                <input id="extraSearch" type="text" class="form-control" placeholder="พิมพ์รหัสหรือชื่อ...">
+                <input type="hidden" id="subModel_id_extra" value="{{ $saleCar->subModel_id }}">
+                <span class="btn btn-outline-secondary btnExtraSearch" style="cursor:pointer;">
+                  <i class="bx bx-search"></i>
+                </span>
+              </div>
+            </fieldset>
           </div>
         </div>
 

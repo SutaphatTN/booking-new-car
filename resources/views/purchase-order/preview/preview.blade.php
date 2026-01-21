@@ -37,6 +37,13 @@
         <input type="hidden" id="userRole" value="{{ $userRole }}">
         <input type="hidden" id="hasApproval" value="{{ $hasApproval ? 1 : 0 }}">
         <input type="hidden" name="action_type" id="action_type" value="">
+
+        <input type="hidden" id="approvalRequested"
+          value="{{ $saleCar->approval_requested_at ? 1 : 0 }}">
+
+        <input type="hidden" id="approvalType"
+          value="{{ $saleCar->approval_type ?? '' }}">
+
       </div>
 
     </div>

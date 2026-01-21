@@ -157,7 +157,7 @@
             <div class="col-md-4 mb-5">
               <label for="approver" class="form-label">ผู้อนุมัติ</label>
               <select id="approver" name="approver" class="form-select" required>
-                <option value="">เลือกผู้อนุมัติ</option>
+                <option value="">-- เลือกผู้อนุมัติ --</option>
                 @foreach ($approvers as $u)
                 <option value="{{ $u->id }}">
                   {{ $u->name }}

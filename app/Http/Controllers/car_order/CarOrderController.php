@@ -143,7 +143,7 @@ class CarOrderController extends Controller
                             ->orWhere('detail', 'like', "%{$keyword}%");
                     });
             })
-            ->orderByRaw("CASE WHEN order_status = 5 THEN 0 ELSE 1 END")
+            ->orderByRaw("CASE WHEN order_status = 4 THEN 0 ELSE 1 END")
             ->orderBy('order_stock_date', 'asc')
             ->limit(10)
             ->get();

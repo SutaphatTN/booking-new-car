@@ -14,7 +14,8 @@
           @method('PUT')
 
           <div class="row">
-            <input type="hidden" id="net_price" value="{{ $fnCon->net_price }}">
+            <input type="hidden" id="net_price" name="net_price" value="{{ $fnCon->net_price }}">
+
             <input type="hidden" id="down" value="{{ $fnCon->down }}">
             <input type="hidden" id="excellent" value="{{ $fnCon->excellent }}">
 
@@ -38,25 +39,18 @@
                 value="{{ $sale->model->Name_TH ?? '-' }}" readonly>
             </div>
 
-            <div class="col-md-6 mb-5">
+            <div class="col-md-8 mb-5">
               <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
               <input id="subModel_id" type="text"
                 class="form-control"
                 value="{{ $sale->subModel->detail ?? '-' }} - {{ $sale->subModel->name ?? '-' }}" readonly>
             </div>
 
-            <div class="col-md-3 mb-5">
+            <div class="col-md-2 mb-5">
               <label for="option" class="form-label">Option</label>
               <input id="option" type="text"
                 class="form-control"
                 value="{{ $sale->option ?? '-' }}" readonly>
-            </div>
-
-            <div class="col-md-3 mb-5">
-              <label for="Color" class="form-label">สี</label>
-              <input id="Color" type="text"
-                class="form-control"
-                value="{{ $sale->Color ?? '-' }}" readonly>
             </div>
 
             <div class="col-md-2 mb-5">
@@ -67,21 +61,36 @@
             </div>
 
             <div class="col-md-3 mb-5">
-              <label for="interest_show" class="form-label">ดอกเบี้ย</label>
-              <input id="interest_show" type="text" class="form-control"
+              <label for="Color" class="form-label">สี</label>
+              <input id="Color" type="text"
+                class="form-control"
+                value="{{ $sale->Color ?? '-' }}" readonly>
+            </div>
+
+            <div class="col-md-5 mb-5">
+              <label for="edit_FinanceCompany" class="form-label">ไฟแนนซ์</label>
+              <input id="edit_FinanceCompany" type="text"
+                class="form-control"
+                value="{{ $sale->remainingPayment?->financeInfo?->FinanceCompany ?? '-' }}"
+                readonly>
+            </div>
+
+            <div class="col-md-2 mb-5">
+              <label for="edit_interest" class="form-label">ดอกเบี้ย</label>
+              <input id="edit_interest" type="text" class="form-control"
                 value="{{ $sale->remainingPayment?->interest !== null ? $sale->remainingPayment->interest . '%' : '-' }}"
                 readonly>
             </div>
 
-            <div class="col-md-4 mb-5">
-              <label for="type_com_show" class="form-label">ประเภทคอม</label>
-              <input id="type_com_show" type="text" class="form-control"
+            <div class="col-md-2 mb-5">
+              <label for="edit_type_com" class="form-label">ประเภทคอม</label>
+              <input id="edit_type_com" type="text" class="form-control"
                 value="{{ $sale->remainingPayment?->type_com !== null ? 'C' . $sale->remainingPayment->type_com : '-' }}"
                 readonly>
             </div>
 
             <div class="col-md-3 mb-5">
-              <label for="period_show" class="form-label">จำนวนปีที่ผ่อน</label>
+              <label for="edit_period" class="form-label">จำนวนปีที่ผ่อน</label>
 
               @php
               $years = $sale->remainingPayment?->period
@@ -89,35 +98,50 @@
               : null;
               @endphp
 
-              <input id="period_show" type="text"
+              <input id="edit_period" type="text"
                 class="form-control"
                 value="{{ $years ?? '-' }}"
                 readonly>
             </div>
 
             <div class="col-md-3 mb-5">
-              <label for="tax_show" class="form-label">ภาษีหัก ณ ที่จ่าย</label>
-              <input id="tax_show" type="text" class="form-control"
+              <label for="edit_tax" class="form-label">ภาษีหัก ณ ที่จ่าย</label>
+              <input id="edit_tax" type="text" class="form-control"
                 value="{{ $sale->remainingPayment?->financeInfo?->tax !== null ? $sale->remainingPayment->financeInfo->tax . '%' : '-' }}"
                 readonly>
             </div>
 
             <div class="col-md-3 mb-5">
-              <label for="down_show" class="form-label">เงินดาวน์</label>
-              <input id="down_show" type="text"
+              <label for="edit_net_price" class="form-label">Net Price</label>
+              <input id="edit_net_price" type="text"
+                class="form-control text-end money-input"
+                value="{{ $fnCon->net_price ?? '' }}"
+                readonly>
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="edit_alp" class="form-label">ค่างวด (กรณีไม่มี ALP)</label>
+              <input id="edit_alp" type="text"
+                class="form-control text-end money-input"
+                value="{{ $sale->remainingPayment->alp ?? '' }}"
+                readonly>
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label for="edit_down" class="form-label">เงินดาวน์</label>
+              <input id="edit_down" type="text"
                 class="form-control text-end money-input"
                 name="down" value="{{ old('down', $fnCon->down) }}" required>
             </div>
 
-            <div class="col-md-3 mb-5">
-              <label for="excellent_show" class="form-label">ยอดจัด</label>
-              <input id="excellent_show" type="text"
+            <div class="col-md-4 mb-5">
+              <label for="edit_excellent" class="form-label">ยอดจัด</label>
+              <input id="edit_excellent" type="text"
                 class="form-control text-end money-input"
                 name="excellent" value="{{ old('excellent', $fnCon->excellent) }}" required>
             </div>
 
-
-            <div class="col-md-3 mb-5">
+            <div class="col-md-4 mb-5">
               <label for="com_fin" class="form-label">Com Fin</label>
               <input id="com_fin" type="text"
                 class="form-control text-end money-input"
@@ -138,35 +162,35 @@
               <label for="com_kickback" class="form-label">Com Kickback</label>
               <input id="com_kickback" type="text"
                 class="form-control text-end money-input"
-                name="com_kickback" value="{{ old('com_kickback', $fnCon->com_kickback) }}">
+                name="com_kickback" value="{{ old('com_kickback', $fnCon->com_kickback ?? '' ) }}">
             </div>
 
             <div class="col-md-3 mb-5">
               <label for="com_subsidy" class="form-label">Com Subsidy</label>
               <input id="com_subsidy" type="text"
                 class="form-control text-end money-input"
-                name="com_subsidy" value="{{ old('com_subsidy', $fnCon->com_subsidy) }}">
+                name="com_subsidy" value="{{ old('com_subsidy', $fnCon->com_subsidy ?? '' ) }}">
             </div>
 
             <div class="col-md-3 mb-5">
               <label for="advance_installment" class="form-label">ค่างวดล่วงหน้า</label>
               <input id="advance_installment" type="text"
                 class="form-control text-end money-input"
-                name="advance_installment" value="{{ old('advance_installment', $fnCon->advance_installment) }}">
+                name="advance_installment" value="{{ old('advance_installment', $fnCon->advance_installment ?? '' ) }}">
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="total" class="form-label">สรุปยอด</label>
               <input id="total" type="text"
                 class="form-control text-end money-input"
-                name="total" value="{{ old('total', $fnCon->total) }}" required>
+                name="total" value="{{ old('total', $fnCon->total ?? '' ) }}" required>
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="actually_received" class="form-label">ยอดที่ได้รับจริง</label>
               <input id="actually_received" type="text"
                 class="form-control text-end money-input"
-                name="actually_received" value="{{ old('actually_received', $fnCon->actually_received) }}">
+                name="actually_received" value="{{ old('actually_received', $fnCon->actually_received ?? '' ) }}">
             </div>
 
             <div class="col-md-4 mb-5">

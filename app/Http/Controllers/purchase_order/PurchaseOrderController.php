@@ -533,6 +533,7 @@ class PurchaseOrderController extends Controller
                     : null,
                 'TurnCarID' => $turnCarID,
                 'BookingDate' => $request->BookingDate,
+                'KeyInDate' => $request->KeyInDate,
                 'DeliveryDate' => $request->DeliveryDate,
                 'DeliveryInDMSDate' => $request->DeliveryInDMSDate,
                 'DeliveryInCKDate' => $request->DeliveryInCKDate,
@@ -981,17 +982,25 @@ class PurchaseOrderController extends Controller
 
 
             $action = $request->action_type;
-            Log::info('ACTION TYPE = ' . $request->action_type);
+            // Log::info('ACTION TYPE = ' . $request->action_type);
 
             if ($action === 'request_normal') {
-                Log::info('SENDING NORMAL MAIL');
+                // Log::info('SENDING NORMAL MAIL');
+                $saleCar->update([
+                    'approval_type' => 'normal',
+                    'approval_requested_at' => now(),
+                ]);
                 // ส่งเมลแบบยอดปกติ
                 Mail::to('mitsuchookiat.programmer@gmail.com')
                     ->send(new SaleRequestMail($saleCar, 'normal'));
             }
 
             if ($action === 'request_over') {
-                Log::info('SENDING over MAIL');
+                // Log::info('SENDING over MAIL');
+                $saleCar->update([
+                    'approval_type' => 'overbudget',
+                    'approval_requested_at' => now(),
+                ]);
                 // ส่งเมลแบบเกินงบ
                 Mail::to('sutaphat.thongnui@gmail.com')
                     ->cc('mitsuchookiat.programmer@gmail.com')

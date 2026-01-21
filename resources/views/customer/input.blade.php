@@ -193,7 +193,7 @@
               <div class="col-md-2 mb-5">
                 <label for="current_group" class="form-label">หมู่ที่</label>
                 <input id="current_group" type="text" name="current_group"
-                  class="form-control" required>
+                  class="form-control">
               </div>
 
               <div class="col-md-4 mb-5">
@@ -259,7 +259,7 @@
               <div class="col-md-2 mb-5">
                 <label for="doc_group" class="form-label">หมู่ที่</label>
                 <input id="doc_group" type="text" name="doc_group"
-                  class="form-control" required>
+                  class="form-control">
               </div>
 
               <div class="col-md-4 mb-5">

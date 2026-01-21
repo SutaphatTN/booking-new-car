@@ -62,31 +62,33 @@
               <input id="customerName" type="text" class="form-control" readonly>
             </div>
             <div class="col-md-3">
-              <label for="customerID" class="form-label" for="">เลขบัตรประชาชน</label>
+              <label for="customerID" class="form-label">เลขบัตรประชาชน</label>
               <input id="customerID" type="text" class="form-control" readonly>
             </div>
             <div class="col-md-3">
-              <label for="customerPhone" class="form-label" for="">เบอร์โทรศัพท์</label>
+              <label for="customerPhone" class="form-label">เบอร์โทรศัพท์</label>
               <input id="customerPhone" type="text" class="form-control" readonly>
             </div>
             <div class="col-md-2">
-              <label class="form-label d-block">รถเทิร์น</label>
+              <fieldset class="mb-0">
+                <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">รถเทิร์น</legend>
 
-              <div class="form-check form-check-inline">
-                <input class="form-check-input @error('hasTurnCar') is-invalid @enderror" type="radio" name="hasTurnCar" id="turnCarYes" value="yes" {{ old('hasTurnCar') == 'yes' ? 'checked' : '' }}>
-                <label class="form-check-label" for="turnCarYes">มี</label>
-              </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input @error('hasTurnCar') is-invalid @enderror" type="radio" name="hasTurnCar" id="turnCarYes" value="yes" {{ old('hasTurnCar') == 'yes' ? 'checked' : '' }}>
+                  <label class="form-check-label" for="turnCarYes">มี</label>
+                </div>
 
-              <div class="form-check form-check-inline" style="margin-left: 10px">
-                <input class="form-check-input @error('hasTurnCar') is-invalid @enderror" type="radio" name="hasTurnCar" id="turnCarNo" value="no" {{ old('hasTurnCar') == 'no' ? 'checked' : '' }}>
-                <label class="form-check-label" for="turnCarNo">ไม่มี</label>
-              </div>
+                <div class="form-check form-check-inline ms-2">
+                  <input class="form-check-input @error('hasTurnCar') is-invalid @enderror" type="radio" name="hasTurnCar" id="turnCarNo" value="no" {{ old('hasTurnCar') == 'no' ? 'checked' : '' }}>
+                  <label class="form-check-label" for="turnCarNo">ไม่มี</label>
+                </div>
 
-              @error('hasTurnCar')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
+                @error('hasTurnCar')
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
+                @enderror
+              </fieldset>
             </div>
 
             <div class="col-md-3">
@@ -178,27 +180,29 @@
             </div>
 
             <div class="col-md-6">
-              <label class="form-label d-block">ประเภทการจ่ายเงินจอง</label>
+              <fieldset class="mb-0">
+                <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">ประเภทการจ่ายเงินจอง</legend>
 
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="reservationCondition" id="cashRes" value="cash">
-                <label class="form-check-label" for="cashRes">เงินสด</label>
-              </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="reservationCondition" id="cashRes" value="cash">
+                  <label class="form-check-label" for="cashRes">เงินสด</label>
+                </div>
 
-              <div class="form-check form-check-inline" style="margin-left: 15px">
-                <input class="form-check-input" type="radio" name="reservationCondition" id="creditRes" value="credit">
-                <label class="form-check-label" for="creditRes">บัตรเครดิต</label>
-              </div>
+                <div class="form-check form-check-inline" style="margin-left: 15px">
+                  <input class="form-check-input" type="radio" name="reservationCondition" id="creditRes" value="credit">
+                  <label class="form-check-label" for="creditRes">บัตรเครดิต</label>
+                </div>
 
-              <div class="form-check form-check-inline" style="margin-left: 15px">
-                <input class="form-check-input" type="radio" name="reservationCondition" id="checkRes" value="check">
-                <label class="form-check-label" for="checkRes">เช็คธนาคาร</label>
-              </div>
+                <div class="form-check form-check-inline" style="margin-left: 15px">
+                  <input class="form-check-input" type="radio" name="reservationCondition" id="checkRes" value="check">
+                  <label class="form-check-label" for="checkRes">เช็คธนาคาร</label>
+                </div>
 
-              <div class="form-check form-check-inline" style="margin-left: 15px">
-                <input class="form-check-input" type="radio" name="reservationCondition" id="tranRes" value="transfer">
-                <label class="form-check-label" for="tranRes">เงินโอน</label>
-              </div>
+                <div class="form-check form-check-inline" style="margin-left: 15px">
+                  <input class="form-check-input" type="radio" name="reservationCondition" id="tranRes" value="transfer">
+                  <label class="form-check-label" for="tranRes">เงินโอน</label>
+                </div>
+              </fieldset>
             </div>
 
             <div id="creditSection" style="display:none;">

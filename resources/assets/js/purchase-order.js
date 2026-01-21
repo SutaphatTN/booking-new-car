@@ -21,27 +21,37 @@ function safeNumber(selector) {
   return parseFloat(val.replace(/,/g, '')) || 0;
 }
 
+function safeTextNumber(selector) {
+  const el = document.querySelector(selector);
+  if (!el) return 0;
+  const text = el.textContent?.trim();
+  if (!text) return 0;
+  return parseFloat(text.replace(/,/g, '')) || 0;
+}
+
 //use css
 $(document).ready(function () {
   $('.money-input').each(function () {
     let value = $(this).val();
-    if (value && !isNaN(value.replace(/,/g, ''))) {
-      $(this).val(
-        parseFloat(value.replace(/,/g, '')).toLocaleString(undefined, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        })
-      );
-    }
+    if (value === null || value === undefined || value === '') return;
+    
+    const num = parseFloat(value.toString().replace(/,/g, ''));
+    if (isNaN(num)) return;
+
+    $(this).val(
+      num.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
+    );
   });
 });
 
 $(document).on('input', '.money-input', function () {
   let value = this.value.replace(/,/g, '');
-  if (value === '' || isNaN(value)) {
-    this.value = '';
-    return;
-  }
+  if (value === '') return;
+  if (isNaN(value)) return;
+
   this.value = parseFloat(value).toLocaleString();
 });
 
@@ -213,6 +223,14 @@ $(document).ready(function () {
     idInput: '#customerIDRef',
     hiddenId: '#ReferrerID'
   });
+});
+
+// blur focus modalSearchCustomer
+$(document).on('hide.bs.modal', '#modalSearchCustomer', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hiddenId }) {
@@ -499,6 +517,14 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+// blur focus modalSearchCarOrder
+$(document).on('hide.bs.modal', '#modalSearchCarOrder', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //edit : search car order id
 $(document).ready(function () {
   const $searchInput = $('#carOrderSearch');
@@ -630,6 +656,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
   acceptRadio.addEventListener('change', () => toggleRedPlateFields(true));
   rejectRadio.addEventListener('change', () => toggleRedPlateFields(false));
+});
+
+// blur focus viewGift
+$(document).on('hide.bs.modal', '.viewGift', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
+// blur focus viewExtra
+$(document).on('hide.bs.modal', '.viewExtra', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 //edit : accessory and gift
@@ -961,28 +1003,42 @@ $(document).ready(function () {
 
   // ฟังก์ชันคำนวณยอดรวมตอนโหลดหน้า edit
   function initGrandTotalOnLoad() {
-    // accessory
+    // gift
     let giftTotal = 0;
+    let giftComTotal = 0;
+
     $('#giftTablePrice tbody tr:not(#no-data-row)').each(function () {
       giftTotal += parseFloat($(this).data('price')) || 0;
+      giftComTotal += parseFloat($(this).data('com')) || 0;
     });
-    $('#total-price-gift').text(
-      giftTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    );
-    $('#total_gift_used').val(giftTotal);
 
-    // gift
+    $('#total-price-gift').text(
+      `${giftTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ` +
+        `(${giftComTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
+    );
+
+    $('#total_gift_used').val(giftTotal);
+    $('#total_gift_com').val(giftComTotal);
+
+    // extra
     let extraTotal = 0;
+    let extraComTotal = 0;
+
     $('#extraTable tbody tr:not(#no-data-extra)').each(function () {
       extraTotal += parseFloat($(this).data('price')) || 0;
+      extraComTotal += parseFloat($(this).data('com')) || 0;
     });
-    $('#total-price-extra').text(
-      extraTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    );
-    $('#total_extra_used').val(extraTotal);
 
-    // update hidden field
+    $('#total-price-extra').text(
+      `${extraTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ` +
+        `(${extraComTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
+    );
+
+    $('#total_extra_used').val(extraTotal);
+    $('#total_extra_com').val(extraComTotal);
+
     updateGrandTotals();
+    calculateCommissionSale();
   }
 
   // เรียกตอนโหลดหน้า
@@ -1229,91 +1285,133 @@ $(document).ready(function () {
 });
 
 //edit : auto value -> บวกหัว (90%), ราคาสุทธิบวกหัว
-document.addEventListener('DOMContentLoaded', function () {
-  const salePriceInput = document.getElementById('carOrderSale');
-  const markupInput = document.getElementById('MarkupPrice');
-  const markup90Input = document.querySelector('input[name="Markup90"]');
-  const finalPriceInput = document.getElementById('CarSalePriceFinal');
+let salePriceInput;
+let markupInput;
+let markup90Input;
+let finalPriceInput;
 
-  //เงินดาวน์
-  const downPaymentInput = document.getElementById('DownPayment');
-  const downPaymentPercentInput = document.getElementById('DownPaymentPercentage');
+let downPaymentInput;
+let downPaymentPercentInput;
 
-  //edit : ราคารถสุทธิรวมบวกหัว
-  function calculateCarPrice() {
-    const salePrice = parseFloat(salePriceInput.value.replace(/,/g, '')) || 0;
-    const markup = parseFloat(markupInput.value.replace(/,/g, '')) || 0;
+let isInitialLoad = true;
 
-    const markup90 = markup * 0.9;
-    const finalPrice = salePrice + markup;
+function getNumber(el) {
+  if (!el || !el.value) return 0;
+  return parseFloat(el.value.replace(/,/g, '')) || 0;
+}
 
-    // ใส่ค่าในช่อง
-    markup90Input.value = markup90.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// ราคารถสุทธิรวมบวกหัว
+function calculateCarPrice(e) {
+  const salePrice = getNumber(salePriceInput);
+  const markup = getNumber(markupInput);
+
+  const markup90 = markup * 0.9;
+  const finalPrice = salePrice + markup;
+
+  if (markup90Input) {
+    markup90Input.value = markup90.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  if (finalPriceInput) {
     finalPriceInput.value = finalPrice.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
-
-    downPaymentInput.value = '';
-    downPaymentPercentInput.value = '';
-
-    calculateRemaining();
-    calculateBalanceCampaign();
-
-    return { markup90, finalPrice };
   }
 
-  // edit : บวกหัว 90%
-  function calculateFinalFromManualMarkup90() {
-    const salePrice = parseFloat(salePriceInput.value.replace(/,/g, '')) || 0;
-    const markup90 = parseFloat(markup90Input.value.replace(/,/g, '')) || 0;
+  if (!isInitialLoad && (document.activeElement === salePriceInput || document.activeElement === markupInput)) {
+    downPaymentInput.value = '';
+    downPaymentPercentInput.value = '';
+  }
 
-    const finalPrice = salePrice + markup90;
+  calculateRemaining?.();
+  calculateBalanceCampaign?.();
 
+  return { markup90, finalPrice };
+}
+
+// บวกหัว 90% (แก้เอง)
+function calculateFinalFromManualMarkup90() {
+  const salePrice = getNumber(salePriceInput);
+  const markup90 = getNumber(markup90Input);
+
+  const finalPrice = salePrice + markup90;
+
+  if (finalPriceInput) {
     finalPriceInput.value = finalPrice.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
-
-    downPaymentInput.value = '';
-    downPaymentPercentInput.value = '';
-    calculateRemaining();
   }
 
-  //edit : เงินดาวน์ และ %
-  function calculateDownPayment() {
-    const finalPrice = parseFloat(finalPriceInput.value.replace(/,/g, '')) || 0;
-    const downPayment = parseFloat(downPaymentInput.value.replace(/,/g, '')) || 0;
-    const downPercent = parseFloat(downPaymentPercentInput.value.replace(/,/g, '')) || 0;
+  if (!isInitialLoad && document.activeElement === markup90Input) {
+    downPaymentInput.value = '';
+    downPaymentPercentInput.value = '';
+  }
 
-    if (document.activeElement === downPaymentInput) {
-      const percent = finalPrice > 0 ? (downPayment / finalPrice) * 100 : 0;
-      downPaymentPercentInput.value = percent.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-    } else if (document.activeElement === downPaymentPercentInput) {
-      const dp = (finalPrice * downPercent) / 100;
-      downPaymentInput.value = dp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (typeof calculateRemaining === 'function') {
+    calculateRemaining();
+  }
+}
 
+// เงินดาวน์ และ %
+function calculateDownPayment() {
+  const finalPrice = getNumber(finalPriceInput);
+  const downPayment = getNumber(downPaymentInput);
+  const downPercent = getNumber(downPaymentPercentInput);
+
+  if (document.activeElement === downPaymentInput) {
+    const percent = finalPrice > 0 ? (downPayment / finalPrice) * 100 : 0;
+    downPaymentPercentInput.value = percent.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  if (document.activeElement === downPaymentPercentInput) {
+    const dp = (finalPrice * downPercent) / 100;
+    downPaymentInput.value = dp.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    if (window.jQuery) {
       $(downPaymentInput).trigger('input');
     }
+  }
 
-    if (document.activeElement === downPaymentInput) {
+  if (document.activeElement === downPaymentInput) {
+    if (typeof calculateRemaining === 'function') {
       calculateRemaining();
     }
   }
+}
 
-  //ราคาขาย
+// INIT (DOM READY)
+document.addEventListener('DOMContentLoaded', function () {
+  salePriceInput = document.getElementById('carOrderSale');
+  markupInput = document.getElementById('MarkupPrice');
+  markup90Input = document.querySelector('input[name="Markup90"]');
+  finalPriceInput = document.getElementById('CarSalePriceFinal');
+
+  downPaymentInput = document.getElementById('DownPayment');
+  downPaymentPercentInput = document.getElementById('DownPaymentPercentage');
+
   if (salePriceInput) salePriceInput.addEventListener('input', calculateCarPrice);
   if (markupInput) markupInput.addEventListener('input', calculateCarPrice);
   if (markup90Input) markup90Input.addEventListener('input', calculateFinalFromManualMarkup90);
 
-  //ดาวน์
   if (downPaymentInput) downPaymentInput.addEventListener('input', calculateDownPayment);
   if (downPaymentPercentInput) downPaymentPercentInput.addEventListener('input', calculateDownPayment);
 
-  calculateRemaining();
+  isInitialLoad = false;
+
+  if (typeof calculateRemaining === 'function') {
+    calculateRemaining();
+  }
 });
 
 //edit : total payment delivery ค่าใช้จ่ายวันออกรถ
@@ -1364,7 +1462,7 @@ function calculatePaymentTotal() {
 
 //edit : ยอดคงเหลือ
 function calculateBalance() {
-  const carSale = safeNumber('#summaryCarSale');
+  const carSale = safeNumber('#carOrderSale');
   const ExtraTotal = safeNumber('#summaryExtraTotal');
   const turnCost = safeNumber('#summaryTurn');
   const cashDeposit = safeNumber('#summaryCashDeposit');
@@ -1373,7 +1471,7 @@ function calculateBalance() {
 
   const total = carSale + ExtraTotal - (turnCost + cashDeposit + discount + paymentTotal);
 
-  $('.balance-display:visible').val(
+  $('.balance-display').val(
     total.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
@@ -1396,7 +1494,9 @@ function updateSummary() {
   $('#summaryCarSale').val(sale.toLocaleString(undefined, { minimumFractionDigits: 2 }));
 
   calculateTotalPaymentAtDelivery();
+  calculateBalance();
   calculateInstallment();
+  calculateCarPrice();
 }
 
 // edit : ค่างวด (กรณีไม่มี ALP)
@@ -1405,8 +1505,7 @@ function calculateInstallment() {
   const interestRate = Number($('#remaining_interest').val());
   const periodMonths = Number($('#remaining_period').val());
 
-  if (!financeAmount || !interestRate || !periodMonths || periodMonths <= 0) {
-    $('#remaining_alp').val('');
+  if (!financeAmount || !periodMonths || periodMonths <= 0) {
     return;
   }
 
@@ -1480,7 +1579,7 @@ function calculateBalanceCampaign() {
   const markup90 = safeNumber('#Markup90');
 
   const downPay = safeNumber('#DownPaymentDiscount');
-  const gift = safeNumber('#total-price-gift');
+  const gift = safeTextNumber('#total-price-gift');
   const refA = safeNumber('#ReferrerAmount');
 
   const payDis = safeNumber('#PaymentDiscount');
@@ -1523,8 +1622,8 @@ $(document).ready(function () {
     calculateTotalPaymentAtDelivery
   );
   $('#CarSalePriceFinal, #DownPayment').on('input change', calculateRemaining);
-  $('#balanceFinanceDisplay, #remaining_interest, #remaining_period').on('input change', calculateInstallment);
-  $('#summaryCarSale, #summaryExtraTotal, #summaryTurn, #summaryCashDeposit, #PaymentDiscount').on(
+  $('#remaining_interest, #remaining_period').on('input change', calculateInstallment);
+  $('#carOrderSale, #summaryExtraTotal, #summaryTurn, #summaryCashDeposit, #PaymentDiscount').on(
     'input change',
     calculateBalance
   );
@@ -1678,35 +1777,43 @@ $(document).ready(function () {
 
 //edit : เลือกไฟแนนซ์ แล้วแสดงปีตาม max year
 function renderPeriods(maxYear, selectedPeriod = null) {
-  let $period = $('#remaining_period');
+  const $period = $('#remaining_period');
+
+  if (!$period.length) return;
+
   $period.empty();
+  $period.append('<option value="">-- เลือกงวด --</option>');
 
-  // เพิ่ม Placeholder
-  $period.append(`<option value="">-- เลือกงวด --</option>`);
+  if (!maxYear || isNaN(maxYear)) {
+    $period.prop('disabled', true);
+    return;
+  }
 
-  // ถ้า maxYear ไม่มี ให้จบ
-  if (!maxYear || isNaN(maxYear)) return;
+  $period.prop('disabled', false);
 
-  let maxMonth = maxYear * 12;
+  const maxMonth = maxYear * 12;
 
   for (let m = 12; m <= maxMonth; m += 12) {
-    let selected = selectedPeriod == m ? 'selected' : '';
-    $period.append(`<option value="${m}" ${selected}>${m} งวด</option>`);
+    $period.append(`<option value="${m}">${m} งวด</option>`);
+  }
+
+  if (selectedPeriod && selectedPeriod <= maxMonth) {
+    $period.val(String(selectedPeriod)).trigger('change');
   }
 }
 
-// เมื่อเลือกไฟแนนซ์ใหม่
-$('#remaining_finance').on('change', function () {
-  let maxYear = $('option:selected', this).data('max-year') || 0;
-  renderPeriods(maxYear);
-});
-
-// โหลดหน้า: ทำให้เลือกงวดตรงกับค่าที่มีใน DB
+// เมื่อเลือกไฟแนนซ์ใหม่ / โหลดหน้า: ทำให้เลือกงวดตรงกับค่าที่มีใน DB
 $(document).ready(function () {
-  let finance = $('#remaining_finance option:selected');
-  if (finance.length) {
-    let maxYear = finance.data('max-year');
-    let selectedPeriod = "{{ $remainingPayment->period ?? '' }}";
+  $('#remaining_finance').on('change', function () {
+    const maxYear = Number($(this).find('option:selected').data('max-year')) || 0;
+    renderPeriods(maxYear);
+  });
+
+  const finance = $('#remaining_finance option:selected');
+  const maxYear = Number(finance.data('max-year')) || 0;
+  const selectedPeriod = Number($('#remaining_period').data('selected')) || 0;
+
+  if (maxYear) {
     renderPeriods(maxYear, selectedPeriod);
   }
 });
@@ -1749,6 +1856,9 @@ document.addEventListener('DOMContentLoaded', function () {
   const btnSave = document.getElementById('btnUpdatePurchase');
   const btnRequestNormal = document.getElementById('btnRequestNormal');
   const btnRequestOverBudget = document.getElementById('btnRequestOverBudget');
+
+  const approvalRequested = document.getElementById('approvalRequested')?.value === '1';
+  const approvalType = document.getElementById('approvalType')?.value || '';
 
   function handlePreview() {
     function formatThaiDate(inputId) {
@@ -2382,38 +2492,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const budget = document.querySelector('#model_id option:checked')?.dataset.overbudget || '-';
 
-    if (userRole === 'sale' && hasApproval) {
+    btnSave.classList.add('d-none');
+    btnRequestNormal.classList.add('d-none');
+    btnRequestOverBudget.classList.add('d-none');
+
+    if (userRole !== 'sale') {
+      btnSave.classList.remove('d-none');
       content.innerHTML = html;
       modal.show();
       return;
     }
 
-    //เกินงบบ
-    if (balanceCam > budget) {
-      if (!hasApproval) {
-        if (userRole === 'sale') {
-          btnRequestOverBudget.classList.remove('d-none');
-        } else {
-          btnSave.classList.remove('d-none');
-        }
-      } else {
-        btnSave.classList.remove('d-none');
-      }
+    // sale เคยขออนุมัติแล้ว → แสดงแค่ปิด
+    if (approvalRequested || hasApproval) {
+      content.innerHTML = html;
+      modal.show();
+      return;
     }
 
-    //ยอดปกติ
-    else {
-      if (!hasApproval) {
-        // ยังไม่มีอนุมัติ
-        if (userRole === 'sale') {
-          btnRequestNormal.classList.remove('d-none'); // ขออนุมัติ
-        } else {
-          btnSave.classList.remove('d-none'); // role อื่น → บันทึก
-        }
-      } else {
-        // มีอนุมัติแล้ว → บันทึกได้ทุก role
-        btnSave.classList.remove('d-none');
-      }
+    // sale ต้องเห็นปุ่ม "บันทึก" เสมอ
+    btnSave.classList.remove('d-none');
+
+    // เช็คเกินงบ
+    if (balanceCam > budget) {
+      btnRequestOverBudget.classList.remove('d-none');
+    } else {
+      btnRequestNormal.classList.remove('d-none');
     }
 
     content.innerHTML = html;

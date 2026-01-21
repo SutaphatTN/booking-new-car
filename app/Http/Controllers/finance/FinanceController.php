@@ -309,18 +309,18 @@ class FinanceController extends Controller
         $fnCon = FinancesConfirm::where('SaleID', $id)->first();
         $remaining = $sale->remainingPayment;
 
+        if (!$fnCon) {
+            $fnCon = new FinancesConfirm();
+        }
+
+        $fnCon->net_price ??= $sale->carOrder?->car_MSRP;
+        $fnCon->down      ??= $sale->DownPayment;
+        $fnCon->excellent ??= $sale->balanceFinance;
+
         $comExtra = FinancesExtraCom::where('model_id', $sale->model_id)
             ->where('financeID', $sale->remainingPayment?->financeInfo?->id)
             ->value('com') ?? 0;
 
-
-        if (!$fnCon) {
-            $fnCon = new FinancesConfirm([
-                'net_price' => $sale->carOrder?->car_MSRP,
-                'down'      => $sale->DownPayment,
-                'excellent' => $sale->balanceFinance,
-            ]);
-        }
         return view('finance.confirm-finance.edit', compact('sale', 'fnCon', 'comExtra'));
     }
 

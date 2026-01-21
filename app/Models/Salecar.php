@@ -201,7 +201,9 @@ class Salecar extends Model
 		'ReferrerAmount',
 		'balance',
 		'balanceFinance',
-		'con_status'
+		'con_status',
+		'approval_type',
+		'approval_requested_at'
 	];
 
 	protected $dates = ['deleted_at'];
@@ -293,6 +295,16 @@ class Salecar extends Model
 		return $this->BookingDate ? Carbon::parse($this->BookingDate)->format('d-m-Y') : null;
 	}
 
+	public function getKeyInDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getDeliveryDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
 	public function getAdminCheckedDateAttribute($value)
 	{
 		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
@@ -309,6 +321,16 @@ class Salecar extends Model
 	}
 
 	public function getApprovalSignatureDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getDeliveryInDMSDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getDeliveryInCKDateAttribute($value)
 	{
 		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
 	}

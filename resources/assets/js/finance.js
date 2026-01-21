@@ -694,12 +694,12 @@ function calculateComFin() {
 }
 
 function calculateTotal() {
-  let excellent = parseFloat($('#excellent').val() || 0);
-  let advance = parseFloat($('#advance_installment').val() || 0);
-  let comFin = parseFloat($('#com_fin').val() || 0);
-  let comExtra = parseFloat($('#com_extra').val() || 0);
-  let comKickback = parseFloat($('#com_kickback').val() || 0);
-  let comSubsidy = parseFloat($('#com_subsidy').val() || 0);
+  let excellent = parseNumber($('#excellent').val() || 0);
+  let advance = parseNumber($('#advance_installment').val() || 0);
+  let comFin = parseNumber($('#com_fin').val() || 0);
+  let comExtra = parseNumber($('#com_extra').val() || 0);
+  let comKickback = parseNumber($('#com_kickback').val() || 0);
+  let comSubsidy = parseNumber($('#com_subsidy').val() || 0);
 
   let total = excellent - advance + comFin + comExtra + comKickback + comSubsidy;
 
