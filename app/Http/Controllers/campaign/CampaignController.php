@@ -215,7 +215,7 @@ class CampaignController extends Controller
     public function viewAppellation()
     {
         $camApp = CampaignName::all();
-        return view('campaign.Appellation.view', compact('camApp'));
+        return view('campaign.appellation.view', compact('camApp'));
     }
 
     public function listAppellation()
@@ -226,7 +226,7 @@ class CampaignController extends Controller
             return [
                 'No' => $index + 1,
                 'name' => $c->name,
-                'Action' => view('campaign.Appellation.button', compact('c'))->render()
+                'Action' => view('campaign.appellation.button', compact('c'))->render()
             ];
         });
 
@@ -236,7 +236,7 @@ class CampaignController extends Controller
     public function createAppellation()
     {
         $camApp = CampaignName::all();
-        return view('campaign.Appellation.input', compact('camApp'));
+        return view('campaign.appellation.input', compact('camApp'));
     }
 
     function storeAppellation(Request $request)
@@ -263,7 +263,7 @@ class CampaignController extends Controller
     public function editAppellation($id)
     {
         $camApp = CampaignName::findOrFail($id);
-        return view('campaign.Appellation.edit', compact('camApp'));
+        return view('campaign.appellation.edit', compact('camApp'));
     }
 
     public function updateAppellation(Request $request, $id)
