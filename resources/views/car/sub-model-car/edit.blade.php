@@ -83,12 +83,12 @@
               @enderror
             </div> -->
 
-            <div class="col-md-12 mb-5">
+            <!-- <div class="col-md-12 mb-5">
               <label for="over_budget" class="form-label">ยอดเงินเกินงบ</label>
               <input id="over_budget" type="text"
                 class="form-control text-end money-input"
                 name="over_budget" value="{{ $sub->over_budget !== null ? number_format($sub->over_budget, 2) : '' }}">
-            </div>
+            </div> -->
 
           </div>
 

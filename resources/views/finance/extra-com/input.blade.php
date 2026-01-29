@@ -1,5 +1,5 @@
 <div class="modal fade inputFinExtraCom" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-md" role="document">
+  <div class="modal-dialog modal-sm" role="document">
     <div class="modal-content">
       <div class="modal-header border-bottom">
         <h4 class="modal-title mb-2" id="inputFinExtraComLabel">เพิ่มข้อมูลไฟแนนซ์ Com Extra</h4>

@@ -17,10 +17,9 @@
               disabled>
           </div>
 
-
           <div class="col-md-3 mb-5">
             <label for="Gender" class="form-label">เพศ</label>
-            <input id="Gender" class="form-control" type="text" value="{{ $customers->Gender }}" disabled />
+            <input id="Gender" class="form-control" type="text" value="{{ $customers->gender_th }}" disabled />
           </div>
 
           <div class="col-md-3 mb-5">
@@ -50,7 +49,7 @@
 
           <div class="col-md-2 mb-5">
             <label for="religion" class="form-label">ศาสนา</label>
-            <input id="religion" class="form-control" type="text" value="{{ $customers->religion }}" disabled />
+            <input id="religion" class="form-control" type="text" value="{{ $customers->religion_th }}" disabled />
           </div>
 
           <div class="col-md-3 mb-5">

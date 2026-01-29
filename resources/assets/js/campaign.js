@@ -66,9 +66,12 @@ $(document).on('input', '.money-input', function () {
   let value = this.value.replace(/,/g, '');
   if (value === '' || isNaN(value)) {
     this.value = '';
+    updateCashSupportFinal();
     return;
   }
+
   this.value = parseFloat(value).toLocaleString();
+  updateCashSupportFinal();
 });
 
 $(document).on('blur', '.money-input', function () {
@@ -257,6 +260,8 @@ $(document).on('click', '.btnEditCam', function () {
 
     $modal.modal('show');
 
+    setTimeout(updateCashSupportFinal, 100);
+
     $modal
       .find('.btnUpdateCampaign')
       .off('click')
@@ -325,8 +330,10 @@ function updateCashSupportFinal() {
   );
 }
 
-$(document).on('input', '#cashSupport, #cashSupport_deduct', function () {
-  updateCashSupportFinal();
+$(document).on('input change blur keyup', '#cashSupport, #cashSupport_deduct', updateCashSupportFinal);
+
+$(document).on('focus', '#cashSupport, #cashSupport_deduct', function () {
+  setTimeout(updateCashSupportFinal, 50);
 });
 
 //delete cam
@@ -395,8 +402,8 @@ $(document).ready(function () {
   campaignAppellationTable = $('.campaignAppellationTable').DataTable({
     ajax: '/campaign/appellation/list',
     columns: [
-      { data: 'No' },
-      { data: 'name' },
+      { data: 'No' }, 
+      { data: 'name' }, 
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,

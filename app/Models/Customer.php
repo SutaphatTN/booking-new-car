@@ -170,4 +170,24 @@ class Customer extends Model
 	{
 		return $this->hasOne(Address::class, 'customer_id', 'id')->where('type', 'document');
 	}
+
+	public function getGenderThAttribute()
+	{
+		return match (strtolower($this->Gender)) {
+			'female' => 'หญิง',
+			'male' => 'ชาย',
+			default => '-',
+		};
+	}
+
+	public function getReligionThAttribute()
+	{
+		return match (strtolower($this->religion)) {
+			'buddhist' => 'พุทธ',
+			'islam' => 'อิสลาม',
+			'christian' => 'คริสต์',
+			'other' => 'อื่นๆ',
+			default => '-',
+		};
+	}
 }

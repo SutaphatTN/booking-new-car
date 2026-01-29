@@ -1,5 +1,5 @@
 <div class="modal fade editFinExtraCom" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-md" role="document">
+  <div class="modal-dialog modal-sm" role="document">
     <div class="modal-content">
       <div class="modal-header border-bottom">
         <h4 class="modal-title mb-2" id="editFinExtraComLabel">แก้ไขข้อมูลไฟแนนซ์ Com Extra</h4>
@@ -50,7 +50,7 @@
               <label for="com" class="form-label">Com Extra</label>
               <input id="com" type="text"
                 class="form-control @error('com') is-invalid @enderror text-end money-input"
-                name="com" value="{{ $finExtra->com }}" required>
+                name="com" value="{{ $finExtra->com !== null ? number_format($finExtra->com, 2) : '' }}" required>
 
               @error('com')
               <span class="invalid-feedback" role="alert">

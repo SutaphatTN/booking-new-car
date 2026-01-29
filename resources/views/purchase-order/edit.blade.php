@@ -157,7 +157,7 @@
 
                   <div class="col-md-1">
                     <label for="Year" class="form-label">ปี</label>
-                    <input class="form-control" type="number" name="Year" id="Year" min="2020" max="2100"
+                    <input class="form-control" type="text" name="Year" id="Year" min="2000" max="2100"
                       value="{{ $saleCar->Year }}" required>
                   </div>
                   <div class="col-md-2">

@@ -299,7 +299,7 @@ $(document).ready(function () {
       { data: 'name' },
       { data: 'detail' },
       // { data: 'year' },
-      { data: 'over_budget' },
+      // { data: 'over_budget' },
       { data: 'active', orderable: false, searchable: false },
       { data: 'Action', orderable: false, searchable: false }
     ],
