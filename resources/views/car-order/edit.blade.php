@@ -15,51 +15,35 @@
 
           <div class="row">
             <div class="col-md-2 mb-5">
-              <label for="type" class="form-label">ประเภท</label>
-              <select id="type" name="type" class="form-select" required>
-                <option value="">เลือก</option>
-                <option value="ลูกค้า" {{ $order->type == 'ลูกค้า' ? 'selected' : '' }}>ลูกค้า</option>
-                <option value="stock" {{ $order->type == 'stock' ? 'selected' : '' }}>stock</option>
-              </select>
-
-              @error('type')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
+              <label for="type" class="form-label">ประเภทการสั่งรถ</label>
+              <input id="type" type="text"
+                class="form-control"
+                value="{{ $order->type ?? '-' }}" disabled>
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="model_id" class="form-label">รุ่นรถหลัก</label>
-              <select id="model_id" name="model_id" class="form-select @error('model_id') is-invalid @enderror" required>
-                <option value="">-- เลือกรุ่นรถหลัก --</option>
-                @foreach ($model as $m)
-                <option value="{{ $m->id }}" {{ $order->model_id == $m->id ? 'selected' : '' }}>{{ $m->Name_TH }}</option>
-                @endforeach
-              </select>
-
-              @error('model_id')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
+              <input id="model_id" type="text"
+                class="form-control"
+                value="{{ $order->model->Name_TH }}" disabled>
             </div>
 
             <div class="col-md-6 mb-5">
               <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
-              <select id="subModel_id" name="subModel_id" class="form-select @error('subModel_id') is-invalid @enderror" required>
-                @foreach ($subModels as $s)
-                <option value="{{ $s->id }}" {{ $order->subModel_id == $s->id ? 'selected' : '' }}>
-                  {{ $s->detail }} - {{ $s->name }}
-                </option>
-                @endforeach
-              </select>
+              <input id="subModel_id" type="text"
+                class="form-control"
+                value="{{ $order->subModel->detail }} - {{ $order->subModel->name }}" disabled>
+            </div>
 
-              @error('subModel_id')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
+            <div class="col-12">
+              <div id="fieldPurchase" class="row d-none">
+                <div class="col-md-12 mb-5">
+                  <label for="CusFullName" class="form-label">ชื่อ - นามสกุล ลูกค้า</label>
+                  <input id="CusFullName" type="text"
+                    class="form-control"
+                    value="{{ $order->saleCus->customer->prefix->Name_TH ?? '' }} {{ $order->saleCus->customer->FirstName ?? '' }} {{ $order->saleCus->customer->LastName ?? '' }}" disabled>
+                </div>
+              </div>
             </div>
 
             <div class="col-md-4 mb-5">
@@ -275,8 +259,15 @@
               @enderror
             </div>
 
+            <div id="fieldOnWeb" class="col-md-12 row d-none">
+              <div class="col-md-3 mb-3">
+                <label for="estimated_stock_date" class="form-label">วันที่คาดว่าสินค้ามาถึง</label>
+                <input type="date" id="estimated_stock_date" name="estimated_stock_date" class="form-control" value="{{ $order->estimated_stock_date }}">
+              </div>
+            </div>
+
             <div id="fieldInvoice" class="col-md-3 mb-5 d-none">
-              <label for="order_invoice_date" class="form-label">วันที่ออกใบกำกับ</label>
+              <label for="order_invoice_date" class="form-label">วันที่ซื้อ (วันที่ออกใบกำกับ)</label>
               <input type="date" id="order_invoice_date" name="order_invoice_date" class="form-control" value="{{ $order->order_invoice_date }}">
             </div>
 
@@ -285,12 +276,6 @@
                 <label for="order_stock_date" class="form-label">วันที่สต็อก</label>
                 <input type="date" id="order_stock_date" name="order_stock_date" class="form-control" value="{{ $order->order_stock_date }}">
               </div>
-
-              <div class="col-md-3 mb-3">
-                <label for="estimated_stock_date" class="form-label">วันที่คาดว่าสินค้ามาถึง</label>
-                <input type="date" id="estimated_stock_date" name="estimated_stock_date" class="form-control" value="{{ $order->estimated_stock_date }}">
-              </div>
-
             </div>
 
           </div>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\ApproveCarOrderMail;
 use App\Models\CarOrder;
 use App\Models\CarOrderHistory;
+use App\Models\Salecar;
 use App\Models\TbCarmodel;
 use App\Models\TbOrderStatus;
 use App\Models\TbSubcarmodel;
@@ -284,6 +285,7 @@ class CarOrderController extends Controller
             $data = [
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
+                'salecar_id' => $request->salecar_id,
                 'option' => $request->option,
                 'purchase_source' => $request->purchase_source,
                 'order_code' => $order_code,
@@ -331,9 +333,18 @@ class CarOrderController extends Controller
         }
     }
 
-    public function getSubModelCarOrder($model_id)
+    public function getSubModelCarOrder(Request $request)
     {
-        $subModels = TbSubcarmodel::where('model_id', $model_id)
+        $modelId = $request->model_id;
+        $typeCarOrder = $request->type_carOrder;
+
+        $query = TbSubcarmodel::where('model_id', $modelId);
+
+        if ($typeCarOrder) {
+            $query->where('type_carOrder', $typeCarOrder);
+        }
+
+        $subModels = $query
             ->select('id', 'name', 'detail')
             ->orderBy('name')
             ->get();
@@ -343,7 +354,7 @@ class CarOrderController extends Controller
 
     public function editPending($id)
     {
-        $order = CarOrder::findOrFail($id);
+        $order = CarOrder::with(['saleCus'])->findOrFail($id);
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
@@ -556,5 +567,64 @@ class CarOrderController extends Controller
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
             ], 500);
         }
+    }
+
+    // กำหนดเงือนไขเลือกรถรุ่นหลัก
+    public function getModelsByCustomer(Request $request)
+    {
+        $saleCar = Salecar::with([
+            'reservationPayment',
+            'deliveryPayment'
+        ])->findOrFail($request->salecar_id);
+
+        $cash = $saleCar->CashDeposit;
+        $query = TbCarmodel::query();
+
+        if ($saleCar->payment_mode === 'finance') {
+
+            if (!$saleCar->reservationPayment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ลูกค้าไม่มีข้อมูลเงินจอง'
+                ]);
+            }
+
+            if (
+                !$saleCar->deliveryPayment ||
+                empty($saleCar->deliveryPayment->po_number)
+            ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ลูกค้าไม่มีข้อมูล PO Number'
+                ]);
+            }
+
+            if ($cash < TbCarmodel::min('money_min')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'เงินจองไม่ถึงเงื่อนไขที่กำหนด'
+                ]);
+            }
+
+            $query->where('money_min', '<=', $cash);
+        }
+
+        if ($saleCar->payment_mode === 'non-finance') {
+            $query->where('money_min', '<=', $cash);
+        }
+
+        $models = $query->select('id', 'Name_TH')->get();
+
+        if ($models->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบรุ่นรถที่ผ่านเงื่อนไข'
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $models
+        ]);
     }
 }

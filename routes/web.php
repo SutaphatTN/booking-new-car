@@ -15,7 +15,7 @@ use App\Http\Controllers\model_car\ModelCarController;
 use App\Http\Controllers\model_car\SubModelCarController;
 use App\Http\Controllers\purchase_order\PurchaseOrderController;
 
-Route::get('/', fn () => redirect()->route('login'));
+Route::get('/', fn() => redirect()->route('login'));
 
 Route::get('/login', [LoginController::class, 'index'])
     ->name('login');
@@ -65,6 +65,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::put('purchase-order/update-fn/{id}', [FinanceController::class, 'updateFN'])->name('purchase-order.updateFN');
     Route::delete('purchase-order/destroy-fn/{id}', [FinanceController::class, 'destroyFN'])->name('purchase-order.destroyFN');
     Route::get('/purchase-order/booking-export', [PurchaseOrderController::class, 'exportBooking'])->name('purchase-order.booking-export');
+    Route::post('/purchase-order/{id}/cancel-car-order', [PurchaseOrderController::class, 'cancelCarOrder']);
+    Route::get('/purchase-order/search', [PurchaseOrderController::class, 'search'])->name('purchase-order.search');
 
     //accessory partner
     Route::get('accessory/partner', [AccessoryController::class, 'viewPartner'])->name('accessory.partner');
@@ -97,7 +99,7 @@ Route::group(['middleware' => 'auth'], function () {
     // user
     Route::get('user/list', [UserController::class, 'listUser']);
     Route::get('user/{id}/view-more', [UserController::class, 'viewMore'])->name('user.viewMore');
-    
+
     //finance
     Route::get('finance/list', [FinanceController::class, 'listFinance']);
     //finance extra com
@@ -121,7 +123,7 @@ Route::group(['middleware' => 'auth'], function () {
     //car-order
     Route::get('car-order/list', [CarOrderController::class, 'listCarOrder']);
     Route::get('car-order/{id}/view-more', [CarOrderController::class, 'viewMore'])->name('car-order.viewMore');
-    Route::get('/api/car-order/sub-model/{model_id}', [CarOrderController::class, 'getSubModelCarOrder']);
+    Route::get('/api/car-order/sub-model', [CarOrderController::class, 'getSubModelCarOrder']);
     Route::get('/car-order/search', [CarOrderController::class, 'search'])->name('car-order.search');
     //car-order history
     Route::get('car-order/history', [CarOrderController::class, 'history'])->name('car-order.history');
@@ -143,6 +145,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('car-order/edit-approve/{id}', [CarOrderController::class, 'editApprove'])->name('car-order.editApprove');
     Route::put('car-order/update-approve/{id}', [CarOrderController::class, 'updateApprove'])->name('car-order.updateApprove');
     Route::delete('car-order/destroy-approve/{id}', [CarOrderController::class, 'destroyApprove']);
+    //condition select ca model 
+    Route::get('/api/car-order/models-by-customer', [CarOrderController::class, 'getModelsByCustomer']);
 
     //all resource
     Route::resource('customer', CustomerController::class);

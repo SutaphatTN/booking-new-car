@@ -12,14 +12,16 @@
           enctype="multipart/form-data">
           @csrf
 
+          <div class="searchPurchaseCus"></div>
           <div class="row">
 
-            <div class="col-md-2 mb-5">
-              <label for="type" class="form-label">ประเภท</label>
+            <div class="col-md-3 mb-5">
+              <label for="type" class="form-label">ประเภทการสั่งรถ</label>
               <select id="type" name="type" class="form-select" required>
-                <option value="">- เลือก -</option>
-                <option value="ลูกค้า">ลูกค้า</option>
-                <option value="stock">stock</option>
+                <option value="">-- เลือก --</option>
+                <option value="customer">Customer</option>
+                <option value="stock">Stock</option>
+                <option value="auction">Auction</option>
               </select>
 
               @error('type')
@@ -30,6 +32,61 @@
             </div>
 
             <div class="col-md-4 mb-5">
+              <label for="purchase_source" class="form-label">แหล่งที่มา</label>
+              <select id="purchase_source" name="purchase_source" class="form-select" required>
+                <option value="">-- เลือกแหล่งที่มา --</option>
+                <option value="MMTH">MMTH</option>
+                <option value="OTHDealer">OTHDealer</option>
+              </select>
+
+              @error('purchase_source')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-5 mb-5">
+              <label for="purchase_type" class="form-label">ประเภทการซื้อรถ</label>
+              <select id="purchase_type" name="purchase_type" class="form-select" required>
+                <option value="">-- เลือกประเภท --</option>
+                <option value="TestDrive">TestDrive</option>
+                <option value="Retail">Retail</option>
+                <option value="ActivityCar">ActivityCar</option>
+              </select>
+
+              @error('purchase_type')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <input type="hidden" name="salecar_id" id="salecar_id">
+            <div class="col-12">
+              <div id="fieldPurchase" class="row d-none">
+                <div class="col-md-5 mb-5">
+                  <label class="form-label" for="purchaseCus">ค้นหาข้อมูลการจองของลูกค้า</label>
+                  <div class="input-group w-100">
+                    <input id="purchaseCus" type="text" class="form-control"
+                      name="purchaseCus" placeholder="พิมพ์ข้อมูลลูกค้า">
+                    <span class="btn btn-outline-secondary btnPurchaseCus">
+                      <i class="bx bx-search"></i>
+                    </span>
+                  </div>
+                </div>
+
+                <div class="col-md-7 mb-5">
+                  <label for="purchaseCusName" class="form-label">ชื่อ - นามสกุล</label>
+                  <input id="purchaseCusName" type="text"
+                    class="form-control w-100" readonly>
+                </div>
+
+                <div id="modelError" class="text-danger small d-none" style="margin-top: -8px; margin-bottom: 6px;"></div>
+              </div>
+            </div>
+
+            <div class="col-md-5 mb-5">
               <label for="model_id" class="form-label">รุ่นรถหลัก</label>
               <select id="model_id" name="model_id" class="form-select @error('model_id') is-invalid @enderror" required>
                 <option value="">-- เลือกรุ่นรถหลัก --</option>
@@ -45,7 +102,7 @@
               @enderror
             </div>
 
-            <div class="col-md-6 mb-5">
+            <div class="col-md-7 mb-5">
               <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
               <select id="subModel_id" name="subModel_id" class="form-select @error('subModel_id') is-invalid @enderror" required>
                 <option value="">-- เลือกรุ่นรถย่อย --</option>
@@ -58,7 +115,7 @@
               @enderror
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-2 mb-5">
               <label for="option" class="form-label">Option</label>
               <input id="option" type="text"
                 class="form-control @error('option') is-invalid @enderror"
@@ -71,7 +128,7 @@
               @enderror
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="color" class="form-label">สี</label>
               <input id="color" type="text"
                 class="form-control @error('color') is-invalid @enderror"
@@ -84,7 +141,7 @@
               @enderror
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="year" class="form-label">ปี</label>
               <input id="year" type="text"
                 class="form-control @error('year') is-invalid @enderror"
@@ -123,38 +180,8 @@
               @enderror
             </div>
 
-            <div class="col-md-4 mb-5">
-              <label for="purchase_source" class="form-label">แหล่งที่มา</label>
-              <select id="purchase_source" name="purchase_source" class="form-select" required>
-                <option value="">-- เลือกแหล่งที่มา --</option>
-                <option value="MMTH">MMTH</option>
-                <option value="OTHDealer">OTHDealer</option>
-              </select>
 
-              @error('purchase_source')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-5 mb-5">
-              <label for="purchase_type" class="form-label">ประเภทการซื้อรถ</label>
-              <select id="purchase_type" name="purchase_type" class="form-select" required>
-                <option value="">-- เลือกประเภท --</option>
-                <option value="TestDrive">TestDrive</option>
-                <option value="Retail">Retail</option>
-                <option value="ActivityCar">ActivityCar</option>
-              </select>
-
-              @error('purchase_type')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-7 mb-5">
+            <div class="col-md-8 mb-5">
               <label for="approver" class="form-label">ผู้อนุมัติ</label>
               <select id="approver" name="approver" class="form-select" required>
                 <option value="">-- เลือกผู้อนุมัติ --</option>
@@ -173,7 +200,15 @@
             </div>
 
             <div class="col-md-12 mb-5">
-              <label for="note" class="form-label">หมายเหตุ</label>
+              <label for="note" class="form-label">
+                หมายเหตุ
+                <i class="bx bx-info-circle ms-1 text-primary"
+                  data-bs-toggle="tooltip"
+                  data-bs-trigger="click"
+                  data-bs-placement="right"
+                  title="กรณีสั่งให้ลูกค้า ให้ใส่ข้อมูล ชื่อลูกค้า / วันที่ PO (ถ้ามี) / จำนวนเงินจอง ทุกครั้ง">
+                </i>
+              </label>
               <textarea id="note"
                 class="form-control"
                 name="note"
@@ -192,3 +227,11 @@
     </div>
   </div>
 </div>
+
+@include('car-order.pending.search-sale-customer.search')
+
+<style>
+  .bx-info-circle {
+    cursor: pointer;
+  }
+</style>

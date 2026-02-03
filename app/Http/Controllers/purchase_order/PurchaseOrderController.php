@@ -1027,6 +1027,33 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    //ยกเลิกการผูกรถ
+    public function cancelCarOrder(Request $request, $id)
+    {
+        DB::transaction(function () use ($id, $request) {
+
+            $sale = Salecar::findOrFail($id);
+
+            // ป้องกันกรณีไม่มี car order
+            if (!$sale->CarOrderID) {
+                throw new \Exception('ไม่พบข้อมูลการผูกรถ');
+            }
+
+            $carOrder = CarOrder::findOrFail($sale->CarOrderID);
+
+            $sale->CarOrderID = null;
+            $sale->save();
+
+            $carOrder->car_status = 'Available';
+            $carOrder->save();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ยกเลิกการผูกรถเรียบร้อยแล้ว'
+        ]);
+    }
+
     function destroy($id)
     {
         try {
@@ -1242,5 +1269,26 @@ class PurchaseOrderController extends Controller
     public function exportBooking(Request $request)
     {
         return Excel::download(new BookingExport($request), 'booking.xlsx');
+    }
+
+    //search puschase
+    public function search(Request $request)
+    {
+        $keyword = $request->input('keyword');
+
+        $saleCars = Salecar::with([
+            'customer.prefix',
+            'model',
+            'subModel'
+        ])
+            ->whereNull('CarOrderID')
+            ->whereHas('customer', function ($q) use ($keyword) {
+                $q->where('FirstName', 'like', "%{$keyword}%")
+                    ->orWhere('LastName', 'like', "%{$keyword}%");
+            })
+            ->limit(10)
+            ->get();
+
+        return response()->json($saleCars);
     }
 }

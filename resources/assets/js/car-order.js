@@ -100,9 +100,11 @@ function toggleOrderStatusFields($modal) {
   const selected = $modal.find('#order_status option:selected');
   const statusName = selected.data('name');
 
-  $modal.find('#fieldInvoice, #fieldStock').addClass('d-none');
+  $modal.find('#fieldOnWeb, #fieldInvoice, #fieldStock').addClass('d-none');
 
-  if (statusName === 'Invoice') {
+  if (statusName === 'Onweb') {
+    $modal.find('#fieldOnWeb').removeClass('d-none');
+  } else if (statusName === 'Invoice') {
     $modal.find('#fieldInvoice').removeClass('d-none');
   } else if (statusName === 'Stock') {
     $modal.find('#fieldStock').removeClass('d-none');
@@ -349,6 +351,219 @@ $(document).on('click', '.btnInputCarOrder', function () {
   });
 });
 
+//input : หมายเหตุ Tooltip
+document.addEventListener('shown.bs.modal', function (event) {
+  const modal = event.target;
+
+  const tooltipTriggerList = modal.querySelectorAll('[data-bs-toggle="tooltip"]');
+  tooltipTriggerList.forEach(el => {
+    new bootstrap.Tooltip(el);
+  });
+});
+
+//input : hide select customer
+function togglePurchaseFields($modal) {
+  const selected = $modal.find('#type').val();
+
+  $modal.find('#fieldPurchase').addClass('d-none');
+
+  if (selected === 'customer') {
+    $modal.find('#fieldPurchase').removeClass('d-none');
+  }
+}
+
+$(document).on('change', '#type', function () {
+  const $modal = $(this).closest('.modal');
+  togglePurchaseFields($modal);
+
+  $('#modelError').addClass('d-none').text('');
+
+  $('#model_id').val('');
+  $('#subModel_id').empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>').prop('disabled', true);
+
+  toggleCarSelectByType();
+});
+
+$(document).on('shown.bs.modal', '.modal', function () {
+  const $modal = $(this);
+  togglePurchaseFields($modal);
+});
+
+function loadModelByCustomer(saleCarId) {
+  $('#modelError').addClass('d-none').text('');
+
+  $.get(
+    '/api/car-order/models-by-customer',
+    {
+      salecar_id: saleCarId
+    },
+    function (res) {
+      if (!res.success) {
+        $('#model_id').prop('disabled', true);
+        $('#modelError').removeClass('d-none').text(res.message);
+        return;
+      }
+
+      res.data.forEach(m => {
+        $('#model_id').append(`<option value="${m.id}">${m.Name_TH}</option>`);
+      });
+
+      $('#model_id').prop('disabled', false);
+    }
+  );
+}
+
+//input : search purchase customer
+$(document).on('hidden.bs.modal', '#modalSearchPurchaseCus', function () {
+  if (!$('.inputCarOrder').hasClass('show')) {
+    setTimeout(() => {
+      $('.inputCarOrder').modal('show');
+    }, 200);
+  }
+});
+
+$(document).ready(function () {
+  // กด Enter ใน input
+  $(document).on('keypress', '#purchaseCus', function (e) {
+    if (e.which === 13) {
+      e.preventDefault();
+      $(this).siblings('.btnPurchaseCus').trigger('click');
+    }
+  });
+
+  // คลิกปุ่มค้นหา
+  $(document).on('click', '.btnPurchaseCus', function () {
+    const keyword = $('#purchaseCus').val();
+    if (!keyword.trim()) return;
+
+    $('.inputCarOrder').modal('hide');
+
+    setTimeout(() => {
+      searchPurchaseCus(keyword);
+    }, 300);
+  });
+
+  function searchPurchaseCus(keyword) {
+    if (!keyword.trim()) return;
+
+    $.ajax({
+      url: '/purchase-order/search',
+      type: 'GET',
+      data: { keyword },
+      success: function (res) {
+        const $tableBody = $('#tableSelectPurchaseCus tbody');
+        $tableBody.empty();
+
+        if (!res.length) {
+          $tableBody.append(`
+          <tr>
+            <td colspan="7" class="text-center">ไม่พบข้อมูลการจองของลูกค้า</td>
+          </tr>
+        `);
+        } else {
+          res.forEach(c => {
+            const fullName = `${c.customer?.prefix?.Name_TH ?? ''}${c.customer?.FirstName ?? ''} ${c.customer?.LastName ?? ''}`;
+
+            $tableBody.append(`
+            <tr>
+              <td>${fullName}</td>
+              <td>${c.model?.Name_TH ?? '-'}</td>
+              <td>${c.sub_model?.name ?? ''} ${c.sub_model?.detail ?? ''}</td>
+              <td>${c.option ?? '-'}</td>
+              <td>${c.Color ?? '-'}</td>
+              <td>${c.Year ?? '-'}</td>
+              <td>
+                <button
+                  class="btn btn-sm btn-primary btnSelectPurchaseCus"
+                  data-id="${c.id}"
+                  data-name="${fullName}">
+                  เลือก
+                </button>
+              </td>
+            </tr>
+          `);
+          });
+        }
+
+        $('#modalSearchPurchaseCus').modal('show');
+      }
+    });
+  }
+
+  $(document).on('click', '.btnSelectPurchaseCus', function () {
+    const data = $(this).data();
+
+    $('#purchaseCusName').val(data.name);
+    $('#salecar_id').val(data.id);
+
+    $('#purchaseCus').val('');
+
+    $('#modalSearchPurchaseCus').modal('hide');
+
+    setTimeout(() => {
+      $('.inputCarOrder').modal('show');
+    }, 300);
+
+    $('#model_id').empty().append('<option value="">-- เลือกรุ่นรถหลัก --</option>').prop('disabled', true);
+
+    $('#subModel_id').empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>').prop('disabled', true);
+
+    $('#modelError').addClass('d-none').text('');
+
+    loadModelByCustomer(data.id);
+  });
+});
+
+//input : get sub mode
+$(document).on('change', '#model_id', function () {
+  const modelId = $('#model_id').val();
+  const type = $('#type').val();
+  const $subModel = $('#subModel_id');
+
+  $subModel.prop('disabled', true).empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>');
+
+  if (!modelId || !type) return;
+
+  let typeCarOrder = null;
+  if (type === 'stock') typeCarOrder = 1;
+  if (type === 'customer') typeCarOrder = 2;
+
+  $.ajax({
+    url: '/api/car-order/sub-model',
+    data: {
+      model_id: modelId,
+      type_carOrder: typeCarOrder
+    },
+    success: function (data) {
+      if (data.length) {
+        data.forEach(sub => {
+          $subModel.append(`<option value="${sub.id}">${sub.detail} - ${sub.name}</option>`);
+        });
+        $subModel.prop('disabled', false);
+      } else {
+        $subModel.append('<option value="">-- ไม่มีรุ่นย่อย --</option>');
+      }
+    }
+  });
+});
+
+function toggleCarSelectByType() {
+  const type = $('#type').val();
+  const saleCarId = $('#salecar_id').val();
+
+  if (type === 'customer') {
+    $('#model_id').prop('disabled', !saleCarId);
+    $('#subModel_id').prop('disabled', true);
+  } else {
+    $('#model_id').prop('disabled', false);
+    $('#subModel_id').prop('disabled', false);
+  }
+}
+
+$(document).on('change', '#type', toggleCarSelectByType);
+$(document).on('change', '#salecar_id', toggleCarSelectByType);
+$(document).on('shown.bs.modal', '.inputCarOrder', toggleCarSelectByType);
+
 //input : save cam
 $(document).on('click', '.btnStoreCarOrder', function (e) {
   e.preventDefault();
@@ -404,34 +619,6 @@ $(document).on('click', '.btnStoreCarOrder', function (e) {
     },
     complete: function () {
       $btn.prop('disabled', false);
-    }
-  });
-});
-
-//input : get sub model
-$(document).on('change', '#model_id', function () {
-  const modelId = $(this).val();
-  const $subModelSelect = $('#subModel_id');
-
-  $subModelSelect.empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>');
-
-  if (!modelId) return;
-
-  $.ajax({
-    url: '/api/car-order/sub-model/' + modelId,
-    type: 'GET',
-    success: function (data) {
-      console.log('data:', data);
-      if (data.length > 0) {
-        data.forEach(function (sub) {
-          $subModelSelect.append(`<option value="${sub.id}">${sub.detail} - ${sub.name}</option>`);
-        });
-      } else {
-        $subModelSelect.append('<option value="">-- ไม่มีรุ่นย่อย --</option>');
-      }
-    },
-    error: function () {
-      alert('เกิดข้อผิดพลาดในการโหลดข้อมูลรุ่นย่อย');
     }
   });
 });

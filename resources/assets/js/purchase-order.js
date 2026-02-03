@@ -34,7 +34,7 @@ $(document).ready(function () {
   $('.money-input').each(function () {
     let value = $(this).val();
     if (value === null || value === undefined || value === '') return;
-    
+
     const num = parseFloat(value.toString().replace(/,/g, ''));
     if (isNaN(num)) return;
 
@@ -49,8 +49,11 @@ $(document).ready(function () {
 
 $(document).on('input', '.money-input', function () {
   let value = this.value.replace(/,/g, '');
-  if (value === '') return;
-  if (isNaN(value)) return;
+
+  if (value === '' || isNaN(value)) {
+    this.value = '';
+    return;
+  }
 
   this.value = parseFloat(value).toLocaleString();
 });
@@ -625,6 +628,64 @@ $(document).ready(function () {
     updateSummary();
   });
 });
+
+//edit : ยกเลิกการผูกรถ
+$(document).on('click', '#btnCancelCarOrder', function () {
+  const saleId = $(this).data('sale-id');
+  const carOrderId = $(this).data('carorder-id');
+
+  Swal.fire({
+    title: 'ยืนยันการยกเลิกการผูกรถ',
+    // text: 'รถคันนี้จะ',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'ยืนยัน',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33'
+  }).then(result => {
+    if (result.isConfirmed) {
+      cancelCarOrder(saleId, carOrderId);
+    }
+  });
+});
+
+function cancelCarOrder(saleId, carOrderId) {
+  $.ajax({
+    url: `/purchase-order/${saleId}/cancel-car-order`,
+    type: 'POST',
+    data: {
+      car_order_id: carOrderId
+    },
+    success: function (res) {
+      Swal.fire('สำเร็จ', res.message, 'success');
+
+      clearCarOrderUI();
+    },
+    error: function () {
+      Swal.fire('ผิดพลาด', 'ไม่สามารถยกเลิกการผูกรถได้', 'error');
+    }
+  });
+}
+
+function clearCarOrderUI() {
+  $('#CarOrderID').val('');
+
+  $('#carOrderCode').val('');
+  $('#carOrderModel').val('');
+  $('#carOrderSubModel').val('');
+  $('#carOrderVin').val('');
+  $('#carOrderOption').val('');
+  $('#carOrderColor').val('');
+  $('#carOrderYear').val('');
+  $('#carOrderCost').val('');
+  $('#carOrderSale').val('');
+
+  // ซ่อนปุ่ม
+  $('#btnCancelCarOrder').remove();
+
+  updateSummary();
+}
 
 //edit : modal remove accessory
 $(document).on('click', '.btnDeleteRow', function () {
@@ -1419,9 +1480,9 @@ function calculateTotalPaymentAtDelivery() {
   const downPayment = safeNumber('#DownPayment');
   const downDiscount = safeNumber('#DownPaymentDiscount');
   const giftTotal = safeNumber('#total_gift_used');
-  const ExtraTotal = safeNumber('#summaryExtraTotal');
-  const turnCost = safeNumber('#summaryTurn');
-  const cashDeposit = safeNumber('#summaryCashDeposit');
+  const ExtraTotal = safeNumber('#total_extra_used');
+  const turnCost = safeNumber('#cost_turn');
+  const cashDeposit = safeNumber('#CashDeposit');
 
   const total = downPayment + ExtraTotal - (downDiscount + turnCost + cashDeposit);
 
@@ -1463,9 +1524,9 @@ function calculatePaymentTotal() {
 //edit : ยอดคงเหลือ
 function calculateBalance() {
   const carSale = safeNumber('#carOrderSale');
-  const ExtraTotal = safeNumber('#summaryExtraTotal');
-  const turnCost = safeNumber('#summaryTurn');
-  const cashDeposit = safeNumber('#summaryCashDeposit');
+  const ExtraTotal = safeNumber('#total_extra_used');
+  const turnCost = safeNumber('#cost_turn');
+  const cashDeposit = safeNumber('#CashDeposit');
   const discount = safeNumber('#PaymentDiscount');
   const paymentTotal = calculatePaymentTotal();
 
@@ -1556,10 +1617,11 @@ function calculateCommissionSale() {
   const giftCom = safeNumber('#total_gift_com');
   const extraCom = safeNumber('#total_extra_com');
   const fiCom = safeNumber('#remaining_total_com');
+  const turnCom = safeNumber('#com_turn');
 
   balanceCam = Math.min(balanceCam, 2500);
 
-  const totalCommission = balanceCam + giftCom + extraCom + fiCom;
+  const totalCommission = balanceCam + giftCom + extraCom + fiCom + turnCom;
 
   const formatted = totalCommission.toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -1613,17 +1675,17 @@ $(document).on(
   calculateBalanceCampaign
 );
 
-$(document).on('input change', '#remaining_total_com', calculateCommissionSale);
+$(document).on('input change', '#remaining_total_com, #com_turn', calculateCommissionSale);
 
 $(document).ready(function () {
-  $('#carOrderSubModel, #cost_turn, #reservation_cost, #carOrderSale').on('input change', updateSummary);
-  $('#DownPayment, #DownPaymentDiscount, #summaryTurn, #total_gift_used, #summaryExtraTotal, #summaryCashDeposit').on(
+  $('#carOrderSubModel, #cost_turn, #CashDeposit, #carOrderSale').on('input change', updateSummary);
+  $('#DownPayment, #DownPaymentDiscount, #cost_turn, #total_gift_used, #total_extra_used, #CashDeposit').on(
     'input change',
     calculateTotalPaymentAtDelivery
   );
   $('#CarSalePriceFinal, #DownPayment').on('input change', calculateRemaining);
   $('#remaining_interest, #remaining_period').on('input change', calculateInstallment);
-  $('#carOrderSale, #summaryExtraTotal, #summaryTurn, #summaryCashDeposit, #PaymentDiscount').on(
+  $('#carOrderSale, #total_extra_used, #cost_turn, #CashDeposit, #PaymentDiscount').on(
     'input change',
     calculateBalance
   );
@@ -1896,9 +1958,15 @@ document.addEventListener('DOMContentLoaded', function () {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
-    const cashDeposit = document.getElementById('summaryCashDeposit')?.value || '-';
-    const summaryExtraTotal = document.getElementById('summaryExtraTotal')?.value || '-';
-    const turn = document.getElementById('summaryTurn')?.value || '-';
+    const cashDeposit = document.getElementById('CashDeposit')?.value || '-';
+    const summaryExtraTotal = Number(document.querySelector('#total_extra_used')?.value || 0).toLocaleString(
+      undefined,
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }
+    );
+    const turn = document.getElementById('cost_turn')?.value || '-';
 
     // รูปแบบการชำระเงิน
     const paymentType = document.querySelector('#payment_mode')?.value || '-';
@@ -2177,9 +2245,12 @@ document.addEventListener('DOMContentLoaded', function () {
         let price = 0;
         let com = 0;
 
-        if (match) {
-          price = parseFloat(match[1].replace(/,/g, '')) || 0;
-          com = parseFloat(match[2]?.replace(/,/g, '') || '0') || 0;
+        const parts = priceComText.split('(');
+
+        price = parseFloat(parts[0].replace(/,/g, '').trim()) || 0;
+
+        if (parts[1]) {
+          com = parseFloat(parts[1].replace(')', '').replace(/,/g, '').trim()) || 0;
         }
 
         totalGift += price;
@@ -2236,9 +2307,12 @@ document.addEventListener('DOMContentLoaded', function () {
         let price = 0;
         let com = 0;
 
-        if (match) {
-          price = parseFloat(match[1].replace(/,/g, '')) || 0;
-          com = parseFloat(match[2]?.replace(/,/g, '') || '0') || 0;
+        const parts = priceComText.split('(');
+
+        price = parseFloat(parts[0].replace(/,/g, '').trim()) || 0;
+
+        if (parts[1]) {
+          com = parseFloat(parts[1].replace(')', '').replace(/,/g, '').trim()) || 0;
         }
 
         totalExtra += price;

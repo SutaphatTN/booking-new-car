@@ -289,7 +289,22 @@
                   </div>
 
                   @if ($userRole !== 'sale')
-                  <h4 class="pt-2 pb-2 border-bottom">ข้อมูล Car Order</h4>
+                  <!-- <h4 class="pt-2 pb-2 border-bottom">ข้อมูล Car Order</h4> -->
+                  <div class="position-relative pt-2 pb-2 mb-6 border-bottom">
+                    <h4 class="mb-0 text-center">ข้อมูล Car Order</h4>
+
+                    @if(!empty($saleCar->CarOrderID))
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger btn-sm position-absolute top-50 end-0 translate-middle-y"
+                      id="btnCancelCarOrder"
+                      data-sale-id="{{ $saleCar->id }}"
+                      data-carorder-id="{{ $saleCar->CarOrderID }}">
+                      <i class="bx bx-unlink"></i> ยกเลิกการผูกรถ
+                    </button>
+                    @endif
+                  </div>
+
                   <div class="col-md-2 mt-2">
                     <label for="carOrderSearch" class="form-label">ค้นหา Car Order ID</label>
                     <div class="input-group">
@@ -848,21 +863,21 @@
                             value="{{ old('remaining_total_alp', $remainingPayment->total_alp ?? '') }}">
                         </div>
 
-                        <div class="col-md-2">
+                        <!-- <div class="col-md-2">
                           <label for="remaining_date_finance" class="form-label">วันที่ไฟแนนซ์จ่ายเงิน</label>
                           <input id="remaining_date_finance" type="date"
                             class="form-control"
                             name="remaining_date_finance" value="{{ old('remaining_date', $remainingPayment?->date ?? '') }}">
-                        </div>
+                        </div> -->
 
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                           <label for="remaining_po_number" class="form-label">PO-Number</label>
                           <input id="remaining_po_number" type="text"
                             class="form-control"
                             name="remaining_po_number" value="{{ old('remaining_po_number', $remainingPayment?->po_number ?? '') }}">
                         </div>
 
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                           <label for="remaining_po_date" class="form-label">วันที่ PO</label>
                           <input id="remaining_po_date" type="date"
                             class="form-control"

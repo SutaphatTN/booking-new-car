@@ -20,6 +20,7 @@ class CarOrder extends Model
     protected $fillable = [
         'model_id',
         'subModel_id',
+        'salecar_id',
         'vin_number',
         'j_number',
         'type',
@@ -68,25 +69,30 @@ class CarOrder extends Model
         return $this->belongsTo(TbSubcarmodel::class, 'subModel_id', 'id');
     }
 
+    public function saleCus()
+    {
+        return $this->belongsTo(Salecar::class, 'salecar_id', 'id');
+    }
+
     public function approvers()
     {
         return $this->belongsTo(User::class, 'approver', 'id');
     }
 
     public function salecars()
-	{
-		return $this->hasMany(Salecar::class, 'CarOrderID', 'id');
-	}
+    {
+        return $this->hasMany(Salecar::class, 'CarOrderID', 'id');
+    }
 
     public function historyCar()
-	{
-		return $this->hasMany(CarOrderHistory::class, 'CarOrderID', 'id');
-	}
+    {
+        return $this->hasMany(CarOrderHistory::class, 'CarOrderID', 'id');
+    }
 
     public function orderStatus()
-	{
-		return $this->belongsTo(TbOrderStatus::class, 'order_status', 'id');
-	}
+    {
+        return $this->belongsTo(TbOrderStatus::class, 'order_status', 'id');
+    }
 
     public function getFormatOrderDateAttribute()
     {
@@ -119,24 +125,24 @@ class CarOrder extends Model
     }
 
     public function getOrderInvoiceDateAttribute($value)
-	{
-		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
-	}
+    {
+        return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+    }
 
-	public function getCancelDateAttribute($value)
-	{
-		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
-	}
+    public function getCancelDateAttribute($value)
+    {
+        return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+    }
 
     public function getOrderStockDateAttribute($value)
-	{
-		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
-	}
+    {
+        return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+    }
 
-	public function getEstimatedStockDateAttribute($value)
-	{
-		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
-	}
+    public function getEstimatedStockDateAttribute($value)
+    {
+        return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+    }
 
     public function getFormatApproverDateAttribute()
     {
@@ -144,12 +150,12 @@ class CarOrder extends Model
     }
 
     public function getOrderDateAttribute($value)
-	{
-		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
-	}
+    {
+        return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+    }
 
     public function getApproverDateAttribute($value)
-	{
-		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
-	}
+    {
+        return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+    }
 }

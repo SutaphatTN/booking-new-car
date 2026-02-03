@@ -23,127 +23,13 @@
           @csrf
           @method('PUT')
 
+          <div class="searchPurchaseCus"></div>
           <div class="row">
-            <div class="col-md-2 mb-5">
-              <label for="type" class="form-label">ประเภท</label>
-              <select id="type" name="type" class="form-select" required>
-                <option value="">เลือก</option>
-                <option value="ลูกค้า" {{ $order->type == 'ลูกค้า' ? 'selected' : '' }}>ลูกค้า</option>
-                <option value="stock" {{ $order->type == 'stock' ? 'selected' : '' }}>stock</option>
-              </select>
-
-              @error('type')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-4 mb-5">
-              <label for="model_id" class="form-label">รุ่นรถหลัก</label>
-              <select id="model_id" name="model_id" class="form-select @error('model_id') is-invalid @enderror" required>
-                <option value="">-- เลือกรุ่นรถหลัก --</option>
-                @foreach ($model as $m)
-                <option value="{{ $m->id }}" {{ $order->model_id == $m->id ? 'selected' : '' }}>{{ $m->Name_TH }}</option>
-                @endforeach
-              </select>
-
-              @error('model_id')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-6 mb-5">
-              <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
-              <select id="subModel_id" name="subModel_id" class="form-select @error('subModel_id') is-invalid @enderror" required>
-                @foreach ($subModels as $s)
-                <option value="{{ $s->id }}" {{ $order->subModel_id == $s->id ? 'selected' : '' }}>
-                  {{ $s->detail }} - {{ $s->name }}
-                </option>
-                @endforeach
-              </select>
-
-              @error('subModel_id')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
             <div class="col-md-3 mb-5">
-              <label for="option" class="form-label">Option</label>
-              <input id="option" type="text"
-                class="form-control @error('option') is-invalid @enderror"
-                name="option" value="{{ $order->option }}" required>
-
-              @error('option')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-4 mb-5">
-              <label for="color" class="form-label">สี</label>
-              <input id="color" type="text"
-                class="form-control @error('color') is-invalid @enderror"
-                name="color" value="{{ $order->color }}" required>
-
-              @error('color')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-2 mb-5">
-              <label for="year" class="form-label">ปี</label>
-              <input id="year" type="text"
-                class="form-control @error('year') is-invalid @enderror"
-                name="year" value="{{ $order->year }}" required>
-
-              @error('year')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-3 mb-5">
-              <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
-              <input id="order_date" class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
-            </div>
-
-            <div class="col-md-4 mb-5">
-              <label for="car_DNP" class="form-label">ราคาทุน</label>
-              <input id="car_DNP" type="text"
-                class="form-control text-end money-input @error('car_DNP') is-invalid @enderror"
-                name="car_DNP"
-                value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}"
-                required>
-
-              @error('car_DNP')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <div class="col-md-4 mb-5">
-              <label for="car_MSRP" class="form-label">ราคาขาย</label>
-              <input id="car_MSRP" type="text"
-                class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror"
-                name="car_MSRP"
-                value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}"
-                required>
-
-              @error('car_MSRP')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
+              <label for="type" class="form-label">ประเภทการสั่งรถ</label>
+              <input id="type" type="text"
+                class="form-control"
+                value="{{ $order->type }}" disabled>
             </div>
 
             <div class="col-md-4 mb-5">
@@ -177,7 +63,121 @@
               @enderror
             </div>
 
+            <input type="hidden" name="salecar_id" id="salecar_id">
+            <div class="col-12">
+              <div id="fieldPurchase" class="row d-none">
+                <div class="col-md-12 mb-5">
+                  <label for="CusFullName" class="form-label">ชื่อ - นามสกุล ลูกค้า</label>
+                  <input id="CusFullName" type="text"
+                    class="form-control"
+                    value="{{ $order->saleCus->customer->prefix->Name_TH ?? '' }} {{ $order->saleCus->customer->FirstName ?? '' }} {{ $order->saleCus->customer->LastName ?? '' }}" disabled>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-5 mb-5">
+              <label for="model_id" class="form-label">รุ่นรถหลัก</label>
+              <input id="model_id" type="text"
+                class="form-control"
+                value="{{ $order->model->Name_TH }}" disabled>
+
+              <!-- <select id="model_id" name="model_id" class="form-select @error('model_id') is-invalid @enderror" required>
+                <option value="">-- เลือกรุ่นรถหลัก --</option>
+                @foreach ($model as $m)
+                <option value="{{ $m->id }}" {{ $order->model_id == $m->id ? 'selected' : '' }}>{{ $m->Name_TH }}</option>
+                @endforeach
+              </select> -->
+            </div>
+
             <div class="col-md-7 mb-5">
+              <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
+              <input id="subModel_id" type="text"
+                class="form-control"
+                value="{{ $order->subModel->detail }} - {{ $order->subModel->name }}" disabled>
+              <!-- <select id="subModel_id" name="subModel_id" class="form-select @error('subModel_id') is-invalid @enderror" required>
+                @foreach ($subModels as $s)
+                <option value="{{ $s->id }}" {{ $order->subModel_id == $s->id ? 'selected' : '' }}>
+                  {{ $s->detail }} - {{ $s->name }}
+                </option>
+                @endforeach
+              </select> -->
+            </div>
+
+            <div class="col-md-2 mb-5">
+              <label for="option" class="form-label">Option</label>
+              <input id="option" type="text"
+                class="form-control @error('option') is-invalid @enderror"
+                name="option" value="{{ $order->option }}" required>
+
+              @error('option')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="color" class="form-label">สี</label>
+              <input id="color" type="text"
+                class="form-control @error('color') is-invalid @enderror"
+                name="color" value="{{ $order->color }}" required>
+
+              @error('color')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="year" class="form-label">ปี</label>
+              <input id="year" type="text"
+                class="form-control @error('year') is-invalid @enderror"
+                name="year" value="{{ $order->year }}" required>
+
+              @error('year')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label for="car_DNP" class="form-label">ราคาทุน</label>
+              <input id="car_DNP" type="text"
+                class="form-control text-end money-input @error('car_DNP') is-invalid @enderror"
+                name="car_DNP"
+                value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}"
+                required>
+
+              @error('car_DNP')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label for="car_MSRP" class="form-label">ราคาขาย</label>
+              <input id="car_MSRP" type="text"
+                class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror"
+                name="car_MSRP"
+                value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}"
+                required>
+
+              @error('car_MSRP')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
+              <input id="order_date" class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
+            </div>
+
+            <div class="col-md-5 mb-5">
               <label for="approver" class="form-label">ผู้อนุมัติ</label>
               <select id="approver" name="approver" class="form-select" readonly>
                 @foreach ($approvers as $u)
@@ -193,7 +193,15 @@
             </div>
 
             <div class="col-md-12 mb-5">
-              <label for="note" class="form-label">หมายเหตุ</label>
+              <label for="note" class="form-label">
+                หมายเหตุ
+                <i class="bx bx-info-circle ms-1 text-primary"
+                  data-bs-toggle="tooltip"
+                  data-bs-trigger="click"
+                  data-bs-placement="right"
+                  title="กรณีสั่งให้ลูกค้า ให้ใส่ข้อมูล ชื่อลูกค้า / วันที่ PO (ถ้ามี) / จำนวนเงินจอง ทุกครั้ง">
+                </i>
+              </label>
               <textarea id="note"
                 class="form-control"
                 name="note"
@@ -212,3 +220,5 @@
     </div>
   </div>
 </div>
+
+@include('car-order.pending.search-sale-customer.search')

@@ -23,7 +23,7 @@
                 <th>No.</th>
                 <th>รหัส Car Order</th>
                 <th>วันที่สั่งซื้อ</th>
-                <th>ประเภทการสั่ง</th>
+                <th>ประเภทการสั่งรถ</th>
                 <th>รุ่นรถ</th>
                 <th width="150px">Action</th>
               </tr>

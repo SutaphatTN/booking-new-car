@@ -9,7 +9,7 @@
         <div class="row">
 
           <div class="col-md-2 mb-5">
-            <label for="type" class="form-label">ประเภท</label>
+            <label for="type" class="form-label">ประเภทการสั่งรถ</label>
             <input id="type" class="form-control" type="text" value="{{ $order->type }}" disabled />
           </div>
 
@@ -26,6 +26,17 @@
           <div class="col-md-5 mb-5">
             <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
             <input id="subModel_id" class="form-control" type="text" value="{{ $order->subModel->detail }} - {{ $order->subModel->name }}" disabled />
+          </div>
+
+          <div class="col-12">
+            <div id="fieldPurchase" class="row d-none">
+              <div class="col-md-12 mb-5">
+                <label for="CusFullName" class="form-label">ชื่อ - นามสกุล ลูกค้า</label>
+                <input id="CusFullName" type="text"
+                  class="form-control"
+                  value="{{ $order->saleCus->customer->prefix->Name_TH ?? '' }} {{ $order->saleCus->customer->FirstName ?? '' }} {{ $order->saleCus->customer->LastName ?? '' }}" disabled>
+              </div>
+            </div>
           </div>
 
           <div class="col-md-4 mb-5">
@@ -97,34 +108,34 @@
             <textarea id="note" class="form-control" name="note" disabled>{{ $order->note }}</textarea>
           </div>
 
-          <div class="col-md-2 mb-5">
+          <div class="col-md-3 mb-5">
             <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
             <input id="order_date" class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
           </div>
 
-          <div class="col-md-2 mb-5">
+          <div class="col-md-3 mb-5">
             <label for="approver_date" class="form-label">วันที่อนุมัติ</label>
             <input id="approver_date" class="form-control" type="text" value="{{ $order->format_approver_date }}" disabled />
           </div>
 
-          <div class="col-md-2 mb-5">
+          <div class="col-md-3 mb-5">
             <label for="system_date" class="form-label">วันที่สั่งซื้อในระบบ</label>
             <input id="system_date" class="form-control" type="text" value="{{ $order->format_system_date }}" disabled />
           </div>
 
-          <div class="col-md-2 mb-5">
-            <label for="order_invoice_date" class="form-label">วันที่ออกใบกำกับ</label>
+          <div class="col-md-3 mb-3">
+            <label for="estimated_stock_date" class="form-label">วันที่คาดว่าสินค้ามาถึง</label>
+            <input id="estimated_stock_date" class="form-control" type="text" value="{{ $order->format_estimated_stock_date }}" disabled />
+          </div>
+
+          <div class="col-md-3 mb-5">
+            <label for="order_invoice_date" class="form-label">วันที่ซื้อ (วันที่ออกใบกำกับ)</label>
             <input id="order_invoice_date" class="form-control" type="text" value="{{ $order->format_order_invoice_date }}" disabled />
           </div>
 
-          <div class="col-md-2 mb-5">
+          <div class="col-md-3 mb-5">
             <label for="order_stock_date" class="form-label">วันที่สต็อค</label>
             <input id="order_stock_date" class="form-control" type="text" value="{{ $order->format_order_stock_date }}" disabled />
-          </div>
-
-          <div class="col-md-2 mb-5">
-            <label for="estimated_stock_date" class="form-label">วันที่รับรถเข้าสต็อค</label>
-            <input id="estimated_stock_date" class="form-control" type="text" value="{{ $order->format_estimated_stock_date }}" disabled />
           </div>
 
         </div>
