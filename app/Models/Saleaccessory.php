@@ -8,6 +8,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Class Saleaccessory
@@ -26,6 +27,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Saleaccessory extends Model
 {
+	use SoftDeletes;
+	
 	protected $table = 'saleaccessory';
 
 	protected $casts = [
@@ -41,4 +44,6 @@ class Saleaccessory extends Model
 		'commission',
 		'type'
 	];
+
+	protected $dates = ['deleted_at'];
 }

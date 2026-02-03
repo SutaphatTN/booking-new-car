@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 class FinancesExtraCom extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'finances_extracom';
 
     protected $fillable = [
@@ -14,6 +17,8 @@ class FinancesExtraCom extends Model
         'model_id',
         'com'
     ];
+
+    protected $dates = ['deleted_at'];
 
     public function financeAll()
     {

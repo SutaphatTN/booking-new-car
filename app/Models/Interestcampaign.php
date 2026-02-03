@@ -8,6 +8,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Class Interestcampaign
@@ -27,6 +28,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Interestcampaign extends Model
 {
+	use SoftDeletes;
+
 	protected $table = 'interestcampaigns';
 
 	protected $casts = [
@@ -48,4 +51,6 @@ class Interestcampaign extends Model
 		'StartDate',
 		'EndDate'
 	];
+
+	protected $dates = ['deleted_at'];
 }

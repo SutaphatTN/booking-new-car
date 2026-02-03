@@ -8,6 +8,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Class Salecampaign
@@ -26,6 +27,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Salecampaign extends Model
 {
+	use SoftDeletes;
+
 	protected $table = 'salecampaigns';
 
 	protected $casts = [
@@ -47,6 +50,8 @@ class Salecampaign extends Model
 		'CashSupportFinal'
 	];
 
+	protected $dates = ['deleted_at'];
+	
 	public function campaign()
 	{
 		return $this->belongsTo(Campaign::class, 'CampaignID', 'id');

@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SaleCarPayment extends Model
 {
+    use SoftDeletes;
+    
     protected $table = 'salecars_payment';
 
     protected $fillable = [
@@ -15,5 +18,7 @@ class SaleCarPayment extends Model
         'date',
         'userZone',
     ];
+
+    protected $dates = ['deleted_at'];
 
 }

@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 class FinancesConfirm extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'finances_confirm';
 
     protected $fillable = [
@@ -23,6 +26,8 @@ class FinancesConfirm extends Model
         'actually_received',
         'date',
     ];
+
+    protected $dates = ['deleted_at'];
 
     public function getDateAttribute($value)
 	{

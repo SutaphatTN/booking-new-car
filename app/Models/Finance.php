@@ -8,6 +8,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Class Finance
@@ -22,6 +23,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Finance extends Model
 {
+	use SoftDeletes;
+	
 	protected $table = 'finances';
 
 	protected $fillable = [
@@ -30,6 +33,8 @@ class Finance extends Model
 		'max_year',
 		'Active'
 	];
+
+	protected $dates = ['deleted_at'];
 
 	public function getFormatUpdatedAttribute()
 	{

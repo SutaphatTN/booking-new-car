@@ -8,6 +8,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Class TurnCar
@@ -28,6 +29,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class TurnCar extends Model
 {
+	use SoftDeletes;
+	
 	protected $table = 'turn_car';
 
 	protected $casts = [
@@ -45,6 +48,8 @@ class TurnCar extends Model
 		'cost_turn',
 		'com_turn'
 	];
+
+	protected $dates = ['deleted_at'];
 
 	public function saleCar()
 	{
