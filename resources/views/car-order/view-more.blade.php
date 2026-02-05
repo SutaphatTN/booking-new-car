@@ -90,7 +90,7 @@
 
           <div class="col-md-3 mb-5">
             <label for="purchase_type" class="form-label">ประเภทการซื้อรถ</label>
-            <input id="purchase_type" class="form-control" type="text" value="{{ $order->purchase_type }}" disabled />
+            <input id="purchase_type" class="form-control" type="text" value="{{ $order->purchaseType->name }}" disabled />
           </div>
 
           <div class="col-md-3 mb-5">

@@ -9,6 +9,7 @@ use App\Models\CarOrderHistory;
 use App\Models\Salecar;
 use App\Models\TbCarmodel;
 use App\Models\TbOrderStatus;
+use App\Models\TbPurchaseType;
 use App\Models\TbSubcarmodel;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -23,15 +24,25 @@ class CarOrderController extends Controller
     public function index()
     {
         $order = CarOrder::all();
-        return view('car-order.view', compact('order'));
+        $model = TbCarmodel::all();
+        return view('car-order.view', compact('order', 'model'));
     }
 
-    public function listCarOrder()
+    public function listCarOrder(Request $request)
     {
-        $order = CarOrder::with('model', 'subModel')
+        $query = CarOrder::with('model', 'subModel')
             ->where('status', 'finished')
-            ->where('car_status', '!=', 'Delivered')
-            ->get();
+            ->where('car_status', '!=', 'Delivered');
+
+        if ($request->model_id) {
+            $query->where('model_id', $request->model_id);
+        }
+
+        if ($request->sub_model_id) {
+            $query->where('subModel_id', $request->sub_model_id);
+        }
+
+        $order = $query->get();
 
         $data = $order->map(function ($c, $index) {
             $modelOrder = $c->model ? $c->model->Name_TH : '';
@@ -73,8 +84,9 @@ class CarOrderController extends Controller
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
         $approvers = User::where('role', 'audit')->get();
+        $purchaseType = TbPurchaseType::all();
 
-        return view('car-order.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers'));
+        return view('car-order.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType'));
     }
 
     public function update(Request $request, $id)
@@ -257,8 +269,9 @@ class CarOrderController extends Controller
         $model = TbCarmodel::all();
         $orderStatus = TbOrderStatus::all();
         $approvers = User::where('role', 'audit')->get();
+        $purchaseType = TbPurchaseType::all();
 
-        return view('car-order.pending.input', compact('order', 'model', 'orderStatus', 'approvers'));
+        return view('car-order.pending.input', compact('order', 'model', 'orderStatus', 'approvers', 'purchaseType'));
     }
 
     function store(Request $request)
@@ -418,8 +431,9 @@ class CarOrderController extends Controller
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
         $approvers = User::where('role', 'audit')->get();
+        $purchaseType = TbPurchaseType::all();
 
-        return view('car-order.pending.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers'));
+        return view('car-order.pending.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType'));
     }
 
     public function updatePending(Request $request, $id)

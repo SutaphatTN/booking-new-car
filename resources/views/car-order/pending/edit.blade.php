@@ -51,9 +51,13 @@
               <label for="purchase_type" class="form-label">ประเภทการซื้อรถ</label>
               <select id="purchase_type" name="purchase_type" class="form-select" required>
                 <option value="">-- เลือกประเภท --</option>
-                <option value="TestDrive" {{ $order->purchase_type == 'TestDrive' ? 'selected' : '' }}>TestDrive</option>
-                <option value="Retail" {{ $order->purchase_type == 'Retail' ? 'selected' : '' }}>Retail</option>
-                <option value="ActivityCar" {{ $order->purchase_type == 'ActivityCar' ? 'selected' : '' }}>ActivityCar</option>
+                @foreach ($purchaseType as $t)
+                <option value="{{ $t->id }}"
+                  data-name="{{ $t->name }}"
+                  {{ $order->purchase_type == $t->id ? 'selected' : '' }}>
+                  {{ $t->name }}
+                </option>
+                @endforeach
               </select>
 
               @error('purchase_type')

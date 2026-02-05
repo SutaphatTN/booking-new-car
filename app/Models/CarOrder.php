@@ -94,6 +94,11 @@ class CarOrder extends Model
         return $this->belongsTo(TbOrderStatus::class, 'order_status', 'id');
     }
 
+    public function purchaseType()
+    {
+        return $this->belongsTo(TbPurchaseType::class, 'purchase_type', 'id');
+    }
+
     public function getFormatOrderDateAttribute()
     {
         return $this->order_date ? Carbon::parse($this->order_date)->format('d-m-Y') : null;

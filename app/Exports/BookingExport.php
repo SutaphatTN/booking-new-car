@@ -18,6 +18,9 @@ class BookingExport implements WithMultipleSheets
     {
         $sheets = [];
 
+        //Test Drive
+        $sheets[] = new TestDriveSheet();
+
         //สต็อกรวม
         $sheets[] = new BookingSummarySheet($this->request);
 
@@ -27,6 +30,9 @@ class BookingExport implements WithMultipleSheets
         foreach ($models as $model) {
             $sheets[] = new BookingByModelSheet($model);
         }
+
+        // Aging Report
+        $sheets[] = new AgingReportSheet();
 
         return $sheets;
     }

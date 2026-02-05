@@ -96,26 +96,30 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
     public function view(): View
     {
         $carOrders = CarOrder::query()
-            ->select('car_order.*')
-            ->leftJoin('tb_carmodels as m', 'm.id', '=', 'car_order.model_id')
-            ->leftJoin('tb_subcarmodels as sm', 'sm.id', '=', 'car_order.subModel_id')
             ->with([
                 'model',
                 'subModel',
+                'orderStatus',
                 'salecars.customer.prefix',
                 'salecars.saleUser',
                 'salecars.carOrderHistories',
-                'salecars.remainingPayment'
+                'salecars.remainingPayment',
+                'salecars.conStatus',
             ])
-            ->whereIn('car_order.status', ['approved', 'finished'])
-            ->whereNot('car_order.car_status', 'Delivered')
-            ->orderBy('m.Name_TH')
-            ->orderBy('sm.detail')
-            ->orderBy('sm.name')
-            ->orderBy('car_order.color')
-            ->orderBy('car_order.year')
-            ->orderBy('car_order.option')
-            ->get();
+            ->whereIn('status', ['approved', 'finished'])
+            ->whereNot('car_status', 'Delivered')
+            ->get()
+
+            ->sortBy([
+                fn($o) => $o->model->Name_TH ?? '',
+                fn($o) => $o->subModel->detail ?? '',
+                fn($o) => $o->subModel->name ?? '',
+                fn($o) => $o->color ?? '',
+                fn($o) => $o->year ?? '',
+                fn($o) => $o->option ?? '',
+            ])
+
+            ->values();
 
         $data = collect();
         $no = 1;
@@ -155,7 +159,7 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 'year'       => $order->year ?? '-',
                 'option'     => $order->option ?? '-',
                 'car_MSRP'     => $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-',
-                'purchase_type'     => $order->purchase_type ?? '-',
+                'purchase_type'     => $order->purchaseType->name ?? '-',
                 'order_status'     => $order->orderStatus->name ?? '-',
                 'system_date'     => $order->format_system_date ?? '-',
                 'estimated_stock_date'     => $order->format_estimated_stock_date ?? '-',

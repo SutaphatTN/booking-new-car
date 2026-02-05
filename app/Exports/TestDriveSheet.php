@@ -6,6 +6,7 @@ use App\Models\CarOrder;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -15,24 +16,16 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
+class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
-  protected $model;
-
-  public function __construct($model)
-  {
-    $this->model = $model;
-  }
-
   public function title(): string
   {
-    return $this->model->initials;
+    return 'Test Drive';
   }
 
   public function styles(Worksheet $sheet)
   {
     return [
-      //แถวบนสุด
       1 => [
         'font' => [],
         'fill' => [
@@ -80,25 +73,10 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
           $sheet->getRowDimension($row)->setRowHeight(20);
         }
 
-        $sheet->setAutoFilter("B1:{$highestCol}{$highestRow}");
-
         // freeze header
         $sheet->freezePane('A2');
 
-        $colorMap = [
-          'ELL' => 'ff0000',
-          'EL' => 'ffff00',
-          'QX' => 'e26b0a',
-          'SU-DC' => '92cddc',
-          'SU-MC' => '963634',
-          'SU-SC' => '7030a0',
-          'X-FORCE' => '0070c0',
-          'RN' => '00b050',
-        ];
-
-        $sheet->getTabColor()->setRGB(
-          $colorMap[$this->model->initials] ?? '808080'
-        );
+        $sheet->getTabColor()->setRGB('ffc000');
       },
     ];
   }
@@ -114,13 +92,13 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'salecars.saleUser',
         'salecars.conStatus',
       ])
-      ->where('model_id', $this->model->id)
       ->whereIn('status', ['approved', 'finished'])
-      ->whereIn('purchase_type', ['2'])
+      ->whereIn('car_order.purchase_type', ['1'])
       ->whereNot('car_status', 'Delivered')
       ->get()
 
       ->sortBy([
+        fn($o) => $o->model->Name_TH ?? '',
         fn($o) => $o->subModel->detail ?? '',
         fn($o) => $o->subModel->name ?? '',
         fn($o) => $o->color ?? '',
@@ -130,46 +108,41 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
 
       ->values();
 
-    $rows = collect();
+    $data = collect();
 
     foreach ($carOrders as $order) {
 
       $sale = $order->salecars
         ->first(fn($s) => !in_array($s->con_status, [5, 9]));
 
-      $rows->push([
-        'subModel'    => $order->subModel
+      $data->push([
+        'model'      => $order->model->Name_TH ?? '-',
+        'subModel'   => $order->subModel
           ? $order->subModel->detail . ' - ' . $order->subModel->name
           : '-',
-        'color'       => $order->color ?? '-',
-        'year'        => $order->year ?? '-',
-        'option'      => $order->option ?? '-',
+
+        'color'      => $order->color ?? '-',
+        'year'       => $order->year ?? '-',
+        'option'     => $order->option ?? '-',
         'car_MSRP'     => $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-',
-        // 'purchase_type' =>  $order->purchase_type ?? '-',
         'order_status'     => $order->orderStatus->name ?? '-',
         'vin_number' => $order->vin_number ?? '-',
         'j_number'   => $order->j_number ?? '-',
 
-        // 'order_stock_date'   => $order->format_order_stock_date ?? '-',
-        // 'aging_date' => $order->order_stock_date
-        //   ? Carbon::parse($order->order_stock_date)
-        //   ->startOfDay()
-        //   ->diffInDays(now()->startOfDay()) . ' วัน'
-        //   : '-',
-
-        'customer'    => $sale
+        'customer'   => $sale
           ? $sale->customer->prefix->Name_TH . ' '
           . $sale->customer->FirstName . ' '
           . $sale->customer->LastName
           : '',
-        'con_status'  => $sale?->conStatus?->name ?? '',
+        'status'      => $sale?->conStatus?->name ?? '',
         'sale'        => $sale?->saleUser?->name ?? '',
         'bookingDate' => $sale?->format_booking_date ?? '',
+
       ]);
     }
 
-    return view('purchase-order.report.booking-model', [
-      'rows' => $rows
+    return view('purchase-order.report.test-drive', [
+      'testD' => $data
     ]);
   }
 }

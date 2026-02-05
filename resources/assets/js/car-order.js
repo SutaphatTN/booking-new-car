@@ -13,7 +13,13 @@ $(document).ready(function () {
   }
 
   carOrderTable = $('.carOrderTable').DataTable({
-    ajax: '/car-order/list',
+    ajax: {
+      url: '/car-order/list',
+      data: function (d) {
+        d.model_id = $('#filter_model').val();
+        d.sub_model_id = $('#filter_subModel').val();
+      }
+    },
     columns: [
       { data: 'No' },
       { data: 'date' },
@@ -44,6 +50,37 @@ $(document).ready(function () {
       }
     }
   });
+});
+
+//search filter car
+$(document).on('change', '#filter_model', function () {
+  const modelId = $(this).val();
+  const $sub = $('#filter_subModel');
+
+  $sub.prop('disabled', true).empty().append('<option value="">-- ทั้งหมด --</option>');
+
+  if (!modelId) {
+    carOrderTable.ajax.reload();
+    return;
+  }
+
+  $.ajax({
+    url: '/api/car-order/sub-model',
+    data: { model_id: modelId },
+    success: function (data) {
+      data.forEach(sub => {
+        $sub.append(`<option value="${sub.id}">${sub.detail} - ${sub.name}</option>`);
+      });
+      $sub.prop('disabled', false);
+    }
+  });
+
+  carOrderTable.ajax.reload();
+});
+
+//ปุ่มค้นหา
+$(document).on('change', '#filter_subModel', function () {
+  carOrderTable.ajax.reload();
 });
 
 // blur focus viewCarOrder

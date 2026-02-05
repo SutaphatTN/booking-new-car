@@ -50,9 +50,9 @@
               <label for="purchase_type" class="form-label">ประเภทการซื้อรถ</label>
               <select id="purchase_type" name="purchase_type" class="form-select" required>
                 <option value="">-- เลือกประเภท --</option>
-                <option value="TestDrive">TestDrive</option>
-                <option value="Retail">Retail</option>
-                <option value="ActivityCar">ActivityCar</option>
+                @foreach ($purchaseType as $t)
+                <option value="{{ @$t->id }}">{{ @$t->name }}</option>
+                @endforeach
               </select>
 
               @error('purchase_type')

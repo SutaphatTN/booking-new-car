@@ -14,6 +14,30 @@
       <h4 class="card-header">รายการรถ</h4>
       <div class="card-body">
         <div class="table-responsive text-nowrap">
+
+          <div class="row mb-3 justify-content-end">
+            <div class="col-md-3">
+              <label>รุ่นรถหลัก</label>
+              <select id="filter_model" class="form-select">
+                <option value="">-- ทั้งหมด --</option>
+
+                @foreach($model as $model)
+                <option value="{{ $model->id }}">
+                  {{ $model->Name_TH }}
+                </option>
+                @endforeach
+
+              </select>
+            </div>
+
+            <div class="col-md-5">
+              <label>รุ่นรถย่อย</label>
+              <select id="filter_subModel" class="form-select" disabled>
+                <option value="">-- ทั้งหมด --</option>
+              </select>
+            </div>
+          </div>
+
           <table class="table table-bordered carOrderTable">
             <thead>
               <tr>
