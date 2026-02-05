@@ -162,11 +162,12 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 'vin_number' => $order->vin_number ?? '-',
                 'j_number'   => $order->j_number ?? '-',
 
-                'daysBind' => $sale && $sale->carOrderHistories?->changed_at
-                    ? Carbon::parse($sale->carOrderHistories->changed_at)
+                'order_stock_date'   => $order->format_order_stock_date ?? '-',
+                'aging_date' => $order->order_stock_date
+                    ? Carbon::parse($order->order_stock_date)
                     ->startOfDay()
                     ->diffInDays(now()->startOfDay()) . ' วัน'
-                    : '',
+                    : '-',
 
                 'customer'   => $sale
                     ? $sale->customer->prefix->Name_TH . ' '
@@ -176,6 +177,11 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 'sale'        => $sale?->saleUser?->name ?? '',
                 'bookingDate' => $sale?->format_booking_date ?? '',
                 'status'      => $sale?->conStatus?->name ?? '',
+                'daysBind' => $sale && $sale->carOrderHistories?->changed_at
+                    ? Carbon::parse($sale->carOrderHistories->changed_at)
+                    ->startOfDay()
+                    ->diffInDays(now()->startOfDay()) . ' วัน'
+                    : '',
                 'po_date'      => $sale?->format_po_date ?? '',
 
                 'allocation_status' => $allocationStatus,

@@ -10,6 +10,8 @@
       <th>สถานะรถ</th>
       <th>Vin - Number</th>
       <th>J - Number</th>
+      <th>วันที่ Stock</th>
+      <th>Aging (Stock Date)</th>
       <th>ชื่อผู้จอง</th>
       <th>สถานะสัญญา</th>
       <th>Sale</th>
@@ -28,6 +30,8 @@
       <td>{{ $r['order_status'] }}</td>
       <td>{{ $r['vin_number'] }}</td>
       <td>{{ $r['j_number'] }}</td>
+      <td>{{ $r['order_stock_date'] }}</td>
+      <td>{{ $r['aging_date'] }}</td>
       <td>{{ $r['customer'] }}</td>
       <td>{{ $r['con_status'] }}</td>
       <td>{{ $r['sale'] }}</td>
@@ -35,7 +39,7 @@
     </tr>
     @empty
     <tr>
-      <td colspan="13" align="center">ไม่มีข้อมูล</td>
+      <td colspan="15" align="center">ไม่มีข้อมูล</td>
     </tr>
     @endforelse
   </tbody>

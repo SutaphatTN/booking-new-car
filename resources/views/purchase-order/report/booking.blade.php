@@ -10,15 +10,17 @@
       <th>ราคาขาย</th>
       <th>ประเภทการซื้อรถ</th>
       <th>สถานะรถ</th>
-      <th>วันที่สั่งซื้อ</th>
+      <th>วันที่สั่งซื้อในระบบ</th>
       <th>วันที่คาดว่ารถจะมาถึง</th>
       <th>Vin - Number</th>
       <th>J - Number</th>
+      <th>วันที่ Stock</th>
       <th>Aging (Stock Date)</th>
       <th>ผู้จอง</th>
       <th>Sale</th>
       <th>วันจอง</th>
       <th>สถานะสัญญา</th>
+      <th>ระยะเวลาการจอง</th>
       <th>PO Date</th>
       <th>สถานะรถจัดสรร</th>
       <th>วันที่จัดสรร</th>
@@ -40,18 +42,20 @@
       <td>{{ $s['estimated_stock_date'] }}</td>
       <td>{{ $s['vin_number'] }}</td>
       <td>{{ $s['j_number'] }}</td>
-      <td>{{ $s['daysBind'] }}</td>
+      <td>{{ $s['order_stock_date'] }}</td>
+      <td>{{ $s['aging_date'] }}</td>
       <td>{{ $s['customer'] }}</td>
       <td>{{ $s['sale'] }}</td>
       <td>{{ $s['bookingDate'] }}</td>
       <td>{{ $s['status'] }}</td>
+      <td>{{ $s['daysBind'] }}</td>
       <td>{{ $s['po_date'] }}</td>
       <td>{{ $s['allocation_status'] }}</td>
       <td>{{ $s['allocation_date'] }}</td>
     </tr>
     @empty
     <tr>
-      <td colspan="21" align="center">ไม่มีข้อมูล</td>
+      <td colspan="23" align="center">ไม่มีข้อมูล</td>
     </tr>
     @endforelse
   </tbody>

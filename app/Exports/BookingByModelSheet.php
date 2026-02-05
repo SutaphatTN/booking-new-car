@@ -6,6 +6,7 @@ use App\Models\CarOrder;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -143,6 +144,13 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'order_status'     => $order->orderStatus->name ?? '-',
         'vin_number' => $order->vin_number ?? '-',
         'j_number'   => $order->j_number ?? '-',
+
+        'order_stock_date'   => $order->format_order_stock_date ?? '-',
+        'aging_date' => $order->order_stock_date
+          ? Carbon::parse($order->order_stock_date)
+          ->startOfDay()
+          ->diffInDays(now()->startOfDay()) . ' วัน'
+          : '-',
 
         'customer'    => $sale
           ? $sale->customer->prefix->Name_TH . ' '
