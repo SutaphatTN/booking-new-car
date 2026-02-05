@@ -4,39 +4,55 @@
       <th>No</th>
       <th>รุ่นรถหลัก</th>
       <th>รุ่นย่อย</th>
+      <th>สี</th>
+      <th>ปี</th>
+      <th>Option</th>
+      <th>ราคาขาย</th>
+      <th>ประเภทการซื้อรถ</th>
+      <th>สถานะรถ</th>
+      <th>วันที่สั่งซื้อ</th>
+      <th>วันที่คาดว่ารถจะมาถึง</th>
       <th>Vin - Number</th>
       <th>J - Number</th>
-      <th>Option</th>
-      <th>ปี</th>
-      <th>สี</th>
-      <th>จำนวนคัน</th>
+      <th>Aging (Stock Date)</th>
       <th>ผู้จอง</th>
       <th>Sale</th>
       <th>วันจอง</th>
-      <th>สถานะ</th>
-      <th>สถานะการผูกรถ</th>
-      <th>จำนวนวันที่ผูกรถ</th>
+      <th>สถานะสัญญา</th>
+      <th>PO Date</th>
+      <th>สถานะรถจัดสรร</th>
+      <th>วันที่จัดสรร</th>
     </tr>
   </thead>
   <tbody>
-    @foreach ($saleCar as $s)
+    @forelse ($saleCar as $s)
     <tr>
       <td>{{ $s['No'] }}</td>
       <td>{{ $s['model'] }}</td>
       <td>{{ $s['subModel'] }}</td>
+      <td>{{ $s['color'] }}</td>
+      <td>{{ $s['year'] }}</td>
+      <td>{{ $s['option'] }}</td>
+      <td>{{ $s['car_MSRP'] }}</td>
+      <td>{{ $s['purchase_type'] }}</td>
+      <td>{{ $s['order_status'] }}</td>
+      <td>{{ $s['system_date'] }}</td>
+      <td>{{ $s['estimated_stock_date'] }}</td>
       <td>{{ $s['vin_number'] }}</td>
       <td>{{ $s['j_number'] }}</td>
-      <td>{{ $s['option'] }}</td>
-      <td>{{ $s['year'] }}</td>
-      <td>{{ $s['color'] }}</td>
-      <td>{{ $s['count'] }}</td>
+      <td>{{ $s['daysBind'] }}</td>
       <td>{{ $s['customer'] }}</td>
       <td>{{ $s['sale'] }}</td>
       <td>{{ $s['bookingDate'] }}</td>
       <td>{{ $s['status'] }}</td>
-      <td>{{ $s['statusCar'] }}</td>
-      <td>{{ $s['daysBind'] }}</td>
+      <td>{{ $s['po_date'] }}</td>
+      <td>{{ $s['allocation_status'] }}</td>
+      <td>{{ $s['allocation_date'] }}</td>
     </tr>
-    @endforeach
+    @empty
+    <tr>
+      <td colspan="21" align="center">ไม่มีข้อมูล</td>
+    </tr>
+    @endforelse
   </tbody>
 </table>

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 class PaymentType extends Model
 {
@@ -49,5 +50,10 @@ class PaymentType extends Model
     public function financeInfo()
     {
         return $this->belongsTo(Finance::class, 'finance', 'id');
+    }
+
+    public function getFormatPoDateAttribute()
+    {
+        return $this->po_date ? Carbon::parse($this->po_date)->format('d-m-Y') : null;
     }
 }

@@ -1060,7 +1060,7 @@ class PurchaseOrderController extends Controller
             $saleCar = Salecar::findOrFail($id);
 
             if ($saleCar->CarOrderID) {
-                CarOrder::where('id', $saleCar->CarOrderID)->update(['car_status' => 'Null']);
+                CarOrder::where('id', $saleCar->CarOrderID)->update(['car_status' => 'Available']);
             }
 
             $saleCar->delete();

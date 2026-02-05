@@ -184,7 +184,7 @@
                   @endphp
                   <div class="col-md-5">
                     <fieldset class="mb-0">
-                      <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">ประเภทการจ่ายเงินวันออกรถ</legend>
+                      <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">ประเภทการจ่ายเงินจอง</legend>
 
                       <div class="form-check form-check-inline" style="margin-left: 15px">
                         <input class="form-check-input" type="radio" name="reservationCondition" id="cashReser" value="cash"
@@ -219,7 +219,7 @@
                         <input id="reservation_credit" type="text"
                           class="form-control"
                           name="reservation_credit"
-                          value="{{ old('reservation_credit', $reservationPayment->credit ?? '') }}" readonly>
+                          value="{{ old('reservation_credit', $reservationPayment->credit ?? '') }}">
                       </div>
 
                       <div class="col-md-2">
@@ -227,7 +227,7 @@
                         <input id="reservation_tax_credit" type="text"
                           class="form-control text-end money-input"
                           name="reservation_tax_credit"
-                          value="{{ old('reservation_tax_credit', $reservationPayment->tax_credit ?? '') }}" readonly>
+                          value="{{ old('reservation_tax_credit', $reservationPayment->tax_credit ?? '') }}">
                       </div>
                     </div>
                   </div>
@@ -239,7 +239,7 @@
                         <input id="reservation_check_bank" type="text"
                           class="form-control"
                           name="reservation_check_bank"
-                          value="{{ old('reservation_check_bank', $reservationPayment->check_bank ?? '') }}" readonly>
+                          value="{{ old('reservation_check_bank', $reservationPayment->check_bank ?? '') }}">
                       </div>
 
                       <div class="col-md-4">
@@ -247,7 +247,7 @@
                         <input id="reservation_check_branch" type="text"
                           class="form-control"
                           name="reservation_check_branch"
-                          value="{{ old('reservation_check_branch', $reservationPayment->check_branch ?? '') }}" readonly>
+                          value="{{ old('reservation_check_branch', $reservationPayment->check_branch ?? '') }}">
                       </div>
 
                       <div class="col-md-3">
@@ -255,7 +255,7 @@
                         <input id="reservation_check_no" type="text"
                           class="form-control"
                           name="reservation_check_no"
-                          value="{{ old('reservation_check_no', $reservationPayment->check_no ?? '') }}" readonly>
+                          value="{{ old('reservation_check_no', $reservationPayment->check_no ?? '') }}">
                       </div>
                     </div>
                   </div>
@@ -267,7 +267,7 @@
                         <input id="reservation_transfer_bank" type="text"
                           class="form-control"
                           name="reservation_transfer_bank"
-                          value="{{ old('reservation_transfer_bank', $reservationPayment->transfer_bank ?? '') }}" readonly>
+                          value="{{ old('reservation_transfer_bank', $reservationPayment->transfer_bank ?? '') }}">
                       </div>
 
                       <div class="col-md-4">
@@ -275,7 +275,7 @@
                         <input id="reservation_transfer_branch" type="text"
                           class="form-control"
                           name="reservation_transfer_branch"
-                          value="{{ old('reservation_transfer_branch', $reservationPayment->transfer_branch ?? '') }}" readonly>
+                          value="{{ old('reservation_transfer_branch', $reservationPayment->transfer_branch ?? '') }}">
                       </div>
 
                       <div class="col-md-3">
@@ -283,7 +283,7 @@
                         <input id="reservation_transfer_no" type="text"
                           class="form-control"
                           name="reservation_transfer_no"
-                          value="{{ old('reservation_transfer_no', $reservationPayment->transfer_no ?? '') }}" readonly>
+                          value="{{ old('reservation_transfer_no', $reservationPayment->transfer_no ?? '') }}">
                       </div>
                     </div>
                   </div>

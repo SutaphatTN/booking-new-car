@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 class CarOrderController extends Controller
@@ -104,10 +105,32 @@ class CarOrderController extends Controller
         }
     }
 
+    //ยกเลิกการผูกรถ
+    private function unbindCarOrder(CarOrder $order)
+    {
+        if (!$order->salecar_id) {
+            return;
+        }
+
+        $saleCar = SaleCar::find($order->salecar_id);
+
+        if ($saleCar) {
+            $saleCar->update([
+                'CarOrderID' => null
+            ]);
+        }
+
+        $order->update([
+            'car_status' => 'Available'
+        ]);
+    }
+
+
     function destroy($id)
     {
         try {
             $order = CarOrder::findOrFail($id);
+            $this->unbindCarOrder($order);
             $order->delete();
 
             return response()->json([
@@ -256,10 +279,11 @@ class CarOrderController extends Controller
 
             $OrderYear = Carbon::parse($request->order_date)->format('Y');
             $OrderMonth = Carbon::parse($request->order_date)->format('m');
+            $OrderDate = Carbon::parse($request->order_date)->format('d');
 
             $model = TbCarmodel::findOrFail($request->model_id);
 
-            $prefix = "{$newOrderId}-{$OrderYear}-{$OrderMonth}-{$model->id}-";
+            $prefix = "{$OrderYear}-{$OrderMonth}-{$OrderDate}-{$model->id}-";
 
             $lastCode = CarOrder::where('order_code', 'like', $prefix . '%')
                 ->orderBy('order_code', 'desc')
@@ -309,6 +333,41 @@ class CarOrderController extends Controller
             ];
 
             $order = CarOrder::create($data);
+
+            DB::transaction(function () use ($request, $order) {
+
+                if ($request->filled('salecar_id')) {
+
+                    $saleCar = SaleCar::findOrFail($request->salecar_id);
+
+                    $oldCarOrderID = $saleCar->CarOrderID;
+                    $newCarOrderID = $order->id;
+
+                    // update Salecar
+                    $saleCar->update([
+                        'CarOrderID' => $newCarOrderID,
+                    ]);
+
+                    // history
+                    CarOrderHistory::create([
+                        'SaleID'      => $saleCar->id,
+                        'CarOrderID'  => $newCarOrderID,
+                        'BookingDate' => $request->order_date,
+                        'changed_at' => now(),
+                    ]);
+
+                    // คืนสถานะ order เก่า (ถ้ามี)
+                    if ($oldCarOrderID) {
+                        CarOrder::where('id', $oldCarOrderID)
+                            ->update(['car_status' => 'Available']);
+                    }
+
+                    // ตั้งสถานะ order ใหม่
+                    $order->update([
+                        'car_status' => 'Booked'
+                    ]);
+                }
+            });
 
             $approverUser = User::find($request->approver);
 
@@ -395,6 +454,7 @@ class CarOrderController extends Controller
     {
         try {
             $order = CarOrder::findOrFail($id);
+            $this->unbindCarOrder($order);
             $order->delete();
 
             return response()->json([
@@ -465,6 +525,11 @@ class CarOrderController extends Controller
             if ($request->action_status === 'approve') {
                 $order->status = CarOrder::STATUS_APPROVED;
             } elseif ($request->action_status === 'reject') {
+
+                if ($order->salecar_id) {
+                    $this->unbindCarOrder($order);
+                }
+
                 $order->status = CarOrder::STATUS_REJECTED;
                 $order->reason = $request->reason;
             }
@@ -554,6 +619,7 @@ class CarOrderController extends Controller
 
             $order->update([
                 'system_date' => $request->system_date,
+                'order_status' => 2,
                 'status' => CarOrder::STATUS_FINISHED
             ]);
 

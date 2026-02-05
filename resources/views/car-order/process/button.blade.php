@@ -6,7 +6,7 @@
   <i class="bx bx-check-circle"></i>
 </button>
 
-<button class="btn btn-icon btn-danger btnRejectProcess" data-id="{{ $p->id }}" title="ไม่อนุมัติ">
+<button class="btn btn-icon btn-danger btnRejectProcess" data-id="{{ $p->id }}"  data-has-salecar="{{ $p->salecar_id ? 1 : 0 }}" title="ไม่อนุมัติ">
   <i class="bx bx-x-circle"></i>
 </button>
 

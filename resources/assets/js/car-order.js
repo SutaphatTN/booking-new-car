@@ -955,10 +955,8 @@ $(document).on('click', '.btnApproveProcess', function () {
   });
 });
 
-// ไม่อนุมัติ
-$(document).on('click', '.btnRejectProcess', function () {
-  const id = $(this).data('id');
-
+// ถามเมื่อไม่อนุมัติ
+function askRejectReason(id) {
   Swal.fire({
     title: 'ระบุเหตุผลที่ไม่อนุมัติ',
     input: 'textarea',
@@ -980,6 +978,31 @@ $(document).on('click', '.btnRejectProcess', function () {
       submitProcessDirect(id, 'reject', result.value);
     }
   });
+}
+
+// ไม่อนุมัติ
+$(document).on('click', '.btnRejectProcess', function () {
+  const id = $(this).data('id');
+  const hasSaleCar = $(this).data('has-salecar') == 1;
+
+  if (hasSaleCar) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'รถคันนี้ผูกกับลูกค้าอยู่',
+      text: 'หากไม่อนุมัติ ระบบจะยกเลิกการผูกรถ ต้องการดำเนินการต่อหรือไม่?',
+      showCancelButton: true,
+      confirmButtonText: 'ใช่ ดำเนินการต่อ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#6c5ffc',
+      cancelButtonColor: '#d33'
+    }).then(result => {
+      if (result.isConfirmed) {
+        askRejectReason(id);
+      }
+    });
+  } else {
+    askRejectReason(id);
+  }
 });
 
 function submitProcessDirect(id, action, reason) {
