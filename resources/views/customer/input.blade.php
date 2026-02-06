@@ -49,7 +49,7 @@
               <label for="LastName" class="form-label">นามสกุล</label>
               <input id="LastName" type="text"
                 class="form-control @error('LastName') is-invalid @enderror"
-                name="LastName" value="" required>
+                name="LastName" value="">
 
               @error('LastName')
               <span class="invalid-feedback" role="alert">

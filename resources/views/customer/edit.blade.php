@@ -37,7 +37,7 @@
               <label for="LastName" class="form-label">นามสกุล</label>
               <input id="LastName" type="text"
                 class="form-control"
-                name="LastName" value="{{ $customers->LastName }}" required>
+                name="LastName" value="{{ $customers->LastName }}">
             </div>
 
             <div class="col-md-4 mb-5">
