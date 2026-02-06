@@ -267,13 +267,13 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
           res.forEach(c => {
             $tableBody.append(`
               <tr>
-                <td>${c.PrefixNameTH ?? '-'} ${c.FirstName} ${c.LastName}</td>
+                <td>${c.PrefixNameTH ?? ''} ${c.FirstName ?? ''} ${c.LastName ?? ''}</td>
                 <td>${c.formatted_mobile ?? '-'}</td>
                 <td>${c.formatted_id_number ?? '-'}</td>
                 <td>
                   <button class="btn btn-sm btn-primary btnSelectCustomer"
                     data-id="${c.id}"
-                    data-name="${c.PrefixNameTH ?? '-'} ${c.FirstName} ${c.LastName}"
+                    data-name="${c.PrefixNameTH ?? ''} ${c.FirstName ?? ''} ${c.LastName ?? ''}"
                     data-mobile="${c.formatted_mobile ?? ''}"
                     data-idnumber="${c.formatted_id_number ?? ''}"
                     data-target="${searchInput}">

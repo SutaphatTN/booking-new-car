@@ -96,7 +96,7 @@ class CustomerController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
@@ -208,7 +208,7 @@ class CustomerController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
@@ -253,8 +253,7 @@ class CustomerController extends Controller
     {
         $keyword = $request->input('keyword');
 
-        $customers = Customer::select('customers.*', 'tb_prefixname.Name_TH as PrefixNameTH')
-            ->leftJoin('tb_prefixname', 'customers.PrefixName', '=', 'tb_prefixname.id')
+        $customers = Customer::with('prefix')
             ->where(function ($query) use ($keyword) {
                 $query->where('FirstName', 'like', "%{$keyword}%")
                     ->orWhere('LastName', 'like', "%{$keyword}%")
@@ -262,7 +261,11 @@ class CustomerController extends Controller
                     ->orWhere('IDNumber', 'like', "%{$keyword}%");
             })
             ->limit(10)
-            ->get();
+            ->get()
+            ->map(function ($c) {
+                $c->PrefixNameTH = $c->prefix->Name_TH ?? null;
+                return $c;
+            });
 
         return response()->json($customers);
     }

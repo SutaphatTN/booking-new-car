@@ -18,7 +18,7 @@
 
             <div class="col-md-2 mb-5">
               <label for="PrefixName" class="form-label">คำนำหน้า</label>
-              <select id="PrefixName" name="PrefixName" class="form-select" required>
+              <select id="PrefixName" name="PrefixName" class="form-select">
                 <option value="">-- เลือกคำนำหน้า --</option>
                 @foreach ($perfixName as $item)
                 <option value="{{ @$item->id }}">{{ @$item->Name_TH }}</option>
