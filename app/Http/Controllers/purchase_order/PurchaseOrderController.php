@@ -840,7 +840,7 @@ class PurchaseOrderController extends Controller
 
                     case 'credit':
                         $data['credit'] = $request->remaining_credit ?? null;
-                        $data['tax_credit'] = $request->remaining_tax_credit ?? null;
+                        $data['tax_credit'] = $request->remaining_tax_credit ? str_replace(',', '', $request->remaining_tax_credit) : null;
                         break;
 
                     case 'finance':
