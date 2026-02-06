@@ -14,8 +14,10 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
+class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
   protected $model;
 
@@ -28,6 +30,14 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
   {
     return $this->model->initials;
   }
+
+   public function columnFormats(): array
+    {
+        return [
+            'E' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
+            'D' => NumberFormat::FORMAT_TEXT,
+        ];
+    }
 
   public function styles(Worksheet $sheet)
   {
@@ -144,7 +154,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'color'       => $order->color ?? '-',
         'year'        => $order->year ?? '-',
         'option'      => $order->option ?? '-',
-        'car_MSRP'     => $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-',
+        'car_MSRP' => $order->car_MSRP ?? null,
         // 'purchase_type' =>  $order->purchase_type ?? '-',
         'order_status'     => $order->orderStatus->name ?? '-',
         'vin_number' => $order->vin_number ?? '-',

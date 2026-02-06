@@ -15,8 +15,10 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
+class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
     protected $request;
 
@@ -28,6 +30,14 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
     public function title(): string
     {
         return 'สต็อกรถรวม';
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'G' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
+            'F' => NumberFormat::FORMAT_TEXT,
+        ];
     }
 
     public function styles(Worksheet $sheet)
@@ -158,7 +168,7 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 'color'      => $order->color ?? '-',
                 'year'       => $order->year ?? '-',
                 'option'     => $order->option ?? '-',
-                'car_MSRP'     => $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-',
+                'car_MSRP' => $order->car_MSRP ?? null,
                 'purchase_type'     => $order->purchaseType->name ?? '-',
                 'order_status'     => $order->orderStatus->name ?? '-',
                 'system_date'     => $order->format_system_date ?? '-',

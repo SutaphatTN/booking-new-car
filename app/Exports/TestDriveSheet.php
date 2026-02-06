@@ -6,7 +6,6 @@ use App\Models\CarOrder;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -15,13 +14,23 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
+class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
   public function title(): string
   {
     return 'Test Drive';
   }
+
+  public function columnFormats(): array
+    {
+        return [
+            'F' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
+            'E' => NumberFormat::FORMAT_TEXT,
+        ];
+    }
 
   public function styles(Worksheet $sheet)
   {
@@ -124,7 +133,7 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
         'color'      => $order->color ?? '-',
         'year'       => $order->year ?? '-',
         'option'     => $order->option ?? '-',
-        'car_MSRP'     => $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-',
+        'car_MSRP' => $order->car_MSRP ?? null,
         'order_status'     => $order->orderStatus->name ?? '-',
         'vin_number' => $order->vin_number ?? '-',
         'j_number'   => $order->j_number ?? '-',
