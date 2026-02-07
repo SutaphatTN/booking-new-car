@@ -51,26 +51,26 @@
               <label for="NewCardDate" class="form-label">วันออกบัตรประชาชน</label>
               <input id="NewCardDate" type="date"
                 class="form-control"
-                name="NewCardDate" value="{{ $customers->NewCardDate }}" required>
+                name="NewCardDate" value="{{ $customers->NewCardDate }}" >
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="ExpireCard" class="form-label">วันที่บัตรประชาชนหมดอายุ</label>
               <input id="ExpireCard" type="date"
                 class="form-control"
-                name="ExpireCard" value="{{ $customers->ExpireCard }}" required>
+                name="ExpireCard" value="{{ $customers->ExpireCard }}" >
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="Birthday" class="form-label">วัน/เดือน/ปีเกิด</label>
               <input id="Birthday" type="date"
                 class="form-control"
-                name="Birthday" max="{{ date('Y-m-d') }}" value="{{ $customers->Birthday }}" required>
+                name="Birthday" max="{{ date('Y-m-d') }}" value="{{ $customers->Birthday }}" >
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="Gender" class="form-label">เพศ</label>
-              <select id="Gender" name="Gender" class="form-select" required>
+              <select id="Gender" name="Gender" class="form-select" >
                 <option value="">-- เลือกเพศ --</option>
                 <option value="Female" {{ $customers->Gender == 'Female' ? 'selected' : '' }}>หญิง</option>
                 <option value="Male" {{ $customers->Gender == 'Male' ? 'selected' : '' }}>ชาย</option>
@@ -81,12 +81,12 @@
               <label for="Nationality" class="form-label">สัญชาติ</label>
               <input id="Nationality" type="text"
                 class="form-control"
-                name="Nationality" value="{{ $customers->Nationality }}" required>
+                name="Nationality" value="{{ $customers->Nationality }}" >
             </div>
 
             <div class="col-md-4 mb-5">
               <label for="religion" class="form-label">ศาสนา</label>
-              <select id="religion" name="religion" class="form-select" required>
+              <select id="religion" name="religion" class="form-select" >
                 <option value="">-- เลือกศาสนา --</option>
                 <option value="buddhist" {{ $customers->religion == 'buddhist' ? 'selected' : '' }}>พุทธ</option>
                 <option value="islam" {{ $customers->religion == 'islam' ? 'selected' : '' }}>อิสลาม</option>

@@ -75,7 +75,7 @@
               <label for="NewCardDate" class="form-label">วันออกบัตรประชาชน</label>
               <input id="NewCardDate" type="date"
                 class="form-control @error('NewCardDate') is-invalid @enderror"
-                name="NewCardDate" value="" required>
+                name="NewCardDate" value="" >
 
               @error('NewCardDate')
               <span class="invalid-feedback" role="alert">
@@ -88,7 +88,7 @@
               <label for="ExpireCard" class="form-label">วันที่บัตรประชาชนหมดอายุ</label>
               <input id="ExpireCard" type="date"
                 class="form-control @error('ExpireCard') is-invalid @enderror"
-                name="ExpireCard" value="" required>
+                name="ExpireCard" value="" >
 
               @error('ExpireCard')
               <span class="invalid-feedback" role="alert">
@@ -101,7 +101,7 @@
               <label for="Birthday" class="form-label">วัน/เดือน/ปีเกิด</label>
               <input id="Birthday" type="date"
                 class="form-control @error('Birthday') is-invalid @enderror"
-                name="Birthday" max="{{ date('Y-m-d') }}" value="" required>
+                name="Birthday" max="{{ date('Y-m-d') }}" value="" >
 
               @error('Birthday')
               <span class="invalid-feedback" role="alert">
@@ -112,7 +112,7 @@
 
             <div class="col-md-4 mb-5">
               <label for="Gender" class="form-label">เพศ</label>
-              <select id="Gender" name="Gender" class="form-select" required>
+              <select id="Gender" name="Gender" class="form-select" >
                 <option value="">-- เลือกเพศ --</option>
                 <option value="Female">หญิง</option>
                 <option value="Male">ชาย</option>
@@ -129,7 +129,7 @@
               <label for="Nationality" class="form-label">สัญชาติ</label>
               <input id="Nationality" type="text"
                 class="form-control @error('Nationality') is-invalid @enderror"
-                name="Nationality" value="" required>
+                name="Nationality" value="" >
 
               @error('Nationality')
               <span class="invalid-feedback" role="alert">
@@ -140,7 +140,7 @@
 
             <div class="col-md-4 mb-5">
               <label for="religion" class="form-label">ศาสนา</label>
-              <select id="religion" name="religion" class="form-select" required>
+              <select id="religion" name="religion" class="form-select" >
                 <option value="">-- เลือกศาสนา --</option>
                 <option value="buddhist">พุทธ</option>
                 <option value="islam">อิสลาม</option>
