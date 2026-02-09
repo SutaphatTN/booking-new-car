@@ -270,7 +270,7 @@ class FinanceController extends Controller
 
             return [
                 'No' => $index + 1,
-                'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
+                'FullName' => $c->prefix->Name_TH ?? '' . ' ' . $c->FirstName ?? '' . ' ' . $c->LastName ?? '',
                 'model' => $model,
                 'subModel' => $subModelFull,
                 'po' => $number,

@@ -15,7 +15,7 @@
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ชื่อลูกค้า :</strong>
-              <span>{{ $saleCar->customer?->prefix->Name_TH ?? '' }} {{ $saleCar->customer?->FirstName }} {{ $saleCar->customer?->LastName }}</span>
+              <span>{{ $saleCar->customer?->prefix->Name_TH ?? '' }} {{ $saleCar->customer?->FirstName ?? '' }} {{ $saleCar->customer?->LastName ?? '' }}</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ที่อยู่ปัจจุบัน :</strong>

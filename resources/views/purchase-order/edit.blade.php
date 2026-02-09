@@ -87,7 +87,7 @@
                   <div class="col-md-3">
                     <label for="CusFullName" class="form-label">ชื่อ - นามสกุล</label>
                     <input type="text" id="CusFullName" class="form-control"
-                      value="{{ $saleCar->customer->prefix->Name_TH ?? '' }} {{ $saleCar->customer->FirstName }} {{ $saleCar->customer->LastName }}"
+                      value="{{ $saleCar->customer->prefix->Name_TH ?? '' }} {{ $saleCar->customer->FirstName ?? '' }} {{ $saleCar->customer->LastName ?? '' }}"
                       readonly>
                   </div>
                   <div class="col-md-2">

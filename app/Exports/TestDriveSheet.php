@@ -139,9 +139,9 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
         'j_number'   => $order->j_number ?? '-',
 
         'customer'   => $sale
-          ? $sale->customer->prefix->Name_TH . ' '
-          . $sale->customer->FirstName . ' '
-          . $sale->customer->LastName
+          ? $sale->customer->prefix->Name_TH ?? '' . ' '
+          . $sale->customer->FirstName ?? '' . ' '
+          . $sale->customer->LastName ?? ''
           : '',
         'status'      => $sale?->conStatus?->name ?? '',
         'sale'        => $sale?->saleUser?->name ?? '',

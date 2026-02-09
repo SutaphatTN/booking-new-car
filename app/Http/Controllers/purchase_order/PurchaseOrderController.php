@@ -149,7 +149,7 @@ class PurchaseOrderController extends Controller
 
             return [
                 'No' => $index + 1,
-                'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
+                'FullName' => $c->prefix->Name_TH ?? '' . ' ' . $c->FirstName ?? '' . ' ' . $c->LastName ?? '',
                 'model' => $model,
                 'subSale' => $subModelData,
                 'order' => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
@@ -1154,7 +1154,7 @@ class PurchaseOrderController extends Controller
 
             return [
                 'No' => $index + 1,
-                'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
+                'FullName' => $c->prefix->Name_TH ?? '' . ' ' . $c->FirstName ?? '' . ' ' . $c->LastName ?? '',
                 'model' => $model,
                 'subModel' => $subModel,
                 'po' => $number,
@@ -1212,7 +1212,7 @@ class PurchaseOrderController extends Controller
                 'subModel' => $s->subModel?->name ?? '-',
                 'option' => $s->option,
                 'order' => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
-                'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
+                'FullName' => $c->prefix->Name_TH ?? '' . ' ' . $c->FirstName ?? '' . ' ' . $c->LastName ?? '',
                 'sale' => $s->saleUser->name ?? '-',
                 'date' => $s->BookingDate,
                 'status' => $s->conStatus?->name ?? '',
@@ -1244,7 +1244,7 @@ class PurchaseOrderController extends Controller
 
             return [
                 'No' => $index + 1,
-                'FullName' => $c->prefix->Name_TH . ' ' . $c->FirstName . ' ' . $c->LastName,
+                'FullName' => $c->prefix->Name_TH ?? '' . ' ' . $c->FirstName ?? '' . ' ' . $c->LastName ?? '',
                 'code' => $s->carOrder->order_code ?? '-',
                 'Action' => view('purchase-order.history.button', compact('s'))->render()
             ];

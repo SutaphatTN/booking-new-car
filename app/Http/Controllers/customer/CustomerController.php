@@ -113,7 +113,7 @@ class CustomerController extends Controller
 
             return [
                 'No' => $index + 1,
-                'FullName' => $prefixText . ' ' . $c->FirstName . ' ' . $c->LastName,
+                'FullName' => $prefixText ?? '' . ' ' . $c->FirstName ?? '' . ' ' . $c->LastName ?? '',
                 'IDNumber' => $c->formatted_id_number,
                 'Mobilephone' => $c->formatted_mobile,
                 'Action' => view('customer.button', compact('c'))->render()

@@ -13,7 +13,7 @@
               name="customer_fullname"
               class="form-control"
               type="text"
-              value="{{ $customers->prefix->Name_TH }} {{ $customers->FirstName }} {{ $customers->LastName }}"
+              value="{{ $customers->prefix->Name_TH ?? '' }} {{ $customers->FirstName ?? '' }} {{ $customers->LastName ?? '' }}"
               disabled>
           </div>
 
