@@ -138,12 +138,21 @@
         </span>
       </span>
 
+      @if($saleCar->remainingPayment?->type === 'finance')
       <span class="label">
         ราคาเงินสด (รวมบวกหัว) :
         <span style="font-weight: normal;">
           {{ number_format($saleCar->CarSalePriceFinal ?? 0, 2) }}
         </span>
       </span>
+      @else
+      <span class="label">
+        ราคาเงินสด :
+        <span style="font-weight: normal;">
+          {{ number_format($saleCar->CarSalePriceFinal ?? 0, 2) }}
+        </span>
+      </span>
+      @endif
 
       <span class="label">
         เงินจอง :

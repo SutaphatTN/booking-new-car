@@ -141,6 +141,7 @@ class Salecar extends Model
 		'option',
 		'payment_mode',
 		'subModel_id',
+		'price_sub',
 		'SaleConsultantID',
 		'FinanceID',
 		'TurnCarID',

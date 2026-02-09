@@ -220,6 +220,9 @@ class PurchaseOrderController extends Controller
                 'SaleID' => $request->SaleID,
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
+                'price_sub' => $request->filled('price_sub')
+                    ? str_replace(',', '', $request->price_sub)
+                    : null,
                 'CashDeposit' => $request->filled('CashDeposit')
                     ? str_replace(',', '', $request->CashDeposit)
                     : null,
@@ -521,6 +524,9 @@ class PurchaseOrderController extends Controller
                 'SaleID' => $request->SaleID,
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
+                'price_sub' => $request->filled('price_sub')
+                    ? str_replace(',', '', $request->price_sub)
+                    : null,
                 'Color' => $request->Color,
                 'Year' => $request->Year,
                 'CarOrderID' => $request->CarOrderID,

@@ -57,7 +57,7 @@
 
             <input type="hidden" id="CusID" name="CusID">
 
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label for="customerName" class="form-label">ชื่อ - นามสกุล</label>
               <input id="customerName" type="text" class="form-control" readonly>
             </div>
@@ -65,9 +65,17 @@
               <label for="customerID" class="form-label">เลขบัตรประชาชน</label>
               <input id="customerID" type="text" class="form-control" readonly>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label for="customerPhone" class="form-label">เบอร์โทรศัพท์</label>
               <input id="customerPhone" type="text" class="form-control" readonly>
+            </div>
+            <div class="col-md-2">
+              <label for="payment_mode" class="form-label">ประเภทการซื้อ</label>
+              <select id="payment_mode" name="payment_mode" class="form-select" required>
+                <option value="">-- เลือกประเภท --</option>
+                <option value="finance" {{ old('payment_mode') == 'finance' ? 'selected' : '' }}>ผ่อน</option>
+                <option value="non-finance" {{ old('payment_mode') == 'non-finance' ? 'selected' : '' }}>เงินสด</option>
+              </select>
             </div>
             <div class="col-md-2">
               <fieldset class="mb-0">
@@ -157,12 +165,10 @@
             </div>
 
             <div class="col-md-2">
-              <label for="payment_mode" class="form-label">ประเภทการซื้อ</label>
-              <select id="payment_mode" name="payment_mode" class="form-select" required>
-                <option value="">-- เลือกประเภท --</option>
-                <option value="finance" {{ old('payment_mode') == 'finance' ? 'selected' : '' }}>ผ่อน</option>
-                <option value="non-finance" {{ old('payment_mode') == 'non-finance' ? 'selected' : '' }}>เงินสด</option>
-              </select>
+              <label class="form-label" for="price_sub">ราคารถ</label>
+              <input id="price_sub" type="text"
+                class="form-control text-end money-input"
+                name="price_sub" required>
             </div>
 
             <div class="col-md-2">

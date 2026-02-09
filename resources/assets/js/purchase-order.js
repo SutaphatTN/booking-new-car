@@ -1453,7 +1453,7 @@ function calculateDownPayment() {
 
 // INIT (DOM READY)
 document.addEventListener('DOMContentLoaded', function () {
-  salePriceInput = document.getElementById('carOrderSale');
+  salePriceInput = document.getElementById('price_sub');
   markupInput = document.getElementById('MarkupPrice');
   markup90Input = document.querySelector('input[name="Markup90"]');
   finalPriceInput = document.getElementById('CarSalePriceFinal');
@@ -1523,7 +1523,7 @@ function calculatePaymentTotal() {
 
 //edit : ยอดคงเหลือ
 function calculateBalance() {
-  const carSale = safeNumber('#carOrderSale');
+  const carSale = safeNumber('#price_sub');
   const ExtraTotal = safeNumber('#total_extra_used');
   const turnCost = safeNumber('#cost_turn');
   const cashDeposit = safeNumber('#CashDeposit');
@@ -1547,7 +1547,7 @@ function updateSummary() {
   const model = $('#carOrderSubModel').val() || '';
   const turn = safeNumber('#cost_turn');
   const reserve = safeNumber('#CashDeposit');
-  const sale = safeNumber('#carOrderSale');
+  const sale = safeNumber('#price_sub');
 
   $('#summarySubCarModel').val(model);
   $('#summaryTurn').val(turn.toLocaleString(undefined, { minimumFractionDigits: 2 }));
@@ -1678,14 +1678,14 @@ $(document).on(
 $(document).on('input change', '#remaining_total_com, #com_turn', calculateCommissionSale);
 
 $(document).ready(function () {
-  $('#carOrderSubModel, #cost_turn, #CashDeposit, #carOrderSale').on('input change', updateSummary);
+  $('#carOrderSubModel, #cost_turn, #CashDeposit, #price_sub').on('input change', updateSummary);
   $('#DownPayment, #DownPaymentDiscount, #cost_turn, #total_gift_used, #total_extra_used, #CashDeposit').on(
     'input change',
     calculateTotalPaymentAtDelivery
   );
   $('#CarSalePriceFinal, #DownPayment').on('input change', calculateRemaining);
   $('#remaining_interest, #remaining_period').on('input change', calculateInstallment);
-  $('#carOrderSale, #total_extra_used, #cost_turn, #CashDeposit, #PaymentDiscount').on(
+  $('#price_sub, #total_extra_used, #cost_turn, #CashDeposit, #PaymentDiscount').on(
     'input change',
     calculateBalance
   );
@@ -1952,7 +1952,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const option = document.getElementById('option')?.value || '-';
     const color = document.getElementById('Color')?.value || '-';
 
-    const carSale = document.getElementById('carOrderSale')?.value || '-';
+    const carSale = document.getElementById('price_sub')?.value || '-';
     const extraTotal = document.querySelector('#total-price-extra')?.textContent || '-';
     const giftTotal = Number(document.querySelector('#total_gift_used')?.value || 0).toLocaleString(undefined, {
       minimumFractionDigits: 2,
@@ -2158,7 +2158,7 @@ document.addEventListener('DOMContentLoaded', function () {
           </div>
       `;
     } else {
-      price = document.getElementById('summaryCarSale')?.value || '-';
+      price = document.getElementById('price_sub')?.value || '-';
 
       discountHtml = `
           <div class="d-flex justify-content-between mb-2">
