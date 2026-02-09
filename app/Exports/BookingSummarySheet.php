@@ -185,10 +185,12 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                     ->diffInDays(now()->startOfDay()) . ' วัน'
                     : '-',
 
-                'customer'   => $sale
-                    ? $sale->customer->prefix->Name_TH . ' '
-                    . $sale->customer->FirstName . ' '
-                    . $sale->customer->LastName
+                'customer' => $sale?->customer
+                    ? trim(
+                        ($sale->customer->prefix->Name_TH ?? '') . ' ' .
+                            ($sale->customer->FirstName ?? '') . ' ' .
+                            ($sale->customer->LastName ?? '')
+                    )
                     : '',
                 'sale'        => $sale?->saleUser?->name ?? '',
                 'bookingDate' => $sale?->format_booking_date ?? '',

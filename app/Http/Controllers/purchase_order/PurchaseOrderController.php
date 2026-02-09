@@ -150,7 +150,11 @@ class PurchaseOrderController extends Controller
 
             return [
                 'No' => $index + 1,
-                'FullName' => $prefixText . ' ' . $c->FirstName . ' ' . $c->LastName,
+                'FullName' => implode(' ', array_filter([
+                    $prefixText ?? null,
+                    $c->FirstName ?? null,
+                    $c->LastName ?? null,
+                ])),
                 'model' => $model,
                 'subSale' => $subModelData,
                 'order' => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',

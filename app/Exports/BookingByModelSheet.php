@@ -31,13 +31,13 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
     return $this->model->initials;
   }
 
-   public function columnFormats(): array
-    {
-        return [
-            'E' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
-            'D' => NumberFormat::FORMAT_TEXT,
-        ];
-    }
+  public function columnFormats(): array
+  {
+    return [
+      'E' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
+      'D' => NumberFormat::FORMAT_TEXT,
+    ];
+  }
 
   public function styles(Worksheet $sheet)
   {
@@ -167,10 +167,12 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         //   ->diffInDays(now()->startOfDay()) . ' วัน'
         //   : '-',
 
-        'customer'    => $sale
-          ? $sale->customer->prefix->Name_TH . ' '
-          . $sale->customer->FirstName . ' '
-          . $sale->customer->LastName
+        'customer' => $sale?->customer
+          ? trim(
+            ($sale->customer->prefix->Name_TH ?? '') . ' ' .
+              ($sale->customer->FirstName ?? '') . ' ' .
+              ($sale->customer->LastName ?? '')
+          )
           : '',
         'con_status'  => $sale?->conStatus?->name ?? '',
         'sale'        => $sale?->saleUser?->name ?? '',

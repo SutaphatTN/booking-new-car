@@ -255,6 +255,7 @@ class FinanceController extends Controller
             $subDetail = $s->subModel ? $s->subModel->detail : '';
             $subModelFull = "{$subModel}<br>{$subDetail}";
             $number = $s->remainingPayment?->po_number ?? '-';
+            $prefixText = $c->prefix ? $c->prefix->Name_TH : '';
 
             $daysRemaining = '-';
             if ($s->BookingDate) {
@@ -270,7 +271,11 @@ class FinanceController extends Controller
 
             return [
                 'No' => $index + 1,
-                'FullName' => $c->prefix->Name_TH ?? '' . ' ' . $c->FirstName ?? '' . ' ' . $c->LastName ?? '',
+                'FullName' => implode(' ', array_filter([
+                    $prefixText ?? null,
+                    $c->FirstName ?? null,
+                    $c->LastName ?? null,
+                ])),
                 'model' => $model,
                 'subModel' => $subModelFull,
                 'po' => $number,

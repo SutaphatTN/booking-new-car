@@ -25,12 +25,12 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
   }
 
   public function columnFormats(): array
-    {
-        return [
-            'F' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
-            'E' => NumberFormat::FORMAT_TEXT,
-        ];
-    }
+  {
+    return [
+      'F' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
+      'E' => NumberFormat::FORMAT_TEXT,
+    ];
+  }
 
   public function styles(Worksheet $sheet)
   {
@@ -138,10 +138,12 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
         'vin_number' => $order->vin_number ?? '-',
         'j_number'   => $order->j_number ?? '-',
 
-        'customer'   => $sale
-          ? $sale->customer->prefix->Name_TH . ' '
-          . $sale->customer->FirstName . ' '
-          . $sale->customer->LastName
+        'customer' => $sale?->customer
+          ? trim(
+            ($sale->customer->prefix->Name_TH ?? '') . ' ' .
+              ($sale->customer->FirstName ?? '') . ' ' .
+              ($sale->customer->LastName ?? '')
+          )
           : '',
         'status'      => $sale?->conStatus?->name ?? '',
         'sale'        => $sale?->saleUser?->name ?? '',
