@@ -117,6 +117,7 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 'salecars.conStatus',
             ])
             ->whereIn('status', ['approved', 'finished'])
+            ->whereIn('purchase_type', ['2'])
             ->whereNot('car_status', 'Delivered')
             ->get()
 
@@ -129,6 +130,7 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 fn($o) => $o->option ?? '',
             ])
 
+            //reset index
             ->values();
 
         $data = collect();
