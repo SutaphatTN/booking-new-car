@@ -168,9 +168,9 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         //   : '-',
 
         'customer'    => $sale
-          ? $sale->customer->prefix->Name_TH . ' '
-          . $sale->customer->FirstName . ' '
-          . $sale->customer->LastName
+          ? $sale->customer->prefix->Name_TH ?? '' . ' '
+          . $sale->customer->FirstName ?? '' . ' '
+          . $sale->customer->LastName ?? ''
           : '',
         'con_status'  => $sale?->conStatus?->name ?? '',
         'sale'        => $sale?->saleUser?->name ?? '',
