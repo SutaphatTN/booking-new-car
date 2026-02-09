@@ -186,9 +186,9 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                     : '-',
 
                 'customer'   => $sale
-                    ? $sale->customer->prefix->Name_TH ?? '' . ' '
-                    . $sale->customer->FirstName ?? '' . ' '
-                    . $sale->customer->LastName ?? ''
+                    ? $sale->customer->prefix->Name_TH . ' '
+                    . $sale->customer->FirstName . ' '
+                    . $sale->customer->LastName
                     : '',
                 'sale'        => $sale?->saleUser?->name ?? '',
                 'bookingDate' => $sale?->format_booking_date ?? '',
