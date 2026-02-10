@@ -683,7 +683,7 @@
                     <div class="col-md-3">
                       <label for="price_sub" class="form-label">ราคารถ</label>
                       <input id="price_sub" name="price_sub" class="form-control text-end money-input" 
-                      value="{{ $saleCar->price_sub ?? '-' }}" required>
+                      value="{{ $saleCar->price_sub ?? '' }}" required>
                     </div>
 
                     <input type="hidden" id="remaining_date"
