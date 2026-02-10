@@ -255,7 +255,7 @@ class FinanceController extends Controller
             $subDetail = $s->subModel ? $s->subModel->detail : '';
             $subModelFull = "{$subModel}<br>{$subDetail}";
             $number = $s->remainingPayment?->po_number ?? '-';
-            $prefixText = $c->prefix ? $c->prefix->Name_TH : '';
+            $prefixText = $s->customer?->prefix?->Name_TH;
 
             $daysRemaining = '-';
             if ($s->BookingDate) {

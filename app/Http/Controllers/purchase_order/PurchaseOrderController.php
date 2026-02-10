@@ -120,7 +120,7 @@ class PurchaseOrderController extends Controller
 
         $data = $saleCar->map(function ($s, $index) {
             $c = $s->customer;
-            $prefixText = $c->prefix ? $c->prefix->Name_TH : '';
+            $prefixText = $s->customer?->prefix?->Name_TH;
             $model = $s->model ? $s->model->Name_TH : '';
             $subModelSale = $s->subModel ? $s->subModel->name : '';
             $subDetail = $s->subModel ? $s->subModel->detail : '';
