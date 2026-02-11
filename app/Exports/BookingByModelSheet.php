@@ -3,9 +3,11 @@
 namespace App\Exports;
 
 use App\Models\CarOrder;
+use App\Models\Salecar;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -122,6 +124,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'orderStatus',
         'salecars.customer.prefix',
         'salecars.saleUser',
+        'salecars.carOrderHistories',
         'salecars.conStatus',
       ])
       ->where('model_id', $this->model->id)
@@ -129,7 +132,6 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
       ->whereIn('purchase_type', ['2'])
       ->whereNot('car_status', 'Delivered')
       ->get()
-
       ->sortBy([
         fn($o) => $o->subModel->detail ?? '',
         fn($o) => $o->subModel->name ?? '',
@@ -137,7 +139,6 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         fn($o) => $o->year ?? '',
         fn($o) => $o->option ?? '',
       ])
-
       ->values();
 
     $rows = collect();
@@ -160,6 +161,13 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'vin_number' => $order->vin_number ?? '-',
         'j_number'   => $order->j_number ?? '-',
 
+        'order_stock_date'   => $order->format_order_stock_date ?? '-',
+        'aging_date' => $order->order_stock_date
+          ? Carbon::parse($order->order_stock_date)
+          ->startOfDay()
+          ->diffInDays(now()->startOfDay()) . ' วัน'
+          : '-',
+
         // 'order_stock_date'   => $order->format_order_stock_date ?? '-',
         // 'aging_date' => $order->order_stock_date
         //   ? Carbon::parse($order->order_stock_date)
@@ -177,6 +185,49 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'con_status'  => $sale?->conStatus?->name ?? '',
         'sale'        => $sale?->saleUser?->name ?? '',
         'bookingDate' => $sale?->format_booking_date ?? '',
+      ]);
+    }
+
+    //ยังไม่ผูกรถ
+    $orphanSales = Salecar::with([
+      'customer.prefix',
+      'saleUser',
+      'conStatus'
+    ])
+      ->whereNull('CarOrderID')
+      ->where('model_id', $this->model->id)
+      ->whereNotIn('con_status', [5, 9])
+      ->get();
+
+    foreach ($orphanSales as $sale) {
+
+      $rows->push([
+        'subModel'    => $sale->subModel
+          ? $sale->subModel->detail . ' - ' . $sale->subModel->name
+          : 'ยังไม่ผูกรถ',
+
+        'color'       => $sale->Color ?? '-',
+        'year'        => $sale->Year ?? '-',
+        'option'      => $sale->option ?? '-',
+
+        'car_MSRP'    => $sale->price_sub ?? '-',
+        'order_status' => '',
+        'vin_number'  => '',
+        'j_number'    => '',
+        'order_stock_date'   => '',
+        'aging_date'  => '',
+
+        'customer' => $sale->customer
+          ? trim(
+            ($sale->customer->prefix->Name_TH ?? '') . ' ' .
+              ($sale->customer->FirstName ?? '') . ' ' .
+              ($sale->customer->LastName ?? '')
+          )
+          : '',
+
+        'con_status'  => $sale->conStatus?->name ?? '',
+        'sale'        => $sale->saleUser?->name ?? '',
+        'bookingDate' => $sale->format_booking_date ?? '',
       ]);
     }
 

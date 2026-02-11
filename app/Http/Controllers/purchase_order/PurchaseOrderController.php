@@ -1252,10 +1252,15 @@ class PurchaseOrderController extends Controller
 
         $data = $saleCar->map(function ($s, $index) {
             $c = $s->customer;
+            $prefixText = $s->customer?->prefix?->Name_TH;
 
             return [
                 'No' => $index + 1,
-                'FullName' => $c->prefix->Name_TH ?? '' . ' ' . $c->FirstName ?? '' . ' ' . $c->LastName ?? '',
+                'FullName' => implode(' ', array_filter([
+                    $prefixText ?? null,
+                    $c->FirstName ?? null,
+                    $c->LastName ?? null,
+                ])),
                 'code' => $s->carOrder->order_code ?? '-',
                 'Action' => view('purchase-order.history.button', compact('s'))->render()
             ];
