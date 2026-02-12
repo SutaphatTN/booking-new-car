@@ -1,5 +1,6 @@
 @php
 use Illuminate\Support\Facades\Route;
+$userRole = auth()->user()->role ?? null;
 @endphp
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
 
@@ -21,6 +22,21 @@ use Illuminate\Support\Facades\Route;
 
     <ul class="menu-inner py-1">
         @foreach ($menuData[0]->menu as $menu)
+
+        @php
+        $hideForSale = [
+        'model',
+        'car-order',
+        'accessory',
+        'campaign',
+        'finance',
+        'report',
+        ];
+        @endphp
+
+        @if($userRole == 'sale' && in_array($menu->slug, $hideForSale))
+        @continue
+        @endif
 
         {{-- adding active and open class if child is active --}}
 

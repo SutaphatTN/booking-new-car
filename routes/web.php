@@ -151,6 +151,10 @@ Route::group(['middleware' => 'auth'], function () {
     //all resource
     Route::resource('customer', CustomerController::class);
     Route::resource('purchase-order', PurchaseOrderController::class);
+});
+
+Route::middleware(['auth', 'notsale'])->group(function () {
+
     Route::resource('accessory', AccessoryController::class);
     Route::resource('campaign', CampaignController::class);
     Route::resource('user', UserController::class);
@@ -175,6 +179,7 @@ Route::group(['middleware' => 'auth'], function () {
         'destroy' => 'model.sub-model.destroy',
     ]);
 });
+
 
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
