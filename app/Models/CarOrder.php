@@ -46,6 +46,7 @@ class CarOrder extends Model
         'approved_by',
         'approver_date',
         'note',
+        'cam_testdrive',
         'status',
         'reason',
         'userZone',

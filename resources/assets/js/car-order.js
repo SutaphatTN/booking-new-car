@@ -398,6 +398,25 @@ document.addEventListener('shown.bs.modal', function (event) {
   });
 });
 
+//input : when select purchase type to Test Drive
+function toggleTestDriveFields($modal) {
+  const selected = $modal.find('#purchase_type').val();
+
+  $modal.find('#fieldTestDrive').addClass('d-none');
+
+  if (selected == '1') {
+    $modal.find('#fieldTestDrive').removeClass('d-none');
+  }
+}
+
+$(document).on('change', '#purchase_type', function () {
+  const $modal = $(this).closest('.modal');
+  toggleTestDriveFields($modal);
+
+  $('#modelError').addClass('d-none').text('');
+
+});
+
 //input : hide select customer
 function togglePurchaseFields($modal) {
   const selected = $modal.find('#type').val();
@@ -424,6 +443,7 @@ $(document).on('change', '#type', function () {
 $(document).on('shown.bs.modal', '.modal', function () {
   const $modal = $(this);
   togglePurchaseFields($modal);
+  toggleTestDriveFields($modal);
 });
 
 function loadModelByCustomer(saleCarId) {

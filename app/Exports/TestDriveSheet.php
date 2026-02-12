@@ -134,9 +134,10 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
         'year'       => $order->year ?? '-',
         'option'     => $order->option ?? '-',
         'car_MSRP' => $order->car_MSRP ?? null,
+        'cam_testdrive' => $order->cam_testdrive ?? '-',
         'order_status'     => $order->orderStatus->name ?? '-',
         'vin_number' => $order->vin_number ?? '-',
-        'j_number'   => $order->j_number ?? '-',
+        // 'j_number'   => $order->j_number ?? '-',
 
         'customer' => $sale?->customer
           ? trim(

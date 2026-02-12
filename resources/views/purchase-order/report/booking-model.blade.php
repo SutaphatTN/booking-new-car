@@ -15,6 +15,10 @@
       <th>สถานะสัญญา</th>
       <th>Sale</th>
       <th>วันที่จอง</th>
+      <th>สถานะสัญญา</th>
+      <th>ระยะเวลาการจอง</th>
+      <th>สถานะรถจัดสรร</th>
+      <th>วันที่จัดสรร</th>
     </tr>
   </thead>
   <tbody>
@@ -34,6 +38,10 @@
       <td>{{ $r['con_status'] }}</td>
       <td>{{ $r['sale'] }}</td>
       <td>{{ $r['bookingDate'] }}</td>
+      <td>{{ $r['status'] }}</td>
+      <td>{{ $r['daysBind'] }}</td>
+      <td>{{ $r['allocation_status'] }}</td>
+      <td>{{ $r['allocation_date'] }}</td>
     </tr>
     @empty
     <tr>

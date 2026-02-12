@@ -148,6 +148,35 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
       $sale = $order->salecars
         ->first(fn($s) => !in_array($s->con_status, [5, 9]));
 
+      //เงื่อนไข การจัดสรรรถใหม่
+      $changedAt = $sale?->carOrderHistories?->changed_at
+        ? Carbon::parse($sale->carOrderHistories->changed_at)->startOfDay()
+        : null;
+
+      $daysBindInt = $changedAt
+        ? $changedAt->diffInDays(now()->startOfDay())
+        : null;
+
+      $allocationStatus = '';
+      $allocationDate   = '';
+
+      $conStatus = $sale?->con_status;
+
+      if (!in_array($conStatus, [3, 4])) {
+
+        if ($changedAt) {
+
+          $daysBindInt = $changedAt->diffInDays(now()->startOfDay());
+          $allocationDate = $changedAt->copy()->addDays(7)->format('d-m-Y');
+
+          if ($daysBindInt > 7) {
+            $allocationStatus = 'จัดสรรใหม่';
+          } else {
+            $allocationStatus = 'อยู่ในเงื่อนไขการจอง';
+          }
+        }
+      }
+
       $rows->push([
         'subModel'    => $order->subModel
           ? $order->subModel->detail . ' - ' . $order->subModel->name
@@ -185,6 +214,14 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'con_status'  => $sale?->conStatus?->name ?? '',
         'sale'        => $sale?->saleUser?->name ?? '',
         'bookingDate' => $sale?->format_booking_date ?? '',
+        'status'      => $sale?->conStatus?->name ?? '',
+        'daysBind' => $sale && $sale->carOrderHistories?->changed_at
+          ? Carbon::parse($sale->carOrderHistories->changed_at)
+          ->startOfDay()
+          ->diffInDays(now()->startOfDay()) . ' วัน'
+          : '',
+        'allocation_status' => $allocationStatus,
+        'allocation_date' => $allocationDate,
       ]);
     }
 
@@ -211,7 +248,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'option'      => $sale->option ?? '-',
 
         'car_MSRP'    => $sale->price_sub ?? '-',
-        'order_status' => '',
+        'order_status' => 'ยังไม่มีรถ',
         'vin_number'  => '',
         'j_number'    => '',
         'order_stock_date'   => '',
@@ -228,6 +265,14 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'con_status'  => $sale->conStatus?->name ?? '',
         'sale'        => $sale->saleUser?->name ?? '',
         'bookingDate' => $sale->format_booking_date ?? '',
+        'status'      => $sale?->conStatus?->name ?? '',
+        'daysBind' => $sale && $sale->carOrderHistories?->changed_at
+          ? Carbon::parse($sale->carOrderHistories->changed_at)
+          ->startOfDay()
+          ->diffInDays(now()->startOfDay()) . ' วัน'
+          : '',
+        'allocation_status' => '',
+        'allocation_date' => '',
       ]);
     }
 

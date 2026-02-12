@@ -204,6 +204,17 @@
               @enderror
             </div>
 
+            <div class="col-12">
+              <div id="fieldTestDrive" class="row d-none">
+                <div class="col-md-12 mb-5">
+                  <label for="cam_testdrive" class="form-label">แคมเปญทดลองขับ</label>
+                  <input id="cam_testdrive" name="cam_testdrive" type="text"
+                    class="form-control"
+                    value="{{ $order->cam_testdrive ?? '' }}">
+                </div>
+              </div>
+            </div>
+
             <div class="col-md-12 mb-5">
               <label for="note" class="form-label">หมายเหตุ</label>
               <textarea id="note"

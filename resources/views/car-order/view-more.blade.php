@@ -103,6 +103,18 @@
             <input id="order_status" class="form-control" type="text" value="{{ $order->orderStatus->name }}" disabled />
           </div>
 
+          @if($order->purchase_type == 1)
+          <div class="col-12">
+            <div class="col-md-12 mb-5">
+              <label class="form-label">แคมเปญทดลองขับ</label>
+              <input type="text"
+                class="form-control"
+                value="{{ $order->cam_testdrive ?? '' }}" disabled>
+            </div>
+          </div>
+          @endif
+
+
           <div class="col-md-12 mb-5">
             <label for="note" class="form-label">หมายเหตุ</label>
             <textarea id="note" class="form-control" name="note" disabled>{{ $order->note }}</textarea>

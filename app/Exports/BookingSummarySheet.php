@@ -150,13 +150,24 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 ? $changedAt->diffInDays(now()->startOfDay())
                 : null;
 
-            $allocationDate = $changedAt
-                ? $changedAt->copy()->addDays(7)->format('d-m-Y')
-                : '';
-
             $allocationStatus = '';
-            if ($daysBindInt !== null && $daysBindInt > 7) {
-                $allocationStatus = 'จัดสรรใหม่';
+            $allocationDate   = '';
+
+            $conStatus = $sale?->con_status;
+
+            if (!in_array($conStatus, [3, 4])) {
+
+                if ($changedAt) {
+
+                    $daysBindInt = $changedAt->diffInDays(now()->startOfDay());
+                    $allocationDate = $changedAt->copy()->addDays(7)->format('d-m-Y');
+
+                    if ($daysBindInt > 7) {
+                        $allocationStatus = 'จัดสรรใหม่';
+                    } else {
+                        $allocationStatus = 'อยู่ในเงื่อนไขการจอง';
+                    }
+                }
             }
 
             $data->push([
