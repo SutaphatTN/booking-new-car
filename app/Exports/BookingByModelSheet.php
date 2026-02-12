@@ -215,11 +215,16 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'sale'        => $sale?->saleUser?->name ?? '',
         'bookingDate' => $sale?->format_booking_date ?? '',
         'status'      => $sale?->conStatus?->name ?? '',
-        'daysBind' => $sale && $sale->carOrderHistories?->changed_at
+        'daysBind' => (
+          $sale
+          && !in_array($sale->con_status, [3, 4])
+          && $sale->carOrderHistories?->changed_at
+        )
           ? Carbon::parse($sale->carOrderHistories->changed_at)
           ->startOfDay()
           ->diffInDays(now()->startOfDay()) . ' วัน'
           : '',
+
         'allocation_status' => $allocationStatus,
         'allocation_date' => $allocationDate,
       ]);
