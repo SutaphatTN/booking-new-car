@@ -33,19 +33,14 @@
           "slug": "purchase-order.create"
         },
         {
-          "url": "purchase-order/viewFN",
-          "name": "ยอดเฟิร์มเงิน FN",
-          "slug": "purchase-order.viewFN"
-        },
-        {
           "url": "purchase-order/history",
           "name": "ประวัติที่ส่งมอบแล้ว",
           "slug": "purchase-order.history"
         },
         {
-          "url": "purchase-order/booking-export",
-          "name": "ข้อมูลรถและการจอง",
-          "slug": "purchase-order.booking-export"
+          "url": "purchase-order/viewFN",
+          "name": "ยอดเฟิร์มเงิน FN",
+          "slug": "purchase-order.viewFN"
         }
       ]
     },
