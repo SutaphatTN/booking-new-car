@@ -143,6 +143,18 @@
           "slug": "finance.extra-com"
         }
       ]
+    },
+    {
+      "name": "รายงาน",
+      "icon": "menu-icon icon-base bx bx-file-blank",
+      "slug": "report",
+      "submenu": [
+        {
+          "url": "purchase-order/booking-export",
+          "name": "ข้อมูลรถและการจอง",
+          "slug": "report.booking-export"
+        }
+      ]
     }
   ]
 }
