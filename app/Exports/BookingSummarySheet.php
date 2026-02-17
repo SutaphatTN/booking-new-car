@@ -142,12 +142,12 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 ->first(fn($s) => !in_array($s->con_status, [5, 9]));
 
             //เงื่อนไข การจัดสรรรถใหม่
-            $changedAt = $sale?->carOrderHistories?->changed_at
-                ? Carbon::parse($sale->carOrderHistories->changed_at)->startOfDay()
+            $bookingDate = $sale?->BookingDate
+                ? Carbon::parse($sale->BookingDate)->startOfDay()
                 : null;
 
-            $daysBindInt = $changedAt
-                ? $changedAt->diffInDays(now()->startOfDay())
+            $daysBindInt = $bookingDate
+                ? $bookingDate->diffInDays(now()->startOfDay())
                 : null;
 
             $allocationStatus = '';
@@ -157,10 +157,10 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
 
             if (!in_array($conStatus, [3, 4])) {
 
-                if ($changedAt) {
+                if ($bookingDate) {
 
-                    $daysBindInt = $changedAt->diffInDays(now()->startOfDay());
-                    $allocationDate = $changedAt->copy()->addDays(7)->format('d-m-Y');
+                    $daysBindInt = $bookingDate->diffInDays(now()->startOfDay());
+                    $allocationDate = $bookingDate->copy()->addDays(7)->format('d-m-Y');
 
                     if ($daysBindInt > 7) {
                         $allocationStatus = 'จัดสรรใหม่';
@@ -209,9 +209,9 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 'daysBind' => (
                     $sale
                     && !in_array($sale->con_status, [3, 4])
-                    && $sale->carOrderHistories?->changed_at
+                    && $sale->BookingDate
                 )
-                    ? Carbon::parse($sale->carOrderHistories->changed_at)
+                    ? Carbon::parse($sale->BookingDate)
                     ->startOfDay()
                     ->diffInDays(now()->startOfDay()) . ' วัน'
                     : '',
