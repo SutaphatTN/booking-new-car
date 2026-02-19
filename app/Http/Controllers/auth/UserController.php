@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\TbBranch;
+use App\Models\TbBrand;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -41,7 +43,10 @@ class UserController extends Controller
     public function edit($id)
     {
         $user = User::findOrFail($id);
-        return view('auth.user.edit', compact('user'));
+        $branch = TbBranch::all();
+        $brand = TbBrand::all();
+
+        return view('auth.user.edit', compact('user', 'branch', 'brand'));
     }
 
     public function update(Request $request, $id)

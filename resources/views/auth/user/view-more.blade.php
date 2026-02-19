@@ -7,35 +7,35 @@
             </div>
             <div class="modal-body">
                 <div class="row mb-3">
-                    <label for="name"
+                    <label for="view_name"
                         class="col-md-4 col-form-label text-md-end">{{ __('Name') }}</label>
 
                     <div class="col-md-6">
-                        <input id="name" type="text"
+                        <input id="view_name" type="text"
                             class="form-control readonly-field bg-light"
-                            name="name" value="{{ $user->name }}">
+                            name="view_name" value="{{ $user->name ?? '' }}">
                     </div>
                 </div>
 
                 <div class="row mb-3">
-                    <label for="email"
+                    <label for="view_email"
                         class="col-md-4 col-form-label text-md-end">{{ __('E-mail') }}</label>
 
                     <div class="col-md-6">
-                        <input id="email" type="text"
+                        <input id="view_email" type="text"
                             class="form-control readonly-field bg-light"
-                            name="email" value="{{ $user->email }}">
+                            name="view_email" value="{{ $user->email ?? '' }}">
                     </div>
                 </div>
 
                 <div class="row mb-3">
-                    <label for="username"
+                    <label for="view_username"
                         class="col-md-4 col-form-label text-md-end">{{ __('Username') }}</label>
 
                     <div class="col-md-6">
-                        <input id="username" type="text"
+                        <input id="view_username" type="text"
                             class="form-control readonly-field bg-light"
-                            name="username" value="{{ $user->username }}">
+                            name="view_username" value="{{ $user->username ?? '' }}">
                     </div>
                 </div>
 
@@ -46,7 +46,7 @@
                     <div class="col-md-6">
                         <input id="password_plain" type="text"
                             class="form-control readonly-field bg-light"
-                            name="password_plain" value="{{ $user->password_plain }}">
+                            name="password_plain" value="{{ $user->password_plain ?? '' }}">
                     </div>
                 </div>
 
@@ -58,6 +58,39 @@
                         <input id="role" type="text"
                             class="form-control readonly-field bg-light"
                             name="role" value="{{ ucfirst($user->role) }}">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <label for="branch"
+                        class="col-md-4 col-form-label text-md-end">{{ __('สาขา') }}</label>
+
+                    <div class="col-md-6">
+                        <input id="branch" type="text"
+                            class="form-control readonly-field bg-light"
+                            name="branch" value="{{ $user->branchInfo->name ?? '' }}">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <label for="brand"
+                        class="col-md-4 col-form-label text-md-end">{{ __('Brand') }}</label>
+
+                    <div class="col-md-6">
+                        <input id="brand" type="text"
+                            class="form-control readonly-field bg-light"
+                            name="brand" value="{{ $user->brandInfo->name ?? '' }}">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <label for="userZone"
+                        class="col-md-4 col-form-label text-md-end">{{ __('Zone') }}</label>
+
+                    <div class="col-md-6">
+                        <input id="userZone" type="text"
+                            class="form-control readonly-field bg-light"
+                            name="userZone" value="{{ $user->UserZoneName ?? '' }}">
                     </div>
                 </div>
 

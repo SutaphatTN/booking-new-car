@@ -45,6 +45,35 @@
             </div>
 
             <div class="mb-3">
+              <label for="branch" class="form-label">สาขา</label>
+              <select id="branch" name="branch" class="form-select">
+                <option value="">-- เลือกสาขา --</option>
+                @foreach ($branch as $item)
+                <option value="{{ @$item->id }}">{{ @$item->name }}</option>
+                @endforeach
+              </select>
+            </div>
+
+             <div class="mb-3">
+              <label for="brand" class="form-label">Brand</label>
+              <select id="brand" name="brand" class="form-select">
+                <option value="">-- เลือก brand --</option>
+                @foreach ($brand as $item)
+                <option value="{{ @$item->id }}">{{ @$item->name }}</option>
+                @endforeach
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="userZone" class="form-label">Zone</label>
+              <select id="userZone" name="userZone" class="form-select" required>
+                <option value="">-- เลือก Zone --</option>
+                <option value="10">ปัตตานี</option>
+                <option value="40">กระบี่</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
               <label for="role" class="form-label">Role</label>
               <select id="role" name="role" class="form-select" required>
                 <option value="">-- เลือก Role --</option>

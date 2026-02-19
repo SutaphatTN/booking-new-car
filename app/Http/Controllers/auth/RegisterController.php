@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\TbBranch;
+use App\Models\TbBrand;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -11,7 +13,10 @@ class RegisterController extends Controller
 {
     public function index()
     {
-        return view('auth.register');
+        $branch = TbBranch::all();
+        $brand = TbBrand::all();
+
+        return view('auth.register', compact('branch', 'brand'));
     }
 
     public function store(Request $request)
@@ -32,8 +37,11 @@ class RegisterController extends Controller
                 'username' => $request->username,
                 'cardID' => preg_replace('/\D/', '', $request->cardID),
                 'role' => $request->role,
+                'branch' => $request->branch,
+                'brand' => $request->brand,
                 'password' => Hash::make($request->password),
                 'password_plain' => $request->password,
+                'userZone' => $request->userZone,
             ]);
 
             return response()->json([

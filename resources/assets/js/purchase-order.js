@@ -1349,6 +1349,7 @@ $(document).ready(function () {
 let salePriceInput;
 let markupInput;
 let markup90Input;
+let isMarkup90Manual = false;
 let finalPriceInput;
 
 let downPaymentInput;
@@ -1369,7 +1370,7 @@ function calculateCarPrice(e) {
   const markup90 = markup * 0.9;
   const finalPrice = salePrice + markup;
 
-  if (markup90Input) {
+  if (!isMarkup90Manual && markup90Input) {
     markup90Input.value = markup90.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
@@ -1396,6 +1397,8 @@ function calculateCarPrice(e) {
 
 // บวกหัว 90% (แก้เอง)
 function calculateFinalFromManualMarkup90() {
+  isMarkup90Manual = true;
+
   const salePrice = getNumber(salePriceInput);
   const markup90 = getNumber(markup90Input);
 
@@ -1461,6 +1464,10 @@ document.addEventListener('DOMContentLoaded', function () {
   downPaymentInput = document.getElementById('DownPayment');
   downPaymentPercentInput = document.getElementById('DownPaymentPercentage');
 
+  if (markup90Input && markup90Input.value && markup90Input.value.trim() !== '') {
+    isMarkup90Manual = true;
+  }
+
   if (salePriceInput) salePriceInput.addEventListener('input', calculateCarPrice);
   if (markupInput) markupInput.addEventListener('input', calculateCarPrice);
   if (markup90Input) markup90Input.addEventListener('input', calculateFinalFromManualMarkup90);
@@ -1479,12 +1486,13 @@ document.addEventListener('DOMContentLoaded', function () {
 function calculateTotalPaymentAtDelivery() {
   const downPayment = safeNumber('#DownPayment');
   const downDiscount = safeNumber('#DownPaymentDiscount');
+  const discount = safeNumber('#discount');
   const giftTotal = safeNumber('#total_gift_used');
   const ExtraTotal = safeNumber('#total_extra_used');
   const turnCost = safeNumber('#cost_turn');
   const cashDeposit = safeNumber('#CashDeposit');
 
-  const total = downPayment + ExtraTotal - (downDiscount + turnCost + cashDeposit);
+  const total = downPayment + ExtraTotal - (downDiscount + turnCost + cashDeposit + discount);
 
   $('#TotalPaymentatDeliveryCar').val(
     total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -1546,11 +1554,13 @@ function calculateBalance() {
 function updateSummary() {
   const model = $('#carOrderSubModel').val() || '';
   const turn = safeNumber('#cost_turn');
+  const comturn = safeNumber('#com_turn');
   const reserve = safeNumber('#CashDeposit');
   const sale = safeNumber('#price_sub');
 
   $('#summarySubCarModel').val(model);
   $('#summaryTurn').val(turn.toLocaleString(undefined, { minimumFractionDigits: 2 }));
+  $('#summaryComTurn').val(comturn.toLocaleString(undefined, { minimumFractionDigits: 2 }));
   $('#summaryCashDeposit').val(reserve.toLocaleString(undefined, { minimumFractionDigits: 2 }));
   $('#summaryCarSale').val(sale.toLocaleString(undefined, { minimumFractionDigits: 2 }));
 
@@ -1618,15 +1628,28 @@ function calculateCommissionSale() {
   const extraCom = safeNumber('#total_extra_com');
   const fiCom = safeNumber('#remaining_total_com');
   const turnCom = safeNumber('#com_turn');
+  const comSpecial = safeNumber('#CommissionSpecial');
 
   balanceCam = Math.min(balanceCam, 2500);
 
-  const totalCommission = balanceCam + giftCom + extraCom + fiCom + turnCom;
+  const totalCommission = balanceCam + giftCom + extraCom + fiCom + turnCom + comSpecial;
 
   const formatted = totalCommission.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
+
+  const totalComAcc = giftCom + extraCom;
+
+  $('#ComGiftDisplay').val(
+    totalComAcc.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  );
+
+  $('#TotalbalanceCampaign').val(
+    balanceCam.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  );
+
+  $('#ComInterestDisplay').val(fiCom.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
   $('#CommissionSaleDisplay').val(formatted);
 
@@ -1639,6 +1662,7 @@ function calculateBalanceCampaign() {
 
   const totalCampaign = safeNumber('#TotalSaleCampaign');
   const markup90 = safeNumber('#Markup90');
+  const kickback = safeNumber('#kickback');
 
   const downPay = safeNumber('#DownPaymentDiscount');
   const gift = safeTextNumber('#total-price-gift');
@@ -1646,7 +1670,7 @@ function calculateBalanceCampaign() {
 
   const payDis = safeNumber('#PaymentDiscount');
 
-  const totalCam90 = totalCampaign + markup90;
+  const totalCam90 = totalCampaign + markup90 + kickback;
   const totalUseFinance = downPay + gift + refA;
   const totalUseNon = payDis + gift + refA;
 
@@ -1671,24 +1695,21 @@ $(document).on('input', 'input[name="payment_cost[]"]', calculateBalance);
 
 $(document).on(
   'input change',
-  '#payment_type, #TotalSaleCampaign, #Markup90, #DownPaymentDiscount, #total-price-gift, #PaymentDiscount, #ReferrerAmount',
+  '#payment_type, #TotalSaleCampaign, #Markup90, #kickback, #DownPaymentDiscount, #total-price-gift, #PaymentDiscount, #ReferrerAmount',
   calculateBalanceCampaign
 );
 
-$(document).on('input change', '#remaining_total_com, #com_turn', calculateCommissionSale);
+$(document).on('input change', '#remaining_total_com, #com_turn, #CommissionSpecial', calculateCommissionSale);
 
 $(document).ready(function () {
-  $('#carOrderSubModel, #cost_turn, #CashDeposit, #price_sub').on('input change', updateSummary);
-  $('#DownPayment, #DownPaymentDiscount, #cost_turn, #total_gift_used, #total_extra_used, #CashDeposit').on(
+  $('#carOrderSubModel, #cost_turn, #com_turn, #CashDeposit, #price_sub').on('input change', updateSummary);
+  $('#DownPayment, #DownPaymentDiscount, #cost_turn, #total_gift_used, #total_extra_used, #CashDeposit, #discount').on(
     'input change',
     calculateTotalPaymentAtDelivery
   );
   $('#CarSalePriceFinal, #DownPayment').on('input change', calculateRemaining);
   $('#remaining_interest, #remaining_period').on('input change', calculateInstallment);
-  $('#price_sub, #total_extra_used, #cost_turn, #CashDeposit, #PaymentDiscount').on(
-    'input change',
-    calculateBalance
-  );
+  $('#price_sub, #total_extra_used, #cost_turn, #CashDeposit, #PaymentDiscount').on('input change', calculateBalance);
   $('#remaining_interest, #remaining_type_com').on('input change', calculateCommission);
 
   calculateBalanceCampaign();
@@ -1712,7 +1733,7 @@ $(document).ready(function () {
   });
 
   function showRemaining(type) {
-    $('#bankReservation, #creditReservation').hide();
+    $('#bankReservation, #creditReservation, #checkReservation').hide();
 
     if (type === 'credit') $('#creditReservation').show();
     else if (type === 'check') $('#checkReservation').show();
@@ -1838,47 +1859,47 @@ $(document).ready(function () {
 });
 
 //edit : เลือกไฟแนนซ์ แล้วแสดงปีตาม max year
-function renderPeriods(maxYear, selectedPeriod = null) {
-  const $period = $('#remaining_period');
+// function renderPeriods(maxYear, selectedPeriod = null) {
+//   const $period = $('#remaining_period');
 
-  if (!$period.length) return;
+//   if (!$period.length) return;
 
-  $period.empty();
-  $period.append('<option value="">-- เลือกงวด --</option>');
+//   $period.empty();
+//   $period.append('<option value="">-- เลือกงวด --</option>');
 
-  if (!maxYear || isNaN(maxYear)) {
-    $period.prop('disabled', true);
-    return;
-  }
+//   if (!maxYear || isNaN(maxYear)) {
+//     $period.prop('disabled', true);
+//     return;
+//   }
 
-  $period.prop('disabled', false);
+//   $period.prop('disabled', false);
 
-  const maxMonth = maxYear * 12;
+//   const maxMonth = maxYear * 12;
 
-  for (let m = 12; m <= maxMonth; m += 12) {
-    $period.append(`<option value="${m}">${m} งวด</option>`);
-  }
+//   for (let m = 12; m <= maxMonth; m += 12) {
+//     $period.append(`<option value="${m}">${m} งวด</option>`);
+//   }
 
-  if (selectedPeriod && selectedPeriod <= maxMonth) {
-    $period.val(String(selectedPeriod)).trigger('change');
-  }
-}
+//   if (selectedPeriod && selectedPeriod <= maxMonth) {
+//     $period.val(String(selectedPeriod)).trigger('change');
+//   }
+// }
 
 // เมื่อเลือกไฟแนนซ์ใหม่ / โหลดหน้า: ทำให้เลือกงวดตรงกับค่าที่มีใน DB
-$(document).ready(function () {
-  $('#remaining_finance').on('change', function () {
-    const maxYear = Number($(this).find('option:selected').data('max-year')) || 0;
-    renderPeriods(maxYear);
-  });
+// $(document).ready(function () {
+//   $('#remaining_finance').on('change', function () {
+//     const maxYear = Number($(this).find('option:selected').data('max-year')) || 0;
+//     renderPeriods(maxYear);
+//   });
 
-  const finance = $('#remaining_finance option:selected');
-  const maxYear = Number(finance.data('max-year')) || 0;
-  const selectedPeriod = Number($('#remaining_period').data('selected')) || 0;
+//   const finance = $('#remaining_finance option:selected');
+//   const maxYear = Number(finance.data('max-year')) || 0;
+//   const selectedPeriod = Number($('#remaining_period').data('selected')) || 0;
 
-  if (maxYear) {
-    renderPeriods(maxYear, selectedPeriod);
-  }
-});
+//   if (maxYear) {
+//     renderPeriods(maxYear, selectedPeriod);
+//   }
+// });
 
 //edit preview : all campaign
 function getSelectedCampaignText() {
@@ -1976,6 +1997,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const downPayment = document.getElementById('DownPayment')?.value || '-';
     const downPaymentPercentage = document.getElementById('DownPaymentPercentage')?.value || '-';
     const downPaymentDiscount = document.getElementById('DownPaymentDiscount')?.value || '-';
+    const discount = document.getElementById('discount')?.value || '-';
 
     // วันออกรถ
     const poNumber = document.getElementById('remaining_po_number')?.value || '-';
@@ -1996,7 +2018,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // ยอดรวมแคมเปญ
     const totalCampaign = parseFloat(document.getElementById('TotalSaleCampaign')?.value.replace(/,/g, '') || 0);
     const markup90 = parseFloat(document.getElementById('Markup90')?.value.replace(/,/g, '') || 0);
-    const totalcam90 = totalCampaign + markup90;
+    const kickback = parseFloat(document.getElementById('kickback')?.value.replace(/,/g, '') || 0);
+    const totalcam90 = totalCampaign + markup90 + kickback;
 
     //หาค่า ยอดรวมรายการที่ใช้
     const downPay = parseFloat(document.getElementById('DownPaymentDiscount')?.value.replace(/,/g, '') || 0);
@@ -2071,6 +2094,10 @@ document.addEventListener('DOMContentLoaded', function () {
             <strong>ส่วนลดเงินดาวน์ :</strong>
             <span>${downPaymentDiscount} บาท</span>
           </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ส่วนลด :</strong>
+            <span>${discount} บาท</span>
+          </div>
 
           <h5 class="pb-2 mb-3"></h5>
           <div class="d-flex justify-content-between mb-2">
@@ -2127,6 +2154,10 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="d-flex justify-content-between mb-2">
             <strong>บวกหัว (90%) :</strong>
             <span>${markup90.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>Kick Back :</strong>
+            <span>${kickback.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
             <strong>ยอดรวมแคมเปญ (รวมบวกหัว 90%) :</strong>

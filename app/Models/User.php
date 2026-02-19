@@ -56,6 +56,8 @@ class User extends Authenticatable
 		'username',
 		'email_verified_at',
 		'role',
+		'branch',
+		'brand',
 		'cardID',
 		'password',
 		'password_plain',
@@ -64,7 +66,8 @@ class User extends Authenticatable
 		'two_factor_confirmed_at',
 		'remember_token',
 		'current_team_id',
-		'profile_photo_path'
+		'profile_photo_path',
+		'userZone'
 	];
 
 	protected $dates = ['deleted_at'];
@@ -73,5 +76,25 @@ class User extends Authenticatable
 	{
 		$id = $this->cardID;
 		return substr($id, 0, 1) . '-' . substr($id, 1, 4) . '-' . substr($id, 5, 5) . '-' . substr($id, 10, 2) . '-' . substr($id, 12, 1);
+	}
+
+	public function branchInfo()
+	{
+		return $this->belongsTo(TbBranch::class, 'branch', 'id');
+	}
+
+	public function brandInfo()
+	{
+		return $this->belongsTo(TbBrand::class, 'brand', 'id');
+	}
+
+	public function getUserZoneNameAttribute()
+	{
+		$zones = [
+			10 => 'ปัตตานี',
+			40 => 'กระบี่',
+		];
+
+		return $zones[$this->userZone] ?? '-';
 	}
 }

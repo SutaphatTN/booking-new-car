@@ -45,6 +45,12 @@
       ]
     },
     {
+      "name": "ค่าคอมมิชชั่น",
+      "icon": "menu-icon icon-base bx bx-money",
+      "slug": "sale.viewCommission",
+      "url": "sale/viewCommission"
+    },
+    {
       "name": "ข้อมูลรถ",
       "icon": "menu-icon icon-base bx bx-car",
       "slug": "model",
@@ -148,6 +154,11 @@
           "url": "purchase-order/booking-export",
           "name": "ข้อมูลรถและการจอง",
           "slug": "report.booking-export"
+        },
+        {
+          "url": "purchase-order/gp-export",
+          "name": "รายงาน GP",
+          "slug": "report.gp-export"
         }
       ]
     }

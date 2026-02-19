@@ -12,13 +12,13 @@
                     @method('PUT')
 
                     <div class="row mb-3">
-                        <label for="name"
+                        <label for="edit_name"
                             class="col-md-4 col-form-label text-md-end">{{ __('Name') }}</label>
 
                         <div class="col-md-6">
-                            <input id="name" type="text"
+                            <input id="edit_name" type="text"
                                 class="form-control @error('name') is-invalid @enderror"
-                                name="name" value="{{ $user->name }}" required>
+                                name="edit_name" value="{{ $user->name }}" required>
 
                             @error('name')
                             <span class="invalid-feedback" role="alert">
@@ -29,13 +29,13 @@
                     </div>
 
                     <div class="row mb-3">
-                        <label for="email"
+                        <label for="edit_email"
                             class="col-md-4 col-form-label text-md-end">{{ __('Email') }}</label>
 
                         <div class="col-md-6">
-                            <input id="email" type="text"
+                            <input id="edit_email" type="text"
                                 class="form-control @error('name') is-invalid @enderror"
-                                name="email" value="{{ $user->email }}">
+                                name="edit_email" value="{{ $user->email }}">
 
                             @error('email')
                             <span class="invalid-feedback" role="alert">
@@ -46,13 +46,13 @@
                     </div>
 
                     <div class="row mb-3">
-                        <label for="username"
+                        <label for="edit_username"
                             class="col-md-4 col-form-label text-md-end">{{ __('Username') }}</label>
 
                         <div class="col-md-6">
-                            <input id="username" type="text"
+                            <input id="edit_username" type="text"
                                 class="form-control @error('name') is-invalid @enderror"
-                                name="username" value="{{ $user->username }}">
+                                name="edit_username" value="{{ $user->username }}">
 
                             @error('username')
                             <span class="invalid-feedback" role="alert">
@@ -96,6 +96,48 @@
                                 <strong>{{ $message }}</strong>
                             </span>
                             @enderror
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label for="edit_branch"
+                            class="col-md-4 col-form-label text-md-end">{{ __('สาขา') }}</label>
+
+                        <div class="col-md-6">
+                            <select id="edit_branch" class="form-control" name="edit_branch" required>
+                                @foreach ($branch as $item)
+                                <option value="{{ @$item->id }}" {{ $user->branch == $item->id ? 'selected' : '' }}>
+                                    {{ @$item->name }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label for="edit_brand"
+                            class="col-md-4 col-form-label text-md-end">{{ __('Brand') }}</label>
+
+                        <div class="col-md-6">
+                            <select id="edit_brand" class="form-control" name="edit_brand" required>
+                                @foreach ($brand as $item)
+                                <option value="{{ @$item->id }}" {{ $user->brand == $item->id ? 'selected' : '' }}>
+                                    {{ @$item->name }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label for="userZone"
+                            class="col-md-4 col-form-label text-md-end">{{ __('Zone') }}</label>
+
+                        <div class="col-md-6">
+                            <select id="userZone" class="form-control" name="userZone" required>
+                                <option value="10" {{ $user->userZone == '10' ? 'selected' : '' }}>ปัตตานี</option>
+                                <option value="40" {{ $user->userZone == '40' ? 'selected' : '' }}>กระบี่</option>
+                            </select>
                         </div>
                     </div>
 

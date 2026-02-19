@@ -135,6 +135,7 @@ class Salecar extends Model
 		'CarOrderID',
 		'KeyInDate',
 		'SaleID',
+		'type',
 		'model_id',
 		'Color',
 		'Year',
@@ -156,6 +157,7 @@ class Salecar extends Model
 		'MarkupPrice',
 		'Markup90',
 		'CarSalePriceFinal',
+		'discount',
 		'DownPayment',
 		'DownPaymentPercentage',
 		'DownPaymentDiscount',
@@ -168,6 +170,7 @@ class Salecar extends Model
 		'CashSupportFromMarkup',
 		'TotalSaleCampaign',
 		'balanceCampaign',
+		'kickback',
 		'CashSupportInterestPlus',
 		'TotalCashSupport',
 		'TotalAccessoryGift',
@@ -180,6 +183,7 @@ class Salecar extends Model
 		'TradeinComAmount',
 		'CommissionSale',
 		'CommissionDeduct',
+		'CommissionSpecial',
 		'ApprovalSignature',
 		'ApprovalSignatureDate',
 		'FinanceAmount',
@@ -261,6 +265,11 @@ class Salecar extends Model
 		return $this->belongsTo(TbConStatus::class, 'con_status', 'id');
 	}
 
+	public function type()
+	{
+		return $this->belongsTo(TbSalecarType::class, 'type', 'id');
+	}
+
 	public function provinces()
 	{
 		return $this->belongsTo(TbProvinces::class, 'RegistrationProvince', 'id');
@@ -284,6 +293,11 @@ class Salecar extends Model
 	public function saleUser()
 	{
 		return $this->belongsTo(User::class, 'SaleID', 'id');
+	}
+
+	public function financeConfirm()
+	{
+		return $this->hasOne(FinancesConfirm::class, 'SaleID', 'id');
 	}
 
 	public function getBookingDateAttribute($value)
