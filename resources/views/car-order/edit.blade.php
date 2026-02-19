@@ -46,7 +46,7 @@
               </div>
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="vin_number" class="form-label">Vin Number</label>
               <input id="vin_number" type="text"
                 class="form-control @error('vin_number') is-invalid @enderror"
@@ -59,7 +59,7 @@
               @enderror
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="j_number" class="form-label">J-Number</label>
               <input id="j_number" type="text"
                 class="form-control @error('j_number') is-invalid @enderror"
@@ -148,6 +148,21 @@
                 required>
 
               @error('car_MSRP')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-2 mb-5">
+              <label for="RI" class="form-label">RI</label>
+              <input id="RI" type="text"
+                class="form-control text-end money-input @error('RI') is-invalid @enderror"
+                name="RI"
+                value="{{ $order->RI !== null ? number_format($order->RI, 2) : '' }}"
+                required>
+
+              @error('RI')
               <span class="invalid-feedback" role="alert">
                 <strong>{{ $message }}</strong>
               </span>

@@ -39,12 +39,12 @@
             </div>
           </div>
 
-          <div class="col-md-4 mb-5">
+          <div class="col-md-3 mb-5">
             <label for="vin_number" class="form-label">Vin Number</label>
             <input id="vin_number" class="form-control" type="text" value="{{ $order->vin_number }}" disabled />
           </div>
 
-          <div class="col-md-4 mb-5">
+          <div class="col-md-3 mb-5">
             <label for="j_number" class="form-label">J-Number</label>
             <input id="j_number" class="form-control" type="text" value="{{ $order->j_number }}" disabled />
           </div>
@@ -80,6 +80,13 @@
             <label for="car_MSRP" class="form-label">ราคาขาย</label>
             <input id="car_MSRP" class="form-control text-end" type="text"
               value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}"
+              disabled />
+          </div>
+
+          <div class="col-md-2 mb-5">
+            <label for="RI" class="form-label">RI</label>
+            <input id="RI" class="form-control text-end" type="text"
+              value="{{ $order->RI !== null ? number_format($order->RI, 2) : '-' }}"
               disabled />
           </div>
 

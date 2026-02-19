@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\finance;
 
+use App\Exports\fn\FirmExport;
 use App\Http\Controllers\Controller;
 use App\Models\Finance;
 use App\Models\FinancesConfirm;
@@ -10,6 +11,7 @@ use App\Models\Salecar;
 use App\Models\TbCarmodel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 
 class FinanceController extends Controller
 {
@@ -233,17 +235,36 @@ class FinanceController extends Controller
         return view('finance.confirm-finance.view', compact('saleCar'));
     }
 
-    public function listFN()
+    public function listFN(Request $request)
     {
-        $saleCar = Salecar::with([
+        $status = $request->status ?? 'unpaid';
+
+        $query = Salecar::with([
             'customer.prefix',
             'model',
             'subModel',
-            'remainingPayment'
+            'remainingPayment',
+            'financeConfirm'
         ])
             ->where('payment_mode', 'finance')
-            ->where('con_status', '5')
-            ->get();
+            ->where('con_status', '5');
+
+        if ($status === 'unpaid') {
+            $query->where(function ($q) {
+                $q->doesntHave('financeConfirm')
+                    ->orWhereHas('financeConfirm', function ($qq) {
+                        $qq->whereNull('date');
+                    });
+            });
+        }
+
+        if ($status === 'paid') {
+            $query->whereHas('financeConfirm', function ($q) {
+                $q->whereNotNull('date');
+            });
+        }
+
+        $saleCar = $query->get();
 
         // ->where('payment_mode', 'finance')
         // $query = Salecar::with('customer.prefix', 'conStatus')->whereNotIn('con_status', [5, 9]);
@@ -276,9 +297,9 @@ class FinanceController extends Controller
                     $c->FirstName ?? null,
                     $c->LastName ?? null,
                 ])),
-                'model' => $model,
-                'subModel' => $subModelFull,
-                'po' => $number,
+                'delivery_date' => $s->format_delivery_date ?? '-',
+                'firm_date' => $s->financeConfirm->format_firm_date ?? '-',
+                'date' => $s->financeConfirm->format_date ?? '-',
                 'Action' => view('finance.confirm-finance.button', compact('s'))->render()
             ];
         });
@@ -321,12 +342,13 @@ class FinanceController extends Controller
         $fnCon->net_price ??= $sale->carOrder?->car_MSRP;
         $fnCon->down      ??= $sale->DownPayment;
         $fnCon->excellent ??= $sale->balanceFinance;
+        $maxYear = $sale->remainingPayment?->financeInfo?->max_year ?? 0;
 
         $comExtra = FinancesExtraCom::where('model_id', $sale->model_id)
             ->where('financeID', $sale->remainingPayment?->financeInfo?->id)
             ->value('com') ?? 0;
 
-        return view('finance.confirm-finance.edit', compact('sale', 'fnCon', 'comExtra'));
+        return view('finance.confirm-finance.edit', compact('sale', 'fnCon', 'comExtra', 'maxYear'));
     }
 
     public function updateFN(Request $request, $id)
@@ -369,6 +391,10 @@ class FinanceController extends Controller
                 'actually_received' => $request->filled('actually_received')
                     ? str_replace(',', '', $request->actually_received)
                     : null,
+                'diff' => $request->filled('diff')
+                    ? str_replace(',', '', $request->diff)
+                    : null,
+                'firm_date' => $request->firm_date,
                 'date' => $request->date,
             ];
 
@@ -406,5 +432,14 @@ class FinanceController extends Controller
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
             ], 500);
         }
+    }
+
+    // report finance firm
+    public function exportFirm(Request $request)
+    {
+        $month = $request->month ?? now()->month;
+        $year  = $request->year  ?? now()->year;
+
+        return Excel::download(new FirmExport($month, $year), 'firmFN-report.xlsx');
     }
 }

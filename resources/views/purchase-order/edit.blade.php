@@ -63,21 +63,33 @@
                 <div class="row g-6">
                   <h4 class="pb-2 mb-3 border-bottom">ข้อมูลลูกค้า</h4>
                   <div class="col-md-2">
-                    <label for="sale_card" class="form-label">รหัสผู้ขาย</label>
-                    <input id="sale_card" class="form-control" type="text" value="{{ $saleCar->saleUser->format_card_id }}" readonly>
-                  </div>
-                  <div class="col-md-3">
-                    <label for="sale_name" class="form-label">ชื่อ - นามสกุล ผู้ขาย</label>
-                    <input id="sale_name" class="form-control" type="text" value="{{ $saleCar->saleUser->name }}" readonly>
-                  </div>
-                  <input type="hidden" name="SaleID" value="{{ $saleCar->SaleID }}">
-
-                  <div class="col-md-2">
                     <label class="form-label" for="BookingDate">วันที่จอง</label>
                     <input id="BookingDate" type="date"
                       class="form-control"
                       name="BookingDate" value="{{ $saleCar->BookingDate }}" required>
                   </div>
+
+                  <div class="col-md-2">
+                    <label for="type" class="form-label">แหล่งที่มา</label>
+                    <select id="type" name="type" class="form-select">
+                      <option value="">-- เลือก --</option>
+                      @foreach ($type as $item)
+                      <option value="{{ @$item->id }}" {{ $saleCar->type == $item->id ? 'selected' : '' }}>
+                        {{ @$item->name }}
+                      </option>
+                      @endforeach
+                    </select>
+                  </div>
+
+                  <!-- <div class="col-md-2">
+                    <label for="sale_card" class="form-label">รหัสผู้ขาย</label>
+                    <input id="sale_card" class="form-control" type="text" value="{{ $saleCar->saleUser->format_card_id }}" readonly>
+                  </div> -->
+                  <div class="col-md-3">
+                    <label for="sale_name" class="form-label">ชื่อ - นามสกุล ผู้ขาย</label>
+                    <input id="sale_name" class="form-control" type="text" value="{{ $saleCar->saleUser->name }}" readonly>
+                  </div>
+                  <input type="hidden" name="SaleID" value="{{ $saleCar->SaleID }}">
 
                   <input type="hidden" id="CusID" name="CusID" value="{{ $saleCar->CusID }}">
 
@@ -85,11 +97,12 @@
                   <input type="hidden" id="CusDocumentAddress" value="{{ $saleCar->customer->documentAddress->full_address ?? '-' }}">
 
                   <div class="col-md-3">
-                    <label for="CusFullName" class="form-label">ชื่อ - นามสกุล</label>
+                    <label for="CusFullName" class="form-label">ชื่อ - นามสกุล ผู้จอง</label>
                     <input type="text" id="CusFullName" class="form-control"
                       value="{{ $saleCar->customer->prefix->Name_TH ?? '' }} {{ $saleCar->customer->FirstName ?? '' }} {{ $saleCar->customer->LastName ?? '' }}"
                       readonly>
                   </div>
+
                   <div class="col-md-2">
                     <fieldset class="mb-0">
                       <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">รถเทิร์น</legend>
@@ -682,8 +695,8 @@
 
                     <div class="col-md-3">
                       <label for="price_sub" class="form-label">ราคารถ</label>
-                      <input id="price_sub" name="price_sub" class="form-control text-end money-input" 
-                      value="{{ $saleCar->price_sub ?? '' }}" required>
+                      <input id="price_sub" name="price_sub" class="form-control text-end money-input"
+                        value="{{ $saleCar->price_sub ?? '' }}" required>
                     </div>
 
                     <input type="hidden" id="remaining_date"
@@ -746,7 +759,7 @@
                       </div>
                     </div>
 
-                    <div id="financeRemain">
+                    <!-- <div id="financeRemain">
                       <div class="row g-6">
                         <div class="col-md-2">
                           <label for="MarkupPrice" class="form-label">บวกหัว</label>
@@ -759,7 +772,7 @@
                             value="{{ $saleCar->Markup90 }}" />
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                           <label for="CarSalePriceFinal" class="form-label">ราคาขายสุทธิ (รวมบวกหัว)</label>
                           <input class="form-control text-end money-input" type="text" name="CarSalePriceFinal" id="CarSalePriceFinal"
                             value="{{ $saleCar->CarSalePriceFinal }}" readonly />
@@ -774,6 +787,11 @@
                           <label for="DownPaymentPercentage" class="form-label">%</label>
                           <input class="form-control text-end money-input" type="text" name="DownPaymentPercentage" id="DownPaymentPercentage"
                             value="{{ $saleCar->DownPaymentPercentage }}" />
+                        </div>
+                        <div class="col-md-1">
+                          <label for="discount" class="form-label">ส่วนลด</label>
+                          <input class="form-control text-end money-input" type="text" name="discount" id="discount"
+                            value="{{ $saleCar->discount }}" />
                         </div>
                         <div class="col-md-2">
                           <label for="DownPaymentDiscount" class="form-label">ส่วนลดเงินดาวน์</label>
@@ -864,12 +882,12 @@
                             value="{{ old('remaining_total_alp', $remainingPayment->total_alp ?? '') }}">
                         </div>
 
-                        <!-- <div class="col-md-2">
+                       <div class="col-md-2">
                           <label for="remaining_date_finance" class="form-label">วันที่ไฟแนนซ์จ่ายเงิน</label>
                           <input id="remaining_date_finance" type="date"
                             class="form-control"
                             name="remaining_date_finance" value="{{ old('remaining_date', $remainingPayment?->date ?? '') }}">
-                        </div> -->
+                        </div> 
 
                         <div class="col-md-3">
                           <label for="remaining_po_number" class="form-label">PO-Number</label>
@@ -1010,6 +1028,328 @@
                                 name="delivery_transfer_no" value="{{ old('delivery_transfer_no', $deliveryPayment->transfer_no ?? '') }}">
                             </div>
                           </div>
+                        </div>
+
+                      </div>
+                    </div> -->
+
+                    <div id="financeRemain">
+                      <div class="row g-6">
+                        <div class="col-md-2">
+                          <label for="MarkupPrice" class="form-label">บวกหัว</label>
+                          <input class="form-control text-end money-input" type="text" id="MarkupPrice" name="MarkupPrice"
+                            value="{{ $saleCar->MarkupPrice }}" />
+                        </div>
+                        <div class="col-md-2">
+                          <label for="Markup90" class="form-label">บวกหัว (90%)</label>
+                          <input class="form-control text-end money-input" type="text" id="Markup90" name="Markup90"
+                            value="{{ $saleCar->Markup90 }}" />
+                        </div>
+
+                        <div class="col-md-2">
+                          <label for="CarSalePriceFinal" class="form-label">ราคาขายสุทธิ</label>
+                          <input class="form-control text-end money-input" type="text" name="CarSalePriceFinal" id="CarSalePriceFinal"
+                            value="{{ $saleCar->CarSalePriceFinal }}" readonly />
+                        </div>
+
+                        <div class="col-md-2">
+                          <label for="discount" class="form-label">ส่วนลด</label>
+                          <input class="form-control text-end money-input" type="text" name="discount" id="discount"
+                            value="{{ $saleCar->discount }}" />
+                        </div>
+                        <div class="col-md-2">
+                          <label for="kickback" class="form-label">Kick Back</label>
+                          <input class="form-control text-end money-input" type="text" name="kickback" id="kickback"
+                            value="{{ $saleCar->kickback }}" />
+                        </div>
+
+                        <div class="col-md-2">
+                          <label for="DownPayment" class="form-label">เงินดาวน์</label>
+                          <input class="form-control text-end money-input" type="text" name="DownPayment" id="DownPayment"
+                            value="{{ $saleCar->DownPayment }}" />
+                        </div>
+                        <div class="col-md-1">
+                          <label for="DownPaymentPercentage" class="form-label">%</label>
+                          <input class="form-control text-end money-input" type="text" name="DownPaymentPercentage" id="DownPaymentPercentage"
+                            value="{{ $saleCar->DownPaymentPercentage }}" />
+                        </div>
+                        <div class="col-md-2">
+                          <label for="DownPaymentDiscount" class="form-label">ส่วนลดเงินดาวน์</label>
+                          <input class="form-control text-end money-input" type="text" name="DownPaymentDiscount" id="DownPaymentDiscount"
+                            value="{{ $saleCar->DownPaymentDiscount }}" />
+                        </div>
+
+                        <div class="col-md-2">
+                          <label for="TotalPaymentatDeliveryCar" class="form-label">สรุปค่าใช้จ่ายวันออกรถ</label>
+                          <input class="form-control text-end money-input" type="text" id="TotalPaymentatDeliveryCar" name="delivery_cost"
+                            value="{{ old('delivery_cost', $deliveryPayment->cost ?? '') }}" readonly />
+                        </div>
+
+                        <input type="hidden" id="TotalPaymentatDelivery" name="TotalPaymentatDelivery">
+
+                        <div class="col-md-2">
+                          <label for="delivery_date" class="form-label">วันที่จ่ายเงินค่าออกรถ</label>
+                          <input id="delivery_date" type="date"
+                            class="form-control"
+                            name="delivery_date" value="{{ old('delivery_date', $deliveryPayment?->date ?? '') }}">
+                        </div>
+
+                        <div class="col-md-5">
+                          <fieldset class="mb-0">
+                            <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">ประเภทการจ่ายเงินวันออกรถ</legend>
+
+                            <div class="form-check form-check-inline" style="margin-left: 15px">
+                              <input class="form-check-input" type="radio" name="deliveryCondition" id="cashDeli" value="cash"
+                                {{ $deliveryType === 'cash' ? 'checked' : '' }}>
+                              <label class="form-check-label" for="cashDeli">เงินสด</label>
+                            </div>
+
+                            <div class="form-check form-check-inline">
+                              <input class="form-check-input" type="radio" name="deliveryCondition" id="creditDeli" value="credit"
+                                {{ $deliveryType === 'credit' ? 'checked' : '' }}>
+                              <label class="form-check-label" for="creditDeli">บัตรเครดิต</label>
+                            </div>
+
+                            <div class="form-check form-check-inline" style="margin-left: 15px">
+                              <input class="form-check-input" type="radio" name="deliveryCondition" id="checkDeli" value="check"
+                                {{ $deliveryType === 'check' ? 'checked' : '' }}>
+                              <label class="form-check-label" for="checkDeli">เช็คธนาคาร</label>
+                            </div>
+
+                            <div class="form-check form-check-inline" style="margin-left: 15px">
+                              <input class="form-check-input" type="radio" name="deliveryCondition" id="transDeli" value="transfer"
+                                {{ $deliveryType === 'transfer' ? 'checked' : '' }}>
+                              <label class="form-check-label" for="transDeli">เงินโอน</label>
+                            </div>
+                          </fieldset>
+                        </div>
+
+                        <div id="creditDelivery">
+                          <div class="row">
+                            <div class="col-md-4">
+                              <label for="delivery_credit" class="form-label">บัตรเครดิต</label>
+                              <input id="delivery_credit" type="text"
+                                class="form-control"
+                                name="delivery_credit" value="{{ old('delivery_credit', $deliveryPayment->credit ?? '') }}">
+                            </div>
+
+                            <div class="col-md-2">
+                              <label for="delivery_tax_credit" class="form-label">ค่าธรรมเนียม</label>
+                              <input id="delivery_tax_credit" type="text"
+                                class="form-control text-end money-input"
+                                name="delivery_tax_credit" value="{{ old('delivery_tax_credit', $deliveryPayment->tax_credit ?? '') }}">
+                            </div>
+                          </div>
+                        </div>
+
+                        <div id="checkDelivery">
+                          <div class="row">
+                            <div class="col-md-3">
+                              <label for="delivery_check_bank" class="form-label">ธนาคาร</label>
+                              <input id="delivery_check_bank" type="text"
+                                class="form-control"
+                                name="delivery_check_bank" value="{{ old('delivery_check_bank', $deliveryPayment->check_bank ?? '') }}">
+                            </div>
+
+                            <div class="col-md-4">
+                              <label for="delivery_check_branch" class="form-label">สาขา</label>
+                              <input id="delivery_check_branch" type="text"
+                                class="form-control"
+                                name="delivery_check_branch" value="{{ old('delivery_check_branch', $deliveryPayment->check_branch ?? '') }}">
+                            </div>
+
+                            <div class="col-md-3">
+                              <label for="delivery_check_no" class="form-label">เลขที่</label>
+                              <input id="delivery_check_no" type="text"
+                                class="form-control"
+                                name="delivery_check_no" value="{{ old('delivery_check_no', $deliveryPayment->check_no ?? '') }}">
+                            </div>
+                          </div>
+                        </div>
+
+                        <div id="bankDelivery">
+                          <div class="row">
+                            <div class="col-md-3">
+                              <label for="delivery_transfer_bank" class="form-label">ธนาคาร</label>
+                              <input id="delivery_transfer_bank" type="text"
+                                class="form-control"
+                                name="delivery_transfer_bank" value="{{ old('delivery_transfer_bank', $deliveryPayment->transfer_bank ?? '') }}">
+                            </div>
+
+                            <div class="col-md-4">
+                              <label for="delivery_transfer_branch" class="form-label">สาขา</label>
+                              <input id="delivery_transfer_branch" type="text"
+                                class="form-control"
+                                name="delivery_transfer_branch" value="{{ old('delivery_transfer_branch', $deliveryPayment->transfer_branch ?? '') }}">
+                            </div>
+
+                            <div class="col-md-3">
+                              <label for="delivery_transfer_no" class="form-label">เลขที่</label>
+                              <input id="delivery_transfer_no" type="text"
+                                class="form-control"
+                                name="delivery_transfer_no" value="{{ old('delivery_transfer_no', $deliveryPayment->transfer_no ?? '') }}">
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- แบ่งซ้ายขวา -->
+                        <div class="row g-4">
+
+                          <!-- กล่องฝั่งซ้าย -->
+                          <div class="col-md-6">
+                            <div class="finance-box">
+                              <div class="row g-3">
+                                <div class="col-12">
+                                  <div class="form-row-item">
+                                    <label>ชื่อไฟแนนซ์</label>
+                                    <select id="remaining_finance" name="remaining_finance" class="form-select" required>
+                                      <option value="">-- เลือกไฟแนนซ์ --</option>
+                                      @foreach ($finances as $f)
+                                      <option value="{{ $f->id }}"
+                                        data-max-year="{{ $f->max_year }}"
+                                        {{ old('remaining_finance', $saleCar->remainingPayment->financeInfo->id ?? '') == $f->id ? 'selected' : '' }}>
+                                        {{ $f->FinanceCompany }}
+                                      </option>
+                                      @endforeach
+                                    </select>
+                                  </div>
+                                </div>
+
+                                <div class="col-12">
+                                  <div class="form-row-item">
+                                    <label>ยอดจัดไฟแนนซ์</label>
+                                    <input class="form-control text-end money-input" type="text" id="balanceFinanceDisplay"
+                                      value="{{ $saleCar->balanceFinance }}" readonly />
+                                  </div>
+                                </div>
+
+                                <input type="hidden" id="balanceFinance" name="balanceFinance"
+                                  value="{{ old('balanceFinance', $saleCar->balanceFinance ?? '') }}">
+
+                                <div class="col-12">
+                                  <div class="form-row-item">
+                                    <label>ดอกเบี้ย</label>
+                                    <input class="form-control text-end"
+                                      type="text"
+                                      id="remaining_interest"
+                                      name="remaining_interest"
+                                      oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')"
+                                      value="{{ old('remaining_interest', $remainingPayment->interest ?? '') }}">
+                                  </div>
+                                </div>
+
+                                <div class="col-12">
+                                  <div class="form-row-item">
+                                    <label>งวดผ่อน</label>
+                                    <select id="remaining_period" name="remaining_period" class="form-select">
+                                      <option value="">-- เลือกงวด --</option>
+                                      <option value="12" {{ $remainingPayment?->period == '12' ? 'selected' : '' }}>12</option>
+                                      <option value="24" {{ $remainingPayment?->period == '24' ? 'selected' : '' }}>24</option>
+                                      <option value="36" {{ $remainingPayment?->period == '36' ? 'selected' : '' }}>36</option>
+                                      <option value="48" {{ $remainingPayment?->period == '48' ? 'selected' : '' }}>48</option>
+                                      <option value="60" {{ $remainingPayment?->period == '60' ? 'selected' : '' }}>60</option>
+                                      <option value="72" {{ $remainingPayment?->period == '72' ? 'selected' : '' }}>72</option>
+                                      <option value="84" {{ $remainingPayment?->period == '84' ? 'selected' : '' }}>84</option>
+                                    </select>
+                                  </div>
+                                </div>
+
+                                <div class="col-12">
+                                  <div class="form-row-item">
+                                    <label>ดอกเบี้ยคอม</label>
+                                    <select id="remaining_type_com" name="remaining_type_com" class="form-select">
+                                      <option value="">-- เลือก --</option>
+                                      <option value="0" {{ $remainingPayment?->type_com == '0' ? 'selected' : '' }}>C4</option>
+                                      <option value="8" {{ $remainingPayment?->type_com == '8' ? 'selected' : '' }}>C8</option>
+                                      <option value="10" {{ $remainingPayment?->type_com == '10' ? 'selected' : '' }}>C10</option>
+                                      <option value="12" {{ $remainingPayment?->type_com == '12' ? 'selected' : '' }}>C12</option>
+                                      <option value="14" {{ $remainingPayment?->type_com == '14' ? 'selected' : '' }}>C14</option>
+                                      <option value="16" {{ $remainingPayment?->type_com == '16' ? 'selected' : '' }}>C16</option>
+                                    </select>
+                                  </div>
+                                </div>
+
+                                <div class="col-12">
+                                  <div class="form-row-item">
+                                    <label>ยอดเงินค่าคอม</label>
+                                    <input id="remaining_total_com" name="remaining_total_com"
+                                      class="form-control text-end money-input" type="text"
+                                      value="{{ old('remaining_total_com', $remainingPayment->total_com ?? '') }}">
+                                  </div>
+                                </div>
+
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- กล่องฝั่งขวา -->
+                          <div class="col-md-6">
+                            <div class="finance-box">
+                              <div class="row g-3">
+                                <div class="col-12">
+                                  <div class="form-row-item">
+                                    <label>ค่างวด (ไม่มี ALP)</label>
+                                    <input id="remaining_alp" name="remaining_alp"
+                                      class="form-control text-end money-input" type="text"
+                                      value="{{ old('remaining_alp', $remainingPayment->alp ?? '') }}" readonly />
+                                  </div>
+                                </div>
+
+                                <div class="col-12">
+                                  <div class="form-row-item">
+                                    <label>ค่างวด (รวม ALP)</label>
+                                    <input id="remaining_including_alp" name="remaining_including_alp"
+                                      class="form-control text-end money-input" type="text"
+                                      value="{{ old('remaining_including_alp', $remainingPayment->including_alp ?? '') }}">
+                                  </div>
+                                </div>
+
+                                <div class="col-12">
+                                  <div class="form-row-item">
+                                    <label>ยอดเงิน ALP</label>
+                                    <input id="remaining_total_alp" name="remaining_total_alp"
+                                      class="form-control text-end money-input" type="text"
+                                      value="{{ old('remaining_total_alp', $remainingPayment->total_alp ?? '') }}">
+                                  </div>
+                                </div>
+
+                                <div class="col-12">
+                                  <div class="form-row-item">
+                                    <label>PO Number</label>
+                                    <input id="remaining_po_number" type="text"
+                                      class="form-control"
+                                      name="remaining_po_number" value="{{ old('remaining_po_number', $remainingPayment?->po_number ?? '') }}">
+                                  </div>
+                                </div>
+
+                                <div class="col-12">
+                                  <div class="form-row-item">
+                                    <label>วันที่ PO</label>
+                                    <input id="remaining_po_date" type="date"
+                                      class="form-control"
+                                      name="remaining_po_date" value="{{ old('remaining_po_date', $remainingPayment?->po_date ?? '') }}">
+                                  </div>
+                                </div>
+
+                                @php
+                                $deliveryType = $deliveryPayment->type ?? '';
+                                @endphp
+                                <div class="col-12">
+                                  <div class="form-row-item">
+                                    <label>จังหวัดที่ขึ้นทะเบียน</label>
+                                    <select id="RegistrationProvince_finance" name="RegistrationProvince_finance" class="registration-province form-select" required>
+                                      <option value="">-- เลือกจังหวัด --</option>
+                                      @foreach ($provinces as $p)
+                                      <option value="{{ @$p->id }}" {{ $saleCar->RegistrationProvince == $p->id ? 'selected' : '' }}>{{ @$p->name }}</option>
+                                      @endforeach
+                                    </select>
+                                  </div>
+                                </div>
+
+                              </div>
+                            </div>
+                          </div>
+
                         </div>
 
                       </div>
@@ -1181,7 +1521,7 @@
                     </div>
 
                     <h4 class="pt-2 pb-2 border-bottom">แนะนำ</h4>
-                    <div class="col-md-3 mt-2">
+                    <div class="col-md-5 mt-2">
                       <label class="form-label" for="customerSearchRef">ค้นหาข้อมูล</label>
                       <div class="input-group">
                         <input id="customerSearchRef" type="text" class="form-control" name="customerSearchRef" placeholder="พิมพ์ข้อมูล">
@@ -1200,7 +1540,7 @@
                         value="{{ $saleCar->customerReferrer->formatted_id_number ?? '' }}" readonly>
                     </div>
 
-                    <div class="col-md-2 mt-2">
+                    <div class="col-md-3 mt-2">
                       <label class="form-label" for="ReferrerAmount">ยอดเงินค่าแนะนำ</label>
                       <input id="ReferrerAmount" type="text"
                         class="form-control text-end money-input"
@@ -1235,8 +1575,44 @@
 
                     <h4 class="pt-2 pb-2 border-bottom">ยอดค่าคอม sale</h4>
 
-                    <div class="col-md-3">
-                      <label for="CommissionSaleDisplay" class="form-label">Commission Sale</label>
+                    <div class="col-md-2">
+                      <label for="TotalbalanceCampaign" class="form-label">คอมงบเหลือ</label>
+                      <input type="text"
+                        class="form-control text-end money-input"
+                        id="TotalbalanceCampaign" readonly>
+                    </div>
+
+                    <div class="col-md-2">
+                      <label for="ComGiftDisplay" class="form-label">คอมประดับยนต์</label>
+                      <input type="text"
+                        class="form-control text-end money-input"
+                        id="ComGiftDisplay" readonly>
+                    </div>
+
+                    <div class="col-md-2">
+                      <label for="ComInterestDisplay" class="form-label">คอมดอกเบี้ย</label>
+                      <input type="text"
+                        class="form-control text-end money-input"
+                        id="ComInterestDisplay" readonly>
+                    </div>
+
+                    <div class="col-md-2">
+                      <label for="summaryComTurn" class="form-label">คอมรถเทิร์น</label>
+                      <input type="text"
+                        class="form-control text-end money-input"
+                        id="summaryComTurn" readonly>
+                    </div>
+
+                    <div class="col-md-2">
+                      <label for="CommissionSpecial" class="form-label">คอมอื่นๆ</label>
+                      <input type="text"
+                        class="form-control text-end money-input"
+                        id="CommissionSpecial" name="CommissionSpecial"
+                        value="{{ $saleCar->CommissionSpecial }}">
+                    </div>
+
+                    <div class="col-md-2">
+                      <label for="CommissionSaleDisplay" class="form-label">รวมค่าคอม</label>
                       <input type="text"
                         class="form-control text-end money-input"
                         id="CommissionSaleDisplay"
@@ -1494,6 +1870,46 @@
     min-height: 38px !important;
     height: auto !important;
     padding-top: 4px !important;
+  }
+
+  .form-row-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .form-row-item label {
+    width: 180px;
+    margin-bottom: 0;
+    white-space: nowrap;
+  }
+
+  .form-row-item .form-control,
+  .form-row-item .form-select {
+    flex: 1;
+  }
+
+  @media (max-width: 768px) {
+
+    .form-row-item {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+    }
+
+    .form-row-item label {
+      width: 100%;
+      white-space: normal;
+      font-weight: 600;
+    }
+  }
+
+  .finance-box {
+    border: 1px solid #dcdcdc;
+    border-radius: 10px;
+    padding: 20px 18px;
+    background: #fafafa;
+    height: 100%;
   }
 </style>
 

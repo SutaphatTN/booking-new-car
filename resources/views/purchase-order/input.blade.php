@@ -19,13 +19,23 @@
 
           <div class="row g-5">
 
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label for="sale_card" class="form-label">รหัสผู้ขาย</label>
               <input id="sale_card" type="text" class="form-control" value="{{ Auth::user()->format_card_id }}" readonly>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label for="sale_name" class="form-label">ชื่อ - นามสกุล ผู้ขาย</label>
               <input id="sale_name" type="text" class="form-control" value="{{ Auth::user()->name }}" readonly>
+            </div>
+
+            <div class="col-md-2 mb-5">
+              <label for="type" class="form-label">แหล่งที่มา</label>
+              <select id="type" name="type" class="form-select" required>
+                <option value="">-- เลือก --</option>
+                @foreach ($type as $item)
+                <option value="{{ @$item->id }}">{{ @$item->name }}</option>
+                @endforeach
+              </select>
             </div>
 
             <input type="hidden"

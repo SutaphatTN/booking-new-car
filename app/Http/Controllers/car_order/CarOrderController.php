@@ -103,6 +103,10 @@ class CarOrderController extends Controller
                 ? str_replace(',', '', $request->car_MSRP)
                 : null;
 
+            $data['RI'] = $request->RI
+                ? str_replace(',', '', $request->RI)
+                : null;
+
             $order->update($data);
 
             return response()->json([
@@ -338,6 +342,9 @@ class CarOrderController extends Controller
                 'car_MSRP' => $request->filled('car_MSRP')
                     ? str_replace(',', '', $request->car_MSRP)
                     : null,
+                'RI' => $request->filled('RI')
+                    ? str_replace(',', '', $request->RI)
+                    : null,
                 'car_status' => 'Available',
                 'approver' => $request->approver,
                 'note' => $request->note,
@@ -448,6 +455,10 @@ class CarOrderController extends Controller
 
             $data['car_MSRP'] = $request->car_MSRP
                 ? str_replace(',', '', $request->car_MSRP)
+                : null;
+
+            $data['RI'] = $request->RI
+                ? str_replace(',', '', $request->RI)
                 : null;
 
             $order->update($data);

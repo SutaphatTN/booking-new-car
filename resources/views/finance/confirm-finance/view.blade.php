@@ -14,14 +14,27 @@
       <h4 class="card-header">ยอดเฟิร์มเงิน FN</h4>
       <div class="card-body">
         <div class="table-responsive text-nowrap">
+          <div class="d-flex justify-content-between mb-3">
+               <a href="{{ route('finance.firm-export') }}" class="btn btn-warning">
+              รายงาน Firm FN
+            </a>
+            
+            <div>
+              <select id="fnStatusFilter" class="form-select">
+                <option value="unpaid" selected>ยังไม่ได้รับเงิน</option>
+                <option value="paid">รับเงินแล้ว</option>
+                <option value="all">ทั้งหมด</option>
+              </select>
+            </div>
+          </div>
           <table class="table table-bordered confirmFNTable">
             <thead>
               <tr>
                 <th>No.</th>
                 <th>ชื่อ - นามสกุล</th>
-                <th>รุ่นรถหลัก</th>
-                <th>รุ่นรถย่อย</th>
-                <th>เลข PO-Number</th>
+                <th>วันที่ส่งมอบ</th>
+                <th>วันที่เฟิร์มเคส</th>
+                <th>วันที่ได้รับเงิน</th>
                 <th>Action</th>
               </tr>
             </thead>

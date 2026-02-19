@@ -32,20 +32,25 @@
               <input id="type" class="form-control" type="text" value="{{ $order->type }}" disabled />
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="purchase_source" class="form-label">แหล่งที่มา</label>
               <input id="purchase_source" class="form-control" type="text" value="{{ $order->purchase_source }}" disabled />
             </div>
 
-            <div class="col-md-5 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="purchase_type" class="form-label">ประเภทการซื้อรถ</label>
               <input id="purchase_type" class="form-control" type="text" value="{{ $order->purchaseType->name }}" disabled />
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
+              <input id="order_date" class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
             </div>
 
             <div class="col-12">
               <div id="fieldPurchase" class="row d-none">
                 <div class="col-md-12 mb-5">
-                  <label for="CusFullName" class="form-label">ชื่อ - นามสกุล  ลูกค้า</label>
+                  <label for="CusFullName" class="form-label">ชื่อ - นามสกุล ลูกค้า</label>
                   <input id="CusFullName" type="text"
                     class="form-control"
                     value="{{ $order->saleCus->customer->prefix->Name_TH ?? '' }} {{ $order->saleCus->customer->FirstName ?? '' }} {{ $order->saleCus->customer->LastName ?? '' }}" disabled>
@@ -84,15 +89,16 @@
                 value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}" disabled />
             </div>
 
-            <div class="col-md-3 mb-5">
-              <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
-              <input id="order_date" class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
-            </div>
-
             <div class="col-md-4 mb-5">
               <label for="car_MSRP" class="form-label">ราคาขาย</label>
               <input id="car_MSRP" class="form-control text-end" type="text"
                 value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}" disabled />
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="RI" class="form-label">RI</label>
+              <input id="RI" class="form-control text-end" type="text"
+                value="{{ $order->RI !== null ? number_format($order->RI, 2) : '-' }}" disabled />
             </div>
 
             <div class="col-md-5 mb-5">

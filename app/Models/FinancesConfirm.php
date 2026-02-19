@@ -24,6 +24,8 @@ class FinancesConfirm extends Model
         'advance_installment',
         'total',
         'actually_received',
+        'diff',
+        'firm_date',
         'date',
     ];
 
@@ -37,5 +39,10 @@ class FinancesConfirm extends Model
     public function getFormatDateAttribute()
 	{
 		return $this->date ? Carbon::parse($this->date)->format('d-m-Y') : null;
+	}
+
+    public function getFormatFirmDateAttribute()
+	{
+		return $this->firm_date ? Carbon::parse($this->firm_date)->format('d-m-Y') : null;
 	}
 }

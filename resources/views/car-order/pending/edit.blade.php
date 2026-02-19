@@ -32,7 +32,7 @@
                 value="{{ $order->type }}" disabled>
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="purchase_source" class="form-label">แหล่งที่มา</label>
               <select id="purchase_source" name="purchase_source" class="form-select" required>
                 <option value="">-- เลือกแหล่งที่มา --</option>
@@ -47,7 +47,7 @@
               @enderror
             </div>
 
-            <div class="col-md-5 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="purchase_type" class="form-label">ประเภทการซื้อรถ</label>
               <select id="purchase_type" name="purchase_type" class="form-select" required>
                 <option value="">-- เลือกประเภท --</option>
@@ -65,6 +65,11 @@
                 <strong>{{ $message }}</strong>
               </span>
               @enderror
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
+              <input id="order_date" class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
             </div>
 
             <input type="hidden" name="salecar_id" id="salecar_id">
@@ -177,8 +182,18 @@
             </div>
 
             <div class="col-md-3 mb-5">
-              <label for="order_date" class="form-label">วันที่สั่งซื้อ</label>
-              <input id="order_date" class="form-control" type="text" value="{{ $order->format_order_date }}" disabled />
+              <label for="RI" class="form-label">RI</label>
+              <input id="RI" type="text"
+                class="form-control text-end money-input @error('RI') is-invalid @enderror"
+                name="RI"
+                value="{{ $order->RI !== null ? number_format($order->RI, 2) : '' }}"
+                required>
+
+              @error('RI')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
             </div>
 
             <div class="col-md-5 mb-5">

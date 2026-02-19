@@ -180,8 +180,20 @@
               @enderror
             </div>
 
+            <div class="col-md-3 mb-5">
+              <label for="RI" class="form-label">RI</label>
+              <input id="RI" type="text"
+                class="form-control text-end money-input @error('RI') is-invalid @enderror"
+                name="RI" required>
 
-            <div class="col-md-8 mb-5">
+              @error('RI')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-5 mb-5">
               <label for="approver" class="form-label">ผู้อนุมัติ</label>
               <select id="approver" name="approver" class="form-select" required>
                 <option value="">-- เลือกผู้อนุมัติ --</option>
