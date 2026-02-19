@@ -111,7 +111,7 @@
           </div>
 
           @if($order->purchase_type == 1)
-          <div class="col-12">
+          <div class="col-6">
             <div class="col-md-12 mb-5">
               <label class="form-label">แคมเปญทดลองขับ</label>
               <input type="text"
@@ -119,8 +119,16 @@
                 value="{{ $order->cam_testdrive ?? '' }}" disabled>
             </div>
           </div>
-          @endif
 
+          <div class="col-6">
+            <div class="col-md-12 mb-5">
+              <label class="form-label">เลขไมล์รถทดลองขับ</label>
+              <input type="text"
+                class="form-control"
+                value="{{ $order->mileage_test ?? '' }}" disabled>
+            </div>
+          </div>
+          @endif
 
           <div class="col-md-12 mb-5">
             <label for="note" class="form-label">หมายเหตุ</label>

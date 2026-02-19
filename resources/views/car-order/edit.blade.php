@@ -221,11 +221,18 @@
 
             <div class="col-12">
               <div id="fieldTestDrive" class="row d-none">
-                <div class="col-md-12 mb-5">
+                <div class="col-md-6 mb-5">
                   <label for="cam_testdrive" class="form-label">แคมเปญทดลองขับ</label>
                   <input id="cam_testdrive" name="cam_testdrive" type="text"
                     class="form-control"
                     value="{{ $order->cam_testdrive ?? '' }}">
+                </div>
+
+                <div class="col-md-6 mb-5">
+                  <label for="mileage_test" class="form-label">เลขไมล์รถทดลองขับ</label>
+                  <input id="mileage_test" name="mileage_test" type="text"
+                    class="form-control"
+                    value="{{ $order->mileage_test ?? '' }}">
                 </div>
               </div>
             </div>
