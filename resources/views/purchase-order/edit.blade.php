@@ -393,9 +393,9 @@
                     <h4>ข้อมูลรถเทิร์น</h4>
 
                     <div class="col-md-3">
-                      <label for="brand" class="form-label">ยี่ห้อ</label>
-                      <input id="brand" class="form-control" name="brand"
-                        value="{{ old('brand', $saleCar->turnCar->brand ?? '') }}">
+                      <label for="brand_car" class="form-label">ยี่ห้อ</label>
+                      <input id="brand_car" class="form-control" name="brand_car"
+                        value="{{ old('brand_car', $saleCar->turnCar->brand_car ?? '') }}">
                     </div>
 
                     <div class="col-md-4">

@@ -42,6 +42,8 @@ class Extracomssion extends Model
 		'InterestCampaignID',
 		'FinanceID',
 		'ExtraCommissionAmount',
+		'userZone',
+		'brand',
 		'StartDate',
 		'EndDate'
 	];

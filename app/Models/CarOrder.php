@@ -53,6 +53,7 @@ class CarOrder extends Model
         'status',
         'reason',
         'userZone',
+        'brand',
     ];
 
     protected $dates = ['deleted_at'];

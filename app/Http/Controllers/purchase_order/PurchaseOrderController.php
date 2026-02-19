@@ -206,7 +206,7 @@ class PurchaseOrderController extends Controller
 
             if ($request->hasTurnCar === 'yes') {
                 $turnCar = TurnCar::create([
-                    'brand' => $request->brand,
+                    'brand_car' => $request->brand_car,
                     'model' => $request->model,
                     'machine' => $request->machine,
                     'year_turn' => $request->year_turn,
@@ -492,7 +492,7 @@ class PurchaseOrderController extends Controller
 
                 if (!$turnCarID) {
                     $turnCar = TurnCar::create([
-                        'brand' => $request->brand,
+                        'brand_car' => $request->brand_car,
                         'model' => $request->model,
                         'machine' => $request->machine,
                         'year_turn' => $request->year_turn,
@@ -510,7 +510,7 @@ class PurchaseOrderController extends Controller
                 } else {
                     $turnCar = TurnCar::findOrFail($turnCarID);
                     $turnCar->update([
-                        'brand' => $request->brand,
+                        'brand_car' => $request->brand_car,
                         'model' => $request->model,
                         'machine' => $request->machine,
                         'year_turn' => $request->year_turn,

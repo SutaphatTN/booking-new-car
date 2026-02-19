@@ -208,7 +208,9 @@ class Salecar extends Model
 		'balanceFinance',
 		'con_status',
 		'approval_type',
-		'approval_requested_at'
+		'approval_requested_at',
+		'userZone',
+		'brand'
 	];
 
 	protected $dates = ['deleted_at'];

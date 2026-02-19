@@ -13,6 +13,8 @@ class CampaignName extends Model
 
 	protected $fillable = [
 		'name',
+		'userZone',
+		'brand',
 	];
 
 	protected $dates = ['deleted_at'];

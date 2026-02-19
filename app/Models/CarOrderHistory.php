@@ -18,6 +18,7 @@ class CarOrderHistory extends Model
         'BookingDate',
         'changed_at',
         'userZone',
+        'brand',
     ];
 
     protected $dates = ['deleted_at'];

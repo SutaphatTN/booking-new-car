@@ -25,6 +25,7 @@ class Campaign extends Model
 		'cashSupport_deduct',
 		'cashSupport_final',
 		'userZone',
+		'brand',
 		'startDate',
 		'endDate',
 		'startYear',

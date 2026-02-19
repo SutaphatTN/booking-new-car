@@ -29,7 +29,8 @@ class AccessoryPartner extends Model
 
 	protected $fillable = [
 		'name',
-		'userZone'
+		'userZone',
+		'brand'
 	];
 
 	protected $dates = ['deleted_at'];

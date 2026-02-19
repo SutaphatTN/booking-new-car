@@ -63,6 +63,7 @@ class AccessoryPrice extends Model
 		'comSale',
 		'promo',
 		'userZone',
+		'brand',
 		'startDate',
 		'endDate',
 		'active',

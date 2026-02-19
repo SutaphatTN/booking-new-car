@@ -31,7 +31,9 @@ class Finance extends Model
 		'FinanceCompany',
 		'tax',
 		'max_year',
-		'Active'
+		'Active',
+		'userZone',
+		'brand',
 	];
 
 	protected $dates = ['deleted_at'];

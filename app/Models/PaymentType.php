@@ -38,6 +38,7 @@ class PaymentType extends Model
         'po_number',
         'po_date',
         'userZone',
+        'brand'
     ];
 
     protected $dates = ['deleted_at'];

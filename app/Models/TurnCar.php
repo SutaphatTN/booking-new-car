@@ -39,14 +39,16 @@ class TurnCar extends Model
 	];
 
 	protected $fillable = [
-		'brand',
+		'brand_car',
 		'model',
 		'year_turn',
 		'machine',
 		'color_turn',
 		'license_plate',
 		'cost_turn',
-		'com_turn'
+		'com_turn',
+		'userZone',
+		'brand'
 	];
 
 	protected $dates = ['deleted_at'];

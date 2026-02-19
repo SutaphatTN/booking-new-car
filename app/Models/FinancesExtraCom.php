@@ -15,7 +15,9 @@ class FinancesExtraCom extends Model
     protected $fillable = [
         'financeID',
         'model_id',
-        'com'
+        'com',
+        'userZone',
+		'brand',
     ];
 
     protected $dates = ['deleted_at'];

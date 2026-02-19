@@ -76,7 +76,8 @@ class Customer extends Model
 		'Note',
 		'Mobilephone1',
 		'Mobilephone2',
-		'userZone'
+		'userZone',
+		'brand',
 	];
 
 	protected $dates = ['deleted_at'];

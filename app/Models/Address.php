@@ -25,6 +25,7 @@ class Address extends Model
         'province',
         'postal_code',
         'userZone',
+        'brand',
     ];
 
     protected $dates = ['deleted_at'];

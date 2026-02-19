@@ -11,5 +11,7 @@ class TbCampaignType extends Model
 
 	protected $fillable = [
 		'name',
+		'userZone',
+		'brand'
 	];
 }

@@ -27,6 +27,8 @@ class FinancesConfirm extends Model
         'diff',
         'firm_date',
         'date',
+        'userZone',
+		'brand',
     ];
 
     protected $dates = ['deleted_at'];

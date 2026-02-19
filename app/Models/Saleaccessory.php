@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Saleaccessory extends Model
 {
 	use SoftDeletes;
-	
+
 	protected $table = 'saleaccessory';
 
 	protected $casts = [
@@ -42,7 +42,9 @@ class Saleaccessory extends Model
 		'price_type',
 		'price',
 		'commission',
-		'type'
+		'type',
+		'userZone',
+		'brand'
 	];
 
 	protected $dates = ['deleted_at'];

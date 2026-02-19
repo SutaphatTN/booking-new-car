@@ -49,7 +49,9 @@ class Interestcampaign extends Model
 		'CashSupportKickback',
 		'PercentIntCom',
 		'StartDate',
-		'EndDate'
+		'EndDate',
+		'userZone',
+		'brand',
 	];
 
 	protected $dates = ['deleted_at'];

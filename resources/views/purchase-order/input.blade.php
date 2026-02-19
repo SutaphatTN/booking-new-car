@@ -292,10 +292,10 @@
             <div id="turnCarFields" class="row mt-6 g-5" style="display:none;">
               <h4>รถเทิร์น</h4>
               <div class="col-md-3">
-                <label class="form-label" for="brand">ยี่ห้อ</label>
-                <input id="brand" type="text"
+                <label class="form-label" for="brand_car">ยี่ห้อ</label>
+                <input id="brand_car" type="text"
                   class="form-control"
-                  name="brand">
+                  name="brand_car">
               </div>
               <div class="col-md-4">
                 <label class="form-label" for="model">รุ่น</label>
