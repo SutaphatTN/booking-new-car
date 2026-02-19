@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\purchase_order;
 
 use App\Exports\booking\BookingExport;
-use App\Exports\Commission\SaleCommissionExport;
+use App\Exports\commission\SaleCommissionExport;
 use App\Exports\gp\GPExport;
 use App\Http\Controllers\Controller;
 use App\Mail\SaleRequestMail;
