@@ -3,13 +3,19 @@
 namespace App\Services;
 
 use App\Models\Salecar;
+use Illuminate\Support\Carbon;
 
 class GPQuery
 {
-    public static function base($month = null, $year = null)
+    public static function base($fromDate = null, $toDate = null)
     {
-        $month = $month ?? now()->month;
-        $year  = $year  ?? now()->year;
+        $fromDate = $fromDate
+            ? Carbon::parse($fromDate)->startOfDay()
+            : now()->startOfMonth();
+
+        $toDate = $toDate
+            ? Carbon::parse($toDate)->endOfDay()
+            : now()->endOfDay();
 
         return Salecar::with([
             'customer.prefix',
@@ -20,7 +26,9 @@ class GPQuery
         ])
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
-            ->whereMonth('DeliveryInCKDate', $month)
-            ->whereYear('DeliveryInCKDate', $year);
+            ->whereBetween('DeliveryInCKDate', [
+                $fromDate,
+                $toDate
+            ]);
     }
 }

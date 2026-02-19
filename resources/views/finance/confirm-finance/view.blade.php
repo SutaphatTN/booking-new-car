@@ -8,6 +8,7 @@
 @section('content')
 <div class="editFinConfirmModal"></div>
 <div class="viewMoreFinConfirmModal"></div>
+<div class="viewExportFirmModel"></div>
 <div class="row">
   <div class="col-12">
     <div class="card">
@@ -15,10 +16,8 @@
       <div class="card-body">
         <div class="table-responsive text-nowrap">
           <div class="d-flex justify-content-between mb-3">
-               <a href="{{ route('finance.firm-export') }}" class="btn btn-warning">
-              รายงาน Firm FN
-            </a>
-            
+            <button class="btn btn-warning btnViewExportFirm">รายงาน Firm FN</button>
+
             <div>
               <select id="fnStatusFilter" class="form-select">
                 <option value="unpaid" selected>ยังไม่ได้รับเงิน</option>

@@ -6,20 +6,20 @@ use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
 class GPExport implements WithMultipleSheets
 {
-  protected $month;
-  protected $year;
+  protected $fromDate;
+  protected $toDate;
 
-  public function __construct($month = null, $year = null)
+  public function __construct($fromDate = null, $toDate = null)
   {
-    $this->month = $month ?? now()->month;
-    $this->year  = $year  ?? now()->year;
+    $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m-d');
+    $this->toDate   = $toDate   ?? now()->format('Y-m-d');
   }
 
   public function sheets(): array
   {
     return [
-      new GPSummary($this->month, $this->year),
-      new GPPerCar($this->month, $this->year),
+      new GPSummary($this->fromDate, $this->toDate),
+      new GPPerCar($this->fromDate, $this->toDate),
     ];
   }
 }

@@ -1365,20 +1365,31 @@ class PurchaseOrderController extends Controller
         return response()->json(['data' => $data]);
     }
 
+    // report view com
+    public function viewExportCommission()
+    {
+        return view('purchase-order.report.commission.view');
+    }
+
     public function exportSaleCom(Request $request)
     {
-        $month = $request->month ?? now()->month;
-        $year  = $request->year  ?? now()->year;
+        $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
+        $toDate   = $request->to_date   ?? now()->format('Y-m-d');
 
-        return Excel::download(new SaleCommissionExport(Auth::user(), $month, $year), 'sale-commission.xlsx');
+        return Excel::download(new SaleCommissionExport(Auth::user(), $fromDate, $toDate), 'sale-commission.xlsx');
     }
 
     // report gp
+    public function viewExportGP()
+    {
+        return view('purchase-order.report.gp.view');
+    }
+
     public function exportGP(Request $request)
     {
-        $month = $request->month ?? now()->month;
-        $year  = $request->year  ?? now()->year;
+        $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
+        $toDate   = $request->to_date   ?? now()->format('Y-m-d');
 
-        return Excel::download(new GPExport($month, $year), 'gp-report.xlsx');
+        return Excel::download(new GPExport($fromDate, $toDate), 'gp-report.xlsx');
     }
 }

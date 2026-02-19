@@ -8,6 +8,7 @@
       <th>Option</th>
       <th>ราคาขาย</th>
       <th>แคมเปญทดลองขับ</th>
+       <th>เลขไมล์</th>
       <th>สถานะรถ</th>
       <th>Vin - Number</th>
       <th>ชื่อผู้จอง</th>
@@ -26,6 +27,7 @@
       <td>{{ $t['option'] }}</td>
       <td>{{ $t['car_MSRP'] }}</td>
       <td>{{ $t['cam_testdrive'] }}</td>
+      <td>{{ $t['mileage_test'] }}</td>
       <td>{{ $t['order_status'] }}</td>
       <td>{{ $t['vin_number'] }}</td>
       <td>{{ $t['customer'] }}</td>
@@ -35,7 +37,7 @@
     </tr>
     @empty
     <tr>
-      <td colspan="13" align="center">ไม่มีข้อมูล</td>
+      <td colspan="14" align="center">ไม่มีข้อมูล</td>
     </tr>
     @endforelse
   </tbody>

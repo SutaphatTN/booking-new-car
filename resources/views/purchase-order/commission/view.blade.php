@@ -6,6 +6,7 @@
 @endsection
 
 @section('content')
+<div class="viewExportComModel"></div>
 <div class="row">
   <div class="col-12">
     <div class="card">
@@ -13,10 +14,7 @@
       <div class="card-body">
         <div class="table-responsive text-nowrap">
           <div class="d-flex justify-content-end">
-            <a href="{{ route('purchase-order.sale-com-export') }}"
-              class="btn btn-warning">
-              รายงานค่าคอม
-            </a>
+            <button class="btn btn-warning btnViewExportCom">รายงานค่าคอม</button>
           </div>
           <table class="table table-bordered commissionTable">
             <thead>

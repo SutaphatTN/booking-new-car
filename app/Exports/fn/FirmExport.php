@@ -17,13 +17,13 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 
 class FirmExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
-    protected $month;
-    protected $year;
+    protected $fromDate;
+    protected $toDate;
 
-    public function __construct($month = null, $year = null)
+    public function __construct($fromDate = null, $toDate = null)
     {
-        $this->month = $month ?? now()->month;
-        $this->year  = $year  ?? now()->year;
+        $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m-d');
+        $this->toDate   = $toDate   ?? now()->format('Y-m-d');
     }
 
     public function title(): string
@@ -127,8 +127,10 @@ class FirmExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldA
         ])
             ->where('payment_mode', 'finance')
             ->where('con_status', '5')
-            ->whereMonth('DeliveryDate', $this->month)
-            ->whereYear('DeliveryDate', $this->year)
+            ->whereBetween('DeliveryDate', [
+                $this->fromDate,
+                $this->toDate
+            ])
             ->get();
 
         $data = $rows->map(function ($r) {

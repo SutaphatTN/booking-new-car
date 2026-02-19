@@ -18,14 +18,14 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
   protected $user;
-  protected $month;
-  protected $year;
+  protected $fromDate;
+  protected $toDate;
 
-  public function __construct($user, $month, $year)
+  public function __construct($user, $fromDate = null, $toDate = null)
   {
     $this->user = $user;
-    $this->month = $month;
-    $this->year  = $year;
+    $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m-d');
+    $this->toDate   = $toDate   ?? now()->format('Y-m-d');
   }
 
   public function title(): string
@@ -123,7 +123,7 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
   public function view(): View
   {
 
-    $rows = SaleCommissionQuery::base($this->user, true, $this->month, $this->year)
+    $rows = SaleCommissionQuery::base($this->user, true, $this->fromDate, $this->toDate)
       ->get()
       ->sortBy(fn($r) => $r->saleUser->name);
 
@@ -156,7 +156,7 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
 
       return [
         'branch' => $r->saleUser->branchInfo->name ?? '-',
-        'saleName' => $r->saleUser->name ?? '-',
+        'saleName' => optional($r->saleUser)->name ?? '-',
 
         'customer' => $customerName,
         'model' => $model,
@@ -171,7 +171,7 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       ];
     });
 
-    return view('purchase-order.commission.sale-report-per-car', [
+    return view('purchase-order.report.commission.sale-report-per-car', [
       'commission' => $data
     ]);
   }

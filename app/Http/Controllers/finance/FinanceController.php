@@ -435,11 +435,16 @@ class FinanceController extends Controller
     }
 
     // report finance firm
+    public function viewExportFirm()
+    {
+        return view('purchase-order.report.fn.view');
+    }
+
     public function exportFirm(Request $request)
     {
-        $month = $request->month ?? now()->month;
-        $year  = $request->year  ?? now()->year;
+        $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
+        $toDate   = $request->to_date   ?? now()->format('Y-m-d');
 
-        return Excel::download(new FirmExport($month, $year), 'firmFN-report.xlsx');
+        return Excel::download(new FirmExport($fromDate, $toDate), 'firmFN-report.xlsx');
     }
 }

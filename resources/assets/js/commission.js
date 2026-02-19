@@ -15,9 +15,9 @@ $(document).ready(function () {
   commissionTable = $('.commissionTable').DataTable({
     ajax: '/purchase-order/list-Commission',
     columns: [
-      { data: 'No' },
-      { data: 'name' },
-      { data: 'total_car' },
+      { data: 'No' }, 
+      { data: 'name' }, 
+      { data: 'total_car' }, 
       { data: 'com' }
     ],
     paging: true,
@@ -40,5 +40,34 @@ $(document).ready(function () {
         previous: 'ก่อนหน้า'
       }
     }
+  });
+});
+
+//view report
+$(document).on('hide.bs.modal', '.viewExportCom', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
+$(document).on('click', '.btnViewExportCom', function () {
+  $.get('/purchase-order/view-export-commission', function (html) {
+    $('.viewExportComModel').html(html);
+    $('.viewExportCom').modal('show');
+  });
+});
+
+//view report gp
+document.addEventListener('DOMContentLoaded', function () {
+  const modalEl = document.querySelector('.viewExportGP');
+  if (!modalEl) return; // กัน error
+
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+
+  // ปิด modal แล้วกลับหน้าก่อนหน้า
+  modalEl.addEventListener('hidden.bs.modal', function () {
+    window.history.back();
   });
 });

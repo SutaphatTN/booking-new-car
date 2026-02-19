@@ -18,14 +18,14 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
     protected $user;
-    protected $month;
-    protected $year;
+    protected $fromDate;
+    protected $toDate;
 
-    public function __construct($user, $month, $year)
+    public function __construct($user, $fromDate = null, $toDate = null)
     {
         $this->user = $user;
-        $this->month = $month;
-        $this->year  = $year;
+        $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m-d');
+        $this->toDate   = $toDate   ?? now()->format('Y-m-d');
     }
 
     public function title(): string
@@ -121,7 +121,7 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
 
     public function view(): View
     {
-        $sales = SaleCommissionQuery::base($this->user, false, $this->month, $this->year)
+        $sales = SaleCommissionQuery::base($this->user, false, $this->fromDate, $this->toDate)
             ->get()
             ->groupBy('SaleID');
 
@@ -129,7 +129,6 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
 
             $saleUser = $rows->first()->saleUser;
             $branch = $saleUser->branchInfo->name ?? '-';
-            $saleName = $saleUser->name ?? '-';
 
             $totalCars = $rows->count();
 
@@ -158,7 +157,7 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
 
             return [
                 'branch' => $branch,
-                'saleName' => $saleName,
+                'saleName' => optional($rows->saleUser)->name ?? '-',
                 'totalCars' => $totalCars,
                 'retail' => $retail,
                 'testDrive' => $testDrive,
@@ -172,7 +171,7 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
             ];
         })->values();
 
-        return view('purchase-order.commission.sale-report', [
+        return view('purchase-order.report.commission.sale-report', [
             'commission' => $data
         ]);
     }

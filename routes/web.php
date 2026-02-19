@@ -70,8 +70,10 @@ Route::group(['middleware' => 'auth'], function () {
     //commission sale
     Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('sale.viewCommission');
     Route::get('purchase-order/list-Commission', [PurchaseOrderController::class, 'listCommission']);
+    Route::get('purchase-order/view-export-commission', [PurchaseOrderController::class, 'viewExportCommission'])->name('purchase-order.view-export-commission');
     Route::get('/purchase-order/sale-com-export', [PurchaseOrderController::class, 'exportSaleCom'])->name('purchase-order.sale-com-export');
     //GP Report
+    Route::get('purchase-order/view-export-gp', [PurchaseOrderController::class, 'viewExportGP'])->name('purchase-order.view-export-gp');
     Route::get('/purchase-order/gp-export', [PurchaseOrderController::class, 'exportGP'])->name('purchase-order.gp-export');
 
     //accessory partner
@@ -117,6 +119,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::put('finance/update-extra-com/{id}', [FinanceController::class, 'updateExtraCom'])->name('finance.update-extra-com');
     Route::delete('finance/destroy-extra-com/{id}', [FinanceController::class, 'destroyExtraCom'])->name('finance.destroy-extra-com');
     //FirmFinance Report
+    Route::get('finance/view-export-firm', [FinanceController::class, 'viewExportFirm'])->name('finance.view-export-firm');
     Route::get('/finance/firm-export', [FinanceController::class, 'exportFirm'])->name('finance.firm-export');
 
     //car

@@ -731,3 +731,19 @@ function bindTotalEvents() {
       calculateTotal();
     });
 }
+
+//view report
+// blur focus viewExportFN
+$(document).on('hide.bs.modal', '.viewExportFN', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
+$(document).on('click', '.btnViewExportFirm', function () {
+  $.get('/finance/view-export-firm', function (html) {
+    $('.viewExportFirmModel').html(html);
+    $('.viewExportFN').modal('show');
+  });
+});
