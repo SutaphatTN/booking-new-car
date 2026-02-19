@@ -22,7 +22,7 @@
           </div>
         </div>
 
-        <div class="table-responsive">
+        <div class="table-responsive table-scroll">
           <table class="table table-bordered" id="tableGiftResult">
             <thead>
               <tr>
@@ -44,3 +44,26 @@
     </div>
   </div>
 </div>
+
+<style>
+  .table-scroll {
+    max-height: 350px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+  }
+
+  .table-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #fff;
+  }
+
+  .table-scroll tfoot td {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    z-index: 4;
+    box-shadow: 0 -2px 3px rgba(0, 0, 0, 0.05);
+  }
+</style>
