@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\purchase_order;
 
-use App\Exports\BookingExport;
+use App\Exports\booking\BookingExport;
+use App\Exports\Commission\SaleCommissionExport;
+use App\Exports\gp\GPExport;
 use App\Http\Controllers\Controller;
 use App\Mail\SaleRequestMail;
 use App\Models\TbCarmodel;
@@ -17,6 +19,7 @@ use App\Models\Salecar;
 use App\Models\SaleCarPayment;
 use App\Models\TbConStatus;
 use App\Models\TbProvinces;
+use App\Models\TbSalecarType;
 use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -24,7 +27,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -52,7 +54,8 @@ class PurchaseOrderController extends Controller
     public function create()
     {
         $model = TbCarmodel::all();
-        return view('purchase-order.input', compact('model'));
+        $type = TbSalecarType::all();
+        return view('purchase-order.input', compact('model', 'type'));
     }
 
     public function searchAccessory(Request $request)
@@ -222,6 +225,7 @@ class PurchaseOrderController extends Controller
 
             $salecar = Salecar::create([
                 'SaleID' => $request->SaleID,
+                'type' => $request->type,
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
                 'price_sub' => $request->filled('price_sub')
@@ -365,6 +369,7 @@ class PurchaseOrderController extends Controller
         $subModels = TbSubcarmodel::where('model_id', $saleCar->model_id)->get();
         $conStatus = TbConStatus::all();
         $provinces = TbProvinces::all();
+        $type = TbSalecarType::all();
         $payments = SaleCarPayment::where('SaleID', $id)->get();
         $userRole = Auth::user()->role;
 
@@ -396,7 +401,7 @@ class PurchaseOrderController extends Controller
 
         $selected_campaigns = $saleCar->campaigns->pluck('CampaignID')->toArray();
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'provinces', 'payments', 'userRole'));
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'provinces', 'type', 'payments', 'userRole'));
     }
 
     public function update(Request $request, $id)
@@ -526,6 +531,7 @@ class PurchaseOrderController extends Controller
 
             $data = [
                 'SaleID' => $request->SaleID,
+                'type' => $request->type,
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
                 'price_sub' => $request->filled('price_sub')
@@ -563,6 +569,9 @@ class PurchaseOrderController extends Controller
                 'CarSalePriceFinal' => $request->filled('CarSalePriceFinal')
                     ? str_replace(',', '', $request->CarSalePriceFinal)
                     : null,
+                'discount' => $request->filled('discount')
+                    ? str_replace(',', '', $request->discount)
+                    : null,
                 'DownPayment' => $request->filled('DownPayment')
                     ? str_replace(',', '', $request->DownPayment)
                     : null,
@@ -590,6 +599,9 @@ class PurchaseOrderController extends Controller
                 'balanceCampaign' => $request->filled('balanceCampaign')
                     ? str_replace(',', '', $request->balanceCampaign)
                     : null,
+                'kickback' => $request->filled('kickback')
+                    ? str_replace(',', '', $request->kickback)
+                    : null,
                 'CashSupportInterestPlus' => $request->CashSupportInterestPlus,
                 'TotalCashSupport' => $request->filled('TotalCashSupport')
                     ? str_replace(',', '', $request->TotalCashSupport)
@@ -615,7 +627,12 @@ class PurchaseOrderController extends Controller
                 'CommissionSale' => $request->filled('CommissionSale')
                     ? str_replace(',', '', $request->CommissionSale)
                     : null,
-                'CommissionDeduct' => $request->CommissionDeduct,
+                'CommissionDeduct' => $request->filled('CommissionDeduct')
+                    ? str_replace(',', '', $request->CommissionDeduct)
+                    : null,
+                'CommissionSpecial' => $request->filled('CommissionSpecial')
+                    ? str_replace(',', '', $request->CommissionSpecial)
+                    : null,
                 'ApprovalSignature' => $request->ApprovalSignature,
                 'ApprovalSignatureDate' => $request->ApprovalSignatureDate,
                 'FinanceAmount' => $request->FinanceAmount,
@@ -1306,5 +1323,62 @@ class PurchaseOrderController extends Controller
             ->get();
 
         return response()->json($saleCars);
+    }
+
+    //commission
+    public function viewCommission()
+    {
+        return view('purchase-order.commission.view');
+    }
+
+    public function listCommission()
+    {
+        $month = $request->month ?? Carbon::now()->month;
+        $year  = $request->year  ?? Carbon::now()->year;
+
+        $saleCar = Salecar::with('saleUser.branchInfo')
+            ->selectRaw('
+            SaleID,
+            COUNT(CarOrderID) as total_cars,
+            SUM(CommissionSale) as total_commission
+        ')
+            ->whereNotNull('DeliveryInCKDate')
+            ->whereNotNull('CarOrderID')
+            ->whereMonth('DeliveryInCKDate', $month)
+            ->whereYear('DeliveryInCKDate', $year)
+            ->groupBy('SaleID')
+            ->get();
+
+        $data = $saleCar->map(function ($s, $index) {
+            $nameSale = $s->saleUser->name;
+            $branchSale = $s->saleUser->branchInfo->name;
+            $sale = "{$nameSale}<br>(สาขา : {$branchSale})";
+
+            return [
+                'No' => $index + 1,
+                'name' => $sale,
+                'total_car' => $s->total_cars . ' คัน',
+                'com' => number_format($s->total_commission ?? 0, 2),
+            ];
+        });
+
+        return response()->json(['data' => $data]);
+    }
+
+    public function exportSaleCom(Request $request)
+    {
+        $month = $request->month ?? now()->month;
+        $year  = $request->year  ?? now()->year;
+
+        return Excel::download(new SaleCommissionExport(Auth::user(), $month, $year), 'sale-commission.xlsx');
+    }
+
+    // report gp
+    public function exportGP(Request $request)
+    {
+        $month = $request->month ?? now()->month;
+        $year  = $request->year  ?? now()->year;
+
+        return Excel::download(new GPExport($month, $year), 'gp-report.xlsx');
     }
 }

@@ -17,7 +17,7 @@
 
           <div class="row mb-3 justify-content-end">
             <div class="col-md-3">
-              <label>รุ่นรถหลัก</label>
+              <label for="filter_model">รุ่นรถหลัก</label>
               <select id="filter_model" class="form-select">
                 <option value="">-- ทั้งหมด --</option>
 
@@ -31,7 +31,7 @@
             </div>
 
             <div class="col-md-5">
-              <label>รุ่นรถย่อย</label>
+              <label for="filter_subModel">รุ่นรถย่อย</label>
               <select id="filter_subModel" class="form-select" disabled>
                 <option value="">-- ทั้งหมด --</option>
               </select>

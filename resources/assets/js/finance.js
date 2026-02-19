@@ -543,13 +543,18 @@ $(document).ready(function () {
   }
 
   confirmFNTable = $('.confirmFNTable').DataTable({
-    ajax: '/purchase-order/list-fn',
+    ajax: {
+      url: '/purchase-order/list-fn',
+      data: function (d) {
+        d.status = $('#fnStatusFilter').val();
+      }
+    },
     columns: [
       { data: 'No' },
       { data: 'FullName' },
-      { data: 'model' },
-      { data: 'subModel' },
-      { data: 'po' },
+      { data: 'delivery_date' },
+      { data: 'firm_date' },
+      { data: 'date' },
       { data: 'Action' }
     ],
     paging: true,
@@ -573,6 +578,10 @@ $(document).ready(function () {
       }
     }
   });
+});
+
+$('#fnStatusFilter').on('change', function () {
+  confirmFNTable.ajax.reload();
 });
 
 // blur focus viewFinConfirm
@@ -676,18 +685,23 @@ $(document).on('click', '.btnEditFNConfirm', function () {
 
 function calculateComFin() {
   let netPrice = parseFloat(document.getElementById('net_price').value || 0);
+  let excellent = parseFloat(document.getElementById('excellent').value || 0);
   let down = parseFloat(document.getElementById('down').value || 0);
-  let alp = parseFloat(document.getElementById('alp').value || 0);
+  let alp = parseFloat(document.getElementById('total_alp').value || 0);
   let interest = parseFloat(document.getElementById('interest').value || 0) / 100;
   let type_com = parseFloat(document.getElementById('type_com').value || 0) / 100;
-  let period = parseFloat(document.getElementById('period').value || 0);
+  let periodMonth = parseFloat(document.getElementById('period').value || 0);
+  let maxYear = parseFloat(document.getElementById('max_year').value || 0);
   let tax = parseFloat(document.getElementById('tax').value || 0) / 100;
 
-  let base = netPrice - down + alp;
-  let per = type_com * interest * (period / 12);
+  let realYear = periodMonth / 12;
+
+  let useYear = Math.min(realYear, maxYear);
+
+  let base = excellent + alp;
+  let per = type_com * interest * useYear;
 
   let com = (base * per) / 1.07;
-
   let comFin = com * 1.07 - com * tax;
 
   $('#com_fin').val(formatMoney(comFin));
@@ -698,16 +712,20 @@ function calculateTotal() {
   let advance = parseNumber($('#advance_installment').val() || 0);
   let comFin = parseNumber($('#com_fin').val() || 0);
   let comExtra = parseNumber($('#com_extra').val() || 0);
-  let comKickback = parseNumber($('#com_kickback').val() || 0);
+  let comKickback = parseFloat(document.getElementById('kickback').value || 0);
   let comSubsidy = parseNumber($('#com_subsidy').val() || 0);
+  let actually_received = parseNumber($('#actually_received').val() || 0);
 
+  console.log('comFin', comFin);
   let total = excellent - advance + comFin + comExtra + comKickback + comSubsidy;
+  let diff = total - actually_received;
 
   $('#total').val(formatMoney(total));
+  $('#diff').val(formatMoney(diff));
 }
 
 function bindTotalEvents() {
-  $('#excellent, #advance_installment, #com_fin, #com_extra, #com_kickback, #com_subsidy')
+  $('#excellent, #advance_installment, #com_fin, #com_extra, #kickback, #com_subsidy, #actually_received')
     .off('input')
     .on('input', function () {
       calculateTotal();

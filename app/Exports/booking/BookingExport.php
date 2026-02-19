@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Exports;
+namespace App\Exports\booking;
 
 use App\Models\TbCarmodel;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;

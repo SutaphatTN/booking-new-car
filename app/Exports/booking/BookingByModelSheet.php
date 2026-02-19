@@ -1,9 +1,8 @@
 <?php
 
-namespace App\Exports;
+namespace App\Exports\booking;
 
-use App\Models\CarOrder;
-use App\Models\Salecar;
+use App\Services\BookingReportQuery;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Illuminate\Contracts\View\View;
@@ -117,20 +116,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
 
   public function view(): View
   {
-    $carOrders = CarOrder::query()
-      ->with([
-        'model',
-        'subModel',
-        'orderStatus',
-        'salecars.customer.prefix',
-        'salecars.saleUser',
-        'salecars.carOrderHistories',
-        'salecars.conStatus',
-      ])
-      ->where('model_id', $this->model->id)
-      ->whereIn('status', ['approved', 'finished'])
-      ->whereIn('purchase_type', ['2'])
-      ->whereNot('car_status', 'Delivered')
+    $carOrders = BookingReportQuery::carsByModel($this->model->id)
       ->get()
       ->sortBy([
         fn($o) => $o->subModel->detail ?? '',
@@ -231,14 +217,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
     }
 
     //ยังไม่ผูกรถ
-    $orphanSales = Salecar::with([
-      'customer.prefix',
-      'saleUser',
-      'conStatus'
-    ])
-      ->whereNull('CarOrderID')
-      ->where('model_id', $this->model->id)
-      ->whereNotIn('con_status', [5, 9])
+    $orphanSales = BookingReportQuery::orphanSalesByModel($this->model->id)
       ->get();
 
     foreach ($orphanSales as $sale) {
@@ -277,7 +256,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
       ]);
     }
 
-    return view('purchase-order.report.booking-model', [
+    return view('purchase-order.report.booking.booking-model', [
       'rows' => $rows
     ]);
   }

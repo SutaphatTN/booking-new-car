@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Exports;
+namespace App\Exports\booking;
 
-use App\Models\CarOrder;
+use App\Services\BookingReportQuery;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\FromView;
@@ -105,22 +105,8 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
 
     public function view(): View
     {
-        $carOrders = CarOrder::query()
-            ->with([
-                'model',
-                'subModel',
-                'orderStatus',
-                'salecars.customer.prefix',
-                'salecars.saleUser',
-                'salecars.carOrderHistories',
-                'salecars.remainingPayment',
-                'salecars.conStatus',
-            ])
-            ->whereIn('status', ['approved', 'finished'])
-            ->whereIn('purchase_type', ['2'])
-            ->whereNot('car_status', 'Delivered')
+        $carOrders = BookingReportQuery::stockCars()
             ->get()
-
             ->sortBy([
                 fn($o) => $o->model->Name_TH ?? '',
                 fn($o) => $o->subModel->detail ?? '',
@@ -129,8 +115,6 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 fn($o) => $o->year ?? '',
                 fn($o) => $o->option ?? '',
             ])
-
-            //reset index
             ->values();
 
         $data = collect();
@@ -228,7 +212,7 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
             ]);
         }
 
-        return view('purchase-order.report.booking', [
+        return view('purchase-order.report.booking.booking', [
             'saleCar' => $data
         ]);
     }

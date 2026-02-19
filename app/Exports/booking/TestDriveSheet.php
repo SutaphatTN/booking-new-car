@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Exports;
+namespace App\Exports\booking;
 
-use App\Models\CarOrder;
+use App\Services\BookingReportQuery;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Illuminate\Contracts\View\View;
@@ -92,20 +92,8 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
 
   public function view(): View
   {
-    $carOrders = CarOrder::query()
-      ->with([
-        'model',
-        'subModel',
-        'orderStatus',
-        'salecars.customer.prefix',
-        'salecars.saleUser',
-        'salecars.conStatus',
-      ])
-      ->whereIn('status', ['approved', 'finished'])
-      ->whereIn('car_order.purchase_type', ['1'])
-      ->whereNot('car_status', 'Delivered')
+    $carOrders = BookingReportQuery::testDriveCars()
       ->get()
-
       ->sortBy([
         fn($o) => $o->model->Name_TH ?? '',
         fn($o) => $o->subModel->detail ?? '',
@@ -114,7 +102,6 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
         fn($o) => $o->year ?? '',
         fn($o) => $o->option ?? '',
       ])
-
       ->values();
 
     $data = collect();
@@ -153,7 +140,7 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
       ]);
     }
 
-    return view('purchase-order.report.test-drive', [
+    return view('purchase-order.report.booking.test-drive', [
       'testD' => $data
     ]);
   }

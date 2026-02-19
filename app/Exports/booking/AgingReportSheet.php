@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Exports;
+namespace App\Exports\booking;
 
-use App\Models\CarOrder;
+use App\Services\BookingReportQuery;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Illuminate\Contracts\View\View;
@@ -86,12 +86,7 @@ class AgingReportSheet  implements FromView, WithTitle, WithStyles, WithEvents, 
   public function view(): View
   {
     $today = Carbon::today();
-    $orders = CarOrder::with('model')
-      ->whereIn('status', ['approved', 'finished'])
-      ->whereIn('purchase_type', ['2'])
-      ->whereNot('car_status', 'Delivered')
-      ->whereNotNull('order_stock_date')
-      ->get();
+    $orders = BookingReportQuery::agingCars()->get();
 
     $grouped = [];
 
@@ -144,7 +139,7 @@ class AgingReportSheet  implements FromView, WithTitle, WithStyles, WithEvents, 
     $rows = collect($grouped)->sortBy('model')->values();
     $rows->push($grand);
 
-    return view('purchase-order.report.aging-report', [
+    return view('purchase-order.report.booking.aging-report', [
       'rows' => $rows
     ]);
   }
