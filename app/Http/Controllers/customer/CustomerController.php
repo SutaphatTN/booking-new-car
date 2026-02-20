@@ -45,6 +45,17 @@ class CustomerController extends Controller
 
             DB::beginTransaction();
 
+            $idNumber = preg_replace('/\D/', '', $request->IDNumber);
+
+            $exists = Customer::where('IDNumber', $idNumber)->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'เลขบัตรประชาชนนี้มีอยู่ในระบบแล้ว'
+                ], 422);
+            }
+
             $customer = Customer::create([
                 'PrefixName' => $request->PrefixName,
                 'FirstName' => $request->FirstName,
