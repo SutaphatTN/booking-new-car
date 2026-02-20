@@ -33,6 +33,7 @@ class TbCarmodel extends Model
 	protected $fillable = [
 		'Name_TH',
 		'Name_EN',
+		'initials',
 		'Active',
 		'over_budget',
 		'money_min',

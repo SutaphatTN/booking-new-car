@@ -4,8 +4,10 @@ namespace App\Http\Controllers\model_car;
 
 use App\Http\Controllers\Controller;
 use App\Models\TbCarmodel;
+use App\Models\TbCaroderType;
 use App\Models\TbSubcarmodel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class SubModelCarController extends Controller
 {
@@ -66,7 +68,7 @@ class SubModelCarController extends Controller
 
     public function viewMore($id)
     {
-        $sub = TbSubcarmodel::with(['model',])->find($id);
+        $sub = TbSubcarmodel::with(['model','typeCar'])->find($id);
 
         return view('car.sub-model-car.view-more', compact('sub'));
     }
@@ -75,7 +77,9 @@ class SubModelCarController extends Controller
     {
         $sub = TbSubcarmodel::all();
         $model = TbCarmodel::all();
-        return view('car.sub-model-car.input', compact('sub', 'model'));
+        $typeCar = TbCaroderType::all();
+
+        return view('car.sub-model-car.input', compact('sub', 'model', 'typeCar'));
     }
 
     function store(Request $request)
@@ -93,6 +97,9 @@ class SubModelCarController extends Controller
                 'over_budget' => $request->filled('over_budget')
                     ? str_replace(',', '', $request->over_budget)
                     : null,
+                'type_carOrder' => $request->type_carOrder,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
             ];
 
             TbSubcarmodel::create($data);
@@ -113,7 +120,8 @@ class SubModelCarController extends Controller
     {
         $sub = TbSubcarmodel::findOrFail($id);
         $model = TbCarmodel::all();
-        return view('car.sub-model-car.edit', compact('sub', 'model'));
+        $typeCar = TbCaroderType::all();
+        return view('car.sub-model-car.edit', compact('sub', 'model', 'typeCar'));
     }
 
     public function update(Request $request, $id)

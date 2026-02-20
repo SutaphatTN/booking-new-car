@@ -9,6 +9,7 @@ use App\Models\TbCampaignType;
 use App\Models\TbCarmodel;
 use App\Models\TbSubcarmodel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CampaignController extends Controller
 {
@@ -118,7 +119,8 @@ class CampaignController extends Controller
                 'cashSupport_final' => $request->filled('cashSupport_final')
                     ? str_replace(',', '', $request->cashSupport_final)
                     : null,
-                'userZone' => $request->userZone  ?? null,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
                 'startDate' => $request->startDate,
                 'endDate' => $request->endDate,
                 'startYear' => $request->startYear,
@@ -243,7 +245,9 @@ class CampaignController extends Controller
     {
         try {
             $data = [
-                'name' => $request->name
+                'name' => $request->name,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
             ];
 
             CampaignName::create($data);

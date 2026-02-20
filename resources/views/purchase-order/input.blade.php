@@ -109,6 +109,84 @@
               </fieldset>
             </div>
 
+            @if(auth()->user()->brand == 2)
+            <div class="col-md-3">
+              <label class="form-label" for="model_id">รุ่นรถหลัก</label>
+              <select id="model_id" name="model_id" class="form-select" required>
+                <option value="">-- เลือกรุ่นรถหลัก --</option>
+                @foreach ($model as $m)
+                <option value="{{ $m->id }}">{{ $m->Name_TH }}</option>
+                @endforeach
+              </select>
+
+              @error('model_id')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+            <div class="col-md-3">
+              <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
+              <select id="subModel_id" name="subModel_id" class="form-select @error('subModel_id') is-invalid @enderror" required>
+                <option value="">-- เลือกรุ่นรถย่อย --</option>
+              </select>
+
+              @error('subModel_id')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+            <div class="col-md-1">
+              <label class="form-label" for="option">Option</label>
+              <input id="option" type="text"
+                class="form-control @error('option') is-invalid @enderror"
+                name="option" required>
+
+              @error('option')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-1">
+              <label class="form-label" for="Year">ปี</label>
+              <input id="Year" type="text"
+                class="form-control @error('Year') is-invalid @enderror"
+                name="Year" required>
+
+              @error('Year')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="Color">สี</label>
+              <input id="Color" type="text"
+                class="form-control @error('Color') is-invalid @enderror"
+                name="Color" required>
+
+              @error('Color')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="interior_color">สีภายใน</label>
+              <input id="interior_color" type="text"
+                class="form-control @error('interior_color') is-invalid @enderror"
+                name="interior_color" required>
+
+              @error('interior_color')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+            @else
             <div class="col-md-3">
               <label class="form-label" for="model_id">รุ่นรถหลัก</label>
               <select id="model_id" name="model_id" class="form-select" required>
@@ -173,6 +251,7 @@
               </span>
               @enderror
             </div>
+            @endif
 
             <div class="col-md-2">
               <label class="form-label" for="price_sub">ราคารถ</label>

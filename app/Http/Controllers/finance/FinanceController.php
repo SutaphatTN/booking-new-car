@@ -11,6 +11,7 @@ use App\Models\Salecar;
 use App\Models\TbCarmodel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 
 class FinanceController extends Controller
@@ -54,7 +55,9 @@ class FinanceController extends Controller
             $data = [
                 'FinanceCompany' => $request->FinanceCompany,
                 'tax' => $request->tax,
-                'max_year' => $request->max_year
+                'max_year' => $request->max_year,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
             ];
 
             Finance::create($data);
@@ -161,6 +164,8 @@ class FinanceController extends Controller
                 'com' => $request->filled('com')
                     ? str_replace(',', '', $request->com)
                     : null,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
             ];
 
             FinancesExtraCom::create($data);
@@ -396,6 +401,8 @@ class FinanceController extends Controller
                     : null,
                 'firm_date' => $request->firm_date,
                 'date' => $request->date,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
             ];
 
             // fill + save (รองรับทั้ง create และ update)

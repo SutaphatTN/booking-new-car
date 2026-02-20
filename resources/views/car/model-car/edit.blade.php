@@ -41,6 +41,19 @@
             </div>
 
             <div class="col-md-12 mb-5">
+              <label for="initials" class="form-label">ชื่อย่อ</label>
+              <input id="initials" type="text"
+                class="form-control @error('initials') is-invalid @enderror"
+                name="initials" value="{{ $car->initials }}" required>
+
+              @error('initials')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-12 mb-5">
               <label for="over_budget" class="form-label">ยอดเงินเกินงบ</label>
               <input id="over_budget" type="text"
                 class="form-control text-end money-input"

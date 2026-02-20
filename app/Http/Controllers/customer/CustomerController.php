@@ -7,6 +7,7 @@ use App\Models\Address;
 use App\Models\Customer;
 use App\Models\TbPrefixname;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CustomerController extends Controller
@@ -57,7 +58,9 @@ class CustomerController extends Controller
                 'religion' => $request->religion,
                 'Mobilephone1' => preg_replace('/\D/', '', $request->Mobilephone1),
                 'Mobilephone2' => preg_replace('/\D/', '', $request->Mobilephone2),
-                'userZone' => $request->userZone  ?? null,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
+                'UserInsert' => Auth::id(),
             ]);
 
             Address::create([

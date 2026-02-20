@@ -39,7 +39,7 @@
       </div>
 
       <div class="d-flex justify-content-end pb-3 pe-3">
-        <button id="btnSaveExtra" class="btn btn-primary">บันทึก</button>
+        <button type="button" id="btnSaveExtra" class="btn btn-primary">บันทึก</button>
       </div>
     </div>
   </div>

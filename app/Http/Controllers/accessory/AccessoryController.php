@@ -9,6 +9,7 @@ use App\Models\AccessoryType;
 use App\Models\TbCarmodel;
 use App\Models\TbSubcarmodel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AccessoryController extends Controller
 {
@@ -59,7 +60,7 @@ class AccessoryController extends Controller
                 'No' => $index + 1,
                 'accessoryPartner_id' => $partnerA,
                 'name' => $fullName,
-                'model' => $modelC, 
+                'model' => $modelC,
                 'cost' => $fullCost,
                 'active' => $statusSwitch,
                 'Action' => view('accessory.button', compact('a'))->render()
@@ -127,7 +128,8 @@ class AccessoryController extends Controller
                 'promo' => $request->filled('promo')
                     ? str_replace(',', '', $request->promo)
                     : null,
-                'userZone' => $request->userZone  ?? null,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
                 'startDate' => $request->startDate,
                 'endDate' => $request->endDate,
                 'active' => $active,
@@ -259,6 +261,8 @@ class AccessoryController extends Controller
 
             $data = [
                 'name' => $request->name,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
             ];
 
             AccessoryPartner::create($data);

@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\CarOrder;
 use App\Models\Salecar;
-use Illuminate\Support\Carbon;
 
 class BookingReportQuery
 {

@@ -93,6 +93,27 @@
               <input id="subModel_id" class="form-control" type="text" value="{{ $order->subModel->detail }} - {{ $order->subModel->name }}" disabled />
             </div>
 
+            @if(auth()->user()->brand == 2)
+            <div class="col-md-2 mb-5">
+              <label for="option" class="form-label">Option</label>
+              <input id="option" class="form-control" type="text" value="{{ $order->option }}" disabled />
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label for="color" class="form-label">สี</label>
+              <input id="color" class="form-control" type="text" value="{{ $order->color }}" disabled />
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label for="interior_color" class="form-label">สีภายใน</label>
+              <input id="interior_color" class="form-control" type="text" value="{{ $order->interior_color }}" disabled />
+            </div>
+
+            <div class="col-md-2 mb-5">
+              <label for="year" class="form-label">ปี</label>
+              <input id="year" class="form-control" type="text" value="{{ $order->year }}" disabled />
+            </div>
+            @else
             <div class="col-md-3 mb-5">
               <label for="option" class="form-label">Option</label>
               <input id="option" class="form-control" type="text" value="{{ $order->option }}" disabled />
@@ -107,6 +128,7 @@
               <label for="year" class="form-label">ปี</label>
               <input id="year" class="form-control" type="text" value="{{ $order->year }}" disabled />
             </div>
+            @endif
 
             <div class="col-md-4 mb-5">
               <label for="car_DNP" class="form-label">ราคาทุน</label>
@@ -120,7 +142,7 @@
                 value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}" disabled />
             </div>
 
-             <div class="col-md-4 mb-5">
+            <div class="col-md-4 mb-5">
               <label for="RI" class="form-label">RI</label>
               <input id="RI" class="form-control text-end" type="text"
                 value="{{ $order->RI !== null ? number_format($order->RI, 2) : '-' }}" disabled />

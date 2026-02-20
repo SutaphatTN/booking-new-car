@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\UserAccessScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -9,6 +10,7 @@ use Illuminate\Support\Carbon;
 class CarOrderHistory extends Model
 {
     use SoftDeletes;
+    use UserAccessScope;
 
     protected $table = 'car_order_history';
 

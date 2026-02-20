@@ -18,6 +18,7 @@ $(document).ready(function () {
       { data: 'No' },
       { data: 'Name_TH' },
       { data: 'Name_EN' },
+      { data: 'initials' },
       { data: 'over_budget' },
       { data: 'money_min' },
       { data: 'Action', orderable: false, searchable: false }

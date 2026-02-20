@@ -112,6 +112,119 @@
               </select> -->
             </div>
 
+            @if(auth()->user()->brand == 2)
+            <div class="col-md-2 mb-5">
+              <label for="option" class="form-label">Option</label>
+              <input id="option" type="text"
+                class="form-control @error('option') is-invalid @enderror"
+                name="option" value="{{ $order->option }}" required>
+
+              @error('option')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="color" class="form-label">สี</label>
+              <input id="color" type="text"
+                class="form-control @error('color') is-invalid @enderror"
+                name="color" value="{{ $order->color }}" required>
+
+              @error('color')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-3 mb-5">
+              <label for="interior_color" class="form-label">สีภายใน</label>
+              <input id="interior_color" type="text"
+                class="form-control @error('interior_color') is-invalid @enderror"
+                name="interior_color" value="{{ $order->interior_color }}">
+
+              @error('interior_color')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-2 mb-5">
+              <label for="year" class="form-label">ปี</label>
+              <input id="year" type="text"
+                class="form-control @error('year') is-invalid @enderror"
+                name="year" value="{{ $order->year }}" required>
+
+              @error('year')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-2 mb-5">
+              <label for="RI" class="form-label">RI</label>
+              <input id="RI" type="text"
+                class="form-control text-end money-input @error('RI') is-invalid @enderror"
+                name="RI"
+                value="{{ $order->RI !== null ? number_format($order->RI, 2) : '' }}"
+                required>
+
+              @error('RI')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label for="car_DNP" class="form-label">ราคาทุน</label>
+              <input id="car_DNP" type="text"
+                class="form-control text-end money-input @error('car_DNP') is-invalid @enderror"
+                name="car_DNP"
+                value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}"
+                required>
+
+              @error('car_DNP')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label for="car_MSRP" class="form-label">ราคาขาย</label>
+              <input id="car_MSRP" type="text"
+                class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror"
+                name="car_MSRP"
+                value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}"
+                required>
+
+              @error('car_MSRP')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label for="approver" class="form-label">ผู้อนุมัติ</label>
+              <select id="approver" name="approver" class="form-select" readonly>
+                @foreach ($approvers as $u)
+                <option value="{{ $u->id }}" {{ $order->approver == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
+                @endforeach
+              </select>
+
+              @error('approver')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+            @else
             <div class="col-md-2 mb-5">
               <label for="option" class="form-label">Option</label>
               <input id="option" type="text"
@@ -210,6 +323,7 @@
               </span>
               @enderror
             </div>
+            @endif
 
             <div class="col-md-12 mb-5">
               <label for="note" class="form-label">

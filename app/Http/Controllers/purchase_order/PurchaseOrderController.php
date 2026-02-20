@@ -242,7 +242,14 @@ class PurchaseOrderController extends Controller
                 'BookingDate' => $request->BookingDate,
                 'TurnCarID' => $turnCarID,
                 'con_status' => 1,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
+                'UserInsert' => Auth::id(),
             ]);
+
+            if (Auth::user()->brand == 2) {
+                $salecar['interior_color'] = $request->interior_color;
+            }
 
             if ($request->filled('reservationCondition')) {
                 $data = [
@@ -373,6 +380,9 @@ class PurchaseOrderController extends Controller
         $payments = SaleCarPayment::where('SaleID', $id)->get();
         $userRole = Auth::user()->role;
 
+        //history
+        $isHistory = $saleCar->con_status == 5;
+
         $subModel_id = $saleCar->subModel_id;
 
         $today = Carbon::today();
@@ -401,7 +411,7 @@ class PurchaseOrderController extends Controller
 
         $selected_campaigns = $saleCar->campaigns->pluck('CampaignID')->toArray();
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'provinces', 'type', 'payments', 'userRole'));
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'provinces', 'type', 'payments', 'userRole', 'isHistory'));
     }
 
     public function update(Request $request, $id)
@@ -663,6 +673,10 @@ class PurchaseOrderController extends Controller
                     : null,
                 'con_status' => $request->con_status,
             ];
+
+            if (Auth::user()->brand == 2) {
+                $data['interior_color'] = $request->interior_color;
+            }
 
             $oldCarOrderID = $saleCar->CarOrderID;
             $newCarOrderID = $request->CarOrderID;

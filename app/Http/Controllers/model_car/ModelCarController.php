@@ -5,6 +5,7 @@ namespace App\Http\Controllers\model_car;
 use App\Http\Controllers\Controller;
 use App\Models\TbCarmodel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ModelCarController extends Controller
 {
@@ -24,7 +25,9 @@ class ModelCarController extends Controller
                 'No' => $index + 1,
                 'Name_TH' => $c->Name_TH,
                 'Name_EN' => $c->Name_EN,
+                'initials' => $c->initials,
                 'over_budget' => $c->over_budget !== null ? number_format($c->over_budget, 2) : '-',
+                'money_min' => $c->money_min !== null ? number_format($c->money_min, 2) : '-',
                 'Action' => view('car.model-car.button', compact('c'))->render()
             ];
         });
@@ -41,15 +44,20 @@ class ModelCarController extends Controller
     function store(Request $request)
     {
         try {
-            
+
             $data = [
                 'Name_TH' => $request->Name_TH,
                 'Name_EN' => $request->Name_EN,
-                'userZone' => $request->userZone  ?? null,
+                'initials' => $request->initials,
                 'Active' => 'active',
                 'over_budget' => $request->filled('over_budget')
                     ? str_replace(',', '', $request->over_budget)
                     : null,
+                'money_min' => $request->filled('money_min')
+                    ? str_replace(',', '', $request->money_min)
+                    : null,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
             ];
 
             TbCarmodel::create($data);
@@ -80,6 +88,10 @@ class ModelCarController extends Controller
 
             $data['over_budget'] = $request->over_budget
                 ? str_replace(',', '', $request->over_budget)
+                : null;
+
+            $data['money_min'] = $request->money_min
+                ? str_replace(',', '', $request->money_min)
                 : null;
 
             $car->update($data);

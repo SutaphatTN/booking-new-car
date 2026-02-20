@@ -6,9 +6,11 @@
 
 namespace App\Models;
 
+use App\Models\Traits\UserAccessScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Class Customer
@@ -44,6 +46,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Customer extends Model
 {
 	use SoftDeletes;
+	use UserAccessScope;
 
 	protected $table = 'customers';
 
@@ -78,6 +81,7 @@ class Customer extends Model
 		'Mobilephone2',
 		'userZone',
 		'brand',
+		'UserInsert'
 	];
 
 	protected $dates = ['deleted_at'];

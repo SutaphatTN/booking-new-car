@@ -6,6 +6,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\UserAccessScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -76,6 +77,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Salecar extends Model
 {
 	use SoftDeletes;
+	use UserAccessScope;
 
 	protected $table = 'salecars';
 
@@ -138,6 +140,7 @@ class Salecar extends Model
 		'type',
 		'model_id',
 		'Color',
+		'interior_color',
 		'Year',
 		'option',
 		'payment_mode',
@@ -210,7 +213,8 @@ class Salecar extends Model
 		'approval_type',
 		'approval_requested_at',
 		'userZone',
-		'brand'
+		'brand',
+		'UserInsert'
 	];
 
 	protected $dates = ['deleted_at'];

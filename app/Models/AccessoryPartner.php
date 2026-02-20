@@ -6,6 +6,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\UserAccessScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class AccessoryPartner extends Model
 {
 	use SoftDeletes;
+	use UserAccessScope;
 	
 	protected $table = 'accessory_partner';
 

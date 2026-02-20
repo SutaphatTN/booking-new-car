@@ -350,7 +350,14 @@ class CarOrderController extends Controller
                 'note' => $request->note,
                 'userZone' => $request->userZone ?? null,
                 'status' => CarOrder::STATUS_PENDING,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
+                'UserInsert' => Auth::id(),
             ];
+
+            if (Auth::user()->brand == 2) {
+                $data['interior_color'] = $request->interior_color;
+            }
 
             $order = CarOrder::create($data);
 
@@ -374,6 +381,8 @@ class CarOrderController extends Controller
                         'CarOrderID'  => $newCarOrderID,
                         'BookingDate' => $request->order_date,
                         'changed_at' => now(),
+                        'userZone' => Auth::user()->userZone ?? null,
+                        'brand' => Auth::user()->brand ?? null,
                     ]);
 
                     // คืนสถานะ order เก่า (ถ้ามี)
