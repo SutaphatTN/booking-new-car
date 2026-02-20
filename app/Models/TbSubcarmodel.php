@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
+use App\Models\Traits\UserAccessScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TbSubcarmodel extends Model
 {
 	use SoftDeletes;
+	use UserAccessScope;
 
 	protected $table = 'tb_subcarmodels';
 
@@ -30,5 +31,10 @@ class TbSubcarmodel extends Model
 	public function model()
 	{
 		return $this->belongsTo(TbCarmodel::class, 'model_id', 'id');
+	}
+
+	public function typeCar()
+	{
+		return $this->belongsTo(TbCaroderType::class, 'type_carOrder', 'id');
 	}
 }

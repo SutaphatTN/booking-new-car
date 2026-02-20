@@ -46,6 +46,13 @@
                 name="over_budget">
             </div>
 
+            <div class="col-md-12 mb-5">
+              <label for="money_min" class="form-label">เงินจองขั้นต่ำ</label>
+              <input id="money_min" type="text"
+                class="form-control text-end money-input"
+                name="money_min">
+            </div>
+
           </div>
 
           <div class="d-flex justify-content-end gap-2">

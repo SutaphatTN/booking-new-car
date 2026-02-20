@@ -13,6 +13,11 @@
           </div>
 
           <div class="col-md-12 mb-5">
+            <label for="type_carOrder" class="form-label">ประเภท</label>
+            <input id="type_carOrder" class="form-control" type="text" value="{{ $sub->typeCar->name }}" autocomplete="off" disabled />
+          </div>
+
+          <div class="col-md-12 mb-5">
             <label for="name" class="form-label">ชื่อรุ่นรถย่อย</label>
             <input id="name" class="form-control" type="text" value="{{ $sub->name }}" autocomplete="off" disabled />
           </div>

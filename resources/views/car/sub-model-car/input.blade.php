@@ -30,6 +30,16 @@
             </div>
 
             <div class="col-md-12 mb-5">
+              <label for="type_carOrder" class="form-label">ประเภท</label>
+              <select id="type_carOrder" name="type_carOrder" class="form-select">
+                <option value="">-- เลือกประเภท --</option>
+                @foreach ($typeCar as $item)
+                <option value="{{ @$item->id }}">{{ @$item->name }}</option>
+                @endforeach
+              </select>
+            </div>
+
+            <div class="col-md-12 mb-5">
               <label for="name" class="form-label">ชื่อรุ่นรถย่อย</label>
               <input id="name" type="text"
                 class="form-control @error('name') is-invalid @enderror"
