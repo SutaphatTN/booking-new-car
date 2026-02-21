@@ -325,15 +325,15 @@ class PurchaseOrderController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ], 500);
             // return response()->json([
             //     'success' => false,
-            //     'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            //     'message' => $e->getMessage(),
+            //     'trace' => $e->getTraceAsString(),
             // ], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
         }
     }
 
@@ -696,6 +696,8 @@ class PurchaseOrderController extends Controller
                     'CarOrderID' => $newCarOrderID,
                     'BookingDate' => $request->BookingDate,
                     'changed_at' => now(),
+                    'userZone' => Auth::user()->userZone ?? null,
+                    'brand' => Auth::user()->brand ?? null,
                 ]);
 
                 if ($oldCarOrderID) {
@@ -1057,15 +1059,15 @@ class PurchaseOrderController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            // return response()->json([
-            //     'success' => false,
-            //     'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
-            // ], 500);
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
             ], 500);
+            // return response()->json([
+            //     'success' => false,
+            //     'message' => $e->getMessage(),
+            //     'trace' => $e->getTraceAsString(),
+            // ], 500);
         }
     }
 

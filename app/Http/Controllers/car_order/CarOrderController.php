@@ -348,7 +348,6 @@ class CarOrderController extends Controller
                 'car_status' => 'Available',
                 'approver' => $request->approver,
                 'note' => $request->note,
-                'userZone' => $request->userZone ?? null,
                 'status' => CarOrder::STATUS_PENDING,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
@@ -409,15 +408,15 @@ class CarOrderController extends Controller
                 'message' => 'เพิ่มข้อมูลเรียบร้อยแล้ว'
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ], 500);
             // return response()->json([
             //     'success' => false,
-            //     'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            //     'message' => $e->getMessage(),
+            //     'trace' => $e->getTraceAsString(),
             // ], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
         }
     }
 
