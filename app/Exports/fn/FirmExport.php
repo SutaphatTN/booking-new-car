@@ -121,6 +121,8 @@ class FirmExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldA
             'carOrder.model',
             'carOrder.subModel',
             'carOrder',
+            'gwmColor',
+            'interiorColor',
             'financeConfirm',
             'remainingPayment',
             'remainingPayment.financeInfo',
@@ -147,12 +149,21 @@ class FirmExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldA
             $subModel = "{$detailModel} - {$sub}";
             $typeCom = "c{$r->remainingPayment->type_com}";
 
+            $color = $r->brand == 2
+                ? ($r->gwmColor->name ?? '-')
+                : ($r->color ?? '-');
+
+            $interiorColor = $r->brand == 2
+                ? ($r->interiorColor->name ?? '-')
+                : null;
+
             return [
                 'customer' => $customerName,
                 'model' => $model,
                 'subModel' => $subModel,
                 'option'     => $r->option ?? '-',
-                'color'      => $r->color ?? '-',
+                'color'      => $color,
+                'interior_color' => $interiorColor,
                 'year'       => $r->year ?? '-',
                 'alp'       => $r->remainingPayment->total_alp ?? '-',
                 'name_fi'       => $r->remainingPayment->financeInfo->FinanceCompany ?? '-',

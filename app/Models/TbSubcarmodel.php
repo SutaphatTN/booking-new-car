@@ -37,4 +37,14 @@ class TbSubcarmodel extends Model
 	{
 		return $this->belongsTo(TbCaroderType::class, 'type_carOrder', 'id');
 	}
+
+	public function colors()
+	{
+		return $this->belongsToMany(
+			TbColor::class,
+			'color_submodel',
+			'subcarmodel_id',
+			'color_id'
+		);
+	}
 }

@@ -7,6 +7,9 @@
       <th>รุ่นรถย่อย</th>
       <th>Option</th>
       <th>สี</th>
+      @if(auth()->user()->brand == 2)
+      <th>สีภายใน</th>
+      @endif
       <th>ปี</th>
       <th>ประกัน ALP</th>
       <th>ไฟแนนซ์</th>
@@ -36,6 +39,9 @@
       <td>{{ $f['subModel'] }}</td>
       <td>{{ $f['option'] }}</td>
       <td>{{ $f['color'] }}</td>
+      @if(auth()->user()->brand == 2)
+      <td>{{ $f['interior_color'] }}</td>
+      @endif
       <td>{{ $f['year'] }}</td>
 
       <td>{{ $f['alp'] }}</td>
@@ -59,7 +65,9 @@
     </tr>
     @empty
     <tr>
-      <td colspan="24" align="center">ไม่มีข้อมูล</td>
+      <td colspan="{{ auth()->user()->brand == 2 ? 25 : 24 }}" align="center">
+        ไม่มีข้อมูล
+      </td>
     </tr>
     @endforelse
   </tbody>

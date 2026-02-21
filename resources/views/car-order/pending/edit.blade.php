@@ -127,12 +127,19 @@
             </div>
 
             <div class="col-md-3 mb-5">
-              <label for="color" class="form-label">สี</label>
-              <input id="color" type="text"
-                class="form-control @error('color') is-invalid @enderror"
-                name="color" value="{{ $order->color }}" required>
+              <label for="gwm_color" class="form-label">สี</label>
+              <select id="gwm_color" name="gwm_color" class="form-select" required>
+                <option value="">-- เลือกสี --</option>
 
-              @error('color')
+                @foreach ($gwmColor as $t)
+                <option value="{{ $t->id }}"
+                  {{ $order->gwm_color == $t->id ? 'selected' : '' }}>
+                  {{ $t->name }}
+                </option>
+                @endforeach
+              </select>
+
+              @error('gwm_color')
               <span class="invalid-feedback" role="alert">
                 <strong>{{ $message }}</strong>
               </span>
@@ -141,9 +148,15 @@
 
             <div class="col-md-3 mb-5">
               <label for="interior_color" class="form-label">สีภายใน</label>
-              <input id="interior_color" type="text"
-                class="form-control @error('interior_color') is-invalid @enderror"
-                name="interior_color" value="{{ $order->interior_color }}">
+              <select id="interior_color" name="interior_color" class="form-select @error('interior_color') is-invalid @enderror">
+                @foreach ($interiorColor as $t)
+                <option value="{{ $t->id }}"
+                  data-name="{{ $t->name }}"
+                  {{ $order->interior_color == $t->id ? 'selected' : '' }}>
+                  {{ $t->name }}
+                </option>
+                @endforeach
+              </select>
 
               @error('interior_color')
               <span class="invalid-feedback" role="alert">

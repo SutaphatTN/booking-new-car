@@ -8,6 +8,7 @@ use App\Models\CarOrder;
 use App\Models\CarOrderHistory;
 use App\Models\Salecar;
 use App\Models\TbCarmodel;
+use App\Models\TbInteriorColor;
 use App\Models\TbOrderStatus;
 use App\Models\TbPurchaseType;
 use App\Models\TbSubcarmodel;
@@ -50,7 +51,7 @@ class CarOrderController extends Controller
             $subDetail = $c->subModel ? $c->subModel->detail : '';
             $status = $c->orderStatus ? $c->orderStatus->name : '';
 
-            $car = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$c->color}<br>ราคาขาย : " . number_format($c->car_MSRP);
+            $car = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$c->display_color}<br>ราคาขาย : " . number_format($c->car_MSRP);
             $statusDisplay = "รถ : {$status}<br>การจอง : {$c->car_status}";
 
             return [
@@ -72,6 +73,8 @@ class CarOrderController extends Controller
         $order = CarOrder::with([
             'model',
             'subModel',
+            'gwmColor',
+            'interiorColor'
         ])->find($id);
 
         return view('car-order.view-more', compact('order'));
@@ -85,8 +88,9 @@ class CarOrderController extends Controller
         $orderStatus = TbOrderStatus::all();
         $approvers = User::where('role', 'audit')->get();
         $purchaseType = TbPurchaseType::all();
+        $interiorColor = TbInteriorColor::all();
 
-        return view('car-order.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType'));
+        return view('car-order.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType', 'interiorColor'));
     }
 
     public function update(Request $request, $id)
@@ -141,7 +145,6 @@ class CarOrderController extends Controller
         ]);
     }
 
-
     function destroy($id)
     {
         try {
@@ -166,7 +169,7 @@ class CarOrderController extends Controller
     {
         $keyword = $request->input('keyword');
 
-        $order = CarOrder::with(['model', 'subModel', 'orderStatus'])
+        $order = CarOrder::with(['model', 'subModel', 'orderStatus', 'gwmColor', 'interiorColor'])
             ->where('car_status', 'Available')
             ->whereIn('status', ['approved', 'finished'])
             ->where(function ($query) use ($keyword) {
@@ -181,12 +184,31 @@ class CarOrderController extends Controller
                     ->orWhereHas('subModel', function ($q) use ($keyword) {
                         $q->where('name', 'like', "%{$keyword}%")
                             ->orWhere('detail', 'like', "%{$keyword}%");
+                    })
+                    ->orWhereHas('gwmColor', function ($q) use ($keyword) {
+                        $q->where('name', 'like', "%{$keyword}%");
+                    })
+                    ->orWhereHas('interiorColor', function ($q) use ($keyword) {
+                        $q->where('name', 'like', "%{$keyword}%");
                     });
             })
             ->orderByRaw("CASE WHEN order_status = 4 THEN 0 ELSE 1 END")
             ->orderBy('order_stock_date', 'asc')
             ->limit(10)
             ->get();
+
+        $order = $order->map(function ($item) {
+
+            if ($item->brand == 2) {
+                $item->display_color = $item->gwmColor->name ?? '-';
+                $item->display_interior_color = $item->interiorColor->name ?? '-';
+            } else {
+                $item->display_color = $item->color ?? '-';
+                $item->display_interior_color = null;
+            }
+
+            return $item;
+        });
 
         return response()->json($order);
     }
@@ -242,7 +264,7 @@ class CarOrderController extends Controller
 
     public function listPending()
     {
-        $order = CarOrder::with('model', 'subModel')
+        $order = CarOrder::with('model', 'subModel', 'gwmColor')
             ->where('status', 'pending')
             ->get();
 
@@ -251,7 +273,7 @@ class CarOrderController extends Controller
             $subModelOrder = $p->subModel ? $p->subModel->name : '';
             $subDetail = $p->subModel ? $p->subModel->detail : '';
 
-            $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$p->color}<br>ราคาขาย : " . number_format($p->car_MSRP);
+            $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$p->display_color}<br>ราคาขาย : " . number_format($p->car_MSRP);
 
             return [
                 'No' => $index + 1,
@@ -266,7 +288,6 @@ class CarOrderController extends Controller
         return response()->json(['data' => $data]);
     }
 
-
     public function create()
     {
         $order = CarOrder::all();
@@ -274,8 +295,9 @@ class CarOrderController extends Controller
         $orderStatus = TbOrderStatus::all();
         $approvers = User::where('role', 'audit')->get();
         $purchaseType = TbPurchaseType::all();
+        $interiorColor = TbInteriorColor::all();
 
-        return view('car-order.pending.input', compact('order', 'model', 'orderStatus', 'approvers', 'purchaseType'));
+        return view('car-order.pending.input', compact('order', 'model', 'orderStatus', 'approvers', 'purchaseType', 'interiorColor'));
     }
 
     function store(Request $request)
@@ -332,7 +354,7 @@ class CarOrderController extends Controller
                 'order_code' => $order_code,
                 'type' => $request->type,
                 'order_date' => $request->order_date,
-                'color' => $request->color,
+                'color' => $request->color ?? null,
                 'year' => $request->year,
                 'purchase_type' => $request->purchase_type,
                 'order_status' => 1,
@@ -355,6 +377,7 @@ class CarOrderController extends Controller
             ];
 
             if (Auth::user()->brand == 2) {
+                $data['gwm_color'] = $request->gwm_color;
                 $data['interior_color'] = $request->interior_color;
             }
 
@@ -420,6 +443,7 @@ class CarOrderController extends Controller
         }
     }
 
+    //get sub model from model
     public function getSubModelCarOrder(Request $request)
     {
         $modelId = $request->model_id;
@@ -439,6 +463,19 @@ class CarOrderController extends Controller
         return response()->json($subModels);
     }
 
+    //get color from sub model
+    public function getColorBySubModel(Request $request)
+    {
+        $subModelId = $request->sub_model_id;
+
+        $colors = TbSubcarmodel::with('colors')
+            ->find($subModelId)
+            ?->colors
+            ->select('id', 'name');
+
+        return response()->json($colors);
+    }
+
     public function editPending($id)
     {
         $order = CarOrder::with(['saleCus'])->findOrFail($id);
@@ -447,8 +484,12 @@ class CarOrderController extends Controller
         $orderStatus = TbOrderStatus::all();
         $approvers = User::where('role', 'audit')->get();
         $purchaseType = TbPurchaseType::all();
+        $gwmColor = $order->subModel
+            ? $order->subModel->colors
+            : collect();
+        $interiorColor = TbInteriorColor::all();
 
-        return view('car-order.pending.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType'));
+        return view('car-order.pending.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType', 'gwmColor', 'interiorColor'));
     }
 
     public function updatePending(Request $request, $id)
@@ -530,7 +571,7 @@ class CarOrderController extends Controller
                 'type' => $p->type,
                 'model_id' => $modelOrder,
                 'subModel_id' => $subModelFull,
-                'color' => $p->color,
+                'color' => $p->display_color,
                 'cost' => number_format($p->car_MSRP, 2),
                 'Action' => view('car-order.process.button', compact('p'))->render()
             ];
@@ -617,7 +658,7 @@ class CarOrderController extends Controller
                 'type' => $a->type,
                 'model_id' => $modelOrder,
                 'subModel_id' => $subModelFull,
-                'color' => $a->color,
+                'color' => $a->display_color,
                 'cost' => number_format($a->car_MSRP, 2),
                 'status' => $statusBadge,
                 'Action' => view('car-order.approve.button', compact('a'))->render()

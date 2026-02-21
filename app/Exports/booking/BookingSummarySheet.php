@@ -154,6 +154,14 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 }
             }
 
+            $color = $order->brand == 2
+                ? ($order->gwmColor->name ?? '-')
+                : ($order->color ?? '-');
+
+            $interiorColor = $order->brand == 2
+                ? ($order->interiorColor->name ?? '-')
+                : null;
+
             $data->push([
                 'No'         => $no++,
 
@@ -162,7 +170,8 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                     ? $order->subModel->detail . ' - ' . $order->subModel->name
                     : '-',
 
-                'color'      => $order->color ?? '-',
+                'color'      => $color,
+                'interior_color' => $interiorColor,
                 'year'       => $order->year ?? '-',
                 'option'     => $order->option ?? '-',
                 'car_MSRP' => $order->car_MSRP ?? null,

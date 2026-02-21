@@ -75,6 +75,16 @@
                     </div>
                   </div>
 
+                  @if(auth()->user()->brand == 2)
+                  <div class="col-12">
+                    <div class="form-row-item">
+                      <label for="gwm_color" class="form-label">สี / สีภายใน</label>
+                      <input id="gwm_color" type="text"
+                        class="form-control"
+                        value="{{ $sale->gwmColor->name ?? '-' }} / {{ $sale->interiorColor->name ?? '-' }}" readonly>
+                    </div>
+                  </div>
+                  @else
                   <div class="col-12">
                     <div class="form-row-item">
                       <label for="Color" class="form-label">สี</label>
@@ -83,6 +93,7 @@
                         value="{{ $sale->Color ?? '-' }}" readonly>
                     </div>
                   </div>
+                  @endif
 
                   <div class="col-12">
                     <div class="form-row-item">

@@ -10,6 +10,7 @@ use App\Http\Controllers\campaign\CampaignController;
 use App\Http\Controllers\car_order\CarOrderController;
 use App\Http\Controllers\customer\CustomerController;
 use App\Http\Controllers\finance\FinanceController;
+use App\Http\Controllers\forecast\ForecastController;
 use App\Http\Controllers\home\HomeController;
 use App\Http\Controllers\model_car\ModelCarController;
 use App\Http\Controllers\model_car\SubModelCarController;
@@ -136,6 +137,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('car-order/{id}/view-more', [CarOrderController::class, 'viewMore'])->name('car-order.viewMore');
     Route::get('/api/car-order/sub-model', [CarOrderController::class, 'getSubModelCarOrder']);
     Route::get('/car-order/search', [CarOrderController::class, 'search'])->name('car-order.search');
+    //get color
+    Route::get('/api/car-order/color', [CarOrderController::class, 'getColorBySubModel']);
     //car-order history
     Route::get('car-order/history', [CarOrderController::class, 'history'])->name('car-order.history');
     Route::get('car-order/history/list', [CarOrderController::class, 'listHistory']);
@@ -189,6 +192,12 @@ Route::middleware(['auth', 'notsale'])->group(function () {
         'update' => 'model.sub-model.update',
         'destroy' => 'model.sub-model.destroy',
     ]);
+
+    Route::get('/forecast', [ForecastController::class, 'forecastForm'])
+        ->name('forecast.form');
+
+    Route::post('/forecast/calculate', [ForecastController::class, 'forecastCalculate'])
+        ->name('forecast.calculate');
 });
 
 

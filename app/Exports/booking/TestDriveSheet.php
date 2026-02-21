@@ -111,13 +111,22 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
       $sale = $order->salecars
         ->first(fn($s) => !in_array($s->con_status, [5, 9]));
 
+      $color = $order->brand == 2
+        ? ($order->gwmColor->name ?? '-')
+        : ($order->color ?? '-');
+
+      $interiorColor = $order->brand == 2
+        ? ($order->interiorColor->name ?? '-')
+        : null;
+
       $data->push([
         'model'      => $order->model->Name_TH ?? '-',
         'subModel'   => $order->subModel
           ? $order->subModel->detail . ' - ' . $order->subModel->name
           : '-',
 
-        'color'      => $order->color ?? '-',
+        'color'      => $color,
+        'interior_color' => $interiorColor,
         'year'       => $order->year ?? '-',
         'option'     => $order->option ?? '-',
         'car_MSRP' => $order->car_MSRP ?? null,

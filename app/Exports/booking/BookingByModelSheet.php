@@ -163,11 +163,20 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         }
       }
 
+      $color = $order->brand == 2
+        ? ($order->gwmColor->name ?? '-')
+        : ($order->color ?? '-');
+
+      $interiorColor = $order->brand == 2
+        ? ($order->interiorColor->name ?? '-')
+        : null;
+
       $rows->push([
         'subModel'    => $order->subModel
           ? $order->subModel->detail . ' - ' . $order->subModel->name
           : '-',
-        'color'       => $order->color ?? '-',
+        'color'      => $color,
+        'interior_color' => $interiorColor,
         'year'        => $order->year ?? '-',
         'option'      => $order->option ?? '-',
         'car_MSRP' => $order->car_MSRP ?? null,
@@ -222,12 +231,21 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
 
     foreach ($orphanSales as $sale) {
 
+      $color = $sale->brand == 2
+        ? ($sale->gwmColor->name ?? '-')
+        : ($sale->color ?? '-');
+
+      $interiorColor = $sale->brand == 2
+        ? ($sale->interiorColor->name ?? '-')
+        : null;
+
       $rows->push([
         'subModel'    => $sale->subModel
           ? $sale->subModel->detail . ' - ' . $sale->subModel->name
           : 'ยังไม่ผูกรถ',
 
-        'color'       => $sale->Color ?? '-',
+        'color'      => $color,
+        'interior_color' => $interiorColor,
         'year'        => $sale->Year ?? '-',
         'option'      => $sale->option ?? '-',
 

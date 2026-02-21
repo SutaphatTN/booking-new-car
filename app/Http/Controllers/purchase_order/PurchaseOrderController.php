@@ -18,6 +18,7 @@ use App\Models\Salecampaign;
 use App\Models\Salecar;
 use App\Models\SaleCarPayment;
 use App\Models\TbConStatus;
+use App\Models\TbInteriorColor;
 use App\Models\TbProvinces;
 use App\Models\TbSalecarType;
 use App\Models\TbSubcarmodel;
@@ -55,7 +56,8 @@ class PurchaseOrderController extends Controller
     {
         $model = TbCarmodel::all();
         $type = TbSalecarType::all();
-        return view('purchase-order.input', compact('model', 'type'));
+        $interiorColor = TbInteriorColor::all();
+        return view('purchase-order.input', compact('model', 'type', 'interiorColor'));
     }
 
     public function searchAccessory(Request $request)
@@ -234,7 +236,7 @@ class PurchaseOrderController extends Controller
                 'CashDeposit' => $request->filled('CashDeposit')
                     ? str_replace(',', '', $request->CashDeposit)
                     : null,
-                'Color' => $request->Color,
+                'Color' => $request->Color ?? null,
                 'Year' => $request->Year,
                 'option' => $request->option,
                 'payment_mode' => $request->payment_mode,
@@ -248,6 +250,7 @@ class PurchaseOrderController extends Controller
             ]);
 
             if (Auth::user()->brand == 2) {
+                $data['gwm_color'] = $request->gwm_color;
                 $salecar['interior_color'] = $request->interior_color;
             }
 
@@ -347,6 +350,19 @@ class PurchaseOrderController extends Controller
         return response()->json($subModels);
     }
 
+    //get color from sub model
+    public function getColorBySubModel(Request $request)
+    {
+        $subModelId = $request->sub_model_id;
+
+        $colors = TbSubcarmodel::with('colors')
+            ->find($subModelId)
+            ?->colors
+            ->select('id', 'name');
+
+        return response()->json($colors);
+    }
+
     public function getCampaign(Request $request)
     {
         $subModel_id = $request->subModel_id;
@@ -379,6 +395,10 @@ class PurchaseOrderController extends Controller
         $type = TbSalecarType::all();
         $payments = SaleCarPayment::where('SaleID', $id)->get();
         $userRole = Auth::user()->role;
+        $gwmColor = $saleCar->subModel
+            ? $saleCar->subModel->colors
+            : collect();
+        $interiorColor = TbInteriorColor::all();
 
         //history
         $isHistory = $saleCar->con_status == 5;
@@ -411,7 +431,7 @@ class PurchaseOrderController extends Controller
 
         $selected_campaigns = $saleCar->campaigns->pluck('CampaignID')->toArray();
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'provinces', 'type', 'payments', 'userRole', 'isHistory'));
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'provinces', 'type', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor' ));
     }
 
     public function update(Request $request, $id)
@@ -547,7 +567,7 @@ class PurchaseOrderController extends Controller
                 'price_sub' => $request->filled('price_sub')
                     ? str_replace(',', '', $request->price_sub)
                     : null,
-                'Color' => $request->Color,
+                'Color' => $request->Color ?? null,
                 'Year' => $request->Year,
                 'CarOrderID' => $request->CarOrderID,
                 'option' => $request->option,
@@ -675,6 +695,7 @@ class PurchaseOrderController extends Controller
             ];
 
             if (Auth::user()->brand == 2) {
+                $data['gwm_color'] = $request->gwm_color;
                 $data['interior_color'] = $request->interior_color;
             }
 
@@ -1124,7 +1145,7 @@ class PurchaseOrderController extends Controller
 
     public function summaryPurchase($id)
     {
-        $saleCar = Salecar::with(['customer.prefix', 'model', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'reservationPayment', 'remainingPayment.financeInfo', 'deliveryPayment', 'turnCar', 'provinces'])->findOrFail($id);
+        $saleCar = Salecar::with(['customer.prefix', 'model', 'carOrder', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'reservationPayment', 'remainingPayment.financeInfo', 'deliveryPayment', 'turnCar', 'provinces'])->findOrFail($id);
         $model = TbCarmodel::all();
 
         $pdf = Pdf::loadView('purchase-order.report.summary', compact('saleCar', 'model'))

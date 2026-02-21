@@ -4,11 +4,14 @@
       <th>รุ่นหลัก</th>
       <th>รุ่นย่อย</th>
       <th>สี</th>
+      @if(auth()->user()->brand == 2)
+      <th>สีภายใน</th>
+      @endif
       <th>ปี</th>
       <th>Option</th>
       <th>ราคาขาย</th>
       <th>แคมเปญทดลองขับ</th>
-       <th>เลขไมล์</th>
+      <th>เลขไมล์</th>
       <th>สถานะรถ</th>
       <th>Vin - Number</th>
       <th>ชื่อผู้จอง</th>
@@ -23,6 +26,9 @@
       <td>{{ $t['model'] }}</td>
       <td>{{ $t['subModel'] }}</td>
       <td>{{ $t['color'] }}</td>
+      @if(auth()->user()->brand == 2)
+      <td>{{ $t['interior_color'] }}</td>
+      @endif
       <td>{{ $t['year'] }}</td>
       <td>{{ $t['option'] }}</td>
       <td>{{ $t['car_MSRP'] }}</td>
@@ -37,7 +43,9 @@
     </tr>
     @empty
     <tr>
-      <td colspan="14" align="center">ไม่มีข้อมูล</td>
+      <td colspan="{{ auth()->user()->brand == 2 ? 15 : 14 }}" align="center">
+        ไม่มีข้อมูล
+      </td>
     </tr>
     @endforelse
   </tbody>

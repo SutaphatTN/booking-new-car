@@ -414,7 +414,7 @@ $(document).on('change', '#purchase_type', function () {
   toggleTestDriveFields($modal);
 
   $('#modelError').addClass('d-none').text('');
-
+  
 });
 
 //input : hide select customer
@@ -620,6 +620,33 @@ function toggleCarSelectByType() {
 $(document).on('change', '#type', toggleCarSelectByType);
 $(document).on('change', '#salecar_id', toggleCarSelectByType);
 $(document).on('shown.bs.modal', '.inputCarOrder', toggleCarSelectByType);
+
+//input : get color
+$(document).on('change', '#subModel_id', function () {
+  const subModelId = $(this).val();
+  const $color = $('#gwm_color');
+
+  $color.prop('disabled', true).empty().append('<option value="">-- เลือกสี --</option>');
+
+  if (!subModelId) return;
+
+  $.ajax({
+    url: '/api/car-order/color',
+    data: {
+      sub_model_id: subModelId
+    },
+    success: function (data) {
+      if (data.length) {
+        data.forEach(color => {
+          $color.append(`<option value="${color.id}">${color.name}</option>`);
+        });
+        $color.prop('disabled', false);
+      } else {
+        $color.append('<option value="">-- รุ่นนี้ไม่มีตัวเลือกสี --</option>');
+      }
+    }
+  });
+});
 
 //input : save cam
 $(document).on('click', '.btnStoreCarOrder', function (e) {

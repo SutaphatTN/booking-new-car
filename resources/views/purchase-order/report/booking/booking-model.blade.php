@@ -3,6 +3,9 @@
     <tr>
       <th>รุ่นย่อย</th>
       <th>สี</th>
+      @if(auth()->user()->brand == 2)
+      <th>สีภายใน</th>
+      @endif
       <th>ปี</th>
       <th>Option</th>
       <th>ราคาขาย</th>
@@ -26,6 +29,9 @@
     <tr>
       <td>{{ $r['subModel'] }}</td>
       <td>{{ $r['color'] }}</td>
+      @if(auth()->user()->brand == 2)
+      <td>{{ $r['interior_color'] }}</td>
+      @endif
       <td>{{ $r['year'] }}</td>
       <td>{{ $r['option'] }}</td>
       <td>{{ $r['car_MSRP'] }}</td>
@@ -45,7 +51,9 @@
     </tr>
     @empty
     <tr>
-      <td colspan="18" align="center">ไม่มีข้อมูล</td>
+      <td colspan="{{ auth()->user()->brand == 2 ? 19 : 18 }}" align="center">
+        ไม่มีข้อมูล
+      </td>
     </tr>
     @endforelse
   </tbody>

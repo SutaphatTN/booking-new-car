@@ -95,6 +95,12 @@
       ]
     },
     {
+      "name": "คำนวนคำพยากรณ์สั่งรถ",
+      "icon": "menu-icon icon-base bx bx-line-chart",
+      "slug": "forecast.form",
+      "url": "forecast"
+    },
+    {
       "name": "ประดับยนต์",
       "icon": "menu-icon icon-base bx bx-wrench",
       "slug": "accessory",

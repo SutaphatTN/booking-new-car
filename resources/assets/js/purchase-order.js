@@ -363,6 +363,33 @@ $(document).on('change', '#model_id', function () {
   });
 });
 
+//input : get color
+$(document).on('change', '#subModel_id', function () {
+  const subModelId = $(this).val();
+  const $color = $('#gwm_color');
+
+  $color.prop('disabled', true).empty().append('<option value="">-- เลือกสี --</option>');
+
+  if (!subModelId) return;
+
+  $.ajax({
+    url: '/api/car-order/color',
+    data: {
+      sub_model_id: subModelId
+    },
+    success: function (data) {
+      if (data.length) {
+        data.forEach(color => {
+          $color.append(`<option value="${color.id}">${color.name}</option>`);
+        });
+        $color.prop('disabled', false);
+      } else {
+        $color.append('<option value="">-- รุ่นนี้ไม่มีตัวเลือกสี --</option>');
+      }
+    }
+  });
+});
+
 //input : save purchase
 document.addEventListener('DOMContentLoaded', function () {
   $(document).on('click', '.btnSavePurchase', function (e) {
@@ -570,7 +597,10 @@ $(document).ready(function () {
                 </td>
                 <td>${c.vin_number ?? '-'}</td>
                 <td>${c.option ?? '-'}</td>
-                <td>${c.color ?? '-'}</td>
+                <td>
+                  ${c.display_color ?? '-'}
+                  ${c.display_interior_color ? '<br><small class="text-muted">สีภายใน: ' + c.display_interior_color + '</small>' : ''}
+                </td>
                 <td>${c.year ?? '-'}</td>
                 <td>${c.order_status?.name}</td>
                 <td>
@@ -582,7 +612,8 @@ $(document).ready(function () {
                     data-sub-detail="${c.sub_model?.detail ?? ''}"
                     data-vin="${c.vin_number ?? ''}"
                     data-option="${c.option ?? ''}"
-                    data-color="${c.color ?? ''}"
+                    data-color="${c.display_color ?? ''}"
+                    data-interior="${c.display_interior_color ?? ''}"
                     data-year="${c.year ?? ''}"
                     data-cost="${c.car_DNP ?? ''}"
                     data-sale="${c.car_MSRP ?? ''}">
@@ -616,6 +647,7 @@ $(document).ready(function () {
     $('#carOrderVin').val(data.vin);
     $('#carOrderOption').val(data.option);
     $('#carOrderColor').val(data.color);
+    $('#carOrderInterior').val(data.interior);
     $('#carOrderYear').val(data.year);
     $('#carOrderCost').val(formatNumber(data.cost));
     $('#carOrderSale').val(formatNumber(data.sale));
@@ -1971,7 +2003,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const subModel = document.querySelector('#subModel_id option:checked')?.textContent || '-';
     const option = document.getElementById('option')?.value || '-';
-    const color = document.getElementById('Color')?.value || '-';
+
+    //color
+    let color = '-';
+
+    const colorInput = document.getElementById('Color');
+    if (colorInput) {
+      color = colorInput.value || '-';
+    }
+
+    const colorSelect = document.getElementById('gwm_color');
+    if (colorSelect) {
+      const selectedOption = colorSelect.options[colorSelect.selectedIndex];
+      color = selectedOption?.text || '-';
+    }
+
+    let interiorColorHtml = '';
+
+    const interiorSelect = document.getElementById('interior_color');
+    if (interiorSelect) {
+      const selectedOption = interiorSelect.options[interiorSelect.selectedIndex];
+      const interiorColor = selectedOption?.text || '-';
+
+      interiorColorHtml = `
+    <div class="d-flex justify-content-between mb-2">
+        <strong>สีภายใน :</strong>
+        <span>${interiorColor}</span>
+    </div>
+  `;
+    }
 
     const carSale = document.getElementById('price_sub')?.value || '-';
     const extraTotal = document.querySelector('#total-price-extra')?.textContent || '-';
@@ -2514,9 +2574,12 @@ document.addEventListener('DOMContentLoaded', function () {
             <span>${option}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
-            <strong>สี :</strong>
-            <span>${color}</span>
+              <strong>สี :</strong>
+              <span>${color}</span>
           </div>
+
+          ${interiorColorHtml}
+          
           <!-- <div class="d-flex justify-content-between mb-2">
             <strong>ประเภทการชำระเงิน :</strong>
             <span>${paymentType}</span>

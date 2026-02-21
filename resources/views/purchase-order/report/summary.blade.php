@@ -132,11 +132,34 @@
       </span>
 
       <span class="label">
+        รุ่นรถย่อย :
+        <span style="font-weight: normal;">
+          {{ $saleCar->carOrder->subModel->detail ?? '-' }} - {{ $saleCar->carOrder->subModel->name ?? '-' }}
+        </span>
+      </span>
+
+      @if(auth()->user()->brand == 2)
+      <span class="label">
+        สีรถ :
+        <span style="font-weight: normal;">
+          {{ $saleCar->carOrder->gwmColor->name ?? '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        สีภายในรถ :
+        <span style="font-weight: normal;">
+          {{ $saleCar->carOrder->interiorColor->name ?? '-' }}
+        </span>
+      </span>
+      @else
+      <span class="label">
         สีรถ :
         <span style="font-weight: normal;">
           {{ $saleCar->carOrder->color ?? '-' }}
         </span>
       </span>
+      @endif
 
       @if($saleCar->remainingPayment?->type === 'finance')
       <span class="label">

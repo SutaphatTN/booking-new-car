@@ -130,12 +130,12 @@
             </div>
 
             <div class="col-md-3 mb-5">
-              <label for="color" class="form-label">สี</label>
-              <input id="color" type="text"
-                class="form-control @error('color') is-invalid @enderror"
-                name="color" required>
+              <label for="gwm_color" class="form-label">สี</label>
+              <select id="gwm_color" name="gwm_color" class="form-select" required>
+                <option value="">-- เลือกสี --</option>
+              </select>
 
-              @error('color')
+              @error('gwm_color')
               <span class="invalid-feedback" role="alert">
                 <strong>{{ $message }}</strong>
               </span>
@@ -144,9 +144,12 @@
 
             <div class="col-md-3 mb-5">
               <label for="interior_color" class="form-label">สีภายใน</label>
-              <input id="interior_color" type="text"
-                class="form-control @error('interior_color') is-invalid @enderror"
-                name="interior_color">
+              <select id="interior_color" name="interior_color" class="form-select">
+                <option value="">-- เลือกสี --</option>
+                @foreach ($interiorColor as $t)
+                <option value="{{ @$t->id }}">{{ @$t->name }}</option>
+                @endforeach
+              </select>
 
               @error('interior_color')
               <span class="invalid-feedback" role="alert">

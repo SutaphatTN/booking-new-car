@@ -70,7 +70,7 @@
               <textarea id="detail"
                 class="form-control @error('detail') is-invalid @enderror"
                 name="detail"
-                rows="3" required>{{ old('detail') }}</textarea>
+                rows="3">{{ old('detail') }}</textarea>
 
               @error('detail')
               <span class="invalid-feedback" role="alert">

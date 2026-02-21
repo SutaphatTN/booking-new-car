@@ -43,13 +43,25 @@
               <strong>แบบ :</strong>
               <span>{{ $saleCar->option ?? '-' }}</span>
             </div>
+            @if(auth()->user()->brand == 2)
+            <div class="d-flex justify-content-between mb-2">
+              <strong>สี :</strong>
+              <span>{{ $saleCar->gwmColor->name ?? '-' }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <strong>สีภายใน :</strong>
+              <span>{{ $saleCar->interiorColor->name ?? '-' }}</span>
+            </div>
+            @else
             <div class="d-flex justify-content-between mb-2">
               <strong>สี :</strong>
               <span>{{ $saleCar->Color ?? '-' }}</span>
             </div>
+            @endif
+
             <div class="d-flex justify-content-between mb-2">
               <strong>ปี :</strong>
-              <span>{{ $saleCar->Year ?? '-' }} ปี</span>
+              <span>{{ $saleCar->Year ?? '-' }}</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ราคา :</strong>

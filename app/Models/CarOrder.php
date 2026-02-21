@@ -33,6 +33,7 @@ class CarOrder extends Model
         'order_code',
         'order_date',
         'color',
+        'gwm_color',
         'interior_color',
         'year',
         'purchase_type',
@@ -105,6 +106,25 @@ class CarOrder extends Model
     public function purchaseType()
     {
         return $this->belongsTo(TbPurchaseType::class, 'purchase_type', 'id');
+    }
+
+    public function gwmColor()
+    {
+        return $this->belongsTo(TbColor::class, 'gwm_color');
+    }
+
+    public function getDisplayColorAttribute()
+    {
+        if ($this->brand == 2) {
+            return $this->gwmColor?->name ?? '-';
+        }
+
+        return $this->color ?? '-';
+    }
+
+    public function interiorColor()
+    {
+        return $this->belongsTo(TbInteriorColor::class, 'interior_color', 'id');
     }
 
     public function getFormatOrderDateAttribute()

@@ -182,15 +182,30 @@ $disabled = $isHistory ? 'disabled' : '';
                     </div>
 
                     <div class="col-md-2">
-                      <label for="Color" class="form-label">สี</label>
-                      <input class="form-control" type="text" name="Color" id="Color"
-                        value="{{ $saleCar->Color }}" required>
+                      <label for="gwm_color" class="form-label">สี</label>
+                      <select id="gwm_color" name="gwm_color" class="form-select" required>
+                        <option value="">-- เลือกสี --</option>
+
+                        @foreach ($gwmColor as $t)
+                        <option value="{{ $t->id }}"
+                          {{ $saleCar->gwm_color == $t->id ? 'selected' : '' }}>
+                          {{ $t->name }}
+                        </option>
+                        @endforeach
+                      </select>
                     </div>
 
                     <div class="col-md-2">
                       <label for="interior_color" class="form-label">สีภายใน</label>
-                      <input class="form-control" type="text" name="interior_color" id="interior_color"
-                        value="{{ $saleCar->interior_color }}" required>
+                      <select id="interior_color" name="interior_color" class="form-select @error('interior_color') is-invalid @enderror">
+                        @foreach ($interiorColor as $t)
+                        <option value="{{ $t->id }}"
+                          data-name="{{ $t->name }}"
+                          {{ $saleCar->interior_color == $t->id ? 'selected' : '' }}>
+                          {{ $t->name }}
+                        </option>
+                        @endforeach
+                      </select>
                     </div>
 
                     <div class="col-md-1">
@@ -419,6 +434,27 @@ $disabled = $isHistory ? 'disabled' : '';
                         }}"
                         readonly>
                     </div>
+                    
+                    @if(auth()->user()->brand == 2)
+                    <div class="col-md-1">
+                      <label for="carOrderOption" class="form-label">Option</label>
+                      <input id="carOrderOption" type="text" class="form-control" value="{{ $saleCar->carOrder->option ?? '' }}" readonly>
+                    </div>
+                    <div class="col-md-2">
+                      <label for="carOrderVin" class="form-label">Vin-Number</label>
+                      <input id="carOrderVin" type="text" class="form-control" value="{{ $saleCar->carOrder->vin_number ?? '' }}" readonly>
+                    </div>
+
+                    <div class="col-md-2">
+                      <label for="carOrderColor" class="form-label">สี</label>
+                      <input id="carOrderColor" type="text" class="form-control" value="{{ $saleCar->carOrder->gwmColor->name ?? '' }}" readonly>
+                    </div>
+
+                    <div class="col-md-1">
+                      <label for="carOrderInterior" class="form-label">สีภายใน</label>
+                      <input id="carOrderInterior" type="text" class="form-control" value="{{ $saleCar->carOrder->interiorColor->name ?? '' }}" readonly>
+                    </div>
+                    @else
                     <div class="col-md-2">
                       <label for="carOrderOption" class="form-label">Option</label>
                       <input id="carOrderOption" type="text" class="form-control" value="{{ $saleCar->carOrder->option ?? '' }}" readonly>
@@ -430,11 +466,13 @@ $disabled = $isHistory ? 'disabled' : '';
 
                     <div class="col-md-2">
                       <label for="carOrderColor" class="form-label">สี</label>
-                      <input id="carOrderColor" type="text" class="form-control" value="{{ $saleCar->carOrder->year ?? '' }}" readonly>
+                      <input id="carOrderColor" type="text" class="form-control" value="{{ $saleCar->carOrder->color ?? '' }}" readonly>
                     </div>
+                    @endif
+
                     <div class="col-md-2">
                       <label for="carOrderYear" class="form-label">ปี</label>
-                      <input id="carOrderYear" type="text" class="form-control" value="{{ $saleCar->carOrder->color ?? '' }}" readonly>
+                      <input id="carOrderYear" type="text" class="form-control" value="{{ $saleCar->carOrder->year ?? '' }}" readonly>
                     </div>
                     <div class="col-md-2">
                       <label for="carOrderCost" class="form-label">ราคาทุน</label>

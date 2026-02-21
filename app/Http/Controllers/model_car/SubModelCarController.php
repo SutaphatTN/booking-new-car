@@ -41,7 +41,7 @@ class SubModelCarController extends Controller
                 'No' => $index + 1,
                 'model_id' => $modelS,
                 'name' => $s->name,
-                'detail' => $s->detail,
+                'detail' => $s->detail ?? '-',
                 'active' => $statusSubCar,
                 'Action' => view('car.sub-model-car.button', compact('s'))->render()
             ];

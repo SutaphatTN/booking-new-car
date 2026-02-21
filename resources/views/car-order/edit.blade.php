@@ -100,29 +100,17 @@
 
             @if(auth()->user()->brand == 2)
             <div class="col-md-2 mb-5">
-              <label for="color" class="form-label">สี</label>
-              <input id="color" type="text"
-                class="form-control @error('color') is-invalid @enderror"
-                name="color" value="{{ $order->color }}" required>
-
-              @error('color')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
+              <label for="gwm_color" class="form-label">สี</label>
+              <input id="gwm_color" type="text"
+                class="form-control"
+                name="gwm_color" value="{{ $order->gwmColor->name ?? '-' }}" disabled>
             </div>
 
             <div class="col-md-2 mb-5">
               <label for="interior_color" class="form-label">สีภายใน</label>
               <input id="interior_color" type="text"
-                class="form-control @error('interior_color') is-invalid @enderror"
-                name="interior_color" value="{{ $order->interior_color }}" required>
-
-              @error('interior_color')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
+                class="form-control"
+                name="interior_color" value="{{ $order->interiorColor->name ?? '-' }}" disabled>
             </div>
 
             <div class="col-md-2 mb-5">
@@ -144,7 +132,7 @@
                 class="form-control text-end money-input @error('car_DNP') is-invalid @enderror"
                 name="car_DNP"
                 value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}"
-                required>
+                disabled>
 
               @error('car_DNP')
               <span class="invalid-feedback" role="alert">
@@ -159,7 +147,7 @@
                 class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror"
                 name="car_MSRP"
                 value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}"
-                required>
+                disabled>
 
               @error('car_MSRP')
               <span class="invalid-feedback" role="alert">
@@ -187,7 +175,7 @@
               <label for="color" class="form-label">สี</label>
               <input id="color" type="text"
                 class="form-control @error('color') is-invalid @enderror"
-                name="color" value="{{ $order->color }}" required>
+                name="color" value="{{ $order->color }}" disabled>
 
               @error('color')
               <span class="invalid-feedback" role="alert">
@@ -215,7 +203,7 @@
                 class="form-control text-end money-input @error('car_DNP') is-invalid @enderror"
                 name="car_DNP"
                 value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}"
-                required>
+                disabled>
 
               @error('car_DNP')
               <span class="invalid-feedback" role="alert">
@@ -230,7 +218,7 @@
                 class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror"
                 name="car_MSRP"
                 value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}"
-                required>
+                disabled>
 
               @error('car_MSRP')
               <span class="invalid-feedback" role="alert">

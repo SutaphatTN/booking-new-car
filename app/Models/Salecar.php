@@ -140,6 +140,7 @@ class Salecar extends Model
 		'type',
 		'model_id',
 		'Color',
+		'gwm_color',
 		'interior_color',
 		'Year',
 		'option',
@@ -304,6 +305,25 @@ class Salecar extends Model
 	public function financeConfirm()
 	{
 		return $this->hasOne(FinancesConfirm::class, 'SaleID', 'id');
+	}
+
+	public function gwmColor()
+    {
+        return $this->belongsTo(TbColor::class, 'gwm_color');
+    }
+
+    public function getDisplayColorAttribute()
+    {
+        if ($this->brand == 2) {
+            return $this->gwmColor?->name ?? '-';
+        }
+
+        return $this->Color ?? '-';
+    }
+
+	public function interiorColor()
+	{
+		return $this->belongsTo(TbInteriorColor::class, 'interior_color', 'id');
 	}
 
 	public function getBookingDateAttribute($value)
