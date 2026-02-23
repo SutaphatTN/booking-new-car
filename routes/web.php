@@ -162,6 +162,13 @@ Route::group(['middleware' => 'auth'], function () {
     //condition select ca model 
     Route::get('/api/car-order/models-by-customer', [CarOrderController::class, 'getModelsByCustomer']);
 
+    // forecast
+    Route::get('/forecast', [ForecastController::class, 'forecastForm'])
+        ->name('forecast.form');
+
+    Route::post('/forecast/calculate', [ForecastController::class, 'forecastCalculate'])
+        ->name('forecast.calculate');
+
     //all resource
     Route::resource('customer', CustomerController::class);
     Route::resource('purchase-order', PurchaseOrderController::class);
@@ -192,12 +199,6 @@ Route::middleware(['auth', 'notsale'])->group(function () {
         'update' => 'model.sub-model.update',
         'destroy' => 'model.sub-model.destroy',
     ]);
-
-    Route::get('/forecast', [ForecastController::class, 'forecastForm'])
-        ->name('forecast.form');
-
-    Route::post('/forecast/calculate', [ForecastController::class, 'forecastCalculate'])
-        ->name('forecast.calculate');
 });
 
 
