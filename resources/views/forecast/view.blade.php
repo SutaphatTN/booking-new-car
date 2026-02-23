@@ -36,7 +36,7 @@
                 <tr>
                     <th>รุ่น</th>
                     <th>สี</th>
-                    <th>ภายใน</th>
+                     ${res.brand == 2 ? '<th>ภายใน</th>' : ''}
                     <th>ขายได้ 3 เดือน</th>
                     <th>Mix %</th>
                     <th>ควรสั่ง</th>
@@ -50,7 +50,7 @@
                 <tr>
                     <td>${item.subModel}</td>
                     <td>${item.color}</td>
-                    <td>${item.interior_color}</td>
+                     ${res.brand == 2 ? `<td>${item.interior_color}</td>` : ''}
                     <td>${item.sold_last_3m}</td>
                     <td>${item.mix_percent}%</td>
                     <td><b>${item.forecast_units}</b></td>

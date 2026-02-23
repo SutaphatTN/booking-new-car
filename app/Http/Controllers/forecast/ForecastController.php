@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Salecar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class ForecastController extends Controller
 {
@@ -21,18 +22,27 @@ class ForecastController extends Controller
         ]);
 
         $target = $request->target;
+        $brand = Auth::user()->brand;
 
         $startDate = Carbon::now()->subMonths(3)->startOfMonth();
 
-        // ดึงข้อมูล 3 เดือนย้อนหลังจาก salecars
-        $sales = Salecar::with('model', 'subModel', 'gwmColor', 'interiorColor')
+        $query = Salecar::with(['model', 'subModel'])
             ->whereNotNull('DeliveryDate')
-            ->where('DeliveryDate', '>=', $startDate)
-            ->selectRaw('model_id, subModel_id, gwm_color, interior_color, COUNT(*) as total')
-            ->groupBy('model_id', 'subModel_id', 'gwm_color', 'interior_color')
-            ->get();
+            ->where('DeliveryDate', '>=', $startDate);
 
-        // รวมยอดทั้งหมด
+        if ($brand == 2) {
+
+            $query->with(['gwmColor', 'interiorColor'])
+                ->selectRaw('model_id, subModel_id, gwm_color, interior_color, COUNT(*) as total')
+                ->groupBy('model_id', 'subModel_id', 'gwm_color', 'interior_color');
+        } else {
+
+            $query->selectRaw('model_id, subModel_id, Color, COUNT(*) as total')
+                ->groupBy('model_id', 'subModel_id', 'Color');
+        }
+
+        $sales = $query->get();
+
         $grandTotal = $sales->sum('total');
 
         if ($grandTotal == 0) {
@@ -49,16 +59,26 @@ class ForecastController extends Controller
             $mixPercent = $sale->total / $grandTotal;
             $forecastUnits = round($mixPercent * $target);
 
-            $modelOrder = $sale->model ? $sale->model->Name_TH : '';
-            $subModelOrder = $sale->subModel ? $sale->subModel->name : '';
-            $subDetail = $sale->subModel ? $sale->subModel->detail : '';
+            $modelOrder = optional($sale->model)->Name_TH ?? '';
+            $subModelOrder = optional($sale->subModel)->name ?? '';
+            $subDetail = optional($sale->subModel)->detail ?? '';
 
             $car = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subDetail} - {$subModelOrder}";
 
+            if ($brand == 2) {
+
+                $color = optional($sale->gwmColor)->name ?? '-';
+                $interior = optional($sale->interiorColor)->name ?? '-';
+            } else {
+
+                $color = $sale->Color ?? '-';
+                $interior = '-';
+            }
+
             $result[] = [
                 'subModel' => $car,
-                'color' => $sale->gwmColor->name,
-                'interior_color' => $sale->interiorColor->name,
+                'color' => $color,
+                'interior_color' => $interior,
                 'sold_last_3m' => $sale->total,
                 'mix_percent' => round($mixPercent * 100, 2),
                 'forecast_units' => $forecastUnits
@@ -67,7 +87,8 @@ class ForecastController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $result
+            'data' => $result,
+            'brand' => $brand
         ]);
     }
 }

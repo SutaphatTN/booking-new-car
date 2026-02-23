@@ -125,7 +125,7 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
 
     $rows = SaleCommissionQuery::base($this->user, true, $this->fromDate, $this->toDate)
       ->get()
-      ->sortBy(fn($r) => $r->saleUser->name);
+      ->sortBy(fn($r) => optional($r->saleUser)->name);
 
     $data = $rows->map(function ($r) {
 
@@ -135,6 +135,7 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
           ($r->customer->LastName ?? '')
       );
 
+      $saleUser = $r->saleUser;
       $model = $r->carOrder->model->Name_TH ?? '-';
       $sub = $r->carOrder->subModel->name ?? '-';
       $detailModel = $r->carOrder->subModel->detail ?? '-';
@@ -155,8 +156,8 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       $turnCarCom   = $r->turnCar->com_turn ?? 0;
 
       return [
-        'branch' => $r->saleUser->branchInfo->name ?? '-',
-        'saleName' => optional($r->saleUser)->name ?? '-',
+        'branch' => optional($saleUser?->branchInfo)->name ?? '-',
+        'saleName' => optional($saleUser)->name ?? '-',
 
         'customer' => $customerName,
         'model' => $model,
