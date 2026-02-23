@@ -31,6 +31,7 @@ $userRole = auth()->user()->role ?? null;
         'campaign',
         'finance',
         'report',
+        'forecast.form',
         ];
         @endphp
 
