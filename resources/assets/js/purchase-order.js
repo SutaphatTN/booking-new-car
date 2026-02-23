@@ -1381,8 +1381,8 @@ $(document).ready(function () {
 let salePriceInput;
 let markupInput;
 let markup90Input;
-let isMarkup90Manual = false;
 let finalPriceInput;
+let discountInput;
 
 let downPaymentInput;
 let downPaymentPercentInput;
@@ -1394,20 +1394,23 @@ function getNumber(el) {
   return parseFloat(el.value.replace(/,/g, '')) || 0;
 }
 
-// ราคารถสุทธิรวมบวกหัว
 function calculateCarPrice(e) {
   const salePrice = getNumber(salePriceInput);
   const markup = getNumber(markupInput);
+  const discount = getNumber(discountInput);
 
+  // บวกหัว 90%
   const markup90 = markup * 0.9;
-  const finalPrice = salePrice + markup;
 
-  if (!isMarkup90Manual && markup90Input) {
+  if (markup90Input) {
     markup90Input.value = markup90.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
   }
+
+  // ราคารถสุทธิรวมบวกหัว
+  const finalPrice = salePrice + markup - discount;
 
   if (finalPriceInput) {
     finalPriceInput.value = finalPrice.toLocaleString(undefined, {
@@ -1424,33 +1427,7 @@ function calculateCarPrice(e) {
   calculateRemaining?.();
   calculateBalanceCampaign?.();
 
-  return { markup90, finalPrice };
-}
-
-// บวกหัว 90% (แก้เอง)
-function calculateFinalFromManualMarkup90() {
-  isMarkup90Manual = true;
-
-  const salePrice = getNumber(salePriceInput);
-  const markup90 = getNumber(markup90Input);
-
-  const finalPrice = salePrice + markup90;
-
-  if (finalPriceInput) {
-    finalPriceInput.value = finalPrice.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  }
-
-  if (!isInitialLoad && document.activeElement === markup90Input) {
-    downPaymentInput.value = '';
-    downPaymentPercentInput.value = '';
-  }
-
-  if (typeof calculateRemaining === 'function') {
-    calculateRemaining();
-  }
+  return { markup, finalPrice, discount };
 }
 
 // เงินดาวน์ และ %
@@ -1492,17 +1469,14 @@ document.addEventListener('DOMContentLoaded', function () {
   markupInput = document.getElementById('MarkupPrice');
   markup90Input = document.querySelector('input[name="Markup90"]');
   finalPriceInput = document.getElementById('CarSalePriceFinal');
+  discountInput = document.getElementById('discount');
 
   downPaymentInput = document.getElementById('DownPayment');
   downPaymentPercentInput = document.getElementById('DownPaymentPercentage');
 
-  if (markup90Input && markup90Input.value && markup90Input.value.trim() !== '') {
-    isMarkup90Manual = true;
-  }
-
   if (salePriceInput) salePriceInput.addEventListener('input', calculateCarPrice);
   if (markupInput) markupInput.addEventListener('input', calculateCarPrice);
-  if (markup90Input) markup90Input.addEventListener('input', calculateFinalFromManualMarkup90);
+  if (discountInput) discountInput.addEventListener('input', calculateCarPrice);
 
   if (downPaymentInput) downPaymentInput.addEventListener('input', calculateDownPayment);
   if (downPaymentPercentInput) downPaymentPercentInput.addEventListener('input', calculateDownPayment);
@@ -1518,13 +1492,12 @@ document.addEventListener('DOMContentLoaded', function () {
 function calculateTotalPaymentAtDelivery() {
   const downPayment = safeNumber('#DownPayment');
   const downDiscount = safeNumber('#DownPaymentDiscount');
-  const discount = safeNumber('#discount');
   const giftTotal = safeNumber('#total_gift_used');
   const ExtraTotal = safeNumber('#total_extra_used');
   const turnCost = safeNumber('#cost_turn');
   const cashDeposit = safeNumber('#CashDeposit');
 
-  const total = downPayment + ExtraTotal - (downDiscount + turnCost + cashDeposit + discount);
+  const total = downPayment + ExtraTotal - (downDiscount + turnCost + cashDeposit);
 
   $('#TotalPaymentatDeliveryCar').val(
     total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -1735,7 +1708,7 @@ $(document).on('input change', '#remaining_total_com, #com_turn, #CommissionSpec
 
 $(document).ready(function () {
   $('#carOrderSubModel, #cost_turn, #com_turn, #CashDeposit, #price_sub').on('input change', updateSummary);
-  $('#DownPayment, #DownPaymentDiscount, #cost_turn, #total_gift_used, #total_extra_used, #CashDeposit, #discount').on(
+  $('#DownPayment, #DownPaymentDiscount, #cost_turn, #total_gift_used, #total_extra_used, #CashDeposit').on(
     'input change',
     calculateTotalPaymentAtDelivery
   );
@@ -2502,7 +2475,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <span>${CheckerCheckedDate}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้อนุมัติรายการ (ผู้จัดการขาย) :</strong>
+            <strong>ผู้จัดการอนุมัติการขาย :</strong>
             <span>${SMSignature}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
@@ -2510,7 +2483,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <span>${SMCheckedDate}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้อนุมัติการขายกรณีเกินจากงบ :</strong>
+            <strong>ผู้จัดการอนุมัติการขายกรณีงบเกิน :</strong>
             <span>${ApprovalSignature}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
