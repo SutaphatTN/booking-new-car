@@ -157,7 +157,7 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
 
             return [
                 'branch' => $branch,
-                'saleName' => optional($rows->saleUser)->name ?? '-',
+                'saleName' => optional($saleUser)->name ?? '-',
                 'totalCars' => $totalCars,
                 'retail' => $retail,
                 'testDrive' => $testDrive,
