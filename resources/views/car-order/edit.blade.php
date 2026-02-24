@@ -200,8 +200,7 @@
               <input id="car_DNP" type="text"
                 class="form-control text-end money-input @error('car_DNP') is-invalid @enderror"
                 name="car_DNP"
-                value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}"
-                disabled>
+                value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}">
 
               @error('car_DNP')
               <span class="invalid-feedback" role="alert">
@@ -215,8 +214,7 @@
               <input id="car_MSRP" type="text"
                 class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror"
                 name="car_MSRP"
-                value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}"
-                disabled>
+                value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}">
 
               @error('car_MSRP')
               <span class="invalid-feedback" role="alert">
