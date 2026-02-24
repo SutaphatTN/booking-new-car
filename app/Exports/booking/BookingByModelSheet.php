@@ -233,7 +233,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
 
       $color = $sale->brand == 2
         ? ($sale->gwmColor->name ?? '-')
-        : ($sale->color ?? '-');
+        : ($sale->Color ?? '-');
 
       $interiorColor = $sale->brand == 2
         ? ($sale->interiorColor->name ?? '-')

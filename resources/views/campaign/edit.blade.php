@@ -68,7 +68,7 @@
             <div class="col-md-5 mb-5">
               <label for="campaign_type" class="form-label">ประเภท</label>
               <select id="campaign_type" name="campaign_type" class="form-select @error('campaign_type') is-invalid @enderror" required>
-                <option value="">-- เลือกแหล่งที่มา --</option>
+                <option value="">-- เลือกประเภท --</option>
                 @foreach ($type as $t)
                 <option value="{{ @$t->id }}" {{ $cam->campaign_type == $t->id ? 'selected' : '' }}>{{ @$t->name }}</option>
                 @endforeach
