@@ -1228,8 +1228,47 @@ $(document).on('click', '#btnRequestNormal', function () {
 
 // ปุ่มขออนุมัติเกินงบ
 $(document).on('click', '#btnRequestOverBudget', function () {
-  $('#action_type').val('request_over');
-  $('#btnUpdatePurchase').trigger('click');
+  const level = this.dataset.level || 'manager';
+  const previewModalEl = document.getElementById('previewPurchase');
+  const previewModal = bootstrap.Modal.getInstance(previewModalEl);
+
+  if (!previewModal) return;
+  previewModal.hide();
+
+  previewModalEl.addEventListener(
+    'hidden.bs.modal',
+    function () {
+      Swal.fire({
+        title: 'กรอกเหตุผลที่เกินงบ',
+        input: 'textarea',
+        inputLabel: 'เหตุผล',
+        inputPlaceholder: 'กรุณาระบุสาเหตุที่ต้องขออนุมัติเกินงบ...',
+        inputAttributes: {
+          'aria-label': 'กรอกเหตุผล'
+        },
+        showCancelButton: true,
+        confirmButtonColor: '#6c5ffc',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'บันทึก',
+        cancelButtonText: 'ยกเลิก',
+        allowOutsideClick: false,
+        inputValidator: value => {
+          if (!value) {
+            return 'กรุณากรอกเหตุผลก่อนดำเนินการ';
+          }
+        }
+      }).then(result => {
+        if (result.isConfirmed) {
+          $('#reason_campaign').val(result.value);
+          $('#action_type').val(level === 'gm' ? 'request_gm' : 'request_over');
+          $('#btnUpdatePurchase').trigger('click');
+        } else {
+          previewModal.show();
+        }
+      });
+    },
+    { once: true }
+  );
 });
 
 //edit : campaign
@@ -1386,6 +1425,8 @@ let discountInput;
 
 let downPaymentInput;
 let downPaymentPercentInput;
+let totalPaymentAtDeliveryInput;
+let totalPaymentAtDeliveryCarInput;
 
 let isInitialLoad = true;
 
@@ -1419,9 +1460,23 @@ function calculateCarPrice(e) {
     });
   }
 
-  if (!isInitialLoad && (document.activeElement === salePriceInput || document.activeElement === markupInput)) {
+  // ล้างค่าเมื่อเปลี่ยน
+  if (
+    !isInitialLoad &&
+    (document.activeElement === salePriceInput ||
+      document.activeElement === markupInput ||
+      document.activeElement === discountInput)
+  ) {
     downPaymentInput.value = '';
     downPaymentPercentInput.value = '';
+
+    if (totalPaymentAtDeliveryInput) {
+      totalPaymentAtDeliveryInput.value = '';
+    }
+
+    if (totalPaymentAtDeliveryCarInput) {
+      totalPaymentAtDeliveryCarInput.value = '';
+    }
   }
 
   calculateRemaining?.();
@@ -1473,6 +1528,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   downPaymentInput = document.getElementById('DownPayment');
   downPaymentPercentInput = document.getElementById('DownPaymentPercentage');
+  totalPaymentAtDeliveryInput = document.getElementById('TotalPaymentatDelivery');
+  totalPaymentAtDeliveryCarInput = document.getElementById('TotalPaymentatDeliveryCar');
 
   if (salePriceInput) salePriceInput.addEventListener('input', calculateCarPrice);
   if (markupInput) markupInput.addEventListener('input', calculateCarPrice);
@@ -1496,8 +1553,9 @@ function calculateTotalPaymentAtDelivery() {
   const ExtraTotal = safeNumber('#total_extra_used');
   const turnCost = safeNumber('#cost_turn');
   const cashDeposit = safeNumber('#CashDeposit');
+  const otherCostFi = safeNumber('#other_cost_fi');
 
-  const total = downPayment + ExtraTotal - (downDiscount + turnCost + cashDeposit);
+  const total = downPayment + ExtraTotal + otherCostFi - (downDiscount + turnCost + cashDeposit);
 
   $('#TotalPaymentatDeliveryCar').val(
     total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -1541,9 +1599,10 @@ function calculateBalance() {
   const turnCost = safeNumber('#cost_turn');
   const cashDeposit = safeNumber('#CashDeposit');
   const discount = safeNumber('#PaymentDiscount');
+  const otherCost = safeNumber('#other_cost');
   const paymentTotal = calculatePaymentTotal();
 
-  const total = carSale + ExtraTotal - (turnCost + cashDeposit + discount + paymentTotal);
+  const total = carSale + ExtraTotal + otherCost - (turnCost + cashDeposit + discount + paymentTotal);
 
   $('.balance-display').val(
     total.toLocaleString(undefined, {
@@ -1602,19 +1661,25 @@ function calculateInstallment() {
 
 //edit : com C
 function calculateCommission() {
-  const interest = parseFloat($('#remaining_interest').val()) || 0;
+  const isApproved = $('#ApprovalSignature').is(':checked') || $('#GMApprovalSignature').is(':checked');
+
+  let interest = parseFloat($('#remaining_interest').val()) || 0;
   const typeCom = $('#remaining_type_com').val();
   let commission = 0;
 
   const comNumber = typeCom ? parseInt(typeCom.replace('C', '')) : 0;
 
-  if (interest >= 3 && comNumber >= 10) {
-    commission = 500;
-  } else if (interest < 3 && comNumber < 10) {
+  if (isApproved) {
     commission = 0;
   } else {
-    commission = 0;
+    if (interest >= 3 && comNumber >= 10) {
+      commission = 500;
+    } else {
+      commission = 0;
+    }
   }
+
+  calculateCommissionSale();
 
   $('#remaining_total_com').val(
     commission.toLocaleString(undefined, {
@@ -1622,8 +1687,6 @@ function calculateCommission() {
       maximumFractionDigits: 2
     })
   );
-
-  calculateCommissionSale();
 }
 
 //edit : com sale
@@ -1635,7 +1698,14 @@ function calculateCommissionSale() {
   const turnCom = safeNumber('#com_turn');
   const comSpecial = safeNumber('#CommissionSpecial');
 
-  balanceCam = Math.min(balanceCam, 2500);
+  const selectedModel = $('#model_id option:selected');
+  const perBudget = parseFloat(selectedModel.data('perbudget')) || 0;
+
+  if (balanceCam >= 0) {
+    balanceCam = Math.min(balanceCam, 2500);
+  } else {
+    balanceCam = balanceCam * (perBudget / 100);
+  }
 
   const totalCommission = balanceCam + giftCom + extraCom + fiCom + turnCom + comSpecial;
 
@@ -1704,21 +1774,33 @@ $(document).on(
   calculateBalanceCampaign
 );
 
-$(document).on('input change', '#remaining_total_com, #com_turn, #CommissionSpecial', calculateCommissionSale);
+$(document).on(
+  'input change',
+  '#remaining_total_com, #com_turn, #CommissionSpecial, #model_id',
+  calculateCommissionSale
+);
 
 $(document).ready(function () {
   $('#carOrderSubModel, #cost_turn, #com_turn, #CashDeposit, #price_sub').on('input change', updateSummary);
-  $('#DownPayment, #DownPaymentDiscount, #cost_turn, #total_gift_used, #total_extra_used, #CashDeposit').on(
-    'input change',
-    calculateTotalPaymentAtDelivery
-  );
+  $(
+    '#DownPayment, #DownPaymentDiscount, #cost_turn, #total_gift_used, #total_extra_used, #CashDeposit, #other_cost_fi'
+  ).on('input change', calculateTotalPaymentAtDelivery);
   $('#CarSalePriceFinal, #DownPayment').on('input change', calculateRemaining);
   $('#remaining_interest, #remaining_period').on('input change', calculateInstallment);
-  $('#price_sub, #total_extra_used, #cost_turn, #CashDeposit, #PaymentDiscount').on('input change', calculateBalance);
-  $('#remaining_interest, #remaining_type_com').on('input change', calculateCommission);
+  $('#price_sub, #total_extra_used, #cost_turn, #CashDeposit, #PaymentDiscount, #other_cost').on(
+    'input change',
+    calculateBalance
+  );
+  $('#remaining_interest, #remaining_type_com, #ApprovalSignature, #GMApprovalSignature').on(
+    'input change',
+    calculateCommission
+  );
+
+  $('#ApprovalSignature, #GMApprovalSignature').on('change', calculateCommission);
 
   calculateBalanceCampaign();
   calculateCommissionSale();
+  calculateCommission();
 
   updateSummary();
 });
@@ -1949,10 +2031,14 @@ document.addEventListener('DOMContentLoaded', function () {
   const approvalType = document.getElementById('approvalType')?.value || '';
 
   function handlePreview() {
-    function formatThaiDate(inputId) {
+    function formatThaiDate(inputId, type = 'date') {
       const value = document.getElementById(inputId)?.value || '-';
-
       if (!value || value === '-') return '-';
+
+      if (type === 'month') {
+        const [year, month] = value.split('-');
+        return `${month}/${parseInt(year) + 543}`;
+      }
 
       const date = new Date(value);
       return date.toLocaleDateString('th-TH', {
@@ -1971,9 +2057,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     //ข้อมูลการขาย
     const model = document.querySelector('#model_id option:checked')?.textContent || '-';
-    const selectedModel = document.querySelector('#model_id option:checked');
-    const overBudget = selectedModel?.dataset.overbudget || '-';
-
     const subModel = document.querySelector('#subModel_id option:checked')?.textContent || '-';
     const option = document.getElementById('option')?.value || '-';
 
@@ -2030,6 +2113,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const downPayment = document.getElementById('DownPayment')?.value || '-';
     const downPaymentPercentage = document.getElementById('DownPaymentPercentage')?.value || '-';
     const downPaymentDiscount = document.getElementById('DownPaymentDiscount')?.value || '-';
+    const otherCostFi = document.getElementById('other_cost_fi')?.value || '-';
     const discount = document.getElementById('discount')?.value || '-';
 
     // วันออกรถ
@@ -2072,6 +2156,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     //else
     const paymentDiscount = document.getElementById('PaymentDiscount')?.value || '0';
+    const otherCost = document.getElementById('other_cost')?.value || '-';
     const balanceValue = parseFloat(document.getElementById('balance')?.value.replace(/,/g, '') || 0);
 
     // ฟอร์แมตเป็นเลขไทย มี comma และ 2 ทศนิยม
@@ -2105,8 +2190,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // }
 
     const balanceCampaignValue = safeNumber('#balanceCampaign');
+    const balanceCampaignForDisplay = Math.max(balanceCampaignValue, 0);
 
-    const balanceCampaignDisplay = balanceCampaignValue.toLocaleString(undefined, {
+    const balanceCampaignDisplay = balanceCampaignForDisplay.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
@@ -2130,6 +2216,10 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="d-flex justify-content-between mb-2">
             <strong>ส่วนลด :</strong>
             <span>${discount} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ค่าใช้จ่ายอื่นๆ :</strong>
+            <span>${otherCostFi} บาท</span>
           </div>
 
           <h5 class="pb-2 mb-3"></h5>
@@ -2228,6 +2318,10 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="d-flex justify-content-between mb-2">
             <strong>ส่วนลด :</strong>
             <span>${paymentDiscount}  บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ค่าใช้จ่ายอื่นๆ :</strong>
+            <span>${otherCost} บาท</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
             <strong>คงเหลือ :</strong>
@@ -2413,21 +2507,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const AdminSignature = document.querySelector('#AdminSignature').checked
       ? 'เช็ครายการเรียบร้อยแล้ว'
-      : 'ยังไม่ได้เช็ค';
+      : '-';
     let AdminCheckedDate = formatThaiDate('AdminCheckedDate');
-    const CheckerID = document.querySelector('#CheckerID').checked ? 'เช็ครายการเรียบร้อยแล้ว' : 'ยังไม่ได้เช็ค';
+    const CheckerID = document.querySelector('#CheckerID').checked ? 'เช็ครายการเรียบร้อยแล้ว' : '-';
     let CheckerCheckedDate = formatThaiDate('CheckerCheckedDate');
-    const SMSignature = document.querySelector('#SMSignature').checked ? 'เช็ครายการเรียบร้อยแล้ว' : 'ยังไม่ได้เช็ค';
+    const SMSignature = document.querySelector('#SMSignature').checked ? 'อนุมัติเรียบร้อยแล้ว' : '-';
     let SMCheckedDate = formatThaiDate('SMCheckedDate');
 
     const ApprovalSignature = document.querySelector('#ApprovalSignature').checked
-      ? 'เช็ครายการเรียบร้อยแล้ว'
-      : 'ยังไม่ได้เช็ค';
+      ? 'อนุมัติเรียบร้อยแล้ว'
+      : '-';
     let ApprovalSignatureDate = formatThaiDate('ApprovalSignatureDate');
     const GMApprovalSignature = document.querySelector('#GMApprovalSignature').checked
-      ? 'เช็ครายการเรียบร้อยแล้ว'
-      : 'ยังไม่ได้เช็ค';
+      ? 'อนุมัติเรียบร้อยแล้ว'
+      : '-';
     let GMApprovalSignatureDate = formatThaiDate('GMApprovalSignatureDate');
+    let DeliveryEstimateDate = formatThaiDate('DeliveryEstimateDate', 'month');
 
     // จังหวัดที่จดทะเบียน
     let RegistrationProvince = '-';
@@ -2449,15 +2544,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if (userRole === 'audit' || userRole === 'manager' || userRole === 'md') {
       dateAppHtml = `
       <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ส่งมอบในระบบ DMS :</strong>
+            <strong>วันที่ส่งมอบของบริษัท :</strong>
             <span>${DeliveryInDMSDate}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ส่งมอบตามยอดชูเกียรติ :</strong>
+            <strong>วันที่ส่งมอบของฝ่ายขาย :</strong>
             <span>${DeliveryInCKDate}</span>
           </div>
+            <div class="d-flex justify-content-between mb-2">
+            <strong>ประมาณการส่งมอบ :</strong>
+            <span>${DeliveryEstimateDate}</span>
+          </div>
 
-          <h5 class="border-bottom pb-2 mb-3">ผู้อนุมัติ</h5>
+          <h5 class="border-bottom pb-2 mb-3 mt-4">ผู้อนุมัติ</h5>
           <div class="d-flex justify-content-between mb-2">
             <strong>ผู้เช็ครายการ (แอดมินขาย) :</strong>
             <span>${AdminSignature}</span>
@@ -2475,7 +2574,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <span>${CheckerCheckedDate}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้จัดการอนุมัติการขาย :</strong>
+            <strong>ผู้จัดการ อนุมัติการขาย :</strong>
             <span>${SMSignature}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
@@ -2483,7 +2582,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <span>${SMCheckedDate}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้จัดการอนุมัติการขายกรณีงบเกิน :</strong>
+            <strong>ผู้จัดการ อนุมัติกรณีงบเกิน :</strong>
             <span>${ApprovalSignature}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
@@ -2498,8 +2597,8 @@ document.addEventListener('DOMContentLoaded', function () {
             <strong>วันที่ GM อนุมัติกรณีงบเกิน :</strong>
             <span>${GMApprovalSignatureDate}</span>
           </div>
-
-          <h5 class="border-bottom pb-2 mb-3">สถานะ</h5>
+        
+          <h5 class="border-bottom pb-2 mb-3 mt-4">สถานะ</h5>
           <div class="d-flex justify-content-between mb-2">
             <strong>สถานะ :</strong>
             <span>${con_status}</span>
@@ -2606,12 +2705,12 @@ document.addEventListener('DOMContentLoaded', function () {
             ${giftHtml}
           </div>
 
-          <h5 class="border-bottom pb-2 mb-3">รายการซื้อเพิ่ม</h5>
+          <h5 class="border-bottom pb-2 mb-3 mt-4">รายการซื้อเพิ่ม</h5>
           <div class="table-responsive text-nowrap">
             ${extraHtml}
           </div>
 
-          <h5 class="border-bottom pb-2 mb-3">ข้อมูลวันส่งมอบ</h5>
+          <h5 class="border-bottom pb-2 mb-3 mt-4">ข้อมูลวันส่งมอบ</h5>
           <div class="d-flex justify-content-between mb-2">
             <strong>วันที่ส่งเอกสารสรุปการขาย :</strong>
             <span>${KeyInDate}</span>
@@ -2627,11 +2726,10 @@ document.addEventListener('DOMContentLoaded', function () {
       </div>
     `;
 
-    //ต้องเก็บรายละเอียดเรื่องรุ่นรถเพิ่ม เพราะข้อมูลรุ่นรถมีเยอะ อันนี้เช็คแค่
     const raw = document.getElementById('balanceCampaign')?.value || '';
     const balanceCam = parseFloat(raw.replace(/,/g, '')) || 0;
-
-    const budget = document.querySelector('#model_id option:checked')?.dataset.overbudget || '-';
+    const selectedModel = document.querySelector('#model_id option:checked');
+    const budget = selectedModel?.dataset.overbudget || '-';
 
     btnSave.classList.add('d-none');
     btnRequestNormal.classList.add('d-none');
@@ -2644,21 +2742,29 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // sale เคยขออนุมัติแล้ว → แสดงแค่ปิด
+    // sale เคยขออนุมัติแล้ว แสดงแค่ปิด
     if (approvalRequested || hasApproval) {
       content.innerHTML = html;
       modal.show();
       return;
     }
 
-    // sale ต้องเห็นปุ่ม "บันทึก" เสมอ
+    // sale ต้องเห็นปุ่ม บันทึก ก่อนขออนุมัติ
     btnSave.classList.remove('d-none');
 
-    // เช็คเกินงบ
-    if (balanceCam > budget) {
-      btnRequestOverBudget.classList.remove('d-none');
-    } else {
+    if (balanceCam >= 0) {
       btnRequestNormal.classList.remove('d-none');
+    } else {
+      const overAmount = Math.abs(balanceCam);
+      if (overAmount <= budget) {
+        btnRequestOverBudget.classList.remove('d-none');
+        btnRequestOverBudget.dataset.level = 'manager';
+        btnRequestOverBudget.textContent = 'ขอ ผู้จัดการ อนุมัติเกินงบ';
+      } else {
+        btnRequestOverBudget.classList.remove('d-none');
+        btnRequestOverBudget.dataset.level = 'gm';
+        btnRequestOverBudget.textContent = 'ขอ GM อนุมัติเกินงบ';
+      }
     }
 
     content.innerHTML = html;

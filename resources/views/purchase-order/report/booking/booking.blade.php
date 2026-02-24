@@ -27,6 +27,7 @@
       <th>PO Date</th>
       <th>สถานะรถจัดสรร</th>
       <th>วันที่จัดสรร</th>
+      <th>ประดับยนต์ของรถ</th>
     </tr>
   </thead>
   <tbody>
@@ -58,10 +59,11 @@
       <td>{{ $s['po_date'] }}</td>
       <td>{{ $s['allocation_status'] }}</td>
       <td>{{ $s['allocation_date'] }}</td>
+      <td>{{ $s['note_accessory'] }}</td>
     </tr>
     @empty
     <tr>
-      <td colspan="{{ auth()->user()->brand == 2 ? 24 : 23 }}" align="center">
+      <td colspan="{{ auth()->user()->brand == 2 ? 25 : 24 }}" align="center">
         ไม่มีข้อมูล
       </td>
     </tr>

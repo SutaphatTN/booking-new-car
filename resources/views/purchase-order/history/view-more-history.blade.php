@@ -93,6 +93,14 @@
               <strong>ส่วนลดเงินดาวน์ :</strong>
               <span>{{ $saleCar->downPaymentDiscount !== null ? number_format($saleCar->downPaymentDiscount, 2) : '-' }} บาท</span>
             </div>
+            <div class="d-flex justify-content-between mb-2">
+              <strong>ส่วนลด :</strong>
+              <span>{{ $saleCar->discount !== null ? number_format($saleCar->discount, 2) : '-' }} บาท</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <strong>ค่าใช้จ่ายอื่นๆ :</strong>
+              <span>{{ $saleCar->other_cost_fi !== null ? number_format($saleCar->other_cost_fi, 2) : '-' }} บาท</span>
+            </div>
 
             <h5 class="pb-2 mb-3"></h5>
             <div class="d-flex justify-content-between mb-2">
@@ -143,6 +151,10 @@
             <div class="d-flex justify-content-between mb-2">
               <strong>ส่วนลด :</strong>
               <span>{{ $saleCar->PaymentDiscount !== null ? number_format($saleCar->PaymentDiscount, 2) : '-' }} บาท</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <strong>ค่าใช้จ่ายอื่นๆ :</strong>
+              <span>{{ $saleCar->other_cost !== null ? number_format($saleCar->other_cost, 2) : '-' }} บาท</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>คงเหลือ :</strong>
@@ -356,12 +368,16 @@
               <span>{{ $saleCar->format_delivery_date ?? '-' }}</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
-              <strong>วันที่ส่งมอบในระบบ DMS :</strong>
+              <strong>วันที่ส่งมอบของบริษัท :</strong>
               <span>{{ $saleCar->format_dms_date ?? '-' }}</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
-              <strong>วันที่ส่งมอบตามยอดชูเกียรติ :</strong>
+              <strong>วันที่ส่งมอบของฝ่ายขาย :</strong>
               <span>{{ $saleCar->format_ck_date ?? '-' }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <strong>ประมาณการส่งมอบ :</strong>
+              <span>{{ $saleCar->format_delivery_estimate_date ?? '-' }}</span>
             </div>
 
             <h5 class="border-bottom pb-2 mb-3">ผู้อนุมัติ</h5>
@@ -371,7 +387,7 @@
                 @if(($saleCar->AdminSignature ?? null) == 1)
                 เช็ครายการเรียบร้อยแล้ว
                 @else
-                ยังไม่ได้เช็ค
+                -
                 @endif
               </span>
             </div>
@@ -385,7 +401,7 @@
                 @if(($saleCar->CheckerID ?? null) == 1)
                 เช็ครายการเรียบร้อยแล้ว
                 @else
-                ยังไม่ได้เช็ค
+                -
                 @endif
               </span>
             </div>
@@ -394,12 +410,12 @@
               <span>{{ $saleCar->format_checker_date ?? '-' }}</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
-              <strong>ผู้อนุมัติรายการ (ผู้จัดการขาย) :</strong>
+              <strong>ผู้จัดการ อนุมัติการขาย :</strong>
               <span>
                 @if(($saleCar->SMSignature ?? null) == 1)
-                เช็ครายการเรียบร้อยแล้ว
+                อนุมัติเรียบร้อยแล้ว
                 @else
-                ยังไม่ได้เช็ค
+                -
                 @endif
               </span>
             </div>
@@ -408,12 +424,12 @@
               <span>{{ $saleCar->format_sm_date ?? '-' }}</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
-              <strong>ผู้อนุมัติการขายกรณีเกินจากงบ :</strong>
+              <strong>ผู้จัดการ อนุมัติกรณีงบเกิน :</strong>
               <span>
                 @if(($saleCar->ApprovalSignature ?? null) == 1)
-                เช็ครายการเรียบร้อยแล้ว
+                อนุมัติเรียบร้อยแล้ว
                 @else
-                ยังไม่ได้เช็ค
+                -
                 @endif
               </span>
             </div>
@@ -425,9 +441,9 @@
               <strong>GM อนุมัติกรณีงบเกิน (N) :</strong>
               <span>
                 @if(($saleCar->GMApprovalSignature ?? null) == 1)
-                เช็ครายการเรียบร้อยแล้ว
+                อนุมัติเรียบร้อยแล้ว
                 @else
-                ยังไม่ได้เช็ค
+                -
                 @endif
               </span>
             </div>

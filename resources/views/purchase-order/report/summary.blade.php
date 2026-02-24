@@ -123,18 +123,18 @@
       <span class="label">
         รุ่นรถ :
         <span style="font-weight: normal;">
-          {{ $saleCar->carOrder->model->Name_TH ?? '-' }}
+          {{ $saleCar->model->Name_TH ?? '-' }}
         </span> &nbsp;&nbsp;
-        แบบ :
+        Option :
         <span style="font-weight: normal;">
-          {{ $saleCar->carOrder->option ?? '-' }}
+          {{ $saleCar->option ?? '-' }}
         </span>
       </span>
 
       <span class="label">
         รุ่นรถย่อย :
         <span style="font-weight: normal;">
-          {{ $saleCar->carOrder->subModel->detail ?? '-' }} - {{ $saleCar->carOrder->subModel->name ?? '-' }}
+          {{ $saleCar->subModel->detail ?? '-' }} - {{ $saleCar->subModel->name ?? '-' }}
         </span>
       </span>
 
@@ -142,21 +142,21 @@
       <span class="label">
         สีรถ :
         <span style="font-weight: normal;">
-          {{ $saleCar->carOrder->gwmColor->name ?? '-' }}
+          {{ $saleCar->gwmColor->name ?? '-' }}
         </span>
       </span>
 
       <span class="label">
         สีภายในรถ :
         <span style="font-weight: normal;">
-          {{ $saleCar->carOrder->interiorColor->name ?? '-' }}
+          {{ $saleCar->interiorColor->name ?? '-' }}
         </span>
       </span>
       @else
       <span class="label">
         สีรถ :
         <span style="font-weight: normal;">
-          {{ $saleCar->carOrder->color ?? '-' }}
+          {{ $saleCar->Color ?? '-' }}
         </span>
       </span>
       @endif
@@ -219,6 +219,24 @@
         <span style="font-weight: normal;">
           {{ is_numeric($saleCar->DownPaymentDiscount ?? null) 
             ? number_format($saleCar->DownPaymentDiscount, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ส่วนลด :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->discount ?? null) 
+            ? number_format($saleCar->discount, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ค่าใช้จ่ายอื่นๆ :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->other_cost_fi ?? null) 
+            ? number_format($saleCar->other_cost_fi, 2) 
             : '-' }}
         </span>
       </span>
@@ -307,6 +325,15 @@
         <span style="font-weight: normal;">
           {{ is_numeric($saleCar->PaymentDiscount ?? null) 
             ? number_format($saleCar->PaymentDiscount, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ค่าใช้จ่ายอื่นๆ :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->other_cost ?? null) 
+            ? number_format($saleCar->other_cost, 2) 
             : '-' }}
         </span>
       </span>
@@ -496,16 +523,23 @@
       </span>
 
       <span class="label">
-        วันที่ส่งมอบในระบบ DMS :
+        วันที่ส่งมอบของบริษัท :
         <span style="font-weight: normal;">
           {{ $saleCar->format_dms_date ?? '-' }}
         </span>
       </span>
 
       <span class="label">
-        วันที่ส่งมอบตามยอดชูเกียรติ :
+        วันที่ส่งมอบของฝ่ายขาย :
         <span style="font-weight: normal;">
           {{ $saleCar->format_ck_date ?? '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        วันที่ส่งมอบตามยอดชูเกียรติ :
+        <span style="font-weight: normal;">
+          {{ $saleCar->format_delivery_estimate_date ?? '-' }}
         </span>
       </span>
 
@@ -516,7 +550,7 @@
           @if(($saleCar->AdminSignature ?? null) == 1)
           เช็ครายการเรียบร้อยแล้ว
           @else
-          ยังไม่ได้เช็ค
+          -
           @endif
         </span>
       </span>
@@ -534,7 +568,7 @@
           @if(($saleCar->CheckerID ?? null) == 1)
           เช็ครายการเรียบร้อยแล้ว
           @else
-          ยังไม่ได้เช็ค
+          -
           @endif
         </span>
       </span>
@@ -547,12 +581,12 @@
       </span>
 
       <span class="label">
-        ผู้อนุมัติรายการ (ผู้จัดการขาย) :
+        ผู้จัดการ อนุมัติการขาย :
         <span style="font-weight: normal;">
           @if(($saleCar->SMSignature ?? null) == 1)
-          เช็ครายการเรียบร้อยแล้ว
+          อนุมัติเรียบร้อยแล้ว
           @else
-          ยังไม่ได้เช็ค
+          -
           @endif
         </span>
       </span>
@@ -565,12 +599,12 @@
       </span>
 
       <span class="label">
-        ผู้อนุมัติการขายกรณีเกินจากงบ :
+        ผู้จัดการ อนุมัติกรณีงบเกิน :
         <span style="font-weight: normal;">
           @if(($saleCar->ApprovalSignature ?? null) == 1)
-          เช็ครายการเรียบร้อยแล้ว
+          อนุมัติเรียบร้อยแล้ว
           @else
-          ยังไม่ได้เช็ค
+          -
           @endif
         </span>
       </span>
@@ -586,9 +620,9 @@
         GM อนุมัติกรณีงบเกิน (N) :
         <span style="font-weight: normal;">
           @if(($saleCar->GMApprovalSignature ?? null) == 1)
-          เช็ครายการเรียบร้อยแล้ว
+          อนุมัติเรียบร้อยแล้ว
           @else
-          ยังไม่ได้เช็ค
+          -
           @endif
         </span>
       </span>

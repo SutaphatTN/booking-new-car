@@ -97,7 +97,7 @@
 
                   <div class="col-12">
                     <div class="form-row-item">
-                      <label for="view_alp" class="form-label">ประกัน ALP</label>
+                      <label for="edit_alp" class="form-label">ประกัน ALP</label>
                       <input id="edit_alp" type="text"
                         class="form-control text-end money-input"
                         value="{{ $sale->remainingPayment->total_alp ?? '' }}"
@@ -135,7 +135,7 @@
 
                   <div class="col-12">
                     <div class="form-row-item">
-                      <label for="view_interest" class="form-label">ดอกเบี้ย</label>
+                      <label for="edit_interest" class="form-label">ดอกเบี้ย</label>
                       <input id="edit_interest" type="text" class="form-control"
                         value="{{ $sale->remainingPayment?->interest !== null ? $sale->remainingPayment->interest . '%' : '-' }}"
                         readonly>
@@ -144,7 +144,7 @@
 
                   <div class="col-12">
                     <div class="form-row-item">
-                      <label for="view_type_com" class="form-label">ประเภทคอม</label>
+                      <label for="edit_type_com" class="form-label">ประเภทคอม</label>
                       <input id="edit_type_com" type="text" class="form-control"
                         value="{{ $sale->remainingPayment?->type_com !== null ? 'C' . $sale->remainingPayment->type_com : '-' }}"
                         readonly>
@@ -153,7 +153,7 @@
 
                   <div class="col-12">
                     <div class="form-row-item">
-                      <label for="view_period" class="form-label">จำนวนเดือนที่ผ่อน</label>
+                      <label for="edit_period" class="form-label">จำนวนเดือนที่ผ่อน</label>
 
                       @php
                       $years = $sale->remainingPayment?->period
@@ -170,14 +170,12 @@
 
                   <div class="col-12">
                     <div class="form-row-item">
-                      <label for="view_tax" class="form-label">ภาษีหัก ณ ที่จ่าย</label>
+                      <label for="edit_tax" class="form-label">ภาษีหัก ณ ที่จ่าย</label>
                       <input id="edit_tax" type="text" class="form-control"
                         value="{{ $sale->remainingPayment?->financeInfo?->tax !== null ? $sale->remainingPayment->financeInfo->tax . '%' : '-' }}"
                         readonly>
                     </div>
                   </div>
-
-
 
                   <div class="col-12">
                     <div class="form-row-item">
@@ -294,8 +292,10 @@
               <thead class="table-warning">
                 <tr>
                   <th width="10%">ลำดับ</th>
-                  <th width="65%">รายการรับชำระ</th>
-                  <th width="25%">ประมาณการ</th>
+                  <th width="30%">รายการรับชำระ</th>
+                  <th width="20%">ประมาณการ</th>
+                  <th width="20%">รับจริง</th>
+                  <th width="20%">diff</th>
                 </tr>
               </thead>
 
@@ -308,6 +308,18 @@
                       class="form-control text-end money-input"
                       name="excellent" value="{{ old('excellent', $fnCon->excellent) }}" readonly>
                   </td>
+                  <td>
+                    <input id="excellent_accept" type="text"
+                      class="form-control text-end money-decimal"
+                      name="excellent_accept"
+                      value="{{ number_format($fnCon->excellent_accept ?? 0, 2) }}">
+                  </td>
+                  <td>
+                    <input id="excellent_diff" name="excellent_diff"
+                      type="text"
+                      class="form-control text-end money-input"
+                      readonly>
+                  </td>
                 </tr>
 
                 <tr>
@@ -317,6 +329,18 @@
                     <input id="com_fin" type="text"
                       class="form-control text-end money-input"
                       name="com_fin" value="{{ old('com_fin', $fnCon->com_fin) }}" readonly>
+                  </td>
+                  <td>
+                    <input id="com_fin_accept" type="text"
+                      class="form-control text-end money-decimal"
+                      name="com_fin_accept"
+                      value="{{ number_format($fnCon->com_fin_accept ?? 0, 2) }}">
+                  </td>
+                  <td>
+                    <input id="com_fin_diff" name="com_fin_diff"
+                      type="text"
+                      class="form-control text-end money-input"
+                      readonly>
                   </td>
                 </tr>
 
@@ -330,15 +354,44 @@
                       name="com_extra"
                       value="{{ old('com_extra', $fnCon->com_extra ?? $comExtra) }}" readonly>
                   </td>
+                  <td>
+                    <input id="com_extra_accept"
+                      type="text"
+                      class="form-control text-end money-decimal"
+                      name="com_extra_accept"
+                      value="{{ number_format($fnCon->com_extra ?? 0, 2) }}">
+                  </td>
+                  <td>
+                    <input id="com_extra_diff" name="com_extra_diff"
+                      type="text"
+                      class="form-control text-end money-input"
+                      readonly>
+                  </td>
                 </tr>
 
                 <tr>
                   <td>4</td>
                   <td class="text-start">Com Kickback</td>
                   <td>
+                    <input type="hidden"
+                      name="com_kickback"
+                      id="com_kickback"
+                      value="{{ $sale->kickback }}">
                     <input id="edit_kickback" type="text"
                       class="form-control text-end money-input"
                       value="{{ $sale->kickback !== null ? $sale->kickback : '-' }}" readonly>
+                  </td>
+                  <td>
+                    <input id="com_kickback_accept" type="text"
+                      class="form-control text-end money-decimal"
+                      name="com_kickback_accept"
+                      value="{{ number_format($fnCon->com_kickback_accept ?? 0, 2) }}">
+                  </td>
+                  <td>
+                    <input id="com_kickback_diff" name="com_kickback_diff"
+                      type="text"
+                      class="form-control text-end money-input"
+                      readonly>
                   </td>
                 </tr>
 
@@ -347,8 +400,21 @@
                   <td class="text-start">Com Subsidy</td>
                   <td>
                     <input id="com_subsidy" type="text"
+                      class="form-control text-end money-decimal"
+                      name="com_subsidy"
+                      value="{{ number_format($fnCon->com_subsidy ?? 0, 2) }}">
+                  </td>
+                  <td>
+                    <input id="com_subsidy_accept" type="text"
+                      class="form-control text-end money-decimal"
+                      name="com_subsidy_accept"
+                      value="{{ number_format($fnCon->com_subsidy_accept ?? 0, 2) }}">
+                  </td>
+                  <td>
+                    <input id="com_subsidy_diff" name="com_subsidy_diff"
+                      type="text"
                       class="form-control text-end money-input"
-                      name="com_subsidy" value="{{ old('com_subsidy', $fnCon->com_subsidy ?? '' ) }}">
+                      readonly>
                   </td>
                 </tr>
 
@@ -357,8 +423,21 @@
                   <td class="text-start">ค่างวดล่วงหน้า</td>
                   <td>
                     <input id="advance_installment" type="text"
+                      class="form-control text-end money-decimal"
+                      name="advance_installment"
+                      value="{{ number_format($fnCon->advance_installment ?? 0, 2) }}">
+                  </td>
+                  <td>
+                    <input id="advance_installment_accept" type="text"
+                      class="form-control text-end money-decimal"
+                      name="advance_installment_accept"
+                      value="{{ number_format($fnCon->advance_installment_accept ?? 0, 2) }}">
+                  </td>
+                  <td>
+                    <input id="advance_installment_diff" name="advance_installment_diff"
+                      type="text"
                       class="form-control text-end money-input"
-                      name="advance_installment" value="{{ old('advance_installment', $fnCon->advance_installment ?? '' ) }}">
+                      readonly>
                   </td>
                 </tr>
 
@@ -370,21 +449,12 @@
                       class="form-control text-end money-input"
                       name="total" value="{{ old('total', $fnCon->total ?? '' ) }}" readonly>
                   </td>
-                </tr>
-
-                <tr>
-                  <td></td>
-                  <td class="text-start">ยอดที่ได้รับจริง</td>
                   <td>
                     <input id="actually_received" type="text"
-                      class="form-control text-end money-input"
-                      name="actually_received" value="{{ old('actually_received', $fnCon->actually_received ?? '' ) }}">
+                      class="form-control text-end money-decimal"
+                      name="actually_received" 
+                      value="{{ number_format($fnCon->actually_received ?? 0, 2) }}">
                   </td>
-                </tr>
-
-                <tr class="table-secondary fw-bold">
-                  <td></td>
-                  <td class="text-start">Diff</td>
                   <td>
                     <input id="diff" type="text"
                       class="form-control text-end money-input"

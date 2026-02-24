@@ -13,7 +13,7 @@
       @endphp
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ปิด</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
 
         <button type="submit"
           class="btn btn-primary d-none"
@@ -29,7 +29,7 @@
         </button>
 
         <button type="button"
-          class="btn btn-warning d-none"
+          class="btn btn-danger d-none"
           id="btnRequestOverBudget">
           ขออนุมัติเกินงบ
         </button>
@@ -37,6 +37,7 @@
         <input type="hidden" id="userRole" value="{{ $userRole }}">
         <input type="hidden" id="hasApproval" value="{{ $hasApproval ? 1 : 0 }}">
         <input type="hidden" name="action_type" id="action_type" value="">
+        <input type="hidden" name="reason_campaign" id="reason_campaign">
 
         <input type="hidden" id="approvalRequested"
           value="{{ $saleCar->approval_requested_at ? 1 : 0 }}">

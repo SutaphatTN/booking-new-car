@@ -36,6 +36,7 @@ class TbCarmodel extends Model
 		'initials',
 		'Active',
 		'over_budget',
+		'per_budget',
 		'money_min',
 		'userZone',
 		'brand'

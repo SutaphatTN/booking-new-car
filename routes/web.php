@@ -76,6 +76,9 @@ Route::group(['middleware' => 'auth'], function () {
     //GP Report
     Route::get('purchase-order/view-export-gp', [PurchaseOrderController::class, 'viewExportGP'])->name('purchase-order.view-export-gp');
     Route::get('/purchase-order/gp-export', [PurchaseOrderController::class, 'exportGP'])->name('purchase-order.gp-export');
+    // sale car report
+    Route::get('purchase-order/view-export-saleCar', [PurchaseOrderController::class, 'viewExportSaleCar'])->name('purchase-order.view-export-saleCar');
+    Route::get('/purchase-order/saleCar-export', [PurchaseOrderController::class, 'exportSaleCar'])->name('purchase-order.saleCar-export');
 
     //accessory partner
     Route::get('accessory/partner', [AccessoryController::class, 'viewPartner'])->name('accessory.partner');

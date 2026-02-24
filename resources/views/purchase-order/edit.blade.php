@@ -72,25 +72,6 @@ $disabled = $isHistory ? 'disabled' : '';
                 <div class="col-md-12">
                   <div class="row g-6">
                     <h4 class="pb-2 mb-3 border-bottom">ข้อมูลลูกค้า</h4>
-                    <div class="col-md-2">
-                      <label class="form-label" for="BookingDate">วันที่จอง</label>
-                      <input id="BookingDate" type="date"
-                        class="form-control"
-                        name="BookingDate" value="{{ $saleCar->BookingDate }}" required>
-                    </div>
-
-                    <div class="col-md-2">
-                      <label for="type" class="form-label">แหล่งที่มา</label>
-                      <select id="type" name="type" class="form-select">
-                        <option value="">-- เลือก --</option>
-                        @foreach ($type as $item)
-                        <option value="{{ @$item->id }}" {{ $saleCar->type == $item->id ? 'selected' : '' }}>
-                          {{ @$item->name }}
-                        </option>
-                        @endforeach
-                      </select>
-                    </div>
-
                     <!-- <div class="col-md-2">
                     <label for="sale_card" class="form-label">รหัสผู้ขาย</label>
                     <input id="sale_card" class="form-control" type="text" value="{{ $saleCar->saleUser->format_card_id }}" readonly>
@@ -100,6 +81,13 @@ $disabled = $isHistory ? 'disabled' : '';
                       <input id="sale_name" class="form-control" type="text" value="{{ $saleCar->saleUser->name }}" readonly>
                     </div>
                     <input type="hidden" name="SaleID" value="{{ $saleCar->SaleID }}">
+
+                    <div class="col-md-2">
+                      <label class="form-label" for="BookingDate">วันที่จอง</label>
+                      <input id="BookingDate" type="date"
+                        class="form-control"
+                        name="BookingDate" value="{{ $saleCar->BookingDate }}" required>
+                    </div>
 
                     <input type="hidden" id="CusID" name="CusID" value="{{ $saleCar->CusID }}">
 
@@ -111,6 +99,12 @@ $disabled = $isHistory ? 'disabled' : '';
                       <input type="text" id="CusFullName" class="form-control"
                         value="{{ $saleCar->customer->prefix->Name_TH ?? '' }} {{ $saleCar->customer->FirstName ?? '' }} {{ $saleCar->customer->LastName ?? '' }}"
                         readonly>
+                    </div>
+
+                    <div class="col-md-2">
+                      <label for="CusMobile" class="form-label">เบอร์โทรศัพท์</label>
+                      <input class="form-control" id="CusMobile" type="text" name="Mobilephone1" id="Mobilephone1"
+                        value="{{ $saleCar->customer->formatted_mobile }}" readonly>
                     </div>
 
                     <div class="col-md-2">
@@ -142,15 +136,34 @@ $disabled = $isHistory ? 'disabled' : '';
                     </div>
 
                     <div class="col-md-2">
-                      <label for="CusMobile" class="form-label">เบอร์โทรศัพท์</label>
-                      <input class="form-control" id="CusMobile" type="text" name="Mobilephone1" id="Mobilephone1"
-                        value="{{ $saleCar->customer->formatted_mobile }}" readonly>
+                      <label for="type" class="form-label">แหล่งที่มา</label>
+                      <select id="type" name="type" class="form-select">
+                        <option value="">-- เลือก --</option>
+                        @foreach ($type as $item)
+                        <option value="{{ @$item->id }}" {{ $saleCar->type == $item->id ? 'selected' : '' }}>
+                          {{ @$item->name }}
+                        </option>
+                        @endforeach
+                      </select>
                     </div>
+
                     <div class="col-md-2">
+                      <label for="type_sale" class="form-label">ประเภทการขาย</label>
+                      <select id="type_sale" name="type_sale" class="form-select">
+                        <option value="">-- เลือก --</option>
+                        @foreach ($typeSale as $item)
+                        <option value="{{ @$item->id }}" {{ $saleCar->type_sale == $item->id ? 'selected' : '' }}>
+                          {{ @$item->name }}
+                        </option>
+                        @endforeach
+                      </select>
+                    </div>
+
+                    <!-- <div class="col-md-2">
                       <label for="IDNumber" class="form-label">เลขบัตรประชาชน</label>
                       <input class="form-control" type="text" name="IDNumber" id="IDNumber"
                         value="{{ $saleCar->customer->formatted_id_number }}" readonly>
-                    </div>
+                    </div> -->
 
                     @if(auth()->user()->brand == 2)
                     <div class="col-md-2">
@@ -158,7 +171,7 @@ $disabled = $isHistory ? 'disabled' : '';
                       <select id="model_id" name="model_id" class="form-select" required>
                         <option value="">-- เลือกรุ่นรถหลัก --</option>
                         @foreach ($model as $m)
-                        <option value="{{ $m->id }}" data-overbudget="{{ $m->over_budget }}" {{ $saleCar->model_id == $m->id ? 'selected' : '' }}>{{ $m->Name_TH }}</option>
+                        <option value="{{ $m->id }}" data-overbudget="{{ $m->over_budget }}" data-perbudget="{{ $m->per_budget }}" {{ $saleCar->model_id == $m->id ? 'selected' : '' }}>{{ $m->Name_TH }}</option>
                         @endforeach
                       </select>
                     </div>
@@ -219,7 +232,7 @@ $disabled = $isHistory ? 'disabled' : '';
                       <select id="model_id" name="model_id" class="form-select" required>
                         <option value="">-- เลือกรุ่นรถหลัก --</option>
                         @foreach ($model as $m)
-                        <option value="{{ $m->id }}" data-overbudget="{{ $m->over_budget }}" {{ $saleCar->model_id == $m->id ? 'selected' : '' }}>{{ $m->Name_TH }}</option>
+                        <option value="{{ $m->id }}" data-overbudget="{{ $m->over_budget }}" data-perbudget="{{ $m->per_budget }}" {{ $saleCar->model_id == $m->id ? 'selected' : '' }}>{{ $m->Name_TH }}</option>
                         @endforeach
                       </select>
                     </div>
@@ -434,7 +447,7 @@ $disabled = $isHistory ? 'disabled' : '';
                         }}"
                         readonly>
                     </div>
-                    
+
                     @if(auth()->user()->brand == 2)
                     <div class="col-md-1">
                       <label for="carOrderOption" class="form-label">Option</label>
@@ -824,7 +837,7 @@ $disabled = $isHistory ? 'disabled' : '';
 
                       <div id="nonFinanceSelect" style="display:none">
                         <div class="row g-6">
-                          <div class="col-md-3">
+                          <div class="col-md-2">
                             <label for="remainingConditionSelect" class="form-label">ประเภทการชำระ</label>
                             <select id="remainingConditionSelect" class="form-select">
                               <option value="">-- เลือกประเภท --</option>
@@ -836,12 +849,18 @@ $disabled = $isHistory ? 'disabled' : '';
                           </div>
 
                           <div class="col-md-2">
+                            <label for="other_cost" class="form-label">ค่าใช้จ่ายอื่นๆ</label>
+                            <input class="form-control text-end money-input" type="text" id="other_cost" name="other_cost"
+                              value="{{ $saleCar->other_cost }}" />
+                          </div>
+
+                          <div class="col-md-2">
                             <label for="PaymentDiscount" class="form-label">ส่วนลด</label>
                             <input class="form-control text-end money-input" type="text" id="PaymentDiscount" name="PaymentDiscount"
                               value="{{ $saleCar->PaymentDiscount }}" />
                           </div>
 
-                          <div class="col-md-3">
+                          <div class="col-md-2">
                             <label for="balance_display" class="form-label">ยอดคงเหลือ</label>
                             <input id="balance_display" class="form-control text-end money-input balance-display" type="text"
                               value="{{ $saleCar->balance }}" readonly />
@@ -865,6 +884,89 @@ $disabled = $isHistory ? 'disabled' : '';
                           </div>
                         </div>
                       </div>
+
+                      @if(!$isHistory || $remainingPayment === 'credit')
+                      <div id="creditRemain">
+                        <div class="row">
+                          <div class="col-md-3">
+                            <label for="remaining_credit" class="form-label">บัตรเครดิต</label>
+                            <input id="remaining_credit" type="text"
+                              class="form-control"
+                              name="remaining_credit"
+                              value="{{ old('remaining_credit', $remainingPayment->credit ?? '') }}">
+                          </div>
+
+                          <div class="col-md-2">
+                            <label for="remaining_tax_credit" class="form-label">ค่าธรรมเนียม</label>
+                            <input id="remaining_tax_credit" type="text"
+                              class="form-control text-end money-input"
+                              name="remaining_tax_credit"
+                              value="{{ old('remaining_tax_credit', $remainingPayment->tax_credit ?? '') }}">
+                          </div>
+                        </div>
+                      </div>
+                      @endif
+
+                      @if(!$isHistory || $remainingPayment === 'check')
+                      <div id="checkRemain">
+                        <div class="row">
+                          <div class="col-md-3">
+                            <label for="remaining_check_bank" class="form-label">ธนาคาร</label>
+                            <input id="remaining_check_bank" type="text"
+                              class="form-control"
+                              name="remaining_check_bank"
+                              value="{{ old('remaining_check_bank', $remainingPayment->check_bank ?? '') }}">
+                          </div>
+
+                          <div class="col-md-2">
+                            <label for="remaining_check_branch" class="form-label">สาขา</label>
+                            <input id="remaining_check_branch" type="text"
+                              class="form-control"
+                              name="remaining_check_branch"
+                              value="{{ old('remaining_check_branch', $remainingPayment->check_branch ?? '') }}">
+                          </div>
+
+                          <div class="col-md-3">
+                            <label for="remaining_check_no" class="form-label">เลขที่</label>
+                            <input id="remaining_check_no" type="text"
+                              class="form-control"
+                              name="remaining_check_no"
+                              value="{{ old('remaining_check_no', $remainingPayment->check_no ?? '') }}">
+                          </div>
+                        </div>
+                      </div>
+                      @endif
+
+                      @if(!$isHistory || $remainingPayment === 'transfer')
+                      <div id="bankRemain">
+                        <div class="row">
+                          <div class="col-md-3">
+                            <label for="remaining_transfer_bank" class="form-label">ธนาคาร</label>
+                            <input id="remaining_transfer_bank" type="text"
+                              class="form-control"
+                              name="remaining_transfer_bank"
+                              value="{{ old('remaining_transfer_bank', $remainingPayment->transfer_bank ?? '') }}">
+                          </div>
+
+                          <div class="col-md-2">
+                            <label for="remaining_transfer_branch" class="form-label">สาขา</label>
+                            <input id="remaining_transfer_branch" type="text"
+                              class="form-control"
+                              name="remaining_transfer_branch"
+                              value="{{ old('remaining_transfer_branch', $remainingPayment->transfer_branch ?? '') }}">
+                          </div>
+
+                          <div class="col-md-3">
+                            <label for="remaining_transfer_no" class="form-label">เลขที่</label>
+                            <input id="remaining_transfer_no" type="text"
+                              class="form-control"
+                              name="remaining_transfer_no"
+                              value="{{ old('remaining_transfer_no', $remainingPayment->check_no ?? '') }}">
+                          </div>
+
+                        </div>
+                      </div>
+                      @endif
 
                       <!-- <div id="financeRemain">
                       <div class="row g-6">
@@ -1142,172 +1244,233 @@ $disabled = $isHistory ? 'disabled' : '';
 
                       <div id="financeRemain">
                         <div class="row g-6">
-                          <div class="col-md-2">
-                            <label for="MarkupPrice" class="form-label">บวกหัว</label>
-                            <input class="form-control text-end money-input" type="text" id="MarkupPrice" name="MarkupPrice"
-                              value="{{ $saleCar->MarkupPrice }}" />
-                          </div>
-                          <div class="col-md-2">
-                            <label for="Markup90" class="form-label">บวกหัว (90%)</label>
-                            <input class="form-control text-end money-input" type="text" id="Markup90" name="Markup90"
-                              value="{{ $saleCar->Markup90 }}" />
-                          </div>
+                          <div class="row g-4">
 
-                          <div class="col-md-2">
-                            <label for="CarSalePriceFinal" class="form-label">ราคาขายสุทธิ</label>
-                            <input class="form-control text-end money-input" type="text" name="CarSalePriceFinal" id="CarSalePriceFinal"
-                              value="{{ $saleCar->CarSalePriceFinal }}" readonly />
-                          </div>
+                            <div class="col-md-4">
+                              <div class="finance-box">
+                                <div class="row g-3">
+                                  <div class="col-12">
+                                    <div class="form-row-item">
+                                      <label for="MarkupPrice">บวกหัว</label>
+                                      <input class="form-control text-end money-input" type="text" id="MarkupPrice" name="MarkupPrice"
+                                        value="{{ $saleCar->MarkupPrice }}" />
+                                    </div>
+                                  </div>
 
-                          <div class="col-md-2">
-                            <label for="discount" class="form-label">ส่วนลด</label>
-                            <input class="form-control text-end money-input" type="text" name="discount" id="discount"
-                              value="{{ $saleCar->discount }}" />
-                          </div>
-                          <div class="col-md-2">
-                            <label for="kickback" class="form-label">Kick Back</label>
-                            <input class="form-control text-end money-input" type="text" name="kickback" id="kickback"
-                              value="{{ $saleCar->kickback }}" />
-                          </div>
+                                  <div class="col-12">
+                                    <div class="form-row-item">
+                                      <label for="Markup90">บวกหัว (90%)</label>
+                                      <input class="form-control text-end money-input" type="text" id="Markup90" name="Markup90"
+                                        value="{{ $saleCar->Markup90 }}" />
+                                    </div>
+                                  </div>
 
-                          <div class="col-md-2">
-                            <label for="DownPayment" class="form-label">เงินดาวน์</label>
-                            <input class="form-control text-end money-input" type="text" name="DownPayment" id="DownPayment"
-                              value="{{ $saleCar->DownPayment }}" />
-                          </div>
-                          <div class="col-md-1">
-                            <label for="DownPaymentPercentage" class="form-label">%</label>
-                            <input class="form-control text-end money-input" type="text" name="DownPaymentPercentage" id="DownPaymentPercentage"
-                              value="{{ $saleCar->DownPaymentPercentage }}" />
-                          </div>
-                          <div class="col-md-2">
-                            <label for="DownPaymentDiscount" class="form-label">ส่วนลดเงินดาวน์</label>
-                            <input class="form-control text-end money-input" type="text" name="DownPaymentDiscount" id="DownPaymentDiscount"
-                              value="{{ $saleCar->DownPaymentDiscount }}" />
-                          </div>
+                                  <div class="col-12">
+                                    <div class="form-row-item">
+                                      <label for="discount">ส่วนลดราคารถ</label>
+                                      <input class="form-control text-end money-input" type="text" name="discount" id="discount"
+                                        value="{{ $saleCar->discount }}" />
+                                    </div>
+                                  </div>
 
-                          <div class="col-md-2">
-                            <label for="TotalPaymentatDeliveryCar" class="form-label">สรุปค่าใช้จ่ายวันออกรถ</label>
-                            <input class="form-control text-end money-input" type="text" id="TotalPaymentatDeliveryCar" name="delivery_cost"
-                              value="{{ old('delivery_cost', $deliveryPayment->cost ?? '') }}" readonly />
+                                  <div class="col-12">
+                                    <div class="form-row-item">
+                                      <label for="CarSalePriceFinal">ราคาขายสุทธิ</label>
+                                      <input class="form-control text-end money-input" type="text" name="CarSalePriceFinal" id="CarSalePriceFinal"
+                                        value="{{ $saleCar->CarSalePriceFinal }}" readonly />
+                                    </div>
+                                  </div>
+
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="col-md-4">
+                              <div class="finance-box">
+                                <div class="row g-3">
+                                  <div class="col-12">
+                                    <div class="form-row-item">
+                                      <label for="DownPayment">เงินดาวน์</label>
+                                      <input class="form-control text-end money-input" type="text" name="DownPayment" id="DownPayment"
+                                        value="{{ $saleCar->DownPayment }}" />
+                                    </div>
+                                  </div>
+
+                                  <div class="col-12">
+                                    <div class="form-row-item">
+                                      <label for="DownPaymentPercentage">% เงินดาวน์</label>
+                                      <input class="form-control text-end money-input" type="text" name="DownPaymentPercentage" id="DownPaymentPercentage"
+                                        value="{{ $saleCar->DownPaymentPercentage }}" />
+                                    </div>
+                                  </div>
+
+                                  <div class="col-12">
+                                    <div class="form-row-item">
+                                      <label for="DownPaymentDiscount">ส่วนลดเงินดาวน์</label>
+                                      <input class="form-control text-end money-input" type="text" name="DownPaymentDiscount" id="DownPaymentDiscount"
+                                        value="{{ $saleCar->DownPaymentDiscount }}" />
+                                    </div>
+                                  </div>
+
+                                  <div class="col-12">
+                                    <div class="form-row-item">
+                                      <label for="other_cost_fi">ค่าใช้จ่ายอื่นๆ</label>
+                                      <input class="form-control text-end money-input" type="text" id="other_cost_fi" name="other_cost_fi"
+                                        value="{{ $saleCar->other_cost_fi }}" />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="col-md-4">
+                              <div class="finance-box">
+                                <div class="row g-3">
+                                  <div class="col-12">
+                                    <div class="form-row-item">
+                                      <label for="kickback">Kick Back</label>
+                                      <input class="form-control text-end money-input" type="text" name="kickback" id="kickback"
+                                        value="{{ $saleCar->kickback }}" />
+                                    </div>
+                                  </div>
+
+                                  <input type="hidden" id="TotalPaymentatDelivery" name="TotalPaymentatDelivery">
+                                  <div class="col-12">
+                                    <div class="form-row-item">
+                                      <label for="TotalPaymentatDeliveryCar">สรุปค่าใช้จ่ายวันออกรถ</label>
+                                      <input class="form-control text-end money-input" type="text" id="TotalPaymentatDeliveryCar" name="delivery_cost"
+                                        value="{{ old('delivery_cost', $deliveryPayment->cost ?? '') }}" readonly />
+                                    </div>
+                                  </div>
+
+                                  <div class="col-12">
+                                    <div class="form-row-item">
+                                      <label for="delivery_date">วันที่จ่ายเงินค่าออกรถ</label>
+                                      <input id="delivery_date" type="date"
+                                        class="form-control"
+                                        name="delivery_date" value="{{ old('delivery_date', $deliveryPayment?->date ?? '') }}">
+                                    </div>
+                                  </div>
+
+                                </div>
+                              </div>
+                            </div>
                           </div>
-
-                          <input type="hidden" id="TotalPaymentatDelivery" name="TotalPaymentatDelivery">
-
-                          <div class="col-md-2">
-                            <label for="delivery_date" class="form-label">วันที่จ่ายเงินค่าออกรถ</label>
-                            <input id="delivery_date" type="date"
-                              class="form-control"
-                              name="delivery_date" value="{{ old('delivery_date', $deliveryPayment?->date ?? '') }}">
-                          </div>
-
 
                           @php
                           $deliveryType = $deliveryPayment->type ?? '';
                           @endphp
-                          <div class="col-md-5">
-                            <fieldset class="mb-0">
-                              <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">ประเภทการจ่ายเงินวันออกรถ</legend>
+                          <div class="row g-4">
+                            <div class="col-md-12">
+                              <div class="finance-box">
+                                <div class="col-md-12">
+                                  <div class="row g-3">
+                                    <fieldset class="mb-4">
+                                      <legend class="form-label fw-semibold mb-4" style="font-size: 1rem;">ประเภทการจ่ายเงินวันออกรถ</legend>
 
-                              <div class="form-check form-check-inline" style="margin-left: 15px">
-                                <input class="form-check-input" type="radio" name="deliveryCondition" id="cashDeli" value="cash"
-                                  {{ $deliveryType === 'cash' ? 'checked' : '' }} {{ $disabled }}>
-                                <label class="form-check-label" for="cashDeli">เงินสด</label>
-                              </div>
+                                      <div class="form-check form-check-inline" style="margin-left: 15px">
+                                        <input class="form-check-input" type="radio" name="deliveryCondition" id="cashDeli" value="cash"
+                                          {{ $deliveryType === 'cash' ? 'checked' : '' }} {{ $disabled }}>
+                                        <label class="form-check-label" for="cashDeli">เงินสด</label>
+                                      </div>
 
-                              <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="deliveryCondition" id="creditDeli" value="credit"
-                                  {{ $deliveryType === 'credit' ? 'checked' : '' }} {{ $disabled }}>
-                                <label class="form-check-label" for="creditDeli">บัตรเครดิต</label>
-                              </div>
+                                      <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="deliveryCondition" id="creditDeli" value="credit"
+                                          {{ $deliveryType === 'credit' ? 'checked' : '' }} {{ $disabled }}>
+                                        <label class="form-check-label" for="creditDeli">บัตรเครดิต</label>
+                                      </div>
 
-                              <div class="form-check form-check-inline" style="margin-left: 15px">
-                                <input class="form-check-input" type="radio" name="deliveryCondition" id="checkDeli" value="check"
-                                  {{ $deliveryType === 'check' ? 'checked' : '' }} {{ $disabled }}>
-                                <label class="form-check-label" for="checkDeli">เช็คธนาคาร</label>
-                              </div>
+                                      <div class="form-check form-check-inline" style="margin-left: 15px">
+                                        <input class="form-check-input" type="radio" name="deliveryCondition" id="checkDeli" value="check"
+                                          {{ $deliveryType === 'check' ? 'checked' : '' }} {{ $disabled }}>
+                                        <label class="form-check-label" for="checkDeli">เช็คธนาคาร</label>
+                                      </div>
 
-                              <div class="form-check form-check-inline" style="margin-left: 15px">
-                                <input class="form-check-input" type="radio" name="deliveryCondition" id="transDeli" value="transfer"
-                                  {{ $deliveryType === 'transfer' ? 'checked' : '' }} {{ $disabled }}>
-                                <label class="form-check-label" for="transDeli">เงินโอน</label>
-                              </div>
-                            </fieldset>
-                          </div>
+                                      <div class="form-check form-check-inline" style="margin-left: 15px">
+                                        <input class="form-check-input" type="radio" name="deliveryCondition" id="transDeli" value="transfer"
+                                          {{ $deliveryType === 'transfer' ? 'checked' : '' }} {{ $disabled }}>
+                                        <label class="form-check-label" for="transDeli">เงินโอน</label>
+                                      </div>
+                                    </fieldset>
+                                  </div>
+                                </div>
 
-                          @if(!$isHistory || $deliveryType === 'credit')
-                          <div id="creditDelivery">
-                            <div class="row">
-                              <div class="col-md-4">
-                                <label for="delivery_credit" class="form-label">บัตรเครดิต</label>
-                                <input id="delivery_credit" type="text"
-                                  class="form-control"
-                                  name="delivery_credit" value="{{ old('delivery_credit', $deliveryPayment->credit ?? '') }}">
-                              </div>
+                                @if(!$isHistory || $deliveryType === 'credit')
+                                <div id="creditDelivery">
+                                  <div class="row">
+                                    <div class="col-md-4">
+                                      <label for="delivery_credit" class="form-label">บัตรเครดิต</label>
+                                      <input id="delivery_credit" type="text"
+                                        class="form-control"
+                                        name="delivery_credit" value="{{ old('delivery_credit', $deliveryPayment->credit ?? '') }}">
+                                    </div>
 
-                              <div class="col-md-2">
-                                <label for="delivery_tax_credit" class="form-label">ค่าธรรมเนียม</label>
-                                <input id="delivery_tax_credit" type="text"
-                                  class="form-control text-end money-input"
-                                  name="delivery_tax_credit" value="{{ old('delivery_tax_credit', $deliveryPayment->tax_credit ?? '') }}">
+                                    <div class="col-md-2">
+                                      <label for="delivery_tax_credit" class="form-label">ค่าธรรมเนียม</label>
+                                      <input id="delivery_tax_credit" type="text"
+                                        class="form-control text-end money-input"
+                                        name="delivery_tax_credit" value="{{ old('delivery_tax_credit', $deliveryPayment->tax_credit ?? '') }}">
+                                    </div>
+                                  </div>
+                                </div>
+                                @endif
+
+                                @if(!$isHistory || $deliveryType === 'check')
+                                <div id="checkDelivery">
+                                  <div class="row">
+                                    <div class="col-md-3">
+                                      <label for="delivery_check_bank" class="form-label">ธนาคาร</label>
+                                      <input id="delivery_check_bank" type="text"
+                                        class="form-control"
+                                        name="delivery_check_bank" value="{{ old('delivery_check_bank', $deliveryPayment->check_bank ?? '') }}">
+                                    </div>
+
+                                    <div class="col-md-4">
+                                      <label for="delivery_check_branch" class="form-label">สาขา</label>
+                                      <input id="delivery_check_branch" type="text"
+                                        class="form-control"
+                                        name="delivery_check_branch" value="{{ old('delivery_check_branch', $deliveryPayment->check_branch ?? '') }}">
+                                    </div>
+
+                                    <div class="col-md-3">
+                                      <label for="delivery_check_no" class="form-label">เลขที่</label>
+                                      <input id="delivery_check_no" type="text"
+                                        class="form-control"
+                                        name="delivery_check_no" value="{{ old('delivery_check_no', $deliveryPayment->check_no ?? '') }}">
+                                    </div>
+                                  </div>
+                                </div>
+                                @endif
+
+                                @if(!$isHistory || $deliveryType === 'transfer')
+                                <div id="bankDelivery">
+                                  <div class="row">
+                                    <div class="col-md-3">
+                                      <label for="delivery_transfer_bank" class="form-label">ธนาคาร</label>
+                                      <input id="delivery_transfer_bank" type="text"
+                                        class="form-control"
+                                        name="delivery_transfer_bank" value="{{ old('delivery_transfer_bank', $deliveryPayment->transfer_bank ?? '') }}">
+                                    </div>
+
+                                    <div class="col-md-4">
+                                      <label for="delivery_transfer_branch" class="form-label">สาขา</label>
+                                      <input id="delivery_transfer_branch" type="text"
+                                        class="form-control"
+                                        name="delivery_transfer_branch" value="{{ old('delivery_transfer_branch', $deliveryPayment->transfer_branch ?? '') }}">
+                                    </div>
+
+                                    <div class="col-md-3">
+                                      <label for="delivery_transfer_no" class="form-label">เลขที่</label>
+                                      <input id="delivery_transfer_no" type="text"
+                                        class="form-control"
+                                        name="delivery_transfer_no" value="{{ old('delivery_transfer_no', $deliveryPayment->transfer_no ?? '') }}">
+                                    </div>
+                                  </div>
+                                </div>
+                                @endif
                               </div>
                             </div>
                           </div>
-                          @endif
-
-                          @if(!$isHistory || $deliveryType === 'check')
-                          <div id="checkDelivery">
-                            <div class="row">
-                              <div class="col-md-3">
-                                <label for="delivery_check_bank" class="form-label">ธนาคาร</label>
-                                <input id="delivery_check_bank" type="text"
-                                  class="form-control"
-                                  name="delivery_check_bank" value="{{ old('delivery_check_bank', $deliveryPayment->check_bank ?? '') }}">
-                              </div>
-
-                              <div class="col-md-4">
-                                <label for="delivery_check_branch" class="form-label">สาขา</label>
-                                <input id="delivery_check_branch" type="text"
-                                  class="form-control"
-                                  name="delivery_check_branch" value="{{ old('delivery_check_branch', $deliveryPayment->check_branch ?? '') }}">
-                              </div>
-
-                              <div class="col-md-3">
-                                <label for="delivery_check_no" class="form-label">เลขที่</label>
-                                <input id="delivery_check_no" type="text"
-                                  class="form-control"
-                                  name="delivery_check_no" value="{{ old('delivery_check_no', $deliveryPayment->check_no ?? '') }}">
-                              </div>
-                            </div>
-                          </div>
-                          @endif
-
-                          @if(!$isHistory || $deliveryType === 'transfer')
-                          <div id="bankDelivery">
-                            <div class="row">
-                              <div class="col-md-3">
-                                <label for="delivery_transfer_bank" class="form-label">ธนาคาร</label>
-                                <input id="delivery_transfer_bank" type="text"
-                                  class="form-control"
-                                  name="delivery_transfer_bank" value="{{ old('delivery_transfer_bank', $deliveryPayment->transfer_bank ?? '') }}">
-                              </div>
-
-                              <div class="col-md-4">
-                                <label for="delivery_transfer_branch" class="form-label">สาขา</label>
-                                <input id="delivery_transfer_branch" type="text"
-                                  class="form-control"
-                                  name="delivery_transfer_branch" value="{{ old('delivery_transfer_branch', $deliveryPayment->transfer_branch ?? '') }}">
-                              </div>
-
-                              <div class="col-md-3">
-                                <label for="delivery_transfer_no" class="form-label">เลขที่</label>
-                                <input id="delivery_transfer_no" type="text"
-                                  class="form-control"
-                                  name="delivery_transfer_no" value="{{ old('delivery_transfer_no', $deliveryPayment->transfer_no ?? '') }}">
-                              </div>
-                            </div>
-                          </div>
-                          @endif
 
                           <!-- แบ่งซ้ายขวา -->
                           <div class="row g-4">
@@ -1318,7 +1481,7 @@ $disabled = $isHistory ? 'disabled' : '';
                                 <div class="row g-3">
                                   <div class="col-12">
                                     <div class="form-row-item">
-                                      <label>ชื่อไฟแนนซ์</label>
+                                      <label for="remaining_finance">ชื่อไฟแนนซ์</label>
                                       <select id="remaining_finance" name="remaining_finance" class="form-select" required>
                                         <option value="">-- เลือกไฟแนนซ์ --</option>
                                         @foreach ($finances as $f)
@@ -1334,7 +1497,16 @@ $disabled = $isHistory ? 'disabled' : '';
 
                                   <div class="col-12">
                                     <div class="form-row-item">
-                                      <label>ยอดจัดไฟแนนซ์</label>
+                                      <label for="remaining_contract_date">วันที่เซ็นสัญญา</label>
+                                      <input id="remaining_contract_date" type="date"
+                                        class="form-control"
+                                        name="remaining_contract_date" value="{{ old('remaining_contract_date', $remainingPayment?->contract_date ?? '') }}">
+                                    </div>
+                                  </div>
+
+                                  <div class="col-12">
+                                    <div class="form-row-item">
+                                      <label for="balanceFinanceDisplay">ยอดจัดไฟแนนซ์</label>
                                       <input class="form-control text-end money-input" type="text" id="balanceFinanceDisplay"
                                         value="{{ $saleCar->balanceFinance }}" readonly />
                                     </div>
@@ -1345,7 +1517,7 @@ $disabled = $isHistory ? 'disabled' : '';
 
                                   <div class="col-12">
                                     <div class="form-row-item">
-                                      <label>ดอกเบี้ย</label>
+                                      <label for="remaining_interest">ดอกเบี้ย</label>
                                       <input class="form-control text-end"
                                         type="text"
                                         id="remaining_interest"
@@ -1357,7 +1529,7 @@ $disabled = $isHistory ? 'disabled' : '';
 
                                   <div class="col-12">
                                     <div class="form-row-item">
-                                      <label>งวดผ่อน</label>
+                                      <label for="remaining_period">งวดผ่อน</label>
                                       <select id="remaining_period" name="remaining_period" class="form-select">
                                         <option value="">-- เลือกงวด --</option>
                                         <option value="12" {{ $remainingPayment?->period == '12' ? 'selected' : '' }}>12</option>
@@ -1373,7 +1545,7 @@ $disabled = $isHistory ? 'disabled' : '';
 
                                   <div class="col-12">
                                     <div class="form-row-item">
-                                      <label>ดอกเบี้ยคอม</label>
+                                      <label for="remaining_type_com">ดอกเบี้ยคอม</label>
                                       <select id="remaining_type_com" name="remaining_type_com" class="form-select">
                                         <option value="">-- เลือก --</option>
                                         <option value="0" {{ $remainingPayment?->type_com == '0' ? 'selected' : '' }}>C4</option>
@@ -1388,10 +1560,10 @@ $disabled = $isHistory ? 'disabled' : '';
 
                                   <div class="col-12">
                                     <div class="form-row-item">
-                                      <label>ยอดเงินค่าคอม</label>
+                                      <label for="remaining_total_com">ยอดเงินค่าคอม</label>
                                       <input id="remaining_total_com" name="remaining_total_com"
                                         class="form-control text-end money-input" type="text"
-                                        value="{{ old('remaining_total_com', $remainingPayment->total_com ?? '') }}">
+                                        value="{{ old('remaining_total_com', $remainingPayment->total_com ?? '') }}" readonly>
                                     </div>
                                   </div>
 
@@ -1405,7 +1577,7 @@ $disabled = $isHistory ? 'disabled' : '';
                                 <div class="row g-3">
                                   <div class="col-12">
                                     <div class="form-row-item">
-                                      <label>ค่างวด (ไม่มี ALP)</label>
+                                      <label for="remaining_alp">ค่างวด (ไม่มี ALP)</label>
                                       <input id="remaining_alp" name="remaining_alp"
                                         class="form-control text-end money-input" type="text"
                                         value="{{ old('remaining_alp', $remainingPayment->alp ?? '') }}" readonly />
@@ -1414,7 +1586,7 @@ $disabled = $isHistory ? 'disabled' : '';
 
                                   <div class="col-12">
                                     <div class="form-row-item">
-                                      <label>ค่างวด (รวม ALP)</label>
+                                      <label for="remaining_including_alp">ค่างวด (รวม ALP)</label>
                                       <input id="remaining_including_alp" name="remaining_including_alp"
                                         class="form-control text-end money-input" type="text"
                                         value="{{ old('remaining_including_alp', $remainingPayment->including_alp ?? '') }}">
@@ -1423,7 +1595,7 @@ $disabled = $isHistory ? 'disabled' : '';
 
                                   <div class="col-12">
                                     <div class="form-row-item">
-                                      <label>ยอดเงิน ALP</label>
+                                      <label for="remaining_total_alp">ยอดเงิน ALP</label>
                                       <input id="remaining_total_alp" name="remaining_total_alp"
                                         class="form-control text-end money-input" type="text"
                                         value="{{ old('remaining_total_alp', $remainingPayment->total_alp ?? '') }}">
@@ -1432,7 +1604,7 @@ $disabled = $isHistory ? 'disabled' : '';
 
                                   <div class="col-12">
                                     <div class="form-row-item">
-                                      <label>PO Number</label>
+                                      <label for="remaining_po_number">PO Number</label>
                                       <input id="remaining_po_number" type="text"
                                         class="form-control"
                                         name="remaining_po_number" value="{{ old('remaining_po_number', $remainingPayment?->po_number ?? '') }}">
@@ -1441,7 +1613,7 @@ $disabled = $isHistory ? 'disabled' : '';
 
                                   <div class="col-12">
                                     <div class="form-row-item">
-                                      <label>วันที่ PO</label>
+                                      <label for="remaining_po_date">วันที่ PO</label>
                                       <input id="remaining_po_date" type="date"
                                         class="form-control"
                                         name="remaining_po_date" value="{{ old('remaining_po_date', $remainingPayment?->po_date ?? '') }}">
@@ -1450,7 +1622,7 @@ $disabled = $isHistory ? 'disabled' : '';
 
                                   <div class="col-12">
                                     <div class="form-row-item">
-                                      <label>จังหวัดที่ขึ้นทะเบียน</label>
+                                      <label for="RegistrationProvince_finance">จังหวัดที่ขึ้นทะเบียน</label>
                                       <select id="RegistrationProvince_finance" name="RegistrationProvince_finance" class="registration-province form-select" required>
                                         <option value="">-- เลือกจังหวัด --</option>
                                         @foreach ($provinces as $p)
@@ -1468,89 +1640,6 @@ $disabled = $isHistory ? 'disabled' : '';
 
                         </div>
                       </div>
-
-                      @if(!$isHistory || $remainingPayment === 'credit')
-                      <div id="creditRemain">
-                        <div class="row">
-                          <div class="col-md-3">
-                            <label for="remaining_credit" class="form-label">บัตรเครดิต</label>
-                            <input id="remaining_credit" type="text"
-                              class="form-control"
-                              name="remaining_credit"
-                              value="{{ old('remaining_credit', $remainingPayment->credit ?? '') }}">
-                          </div>
-
-                          <div class="col-md-2">
-                            <label for="remaining_tax_credit" class="form-label">ค่าธรรมเนียม</label>
-                            <input id="remaining_tax_credit" type="text"
-                              class="form-control text-end money-input"
-                              name="remaining_tax_credit"
-                              value="{{ old('remaining_tax_credit', $remainingPayment->tax_credit ?? '') }}">
-                          </div>
-                        </div>
-                      </div>
-                      @endif
-
-                      @if(!$isHistory || $remainingPayment === 'check')
-                      <div id="checkRemain">
-                        <div class="row">
-                          <div class="col-md-3">
-                            <label for="remaining_check_bank" class="form-label">ธนาคาร</label>
-                            <input id="remaining_check_bank" type="text"
-                              class="form-control"
-                              name="remaining_check_bank"
-                              value="{{ old('remaining_check_bank', $remainingPayment->check_bank ?? '') }}">
-                          </div>
-
-                          <div class="col-md-2">
-                            <label for="remaining_check_branch" class="form-label">สาขา</label>
-                            <input id="remaining_check_branch" type="text"
-                              class="form-control"
-                              name="remaining_check_branch"
-                              value="{{ old('remaining_check_branch', $remainingPayment->check_branch ?? '') }}">
-                          </div>
-
-                          <div class="col-md-3">
-                            <label for="remaining_check_no" class="form-label">เลขที่</label>
-                            <input id="remaining_check_no" type="text"
-                              class="form-control"
-                              name="remaining_check_no"
-                              value="{{ old('remaining_check_no', $remainingPayment->check_no ?? '') }}">
-                          </div>
-                        </div>
-                      </div>
-                      @endif
-
-                      @if(!$isHistory || $remainingPayment === 'transfer')
-                      <div id="bankRemain">
-                        <div class="row">
-                          <div class="col-md-3">
-                            <label for="remaining_transfer_bank" class="form-label">ธนาคาร</label>
-                            <input id="remaining_transfer_bank" type="text"
-                              class="form-control"
-                              name="remaining_transfer_bank"
-                              value="{{ old('remaining_transfer_bank', $remainingPayment->transfer_bank ?? '') }}">
-                          </div>
-
-                          <div class="col-md-2">
-                            <label for="remaining_transfer_branch" class="form-label">สาขา</label>
-                            <input id="remaining_transfer_branch" type="text"
-                              class="form-control"
-                              name="remaining_transfer_branch"
-                              value="{{ old('remaining_transfer_branch', $remainingPayment->transfer_branch ?? '') }}">
-                          </div>
-
-                          <div class="col-md-3">
-                            <label for="remaining_transfer_no" class="form-label">เลขที่</label>
-                            <input id="remaining_transfer_no" type="text"
-                              class="form-control"
-                              name="remaining_transfer_no"
-                              value="{{ old('remaining_transfer_no', $remainingPayment->check_no ?? '') }}">
-                          </div>
-
-                        </div>
-                      </div>
-                      @endif
 
                       <!-- ข้อมูลการจ่ายเงิน -->
                       <!-- <option value="cash" {{ $remainingPayment?->type == 'cash' ? 'selected' : '' }}>เงินสด</option> -->
@@ -1639,7 +1728,7 @@ $disabled = $isHistory ? 'disabled' : '';
 
                       </div>
 
-                      <h4 class="pt-2 pb-2 border-bottom">แนะนำ</h4>
+                      <h4 class="pt-2 pb-2 border-bottom">ข้อมูลคนแนะนำ</h4>
                       <div class="col-md-5 mt-2">
                         <label class="form-label" for="customerSearchRef">ค้นหาข้อมูล</label>
                         <div class="input-group">
@@ -1666,7 +1755,7 @@ $disabled = $isHistory ? 'disabled' : '';
                           name="ReferrerAmount" value="{{ $saleCar->ReferrerAmount }}" />
                       </div>
 
-                      @if ($userRole === 'sale' && ($saleCar->GMApprovalSignature || $saleCar->ApprovalSignature))
+                      <!-- @if ($userRole === 'sale' && ($saleCar->GMApprovalSignature || $saleCar->ApprovalSignature))
                       <h4 class="pt-2 pb-2 border-bottom">ข้อมูลวันส่งมอบ</h4>
 
                       <div class="col-md-12">
@@ -1690,7 +1779,36 @@ $disabled = $isHistory ? 'disabled' : '';
                         <label for="DeliveryDate" class="form-label">วันส่งมอบจริง (วันที่แจ้งประกัน)</label>
                         <input class="form-control" type="date" id="DeliveryDate" name="DeliveryDate" value="{{ $saleCar->DeliveryDate }}" />
                       </div>
-                      @endif
+                      @endif -->
+
+                      <h4 class="pt-2 pb-2 border-bottom">ข้อมูลวันส่งมอบ</h4>
+                      <div class="row g-4">
+                        <div class="col-md-6">
+                          <div class="finance-box">
+                            <div class="row align-items-center">
+                              <label for="KeyInDate" class="col-6">
+                                วันที่ส่งเอกสารสรุปการขาย
+                              </label>
+                              <div class="col-6">
+                                <input class="form-control" type="date" id="KeyInDate" name="KeyInDate" value="{{ $saleCar->KeyInDate }}" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="col-md-6">
+                          <div class="finance-box">
+                            <div class="row align-items-center">
+                              <label for="DeliveryDate" class="col-6">
+                                วันส่งมอบจริง (วันที่แจ้งประกัน)
+                              </label>
+                              <div class="col-6">
+                                <input class="form-control" type="date" id="DeliveryDate" name="DeliveryDate" value="{{ $saleCar->DeliveryDate }}" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
                       <h4 class="pt-2 pb-2 border-bottom">ยอดค่าคอม sale</h4>
 
@@ -1773,13 +1891,60 @@ $disabled = $isHistory ? 'disabled' : '';
                   <div class="row g-6">
                     <h4 class="pt-2 pb-2 border-bottom">วันส่งมอบและผู้อนุมัติ</h4>
 
-                    <div class="col-md-12">
-                      <label for="DeliveryInDMSDate" class="form-label">วันที่ส่งมอบในระบบ DMS</label>
-                      <input class="form-control" type="date" id="DeliveryInDMSDate" name="DeliveryInDMSDate" value="{{ $saleCar->DeliveryInDMSDate }}" />
-                    </div>
-                    <div class="col-md-12">
-                      <label for="DeliveryInCKDate" class="form-label">วันที่ส่งมอบตามยอดชูเกียรติ</label>
-                      <input class="form-control" type="date" id="DeliveryInCKDate" name="DeliveryInCKDate" value="{{ $saleCar->DeliveryInCKDate }}" />
+                    <div class="row g-4" style="margin-top: -10px;">
+                      <div class="col-md-6">
+                        <div class="finance-box">
+
+                          <div class="row align-items-center mb-4">
+                            <label for="DeliveryInDMSDate" class="col-6">
+                              วันที่ส่งมอบของบริษัท
+                            </label>
+                            <div class="col-6">
+                              <input class="form-control" type="date" id="DeliveryInDMSDate" name="DeliveryInDMSDate" value="{{ $saleCar->DeliveryInDMSDate }}" />
+                            </div>
+                          </div>
+
+                          <div class="row align-items-center">
+                            <label for="DeliveryEstimateDate" class="col-6">
+                              ประมาณการส่งมอบ
+                            </label>
+                            <div class="col-6">
+                              <input class="form-control" type="month" id="DeliveryEstimateDate" name="DeliveryEstimateDate" value="{{ old('DeliveryEstimateDate', $saleCar->delivery_estimate_date_month) }}" />
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+
+                      <div class="col-md-6">
+                        <div class="finance-box">
+
+                          <div class="row align-items-center mb-4">
+                            <label for="DeliveryInCKDate" class="col-6">
+                              วันที่ส่งมอบของฝ่ายขาย
+                            </label>
+                            <div class="col-6">
+                              <input class="form-control" type="date" id="DeliveryInCKDate" name="DeliveryInCKDate" value="{{ $saleCar->DeliveryInCKDate }}" />
+                            </div>
+                          </div>
+
+
+                          <div class="row align-items-center">
+                            <label for="con_status" class="col-6">
+                              สถานะ
+                            </label>
+                            <div class="col-6">
+                              <select id="con_status" name="con_status" class="form-select" required>
+                                <option value="">-- เลือกสถานะ --</option>
+                                @foreach ($conStatus as $con)
+                                <option value="{{ @$con->id }}" {{ $saleCar->con_status == $con->id ? 'selected' : '' }}>{{ @$con->name }}</option>
+                                @endforeach
+                              </select>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
                     </div>
 
                     <div class="col-md-12">
@@ -1846,14 +2011,14 @@ $disabled = $isHistory ? 'disabled' : '';
 
                     <div class="col-md-12">
                       <fieldset class="mb-0">
-                        <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">อนุมัติรายการ (ผู้จัดการขาย)</legend>
+                        <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">ผู้จัดการ อนุมัติการขาย</legend>
                         <div class="d-flex align-items-center justify-content-between p-3 border rounded-3">
 
                           <div class="form-check m-0">
                             <input class="form-check-input" type="checkbox" id="SMSignature" name="SMSignature"
                               value="1" {{ $saleCar->SMSignature ? 'checked' : '' }}>
                             <label class="form-check-label" for="SMSignature">
-                              เช็คเรียบร้อยแล้ว
+                              อนุมัติ
                             </label>
                           </div>
 
@@ -1877,7 +2042,7 @@ $disabled = $isHistory ? 'disabled' : '';
 
                     <div class="col-md-12">
                       <fieldset class="mb-0">
-                        <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">ผู้จัดการอนุมัติการขาย</legend>
+                        <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">ผู้จัดการ อนุมัติกรณีงบเกิน</legend>
                         <div class="d-flex align-items-center justify-content-between p-3 border rounded-3">
 
                           <div class="form-check m-0">
@@ -1937,7 +2102,7 @@ $disabled = $isHistory ? 'disabled' : '';
                       </fieldset>
                     </div>
 
-                    <h4 class="pt-2 pb-2 border-bottom">สถานะ</h4>
+                    <!-- <h4 class="pt-2 pb-2 border-bottom">สถานะ</h4>
                     <div class="col-md-12">
                       <label for="con_status" class="form-label">สถานะ</label>
                       <select id="con_status" name="con_status" class="form-select" required>
@@ -1946,7 +2111,7 @@ $disabled = $isHistory ? 'disabled' : '';
                         <option value="{{ @$con->id }}" {{ $saleCar->con_status == $con->id ? 'selected' : '' }}>{{ @$con->name }}</option>
                         @endforeach
                       </select>
-                    </div>
+                    </div> -->
 
                   </div>
 
@@ -2008,6 +2173,7 @@ $disabled = $isHistory ? 'disabled' : '';
   .form-row-item .form-control,
   .form-row-item .form-select {
     flex: 1;
+    min-width: 0;
   }
 
   @media (max-width: 768px) {

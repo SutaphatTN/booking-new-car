@@ -134,6 +134,7 @@ class CustomerController extends Controller
                 ])),
                 'IDNumber' => $c->formatted_id_number,
                 'Mobilephone' => $c->formatted_mobile,
+                'MobilephoneRaw' => $c->Mobilephone1,
                 'Action' => view('customer.button', compact('c'))->render()
             ];
         });

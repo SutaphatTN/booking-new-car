@@ -5,6 +5,7 @@ namespace App\Http\Controllers\purchase_order;
 use App\Exports\booking\BookingExport;
 use App\Exports\commission\SaleCommissionExport;
 use App\Exports\gp\GPExport;
+use App\Exports\saleCar\SaleCarExport;
 use App\Http\Controllers\Controller;
 use App\Mail\SaleRequestMail;
 use App\Models\TbCarmodel;
@@ -21,6 +22,7 @@ use App\Models\TbConStatus;
 use App\Models\TbInteriorColor;
 use App\Models\TbProvinces;
 use App\Models\TbSalecarType;
+use App\Models\TbSalePurchaseType;
 use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -56,8 +58,9 @@ class PurchaseOrderController extends Controller
     {
         $model = TbCarmodel::all();
         $type = TbSalecarType::all();
+        $typeSale = TbSalePurchaseType::all();
         $interiorColor = TbInteriorColor::all();
-        return view('purchase-order.input', compact('model', 'type', 'interiorColor'));
+        return view('purchase-order.input', compact('model', 'type', 'typeSale', 'interiorColor'));
     }
 
     public function searchAccessory(Request $request)
@@ -134,9 +137,11 @@ class PurchaseOrderController extends Controller
             $subModelData = "{$subModelSale}<br>{$subDetail}";
 
             if (!empty($s->GMApprovalSignature)) {
-                $approver = 'GM อนุมัติแล้ว';
+                $approver = 'GM อนุมัติกรณีงบเกินแล้ว';
             } elseif (!empty($s->ApprovalSignature)) {
-                $approver = 'ผู้จัดการอนุมัติแล้ว';
+                $approver = 'ผู้จัดการ อนุมัติกรณีงบเกินแล้ว';
+            } elseif (!empty($s->SMSignature)) {
+                $approver = 'ผู้จัดการ อนุมัติแล้ว';
             } elseif (!empty($s->balanceCampaign)) {
                 $approver = 'รออนุมัติ';
             } else {
@@ -228,6 +233,7 @@ class PurchaseOrderController extends Controller
             $salecar = Salecar::create([
                 'SaleID' => $request->SaleID,
                 'type' => $request->type,
+                'type_sale' => $request->type_sale,
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
                 'price_sub' => $request->filled('price_sub')
@@ -393,6 +399,7 @@ class PurchaseOrderController extends Controller
         $conStatus = TbConStatus::all();
         $provinces = TbProvinces::all();
         $type = TbSalecarType::all();
+        $typeSale = TbSalePurchaseType::all();
         $payments = SaleCarPayment::where('SaleID', $id)->get();
         $userRole = Auth::user()->role;
         $gwmColor = $saleCar->subModel
@@ -431,7 +438,7 @@ class PurchaseOrderController extends Controller
 
         $selected_campaigns = $saleCar->campaigns->pluck('CampaignID')->toArray();
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'provinces', 'type', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor' ));
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor'));
     }
 
     public function update(Request $request, $id)
@@ -562,6 +569,7 @@ class PurchaseOrderController extends Controller
             $data = [
                 'SaleID' => $request->SaleID,
                 'type' => $request->type,
+                'type_sale' => $request->type_sale,
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
                 'price_sub' => $request->filled('price_sub')
@@ -632,6 +640,12 @@ class PurchaseOrderController extends Controller
                 'kickback' => $request->filled('kickback')
                     ? str_replace(',', '', $request->kickback)
                     : null,
+                'other_cost' => $request->filled('other_cost')
+                    ? str_replace(',', '', $request->other_cost)
+                    : null,
+                'other_cost_fi' => $request->filled('other_cost_fi')
+                    ? str_replace(',', '', $request->other_cost_fi)
+                    : null,
                 'CashSupportInterestPlus' => $request->CashSupportInterestPlus,
                 'TotalCashSupport' => $request->filled('TotalCashSupport')
                     ? str_replace(',', '', $request->TotalCashSupport)
@@ -680,6 +694,7 @@ class PurchaseOrderController extends Controller
                 'CheckerCheckedDate' => $request->CheckerCheckedDate,
                 'GMApprovalSignature' => $request->GMApprovalSignature,
                 'GMApprovalSignatureDate' => $request->GMApprovalSignatureDate,
+                'DeliveryEstimateDate' => $request->DeliveryEstimateDate,
                 'Note' => $request->Note,
                 'ReferrerID' => $request->ReferrerID,
                 'ReferrerAmount' => $request->filled('ReferrerAmount')
@@ -885,6 +900,7 @@ class PurchaseOrderController extends Controller
                     'total_com',
                     'po_number',
                     'po_date',
+                    'contract_date'
                 ];
                 foreach ($fieldsToClear as $field) {
                     $data[$field] = null;
@@ -919,6 +935,7 @@ class PurchaseOrderController extends Controller
                         $data['total_com'] = $request->remaining_total_com ? str_replace(',', '', $request->remaining_total_com) : null;
                         $data['po_number'] = $request->remaining_po_number ?? null;
                         $data['po_date'] = $request->remaining_po_date ?? null;
+                        $data['contract_date'] = $request->remaining_contract_date ?? null;
                         break;
 
                     case 'cash':
@@ -1045,7 +1062,6 @@ class PurchaseOrderController extends Controller
                 }
             }
 
-
             $action = $request->action_type;
             // Log::info('ACTION TYPE = ' . $request->action_type);
 
@@ -1061,15 +1077,30 @@ class PurchaseOrderController extends Controller
             }
 
             if ($action === 'request_over') {
-                // Log::info('SENDING over MAIL');
+
                 $saleCar->update([
                     'approval_type' => 'overbudget',
                     'approval_requested_at' => now(),
+                    'reason_campaign' => $request->reason_campaign,
                 ]);
-                // ส่งเมลแบบเกินงบ
+
+                // ผู้จัดการ
+                Mail::to('mitsuchookiat.programmer@gmail.com')
+                    ->send(new SaleRequestMail($saleCar, 'manager'));
+            }
+
+            if ($action === 'request_gm') {
+
+                $saleCar->update([
+                    'approval_type' => 'overbudget',
+                    'approval_requested_at' => now(),
+                    'reason_campaign' => $request->reason_campaign,
+                ]);
+
+                // GM
                 Mail::to('sutaphat.thongnui@gmail.com')
                     ->cc('mitsuchookiat.programmer@gmail.com')
-                    ->send(new SaleRequestMail($saleCar, 'over'));
+                    ->send(new SaleRequestMail($saleCar, 'gm'));
             }
 
             DB::commit();
@@ -1428,5 +1459,11 @@ class PurchaseOrderController extends Controller
         $toDate   = $request->to_date   ?? now()->format('Y-m-d');
 
         return Excel::download(new GPExport($fromDate, $toDate), 'gp-report.xlsx');
+    }
+
+    // report saleCar
+    public function exportSaleCar(Request $request)
+    {
+        return Excel::download(new SaleCarExport($request), 'ข้อมูลการจอง.xlsx');
     }
 }

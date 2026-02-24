@@ -22,6 +22,7 @@
       <th>ระยะเวลาการจอง</th>
       <th>สถานะรถจัดสรร</th>
       <th>วันที่จัดสรร</th>
+      <th>ประดับยนต์ของรถ</th>
     </tr>
   </thead>
   <tbody>
@@ -48,10 +49,11 @@
       <td>{{ $r['daysBind'] }}</td>
       <td>{{ $r['allocation_status'] }}</td>
       <td>{{ $r['allocation_date'] }}</td>
+      <td>{{ $r['note_accessory'] }}</td>
     </tr>
     @empty
     <tr>
-      <td colspan="{{ auth()->user()->brand == 2 ? 19 : 18 }}" align="center">
+      <td colspan="{{ auth()->user()->brand == 2 ? 20 : 19 }}" align="center">
         ไม่มีข้อมูล
       </td>
     </tr>

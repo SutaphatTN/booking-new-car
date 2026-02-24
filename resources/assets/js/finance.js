@@ -328,6 +328,24 @@ $(document).on('blur', '.money-input', function () {
   this.value = formatMoney(val);
 });
 
+$(document).on('input', '.money-decimal', function () {
+  let val = this.value;
+
+  val = val.replace(/[^0-9.]/g, '');
+
+  const parts = val.split('.');
+  if (parts.length > 2) {
+    val = parts[0] + '.' + parts[1];
+  }
+
+  this.value = val;
+});
+
+$(document).on('blur', '.money-decimal', function () {
+  let val = parseNumber(this.value);
+  this.value = formatMoney(val);
+});
+
 // blur focus inputFinExtraCom
 $(document).on('hide.bs.modal', '.inputFinExtraCom', function () {
   setTimeout(() => {
@@ -552,6 +570,7 @@ $(document).ready(function () {
     columns: [
       { data: 'No' },
       { data: 'FullName' },
+      { data: 'finance_name' },
       { data: 'delivery_date' },
       { data: 'firm_date' },
       { data: 'date' },
@@ -624,6 +643,8 @@ $(document).on('click', '.btnEditFNConfirm', function () {
     calculateComFin();
     bindTotalEvents();
     calculateTotal();
+    calculateAllDiff();
+    calculateDiffRow();
 
     $modal.modal('show');
 
@@ -724,11 +745,43 @@ function calculateTotal() {
   $('#diff').val(formatMoney(diff));
 }
 
+function calculateAllDiff() {
+  let totalDiff = 0;
+
+  totalDiff += calculateDiffRow('excellent', 'excellent_accept', 'excellent_diff');
+  totalDiff += calculateDiffRow('com_fin', 'com_fin_accept', 'com_fin_diff');
+  totalDiff += calculateDiffRow('com_extra', 'com_extra_accept', 'com_extra_diff');
+  totalDiff += calculateDiffRow('com_kickback', 'com_kickback_accept', 'com_kickback_diff');
+  totalDiff += calculateDiffRow('com_subsidy', 'com_subsidy_accept', 'com_subsidy_diff');
+  totalDiff += calculateDiffRow('advance_installment', 'advance_installment_accept', 'advance_installment_diff');
+
+  $('#diff').val(formatMoney(totalDiff));
+}
+
+function calculateDiffRow(estimateId, acceptId, diffId) {
+  let estimate = parseNumber($('#' + estimateId).val() || 0);
+  let accept = parseNumber($('#' + acceptId).val() || 0);
+
+  let diff = estimate - accept;
+
+  $('#' + diffId).val(formatMoney(diff));
+
+  return diff;
+}
+
 function bindTotalEvents() {
-  $('#excellent, #advance_installment, #com_fin, #com_extra, #kickback, #com_subsidy, #actually_received')
+  $('#excellent, #advance_installment, #com_fin, #com_extra, #com_kickback, #com_subsidy, #actually_received')
     .off('input')
     .on('input', function () {
       calculateTotal();
+    });
+
+  $(
+    '#excellent_accept, #com_fin_accept, #com_extra_accept, #com_kickback_accept, #com_subsidy_accept, #advance_installment_accept'
+  )
+    .off('input')
+    .on('input', function () {
+      calculateAllDiff();
     });
 }
 

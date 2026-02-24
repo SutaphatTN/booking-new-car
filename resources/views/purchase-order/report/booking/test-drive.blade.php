@@ -18,6 +18,7 @@
       <th>สถานะสัญญา</th>
       <th>Sale</th>
       <th>วันที่จอง</th>
+      <th>ประดับยนต์ของรถ</th>
     </tr>
   </thead>
   <tbody>
@@ -40,10 +41,11 @@
       <td>{{ $t['status'] }}</td>
       <td>{{ $t['sale'] }}</td>
       <td>{{ $t['bookingDate'] }}</td>
+      <td>{{ $t['note_accessory'] }}</td>
     </tr>
     @empty
     <tr>
-      <td colspan="{{ auth()->user()->brand == 2 ? 15 : 14 }}" align="center">
+      <td colspan="{{ auth()->user()->brand == 2 ? 16 : 15 }}" align="center">
         ไม่มีข้อมูล
       </td>
     </tr>

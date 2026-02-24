@@ -280,8 +280,10 @@
             <thead class="table-warning">
               <tr>
                 <th width="10%">ลำดับ</th>
-                <th width="65%">รายการรับชำระ</th>
-                <th width="25%">ประมาณการ</th>
+                  <th width="30%">รายการรับชำระ</th>
+                  <th width="20%">ประมาณการ</th>
+                  <th width="20%">รับจริง</th>
+                  <th width="20%">diff</th>
               </tr>
             </thead>
 
@@ -295,6 +297,18 @@
                     name="excellent"
                     value="{{ optional($fnCon)->excellent !== null ? number_format(optional($fnCon)->excellent, 2) : '' }}" disabled>
                 </td>
+                <td>
+                  <input id="excellent_accept" type="text"
+                    class="form-control text-end"
+                    name="excellent_accept"
+                    value="{{ optional($fnCon)->excellent_accept !== null ? number_format(optional($fnCon)->excellent_accept, 2) : '' }}" disabled>
+                </td>
+                <td>
+                  <input id="excellent_diff" type="text"
+                    class="form-control text-end"
+                    name="excellent_diff"
+                    value="{{ optional($fnCon)->excellent_diff !== null ? number_format(optional($fnCon)->excellent_diff, 2) : '' }}" disabled>
+                </td>
               </tr>
 
               <tr>
@@ -305,6 +319,18 @@
                     class="form-control text-end"
                     name="com_fin"
                     value="{{ optional($fnCon)->com_fin !== null ? number_format(optional($fnCon)->com_fin, 2) : '' }}" disabled>
+                </td>
+                <td>
+                  <input id="com_fin_accept" type="text"
+                    class="form-control text-end"
+                    name="com_fin_accept"
+                    value="{{ optional($fnCon)->com_fin_accept !== null ? number_format(optional($fnCon)->com_fin_accept, 2) : '' }}" disabled>
+                </td>
+                <td>
+                  <input id="com_fin_diff" type="text"
+                    class="form-control text-end"
+                    name="com_fin_diff"
+                    value="{{ optional($fnCon)->com_fin_diff !== null ? number_format(optional($fnCon)->com_fin_diff, 2) : '' }}" disabled>
                 </td>
               </tr>
 
@@ -318,6 +344,18 @@
                     name="com_extra"
                     value="{{ optional($fnCon)->com_extra !== null ? number_format(optional($fnCon)->com_extra, 2) : '' }}" disabled>
                 </td>
+                <td>
+                  <input id="com_extra_accept" type="text"
+                    class="form-control text-end"
+                    name="com_extra_accept"
+                    value="{{ optional($fnCon)->com_extra_accept !== null ? number_format(optional($fnCon)->com_extra_accept, 2) : '' }}" disabled>
+                </td>
+                <td>
+                  <input id="com_extra_diff" type="text"
+                    class="form-control text-end"
+                    name="com_extra_diff"
+                    value="{{ optional($fnCon)->com_extra_diff !== null ? number_format(optional($fnCon)->com_extra_diff, 2) : '' }}" disabled>
+                </td>
               </tr>
 
               <tr>
@@ -328,6 +366,18 @@
                     class="form-control text-end money-input"
                     value="{{ $sale->kickback !== null ? number_format($sale->kickback, 2) : '-' }}"
                     disabled>
+                </td>
+                <td>
+                  <input id="com_kickback_accept" type="text"
+                    class="form-control text-end"
+                    name="com_kickback_accept"
+                    value="{{ optional($fnCon)->com_kickback_accept !== null ? number_format(optional($fnCon)->com_kickback_accept, 2) : '' }}" disabled>
+                </td>
+                <td>
+                  <input id="com_kickback_diff" type="text"
+                    class="form-control text-end"
+                    name="com_kickback_diff"
+                    value="{{ optional($fnCon)->com_kickback_diff !== null ? number_format(optional($fnCon)->com_kickback_diff, 2) : '' }}" disabled>
                 </td>
               </tr>
 
@@ -340,6 +390,18 @@
                     name="com_subsidy"
                     value="{{ optional($fnCon)->com_subsidy !== null ? number_format(optional($fnCon)->com_subsidy, 2) : '' }}" disabled>
                 </td>
+                <td>
+                  <input id="com_subsidy_accept" type="text"
+                    class="form-control text-end"
+                    name="com_subsidy_accept"
+                    value="{{ optional($fnCon)->com_subsidy_accept !== null ? number_format(optional($fnCon)->com_subsidy_accept, 2) : '' }}" disabled>
+                </td>
+                <td>
+                  <input id="com_subsidy_diff" type="text"
+                    class="form-control text-end"
+                    name="com_subsidy_diff"
+                    value="{{ optional($fnCon)->com_subsidy_diff !== null ? number_format(optional($fnCon)->com_subsidy_diff, 2) : '' }}" disabled>
+                </td>
               </tr>
 
               <tr>
@@ -350,6 +412,18 @@
                     class="form-control text-end"
                     name="advance_installment"
                     value="{{ optional($fnCon)->advance_installment !== null ? number_format(optional($fnCon)->advance_installment, 2) : '' }}" disabled>
+                </td>
+                <td>
+                  <input id="advance_installment_accept" type="text"
+                    class="form-control text-end"
+                    name="advance_installment_accept"
+                    value="{{ optional($fnCon)->advance_installment_accept !== null ? number_format(optional($fnCon)->advance_installment_accept, 2) : '' }}" disabled>
+                </td>
+                <td>
+                  <input id="advance_installment_diff" type="text"
+                    class="form-control text-end"
+                    name="advance_installment_diff"
+                    value="{{ optional($fnCon)->advance_installment_diff !== null ? number_format(optional($fnCon)->advance_installment_diff, 2) : '' }}" disabled>
                 </td>
               </tr>
 
@@ -362,22 +436,12 @@
                     name="total"
                     value="{{ optional($fnCon)->total !== null ? number_format(optional($fnCon)->total, 2) : '' }}" disabled>
                 </td>
-              </tr>
-
-              <tr>
-                <td></td>
-                <td class="text-start">ยอดที่ได้รับจริง</td>
                 <td>
                   <input id="actually_received" type="text"
                     class="form-control text-end"
                     name="actually_received"
                     value="{{ optional($fnCon)->actually_received !== null ? number_format(optional($fnCon)->actually_received, 2) : '' }}" disabled>
                 </td>
-              </tr>
-
-              <tr>
-                <td></td>
-                <td class="text-start">Diff</td>
                 <td>
                   <input id="diff" type="text"
                     class="form-control text-end"
@@ -385,7 +449,6 @@
                     value="{{ optional($fnCon)->diff !== null ? number_format(optional($fnCon)->diff, 2) : '' }}" disabled>
                 </td>
               </tr>
-
             </tbody>
           </table>
         </div>

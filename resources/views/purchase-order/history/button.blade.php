@@ -1,11 +1,11 @@
-<button class="btn btn-icon btn-success btnViewHistory" data-id="{{ $s->id }}" title="preview">
-  <i class="bx bx-note"></i></a>
+<button class="btn btn-icon btn-info btnViewHistory" data-id="{{ $s->id }}" title="preview">
+  <i class="bx bx-show"></i></a>
 </button>
 
 <a href="{{ route('purchase-order.edit', $s->id) }}"
-  class="btn btn-icon btn-info"
+  class="btn btn-icon btn-success"
   title="ดูข้อมูล">
-  <i class="bx bx-show"></i>
+  <i class="bx bx-folder-open"></i>
 </a>
 @php
 $hasRemaining = !empty($s->remainingPayment);

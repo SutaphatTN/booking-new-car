@@ -214,6 +214,8 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 'allocation_status' => $allocationStatus,
                 'allocation_date' => $allocationDate,
 
+                'note_accessory' => $order->note_accessory ?? '-',
+
                 // 'statusCar' => $sale ? 'ผูกรถแล้ว' : 'รถว่าง',
                 // 1 คัน = 1 แถว เสมอ
                 // 'count'      => 1,

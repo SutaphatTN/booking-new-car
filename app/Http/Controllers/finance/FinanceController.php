@@ -295,6 +295,8 @@ class FinanceController extends Controller
                 }
             }
 
+            $financeF = $s->remainingPayment?->financeInfo?->FinanceCompany ?? '-';
+
             return [
                 'No' => $index + 1,
                 'FullName' => implode(' ', array_filter([
@@ -302,6 +304,7 @@ class FinanceController extends Controller
                     $c->FirstName ?? null,
                     $c->LastName ?? null,
                 ])),
+                'finance_name' => $financeF,
                 'delivery_date' => $s->format_delivery_date ?? '-',
                 'firm_date' => $s->financeConfirm->format_firm_date ?? '-',
                 'date' => $s->financeConfirm->format_date ?? '-',
@@ -375,20 +378,56 @@ class FinanceController extends Controller
                 'excellent' => $request->filled('excellent')
                     ? str_replace(',', '', $request->excellent)
                     : null,
+                'excellent_accept' => $request->filled('excellent_accept')
+                    ? str_replace(',', '', $request->excellent_accept)
+                    : null,
+                'excellent_diff' => $request->filled('excellent_diff')
+                    ? str_replace(',', '', $request->excellent_diff)
+                    : null,
                 'com_fin' => $request->filled('com_fin')
                     ? str_replace(',', '', $request->com_fin)
+                    : null,
+                'com_fin_accept' => $request->filled('com_fin_accept')
+                    ? str_replace(',', '', $request->com_fin_accept)
+                    : null,
+                'com_fin_diff' => $request->filled('com_fin_diff')
+                    ? str_replace(',', '', $request->com_fin_diff)
                     : null,
                 'com_extra' => $request->filled('com_extra')
                     ? str_replace(',', '', $request->com_extra)
                     : null,
+                'com_extra_accept' => $request->filled('com_extra_accept')
+                    ? str_replace(',', '', $request->com_extra_accept)
+                    : null,
+                'com_extra_diff' => $request->filled('com_extra_diff')
+                    ? str_replace(',', '', $request->com_extra_diff)
+                    : null,
                 'com_kickback' => $request->filled('com_kickback')
                     ? str_replace(',', '', $request->com_kickback)
+                    : null,
+                'com_kickback_accept' => $request->filled('com_kickback_accept')
+                    ? str_replace(',', '', $request->com_kickback_accept)
+                    : null,
+                'com_kickback_diff' => $request->filled('com_kickback_diff')
+                    ? str_replace(',', '', $request->com_kickback_diff)
                     : null,
                 'com_subsidy' => $request->filled('com_subsidy')
                     ? str_replace(',', '', $request->com_subsidy)
                     : null,
+                'com_subsidy_accept' => $request->filled('com_subsidy_accept')
+                    ? str_replace(',', '', $request->com_subsidy_accept)
+                    : null,
+                'com_subsidy_diff' => $request->filled('com_subsidy_diff')
+                    ? str_replace(',', '', $request->com_subsidy_diff)
+                    : null,
                 'advance_installment' => $request->filled('advance_installment')
                     ? str_replace(',', '', $request->advance_installment)
+                    : null,
+                'advance_installment_accept' => $request->filled('advance_installment_accept')
+                    ? str_replace(',', '', $request->advance_installment_accept)
+                    : null,
+                'advance_installment_diff' => $request->filled('advance_installment_diff')
+                    ? str_replace(',', '', $request->advance_installment_diff)
                     : null,
                 'total' => $request->filled('total')
                     ? str_replace(',', '', $request->total)

@@ -20,7 +20,18 @@ $(document).ready(function () {
       { data: 'No' },
       { data: 'FullName' },
       { data: 'IDNumber' },
-      { data: 'Mobilephone' },
+      {
+        data: 'Mobilephone',
+        render: function (data, type, row) {
+          if (type === 'display') {
+            return data;
+          }
+          if (type === 'filter') {
+            return row.MobilephoneRaw;
+          }
+          return data;
+        }
+      },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,

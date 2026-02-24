@@ -138,6 +138,7 @@ class Salecar extends Model
 		'KeyInDate',
 		'SaleID',
 		'type',
+		'type_sale',
 		'model_id',
 		'Color',
 		'gwm_color',
@@ -175,6 +176,8 @@ class Salecar extends Model
 		'TotalSaleCampaign',
 		'balanceCampaign',
 		'kickback',
+		'other_cost',
+		'other_cost_fi',
 		'CashSupportInterestPlus',
 		'TotalCashSupport',
 		'TotalAccessoryGift',
@@ -205,6 +208,8 @@ class Salecar extends Model
 		'CheckerCheckedDate',
 		'GMApprovalSignature',
 		'GMApprovalSignatureDate',
+		'DeliveryEstimateDate',
+		'reason_campaign',
 		'Note',
 		'ReferrerID',
 		'ReferrerAmount',
@@ -277,6 +282,11 @@ class Salecar extends Model
 		return $this->belongsTo(TbSalecarType::class, 'type', 'id');
 	}
 
+	public function salePurType()
+	{
+		return $this->belongsTo(TbSalePurchaseType::class, 'type_sale', 'id');
+	}
+
 	public function provinces()
 	{
 		return $this->belongsTo(TbProvinces::class, 'RegistrationProvince', 'id');
@@ -308,18 +318,18 @@ class Salecar extends Model
 	}
 
 	public function gwmColor()
-    {
-        return $this->belongsTo(TbColor::class, 'gwm_color');
-    }
+	{
+		return $this->belongsTo(TbColor::class, 'gwm_color');
+	}
 
-    public function getDisplayColorAttribute()
-    {
-        if ($this->brand == 2) {
-            return $this->gwmColor?->name ?? '-';
-        }
+	public function getDisplayColorAttribute()
+	{
+		if ($this->brand == 2) {
+			return $this->gwmColor?->name ?? '-';
+		}
 
-        return $this->Color ?? '-';
-    }
+		return $this->Color ?? '-';
+	}
 
 	public function interiorColor()
 	{
@@ -424,5 +434,25 @@ class Salecar extends Model
 	public function getFormatDeliveryDateAttribute()
 	{
 		return $this->DeliveryDate ? Carbon::parse($this->DeliveryDate)->format('d-m-Y') : null;
+	}
+
+	public function setDeliveryEstimateDateAttribute($value)
+	{
+		if ($value) {
+			$this->attributes['DeliveryEstimateDate'] =
+				Carbon::createFromFormat('Y-m', $value)->startOfMonth();
+		}
+	}
+
+	public function getDeliveryEstimateDateMonthAttribute()
+	{
+		return $this->DeliveryEstimateDate
+			? Carbon::parse($this->DeliveryEstimateDate)->format('Y-m')
+			: null;
+	}
+
+	public function getFormatDeliveryEstimateDateAttribute()
+	{
+		return $this->DeliveryEstimateDate ? Carbon::parse($this->DeliveryEstimateDate)->format('m-Y') : null;
 	}
 }

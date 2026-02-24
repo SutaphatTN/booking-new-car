@@ -37,6 +37,7 @@ class PaymentType extends Model
         'total_com',
         'po_number',
         'po_date',
+        'contract_date',
         'userZone',
         'brand'
     ];
@@ -51,6 +52,11 @@ class PaymentType extends Model
     public function financeInfo()
     {
         return $this->belongsTo(Finance::class, 'finance', 'id');
+    }
+
+    public function getFormatContractDateAttribute()
+    {
+        return $this->contract_date ? Carbon::parse($this->contract_date)->format('d-m-Y') : null;
     }
 
     public function getFormatPoDateAttribute()

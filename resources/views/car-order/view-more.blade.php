@@ -169,6 +169,11 @@
           @endif
 
           <div class="col-md-12 mb-5">
+            <label for="note_accessory" class="form-label">ประดับยนต์ของรถ</label>
+            <textarea id="note_accessory" class="form-control" name="note_accessory" disabled>{{ $order->note_accessory }}</textarea>
+          </div>
+
+          <div class="col-md-12 mb-5">
             <label for="note" class="form-label">หมายเหตุ</label>
             <textarea id="note" class="form-control" name="note" disabled>{{ $order->note }}</textarea>
           </div>
