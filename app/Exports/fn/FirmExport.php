@@ -151,7 +151,7 @@ class FirmExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldA
 
             $color = $r->brand == 2
                 ? ($r->gwmColor->name ?? '-')
-                : ($r->color ?? '-');
+                : ($r->Color ?? '-');
 
             $interiorColor = $r->brand == 2
                 ? ($r->interiorColor->name ?? '-')
@@ -164,7 +164,7 @@ class FirmExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldA
                 'option'     => $r->option ?? '-',
                 'color'      => $color,
                 'interior_color' => $interiorColor,
-                'year'       => $r->year ?? '-',
+                'year'       => $r->Year ?? '-',
                 'alp'       => $r->remainingPayment->total_alp ?? '-',
                 'name_fi'       => $r->remainingPayment->financeInfo->FinanceCompany ?? '-',
                 'interest'       => $r->remainingPayment->interest . '%' ?? '-',

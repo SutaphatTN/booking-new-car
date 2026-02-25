@@ -4,6 +4,7 @@ namespace App\Exports\saleCar;
 
 use App\Models\Salecar;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -17,11 +18,13 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 
 class SaleCarExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
-    protected $request;
+    protected $fromDate;
+    protected $toDate;
 
-    public function __construct($request)
+    public function __construct($fromDate = null, $toDate = null)
     {
-        $this->request = $request;
+        $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m');
+        $this->toDate   = $toDate   ?? now()->format('Y-m');
     }
 
     public function title(): string
@@ -37,7 +40,7 @@ class SaleCarExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
                 'font' => [],
                 'fill' => [
                     'fillType' => 'solid',
-                    'startColor' => ['rgb' => 'be6aff'],
+                    'startColor' => ['rgb' => 'd7a2ff'],
                 ],
                 'alignment' => [
                     'horizontal' => 'center',
@@ -87,13 +90,16 @@ class SaleCarExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
                 $sheet->freezePane('A2');
 
                 // สี sheet
-                $sheet->getTabColor()->setRGB('be6aff');
+                $sheet->getTabColor()->setRGB('d7a2ff');
             },
         ];
     }
 
     public function view(): View
     {
+        $start = Carbon::createFromFormat('Y-m', $this->fromDate)->startOfMonth();
+        $end   = Carbon::createFromFormat('Y-m', $this->toDate)->endOfMonth();
+
         $rows = Salecar::with([
             'customer.prefix',
             'carOrder.model',
@@ -106,6 +112,7 @@ class SaleCarExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
             'remainingPayment',
             'remainingPayment.financeInfo',
         ])
+            ->whereBetween('DeliveryInDMSDate', [$start, $end])
             ->get();
 
         $data = $rows->map(function ($r) {
@@ -115,15 +122,15 @@ class SaleCarExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
                     ($r->customer->LastName ?? '')
             );
 
-            $model = $r->carOrder->model->Name_TH ?? '-';
-            $sub = $r->carOrder->subModel->name ?? '-';
-            $detailModel = $r->carOrder->subModel->detail ?? '-';
+            $model = $r->model->Name_TH ?? '-';
+            $sub = $r->subModel->name ?? '-';
+            $detailModel = $r->subModel->detail ?? '-';
 
             $subModel = "{$detailModel} - {$sub}";
 
             $color = $r->brand == 2
                 ? ($r->gwmColor->name ?? '-')
-                : ($r->color ?? '-');
+                : ($r->Color ?? '-');
 
             $interiorColor = $r->brand == 2
                 ? ($r->interiorColor->name ?? '-')
@@ -136,7 +143,7 @@ class SaleCarExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
                 'option'     => $r->option ?? '-',
                 'color'      => $color,
                 'interior_color' => $interiorColor,
-                'year'       => $r->year ?? '-',
+                'year'       => $r->Year ?? '-',
                 'bookingDate' => $r?->format_booking_date ?? '',
                 'name_fi'       => $r->remainingPayment->financeInfo->FinanceCompany ?? '-',
                 'order_status' => $r->carOrder->orderStatus->name ?? '-',

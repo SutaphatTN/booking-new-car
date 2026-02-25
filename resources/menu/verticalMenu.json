@@ -167,7 +167,7 @@
           "slug": "report.gp-export"
         },
         {
-          "url": "purchase-order/saleCar-export",
+          "url": "purchase-order/view-export-saleCar",
           "name": "ข้อมูลการจอง",
           "slug": "report.saleCar-export"
         }

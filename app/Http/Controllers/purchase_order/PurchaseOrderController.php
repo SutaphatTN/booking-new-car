@@ -1462,8 +1462,16 @@ class PurchaseOrderController extends Controller
     }
 
     // report saleCar
+    public function viewExportSaleCar()
+    {
+        return view('purchase-order.report.saleCar.view');
+    }
+
     public function exportSaleCar(Request $request)
     {
-        return Excel::download(new SaleCarExport($request), 'ข้อมูลการจอง.xlsx');
+        $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
+        $toDate   = $request->to_date   ?? now()->format('Y-m');
+
+        return Excel::download(new SaleCarExport($fromDate, $toDate), 'ข้อมูลการจอง.xlsx');
     }
 }

@@ -3007,3 +3007,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 });
+
+//view report saleCar
+document.addEventListener('DOMContentLoaded', function () {
+  const modalEl = document.querySelector('.viewExportSaleCar');
+  if (!modalEl) return;
+
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+
+  // ปิด modal แล้วกลับหน้าก่อนหน้า
+  modalEl.addEventListener('hidden.bs.modal', function () {
+    window.history.back();
+  });
+});
