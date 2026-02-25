@@ -1072,7 +1072,8 @@ class PurchaseOrderController extends Controller
                     'approval_requested_at' => now(),
                 ]);
                 // ส่งเมลแบบยอดปกติ
-                Mail::to('mitsuchookiat.programmer@gmail.com')
+                // Mail::to('mitsuchookiat.programmer@gmail.com')
+                Mail::to('Phung.mitsuchookiatkrabi@gmail.com')
                     ->send(new SaleRequestMail($saleCar, 'normal'));
             }
 
@@ -1085,7 +1086,8 @@ class PurchaseOrderController extends Controller
                 ]);
 
                 // ผู้จัดการ
-                Mail::to('mitsuchookiat.programmer@gmail.com')
+                // Mail::to('mitsuchookiat.programmer@gmail.com')
+                Mail::to('Phung.mitsuchookiatkrabi@gmail.com')
                     ->send(new SaleRequestMail($saleCar, 'manager'));
             }
 
@@ -1098,8 +1100,10 @@ class PurchaseOrderController extends Controller
                 ]);
 
                 // GM
+                // Mail::to('sutaphat.thongnui@gmail.com')
+                //     ->cc('mitsuchookiat.programmer@gmail.com')
                 Mail::to('sutaphat.thongnui@gmail.com')
-                    ->cc('mitsuchookiat.programmer@gmail.com')
+                    ->cc('Phung.mitsuchookiatkrabi@gmail.com')
                     ->send(new SaleRequestMail($saleCar, 'gm'));
             }
 
