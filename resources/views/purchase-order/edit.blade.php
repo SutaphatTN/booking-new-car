@@ -2115,6 +2115,14 @@ $disabled = $isHistory ? 'disabled' : '';
 
                   </div>
 
+                  <input type="hidden" name="reason_campaign" id="reason_campaign">
+
+                  <input type="hidden" id="approvalRequested"
+                    value="{{ $saleCar->approval_requested_at ? 1 : 0 }}">
+
+                  <input type="hidden" id="approvalType"
+                    value="{{ $saleCar->approval_type ?? '' }}">
+
                   @if(!$isHistory)
                   <div class="mt-6 d-flex justify-content-end gap-2">
                     <button id="prevCar" class="btn btn-danger">ย้อนกลับ</button>

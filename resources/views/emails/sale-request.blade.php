@@ -19,7 +19,15 @@
 - **สี :** {{ $saleCar->Color ?? '-' }}
 - **ปี :** {{ $saleCar->Year ?? '-' }}
 - **Option :** {{ $saleCar->option ?? '-' }}
-- **ยอดคงเหลือแคมเปญ :** {{ $saleCar->balanceCampaign !== null ? number_format($saleCar->balanceCampaign, 2) : '' }}
+- **ยอดคงเหลือแคมเปญ :**
+{{
+    $saleCar->balanceCampaign !== null 
+        ? number_format(max(0, $saleCar->balanceCampaign), 2) 
+        : '' 
+}}
+@if(!empty($saleCar->reason_campaign))
+- **สาเหตุที่งบเกิน :** {{ $saleCar->reason_campaign }}
+@endif
 
 ---
 
