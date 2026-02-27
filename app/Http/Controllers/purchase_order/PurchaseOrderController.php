@@ -1064,6 +1064,13 @@ class PurchaseOrderController extends Controller
 
             $action = $request->action_type;
             // Log::info('ACTION TYPE = ' . $request->action_type);
+            $user = Auth::user();
+            $mailTo = ['Phung.mitsuchookiatkrabi@gmail.com'];
+            // $mailTo = ['mitsuchookiat.programmer@gmail.com'];
+            if ($user->brand == 2) {
+                $mailTo[] = 'JirapornK@Chookiat.org';
+                // $mailTo[] = 'sutaphat.thongnui@gmail.com';
+            }
 
             if ($action === 'request_normal') {
                 // Log::info('SENDING NORMAL MAIL');
@@ -1072,8 +1079,7 @@ class PurchaseOrderController extends Controller
                     'approval_requested_at' => now(),
                 ]);
                 // ส่งเมลแบบยอดปกติ
-                // Mail::to('mitsuchookiat.programmer@gmail.com')
-                Mail::to('Phung.mitsuchookiatkrabi@gmail.com')
+                Mail::to($mailTo)
                     ->send(new SaleRequestMail($saleCar, 'normal'));
             }
 
@@ -1086,8 +1092,7 @@ class PurchaseOrderController extends Controller
                 ]);
 
                 // ผู้จัดการ
-                // Mail::to('mitsuchookiat.programmer@gmail.com')
-                Mail::to('Phung.mitsuchookiatkrabi@gmail.com')
+                Mail::to($mailTo)
                     ->send(new SaleRequestMail($saleCar, 'manager'));
             }
 
@@ -1103,7 +1108,7 @@ class PurchaseOrderController extends Controller
                 // Mail::to('sutaphat.thongnui@gmail.com')
                 //     ->cc('mitsuchookiat.programmer@gmail.com')
                 Mail::to('sutaphat.thongnui@gmail.com')
-                    ->cc('Phung.mitsuchookiatkrabi@gmail.com')
+                    ->cc('$mailTo')
                     ->send(new SaleRequestMail($saleCar, 'gm'));
             }
 

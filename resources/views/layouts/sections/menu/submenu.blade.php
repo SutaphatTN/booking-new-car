@@ -1,11 +1,17 @@
 @php
 use Illuminate\Support\Facades\Route;
 $userRole = auth()->user()->role ?? null;
+$userBrand = auth()->user()->brand ?? null;
 @endphp
 
 <ul class="menu-sub">
   @if (isset($menu))
   @foreach ($menu as $submenu)
+
+
+  @if($submenu->slug == 'model.color.index' && $userBrand != 2)
+  @continue
+  @endif
 
   @if($userRole == 'sale' && $submenu->slug == 'purchase-order.viewFN')
   @continue

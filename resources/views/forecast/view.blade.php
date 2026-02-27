@@ -38,6 +38,7 @@
                     <th>สี</th>
                      ${res.brand == 2 ? '<th>ภายใน</th>' : ''}
                     <th>ขายได้ 3 เดือน</th>
+                     <th>จำนวนรถในสต็อค</th>
                     <th>Mix %</th>
                     <th>ควรสั่ง</th>
                 </tr>
@@ -52,6 +53,7 @@
                     <td>${item.color}</td>
                      ${res.brand == 2 ? `<td>${item.interior_color}</td>` : ''}
                     <td>${item.sold_last_3m}</td>
+                    <td>${item.stock_available}</td>
                     <td>${item.mix_percent}%</td>
                     <td><b>${item.forecast_units}</b></td>
                 </tr>

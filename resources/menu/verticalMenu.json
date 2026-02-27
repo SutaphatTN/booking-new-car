@@ -64,6 +64,11 @@
           "url": "sub-model-car",
           "name": "ข้อมูลรถรุ่นย่อย",
           "slug": "model.sub-model.index"
+        },
+        {
+          "url": "color",
+          "name": "ข้อมูลสีรถ",
+          "slug": "model.color.index"
         }
       ]
     },

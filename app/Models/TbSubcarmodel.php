@@ -45,6 +45,6 @@ class TbSubcarmodel extends Model
 			'color_submodel',
 			'subcarmodel_id',
 			'color_id'
-		);
+		)->withTimestamps();
 	}
 }

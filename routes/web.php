@@ -8,6 +8,7 @@ use App\Http\Controllers\auth\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\campaign\CampaignController;
 use App\Http\Controllers\car_order\CarOrderController;
+use App\Http\Controllers\color\ColorController;
 use App\Http\Controllers\customer\CustomerController;
 use App\Http\Controllers\finance\FinanceController;
 use App\Http\Controllers\forecast\ForecastController;
@@ -165,6 +166,10 @@ Route::group(['middleware' => 'auth'], function () {
     //condition select ca model 
     Route::get('/api/car-order/models-by-customer', [CarOrderController::class, 'getModelsByCustomer']);
 
+    //color
+    Route::get('color/list', [ColorController::class, 'listColor']);
+    Route::get('/api/color/sub-model/{model_id}', [ColorController::class, 'getSubModelColorSub']);
+
     //all resource
     Route::resource('customer', CustomerController::class);
     Route::resource('purchase-order', PurchaseOrderController::class);
@@ -177,6 +182,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::resource('user', UserController::class);
     Route::resource('finance', FinanceController::class);
     Route::resource('car-order', CarOrderController::class);
+    Route::resource('color', ColorController::class);
 
     Route::resource('model-car', ModelCarController::class)->names([
         'index' => 'model-car.index',
