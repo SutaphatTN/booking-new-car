@@ -115,8 +115,13 @@ class PurchaseOrderController extends Controller
     public function listPurchaseOrder(Request $request)
     {
         $statusFilter = $request->con_status;
+        $user = Auth::user();
 
         $query = Salecar::with('customer.prefix', 'conStatus')->whereNotIn('con_status', [5, 9]);
+
+        if ($user->role === 'sale') {
+            $query->where('UserInsert', $user->id);
+        }
 
         if ($statusFilter) {
             $query->whereHas('conStatus', function ($q) use ($statusFilter) {
@@ -208,6 +213,12 @@ class PurchaseOrderController extends Controller
             //     'reservation_credit.required_if' => 'กรุณากรอกชื่อบัตรเครดิต',
             //     'reservation_tax_credit.required_if' => 'กรุณากรอกค่าธรรมเนียมบัตรเครดิต',
             // ]);
+
+            $request->validate([
+                'CusID' => 'required|exists:customers,id'
+            ], [
+                'CusID.required' => 'กรุณาค้นหาและเลือกลูกค้า'
+            ]);
 
             $turnCarID = null;
 
@@ -643,9 +654,11 @@ class PurchaseOrderController extends Controller
                 'other_cost' => $request->filled('other_cost')
                     ? str_replace(',', '', $request->other_cost)
                     : null,
+                'reason_other_cost' => $request->reason_other_cost,
                 'other_cost_fi' => $request->filled('other_cost_fi')
                     ? str_replace(',', '', $request->other_cost_fi)
                     : null,
+                'reason_other_cost_fi' => $request->reason_other_cost_fi,
                 'CashSupportInterestPlus' => $request->CashSupportInterestPlus,
                 'TotalCashSupport' => $request->filled('TotalCashSupport')
                     ? str_replace(',', '', $request->TotalCashSupport)
@@ -656,11 +669,17 @@ class PurchaseOrderController extends Controller
                 'AccessoryGiftCom' => $request->filled('AccessoryGiftCom')
                     ? str_replace(',', '', $request->AccessoryGiftCom)
                     : null,
+                'AccessoryGiftVat' => $request->filled('AccessoryGiftVat')
+                    ? str_replace(',', '', $request->AccessoryGiftVat)
+                    : null,
                 'TotalAccessoryExtra' => $request->filled('TotalAccessoryExtra')
                     ? str_replace(',', '', $request->TotalAccessoryExtra)
                     : null,
                 'AccessoryExtraCom' => $request->filled('AccessoryExtraCom')
                     ? str_replace(',', '', $request->AccessoryExtraCom)
+                    : null,
+                'AccessoryExtraVat' => $request->filled('AccessoryExtraVat')
+                    ? str_replace(',', '', $request->AccessoryExtraVat)
                     : null,
                 'TotalCashSupportUsed' => $request->filled('TotalCashSupportUsed')
                     ? str_replace(',', '', $request->TotalCashSupportUsed)
@@ -1413,7 +1432,9 @@ class PurchaseOrderController extends Controller
         $month = $request->month ?? Carbon::now()->month;
         $year  = $request->year  ?? Carbon::now()->year;
 
-        $saleCar = Salecar::with('saleUser.branchInfo')
+        $user = Auth::user();
+
+        $query = Salecar::with('saleUser.branchInfo')
             ->selectRaw('
             SaleID,
             COUNT(CarOrderID) as total_cars,
@@ -1422,7 +1443,13 @@ class PurchaseOrderController extends Controller
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
             ->whereMonth('DeliveryInCKDate', $month)
-            ->whereYear('DeliveryInCKDate', $year)
+            ->whereYear('DeliveryInCKDate', $year);
+
+        if ($user->role === 'sale') {
+            $query->where('SaleID', $user->id);
+        }
+
+        $saleCar = $query
             ->groupBy('SaleID')
             ->get();
 

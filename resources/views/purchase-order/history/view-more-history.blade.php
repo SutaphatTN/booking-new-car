@@ -40,7 +40,7 @@
               <span>{{ $saleCar->subModel?->detail }} - {{ $saleCar->subModel?->name }}</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
-              <strong>แบบ :</strong>
+              <strong>Option :</strong>
               <span>{{ $saleCar->option ?? '-' }}</span>
             </div>
             @if(auth()->user()->brand == 2)
@@ -94,12 +94,20 @@
               <span>{{ $saleCar->downPaymentDiscount !== null ? number_format($saleCar->downPaymentDiscount, 2) : '-' }} บาท</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
-              <strong>ส่วนลด :</strong>
+              <strong>ส่วนลดราคารถ :</strong>
               <span>{{ $saleCar->discount !== null ? number_format($saleCar->discount, 2) : '-' }} บาท</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ค่าใช้จ่ายอื่นๆ :</strong>
               <span>{{ $saleCar->other_cost_fi !== null ? number_format($saleCar->other_cost_fi, 2) : '-' }} บาท</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <strong>หมายเหตุ ค่าใช้จ่ายอื่นๆ :</strong>
+              <span>{{ $saleCar->reason_other_cost_fi ?? '-' }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <strong>Vat ซื้อเพิ่ม :</strong>
+              <span>{{ $saleCar->AccessoryExtraVat !== null ? number_format($saleCar->AccessoryExtraVat, 2) : '-' }} บาท</span>
             </div>
 
             <h5 class="pb-2 mb-3"></h5>
@@ -157,6 +165,10 @@
               <span>{{ $saleCar->other_cost !== null ? number_format($saleCar->other_cost, 2) : '-' }} บาท</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
+              <strong>หมายเหตุ ค่าใช้จ่ายอื่นๆ :</strong>
+              <span>{{ $saleCar->reason_other_cost ?? '-' }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
               <strong>คงเหลือ :</strong>
               <span>{{ $saleCar->balance !== null ? number_format($saleCar->balance, 2) : '-' }} บาท</span>
             </div>
@@ -192,12 +204,14 @@
             $totalCam = $saleCar->TotalSaleCampaign;
             $gift = $saleCar->TotalAccessoryGift;
             $refA = $saleCar->ReferrerAmount;
+            $vatGift = $saleCar->AccessoryGiftVat;
+            $kickback = $saleCar->kickback;
 
             $markUp = $saleCar->Markup90;
-            $totalCamMark = $totalCam + $markUp;
+            $totalCamMark = $totalCam + $markUp + $kickback;
 
             $downPay = $saleCar->DownPaymentDiscount;
-            $totalUseFi = $downPay + $gift + $refA;
+            $totalUseFi = $downPay + $gift + $refA + $vatGift;
 
             $totalBalanceFi = $totalCamMark - $totalUseFi;
 
@@ -218,6 +232,10 @@
               <span>{{ $saleCar->Markup90 !== null ? number_format($saleCar->Markup90, 2) : '-' }} บาท</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
+              <strong>Kick Back :</strong>
+              <span>{{ $saleCar->kickback !== null ? number_format($saleCar->kickback, 2) : '-' }} บาท</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
               <strong>ยอดรวมแคมเปญ (รวมบวกหัว 90%) :</strong>
               <span>{{ $totalCamMark !== null ? number_format($totalCamMark, 2) : '-' }} บาท</span>
             </div>
@@ -228,6 +246,10 @@
             <div class="d-flex justify-content-between mb-2">
               <strong>ส่วนต่างของแถม :</strong>
               <span>{{ $saleCar->TotalAccessoryGift !== null ? number_format($saleCar->TotalAccessoryGift, 2) : '-' }} บาท</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <strong>Vat ของแถม :</strong>
+              <span>{{ $saleCar->AccessoryGiftVat !== null ? number_format($saleCar->AccessoryGiftVat, 2) : '-' }} บาท</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ค่าแนะนำ :</strong>

@@ -403,6 +403,19 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
+    if (!$('#CusID').val()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ยังไม่ได้เลือกลูกค้า',
+        text: 'กรุณาค้นหาและเลือกลูกค้าก่อนบันทึก',
+        confirmButtonText: 'ตกลง'
+      }).then(() => {
+        $('#customerSearch').focus();
+      });
+
+      return;
+    }
+
     const url = $(form).attr('action');
     const formData = new FormData(form);
 
@@ -1554,8 +1567,9 @@ function calculateTotalPaymentAtDelivery() {
   const turnCost = safeNumber('#cost_turn');
   const cashDeposit = safeNumber('#CashDeposit');
   const otherCostFi = safeNumber('#other_cost_fi');
+  const vatExtra = safeNumber('#AccessoryExtraVat');
 
-  const total = downPayment + ExtraTotal + otherCostFi - (downDiscount + turnCost + cashDeposit);
+  const total = downPayment + ExtraTotal + otherCostFi + vatExtra - (downDiscount + turnCost + cashDeposit);
 
   $('#TotalPaymentatDeliveryCar').val(
     total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -1742,11 +1756,12 @@ function calculateBalanceCampaign() {
   const downPay = safeNumber('#DownPaymentDiscount');
   const gift = safeTextNumber('#total-price-gift');
   const refA = safeNumber('#ReferrerAmount');
+  const vatGift = safeNumber('#AccessoryGiftVat');
 
   const payDis = safeNumber('#PaymentDiscount');
 
   const totalCam90 = totalCampaign + markup90 + kickback;
-  const totalUseFinance = downPay + gift + refA;
+  const totalUseFinance = downPay + gift + refA + vatGift;
   const totalUseNon = payDis + gift + refA;
 
   let balance = 0;
@@ -1770,7 +1785,7 @@ $(document).on('input', 'input[name="payment_cost[]"]', calculateBalance);
 
 $(document).on(
   'input change',
-  '#payment_type, #TotalSaleCampaign, #Markup90, #kickback, #DownPaymentDiscount, #total-price-gift, #PaymentDiscount, #ReferrerAmount',
+  '#payment_type, #TotalSaleCampaign, #Markup90, #kickback, #DownPaymentDiscount, #total-price-gift, #PaymentDiscount, #ReferrerAmount, #AccessoryGiftVat',
   calculateBalanceCampaign
 );
 
@@ -1783,7 +1798,7 @@ $(document).on(
 $(document).ready(function () {
   $('#carOrderSubModel, #cost_turn, #com_turn, #CashDeposit, #price_sub').on('input change', updateSummary);
   $(
-    '#DownPayment, #DownPaymentDiscount, #cost_turn, #total_gift_used, #total_extra_used, #CashDeposit, #other_cost_fi'
+    '#DownPayment, #DownPaymentDiscount, #cost_turn, #total_gift_used, #total_extra_used, #CashDeposit, #other_cost_fi, #AccessoryExtraVat'
   ).on('input change', calculateTotalPaymentAtDelivery);
   $('#CarSalePriceFinal, #DownPayment').on('input change', calculateRemaining);
   $('#remaining_interest, #remaining_period').on('input change', calculateInstallment);
@@ -2114,6 +2129,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const downPaymentPercentage = document.getElementById('DownPaymentPercentage')?.value || '-';
     const downPaymentDiscount = document.getElementById('DownPaymentDiscount')?.value || '-';
     const otherCostFi = document.getElementById('other_cost_fi')?.value || '-';
+    const reasonOtherCostFi = document.getElementById('reason_other_cost_fi')?.value || '-';
+    const vatExtra = document.getElementById('AccessoryExtraVat')?.value || '-';
     const discount = document.getElementById('discount')?.value || '-';
 
     // วันออกรถ
@@ -2142,12 +2159,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const downPay = parseFloat(document.getElementById('DownPaymentDiscount')?.value.replace(/,/g, '') || 0);
     const gift = parseFloat(document.querySelector('#total-price-gift')?.textContent.replace(/,/g, '') || 0);
     const refA = parseFloat(document.getElementById('ReferrerAmount')?.value.replace(/,/g, '') || 0);
+    const vatGift = parseFloat(document.getElementById('AccessoryGiftVat')?.value.replace(/,/g, '') || 0);
 
     //แนะนำ
     const customerIDRef = document.getElementById('customerIDRef')?.value || '-';
     const ReferrerAmount = document.getElementById('ReferrerAmount')?.value || '-';
 
-    const totalUseFinance = downPay + gift + refA;
+    const totalUseFinance = downPay + gift + refA + vatGift;
 
     //หาค่า คงเหลือ
     const totalBalanceFinance = totalcam90 - totalUseFinance;
@@ -2157,6 +2175,7 @@ document.addEventListener('DOMContentLoaded', function () {
     //else
     const paymentDiscount = document.getElementById('PaymentDiscount')?.value || '0';
     const otherCost = document.getElementById('other_cost')?.value || '-';
+    const reasonOtherCost = document.getElementById('reason_other_cost')?.value || '-';
     const balanceValue = parseFloat(document.getElementById('balance')?.value.replace(/,/g, '') || 0);
 
     // ฟอร์แมตเป็นเลขไทย มี comma และ 2 ทศนิยม
@@ -2202,8 +2221,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
       discountHtml = `
           <div class="d-flex justify-content-between mb-2">
-                <strong>เงินดาวน์ :</strong>
-                <span>${downPayment} บาท</span>
+            <strong>เงินดาวน์ :</strong>
+            <span>${downPayment} บาท</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
             <strong>เปอร์เซ็นต์เงินดาวน์ :</strong>
@@ -2214,12 +2233,20 @@ document.addEventListener('DOMContentLoaded', function () {
             <span>${downPaymentDiscount} บาท</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
-            <strong>ส่วนลด :</strong>
+            <strong>ส่วนลดราคารถ :</strong>
             <span>${discount} บาท</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
             <strong>ค่าใช้จ่ายอื่นๆ :</strong>
             <span>${otherCostFi} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>หมายเหตุ ค่าใช้จ่ายอื่นๆ :</strong>
+            <span>${reasonOtherCostFi}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>Vat ซื้อเพิ่ม :</strong>
+            <span>${vatExtra} บาท</span>
           </div>
 
           <h5 class="pb-2 mb-3"></h5>
@@ -2299,6 +2326,10 @@ document.addEventListener('DOMContentLoaded', function () {
             <span>${ReferrerAmount} บาท</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
+            <strong>Vat ของแถม :</strong>
+            <span>${vatGift.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
             <strong>ยอดรวมรายการที่ใช้ :</strong>
             <span>${totalUseFinance.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
           </div>
@@ -2322,6 +2353,10 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="d-flex justify-content-between mb-2">
             <strong>ค่าใช้จ่ายอื่นๆ :</strong>
             <span>${otherCost} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>หมายเหตุ ค่าใช้จ่ายอื่นๆ :</strong>
+            <span>${reasonOtherCost}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
             <strong>คงเหลือ :</strong>
@@ -2642,7 +2677,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <span>${subModel}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
-            <strong>แบบ :</strong>
+            <strong>Option :</strong>
             <span>${option}</span>
           </div>
           <div class="d-flex justify-content-between mb-2">

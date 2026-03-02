@@ -19,9 +19,22 @@ class SaleCommissionExport implements WithMultipleSheets
 
   public function sheets(): array
   {
-    return [
-      new SaleCommissionSummary($this->user, $this->fromDate, $this->toDate),
-      new SaleCommissionPerCar($this->user, $this->fromDate, $this->toDate),
-    ];
+    $sheets = [];
+
+    if ($this->user->role !== 'sale') {
+      $sheets[] = new SaleCommissionSummary(
+        $this->user,
+        $this->fromDate,
+        $this->toDate
+      );
+    }
+
+    $sheets[] = new SaleCommissionPerCar(
+      $this->user,
+      $this->fromDate,
+      $this->toDate
+    );
+
+    return $sheets;
   }
 }

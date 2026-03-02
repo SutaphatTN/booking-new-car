@@ -23,6 +23,10 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
 
     public function __construct($user, $fromDate = null, $toDate = null)
     {
+        if ($user->role === 'sale') {
+            abort(403, 'Unauthorized');
+        }
+
         $this->user = $user;
         $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m-d');
         $this->toDate   = $toDate   ?? now()->format('Y-m-d');

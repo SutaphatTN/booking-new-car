@@ -99,12 +99,12 @@
         </span>
       </span>
 
-      <span class="label">
+      <!-- <span class="label">
         ที่อยู่ปัจจุบัน :
         <span style="font-weight: normal;">
           {{ $saleCar->customer->currentAddress->full_address ?? '-' }}
         </span>
-      </span>
+      </span> -->
 
       <span class="label">
         ที่อยู่สำหรับส่งเอกสาร :
@@ -157,6 +157,12 @@
         สีรถ :
         <span style="font-weight: normal;">
           {{ $saleCar->Color ?? '-' }}
+        </span> &nbsp;&nbsp;
+        เงินจอง :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->reservationPayment->cost ?? null) 
+            ? number_format($saleCar->reservationPayment->cost, 2) 
+            : '-' }}
         </span>
       </span>
       @endif
@@ -178,24 +184,12 @@
       @endif
 
       <span class="label">
-        เงินจอง :
-        <span style="font-weight: normal;">
-          {{ is_numeric($saleCar->reservationPayment->cost ?? null) 
-            ? number_format($saleCar->reservationPayment->cost, 2) 
-            : '-' }}
-        </span>
-      </span>
-
-      <span class="label">
         หักราคารถเทิร์น :
         <span style="font-weight: normal;">
           {{ is_numeric($saleCar->turnCar->cost_turn ?? null) 
             ? number_format($saleCar->turnCar->cost_turn, 2) 
             : '-' }}
-        </span>
-      </span>
-
-      <span class="label">
+        </span> &nbsp;&nbsp;
         ลูกค้าจ่ายเพิ่ม :
         <span style="font-weight: normal;">
           {{ is_numeric($saleCar->TotalAccessoryExtra ?? null) 
@@ -211,23 +205,35 @@
           {{ is_numeric($saleCar->DownPayment ?? null) 
             ? number_format($saleCar->DownPayment, 2) 
             : '-' }}
+        </span> &nbsp;&nbsp;
+        เปอร์เซ็นต์ :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->DownPaymentPercentage ?? null) 
+            ? number_format($saleCar->DownPaymentPercentage, 2) . '%'
+            : '-' }}
         </span>
       </span>
 
-      <span class="label">
+      <!-- <span class="label">
         ส่วนลดเงินดาวน์ :
         <span style="font-weight: normal;">
           {{ is_numeric($saleCar->DownPaymentDiscount ?? null) 
             ? number_format($saleCar->DownPaymentDiscount, 2) 
             : '-' }}
         </span>
-      </span>
+      </span> -->
 
       <span class="label">
-        ส่วนลด :
+        ส่วนลดราคารถ :
         <span style="font-weight: normal;">
           {{ is_numeric($saleCar->discount ?? null) 
             ? number_format($saleCar->discount, 2) 
+            : '-' }}
+        </span> &nbsp;&nbsp;
+        Vat ซื้อเพิ่ม :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->AccessoryExtraVat ?? null) 
+            ? number_format($saleCar->AccessoryExtraVat, 2) 
             : '-' }}
         </span>
       </span>
@@ -242,10 +248,17 @@
       </span>
 
       <span class="label">
+        หมายเหตุ ค่าใช้จ่ายอื่นๆ :
+        <span style="font-weight: normal;">
+          {{ $saleCar->reason_other_cost_fi ?? '-' }}
+        </span>
+      </span>
+
+      <span class="label">
         สรุปค่าใช้จ่ายวันออกรถ :
         <span style="font-weight: normal;">
-          {{ is_numeric($saleCar->deliveryPayment->cost ?? null) 
-            ? number_format($saleCar->deliveryPayment->cost, 2) 
+          {{ is_numeric($saleCar->TotalPaymentatDelivery ?? null) 
+            ? number_format($saleCar->TotalPaymentatDelivery, 2) 
             : '-' }}
         </span>
       </span>
@@ -339,6 +352,13 @@
       </span>
 
       <span class="label">
+        หมายเหตุ ค่าใช้จ่ายอื่นๆ :
+        <span style="font-weight: normal;">
+          {{ $saleCar->reason_other_cost ?? '-' }}
+        </span>
+      </span>
+
+      <span class="label">
         ยอดที่ต้องจ่ายวันออกรถ :
         <span style="font-weight: normal;">
           {{ is_numeric($saleCar->remainingPayment?->cost ?? null) 
@@ -385,26 +405,36 @@
       @php
       $totalSaleCampaign = $saleCar->TotalSaleCampaign ?? 0;
       $markup90 = $saleCar->Markup90 ?? 0;
-      $campaignBalance = $totalSaleCampaign + $markup90;
+      $kickback = $saleCar->kickback ?? 0;
+      $campaignBalance = $totalSaleCampaign + $markup90 + $kickback;
       @endphp
 
       <span class="label">
-        งบ :
+        รวมงบแคมเปญ :
         <span style="font-weight: normal;">
           {{ is_numeric($saleCar->TotalSaleCampaign ?? null) 
             ? number_format($saleCar->TotalSaleCampaign, 2) 
-            : '-' }}
-        </span> &nbsp;&nbsp;
-        บวกหัว 90% :
-        <span style="font-weight: normal;">
-          {{ is_numeric($saleCar->Markup90 ?? null) 
-            ? number_format($saleCar->Markup90, 2) 
             : '-' }}
         </span>
       </span>
 
       <span class="label">
-        รวม :
+        บวกหัว 90% :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->Markup90 ?? null) 
+            ? number_format($saleCar->Markup90, 2) 
+            : '-' }}
+        </span> &nbsp;&nbsp;
+        Kick Back :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->kickback ?? null) 
+            ? number_format($saleCar->kickback, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
+        ยอดรวมแคมเปญ :
         <span style="font-weight: normal;">
           {{ is_numeric($campaignBalance ?? null) 
             ? number_format($campaignBalance, 2) 
@@ -414,17 +444,28 @@
 
       @php
       $DownPaymentDiscount = $saleCar->DownPaymentDiscount ?? 0;
-      $TotalAccessoryGift = $TotalAccessoryGift->Markup90 ?? 0;
-      $discountBalance = $DownPaymentDiscount + $TotalAccessoryGift;
+      $TotalAccessoryGift = $saleCar->TotalAccessoryGift ?? 0;
+      $refA = $saleCar->ReferrerAmount ?? 0;
+      $vatGift = $saleCar->AccessoryGiftVat ?? 0;
+      $discountBalance = $DownPaymentDiscount + $TotalAccessoryGift + $refA + $vatGift;
       @endphp
 
       <span class="label">
-        ส่วนลด :
+        ส่วนลดเงินดาวน์ :
         <span style="font-weight: normal;">
           {{ is_numeric($saleCar->DownPaymentDiscount ?? null) 
             ? number_format($saleCar->DownPaymentDiscount, 2) 
             : '-' }}
         </span> &nbsp;&nbsp;
+        Vat ของแถม :
+        <span style="font-weight: normal;">
+          {{ is_numeric($saleCar->AccessoryGiftVat ?? null) 
+            ? number_format($saleCar->AccessoryGiftVat, 2) 
+            : '-' }}
+        </span>
+      </span>
+
+      <span class="label">
         ส่วนต่างของแถม :
         <span style="font-weight: normal;">
           {{ is_numeric($saleCar->TotalAccessoryGift ?? null) 
@@ -434,7 +475,7 @@
       </span>
 
       <span class="label">
-        รวมส่วนลด :
+        ยอดรวมรายการที่ใช้ :
         <span style="font-weight: normal;">
           {{ is_numeric($discountBalance ?? null) 
             ? number_format($discountBalance, 2) 
@@ -463,7 +504,7 @@
 
       @php
       $PaymentDiscount = $saleCar->PaymentDiscount ?? 0;
-      $TotalAccessoryGift = $TotalAccessoryGift->Markup90 ?? 0;
+      $TotalAccessoryGift = $saleCar->TotalAccessoryGift ?? 0;
       $discountBalance = $PaymentDiscount + $TotalAccessoryGift;
       @endphp
 
