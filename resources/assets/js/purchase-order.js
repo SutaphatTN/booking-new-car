@@ -2576,7 +2576,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const con_status = document.querySelector('#con_status option:checked')?.textContent || '-';
 
     let dateAppHtml = '';
-    if (userRole === 'audit' || userRole === 'manager' || userRole === 'md') {
+    if (userRole === 'admin' || userRole === 'audit' || userRole === 'manager' || userRole === 'md') {
       dateAppHtml = `
       <div class="d-flex justify-content-between mb-2">
             <strong>วันที่ส่งมอบของบริษัท :</strong>

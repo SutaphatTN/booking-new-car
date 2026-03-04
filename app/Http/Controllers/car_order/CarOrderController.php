@@ -82,11 +82,15 @@ class CarOrderController extends Controller
 
     public function edit($id)
     {
+        $authUser = Auth::user();
+
         $order = CarOrder::findOrFail($id);
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::where('role', 'audit')->get();
+        $approvers = User::whereIn('role', ['audit', 'md'])
+            ->where('brand', $authUser->brand)
+            ->get();
         $purchaseType = TbPurchaseType::all();
         $interiorColor = TbInteriorColor::all();
 
@@ -290,10 +294,14 @@ class CarOrderController extends Controller
 
     public function create()
     {
+        $authUser = Auth::user();
+
         $order = CarOrder::all();
         $model = TbCarmodel::all();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::where('role', 'audit')->get();
+        $approvers = User::whereIn('role', ['audit', 'md'])
+            ->where('brand', $authUser->brand)
+            ->get();
         $purchaseType = TbPurchaseType::all();
         $interiorColor = TbInteriorColor::all();
 
@@ -478,11 +486,15 @@ class CarOrderController extends Controller
 
     public function editPending($id)
     {
+        $authUser = Auth::user();
+
         $order = CarOrder::with(['saleCus'])->findOrFail($id);
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::where('role', 'audit')->get();
+        $approvers = User::whereIn('role', ['audit', 'md'])
+            ->where('brand', $authUser->brand)
+            ->get();
         $purchaseType = TbPurchaseType::all();
         $gwmColor = $order->subModel
             ? $order->subModel->colors
@@ -582,11 +594,15 @@ class CarOrderController extends Controller
 
     public function editProcess($id)
     {
+        $authUser = Auth::user();
+
         $order = CarOrder::findOrFail($id);
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::where('role', 'audit')->get();
+        $approvers = User::whereIn('role', ['audit', 'md'])
+            ->where('brand', $authUser->brand)
+            ->get();
 
         return view('car-order.process.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers'));
     }
@@ -670,11 +686,15 @@ class CarOrderController extends Controller
 
     public function editApprove($id)
     {
+        $authUser = Auth::user();
+
         $order = CarOrder::findOrFail($id);
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::where('role', 'audit')->get();
+        $approvers = User::whereIn('role', ['audit', 'md'])
+            ->where('brand', $authUser->brand)
+            ->get();
 
         return view('car-order.approve.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers'));
     }

@@ -7,6 +7,7 @@ use App\Models\TbBranch;
 use App\Models\TbBrand;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -18,7 +19,13 @@ class UserController extends Controller
 
     public function listUser()
     {
-        $user = User::all();
+        $authUser = Auth::user();
+
+        if ($authUser->role === 'admin') {
+            $user = User::all();
+        } else {
+            $user = User::where('brand', $authUser->brand)->get();
+        }
 
         $data = $user->map(function ($u, $index) {
             return [

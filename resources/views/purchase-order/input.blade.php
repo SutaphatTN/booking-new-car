@@ -23,10 +23,29 @@
               <label for="sale_card" class="form-label">รหัสผู้ขาย</label>
               <input id="sale_card" type="text" class="form-control" value="{{ Auth::user()->format_card_id }}" readonly>
             </div> -->
-            <div class="col-md-3">
-              <label for="sale_name" class="form-label">ชื่อ - นามสกุล ผู้ขาย</label>
-              <input id="sale_name" type="text" class="form-control" value="{{ Auth::user()->name }}" readonly>
-            </div>
+            @if (auth()->user()->brand == 2)
+              <div class="col-md-3">
+                  <label class="form-label" for="SaleID">ชื่อ - นามสกุล ผู้ขาย</label>
+                  <select id="SaleID" name="SaleID" class="form-select">
+                    <option value="">-- เลือกผู้ขาย --</option>
+                    @foreach ($saleUser as $s)
+                      <option value="{{ @$s->id }}">{{ @$s->name }}</option>
+                    @endforeach
+                  </select>
+
+                  @error('SaleID')
+                    <span class="invalid-feedback" role="alert">
+                      <strong>{{ $message }}</strong>
+                    </span>
+                  @enderror
+                </div>
+              @else
+                <input type="hidden" name="SaleID" value="{{ Auth::user()->id }}">
+                <div class="col-md-3">
+                  <label for="sale_name" class="form-label">ชื่อ - นามสกุล ผู้ขาย</label>
+                  <input id="sale_name" type="text" class="form-control" value="{{ Auth::user()->name }}" readonly>
+                </div>
+              @endif
 
             <div class="col-md-2 mb-5">
               <label for="type_sale" class="form-label">ประเภทการขาย</label>
@@ -48,9 +67,7 @@
               </select>
             </div>
 
-            <input type="hidden"
-              name="SaleID"
-              value="{{ Auth::user()->id }}">
+
 
             <div class="col-md-2">
               <label for="BookingDate" class="form-label" for="BookingDate">วันที่จอง</label>

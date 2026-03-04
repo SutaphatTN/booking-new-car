@@ -54,7 +54,7 @@ $disabled = $isHistory ? 'disabled' : '';
               </button>
             </li>
 
-            @if( ($userRole == 'audit' || $userRole == 'manager' || $userRole == 'md') )
+            @if( ($userRole == 'admin' || $userRole == 'audit' || $userRole == 'manager' || $userRole == 'md') )
             <li class="nav-item mb-1 mb-sm-0">
               <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#tab-more" aria-controls="tab-more" aria-selected="false">
                 <span class="d-none d-sm-inline-flex align-items-center"><i class="icon-base bx bx-slider icon-sm me-1_5"></i>ข้อมูลเพิ่มเติม</span>
@@ -210,7 +210,9 @@ $disabled = $isHistory ? 'disabled' : '';
 
                     <div class="col-md-2">
                       <label for="interior_color" class="form-label">สีภายใน</label>
-                      <select id="interior_color" name="interior_color" class="form-select @error('interior_color') is-invalid @enderror">
+                      <select id="interior_color" name="interior_color" class="form-select @error('interior_color') is-invalid @enderror" required>
+                        <option value="">-- เลือกสี --</option>
+
                         @foreach ($interiorColor as $t)
                         <option value="{{ $t->id }}"
                           data-name="{{ $t->name }}"

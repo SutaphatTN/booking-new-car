@@ -25,6 +25,7 @@ use App\Models\TbSalecarType;
 use App\Models\TbSalePurchaseType;
 use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -56,11 +57,16 @@ class PurchaseOrderController extends Controller
 
     public function create()
     {
+        $authUser = Auth::user();
+
         $model = TbCarmodel::all();
         $type = TbSalecarType::all();
+        $saleUser = User::where('role', 'sale')
+            ->where('brand', $authUser->brand)
+            ->get();
         $typeSale = TbSalePurchaseType::all();
         $interiorColor = TbInteriorColor::all();
-        return view('purchase-order.input', compact('model', 'type', 'typeSale', 'interiorColor'));
+        return view('purchase-order.input', compact('model', 'type', 'typeSale', 'interiorColor', 'saleUser'));
     }
 
     public function searchAccessory(Request $request)
@@ -264,12 +270,9 @@ class PurchaseOrderController extends Controller
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
                 'UserInsert' => Auth::id(),
+                'gwm_color' => Auth::user()->brand == 2 ? $request->gwm_color : null,
+                'interior_color' => Auth::user()->brand == 2 ? $request->interior_color : null,
             ]);
-
-            if (Auth::user()->brand == 2) {
-                $data['gwm_color'] = $request->gwm_color;
-                $salecar['interior_color'] = $request->interior_color;
-            }
 
             if ($request->filled('reservationCondition')) {
                 $data = [
