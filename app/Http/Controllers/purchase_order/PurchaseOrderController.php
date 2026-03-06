@@ -1129,7 +1129,7 @@ class PurchaseOrderController extends Controller
                 // GM
                 // Mail::to('sutaphat.thongnui@gmail.com')
                 //     ->cc('mitsuchookiat.programmer@gmail.com')
-                Mail::to('sutaphat.thongnui@gmail.com')
+                Mail::to('ketsudap@chookiat.org')
                     ->cc('$mailTo')
                     ->send(new SaleRequestMail($saleCar, 'gm'));
             }
