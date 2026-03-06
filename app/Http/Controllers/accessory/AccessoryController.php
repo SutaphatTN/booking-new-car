@@ -50,11 +50,12 @@ class AccessoryController extends Controller
 
             $fullName = "รหัส : {$a->accessory_id}<br>ชื่อ : {$a->detail}";
 
+            $costSpare = $a->cost_spare !== null ? number_format($a->cost_spare, 2) : '-';
             $cost = $a->cost !== null ? number_format($a->cost, 2) : '-';
             $sale = $a->sale !== null ? number_format($a->sale, 2) : '-';
             $promo = $a->promo !== null ? number_format($a->promo, 2) : '-';
 
-            $fullCost = "ราคาทุน : {$cost}<br>ราคาขาย : {$sale}<br>ราคาพิเศษ : {$promo}";
+            $fullCost = "ราคาทุนอะไหล่ : {$costSpare}<br>ราคาทุน : {$cost}<br>ราคาขาย : {$sale}<br>ราคาพิเศษ : {$promo}";
 
             return [
                 'No' => $index + 1,
@@ -116,6 +117,9 @@ class AccessoryController extends Controller
                 'detail' => $request->detail,
                 'accessoryType_id' => $request->accessoryType_id,
                 'accessoryPartner_id' => $request->accessoryPartner_id,
+                'cost_spare' => $request->filled('cost_spare')
+                    ? str_replace(',', '', $request->cost_spare)
+                    : null,
                 'cost' => $request->filled('cost')
                     ? str_replace(',', '', $request->cost)
                     : null,
@@ -176,6 +180,10 @@ class AccessoryController extends Controller
         try {
             $acc = AccessoryPrice::findOrFail($id);
             $data = $request->except(['_token', '_method']);
+
+            $data['cost_spare'] = $request->cost_spare
+                ? str_replace(',', '', $request->cost_spare)
+                : null;
 
             $data['cost'] = $request->cost
                 ? str_replace(',', '', $request->cost)

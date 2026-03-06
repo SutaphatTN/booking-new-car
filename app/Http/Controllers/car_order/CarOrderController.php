@@ -178,6 +178,7 @@ class CarOrderController extends Controller
             ->whereIn('status', ['approved', 'finished'])
             ->where(function ($query) use ($keyword) {
                 $query->where('vin_number', 'like', "%{$keyword}%")
+                    ->orWhere('j_number', 'like', "%{$keyword}%")
                     ->orWhere('order_code', 'like', "%{$keyword}%")
                     ->orWhere('option', 'like', "%{$keyword}%")
                     ->orWhere('color', 'like', "%{$keyword}%")

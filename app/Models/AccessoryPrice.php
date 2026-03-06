@@ -60,6 +60,7 @@ class AccessoryPrice extends Model
 		'detail',
 		'accessoryType_id',
 		'accessoryPartner_id',
+		'cost_spare',
 		'cost',
 		'sale',
 		'comSale',

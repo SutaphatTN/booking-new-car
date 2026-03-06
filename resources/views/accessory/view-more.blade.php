@@ -33,25 +33,31 @@
           </div>
 
           <div class="col-md-6 mb-5">
+            <label for="cost_spare" class="form-label">ราคาทุนอะไหล่</label>
+            <input id="cost_spare" class="form-control text-end" type="text"
+              value="{{ $acc->cost_spare !== null ? number_format($acc->cost_spare, 2) : '-' }}"
+              disabled />
+          </div>
+          <div class="col-md-6 mb-5">
             <label for="cost" class="form-label">ราคาทุน</label>
             <input id="cost" class="form-control text-end" type="text"
               value="{{ $acc->cost !== null ? number_format($acc->cost, 2) : '-' }}"
               disabled />
           </div>
-          <div class="col-md-6 mb-5">
+          <div class="col-md-4 mb-5">
             <label for="promo" class="form-label">ราคาพิเศษ</label>
             <input id="promo" class="form-control text-end" type="text"
               value="{{ $acc->promo !== null ? number_format($acc->promo, 2) : '-' }}"
               disabled />
           </div>
 
-          <div class="col-md-6 mb-5">
+          <div class="col-md-4 mb-5">
             <label for="sale" class="form-label">ราคาขาย</label>
             <input id="sale" class="form-control text-end" type="text"
               value="{{ $acc->sale !== null ? number_format($acc->sale, 2) : '-' }}"
               disabled />
           </div>
-          <div class="col-md-6 mb-5">
+          <div class="col-md-4 mb-5">
             <label for="comSale" class="form-label">ค่าคอม ราคาขาย</label>
             <input id="comSale" class="form-control text-end" type="text"
               value="{{ $acc->comSale !== null ? number_format($acc->comSale, 2) : '-' }}"

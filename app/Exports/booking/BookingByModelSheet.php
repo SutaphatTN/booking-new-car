@@ -21,14 +21,20 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
   protected $model;
+  protected $filter;
 
-  public function __construct($model)
+  public function __construct($model, $filter = null)
   {
     $this->model = $model;
+    $this->filter = $filter;
   }
 
   public function title(): string
   {
+    if ($this->model->id == 3 && $this->filter == 'only9') {
+      return $this->model->initials . '-AT';
+    }
+
     return $this->model->initials;
   }
 
@@ -103,12 +109,15 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
           'SU-DC' => '92cddc',
           'SU-MC' => '963634',
           'SU-SC' => '7030a0',
+          'SU-SC-AT' => '040128',
           'X-FORCE' => '0070c0',
           'RN' => '00b050',
         ];
 
+        $sheetName = $event->sheet->getTitle();
+
         $sheet->getTabColor()->setRGB(
-          $colorMap[$this->model->initials] ?? '808080'
+          $colorMap[$sheetName] ?? '808080'
         );
       },
     ];
@@ -116,8 +125,20 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
 
   public function view(): View
   {
-    $carOrders = BookingReportQuery::carsByModel($this->model->id)
-      ->get()
+    $query = BookingReportQuery::carsByModel($this->model->id);
+
+    if ($this->model->id == 3) {
+
+      if ($this->filter == 'only9') {
+        $query->where('subModel_id', 9);
+      }
+
+      if ($this->filter == 'exclude9') {
+        $query->where('subModel_id', '!=', 9);
+      }
+    }
+
+    $carOrders = $query->get()
       ->sortBy([
         fn($o) => $o->subModel->detail ?? '',
         fn($o) => $o->subModel->name ?? '',
@@ -227,8 +248,20 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
     }
 
     //ยังไม่ผูกรถ
-    $orphanSales = BookingReportQuery::orphanSalesByModel($this->model->id)
-      ->get();
+    $orphanSales = BookingReportQuery::orphanSalesByModel($this->model->id);
+
+    if ($this->model->id == 3) {
+
+      if ($this->filter == 'only9') {
+        $orphanSales->where('subModel_id', 9);
+      }
+
+      if ($this->filter == 'exclude9') {
+        $orphanSales->where('subModel_id', '!=', 9);
+      }
+    }
+
+    $orphanSales = $orphanSales->get();
 
     foreach ($orphanSales as $sale) {
 

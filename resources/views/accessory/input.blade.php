@@ -89,6 +89,18 @@
             </div>
 
             <div class="col-md-6 mb-5">
+              <label for="cost_spare" class="form-label">ราคาทุนอะไหล่</label>
+              <input id="cost_spare" type="text"
+                class="form-control text-end money-input @error('cost_spare') is-invalid @enderror"
+                name="cost_spare" required>
+
+              @error('cost_spare')
+              <span class="invalid-feedback" role="alert">
+                <strong>{{ $message }}</strong>
+              </span>
+              @enderror
+            </div>
+            <div class="col-md-6 mb-5">
               <label for="cost" class="form-label">ราคาทุน</label>
               <input id="cost" type="text"
                 class="form-control text-end money-input @error('cost') is-invalid @enderror"
@@ -100,14 +112,15 @@
               </span>
               @enderror
             </div>
-            <div class="col-md-6 mb-5">
+
+            <div class="col-md-4 mb-5">
               <label for="promo" class="form-label">ราคาพิเศษ</label>
               <input id="promo" type="text"
                 class="form-control text-end money-input"
                 name="promo">
             </div>
 
-            <div class="col-md-6 mb-5">
+            <div class="col-md-4 mb-5">
               <label for="sale" class="form-label">ราคาขาย</label>
               <input id="sale" type="text"
                 class="form-control text-end money-input @error('sale') is-invalid @enderror"
@@ -119,7 +132,7 @@
               </span>
               @enderror
             </div>
-            <div class="col-md-6 mb-5">
+            <div class="col-md-4 mb-5">
               <label for="comSale" class="form-label">ค่าคอม ราคาขาย</label>
               <input id="comSale" type="text"
                 class="form-control text-end money-input"

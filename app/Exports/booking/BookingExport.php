@@ -26,9 +26,20 @@ class BookingExport implements WithMultipleSheets
 
         //ข้อมูลรถรุ่นหลัก
         $models = TbCarmodel::orderBy('Name_TH')->get();
-
         foreach ($models as $model) {
-            $sheets[] = new BookingByModelSheet($model);
+
+            // ถ้าเป็น model 3
+            if ($model->id == 3) {
+
+                // sheet สำหรับ submodel 5-8
+                $sheets[] = new BookingByModelSheet($model, 'exclude9');
+
+                // sheet สำหรับ submodel 9
+                $sheets[] = new BookingByModelSheet($model, 'only9');
+            } else {
+
+                $sheets[] = new BookingByModelSheet($model);
+            }
         }
 
         // Aging Report
