@@ -124,9 +124,11 @@ class SaleCarExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
 
             $model = $r->model->Name_TH ?? '-';
             $sub = $r->subModel->name ?? '-';
-            $detailModel = $r->subModel->detail ?? '-';
+            $detailModel = $r->subModel->detail ?? null;
 
-            $subModel = "{$detailModel} - {$sub}";
+            $subModel = $detailModel
+                ? "{$detailModel} - {$sub}"
+                : $sub;
 
             $color = $r->brand == 2
                 ? ($r->gwmColor->name ?? '-')

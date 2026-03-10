@@ -6,10 +6,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form
-          action="{{ route('car-order.store') }}"
-          method="POST"
-          enctype="multipart/form-data">
+        <form action="{{ route('car-order.store') }}" method="POST" enctype="multipart/form-data">
           @csrf
 
           <div class="searchPurchaseCus"></div>
@@ -25,9 +22,9 @@
               </select>
 
               @error('type')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
               @enderror
             </div>
 
@@ -35,14 +32,20 @@
               <label for="purchase_source" class="form-label">แหล่งที่มา</label>
               <select id="purchase_source" name="purchase_source" class="form-select" required>
                 <option value="">-- เลือกแหล่งที่มา --</option>
-                <option value="MMTH">MMTH</option>
+                @if (auth()->user()->brand == 1)
+                  <option value="MMTH">MMTH</option>
+                @endif
+
+                @if (auth()->user()->brand == 2)
+                  <option value="GWM">GWM</option>
+                @endif
                 <option value="OTHDealer">OTHDealer</option>
               </select>
 
               @error('purchase_source')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
               @enderror
             </div>
 
@@ -51,14 +54,14 @@
               <select id="purchase_type" name="purchase_type" class="form-select" required>
                 <option value="">-- เลือกประเภท --</option>
                 @foreach ($purchaseType as $t)
-                <option value="{{ @$t->id }}">{{ @$t->name }}</option>
+                  <option value="{{ @$t->id }}">{{ @$t->name }}</option>
                 @endforeach
               </select>
 
               @error('purchase_type')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
               @enderror
             </div>
 
@@ -68,8 +71,8 @@
                 <div class="col-md-5 mb-5">
                   <label class="form-label" for="purchaseCus">ค้นหาข้อมูลการจองของลูกค้า</label>
                   <div class="input-group w-100">
-                    <input id="purchaseCus" type="text" class="form-control"
-                      name="purchaseCus" placeholder="พิมพ์ข้อมูลลูกค้า">
+                    <input id="purchaseCus" type="text" class="form-control" name="purchaseCus"
+                      placeholder="พิมพ์ข้อมูลลูกค้า">
                     <span class="btn btn-outline-secondary btnPurchaseCus">
                       <i class="bx bx-search"></i>
                     </span>
@@ -78,270 +81,317 @@
 
                 <div class="col-md-7 mb-5">
                   <label for="purchaseCusName" class="form-label">ชื่อ - นามสกุล</label>
-                  <input id="purchaseCusName" type="text"
-                    class="form-control w-100" readonly>
+                  <input id="purchaseCusName" type="text" class="form-control w-100" readonly>
                 </div>
 
-                <div id="modelError" class="text-danger small d-none" style="margin-top: -8px; margin-bottom: 6px;"></div>
+                <div id="modelError" class="text-danger small d-none" style="margin-top: -8px; margin-bottom: 6px;">
+                </div>
               </div>
             </div>
 
             <div class="col-md-5 mb-5">
               <label for="model_id" class="form-label">รุ่นรถหลัก</label>
-              <select id="model_id" name="model_id" class="form-select @error('model_id') is-invalid @enderror" required>
+              <select id="model_id" name="model_id" class="form-select @error('model_id') is-invalid @enderror"
+                required>
                 <option value="">-- เลือกรุ่นรถหลัก --</option>
                 @foreach ($model as $m)
-                <option value="{{ $m->id }}">{{ $m->Name_TH }}</option>
+                  <option value="{{ $m->id }}">{{ $m->Name_TH }}</option>
                 @endforeach
               </select>
 
               @error('model_id')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
               @enderror
             </div>
 
             <div class="col-md-7 mb-5">
               <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
-              <select id="subModel_id" name="subModel_id" class="form-select @error('subModel_id') is-invalid @enderror" required>
+              <select id="subModel_id" name="subModel_id" class="form-select @error('subModel_id') is-invalid @enderror"
+                required>
                 <option value="">-- เลือกรุ่นรถย่อย --</option>
               </select>
 
               @error('subModel_id')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
+                <span class="invalid-feedback" role="alert">
+                  <strong>{{ $message }}</strong>
+                </span>
               @enderror
             </div>
 
-            @if(auth()->user()->brand == 2)
-            <div class="col-md-2 mb-5">
-              <label for="option" class="form-label">Option</label>
-              <input id="option" type="text"
-                class="form-control @error('option') is-invalid @enderror"
-                name="option" required>
+            @if (auth()->user()->brand == 2)
+              <div class="col-md-4 mb-5">
+                <label for="gwm_color" class="form-label">สี</label>
+                <select id="gwm_color" name="gwm_color" class="form-select" required>
+                  <option value="">-- เลือกสี --</option>
+                </select>
 
-              @error('option')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+                @error('gwm_color')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-            <div class="col-md-3 mb-5">
-              <label for="gwm_color" class="form-label">สี</label>
-              <select id="gwm_color" name="gwm_color" class="form-select" required>
-                <option value="">-- เลือกสี --</option>
-              </select>
+              <div class="col-md-4 mb-5">
+                <label for="interior_color" class="form-label">สีภายใน</label>
+                <select id="interior_color" name="interior_color" class="form-select">
+                  <option value="">-- เลือกสี --</option>
+                  @foreach ($interiorColor as $t)
+                    <option value="{{ @$t->id }}">{{ @$t->name }}</option>
+                  @endforeach
+                </select>
 
-              @error('gwm_color')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+                @error('interior_color')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-            <div class="col-md-3 mb-5">
-              <label for="interior_color" class="form-label">สีภายใน</label>
-              <select id="interior_color" name="interior_color" class="form-select">
-                <option value="">-- เลือกสี --</option>
-                @foreach ($interiorColor as $t)
-                <option value="{{ @$t->id }}">{{ @$t->name }}</option>
-                @endforeach
-              </select>
+              <div class="col-md-4 mb-5">
+                <label for="year" class="form-label">ปี</label>
+                <input id="year" type="text" class="form-control @error('year') is-invalid @enderror"
+                  name="year" required>
 
-              @error('interior_color')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+                @error('year')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-            <div class="col-md-2 mb-5">
-              <label for="year" class="form-label">ปี</label>
-              <input id="year" type="text"
-                class="form-control @error('year') is-invalid @enderror"
-                name="year" required>
+              <div class="col-md-4 mb-5">
+                <label for="car_DNP" class="form-label">ราคาทุน</label>
+                <input id="car_DNP" type="text"
+                  class="form-control text-end money-input @error('car_DNP') is-invalid @enderror" name="car_DNP"
+                  required>
 
-              @error('year')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+                @error('car_DNP')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-            <div class="col-md-2 mb-5">
-              <label for="RI" class="form-label">RI</label>
-              <input id="RI" type="text"
-                class="form-control text-end money-input @error('RI') is-invalid @enderror"
-                name="RI" required>
+              <div class="col-md-4 mb-5">
+                <label for="car_MSRP" class="form-label">ราคาขาย</label>
+                <input id="car_MSRP" type="text"
+                  class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror" name="car_MSRP"
+                  required>
 
-              @error('RI')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+                @error('car_MSRP')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-            <div class="col-md-4 mb-5">
-              <label for="car_DNP" class="form-label">ราคาทุน</label>
-              <input id="car_DNP" type="text"
-                class="form-control text-end money-input @error('car_DNP') is-invalid @enderror"
-                name="car_DNP" required>
+              <div class="col-md-4 mb-5">
+                <label for="approver" class="form-label">ผู้อนุมัติ</label>
+                <select id="approver" name="approver" class="form-select" required>
+                  <option value="">-- เลือกผู้อนุมัติ --</option>
+                  @foreach ($approvers as $u)
+                    <option value="{{ $u->id }}">
+                      {{ $u->name }}
+                    </option>
+                  @endforeach
+                </select>
 
-              @error('car_DNP')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+                @error('approver')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
+            @elseif(auth()->user()->brand == 3)
+              <div class="col-md-4 mb-5">
+                <label for="color" class="form-label">สี</label>
+                <input id="color" type="text" class="form-control @error('color') is-invalid @enderror"
+                  name="color" required>
 
-            <div class="col-md-4 mb-5">
-              <label for="car_MSRP" class="form-label">ราคาขาย</label>
-              <input id="car_MSRP" type="text"
-                class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror"
-                name="car_MSRP" required>
+                @error('color')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-              @error('car_MSRP')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+              <div class="col-md-4 mb-5">
+                <label for="year" class="form-label">ปี</label>
+                <input id="year" type="text" class="form-control @error('year') is-invalid @enderror"
+                  name="year" required>
 
-            <div class="col-md-4 mb-5">
-              <label for="approver" class="form-label">ผู้อนุมัติ</label>
-              <select id="approver" name="approver" class="form-select" required>
-                <option value="">-- เลือกผู้อนุมัติ --</option>
-                @foreach ($approvers as $u)
-                <option value="{{ $u->id }}">
-                  {{ $u->name }}
-                </option>
-                @endforeach
-              </select>
+                @error('year')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-              @error('approver')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+              <div class="col-md-4 mb-5">
+                <label for="car_DNP" class="form-label">ราคาทุน</label>
+                <input id="car_DNP" type="text"
+                  class="form-control text-end money-input @error('car_DNP') is-invalid @enderror" name="car_DNP"
+                  required>
 
+                @error('car_DNP')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
+
+              <div class="col-md-4 mb-5">
+                <label for="car_MSRP" class="form-label">ราคาขาย</label>
+                <input id="car_MSRP" type="text"
+                  class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror" name="car_MSRP"
+                  required>
+
+                @error('car_MSRP')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
+
+              <div class="col-md-3 mb-5">
+                <label for="RI" class="form-label">RI</label>
+                <input id="RI" type="text"
+                  class="form-control text-end money-input @error('RI') is-invalid @enderror" name="RI"
+                  required>
+
+                @error('RI')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
+
+              <div class="col-md-5 mb-5">
+                <label for="approver" class="form-label">ผู้อนุมัติ</label>
+                <select id="approver" name="approver" class="form-select" required>
+                  <option value="">-- เลือกผู้อนุมัติ --</option>
+                  @foreach ($approvers as $u)
+                    <option value="{{ $u->id }}">
+                      {{ $u->name }}
+                    </option>
+                  @endforeach
+                </select>
+
+                @error('approver')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
             @else
+              <div class="col-md-2 mb-5">
+                <label for="option" class="form-label">Option</label>
+                <input id="option" type="text" class="form-control @error('option') is-invalid @enderror"
+                  name="option" required>
 
-            <div class="col-md-2 mb-5">
-              <label for="option" class="form-label">Option</label>
-              <input id="option" type="text"
-                class="form-control @error('option') is-invalid @enderror"
-                name="option" required>
+                @error('option')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-              @error('option')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+              <div class="col-md-3 mb-5">
+                <label for="color" class="form-label">สี</label>
+                <input id="color" type="text" class="form-control @error('color') is-invalid @enderror"
+                  name="color" required>
 
-            <div class="col-md-3 mb-5">
-              <label for="color" class="form-label">สี</label>
-              <input id="color" type="text"
-                class="form-control @error('color') is-invalid @enderror"
-                name="color" required>
+                @error('color')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-              @error('color')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+              <div class="col-md-3 mb-5">
+                <label for="year" class="form-label">ปี</label>
+                <input id="year" type="text" class="form-control @error('year') is-invalid @enderror"
+                  name="year" required>
 
-            <div class="col-md-3 mb-5">
-              <label for="year" class="form-label">ปี</label>
-              <input id="year" type="text"
-                class="form-control @error('year') is-invalid @enderror"
-                name="year" required>
+                @error('year')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-              @error('year')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+              <div class="col-md-4 mb-5">
+                <label for="car_DNP" class="form-label">ราคาทุน</label>
+                <input id="car_DNP" type="text"
+                  class="form-control text-end money-input @error('car_DNP') is-invalid @enderror" name="car_DNP"
+                  required>
 
-            <div class="col-md-4 mb-5">
-              <label for="car_DNP" class="form-label">ราคาทุน</label>
-              <input id="car_DNP" type="text"
-                class="form-control text-end money-input @error('car_DNP') is-invalid @enderror"
-                name="car_DNP" required>
+                @error('car_DNP')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-              @error('car_DNP')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+              <div class="col-md-4 mb-5">
+                <label for="car_MSRP" class="form-label">ราคาขาย</label>
+                <input id="car_MSRP" type="text"
+                  class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror" name="car_MSRP"
+                  required>
 
-            <div class="col-md-4 mb-5">
-              <label for="car_MSRP" class="form-label">ราคาขาย</label>
-              <input id="car_MSRP" type="text"
-                class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror"
-                name="car_MSRP" required>
+                @error('car_MSRP')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-              @error('car_MSRP')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+              <div class="col-md-3 mb-5">
+                <label for="RI" class="form-label">RI</label>
+                <input id="RI" type="text"
+                  class="form-control text-end money-input @error('RI') is-invalid @enderror" name="RI"
+                  required>
 
-            <div class="col-md-3 mb-5">
-              <label for="RI" class="form-label">RI</label>
-              <input id="RI" type="text"
-                class="form-control text-end money-input @error('RI') is-invalid @enderror"
-                name="RI" required>
+                @error('RI')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
-              @error('RI')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+              <div class="col-md-5 mb-5">
+                <label for="approver" class="form-label">ผู้อนุมัติ</label>
+                <select id="approver" name="approver" class="form-select" required>
+                  <option value="">-- เลือกผู้อนุมัติ --</option>
+                  @foreach ($approvers as $u)
+                    <option value="{{ $u->id }}">
+                      {{ $u->name }}
+                    </option>
+                  @endforeach
+                </select>
 
-            <div class="col-md-5 mb-5">
-              <label for="approver" class="form-label">ผู้อนุมัติ</label>
-              <select id="approver" name="approver" class="form-select" required>
-                <option value="">-- เลือกผู้อนุมัติ --</option>
-                @foreach ($approvers as $u)
-                <option value="{{ $u->id }}">
-                  {{ $u->name }}
-                </option>
-                @endforeach
-              </select>
-
-              @error('approver')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
+                @error('approver')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
 
             @endif
 
             <div class="col-md-12 mb-5">
               <label for="note" class="form-label">
                 หมายเหตุ
-                <i class="bx bx-info-circle ms-1 text-primary"
-                  data-bs-toggle="tooltip"
-                  data-bs-trigger="click"
+                <i class="bx bx-info-circle ms-1 text-primary" data-bs-toggle="tooltip" data-bs-trigger="click"
                   data-bs-placement="right"
                   title="กรณีสั่งให้ลูกค้า ให้ใส่ข้อมูล ชื่อลูกค้า / วันที่ PO (ถ้ามี) / จำนวนเงินจอง ทุกครั้ง">
                 </i>
               </label>
-              <textarea id="note"
-                class="form-control"
-                name="note"
-                rows="2" placeholder="กรณีสั่งให้ลูกค้า ให้ใส่ข้อมูล ชื่อลูกค้า / วันที่ PO / จำนวนเงินจอง ทุกครั้ง">{{ old('note') }}</textarea>
+              <textarea id="note" class="form-control" name="note" rows="2"
+                placeholder="กรณีสั่งให้ลูกค้า ให้ใส่ข้อมูล ชื่อลูกค้า / วันที่ PO / จำนวนเงินจอง ทุกครั้ง">{{ old('note') }}</textarea>
             </div>
 
           </div>

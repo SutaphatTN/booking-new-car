@@ -138,9 +138,11 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       $saleUser = $r->saleUser;
       $model = $r->carOrder->model->Name_TH ?? '-';
       $sub = $r->carOrder->subModel->name ?? '-';
-      $detailModel = $r->carOrder->subModel->detail ?? '-';
+      $detailModel = $r->carOrder->subModel->detail ?? null;
 
-      $subModel = "{$detailModel} - {$sub}";
+      $subModel = $detailModel
+        ? "{$detailModel} - {$sub}"
+        : $sub;
 
       $carType = match ((int) ($r->carOrder->purchase_type ?? 0)) {
         1 => 'รถทดลองขับ',

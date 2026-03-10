@@ -51,7 +51,12 @@ class CarOrderController extends Controller
             $subDetail = $c->subModel ? $c->subModel->detail : '';
             $status = $c->orderStatus ? $c->orderStatus->name : '';
 
-            $car = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$c->display_color}<br>ราคาขาย : " . number_format($c->car_MSRP);
+            if ($c->brand == 2) {
+                $car = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>สี : {$c->display_color}<br>ราคาขาย : " . number_format($c->car_MSRP);
+            } else {
+                $car = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$c->display_color}<br>ราคาขาย : " . number_format($c->car_MSRP);
+            }
+
             $statusDisplay = "รถ : {$status}<br>การจอง : {$c->car_status}";
 
             return [
@@ -278,7 +283,11 @@ class CarOrderController extends Controller
             $subModelOrder = $p->subModel ? $p->subModel->name : '';
             $subDetail = $p->subModel ? $p->subModel->detail : '';
 
-            $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$p->display_color}<br>ราคาขาย : " . number_format($p->car_MSRP);
+            if ($p->brand == 2) {
+                $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>สี : {$p->display_color}<br>ราคาขาย : " . number_format($p->car_MSRP);
+            } else {
+                $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$p->display_color}<br>ราคาขาย : " . number_format($p->car_MSRP);
+            }
 
             return [
                 'No' => $index + 1,
@@ -575,8 +584,10 @@ class CarOrderController extends Controller
         $data = $order->map(function ($p, $index) {
             $modelOrder = $p->model ? $p->model->Name_TH : '';
             $subModelOrder = $p->subModel ? $p->subModel->name : '';
-            $subDetail = $p->subModel ? $p->subModel->detail : '';
-            $subModelFull = "{$subModelOrder}<br>{$subDetail}";
+            $subDetail = $p->subModel ? $p->subModel->detail : null;
+            $subModelFull = $subDetail
+                ? "{$subDetail} - {$subModelOrder}"
+                : $subModelOrder;
 
             return [
                 'No' => $index + 1,
@@ -658,8 +669,10 @@ class CarOrderController extends Controller
         $data = $order->map(function ($a, $index) {
             $modelOrder = $a->model ? $a->model->Name_TH : '';
             $subModelOrder = $a->subModel ? $a->subModel->name : '';
-            $subDetail = $a->subModel ? $a->subModel->detail : '';
-            $subModelFull = "{$subModelOrder}<br>{$subDetail}";
+            $subDetail = $a->subModel ? $a->subModel->detail : null;
+            $subModelFull = $subDetail
+                ? "{$subDetail} - {$subModelOrder}"
+                : $subModelOrder;
 
             if ($a->status === 'approved') {
                 $statusBadge = '<span class="badge bg-label-success">อนุมัติ</span>';

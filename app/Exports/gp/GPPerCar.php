@@ -138,9 +138,11 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
 
       $model = $r->carOrder->model->Name_TH ?? '-';
       $sub = $r->carOrder->subModel->name ?? '-';
-      $detailModel = $r->carOrder->subModel->detail ?? '-';
+      $detailModel = $r->carOrder->subModel->detail ?? null;
 
-      $subModel = "{$detailModel} - {$sub}";
+      $subModel = $detailModel
+        ? "{$detailModel} - {$sub}"
+        : $sub;
 
       $totalSalePrice = $r->carOrder->car_MSRP ?? 0;
       $totalCostPrice = $r->carOrder->car_DNP ?? 0;

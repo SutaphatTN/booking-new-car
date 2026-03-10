@@ -166,8 +166,10 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 'No'         => $no++,
 
                 'model'      => $order->model->Name_TH ?? '-',
-                'subModel'   => $order->subModel
-                    ? $order->subModel->detail . ' - ' . $order->subModel->name
+                'subModel' => $order->subModel
+                    ? ($order->subModel->detail
+                        ? $order->subModel->detail . ' - ' . $order->subModel->name
+                        : $order->subModel->name)
                     : '-',
 
                 'color'      => $color,

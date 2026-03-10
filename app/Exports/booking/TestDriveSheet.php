@@ -121,10 +121,11 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
 
       $data->push([
         'model'      => $order->model->Name_TH ?? '-',
-        'subModel'   => $order->subModel
-          ? $order->subModel->detail . ' - ' . $order->subModel->name
+        'subModel' => $order->subModel
+          ? ($order->subModel->detail
+            ? $order->subModel->detail . ' - ' . $order->subModel->name
+            : $order->subModel->name)
           : '-',
-
         'color'      => $color,
         'interior_color' => $interiorColor,
         'year'       => $order->year ?? '-',

@@ -145,8 +145,12 @@ class PurchaseOrderController extends Controller
             $subDetail = $s->subModel ? $s->subModel->detail : '';
             $statusSale = $s->conStatus ? $s->conStatus->name : '';
 
-            $car = "รุ่นหลัก : {$model}<br>รุ่นย่อย : {$subModelSale}<br>{$subDetail}";
-            
+            if ($s->brand == 2) {
+                $car = "รุ่นหลัก : {$model}<br>รุ่นย่อย : {$subModelSale}";
+            } else {
+                $car = "รุ่นหลัก : {$model}<br>รุ่นย่อย : {$subModelSale}<br>{$subDetail}";
+            }
+
             if (!empty($s->GMApprovalSignature)) {
                 $approver = 'GM อนุมัติกรณีงบเกินแล้ว';
             } elseif (!empty($s->ApprovalSignature)) {

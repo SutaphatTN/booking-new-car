@@ -27,7 +27,9 @@ class ColorController extends Controller
             $modelC = $c->subModel?->model?->Name_TH ?? '-';
             $subModelSale = $c->subModel ? $c->subModel->name : '';
             $subDetail = $c->subModel ? $c->subModel->detail : '';
-            $subModelData = "{$subModelSale}<br>{$subDetail}";
+            $subModelData = $subDetail
+                ? "{$subDetail} - {$subModelSale}"
+                : $subModelSale;
 
             return [
                 'No' => $index + 1,

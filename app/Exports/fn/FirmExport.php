@@ -144,9 +144,11 @@ class FirmExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldA
 
             $model = $r->carOrder->model->Name_TH ?? '-';
             $sub = $r->carOrder->subModel->name ?? '-';
-            $detailModel = $r->carOrder->subModel->detail ?? '-';
+            $detailModel = $r->carOrder->subModel->detail ?? null;
 
-            $subModel = "{$detailModel} - {$sub}";
+            $subModel = $detailModel
+                ? "{$detailModel} - {$sub}"
+                : $sub;
             $typeCom = "c{$r->remainingPayment->type_com}";
 
             $color = $r->brand == 2

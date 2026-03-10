@@ -594,7 +594,9 @@ $(document).on('change', '#model_id', function () {
     success: function (data) {
       if (data.length) {
         data.forEach(sub => {
-          $subModel.append(`<option value="${sub.id}">${sub.detail} - ${sub.name}</option>`);
+          let text = sub.detail ? `${sub.detail} - ${sub.name}` : sub.name;
+
+          $subModel.append(`<option value="${sub.id}">${text}</option>`);
         });
         $subModel.prop('disabled', false);
       } else {
