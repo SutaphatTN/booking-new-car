@@ -91,7 +91,7 @@
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ส่วนลดเงินดาวน์ :</strong>
-              <span>{{ $saleCar->downPaymentDiscount !== null ? number_format($saleCar->downPaymentDiscount, 2) : '-' }} บาท</span>
+              <span>{{ $saleCar->DownPaymentDiscount !== null ? number_format($saleCar->DownPaymentDiscount, 2) : '-' }} บาท</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ส่วนลดราคารถ :</strong>
@@ -211,14 +211,17 @@
             $totalCamMark = $totalCam + $markUp + $kickback;
 
             $downPay = $saleCar->DownPaymentDiscount;
-            $totalUseFi = $downPay + $gift + $refA + $vatGift;
+            $disC = $saleCar->discount;
+            $totalUseFi = $downPay + $gift + $refA + $vatGift + $disC;
 
             $totalBalanceFi = $totalCamMark - $totalUseFi;
+            $totalBalanceFi2 = $totalBalanceFi * 2;
 
             $discount = $saleCar->PaymentDiscount;
             $totalUseCash = $discount + $gift + $refA;
 
             $totalBalanceCash = $totalCam - $totalUseCash;
+            $totalBalanceCash2 = $totalBalanceCash * 2;
 
             @endphp
 
@@ -244,6 +247,10 @@
               <span>{{ $saleCar->DownPaymentDiscount !== null ? number_format($saleCar->DownPaymentDiscount, 2) : '-' }} บาท</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
+              <strong>ส่วนลดราคารถ :</strong>
+              <span>{{ $saleCar->discount !== null ? number_format($saleCar->discount, 2) : '-' }} บาท</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
               <strong>ส่วนต่างของแถม :</strong>
               <span>{{ $saleCar->TotalAccessoryGift !== null ? number_format($saleCar->TotalAccessoryGift, 2) : '-' }} บาท</span>
             </div>
@@ -261,11 +268,11 @@
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>คงเหลือ :</strong>
-              <span>{{ $totalBalanceFi !== null ? number_format($totalBalanceFi, 2) : '-' }} บาท</span>
+              <span>{{ $totalBalanceFi2 !== null ? number_format($totalBalanceFi2, 2) : '-' }} บาท</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>คงเหลือ(แบ่ง 2 ส่วน) :</strong>
-              <span>{{ $saleCar->CommissionSale !== null ? number_format($saleCar->CommissionSale, 2) : '-' }} บาท</span>
+              <span>{{ $totalBalanceFi !== null ? number_format($totalBalanceFi, 2) : '-' }} บาท</span>
             </div>
             @else
             <div class="d-flex justify-content-between mb-2">
@@ -290,11 +297,11 @@
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>คงเหลือ :</strong>
-              <span>{{ $totalBalanceCash !== null ? number_format($totalBalanceCash, 2) : '-' }} บาท</span>
+              <span>{{ $totalBalanceCash2 !== null ? number_format($totalBalanceCash2, 2) : '-' }} บาท</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>คงเหลือ(แบ่ง 2 ส่วน) :</strong>
-              <span>{{ $saleCar->CommissionSale !== null ? number_format($saleCar->CommissionSale, 2) : '-' }} บาท</span>
+              <span>{{ $totalBalanceCash !== null ? number_format($totalBalanceCash, 2) : '-' }} บาท</span>
             </div>
             @endif
 

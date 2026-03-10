@@ -459,4 +459,14 @@ class Salecar extends Model
 	{
 		return $this->DeliveryEstimateDate ? Carbon::parse($this->DeliveryEstimateDate)->format('m-Y') : null;
 	}
+
+	public function getFormatBookingDateSumAttribute()
+	{
+		return $this->BookingDate ? Carbon::parse($this->BookingDate)->format('d/m/Y') : null;
+	}
+
+	public function getFormatDeliveryDateSumAttribute()
+	{
+		return $this->DeliveryDate ? Carbon::parse($this->DeliveryDate)->format('d/m/Y') : null;
+	}
 }

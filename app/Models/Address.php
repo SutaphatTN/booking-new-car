@@ -51,4 +51,21 @@ class Address extends Model
 
         return implode(' ', array_filter($parts));
     }
+
+    public function getShortAddressAttribute()
+    {
+        $parts = [
+            $this->house_number ? $this->house_number : null,
+            $this->group ? 'ม. ' . $this->group : null,
+            $this->village ? 'หมู่บ้าน ' . $this->village : null,
+            $this->alley ? 'ซ. ' . $this->alley : null,
+            $this->road ? 'ถ. ' . $this->road : null,
+            $this->subdistrict ? 'ต. ' . $this->subdistrict : null,
+            $this->district ? 'อ. ' . $this->district : null,
+            $this->province ? 'จ. ' . $this->province : null,
+            $this->postal_code ? $this->postal_code : null,
+        ];
+
+        return implode(' ', array_filter($parts));
+    }
 }

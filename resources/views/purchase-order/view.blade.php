@@ -19,11 +19,9 @@
                 <tr>
                   <th>No.</th>
                   <th>ชื่อ - นามสกุล</th>
-                  <th>รุ่นรถหลัก</th>
-                  <th>รุ่นรถย่อย</th>
+                  <th>รุ่นรถ</th>
                   <th>รหัส Car Order</th>
-                  <th>สถานะใบจอง</th>
-                  <th>สถานะการตรวจสอบ</th>
+                  <th>สถานะ</th>
                   <th width="150px">Action</th>
                 </tr>
               </thead>

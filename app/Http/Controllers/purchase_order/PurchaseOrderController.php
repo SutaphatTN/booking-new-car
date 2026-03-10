@@ -145,8 +145,8 @@ class PurchaseOrderController extends Controller
             $subDetail = $s->subModel ? $s->subModel->detail : '';
             $statusSale = $s->conStatus ? $s->conStatus->name : '';
 
-            $subModelData = "{$subModelSale}<br>{$subDetail}";
-
+            $car = "รุ่นหลัก : {$model}<br>รุ่นย่อย : {$subModelSale}<br>{$subDetail}";
+            
             if (!empty($s->GMApprovalSignature)) {
                 $approver = 'GM อนุมัติกรณีงบเกินแล้ว';
             } elseif (!empty($s->ApprovalSignature)) {
@@ -169,6 +169,8 @@ class PurchaseOrderController extends Controller
             //     $approver = 'รอดำเนินการ';
             // }
 
+            $status = "ใบจอง : {$statusSale}<br>การตรวจสอบ : {$approver}";
+
             return [
                 'No' => $index + 1,
                 'FullName' => implode(' ', array_filter([
@@ -176,11 +178,9 @@ class PurchaseOrderController extends Controller
                     $c->FirstName ?? null,
                     $c->LastName ?? null,
                 ])),
-                'model' => $model,
-                'subSale' => $subModelData,
+                'model' => $car,
                 'order' => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
-                'statusSale' => $statusSale,
-                'approver' => $approver,
+                'statusSale' => $status,
                 'Action' => view('purchase-order.button', compact('s'))->render()
             ];
         });

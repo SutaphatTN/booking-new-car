@@ -81,10 +81,8 @@ $(document).ready(function () {
       { data: 'No' },
       { data: 'FullName' },
       { data: 'model' },
-      { data: 'subSale' },
       { data: 'order' },
       { data: 'statusSale' },
-      { data: 'approver' },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
@@ -1754,6 +1752,7 @@ function calculateBalanceCampaign() {
   const kickback = safeNumber('#kickback');
 
   const downPay = safeNumber('#DownPaymentDiscount');
+  const disC = safeNumber('#discount');
   const gift = safeTextNumber('#total-price-gift');
   const refA = safeNumber('#ReferrerAmount');
   const vatGift = safeNumber('#AccessoryGiftVat');
@@ -1761,7 +1760,7 @@ function calculateBalanceCampaign() {
   const payDis = safeNumber('#PaymentDiscount');
 
   const totalCam90 = totalCampaign + markup90 + kickback;
-  const totalUseFinance = downPay + gift + refA + vatGift;
+  const totalUseFinance = downPay + gift + refA + vatGift + disC;
   const totalUseNon = payDis + gift + refA;
 
   let balance = 0;
@@ -1785,7 +1784,7 @@ $(document).on('input', 'input[name="payment_cost[]"]', calculateBalance);
 
 $(document).on(
   'input change',
-  '#payment_type, #TotalSaleCampaign, #Markup90, #kickback, #DownPaymentDiscount, #total-price-gift, #PaymentDiscount, #ReferrerAmount, #AccessoryGiftVat',
+  '#payment_type, #TotalSaleCampaign, #Markup90, #kickback, #DownPaymentDiscount, #total-price-gift, #PaymentDiscount, #ReferrerAmount, #AccessoryGiftVat, #discount',
   calculateBalanceCampaign
 );
 
@@ -2157,6 +2156,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     //หาค่า ยอดรวมรายการที่ใช้
     const downPay = parseFloat(document.getElementById('DownPaymentDiscount')?.value.replace(/,/g, '') || 0);
+    const disC = parseFloat(document.getElementById('discount')?.value.replace(/,/g, '') || 0);
     const gift = parseFloat(document.querySelector('#total-price-gift')?.textContent.replace(/,/g, '') || 0);
     const refA = parseFloat(document.getElementById('ReferrerAmount')?.value.replace(/,/g, '') || 0);
     const vatGift = parseFloat(document.getElementById('AccessoryGiftVat')?.value.replace(/,/g, '') || 0);
@@ -2165,7 +2165,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const customerIDRef = document.getElementById('customerIDRef')?.value || '-';
     const ReferrerAmount = document.getElementById('ReferrerAmount')?.value || '-';
 
-    const totalUseFinance = downPay + gift + refA + vatGift;
+    const totalUseFinance = downPay + gift + refA + vatGift + disC;
 
     //หาค่า คงเหลือ
     const totalBalanceFinance = totalcam90 - totalUseFinance;
@@ -2316,6 +2316,10 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="d-flex justify-content-between mb-2">
             <strong>ส่วนลดเงินดาวน์ :</strong>
             <span>${downPaymentDiscount} บาท</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>ส่วนลดราคารถ :</strong>
+            <span>${discount} บาท</span>
           </div>
           <div class="d-flex justify-content-between mb-2">
             <strong>ส่วนต่างของแถม :</strong>

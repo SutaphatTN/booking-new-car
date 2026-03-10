@@ -12,13 +12,13 @@
                     @method('PUT')
 
                     <div class="row mb-3">
-                        <label for="edit_name"
+                        <label for="name"
                             class="col-md-4 col-form-label text-md-end">{{ __('Name') }}</label>
 
                         <div class="col-md-6">
-                            <input id="edit_name" type="text"
+                            <input id="name" type="text"
                                 class="form-control @error('name') is-invalid @enderror"
-                                name="edit_name" value="{{ $user->name }}" required>
+                                name="name" value="{{ $user->name }}" required>
 
                             @error('name')
                             <span class="invalid-feedback" role="alert">
@@ -29,13 +29,13 @@
                     </div>
 
                     <div class="row mb-3">
-                        <label for="edit_email"
+                        <label for="email"
                             class="col-md-4 col-form-label text-md-end">{{ __('Email') }}</label>
 
                         <div class="col-md-6">
-                            <input id="edit_email" type="text"
+                            <input id="email" type="text"
                                 class="form-control @error('name') is-invalid @enderror"
-                                name="edit_email" value="{{ $user->email }}">
+                                name="email" value="{{ $user->email }}">
 
                             @error('email')
                             <span class="invalid-feedback" role="alert">
@@ -46,13 +46,13 @@
                     </div>
 
                     <div class="row mb-3">
-                        <label for="edit_username"
+                        <label for="username"
                             class="col-md-4 col-form-label text-md-end">{{ __('Username') }}</label>
 
                         <div class="col-md-6">
-                            <input id="edit_username" type="text"
+                            <input id="username" type="text"
                                 class="form-control @error('name') is-invalid @enderror"
-                                name="edit_username" value="{{ $user->username }}">
+                                name="username" value="{{ $user->username }}">
 
                             @error('username')
                             <span class="invalid-feedback" role="alert">
@@ -100,11 +100,11 @@
                     </div>
 
                     <div class="row mb-3">
-                        <label for="edit_branch"
+                        <label for="branch"
                             class="col-md-4 col-form-label text-md-end">{{ __('สาขา') }}</label>
 
                         <div class="col-md-6">
-                            <select id="edit_branch" class="form-control" name="edit_branch" required>
+                            <select id="branch" class="form-control" name="branch" required>
                                 @foreach ($branch as $item)
                                 <option value="{{ @$item->id }}" {{ $user->branch == $item->id ? 'selected' : '' }}>
                                     {{ @$item->name }}
@@ -115,11 +115,11 @@
                     </div>
 
                     <div class="row mb-3">
-                        <label for="edit_brand"
+                        <label for="brand"
                             class="col-md-4 col-form-label text-md-end">{{ __('Brand') }}</label>
 
                         <div class="col-md-6">
-                            <select id="edit_brand" class="form-control" name="edit_brand" required>
+                            <select id="brand" class="form-control" name="brand" required>
                                 @foreach ($brand as $item)
                                 <option value="{{ @$item->id }}" {{ $user->brand == $item->id ? 'selected' : '' }}>
                                     {{ @$item->name }}
