@@ -1091,11 +1091,17 @@ class PurchaseOrderController extends Controller
             $action = $request->action_type;
             // Log::info('ACTION TYPE = ' . $request->action_type);
             $user = Auth::user();
-            $mailTo = ['Phung.mitsuchookiatkrabi@gmail.com'];
-            // $mailTo = ['mitsuchookiat.programmer@gmail.com'];
+
+            $mailTo = [];
+            $mailGM = [];
+
             if ($user->brand == 2) {
                 $mailTo[] = 'JirapornK@Chookiat.org';
+                $mailGM[] = 'danut@chookiat.org';
                 // $mailTo[] = 'sutaphat.thongnui@gmail.com';
+            } else {
+                $mailTo[] = 'Phung.mitsuchookiatkrabi@gmail.com';
+                $mailGM[] = 'ketsudap@chookiat.org';
             }
 
             if ($action === 'request_normal') {
@@ -1107,9 +1113,7 @@ class PurchaseOrderController extends Controller
                 // ส่งเมลแบบยอดปกติ
                 Mail::to($mailTo)
                     ->send(new SaleRequestMail($saleCar, 'normal'));
-            }
-
-            if ($action === 'request_over') {
+            } elseif ($action === 'request_over') {
 
                 $saleCar->update([
                     'approval_type' => 'overbudget',
@@ -1120,9 +1124,7 @@ class PurchaseOrderController extends Controller
                 // ผู้จัดการ
                 Mail::to($mailTo)
                     ->send(new SaleRequestMail($saleCar, 'manager'));
-            }
-
-            if ($action === 'request_gm') {
+            } elseif ($action === 'request_gm') {
 
                 $saleCar->update([
                     'approval_type' => 'overbudget',
@@ -1133,8 +1135,8 @@ class PurchaseOrderController extends Controller
                 // GM
                 // Mail::to('sutaphat.thongnui@gmail.com')
                 //     ->cc('mitsuchookiat.programmer@gmail.com')
-                Mail::to('ketsudap@chookiat.org')
-                    ->cc('$mailTo')
+                Mail::to($mailGM)
+                    ->cc($mailTo)
                     ->send(new SaleRequestMail($saleCar, 'gm'));
             }
 
