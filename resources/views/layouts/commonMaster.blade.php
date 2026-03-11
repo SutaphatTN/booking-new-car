@@ -26,9 +26,20 @@
     <!-- Canonical SEO -->
     <link rel="canonical" href="{{ config('variables.productPage') ? config('variables.productPage') : '' }}" />
     <!-- Favicon -->
+    @if (auth()->user()->brand == 2)
+    <link rel="icon" type="image/png" href="{{ asset('assets/img/Gwm_logoCrop32.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('assets/img/Gwm_logoCrop16.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/img/Gwm_logoCrop180.png') }}">
+    @elseif (auth()->user()->brand == 3)
+    <link rel="icon" type="image/png" href="{{ asset('assets/img/Wuling_logoCrop32.jpg') }}">
+    <link rel="icon" type="image/png" href="{{ asset('assets/img/Wuling_logoCrop16.jpg') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/img/Wuling_logoCrop180.jpg') }}">
+    @else
     <link rel="icon" type="image/png" href="{{ asset('assets/img/Mitsubishi_logoCrop32.png') }}">
     <link rel="icon" type="image/png" href="{{ asset('assets/img/Mitsubishi_logoCrop16.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('assets/img/Mitsubishi_logoCrop180.png') }}">
+    @endif
+    
 
     <!-- Include Styles -->
     @include('layouts/sections/styles')
