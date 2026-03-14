@@ -44,4 +44,9 @@ class CarOrderHistory extends Model
     {
         return $value ? Carbon::parse($value)->format('Y-m-d') : null;
     }
+
+    public function getFormatChangedDateAttribute()
+	{
+		return $this->changed_at ? Carbon::parse($this->changed_at)->format('m-Y') : null;
+	}
 }

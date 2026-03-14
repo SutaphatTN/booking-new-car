@@ -175,6 +175,11 @@
           "url": "purchase-order/view-export-saleCar",
           "name": "ข้อมูลการจอง",
           "slug": "report.saleCar-export"
+        },
+        {
+          "url": "purchase-order/view-export-gwm-stock",
+          "name": "Stock GWM",
+          "slug": "report.gwm-stock-export"
         }
       ]
     }

@@ -8,8 +8,8 @@ $userBrand = auth()->user()->brand ?? null;
   @if (isset($menu))
   @foreach ($menu as $submenu)
 
-
-  @if($submenu->slug == 'model.color.index' && $userBrand != 2)
+  
+  @if(($submenu->slug == 'model.color.index' || $submenu->slug == 'report.gwm-stock-export') && $userBrand != 2)
   @continue
   @endif
 

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\purchase_order;
 use App\Exports\booking\BookingExport;
 use App\Exports\commission\SaleCommissionExport;
 use App\Exports\gp\GPExport;
+use App\Exports\gwm\GwmExport;
+use App\Exports\gwm\StockExport;
 use App\Exports\saleCar\SaleCarExport;
 use App\Http\Controllers\Controller;
 use App\Mail\SaleRequestMail;
@@ -750,6 +752,7 @@ class PurchaseOrderController extends Controller
                     CarOrder::where('id', $saleCar->CarOrderID)
                         ->update(['car_status' => 'Available']);
                 }
+                $saleCar->carOrderHistories()->delete();
             }
 
             if ($oldCarOrderID != $newCarOrderID && $newCarOrderID) {
@@ -1174,6 +1177,8 @@ class PurchaseOrderController extends Controller
 
             $carOrder = CarOrder::findOrFail($sale->CarOrderID);
 
+            $sale->carOrderHistories()->delete();
+
             $sale->CarOrderID = null;
             $sale->save();
 
@@ -1194,6 +1199,7 @@ class PurchaseOrderController extends Controller
 
             if ($saleCar->CarOrderID) {
                 CarOrder::where('id', $saleCar->CarOrderID)->update(['car_status' => 'Available']);
+                $saleCar->carOrderHistories()->delete();
             }
 
             $saleCar->delete();
@@ -1518,5 +1524,18 @@ class PurchaseOrderController extends Controller
         $toDate   = $request->to_date   ?? now()->format('Y-m');
 
         return Excel::download(new SaleCarExport($fromDate, $toDate), 'ข้อมูลการจอง.xlsx');
+    }
+
+    //report gwm
+    public function viewExportGwmStock()
+    {
+        return view('purchase-order.report.gwm.view');
+    }
+
+    public function gwmStockExport(Request $request)
+    {
+        $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
+
+        return Excel::download(new GwmExport($fromDate), 'ข้อมูลรถ GWM.xlsx');
     }
 }

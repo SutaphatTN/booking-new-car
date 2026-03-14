@@ -80,6 +80,9 @@ Route::group(['middleware' => 'auth'], function () {
     // sale car report
     Route::get('purchase-order/view-export-saleCar', [PurchaseOrderController::class, 'viewExportSaleCar'])->name('purchase-order.view-export-saleCar');
     Route::get('/purchase-order/saleCar-export', [PurchaseOrderController::class, 'exportSaleCar'])->name('purchase-order.saleCar-export');
+    //report gwm stock
+    Route::get('purchase-order/view-export-gwm-stock', [PurchaseOrderController::class, 'viewExportGwmStock'])->name('purchase-order.view-export-gwm-stock');
+    Route::get('/purchase-order/gwm-stock-export', [PurchaseOrderController::class, 'gwmStockExport'])->name('purchase-order.gwm-stock-export');
 
     //accessory partner
     Route::get('accessory/partner', [AccessoryController::class, 'viewPartner'])->name('accessory.partner');
