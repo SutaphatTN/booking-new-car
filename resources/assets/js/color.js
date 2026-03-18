@@ -272,10 +272,13 @@ $(document).on('change', '#model_id', function () {
     url: '/api/color/sub-model/' + modelId,
     type: 'GET',
     success: function (data) {
-      if (data.length > 0) {
-        data.forEach(function (sub) {
-          $subModelSelect.append(`<option value="${sub.id}">${sub.detail} - ${sub.name}</option>`);
+      if (data.length) {
+        data.forEach(sub => {
+          let text = sub.detail ? `${sub.detail} - ${sub.name}` : sub.name;
+
+          $subModelSelect.append(`<option value="${sub.id}">${text}</option>`);
         });
+        $subModelSelect.prop('disabled', false);
       } else {
         $subModelSelect.append('<option value="">-- ไม่มีรุ่นย่อย --</option>');
       }
