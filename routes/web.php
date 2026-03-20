@@ -16,6 +16,8 @@ use App\Http\Controllers\home\HomeController;
 use App\Http\Controllers\model_car\ModelCarController;
 use App\Http\Controllers\model_car\SubModelCarController;
 use App\Http\Controllers\purchase_order\PurchaseOrderController;
+use App\Http\Controllers\vehicle\LicenseController;
+use App\Http\Controllers\vehicle\VehicleController;
 
 Route::get('/', fn() => redirect()->route('login'));
 
@@ -60,6 +62,23 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/history', [PurchaseOrderController::class, 'history'])->name('purchase-order.history');
     Route::get('purchase-order/list-history', [PurchaseOrderController::class, 'listHistory']);
     Route::get('purchase-order/view-more-history/{id}', [PurchaseOrderController::class, 'viewMoreHistory']);
+    Route::post('/purchase-order/{id}/cancel-car-order', [PurchaseOrderController::class, 'cancelCarOrder']);
+    Route::get('/purchase-order/search', [PurchaseOrderController::class, 'search'])->name('purchase-order.search');
+    //commission sale
+    Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('sale.viewCommission');
+    Route::get('purchase-order/list-Commission', [PurchaseOrderController::class, 'listCommission']);
+
+    //logout
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+    //all resource
+    Route::resource('customer', CustomerController::class);
+    Route::resource('purchase-order', PurchaseOrderController::class);
+});
+
+Route::middleware(['auth', 'notsale'])->group(function () {
+
+    // purchase-order
     Route::get('purchase-order/viewFN', [FinanceController::class, 'viewFN'])->name('purchase-order.viewFN');
     Route::get('purchase-order/{id}/view-more', [FinanceController::class, 'viewMoreFN'])->name('purchase-order.viewMoreFN');
     Route::get('purchase-order/list-fn', [FinanceController::class, 'listFN']);
@@ -67,11 +86,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::put('purchase-order/update-fn/{id}', [FinanceController::class, 'updateFN'])->name('purchase-order.updateFN');
     Route::delete('purchase-order/destroy-fn/{id}', [FinanceController::class, 'destroyFN'])->name('purchase-order.destroyFN');
     Route::get('/purchase-order/booking-export', [PurchaseOrderController::class, 'exportBooking'])->name('purchase-order.booking-export');
-    Route::post('/purchase-order/{id}/cancel-car-order', [PurchaseOrderController::class, 'cancelCarOrder']);
-    Route::get('/purchase-order/search', [PurchaseOrderController::class, 'search'])->name('purchase-order.search');
-    //commission sale
-    Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('sale.viewCommission');
-    Route::get('purchase-order/list-Commission', [PurchaseOrderController::class, 'listCommission']);
+    //commission sale report
     Route::get('purchase-order/view-export-commission', [PurchaseOrderController::class, 'viewExportCommission'])->name('purchase-order.view-export-commission');
     Route::get('/purchase-order/sale-com-export', [PurchaseOrderController::class, 'exportSaleCom'])->name('purchase-order.sale-com-export');
     //GP Report
@@ -97,6 +112,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/api/accessory/sub-model/{model_id}', [AccessoryController::class, 'getSubModelAcc']);
     Route::get('accessory/{id}/view-more', [AccessoryController::class, 'viewMore'])->name('accessory.viewMore');
     Route::post('/accessory/status-acc', [AccessoryController::class, 'statusAcc'])->name('accessory.status-acc');
+    //export accessory partner
+    Route::get('accessory/view-export-accessory', [AccessoryController::class, 'viewExportAccessory'])->name('accessory.view-export-accessory');
+    Route::get('/accessory/accessory-partner-export', [AccessoryController::class, 'exportAccessoryPartner'])->name('accessory.accessory-partner-export');
 
     //campaign
     Route::get('campaign/list', [CampaignController::class, 'listCampaign']);
@@ -136,8 +154,6 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('sub-model-car/{id}/view-more', [SubModelCarController::class, 'viewMore'])->name('sub-model-car.viewMore');
     Route::post('/sub-model-car/status-sub-car', [SubModelCarController::class, 'statusSubCar'])->name('sub-model-car.status-sub-car');
 
-    //logout
-    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     //car-order
     Route::get('car-order/list', [CarOrderController::class, 'listCarOrder']);
@@ -173,12 +189,30 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('color/list', [ColorController::class, 'listColor']);
     Route::get('/api/color/sub-model/{model_id}', [ColorController::class, 'getSubModelColorSub']);
 
-    //all resource
-    Route::resource('customer', CustomerController::class);
-    Route::resource('purchase-order', PurchaseOrderController::class);
-});
+    //license ป้ายแดง
+    Route::get('license/list', [LicenseController::class, 'listLicense']);
+    Route::get('license/{id}/view-more', [LicenseController::class, 'viewMore'])->name('vehicle.license.viewMore');
+    Route::post('/license/approve-finance', [LicenseController::class, 'approveFinance']);
 
-Route::middleware(['auth', 'notsale'])->group(function () {
+    Route::get('/license/stock-export', [LicenseController::class, 'exportLicStock'])->name('license.stock-export');
+    Route::get('license/view-export-license', [LicenseController::class, 'viewExportLicense'])->name('license.view-export-license');
+    Route::get('/license/summary-export', [LicenseController::class, 'exportLicSummary'])->name('license.summary-export');
+
+
+    //license ป้ายทะเบียน
+    Route::get('vehicle/list', [VehicleController::class, 'listVehicle']);
+    Route::get('vehicle/{id}/view-more', [VehicleController::class, 'viewMore'])->name('vehicle.viewMore');
+    Route::post('/vehicle/update-vehicle', [VehicleController::class, 'updateVehicle']);
+
+    Route::get('vehicle/withdrawal-pending', [VehicleController::class, 'withdrawalPending'])->name('vehicle.withdrawal-pending');
+    Route::post('/vehicle/confirm-withdrawal', [VehicleController::class, 'confirmWithdrawal']);
+    Route::get('/vehicle/export-pdf', [VehicleController::class, 'exportPdf']);
+
+    Route::post('/vehicle/confirm-clear', [VehicleController::class, 'confirmClear']);
+    Route::get('/vehicle/export-clear-pdf', [VehicleController::class, 'exportClearPdf']);
+    //export vehicle
+    Route::get('vehicle/view-export-vehicle', [VehicleController::class, 'viewExportVehicle'])->name('vehicle.view-export-vehicle');
+    Route::get('/vehicle/vehicle-export', [VehicleController::class, 'exportVehicle'])->name('vehicle.vehicle-export');
 
     Route::resource('accessory', AccessoryController::class);
     Route::resource('campaign', CampaignController::class);
@@ -186,6 +220,16 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::resource('finance', FinanceController::class);
     Route::resource('car-order', CarOrderController::class);
     Route::resource('color', ColorController::class);
+    Route::resource('vehicle', VehicleController::class);
+
+    Route::resource('license', LicenseController::class)->names([
+        'index' => 'vehicle.license.index',
+        'create' => 'vehicle.license.create',
+        'store' => 'vehicle.license.store',
+        'edit' => 'vehicle.license.edit',
+        'update' => 'vehicle.license.update',
+        'destroy' => 'vehicle.license.destroy',
+    ]);
 
     Route::resource('model-car', ModelCarController::class)->names([
         'index' => 'model-car.index',

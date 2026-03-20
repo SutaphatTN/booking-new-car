@@ -215,6 +215,7 @@ class Salecar extends Model
 		'DeliveryEstimateDate',
 		'reason_campaign',
 		'Note',
+		'red_license',
 		'ReferrerID',
 		'ReferrerAmount',
 		'balance',
@@ -281,6 +282,11 @@ class Salecar extends Model
 		return $this->belongsTo(TbConStatus::class, 'con_status', 'id');
 	}
 
+	public function licensePlateRed()
+	{
+		return $this->belongsTo(TbLicensePlate::class, 'red_license', 'id');
+	}
+
 	public function type()
 	{
 		return $this->belongsTo(TbSalecarType::class, 'type', 'id');
@@ -319,6 +325,11 @@ class Salecar extends Model
 	public function financeConfirm()
 	{
 		return $this->hasOne(FinancesConfirm::class, 'SaleID', 'id');
+	}
+
+	public function vehicleLicense()
+	{
+		return $this->hasOne(VehicleLicense::class, 'SaleID', 'id')->latestOfMany();
 	}
 
 	public function gwmColor()

@@ -6,7 +6,6 @@ use App\Exports\booking\BookingExport;
 use App\Exports\commission\SaleCommissionExport;
 use App\Exports\gp\GPExport;
 use App\Exports\gwm\GwmExport;
-use App\Exports\gwm\StockExport;
 use App\Exports\saleCar\SaleCarExport;
 use App\Http\Controllers\Controller;
 use App\Mail\SaleRequestMail;
@@ -16,12 +15,14 @@ use App\Models\Campaign;
 use App\Models\CarOrder;
 use App\Models\CarOrderHistory;
 use App\Models\Finance;
+use App\Models\LicensePlateHistory;
 use App\Models\PaymentType;
 use App\Models\Salecampaign;
 use App\Models\Salecar;
 use App\Models\SaleCarPayment;
 use App\Models\TbConStatus;
 use App\Models\TbInteriorColor;
+use App\Models\TbLicensePlate;
 use App\Models\TbProvinces;
 use App\Models\TbSalecarType;
 use App\Models\TbSalePurchaseType;
@@ -417,6 +418,9 @@ class PurchaseOrderController extends Controller
         $finances = Finance::all();
         $subModels = TbSubcarmodel::where('model_id', $saleCar->model_id)->get();
         $conStatus = TbConStatus::all();
+        $licensePlateRed = TbLicensePlate::where('is_used', 0)
+            ->orWhere('id', $saleCar->red_license)
+            ->get();
         $provinces = TbProvinces::all();
         $type = TbSalecarType::all();
         $typeSale = TbSalePurchaseType::all();
@@ -458,7 +462,7 @@ class PurchaseOrderController extends Controller
 
         $selected_campaigns = $saleCar->campaigns->pluck('CampaignID')->toArray();
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor'));
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor'));
     }
 
     public function update(Request $request, $id)
@@ -724,6 +728,7 @@ class PurchaseOrderController extends Controller
                 'GMApprovalSignatureDate' => $request->GMApprovalSignatureDate,
                 'DeliveryEstimateDate' => $request->DeliveryEstimateDate,
                 'Note' => $request->Note,
+                'red_license' => $request->red_license,
                 'ReferrerID' => $request->ReferrerID,
                 'ReferrerAmount' => $request->filled('ReferrerAmount')
                     ? str_replace(',', '', $request->ReferrerAmount)
@@ -737,16 +742,21 @@ class PurchaseOrderController extends Controller
                 'con_status' => $request->con_status,
             ];
 
+            //for GWM
             if (Auth::user()->brand == 2) {
                 $data['gwm_color'] = $request->gwm_color;
                 $data['interior_color'] = $request->interior_color;
             }
 
+            //ดึง id
             $oldCarOrderID = $saleCar->CarOrderID;
             $newCarOrderID = $request->CarOrderID;
 
+            $oldPlate = $saleCar->red_license;
+
             $saleCar->update($data);
 
+            //ยกเลิกการจอง
             if ($request->con_status == 9) {
                 if ($saleCar->CarOrderID) {
                     CarOrder::where('id', $saleCar->CarOrderID)
@@ -755,6 +765,7 @@ class PurchaseOrderController extends Controller
                 $saleCar->carOrderHistories()->delete();
             }
 
+            //เก็บข้อมูลการผูกรถ
             if ($oldCarOrderID != $newCarOrderID && $newCarOrderID) {
                 CarOrderHistory::create([
                     'SaleID' => $saleCar->id,
@@ -771,11 +782,37 @@ class PurchaseOrderController extends Controller
                 CarOrder::where('id', $newCarOrderID)->update(['car_status' => 'Booked']);
             }
 
+            //ส่งมอบรถ
             if ($request->con_status == 5) {
 
                 if ($newCarOrderID) {
                     CarOrder::where('id', $newCarOrderID)->update([
                         'car_status' => 'Delivered'
+                    ]);
+                }
+            }
+
+            //ป้ายแดง
+            $newPlate = $request->red_license;
+
+            if ($oldPlate != $newPlate) {
+
+                if ($oldPlate) {
+                    TbLicensePlate::where('id', $oldPlate)
+                        ->update(['is_used' => 0]);
+                }
+
+                if ($newPlate) {
+                    TbLicensePlate::where('id', $newPlate)
+                        ->update(['is_used' => 1]);
+
+                    LicensePlateHistory::create([
+                        'saleID' => $saleCar->id,
+                        'licenseID' => $newPlate,
+                        'date' => now(),
+                        'UserInsert' => Auth::id(),
+                        'userZone' => Auth::user()->userZone ?? null,
+                        'brand' => Auth::user()->brand ?? null,
                     ]);
                 }
             }
@@ -1051,7 +1088,6 @@ class PurchaseOrderController extends Controller
                 $deleteIds = explode(',', rtrim($request->deletedPayments, ','));
                 SaleCarPayment::whereIn('id', $deleteIds)->delete();
             }
-
 
             if ($request->filled('payment_type')) {
                 $ids = $request->payment_id ?? [];
@@ -1371,12 +1407,19 @@ class PurchaseOrderController extends Controller
 
     public function listHistory(Request $request)
     {
-        $saleCar = Salecar::with([
+        $user = Auth::user();
+
+        $query = Salecar::with([
             'customer.prefix',
             'carOrder'
         ])
-            ->where('con_status', '5')
-            ->get();
+            ->where('con_status', '5');
+
+        if ($user->role === 'sale') {
+            $query->where('UserInsert', $user->id);
+        }
+
+        $saleCar = $query->get();
 
         $data = $saleCar->map(function ($s, $index) {
             $c = $s->customer;

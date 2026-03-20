@@ -119,6 +119,11 @@
           "url": "accessory",
           "name": "ประดับยนต์",
           "slug": "accessory.index"
+        },
+        {
+          "url": "accessory/view-export-accessory",
+          "name": "รายงานต้นทุน",
+          "slug": "accessory.view-export-accessory"
         }
       ]
     },
@@ -153,6 +158,23 @@
           "url": "finance/extra-com",
           "name": "Com Extra",
           "slug": "finance.extra-com"
+        }
+      ]
+    },
+    {
+      "name": "ทะเบียน",
+      "icon": "menu-icon icon-base bx bx-news",
+      "slug": "vehicle",
+      "submenu": [
+        {
+          "url": "vehicle",
+          "name": "ป้ายทะเบียน",
+          "slug": "vehicle.index"
+        },
+        {
+          "url": "license",
+          "name": "ป้ายแดง",
+          "slug": "vehicle.license.index"
         }
       ]
     },

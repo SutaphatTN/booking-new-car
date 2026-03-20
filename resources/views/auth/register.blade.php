@@ -79,6 +79,7 @@
                 <option value="">-- เลือก Role --</option>
                 <option value="sale">Sale</option>
                 <option value="audit">Audit</option>
+                <option value="finance">Finance</option>
                 <option value="manager">Manager</option>
                 <option value="md">MD</option>
               </select>

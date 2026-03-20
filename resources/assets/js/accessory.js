@@ -604,3 +604,17 @@ $(document).on('click', '.btnDeletePart', function () {
     }
   });
 });
+
+//report accessory partner
+document.addEventListener('DOMContentLoaded', function () {
+  const modalEl = document.querySelector('.viewExportAccPart');
+  if (!modalEl) return; // กัน error
+
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+
+  // ปิด modal แล้วกลับหน้าก่อนหน้า
+  modalEl.addEventListener('hidden.bs.modal', function () {
+    window.history.back();
+  });
+});

@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\AccessoryPartner;
 use App\Models\AccessoryPrice;
 use App\Models\AccessoryType;
+use App\Models\Saleaccessory;
 use App\Models\TbCarmodel;
 use App\Models\TbSubcarmodel;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class AccessoryController extends Controller
@@ -329,5 +332,58 @@ class AccessoryController extends Controller
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
             ], 500);
         }
+    }
+
+    public function viewExportAccessory()
+    {
+        return view('accessory.report.view');
+    }
+
+    public function exportAccessoryPartner(Request $request)
+    {
+        $from = $request->from_date;
+        $to   = $request->to_date;
+
+        $rows = Saleaccessory::with(['saleCar.carOrder', 'accessory.partner'])
+            ->whereHas('saleCar', function ($q) use ($from, $to) {
+                $q->whereBetween('DeliveryDate', [$from, $to]);
+            })
+            ->get();
+
+        $data = $rows->map(function ($r) {
+            $customerName = trim(
+                ($r->saleCar?->customer?->prefix?->Name_TH ?? '') . ' ' .
+                    ($r->saleCar?->customer?->FirstName ?? '') . ' ' .
+                    ($r->saleCar?->customer?->LastName ?? '')
+            );
+
+            $accName = $r->accessory?->detail ?? '-';
+            $accID = $r->accessory?->accessory_id ?? '-';
+            $accessoryNID = "{$accID}<br>{$accName}";
+
+            return [
+                'partner_id'   => $r->accessory?->accessoryPartner_id,
+                'partner_name' => $r->accessory?->partner?->name ?? 0,
+
+                'delivery_date' => $r->saleCar?->format_delivery_date ?? '-',
+                'customer' => $customerName,
+                'vin' => $r->saleCar?->carOrder?->vin_number ?? '-',
+                'accessory_name' => $accessoryNID,
+                'cost' => $r->accessory?->cost_spare ?? 0,
+            ];
+        });
+
+        $fromFormatted = Carbon::parse($from)->format('d/m/Y');
+        $toFormatted   = Carbon::parse($to)->format('d/m/Y');
+
+        $grouped = $data->groupBy('partner_id');
+
+        $pdf = Pdf::loadView('accessory.report.pdf', [
+            'groups' => $grouped,
+            'from' => $fromFormatted,
+            'to'   => $toFormatted
+        ]);
+
+        return $pdf->stream('accessory-report.pdf');
     }
 }

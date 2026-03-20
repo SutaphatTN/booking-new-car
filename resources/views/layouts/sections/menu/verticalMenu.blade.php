@@ -29,7 +29,7 @@
   <ul class="menu-inner py-1">
     @foreach ($menuData[0]->menu as $menu)
       @php
-        $hideForSale = ['model', 'car-order', 'accessory', 'campaign', 'finance', 'report', 'forecast.form'];
+        $hideForSale = ['model', 'car-order', 'accessory', 'campaign', 'finance', 'report', 'forecast.form', 'vehicle'];
       @endphp
 
       @if ($userRole == 'sale' && in_array($menu->slug, $hideForSale))

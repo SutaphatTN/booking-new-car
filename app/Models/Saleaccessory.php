@@ -48,4 +48,14 @@ class Saleaccessory extends Model
 	];
 
 	protected $dates = ['deleted_at'];
+
+	public function saleCar()
+	{
+		return $this->belongsTo(Salecar::class, 'salecar_id', 'id');
+	}
+
+	public function accessory()
+	{
+		return $this->belongsTo(AccessoryPrice::class, 'accessory_id', 'id');
+	}
 }
