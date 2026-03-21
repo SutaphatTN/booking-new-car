@@ -67,6 +67,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/view-more-history/{id}', [PurchaseOrderController::class, 'viewMoreHistory']);
     Route::post('/purchase-order/{id}/cancel-car-order', [PurchaseOrderController::class, 'cancelCarOrder']);
     Route::get('/purchase-order/search', [PurchaseOrderController::class, 'search'])->name('purchase-order.search');
+    Route::get('/purchase-order/booking-export', [PurchaseOrderController::class, 'exportBooking'])->name('purchase-order.booking-export');
     //commission sale
     Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('sale.viewCommission');
     Route::get('purchase-order/list-Commission', [PurchaseOrderController::class, 'listCommission']);
@@ -88,7 +89,6 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('purchase-order/edit-fn/{id}', [FinanceController::class, 'editFN'])->name('purchase-order.editFN');
     Route::put('purchase-order/update-fn/{id}', [FinanceController::class, 'updateFN'])->name('purchase-order.updateFN');
     Route::delete('purchase-order/destroy-fn/{id}', [FinanceController::class, 'destroyFN'])->name('purchase-order.destroyFN');
-    Route::get('/purchase-order/booking-export', [PurchaseOrderController::class, 'exportBooking'])->name('purchase-order.booking-export');
     //commission sale report
     Route::get('purchase-order/view-export-commission', [PurchaseOrderController::class, 'viewExportCommission'])->name('purchase-order.view-export-commission');
     Route::get('/purchase-order/sale-com-export', [PurchaseOrderController::class, 'exportSaleCom'])->name('purchase-order.sale-com-export');
