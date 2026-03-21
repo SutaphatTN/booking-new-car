@@ -24,6 +24,7 @@ class Address extends Model
         'district',
         'province',
         'postal_code',
+        'post_id',
         'userZone',
         'brand',
     ];

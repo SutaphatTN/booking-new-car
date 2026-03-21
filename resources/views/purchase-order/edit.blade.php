@@ -658,10 +658,10 @@
                       </thead>
                       <tbody>
                         @if ($saleCar->accessories->count() > 0)
-                          @foreach ($saleCar->accessories->where('pivot.type', 'gift') as $index => $a)
+                          @foreach ($saleCar->accessories->where('pivot.type', 'gift') as $a)
                             <tr data-id="{{ $a->id }}" data-price="{{ $a->pivot->price }}"
                               data-com="{{ $a->pivot->commission }}">
-                              <td>{{ $index + 1 }}</td>
+                              <td>{{ $loop->index + 1 }}</td>
                               <td>{{ $a->accessory_id }}</td>
                               <td>{{ $a->detail }}</td>
                               <td>{{ ucfirst($a->pivot->price_type) }}</td>
@@ -734,10 +734,10 @@
                       </thead>
                       <tbody>
                         @if ($saleCar->accessories->count() > 0)
-                          @foreach ($saleCar->accessories->where('pivot.type', 'extra') as $index => $a)
+                          @foreach ($saleCar->accessories->where('pivot.type', 'extra') as $a)
                             <tr data-id="{{ $a->id }}" data-price="{{ $a->pivot->price }}"
                               data-com="{{ $a->pivot->commission }}">
-                              <td>{{ $index + 1 }}</td>
+                              <td>{{ $loop->index + 1 }}</td>
                               <td>{{ $a->accessory_id }}</td>
                               <td>{{ $a->detail }}</td>
                               <td>{{ ucfirst($a->pivot->price_type) }}</td>

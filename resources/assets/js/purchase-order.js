@@ -575,21 +575,49 @@ $(document).ready(function () {
   $searchInput.on('keypress', function (e) {
     if (e.which === 13) {
       e.preventDefault();
-      searchCarOrder($(this).val());
+      triggerCarOrderSearch();
     }
   });
 
   $('.btnSearchCarOrder').on('click', function () {
-    searchCarOrder($searchInput.val());
+    triggerCarOrderSearch();
   });
 
-  function searchCarOrder(keyword) {
-    if (!keyword.trim()) return;
+  function triggerCarOrderSearch() {
+    const keyword = $searchInput.val().trim();
+    if (keyword) {
+      searchCarOrder(keyword);
+    } else {
+      searchCarOrderByFilter();
+    }
+  }
 
+  function searchCarOrderByFilter() {
+    const isBrand2 = $('#gwm_color').length > 0;
+    const data = {
+      model_id: $('#model_id').val() || '',
+      sub_model_id: $('#subModel_id').val() || '',
+      option: $('#option').val() || '',
+      year: $('#Year').val() || '',
+    };
+    if (isBrand2) {
+      data.color_id = $('#gwm_color').val() || '';
+      data.interior_color_id = $('#interior_color').val() || '';
+    } else {
+      data.color_text = $('#Color').val() || '';
+    }
+    doCarOrderSearch(data);
+  }
+
+  function searchCarOrder(keyword) {
+    doCarOrderSearch({ keyword });
+  }
+
+  function doCarOrderSearch(data) {
     $.ajax({
       url: '/car-order/search',
       type: 'GET',
-      data: { keyword },
+      data: data,
       success: function (res) {
         $tableBody.empty();
 

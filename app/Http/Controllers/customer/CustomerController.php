@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Address;
 use App\Models\Customer;
 use App\Models\TbPrefixname;
+use App\Models\TbThailand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -86,6 +87,9 @@ class CustomerController extends Controller
                 'district' => $request->current_district,
                 'province' => $request->current_province,
                 'postal_code' => $request->current_postal_code,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
+                'post_id' => $request->current_post_id ?: null,
             ]);
 
             Address::create([
@@ -100,6 +104,9 @@ class CustomerController extends Controller
                 'district' => $request->doc_district,
                 'province' => $request->doc_province,
                 'postal_code' => $request->doc_postal_code,
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
+                'post_id' => $request->doc_post_id ?: null,
             ]);
 
             DB::commit();
@@ -155,7 +162,47 @@ class CustomerController extends Controller
             ->where('type', 'document')
             ->first();
 
-        return view('customer.edit', compact('customers', 'perfixName', 'currentAddress', 'docAddress'));
+        $provinces = TbThailand::select('Province_pro')
+            ->distinct()->orderBy('Province_pro')->pluck('Province_pro');
+
+        $currentDistricts = collect();
+        $currentTambons   = collect();
+        if ($currentAddress?->province) {
+            $currentDistricts = TbThailand::select('District_pro')
+                ->where('Province_pro', $currentAddress->province)
+                ->distinct()->orderBy('District_pro')->pluck('District_pro');
+
+            if ($currentAddress->district) {
+                $currentTambons = TbThailand::select('id', 'Tambon_pro', 'Postcode_pro')
+                    ->where('Province_pro', $currentAddress->province)
+                    ->where('District_pro', $currentAddress->district)
+                    ->orderBy('Tambon_pro')->get();
+            }
+        }
+
+        $docDistricts = collect();
+        $docTambons   = collect();
+        if ($docAddress?->province) {
+            $docDistricts = ($docAddress->province === $currentAddress?->province)
+                ? $currentDistricts
+                : TbThailand::select('District_pro')
+                    ->where('Province_pro', $docAddress->province)
+                    ->distinct()->orderBy('District_pro')->pluck('District_pro');
+
+            if ($docAddress->district) {
+                $docTambons = ($docAddress->province === $currentAddress?->province && $docAddress->district === $currentAddress?->district)
+                    ? $currentTambons
+                    : TbThailand::select('id', 'Tambon_pro', 'Postcode_pro')
+                        ->where('Province_pro', $docAddress->province)
+                        ->where('District_pro', $docAddress->district)
+                        ->orderBy('Tambon_pro')->get();
+            }
+        }
+
+        return view('customer.edit', compact(
+            'customers', 'perfixName', 'currentAddress', 'docAddress',
+            'provinces', 'currentDistricts', 'currentTambons', 'docDistricts', 'docTambons'
+        ));
     }
 
     public function update(Request $request, $id)
@@ -198,6 +245,7 @@ class CustomerController extends Controller
                     'district' => $request->current_district,
                     'province' => $request->current_province,
                     'postal_code' => $request->current_postal_code,
+                    'post_id' => $request->current_post_id ?: null,
                 ]);
             }
 
@@ -216,6 +264,7 @@ class CustomerController extends Controller
                     'district' => $request->doc_district,
                     'province' => $request->doc_province,
                     'postal_code' => $request->doc_postal_code,
+                    'post_id' => $request->doc_post_id ?: null,
                 ]);
             }
 
@@ -266,6 +315,38 @@ class CustomerController extends Controller
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
             ], 500);
         }
+    }
+
+    public function getProvinces()
+    {
+        $provinces = TbThailand::select('Province_pro')
+            ->distinct()
+            ->orderBy('Province_pro')
+            ->pluck('Province_pro');
+
+        return response()->json($provinces);
+    }
+
+    public function getDistricts(Request $request)
+    {
+        $districts = TbThailand::select('District_pro')
+            ->where('Province_pro', $request->province)
+            ->distinct()
+            ->orderBy('District_pro')
+            ->pluck('District_pro');
+
+        return response()->json($districts);
+    }
+
+    public function getTambons(Request $request)
+    {
+        $tambons = TbThailand::select('id', 'Tambon_pro', 'Postcode_pro')
+            ->where('Province_pro', $request->province)
+            ->where('District_pro', $request->district)
+            ->orderBy('Tambon_pro')
+            ->get();
+
+        return response()->json($tambons);
     }
 
     public function search(Request $request)

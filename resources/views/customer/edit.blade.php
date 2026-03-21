@@ -149,56 +149,47 @@
               </div>
 
               <div class="col-md-4 mb-5">
-                <label for="current_subdistrict" class="form-label">ตำบล/แขวง</label>
-                <input id="current_subdistrict" type="text" name="current_subdistrict"
-                  class="form-control @error('current_subdistrict') is-invalid @enderror"
-                  value="{{ old('current_subdistrict', $currentAddress->subdistrict ?? '') }}" required>
-
-                @error('current_subdistrict')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-                @enderror
+                <label for="current_province" class="form-label">จังหวัด</label>
+                <select id="current_province" name="current_province" class="form-select" required>
+                  <option value="">-- เลือกจังหวัด --</option>
+                  @foreach($provinces as $p)
+                    <option value="{{ $p }}" {{ ($currentAddress->province ?? '') === $p ? 'selected' : '' }}>{{ $p }}</option>
+                  @endforeach
+                </select>
               </div>
 
               <div class="col-md-4 mb-5">
                 <label for="current_district" class="form-label">อำเภอ/เขต</label>
-                <input id="current_district" type="text" name="current_district"
-                  class="form-control @error('current_district') is-invalid @enderror"
-                  value="{{ old('current_district', $currentAddress->district ?? '') }}" required>
-
-                @error('current_district')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-                @enderror
+                <select id="current_district" name="current_district" class="form-select" required
+                  {{ $currentDistricts->isEmpty() ? 'disabled' : '' }}>
+                  <option value="">-- เลือกอำเภอ --</option>
+                  @foreach($currentDistricts as $d)
+                    <option value="{{ $d }}" {{ ($currentAddress->district ?? '') === $d ? 'selected' : '' }}>{{ $d }}</option>
+                  @endforeach
+                </select>
               </div>
 
               <div class="col-md-3 mb-5">
-                <label for="current_province" class="form-label">จังหวัด</label>
-                <input id="current_province" type="text" name="current_province"
-                  class="form-control @error('current_province') is-invalid @enderror"
-                  value="{{ old('current_province', $currentAddress->province ?? '') }}" required>
-
-                @error('current_province')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-                @enderror
+                <label for="current_subdistrict" class="form-label">ตำบล/แขวง</label>
+                <select id="current_subdistrict" name="current_subdistrict" class="form-select" required
+                  {{ $currentTambons->isEmpty() ? 'disabled' : '' }}>
+                  <option value="">-- เลือกตำบล --</option>
+                  @foreach($currentTambons as $t)
+                    <option value="{{ $t->Tambon_pro }}"
+                      data-postal="{{ $t->Postcode_pro }}"
+                      data-post-id="{{ $t->id }}"
+                      {{ ($currentAddress->subdistrict ?? '') === $t->Tambon_pro ? 'selected' : '' }}>{{ $t->Tambon_pro }}</option>
+                  @endforeach
+                </select>
               </div>
 
               <div class="col-md-2 mb-5">
                 <label for="current_postal_code" class="form-label">เลขไปรษณีย์</label>
                 <input id="current_postal_code" type="text" name="current_postal_code"
-                  class="form-control @error('current_postal_code') is-invalid @enderror"
-                  value="{{ old('current_postal_code', $currentAddress->postal_code ?? '') }}" required>
-
-                @error('current_postal_code')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-                @enderror
+                  class="form-control" readonly
+                  value="{{ old('current_postal_code', $currentAddress->postal_code ?? '') }}">
               </div>
+              <input type="hidden" name="current_post_id" value="{{ old('current_post_id', $currentAddress->post_id ?? '') }}">
             </div>
 
             @php
@@ -268,56 +259,47 @@
               </div>
 
               <div class="col-md-4 mb-5">
-                <label for="doc_subdistrict" class="form-label">ตำบล/แขวง</label>
-                <input id="doc_subdistrict" type="text" name="doc_subdistrict"
-                  class="form-control @error('doc_subdistrict') is-invalid @enderror"
-                  value="{{ old('doc_subdistrict', $docAddress->subdistrict ?? '') }}" required>
-
-                @error('doc_subdistrict')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-                @enderror
+                <label for="doc_province" class="form-label">จังหวัด</label>
+                <select id="doc_province" name="doc_province" class="form-select" required>
+                  <option value="">-- เลือกจังหวัด --</option>
+                  @foreach($provinces as $p)
+                    <option value="{{ $p }}" {{ ($docAddress->province ?? '') === $p ? 'selected' : '' }}>{{ $p }}</option>
+                  @endforeach
+                </select>
               </div>
 
               <div class="col-md-4 mb-5">
                 <label for="doc_district" class="form-label">อำเภอ/เขต</label>
-                <input id="doc_district" type="text" name="doc_district"
-                  class="form-control @error('doc_district') is-invalid @enderror"
-                  value="{{ old('doc_district', $docAddress->district ?? '') }}" required>
-
-                @error('doc_district')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-                @enderror
+                <select id="doc_district" name="doc_district" class="form-select" required
+                  {{ $docDistricts->isEmpty() ? 'disabled' : '' }}>
+                  <option value="">-- เลือกอำเภอ --</option>
+                  @foreach($docDistricts as $d)
+                    <option value="{{ $d }}" {{ ($docAddress->district ?? '') === $d ? 'selected' : '' }}>{{ $d }}</option>
+                  @endforeach
+                </select>
               </div>
 
               <div class="col-md-3 mb-5">
-                <label for="doc_province" class="form-label">จังหวัด</label>
-                <input id="doc_province" type="text" name="doc_province"
-                  class="form-control @error('doc_province') is-invalid @enderror"
-                  value="{{ old('doc_province', $docAddress->province ?? '') }}" required>
-
-                @error('doc_province')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-                @enderror
+                <label for="doc_subdistrict" class="form-label">ตำบล/แขวง</label>
+                <select id="doc_subdistrict" name="doc_subdistrict" class="form-select" required
+                  {{ $docTambons->isEmpty() ? 'disabled' : '' }}>
+                  <option value="">-- เลือกตำบล --</option>
+                  @foreach($docTambons as $t)
+                    <option value="{{ $t->Tambon_pro }}"
+                      data-postal="{{ $t->Postcode_pro }}"
+                      data-post-id="{{ $t->id }}"
+                      {{ ($docAddress->subdistrict ?? '') === $t->Tambon_pro ? 'selected' : '' }}>{{ $t->Tambon_pro }}</option>
+                  @endforeach
+                </select>
               </div>
 
               <div class="col-md-2 mb-5">
                 <label for="doc_postal_code" class="form-label">เลขไปรษณีย์</label>
                 <input id="doc_postal_code" type="text" name="doc_postal_code"
-                  class="form-control @error('doc_postal_code') is-invalid @enderror"
-                  value="{{ old('doc_postal_code', $docAddress->postal_code ?? '') }}" required>
-
-                @error('doc_postal_code')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-                @enderror
+                  class="form-control" readonly
+                  value="{{ old('doc_postal_code', $docAddress->postal_code ?? '') }}">
               </div>
+              <input type="hidden" name="doc_post_id" value="{{ old('doc_post_id', $docAddress->post_id ?? '') }}">
             </div>
 
           </div>

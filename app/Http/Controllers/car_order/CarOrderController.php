@@ -176,35 +176,63 @@ class CarOrderController extends Controller
 
     public function search(Request $request)
     {
-        $keyword = $request->input('keyword');
+        $keyword = trim($request->input('keyword', ''));
 
-        $order = CarOrder::with(['model', 'subModel', 'orderStatus', 'gwmColor', 'interiorColor'])
+        $query = CarOrder::with(['model', 'subModel', 'orderStatus', 'gwmColor', 'interiorColor'])
             ->where('car_status', 'Available')
-            ->whereIn('status', ['approved', 'finished'])
-            ->where(function ($query) use ($keyword) {
-                $query->where('vin_number', 'like', "%{$keyword}%")
+            ->whereIn('status', ['approved', 'finished']);
+
+        if ($keyword !== '') {
+            // ค้นหาแบบพิมพ์หา
+            $query->where(function ($q) use ($keyword) {
+                $q->where('vin_number', 'like', "%{$keyword}%")
                     ->orWhere('j_number', 'like', "%{$keyword}%")
                     ->orWhere('order_code', 'like', "%{$keyword}%")
                     ->orWhere('option', 'like', "%{$keyword}%")
                     ->orWhere('color', 'like', "%{$keyword}%")
                     ->orWhere('year', 'like', "%{$keyword}%")
-                    ->orWhereHas('model', function ($q) use ($keyword) {
-                        $q->where('Name_TH', 'like', "%{$keyword}%");
+                    ->orWhereHas('model', function ($q2) use ($keyword) {
+                        $q2->where('Name_TH', 'like', "%{$keyword}%");
                     })
-                    ->orWhereHas('subModel', function ($q) use ($keyword) {
-                        $q->where('name', 'like', "%{$keyword}%")
+                    ->orWhereHas('subModel', function ($q2) use ($keyword) {
+                        $q2->where('name', 'like', "%{$keyword}%")
                             ->orWhere('detail', 'like', "%{$keyword}%");
                     })
-                    ->orWhereHas('gwmColor', function ($q) use ($keyword) {
-                        $q->where('name', 'like', "%{$keyword}%");
+                    ->orWhereHas('gwmColor', function ($q2) use ($keyword) {
+                        $q2->where('name', 'like', "%{$keyword}%");
                     })
-                    ->orWhereHas('interiorColor', function ($q) use ($keyword) {
-                        $q->where('name', 'like', "%{$keyword}%");
+                    ->orWhereHas('interiorColor', function ($q2) use ($keyword) {
+                        $q2->where('name', 'like', "%{$keyword}%");
                     });
-            })
-            ->orderByRaw("CASE WHEN order_status = 4 THEN 0 ELSE 1 END")
+            });
+        } else {
+            // ค้นหาแบบไม่ต้องพิมพ์
+            if ($request->filled('model_id')) {
+                $query->where('model_id', $request->model_id);
+            }
+            if ($request->filled('sub_model_id')) {
+                $query->where('subModel_id', $request->sub_model_id);
+            }
+            if ($request->filled('option')) {
+                $query->where('option', 'like', '%' . $request->option . '%');
+            }
+            if ($request->filled('color_id')) {
+                $query->where('gwm_color', $request->color_id);
+            }
+            if ($request->filled('interior_color_id')) {
+                $query->where('interior_color', $request->interior_color_id);
+            }
+            if ($request->filled('color_text')) {
+                $query->where('color', 'like', '%' . $request->color_text . '%');
+            }
+            if ($request->filled('year')) {
+                $query->where('year', $request->year);
+            }
+        }
+
+        $order = $query->orderByRaw("CASE WHEN order_status = 4 THEN 0 ELSE 1 END")
             ->orderBy('order_stock_date', 'asc')
-            ->limit(10)
+            ->limit(20)
             ->get();
 
         $order = $order->map(function ($item) {

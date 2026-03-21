@@ -106,7 +106,11 @@ $(document).on('click', '.btnEditCust', function () {
         e.preventDefault();
 
         const form = $modal.find('form')[0];
+
+        const disabledSelects = form.querySelectorAll('select[name$="_province"],select[name$="_district"],select[name$="_subdistrict"]');
+        disabledSelects.forEach(el => el.disabled = false);
         const formData = new FormData(form);
+        disabledSelects.forEach(el => { if (!el.value) el.disabled = true; });
 
         $.ajax({
           url: form.action,
@@ -208,7 +212,166 @@ $(document).on('click', '.btnDeleteCust', function () {
   });
 });
 
-//view more and edit
+// ─── Thailand Address Dropdowns ──────────────────────────────────────────────
+
+function thLoadProvinces(sel, preselect, afterLoad) {
+  $.get('/api/thailand/provinces').done(function (data) {
+    sel.innerHTML = '<option value="">-- เลือกจังหวัด --</option>';
+    data.forEach(function (p) {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      sel.appendChild(opt);
+    });
+    if (preselect) sel.value = preselect;
+    if (afterLoad) afterLoad();
+  });
+}
+
+function thLoadDistricts(sel, province, preselect, afterLoad) {
+  sel.innerHTML = '<option value="">-- เลือกอำเภอ --</option>';
+  sel.disabled = true;
+  if (!province) { if (afterLoad) afterLoad(); return; }
+  $.get('/api/thailand/districts', { province: province }).done(function (data) {
+    data.forEach(function (d) {
+      const opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d;
+      sel.appendChild(opt);
+    });
+    sel.disabled = false;
+    if (preselect) sel.value = preselect;
+    if (afterLoad) afterLoad();
+  });
+}
+
+function thLoadTambons(tambonSel, postalInput, postIdInput, province, district, preselect, afterLoad) {
+  tambonSel.innerHTML = '<option value="">-- เลือกตำบล --</option>';
+  tambonSel.disabled = true;
+  if (postalInput) postalInput.value = '';
+  if (postIdInput) postIdInput.value = '';
+  if (!province || !district) { if (afterLoad) afterLoad(); return; }
+  $.get('/api/thailand/tambons', { province: province, district: district }).done(function (data) {
+    data.forEach(function (t) {
+      const opt = document.createElement('option');
+      opt.value = t.Tambon_pro;
+      opt.textContent = t.Tambon_pro;
+      opt.dataset.postal = t.Postcode_pro;
+      opt.dataset.postId = t.id;
+      tambonSel.appendChild(opt);
+    });
+    tambonSel.disabled = false;
+    if (preselect) {
+      tambonSel.value = preselect;
+      const selected = tambonSel.options[tambonSel.selectedIndex];
+      if (selected && selected.dataset.postal) {
+        if (postalInput) postalInput.value = selected.dataset.postal;
+        if (postIdInput) postIdInput.value = selected.dataset.postId;
+      }
+    }
+    if (afterLoad) afterLoad();
+  });
+}
+
+function initAddressSection(container, prefix) {
+  const provinceSel = container.querySelector(`[name="${prefix}_province"]`);
+  const districtSel = container.querySelector(`[name="${prefix}_district"]`);
+  const tambonSel   = container.querySelector(`[name="${prefix}_subdistrict"]`);
+  const postalInput = container.querySelector(`[name="${prefix}_postal_code"]`);
+  const postIdInput = container.querySelector(`[name="${prefix}_post_id"]`);
+
+  if (!provinceSel) return;
+
+  // if options already pre-rendered server-side (edit form), skip AJAX initial load
+  if (provinceSel.options.length > 1) {
+    // just sync postal/post_id from the already-selected tambon option
+    if (tambonSel && tambonSel.value) {
+      const selectedOpt = tambonSel.options[tambonSel.selectedIndex];
+      if (selectedOpt && selectedOpt.dataset.postal) {
+        if (postalInput && !postalInput.value) postalInput.value = selectedOpt.dataset.postal;
+        if (postIdInput && !postIdInput.value) postIdInput.value = selectedOpt.dataset.postId;
+      }
+    }
+  } else {
+    // create form: no pre-rendered options, load via AJAX
+    const preProvince = provinceSel.dataset.value || '';
+    const preDistrict = districtSel ? (districtSel.dataset.value || '') : '';
+    const preTambon   = tambonSel   ? (tambonSel.dataset.value   || '') : '';
+
+    thLoadProvinces(provinceSel, preProvince, function () {
+      if (preProvince && districtSel) {
+        thLoadDistricts(districtSel, preProvince, preDistrict, function () {
+          if (preDistrict && tambonSel) {
+            thLoadTambons(tambonSel, postalInput, postIdInput, preProvince, preDistrict, preTambon);
+          }
+        });
+      }
+    });
+  }
+
+  $(provinceSel).on('change', function () {
+    const province = this.value;
+    if (districtSel) thLoadDistricts(districtSel, province, '', null);
+    if (tambonSel)   { tambonSel.innerHTML = '<option value="">-- เลือกตำบล --</option>'; tambonSel.disabled = true; }
+    if (postalInput) postalInput.value = '';
+    if (postIdInput) postIdInput.value = '';
+  });
+
+  if (districtSel) {
+    $(districtSel).on('change', function () {
+      const province = provinceSel.value;
+      const district = this.value;
+      if (tambonSel) thLoadTambons(tambonSel, postalInput, postIdInput, province, district, '', null);
+    });
+  }
+
+  if (tambonSel) {
+    $(tambonSel).on('change', function () {
+      const selected = this.options[this.selectedIndex];
+      if (selected && selected.dataset.postal) {
+        if (postalInput) postalInput.value = selected.dataset.postal;
+        if (postIdInput) postIdInput.value = selected.dataset.postId;
+      } else {
+        if (postalInput) postalInput.value = '';
+        if (postIdInput) postIdInput.value = '';
+      }
+    });
+  }
+}
+
+// sync doc dropdown from current values (used by sameAsCurrent checkbox)
+function syncDocFromCurrent(container) {
+  const province = container.querySelector('[name="current_province"]')?.value || '';
+  const district = container.querySelector('[name="current_district"]')?.value || '';
+  const tambon   = container.querySelector('[name="current_subdistrict"]')?.value || '';
+
+  const docProvinceSel = container.querySelector('[name="doc_province"]');
+  const docDistrictSel = container.querySelector('[name="doc_district"]');
+  const docTambonSel   = container.querySelector('[name="doc_subdistrict"]');
+  const docPostal      = container.querySelector('[name="doc_postal_code"]');
+  const docPostId      = container.querySelector('[name="doc_post_id"]');
+
+  // if doc selects already have the correct values pre-rendered, skip AJAX reload
+  if (docProvinceSel && docProvinceSel.value === province &&
+      docDistrictSel && docDistrictSel.value === district &&
+      docTambonSel   && docTambonSel.value   === tambon) {
+    if (tambon) {
+      const selectedOpt = docTambonSel.options[docTambonSel.selectedIndex];
+      if (selectedOpt && selectedOpt.dataset.postal) {
+        if (docPostal && !docPostal.value) docPostal.value = selectedOpt.dataset.postal;
+        if (docPostId && !docPostId.value) docPostId.value = selectedOpt.dataset.postId;
+      }
+    }
+    return;
+  }
+
+  if (docProvinceSel) docProvinceSel.value = province;
+
+  thLoadDistricts(docDistrictSel, province, district, function () {
+    thLoadTambons(docTambonSel, docPostal, docPostId, province, district, tambon);
+  });
+}
+
 //view more and edit : format id number, mobile, address sync
 function bindCustomerFormEvents(container = document) {
   const idInput = container.querySelector('#IDNumber');
@@ -225,59 +388,91 @@ function bindCustomerFormEvents(container = document) {
     phone2.addEventListener('input', e => (e.target.value = formatPhone(e.target.value)));
   }
 
-  // postal_code
-  function allowOnlyNumbers(input) {
-    input.addEventListener('input', e => {
-      e.target.value = e.target.value.replace(/\D/g, '');
-    });
-  }
-
-  const postalCurrent = container.querySelector('[name="current_postal_code"]');
-  const postalDoc = container.querySelector('[name="doc_postal_code"]');
-
-  if (postalCurrent) allowOnlyNumbers(postalCurrent);
-  if (postalDoc) allowOnlyNumbers(postalDoc);
+  // init cascading dropdowns
+  initAddressSection(container, 'current');
+  initAddressSection(container, 'doc');
 
   const checkbox = container.querySelector('#sameAsCurrent');
   if (checkbox) {
+    // flag to prevent uncheck loop when we programmatically set doc values
+    let syncing = false;
+
     checkbox.addEventListener('change', function () {
-      const fields = [
-        'house_number',
-        'group',
-        'village',
-        'alley',
-        'road',
-        'subdistrict',
-        'district',
-        'province',
-        'postal_code'
-      ];
+      const simpleFields = ['house_number', 'group', 'village', 'alley', 'road'];
 
-      fields.forEach(field => {
-        const currentField = container.querySelector(`[name="current_${field}"]`);
-        const docField = container.querySelector(`[name="doc_${field}"]`);
-
-        if (currentField && docField) {
-          if (checkbox.checked) {
-            docField.value = currentField.value;
-            docField.readOnly = true;
-          } else {
-            docField.readOnly = false;
-            docField.value = '';
-          }
-        }
-      });
+      if (checkbox.checked) {
+        // copy simple fields (no lock — user can still edit to deviate)
+        simpleFields.forEach(field => {
+          const currentField = container.querySelector(`[name="current_${field}"]`);
+          const docField = container.querySelector(`[name="doc_${field}"]`);
+          if (currentField && docField) docField.value = currentField.value;
+        });
+        syncDocFromCurrent(container);
+      } else {
+        // clear doc address section
+        simpleFields.forEach(field => {
+          const docField = container.querySelector(`[name="doc_${field}"]`);
+          if (docField) docField.value = '';
+        });
+        const docProvinceSel = container.querySelector('[name="doc_province"]');
+        const docDistrictSel = container.querySelector('[name="doc_district"]');
+        const docTambonSel   = container.querySelector('[name="doc_subdistrict"]');
+        const docPostal      = container.querySelector('[name="doc_postal_code"]');
+        const docPostId      = container.querySelector('[name="doc_post_id"]');
+        if (docProvinceSel) docProvinceSel.value = '';
+        if (docDistrictSel) { docDistrictSel.innerHTML = '<option value="">-- เลือกอำเภอ --</option>'; docDistrictSel.disabled = true; }
+        if (docTambonSel)   { docTambonSel.innerHTML   = '<option value="">-- เลือกตำบล --</option>';  docTambonSel.disabled   = true; }
+        if (docPostal) docPostal.value = '';
+        if (docPostId) docPostId.value = '';
+      }
     });
 
-    const currentFields = container.querySelectorAll('[name^="current_"]');
-    currentFields.forEach(input => {
-      input.addEventListener('input', () => {
-        if (checkbox.checked) {
-          const targetName = input.name.replace('current_', 'doc_');
-          const docField = container.querySelector(`[name="${targetName}"]`);
-          if (docField) docField.value = input.value;
-        }
-      });
+    // auto-uncheck if user edits any doc simple field
+    ['house_number', 'group', 'village', 'alley', 'road'].forEach(field => {
+      const docField = container.querySelector(`[name="doc_${field}"]`);
+      if (docField) {
+        docField.addEventListener('input', () => {
+          if (checkbox.checked && !syncing) checkbox.checked = false;
+        });
+      }
+    });
+
+    // auto-uncheck if user changes any doc address dropdown
+    ['province', 'district', 'subdistrict'].forEach(field => {
+      const docSel = container.querySelector(`[name="doc_${field}"]`);
+      if (docSel) {
+        docSel.addEventListener('change', () => {
+          if (checkbox.checked && !syncing) checkbox.checked = false;
+        });
+      }
+    });
+
+    // sync simple fields live when current changes (while checkbox is checked)
+    ['house_number', 'group', 'village', 'alley', 'road'].forEach(field => {
+      const currentField = container.querySelector(`[name="current_${field}"]`);
+      if (currentField) {
+        currentField.addEventListener('input', () => {
+          if (checkbox.checked) {
+            const docField = container.querySelector(`[name="doc_${field}"]`);
+            if (docField) docField.value = currentField.value;
+          }
+        });
+      }
+    });
+
+    // sync address dropdowns live when current changes (while checkbox is checked)
+    ['province', 'district', 'subdistrict'].forEach(field => {
+      const currentSel = container.querySelector(`[name="current_${field}"]`);
+      if (currentSel) {
+        currentSel.addEventListener('change', () => {
+          if (checkbox.checked) {
+            syncing = true;
+            syncDocFromCurrent(container);
+            // reset flag after async load finishes (give generous timeout)
+            setTimeout(() => { syncing = false; }, 2000);
+          }
+        });
+      }
     });
 
     if (checkbox.checked) {
@@ -330,7 +525,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const url = $(form).attr('action');
+
+    // enable disabled address selects so FormData includes their values
+    const disabledSelects = form.querySelectorAll('select[name$="_province"],select[name$="_district"],select[name$="_subdistrict"]');
+    disabledSelects.forEach(el => el.disabled = false);
     const formData = new FormData(form);
+    disabledSelects.forEach(el => { if (!el.value) el.disabled = true; });
 
     $.ajax({
       url: url,

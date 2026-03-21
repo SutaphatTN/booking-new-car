@@ -46,6 +46,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('customer/{id}/view-more', [CustomerController::class, 'viewMore'])->name('customer-viewMore');
     Route::get('customer/list', [CustomerController::class, 'listCustomer']); //customer table
     Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search'); //customer search
+    Route::get('/api/thailand/provinces', [CustomerController::class, 'getProvinces']);
+    Route::get('/api/thailand/districts', [CustomerController::class, 'getDistricts']);
+    Route::get('/api/thailand/tambons', [CustomerController::class, 'getTambons']);
 
     //purchase order -> search accessory, list purchase for view, get campaign, view more, pdf
     Route::get('/accessory/search', [PurchaseOrderController::class, 'searchAccessory'])->name('accessory.search');

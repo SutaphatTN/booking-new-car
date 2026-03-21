@@ -89,9 +89,11 @@
     <script>
         const IDLE_LIMIT = 10 * 60;
         const LOGOUT_LIMIT = 14 * 60;
+        const KEEP_ALIVE_INTERVAL = 5 * 60; // ping server ทุก 5 นาทีขณะ active
 
         let idleTime = 0;
         let countdownInterval = null;
+        let keepAliveTimer = 0;
 
         const csrfToken = document
             .querySelector('meta[name="csrf-token"]')
@@ -106,6 +108,21 @@
         });
 
         $(document).ajaxComplete(() => resetIdleTime());
+
+        // handle 419 CSRF expired globally
+        $(document).ajaxError(function (event, xhr) {
+            if (xhr.status === 419) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'เซสชันหมดอายุ',
+                    text: 'กรุณาเข้าสู่ระบบใหม่',
+                    confirmButtonText: 'ตกลง',
+                    allowOutsideClick: false
+                }).then(() => {
+                    window.location.href = "{{ route('login') }}";
+                });
+            }
+        });
 
         function doLogout() {
             fetch("{{ route('logout') }}", {
@@ -140,6 +157,13 @@
 
         setInterval(() => {
             idleTime++;
+            keepAliveTimer++;
+
+            // ping server ทุก 5 นาที ถ้า user ยัง active อยู่ (ป้องกัน session หมดอายุ)
+            if (keepAliveTimer >= KEEP_ALIVE_INTERVAL && idleTime < IDLE_LIMIT) {
+                keepAliveTimer = 0;
+                keepAlive();
+            }
 
             if (idleTime === IDLE_LIMIT) {
                 showIdleModal();
@@ -152,6 +176,7 @@
 
         document.getElementById('stayBtn')?.addEventListener('click', function() {
             idleTime = 0;
+            keepAliveTimer = 0;
             bootstrap.Modal
                 .getInstance(document.getElementById('idleModal'))
                 .hide();

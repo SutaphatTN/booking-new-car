@@ -215,28 +215,32 @@
               </div>
 
               <div class="col-md-4 mb-5">
-                <label for="current_subdistrict" class="form-label">ตำบล/แขวง</label>
-                <input id="current_subdistrict" type="text" name="current_subdistrict"
-                  class="form-control" required>
+                <label for="current_province" class="form-label">จังหวัด</label>
+                <select id="current_province" name="current_province" class="form-select" required>
+                  <option value="">-- เลือกจังหวัด --</option>
+                </select>
               </div>
 
               <div class="col-md-4 mb-5">
                 <label for="current_district" class="form-label">อำเภอ/เขต</label>
-                <input id="current_district" type="text" name="current_district"
-                  class="form-control" required>
+                <select id="current_district" name="current_district" class="form-select" required disabled>
+                  <option value="">-- เลือกอำเภอ --</option>
+                </select>
               </div>
 
               <div class="col-md-3 mb-5">
-                <label for="current_province" class="form-label">จังหวัด</label>
-                <input id="current_province" type="text" name="current_province"
-                  class="form-control" required>
+                <label for="current_subdistrict" class="form-label">ตำบล/แขวง</label>
+                <select id="current_subdistrict" name="current_subdistrict" class="form-select" required disabled>
+                  <option value="">-- เลือกตำบล --</option>
+                </select>
               </div>
 
               <div class="col-md-2 mb-5">
                 <label for="current_postal_code" class="form-label">เลขไปรษณีย์</label>
                 <input id="current_postal_code" type="text" name="current_postal_code"
-                  class="form-control" required>
+                  class="form-control" readonly>
               </div>
+              <input type="hidden" name="current_post_id">
             </div>
 
             <div class="row mt-5">
@@ -281,28 +285,32 @@
               </div>
 
               <div class="col-md-4 mb-5">
-                <label for="doc_subdistrict" class="form-label">ตำบล/แขวง</label>
-                <input id="doc_subdistrict" type="text" name="doc_subdistrict"
-                  class="form-control" required>
+                <label for="doc_province" class="form-label">จังหวัด</label>
+                <select id="doc_province" name="doc_province" class="form-select" required>
+                  <option value="">-- เลือกจังหวัด --</option>
+                </select>
               </div>
 
               <div class="col-md-4 mb-5">
                 <label for="doc_district" class="form-label">อำเภอ/เขต</label>
-                <input id="doc_district" type="text" name="doc_district"
-                  class="form-control" required>
+                <select id="doc_district" name="doc_district" class="form-select" required disabled>
+                  <option value="">-- เลือกอำเภอ --</option>
+                </select>
               </div>
 
               <div class="col-md-3 mb-5">
-                <label for="doc_province" class="form-label">จังหวัด</label>
-                <input id="doc_province" type="text" name="doc_province"
-                  class="form-control" required>
+                <label for="doc_subdistrict" class="form-label">ตำบล/แขวง</label>
+                <select id="doc_subdistrict" name="doc_subdistrict" class="form-select" required disabled>
+                  <option value="">-- เลือกตำบล --</option>
+                </select>
               </div>
 
               <div class="col-md-2 mb-5">
                 <label for="doc_postal_code" class="form-label">เลขไปรษณีย์</label>
                 <input id="doc_postal_code" type="text" name="doc_postal_code"
-                  class="form-control" required>
+                  class="form-control" readonly>
               </div>
+              <input type="hidden" name="doc_post_id">
             </div>
 
           </div>
