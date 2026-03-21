@@ -39,47 +39,6 @@ Route::get('/keep-alive', function () {
         ->header('Cache-Control', 'no-store');
 })->middleware('auth');
 
-Route::group(['middleware' => 'auth'], function () {
-    Route::get('/home', [HomeController::class, 'index'])->name('home');
-
-    // customer
-    Route::get('customer/{id}/view-more', [CustomerController::class, 'viewMore'])->name('customer-viewMore');
-    Route::get('customer/list', [CustomerController::class, 'listCustomer']); //customer table
-    Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search'); //customer search
-    Route::get('/api/thailand/provinces', [CustomerController::class, 'getProvinces']);
-    Route::get('/api/thailand/districts', [CustomerController::class, 'getDistricts']);
-    Route::get('/api/thailand/tambons', [CustomerController::class, 'getTambons']);
-
-    //purchase order -> search accessory, list purchase for view, get campaign, view more, pdf
-    Route::get('/accessory/search', [PurchaseOrderController::class, 'searchAccessory'])->name('accessory.search');
-    Route::get('purchase-order/list', [PurchaseOrderController::class, 'listPurchaseOrder']);
-    Route::get('/purchase-order/get-campaign', [PurchaseOrderController::class, 'getCampaign']);
-    Route::get('purchase-order/{id}/view-more', [PurchaseOrderController::class, 'viewMore'])->name('purchase-order-viewMore');
-    Route::get('purchase-order/summary/{id}', [PurchaseOrderController::class, 'summaryPurchase'])->name('purchase-order.summary');
-    Route::get('/api/purchase-order/sub-model/{model_id}', [PurchaseOrderController::class, 'getSubModelPurchase']);
-    Route::get('purchase-order/{id}/preview', [PurchaseOrderController::class, 'preview'])->name('purchase-order.preview');
-    Route::get('purchase-order/viewPO', [PurchaseOrderController::class, 'viewPO'])->name('purchase-order.viewPO');
-    Route::get('purchase-order/list-po', [PurchaseOrderController::class, 'listPO']);
-    Route::get('purchase-order/viewBooking', [PurchaseOrderController::class, 'viewBooking'])->name('purchase-order.viewBooking');
-    Route::get('purchase-order/list-booking', [PurchaseOrderController::class, 'listBooking']);
-    Route::get('purchase-order/history', [PurchaseOrderController::class, 'history'])->name('purchase-order.history');
-    Route::get('purchase-order/list-history', [PurchaseOrderController::class, 'listHistory']);
-    Route::get('purchase-order/view-more-history/{id}', [PurchaseOrderController::class, 'viewMoreHistory']);
-    Route::post('/purchase-order/{id}/cancel-car-order', [PurchaseOrderController::class, 'cancelCarOrder']);
-    Route::get('/purchase-order/search', [PurchaseOrderController::class, 'search'])->name('purchase-order.search');
-    Route::get('/purchase-order/booking-export', [PurchaseOrderController::class, 'exportBooking'])->name('purchase-order.booking-export');
-    //commission sale
-    Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('sale.viewCommission');
-    Route::get('purchase-order/list-Commission', [PurchaseOrderController::class, 'listCommission']);
-
-    //logout
-    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-
-    //all resource
-    Route::resource('customer', CustomerController::class);
-    Route::resource('purchase-order', PurchaseOrderController::class);
-});
-
 Route::middleware(['auth', 'notsale'])->group(function () {
 
     // purchase-order
@@ -89,6 +48,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('purchase-order/edit-fn/{id}', [FinanceController::class, 'editFN'])->name('purchase-order.editFN');
     Route::put('purchase-order/update-fn/{id}', [FinanceController::class, 'updateFN'])->name('purchase-order.updateFN');
     Route::delete('purchase-order/destroy-fn/{id}', [FinanceController::class, 'destroyFN'])->name('purchase-order.destroyFN');
+    Route::get('/purchase-order/booking-export', [PurchaseOrderController::class, 'exportBooking'])->name('purchase-order.booking-export');
     //commission sale report
     Route::get('purchase-order/view-export-commission', [PurchaseOrderController::class, 'viewExportCommission'])->name('purchase-order.view-export-commission');
     Route::get('/purchase-order/sale-com-export', [PurchaseOrderController::class, 'exportSaleCom'])->name('purchase-order.sale-com-export');
@@ -260,6 +220,41 @@ Route::middleware(['auth', 'notsale'])->group(function () {
         ->name('forecast.calculate');
 });
 
+Route::group(['middleware' => 'auth'], function () {
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
+
+    // customer
+    Route::get('customer/{id}/view-more', [CustomerController::class, 'viewMore'])->name('customer-viewMore');
+    Route::get('customer/list', [CustomerController::class, 'listCustomer']);
+    Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
+    Route::get('/api/thailand/provinces', [CustomerController::class, 'getProvinces']);
+    Route::get('/api/thailand/districts', [CustomerController::class, 'getDistricts']);
+    Route::get('/api/thailand/tambons', [CustomerController::class, 'getTambons']);
+
+    //purchase order -> search accessory, list purchase for view, get campaign, view more, pdf
+    Route::get('/accessory/search', [PurchaseOrderController::class, 'searchAccessory'])->name('accessory.search');
+    Route::get('purchase-order/list', [PurchaseOrderController::class, 'listPurchaseOrder']);
+    Route::get('/purchase-order/get-campaign', [PurchaseOrderController::class, 'getCampaign']);
+    Route::get('purchase-order/summary/{id}', [PurchaseOrderController::class, 'summaryPurchase'])->name('purchase-order.summary');
+    Route::get('/api/purchase-order/sub-model/{model_id}', [PurchaseOrderController::class, 'getSubModelPurchase']);
+    Route::get('purchase-order/{id}/preview', [PurchaseOrderController::class, 'preview'])->name('purchase-order.preview');
+    Route::get('purchase-order/viewPO', [PurchaseOrderController::class, 'viewPO'])->name('purchase-order.viewPO');
+    Route::get('purchase-order/list-po', [PurchaseOrderController::class, 'listPO']);
+    Route::get('purchase-order/viewBooking', [PurchaseOrderController::class, 'viewBooking'])->name('purchase-order.viewBooking');
+    Route::get('purchase-order/list-booking', [PurchaseOrderController::class, 'listBooking']);
+    Route::get('purchase-order/history', [PurchaseOrderController::class, 'history'])->name('purchase-order.history');
+    Route::get('purchase-order/list-history', [PurchaseOrderController::class, 'listHistory']);
+    Route::get('purchase-order/view-more-history/{id}', [PurchaseOrderController::class, 'viewMoreHistory']);
+    Route::post('/purchase-order/{id}/cancel-car-order', [PurchaseOrderController::class, 'cancelCarOrder']);
+    Route::get('/purchase-order/search', [PurchaseOrderController::class, 'search'])->name('purchase-order.search');
+    //commission sale
+    Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('sale.viewCommission');
+    Route::get('purchase-order/list-Commission', [PurchaseOrderController::class, 'listCommission']);
+
+    //all resource
+    Route::resource('customer', CustomerController::class);
+    Route::resource('purchase-order', PurchaseOrderController::class);
+});
 
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
