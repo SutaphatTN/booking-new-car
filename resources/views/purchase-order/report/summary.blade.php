@@ -513,16 +513,22 @@
         </span>
 
         <span class="label">
-          เหลืองบ :
+          {{ is_numeric($balanceCam2 ?? null) && $balanceCam2 < 0 ? 'เกินงบ' : 'เหลืองบ' }} :
           <span style="font-weight: normal;">
             {{ is_numeric($balanceCam2 ?? null) ? number_format($balanceCam2, 2) . ' บาท' : '-' }}
           </span>
         </span>
 
+        @php
+          $balanceCamHalf = $saleCar->balanceCampaign ?? null;
+          $perBudgetHalf = $saleCar->model->per_budget ?? 0;
+          $isNegativeHalf = is_numeric($balanceCamHalf) && $balanceCamHalf < 0;
+          $displayBalanceCamHalf = $isNegativeHalf ? $balanceCamHalf * 2 * ($perBudgetHalf / 100) : $balanceCamHalf;
+        @endphp
         <span class="label">
-          เหลืองบ (แบ่ง 2 ส่วน) :
+          {{ $isNegativeHalf ? 'หักคอม' : 'เหลืองบ (แบ่ง 2 ส่วน)' }} :
           <span style="font-weight: normal;">
-            {{ is_numeric($saleCar->balanceCampaign ?? null) ? number_format($saleCar->balanceCampaign, 2) . ' บาท' : '-' }}
+            {{ is_numeric($displayBalanceCamHalf) ? number_format($displayBalanceCamHalf, 2) . ' บาท' : '-' }}
           </span>
         </span>
       @else
@@ -559,16 +565,22 @@
         </span>
 
         <span class="label">
-          เหลืองบ :
+          {{ is_numeric($balanceCash ?? null) && $balanceCash < 0 ? 'เกินงบ' : 'เหลืองบ' }} :
           <span style="font-weight: normal;">
             {{ is_numeric($balanceCash ?? null) ? number_format($balanceCash, 2) . ' บาท' : '-' }}
           </span>
         </span>
 
+        @php
+          $balanceCamHalf2 = $saleCar->balanceCampaign ?? null;
+          $perBudgetHalf2 = $saleCar->model->per_budget ?? 0;
+          $isNegativeHalf2 = is_numeric($balanceCamHalf2) && $balanceCamHalf2 < 0;
+          $displayBalanceCamHalf2 = $isNegativeHalf2 ? $balanceCamHalf2 * 2 * ($perBudgetHalf2 / 100) : $balanceCamHalf2;
+        @endphp
         <span class="label">
-          เหลืองบ (แบ่ง 2 ส่วน) :
+          {{ $isNegativeHalf2 ? 'หักคอม' : 'เหลืองบ (แบ่ง 2 ส่วน)' }} :
           <span style="font-weight: normal;">
-            {{ is_numeric($saleCar->balanceCampaign ?? null) ? number_format($saleCar->balanceCampaign, 2) . ' บาท' : '-' }}
+            {{ is_numeric($displayBalanceCamHalf2) ? number_format($displayBalanceCamHalf2, 2) . ' บาท' : '-' }}
           </span>
         </span>
       @endif

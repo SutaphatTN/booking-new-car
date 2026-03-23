@@ -39,6 +39,10 @@ Route::get('/keep-alive', function () {
         ->header('Cache-Control', 'no-store');
 })->middleware('auth');
 
+Route::middleware('auth')->group(function () {
+    Route::get('/accessory/search', [PurchaseOrderController::class, 'searchAccessory'])->name('accessory.search');
+});
+
 Route::middleware(['auth', 'notsale'])->group(function () {
 
     // purchase-order
@@ -116,7 +120,6 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('sub-model-car/list', [SubModelCarController::class, 'listSubCar']);
     Route::get('sub-model-car/{id}/view-more', [SubModelCarController::class, 'viewMore'])->name('sub-model-car.viewMore');
     Route::post('/sub-model-car/status-sub-car', [SubModelCarController::class, 'statusSubCar'])->name('sub-model-car.status-sub-car');
-
 
     //car-order
     Route::get('car-order/list', [CarOrderController::class, 'listCarOrder']);
@@ -231,8 +234,6 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/api/thailand/districts', [CustomerController::class, 'getDistricts']);
     Route::get('/api/thailand/tambons', [CustomerController::class, 'getTambons']);
 
-    //purchase order -> search accessory, list purchase for view, get campaign, view more, pdf
-    Route::get('/accessory/search', [PurchaseOrderController::class, 'searchAccessory'])->name('accessory.search');
     Route::get('purchase-order/list', [PurchaseOrderController::class, 'listPurchaseOrder']);
     Route::get('/purchase-order/get-campaign', [PurchaseOrderController::class, 'getCampaign']);
     Route::get('purchase-order/summary/{id}', [PurchaseOrderController::class, 'summaryPurchase'])->name('purchase-order.summary');

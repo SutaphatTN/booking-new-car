@@ -1744,7 +1744,7 @@ function calculateCommissionSale() {
   if (balanceCam >= 0) {
     balanceCam = Math.min(balanceCam, 2500);
   } else {
-    balanceCam = balanceCam * (perBudget / 100);
+    balanceCam = balanceCam * 2 * (perBudget / 100);
   }
 
   const totalCommission = balanceCam + giftCom + extraCom + fiCom + turnCom + comSpecial;
@@ -2573,7 +2573,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let DeliveryInCKDate = formatThaiDate('DeliveryInCKDate');
 
     const AdminSignature = document.querySelector('#AdminSignature').checked
-      ? 'เช็ครายการเรียบร้อยแล้ว'
+     ? 'เช็ครายการเรียบร้อยแล้ว'
       : '-';
     let AdminCheckedDate = formatThaiDate('AdminCheckedDate');
     const CheckerID = document.querySelector('#CheckerID').checked ? 'เช็ครายการเรียบร้อยแล้ว' : '-';
@@ -2582,11 +2582,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let SMCheckedDate = formatThaiDate('SMCheckedDate');
 
     const ApprovalSignature = document.querySelector('#ApprovalSignature').checked
-      ? 'อนุมัติเรียบร้อยแล้ว'
+     ? 'อนุมัติเรียบร้อยแล้ว'
       : '-';
     let ApprovalSignatureDate = formatThaiDate('ApprovalSignatureDate');
     const GMApprovalSignature = document.querySelector('#GMApprovalSignature').checked
-      ? 'อนุมัติเรียบร้อยแล้ว'
+     ? 'อนุมัติเรียบร้อยแล้ว'
       : '-';
     let GMApprovalSignatureDate = formatThaiDate('GMApprovalSignatureDate');
     let DeliveryEstimateDate = formatThaiDate('DeliveryEstimateDate', 'month');
