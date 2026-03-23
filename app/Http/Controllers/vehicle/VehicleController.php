@@ -52,7 +52,8 @@ class VehicleController extends Controller
 
         if ($status === 'withdrawal') {
             $query->whereHas('vehicleLicense', function ($q) {
-                $q->whereNotNull('withdrawal_date');
+                $q->whereNotNull('withdrawal_date')
+                    ->whereNull('backup_clear_date');
             });
         }
 
@@ -193,6 +194,7 @@ class VehicleController extends Controller
     {
         $withdrawalData = Salecar::with(['carOrder', 'vehicleLicense', 'customer'])
             ->whereNotNull('CarOrderID')
+            ->whereNotNull('red_license')
             ->where(function ($q) {
                 $q->where('payment_mode', 'non-finance')
                     ->orWhere(function ($q2) {
@@ -211,6 +213,7 @@ class VehicleController extends Controller
 
         $clearData = Salecar::with(['carOrder', 'vehicleLicense', 'customer'])
             ->whereNotNull('CarOrderID')
+            ->whereNotNull('red_license')
             ->whereHas('vehicleLicense', function ($q) {
                 $q->whereNotNull('withdrawal_date')
                     ->whereNull('backup_clear_date');

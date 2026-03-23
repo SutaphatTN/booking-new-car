@@ -45,7 +45,7 @@ class LicenseController extends Controller
         'date' => $p->is_used
           ? ($history?->saleCarLic?->format_delivery_date ?? '-')
           : '-',
-        'Action' => $history
+        'Action' => ($history && $p->is_used)
           ? view('number_register.license.button', [
             'plate' => $p,
             'history' => $history

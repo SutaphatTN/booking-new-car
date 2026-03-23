@@ -30,7 +30,7 @@
               <div>
                 <select id="withdrawalStatusFilter" class="form-select">
                   <option value="unWithdrawal" selected>ยังไม่ได้ตั้งเบิก</option>
-                  <option value="withdrawal">ตั้งเบิกแล้ว</option>
+                  <option value="withdrawal">รอเคลียร์</option>
                   <option value="all">ทั้งหมด</option>
                 </select>
               </div>

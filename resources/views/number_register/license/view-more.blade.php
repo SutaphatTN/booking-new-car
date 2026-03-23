@@ -84,7 +84,7 @@
           <div class="col-md-2 mb-5">
             <label for="refund_amount" class="form-label">ยอดคืนเงิน</label>
             <input id="refund_amount" type="text" class="form-control text-end money-input"
-              value="{{ number_format($lic->refund_amount ?? 3000, 2) }}" disabled>
+              value="{{ number_format($lic->refund_amount, 2) ?? '' }}" disabled>
           </div>
 
           @php
