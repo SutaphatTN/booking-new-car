@@ -30,6 +30,7 @@ class VehicleController extends Controller
             'financeConfirm'
         ])
             ->whereNotNull('CarOrderID')
+            ->whereNotNull('red_license')
             ->where(function ($q) {
                 $q->where('payment_mode', 'non-finance')
                     ->orWhere(function ($q2) {
