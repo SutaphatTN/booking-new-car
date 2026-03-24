@@ -39,6 +39,10 @@
                 @if (auth()->user()->brand == 2)
                   <option value="GWM">GWM</option>
                 @endif
+
+                @if (auth()->user()->brand == 3)
+                  <option value="WULING">WULING</option>
+                @endif
                 <option value="OTHDealer">OTHDealer</option>
               </select>
 

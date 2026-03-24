@@ -289,7 +289,18 @@
               <label for="purchase_source" class="form-label">แหล่งที่มา</label>
               <select id="purchase_source" name="purchase_source" class="form-select" required>
                 <option value="">-- เลือกแหล่งที่มา --</option>
-                <option value="MMTH" {{ $order->purchase_source == 'MMTH' ? 'selected' : '' }}>MMTH</option>
+                @if (auth()->user()->brand == 1)
+                  <option value="MMTH" {{ $order->purchase_source == 'MMTH' ? 'selected' : '' }}>MMTH</option>
+                @endif
+
+                @if (auth()->user()->brand == 2)
+                  <option value="GWM" {{ $order->purchase_source == 'GWM' ? 'selected' : '' }}>GWM</option>
+                @endif
+
+                @if (auth()->user()->brand == 3)
+                  <option value="WULING" {{ $order->purchase_source == 'WULING' ? 'selected' : '' }}>WULING</option>
+                @endif
+                
                 <option value="OTHDealer" {{ $order->purchase_source == 'OTHDealer' ? 'selected' : '' }}>OTHDealer
                 </option>
               </select>
