@@ -8,14 +8,16 @@
   <div class="app-brand demo">
     <a href="{{ url('/home') }}" class="app-brand-link">
       @if (auth()->user()->brand == 2)
-        <img src="{{ asset('assets/img/Gwm_logoCrop.png') }}" width="50" class="me-2">
+        <img src="{{ asset('assets/img/Gwm_logoCrop.png') }}" width="180" class="me-2">
+        {{-- <span class="app-brand-text demo menu-text fw-bold ms-2">GWM</span> --}}
       @elseif (auth()->user()->brand == 3)
         <img src="{{ asset('assets/img/Wuling_logoCrop.jpg') }}" width="50" class="me-2">
+        <span class="app-brand-text demo menu-text fw-bold ms-2">Wuling</span>
       @else
         <img src="{{ asset('assets/img/Mitsubishi_logoCrop.png') }}" width="40" class="me-2">
+        <span class="app-brand-text demo menu-text fw-bold ms-2">New Car</span>
       @endif
       <!-- <span class="app-brand-logo demo">@include('_partials.macros')</span> -->
-      <span class="app-brand-text demo menu-text fw-bold ms-2">New Car</span>
     </a>
 
     <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">

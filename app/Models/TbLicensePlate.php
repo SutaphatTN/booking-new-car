@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Traits\UserAccessScope;
 use Illuminate\Database\Eloquent\Model;
 
 class TbLicensePlate extends Model
 {
+	use UserAccessScope;
+	
 	protected $table = 'tb_license_plate';
 
 	protected $fillable = [

@@ -27,9 +27,10 @@
     <link rel="canonical" href="{{ config('variables.productPage') ? config('variables.productPage') : '' }}" />
     <!-- Favicon -->
     @if (auth()->user()->brand == 2)
-    <link rel="icon" type="image/png" href="{{ asset('assets/img/Gwm_logoCrop32.png') }}">
-    <link rel="icon" type="image/png" href="{{ asset('assets/img/Gwm_logoCrop16.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('assets/img/Gwm_logoCrop180.png') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/img/GWM-Steed.svg') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/img/GWM-Steed.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/img/GWM-Steed.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/GWM-Steed.png') }}">
     @elseif (auth()->user()->brand == 3)
     <link rel="icon" type="image/png" href="{{ asset('assets/img/Wuling_logoCrop32.jpg') }}">
     <link rel="icon" type="image/png" href="{{ asset('assets/img/Wuling_logoCrop16.jpg') }}">

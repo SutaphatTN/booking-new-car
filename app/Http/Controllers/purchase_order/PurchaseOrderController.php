@@ -6,7 +6,8 @@ use App\Exports\booking\BookingExport;
 use App\Exports\commission\SaleCommissionExport;
 use App\Exports\gp\GPExport;
 use App\Exports\gwm\GwmExport;
-use App\Exports\saleCar\SaleCarExport;
+use App\Exports\saleCar\SaleCarBookingExport;
+use App\Exports\saleCar\SaleCarEstimatedExport;
 use App\Http\Controllers\Controller;
 use App\Mail\SaleRequestMail;
 use App\Models\TbCarmodel;
@@ -1555,18 +1556,17 @@ class PurchaseOrderController extends Controller
         return Excel::download(new GPExport($fromDate, $toDate), 'gp-report.xlsx');
     }
 
-    // report saleCar
+    // report sale Estimated
     public function viewExportSaleCar()
     {
-        return view('purchase-order.report.saleCar.view');
+        return view('purchase-order.report.saleCar.estimated.view');
     }
 
     public function exportSaleCar(Request $request)
     {
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
-        $toDate   = $request->to_date   ?? now()->format('Y-m');
 
-        return Excel::download(new SaleCarExport($fromDate, $toDate), 'ข้อมูลการจอง.xlsx');
+        return Excel::download(new SaleCarEstimatedExport($fromDate), 'ข้อมูลประมาณการ.xlsx');
     }
 
     //report gwm
@@ -1580,5 +1580,21 @@ class PurchaseOrderController extends Controller
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
 
         return Excel::download(new GwmExport($fromDate), 'ข้อมูลรถ GWM.xlsx');
+    }
+
+    // report sale Booking
+    public function viewExportSaleBooking()
+    {
+        $conStatus = TbConStatus::all();
+        return view('purchase-order.report.saleCar.booking.view', compact('conStatus'));
+    }
+
+    public function exportSaleBooking(Request $request)
+    {
+        $fromDate = $request->from_date ?: null;
+        $toDate   = $request->to_date   ?: null;
+        $status   = $request->con_status ?: null;
+
+        return Excel::download(new SaleCarBookingExport($fromDate, $toDate, $status), 'ข้อมูลการจอง.xlsx');
     }
 }

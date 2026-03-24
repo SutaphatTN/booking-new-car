@@ -2,7 +2,7 @@
 
 namespace App\Exports\saleCar;
 
-use App\Models\Salecar;
+use App\Services\SaleBookingQuery;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\FromView;
@@ -16,20 +16,18 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 
-class SaleCarExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
+class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
     protected $fromDate;
-    protected $toDate;
 
-    public function __construct($fromDate = null, $toDate = null)
+    public function __construct($fromDate = null)
     {
         $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m');
-        $this->toDate   = $toDate   ?? now()->format('Y-m');
     }
 
     public function title(): string
     {
-        return 'สรุปข้อมูลการจอง';
+        return 'สรุปข้อมูลประมาณการ';
     }
 
     public function styles(Worksheet $sheet)
@@ -91,28 +89,32 @@ class SaleCarExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
 
                 // สี sheet
                 $sheet->getTabColor()->setRGB('d7a2ff');
+
+                // format comma
+                $numberColumns = [
+                    'I',
+                    'J'
+                ];
+
+                foreach ($numberColumns as $col) {
+                    $sheet->getStyle("{$col}2:{$col}{$highestRow}")
+                        ->getNumberFormat()
+                        ->setFormatCode('#,##0.00');
+                }
             },
         ];
     }
 
     public function view(): View
     {
-        $start = Carbon::createFromFormat('Y-m', $this->fromDate)->startOfMonth();
-        $end   = Carbon::createFromFormat('Y-m', $this->toDate)->endOfMonth();
+        $date = Carbon::createFromFormat('Y-m', $this->fromDate)->startOfMonth();
 
-        $rows = Salecar::with([
-            'customer.prefix',
-            'carOrder.model',
-            'carOrder.subModel',
-            'carOrder.orderStatus',
-            'carOrder',
-            'gwmColor',
-            'interiorColor',
-            'financeConfirm',
-            'remainingPayment',
-            'remainingPayment.financeInfo',
-        ])
-            ->whereBetween('DeliveryInDMSDate', [$start, $end])
+        $month = $date->month;
+        $year  = $date->year;
+
+        $rows = SaleBookingQuery::base()
+            ->whereMonth('DeliveryEstimateDate', $month)
+            ->whereYear('DeliveryEstimateDate', $year)
             ->get();
 
         $data = $rows->map(function ($r) {
@@ -146,15 +148,21 @@ class SaleCarExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
                 'color'      => $color,
                 'interior_color' => $interiorColor,
                 'year'       => $r->Year ?? '-',
-                'bookingDate' => $r?->format_booking_date ?? '',
+                'car_MSRP' => $r->carOrder?->car_MSRP ?? '-',
+                'reservation_cost' => $r->CashDeposit ?? '-',
+                'bookingDate' => $r?->format_booking_date ?? '-',
                 'name_fi'       => $r->remainingPayment->financeInfo->FinanceCompany ?? '-',
                 'order_status' => $r->carOrder->orderStatus->name ?? '-',
                 'contract_date' => $r?->remainingPayment->format_contract_date ?? '',
-                'DeliveryEstimateDate' => $r?->format_delivery_estimate_date ?? '',
+                'ck_date' => $r?->format_ck_date ?? '-',
+                'dms_date' => $r?->format_dms_date ?? '-',
+                'DeliveryEstimateDate' => $r?->format_delivery_estimate_date ?? '-',
+                'DeliveryDate' => $r?->format_delivery_date ?? '-',
+                'status' => $r?->conStatus?->name ?? '-',
             ];
         });
 
-        return view('purchase-order.report.saleCar.summary', [
+        return view('purchase-order.report.saleCar.estimated.summary', [
             'sale' => $data
         ]);
     }

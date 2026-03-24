@@ -59,9 +59,12 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     //GP Report
     Route::get('purchase-order/view-export-gp', [PurchaseOrderController::class, 'viewExportGP'])->name('purchase-order.view-export-gp');
     Route::get('/purchase-order/gp-export', [PurchaseOrderController::class, 'exportGP'])->name('purchase-order.gp-export');
-    // sale car report
+    // sale car Estimated report
     Route::get('purchase-order/view-export-saleCar', [PurchaseOrderController::class, 'viewExportSaleCar'])->name('purchase-order.view-export-saleCar');
     Route::get('/purchase-order/saleCar-export', [PurchaseOrderController::class, 'exportSaleCar'])->name('purchase-order.saleCar-export');
+    //sale car booking report 
+    Route::get('purchase-order/view-export-saleBooking', [PurchaseOrderController::class, 'viewExportSaleBooking'])->name('purchase-order.view-export-saleBooking');
+    Route::get('/purchase-order/saleBooking-export', [PurchaseOrderController::class, 'exportSaleBooking'])->name('purchase-order.saleBooking-export');
     //report gwm stock
     Route::get('purchase-order/view-export-gwm-stock', [PurchaseOrderController::class, 'viewExportGwmStock'])->name('purchase-order.view-export-gwm-stock');
     Route::get('/purchase-order/gwm-stock-export', [PurchaseOrderController::class, 'gwmStockExport'])->name('purchase-order.gwm-stock-export');

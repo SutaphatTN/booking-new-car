@@ -7,6 +7,6 @@
 
 @section('content')
 
-@include('purchase-order.report.saleCar.modal')
+@include('purchase-order.report.saleCar.estimated.modal')
 
 @endsection
