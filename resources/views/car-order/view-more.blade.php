@@ -238,6 +238,14 @@
               value="{{ $order->format_order_invoice_date }}" disabled />
           </div>
 
+          @if (auth()->user()->brand == 2)
+            <div class="col-md-3 mb-3">
+              <label for="fp_date" class="form-label">วันที่จ่าย FP</label>
+              <input type="text" id="fp_date" name="fp_date" class="form-control"
+                value="{{ $order->format_fp_date }}" disabled />
+            </div>
+          @endif
+
           <div class="col-md-3 mb-5">
             <label for="order_stock_date" class="form-label">วันที่สต็อค</label>
             <input id="order_stock_date" class="form-control" type="text"

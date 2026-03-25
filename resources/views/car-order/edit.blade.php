@@ -425,10 +425,20 @@
               </div>
             </div>
 
-            <div id="fieldInvoice" class="col-md-3 mb-5 d-none">
-              <label for="order_invoice_date" class="form-label">วันที่ซื้อ (วันที่ออกใบกำกับ)</label>
-              <input type="date" id="order_invoice_date" name="order_invoice_date" class="form-control"
-                value="{{ $order->order_invoice_date }}">
+            <div id="fieldInvoice" class="col-md-12 row d-none">
+              <div class="col-md-3 mb-3">
+                <label for="order_invoice_date" class="form-label">วันที่ซื้อ (วันที่ออกใบกำกับ)</label>
+                <input type="date" id="order_invoice_date" name="order_invoice_date" class="form-control"
+                  value="{{ $order->order_invoice_date }}">
+              </div>
+
+              @if (auth()->user()->brand == 2)
+                <div class="col-md-3 mb-3">
+                  <label for="fp_date" class="form-label">วันที่จ่าย FP</label>
+                  <input type="date" id="fp_date" name="fp_date" class="form-control"
+                    value="{{ $order->fp_date }}">
+                </div>
+              @endif
             </div>
 
             <div id="fieldStock" class="col-md-12 row d-none">

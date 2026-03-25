@@ -38,6 +38,10 @@
         @continue
       @endif
 
+      @if (auth()->user()->brand == 2 && $menu->slug === 'sale.viewCommission')
+        @continue
+      @endif
+
       {{-- adding active and open class if child is active --}}
 
       {{-- menu headers --}}

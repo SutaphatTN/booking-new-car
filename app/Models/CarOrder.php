@@ -39,6 +39,7 @@ class CarOrder extends Model
         'purchase_type',
         'order_status',
         'order_invoice_date',
+        'fp_date',
         'order_stock_date',
         'cancel_date',
         'car_DNP',
@@ -191,5 +192,15 @@ class CarOrder extends Model
     public function getApproverDateAttribute($value)
     {
         return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+    }
+
+    public function getFpDateAttribute($value)
+    {
+        return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+    }
+
+    public function getFormatFpDateAttribute()
+    {
+        return $this->fp_date ? Carbon::parse($this->fp_date)->format('d-m-Y') : null;
     }
 }

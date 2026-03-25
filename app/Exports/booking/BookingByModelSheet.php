@@ -243,6 +243,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'con_status'  => $sale?->conStatus?->name ?? '',
         'sale'        => $sale?->saleUser?->name ?? '',
         'bookingDate' => $sale?->format_booking_date ?? '',
+        'DeliveryEstimateDate' => $sale?->format_delivery_estimate_date ?? '',
         'status'      => $sale?->conStatus?->name ?? '',
         'daysBind' => (
           $sale
@@ -316,6 +317,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'con_status'  => $sale->conStatus?->name ?? '',
         'sale'        => $sale->saleUser?->name ?? '',
         'bookingDate' => $sale->format_booking_date ?? '',
+        'DeliveryEstimateDate' => $sale->format_delivery_estimate_date ?? '',
         'status'      => $sale?->conStatus?->name ?? '',
         'daysBind' => '',
         'allocation_status' => '',

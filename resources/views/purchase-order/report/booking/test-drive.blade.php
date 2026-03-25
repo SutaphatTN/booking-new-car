@@ -4,11 +4,13 @@
       <th>รุ่นหลัก</th>
       <th>รุ่นย่อย</th>
       <th>สี</th>
-      @if(auth()->user()->brand == 2)
-      <th>สีภายใน</th>
+      @if (auth()->user()->brand == 2)
+        <th>สีภายใน</th>
       @endif
       <th>ปี</th>
-      <th>Option</th>
+      @if (auth()->user()->brand != 2)
+        <th>Option</th>
+      @endif
       <th>ราคาขาย</th>
       <th>แคมเปญทดลองขับ</th>
       <th>เลขไมล์</th>
@@ -23,32 +25,34 @@
   </thead>
   <tbody>
     @forelse ($testD as $t)
-    <tr>
-      <td>{{ $t['model'] }}</td>
-      <td>{{ $t['subModel'] }}</td>
-      <td>{{ $t['color'] }}</td>
-      @if(auth()->user()->brand == 2)
-      <td>{{ $t['interior_color'] }}</td>
-      @endif
-      <td>{{ $t['year'] }}</td>
-      <td>{{ $t['option'] }}</td>
-      <td>{{ $t['car_MSRP'] }}</td>
-      <td>{{ $t['cam_testdrive'] }}</td>
-      <td>{{ $t['mileage_test'] }}</td>
-      <td>{{ $t['order_status'] }}</td>
-      <td>{{ $t['vin_number'] }}</td>
-      <td>{{ $t['customer'] }}</td>
-      <td>{{ $t['status'] }}</td>
-      <td>{{ $t['sale'] }}</td>
-      <td>{{ $t['bookingDate'] }}</td>
-      <td>{{ $t['note_accessory'] }}</td>
-    </tr>
+      <tr>
+        <td>{{ $t['model'] }}</td>
+        <td>{{ $t['subModel'] }}</td>
+        <td>{{ $t['color'] }}</td>
+        @if (auth()->user()->brand == 2)
+          <td>{{ $t['interior_color'] }}</td>
+        @endif
+        <td>{{ $t['year'] }}</td>
+        @if (auth()->user()->brand != 2)
+          <td>{{ $t['option'] }}</td>
+        @endif
+        <td>{{ $t['car_MSRP'] }}</td>
+        <td>{{ $t['cam_testdrive'] }}</td>
+        <td>{{ $t['mileage_test'] }}</td>
+        <td>{{ $t['order_status'] }}</td>
+        <td>{{ $t['vin_number'] }}</td>
+        <td>{{ $t['customer'] }}</td>
+        <td>{{ $t['status'] }}</td>
+        <td>{{ $t['sale'] }}</td>
+        <td>{{ $t['bookingDate'] }}</td>
+        <td>{{ $t['note_accessory'] }}</td>
+      </tr>
     @empty
-    <tr>
-      <td colspan="{{ auth()->user()->brand == 2 ? 16 : 15 }}" align="center">
-        ไม่มีข้อมูล
-      </td>
-    </tr>
+      <tr>
+        <td colspan="15" align="center">
+          ไม่มีข้อมูล
+        </td>
+      </tr>
     @endforelse
   </tbody>
 </table>

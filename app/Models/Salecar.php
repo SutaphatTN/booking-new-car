@@ -155,6 +155,7 @@ class Salecar extends Model
 		'DeliveryDate',
 		'DeliveryInDMSDate',
 		'DeliveryInCKDate',
+		'CancelDate',
 		'RegistrationProvince',
 		'RedPlateReceived',
 		'RedPlateAmount',
@@ -479,5 +480,15 @@ class Salecar extends Model
 	public function getFormatDeliveryDateSumAttribute()
 	{
 		return $this->DeliveryDate ? Carbon::parse($this->DeliveryDate)->format('d/m/Y') : null;
+	}
+
+	public function getCancelDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getFormatCancelDateAttribute()
+	{
+		return $this->CancelDate ? Carbon::parse($this->CancelDate)->format('d-m-Y') : null;
 	}
 }
