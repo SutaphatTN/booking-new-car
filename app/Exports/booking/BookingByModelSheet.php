@@ -119,6 +119,17 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         $sheet->getTabColor()->setRGB(
           $colorMap[$sheetName] ?? '808080'
         );
+
+        // format comma
+        $numberColumns = [
+          'F'
+        ];
+
+        foreach ($numberColumns as $col) {
+          $sheet->getStyle("{$col}2:{$col}{$highestRow}")
+            ->getNumberFormat()
+            ->setFormatCode('#,##0.00');
+        }
       },
     ];
   }
@@ -194,7 +205,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
 
       $rows->push([
         'subModel' => $order->subModel
-          ? ($order->subModel->detail
+          ? (trim($order->subModel->detail ?? '')
             ? $order->subModel->detail . ' - ' . $order->subModel->name
             : $order->subModel->name)
           : '-',
@@ -277,10 +288,10 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
 
       $rows->push([
         'subModel' => $sale->subModel
-          ? ($sale->subModel->detail
+          ? (trim($sale->subModel->detail ?? '')
             ? $sale->subModel->detail . ' - ' . $sale->subModel->name
             : $sale->subModel->name)
-          : 'ยังไม่ผูกรถ',
+          : 'ยังไม่เลือกรถรุ่นย่อย',
 
         'color'      => $color,
         'interior_color' => $interiorColor,

@@ -99,6 +99,17 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
 
                 // สี sheet
                 $sheet->getTabColor()->setRGB('2F75B5');
+
+                // format comma
+                $numberColumns = [
+                    'H'
+                ];
+
+                foreach ($numberColumns as $col) {
+                    $sheet->getStyle("{$col}2:{$col}{$highestRow}")
+                        ->getNumberFormat()
+                        ->setFormatCode('#,##0.00');
+                }
             },
         ];
     }
