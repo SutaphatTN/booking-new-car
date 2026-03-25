@@ -164,18 +164,6 @@
               </span>
               @enderror
             </div>
-            <div class="col-md-1">
-              <label class="form-label" for="option">Option</label>
-              <input id="option" type="text"
-                class="form-control @error('option') is-invalid @enderror"
-                name="option" required>
-
-              @error('option')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
 
             <div class="col-md-1">
               <label class="form-label" for="Year">ปี</label>
@@ -189,7 +177,7 @@
               </span>
               @enderror
             </div>
-            <div class="col-md-2">
+            <div class="col-md-3">
               <label class="form-label" for="gwm_color">สี</label>
               <select id="gwm_color" name="gwm_color" class="form-select" required>
                 <option value="">-- เลือกสี --</option>

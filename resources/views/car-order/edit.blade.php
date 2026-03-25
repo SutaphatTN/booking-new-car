@@ -6,10 +6,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form 
-        action="{{ route('car-order.update', $order->id) }}" 
-        method="POST" 
-        enctype="multipart/form-data">
+        <form action="{{ route('car-order.update', $order->id) }}" method="POST" enctype="multipart/form-data">
           @csrf
           @method('PUT')
 
@@ -84,18 +81,6 @@
 
             @if (auth()->user()->brand == 2)
               <div class="col-md-2 mb-5">
-                <label for="gwm_color" class="form-label">สี</label>
-                <input id="gwm_color" type="text" class="form-control" name="gwm_color"
-                  value="{{ $order->gwmColor->name ?? '-' }}" disabled>
-              </div>
-
-              <div class="col-md-2 mb-5">
-                <label for="interior_color" class="form-label">สีภายใน</label>
-                <input id="interior_color" type="text" class="form-control" name="interior_color"
-                  value="{{ $order->interiorColor->name ?? '-' }}" disabled>
-              </div>
-
-              <div class="col-md-2 mb-5">
                 <label for="year" class="form-label">ปี</label>
                 <input id="year" type="text" class="form-control @error('year') is-invalid @enderror"
                   name="year" value="{{ $order->year }}" required>
@@ -105,6 +90,18 @@
                     <strong>{{ $message }}</strong>
                   </span>
                 @enderror
+              </div>
+
+              <div class="col-md-3 mb-5">
+                <label for="gwm_color" class="form-label">สี</label>
+                <input id="gwm_color" type="text" class="form-control" name="gwm_color"
+                  value="{{ $order->gwmColor->name ?? '-' }}" disabled>
+              </div>
+
+              <div class="col-md-3 mb-5">
+                <label for="interior_color" class="form-label">สีภายใน</label>
+                <input id="interior_color" type="text" class="form-control" name="interior_color"
+                  value="{{ $order->interiorColor->name ?? '-' }}" disabled>
               </div>
 
               <div class="col-md-2 mb-5">
@@ -300,7 +297,7 @@
                 @if (auth()->user()->brand == 3)
                   <option value="WULING" {{ $order->purchase_source == 'WULING' ? 'selected' : '' }}>WULING</option>
                 @endif
-                
+
                 <option value="OTHDealer" {{ $order->purchase_source == 'OTHDealer' ? 'selected' : '' }}>OTHDealer
                 </option>
               </select>

@@ -63,20 +63,20 @@
 
           @if (auth()->user()->brand == 2)
             <div class="col-md-2 mb-5">
+              <label for="year" class="form-label">ปี</label>
+              <input id="year" class="form-control" type="text" value="{{ $order->year }}" disabled />
+            </div>
+
+            <div class="col-md-3 mb-5">
               <label for="gwm_color" class="form-label">สี</label>
               <input id="gwm_color" class="form-control" type="text" value="{{ $order->gwmColor->name ?? '-' }}"
                 disabled />
             </div>
 
-            <div class="col-md-2 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="interior_color" class="form-label">สีภายใน</label>
               <input id="interior_color" class="form-control" type="text"
                 value="{{ $order->interiorColor->name ?? '-' }}" disabled />
-            </div>
-
-            <div class="col-md-2 mb-5">
-              <label for="year" class="form-label">ปี</label>
-              <input id="year" class="form-control" type="text" value="{{ $order->year }}" disabled />
             </div>
 
             <div class="col-md-2 mb-5">

@@ -188,13 +188,13 @@
                       </select>
                     </div>
 
-                    <div class="col-md-1">
+                    {{-- <div class="col-md-1">
                       <label class="form-label" for="option">Option</label>
                       <input id="option" type="text" class="form-control" name="option"
                         value="{{ $saleCar->option }}" required>
-                    </div>
+                    </div> --}}
 
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                       <label for="gwm_color" class="form-label">สี</label>
                       <select id="gwm_color" name="gwm_color" class="form-select" required>
                         <option value="">-- เลือกสี --</option>
@@ -439,11 +439,11 @@
                     </div>
 
                     @if (auth()->user()->brand == 2)
-                      <div class="col-md-1">
+                      {{-- <div class="col-md-1">
                         <label for="carOrderOption" class="form-label">Option</label>
                         <input id="carOrderOption" type="text" class="form-control"
                           value="{{ $saleCar->carOrder->option ?? '' }}" readonly>
-                      </div>
+                      </div> --}}
                       <div class="col-md-2">
                         <label for="carOrderVin" class="form-label">Vin-Number</label>
                         <input id="carOrderVin" type="text" class="form-control"
@@ -456,7 +456,7 @@
                           value="{{ $saleCar->carOrder->gwmColor->name ?? '' }}" readonly>
                       </div>
 
-                      <div class="col-md-1">
+                      <div class="col-md-2">
                         <label for="carOrderInterior" class="form-label">สีภายใน</label>
                         <input id="carOrderInterior" type="text" class="form-control"
                           value="{{ $saleCar->carOrder->interiorColor->name ?? '' }}" readonly>
