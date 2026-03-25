@@ -15,9 +15,10 @@
       <th>สถานะรถ</th>
       <th>วันที่สั่งซื้อในระบบ</th>
       <th>วันที่คาดว่ารถจะมาถึง</th>
+      <th>วันที่ออกใบกำกับ</th>
+      <th>วันที่ Stock</th>
       <th>Vin - Number</th>
       <th>J - Number</th>
-      <th>วันที่ Stock</th>
       <th>Aging (Stock Date)</th>
       <th>ผู้จอง</th>
       <th>Sale</th>
@@ -47,9 +48,10 @@
       <td>{{ $s['order_status'] }}</td>
       <td>{{ $s['system_date'] }}</td>
       <td>{{ $s['estimated_stock_date'] }}</td>
+      <td>{{ $s['order_invoice_date'] }}</td>
+      <td>{{ $s['order_stock_date'] }}</td>
       <td>{{ $s['vin_number'] }}</td>
       <td>{{ $s['j_number'] }}</td>
-      <td>{{ $s['order_stock_date'] }}</td>
       <td>{{ $s['aging_date'] }}</td>
       <td>{{ $s['customer'] }}</td>
       <td>{{ $s['sale'] }}</td>
@@ -63,7 +65,7 @@
     </tr>
     @empty
     <tr>
-      <td colspan="{{ auth()->user()->brand == 2 ? 25 : 24 }}" align="center">
+      <td colspan="{{ auth()->user()->brand == 2 ? 26 : 25 }}" align="center">
         ไม่มีข้อมูล
       </td>
     </tr>

@@ -181,10 +181,11 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 'order_status'     => $order->orderStatus->name ?? '-',
                 'system_date'     => $order->format_system_date ?? '-',
                 'estimated_stock_date'     => $order->format_estimated_stock_date ?? '-',
+                'order_invoice_date'   => $order->format_order_invoice_date ?? '-',
+                'order_stock_date'   => $order->format_order_stock_date ?? '-',
                 'vin_number' => $order->vin_number ?? '-',
                 'j_number'   => $order->j_number ?? '-',
 
-                'order_stock_date'   => $order->format_order_stock_date ?? '-',
                 'aging_date' => $order->order_stock_date
                     ? Carbon::parse($order->order_stock_date)
                     ->startOfDay()
