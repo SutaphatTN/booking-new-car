@@ -22,10 +22,10 @@ $(document).ready(function () {
     },
     columns: [
       { data: 'No' },
-      { data: 'date' },
       { data: 'car' },
       { data: 'vin_number' },
       { data: 'j_number' },
+      { data: 'date' },
       { data: 'status' },
       { data: 'Action', orderable: false, searchable: false }
     ],
@@ -50,6 +50,12 @@ $(document).ready(function () {
       }
     }
   });
+
+  carOrderTable.on('draw', function () {
+    $('[data-bs-toggle="tooltip"]').tooltip();
+  });
+
+  $('[data-bs-toggle="tooltip"]').tooltip();
 });
 
 //search filter car
@@ -68,10 +74,16 @@ $(document).on('change', '#filter_model', function () {
     url: '/api/car-order/sub-model',
     data: { model_id: modelId },
     success: function (data) {
-      data.forEach(sub => {
-        $sub.append(`<option value="${sub.id}">${sub.detail} - ${sub.name}</option>`);
-      });
-      $sub.prop('disabled', false);
+      if (data.length) {
+        data.forEach(sub => {
+          let text = sub.detail ? `${sub.detail} - ${sub.name}` : sub.name;
+
+          $sub.append(`<option value="${sub.id}">${text}</option>`);
+        });
+        $sub.prop('disabled', false);
+      } else {
+        $sub.append('<option value="">-- ไม่มีรุ่นย่อย --</option>');
+      }
     }
   });
 

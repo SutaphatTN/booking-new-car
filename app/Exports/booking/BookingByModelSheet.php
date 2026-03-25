@@ -276,8 +276,10 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         : null;
 
       $rows->push([
-        'subModel'    => $sale->subModel
-          ? $sale->subModel->detail . ' - ' . $sale->subModel->name
+        'subModel' => $sale->subModel
+          ? ($sale->subModel->detail
+            ? $sale->subModel->detail . ' - ' . $sale->subModel->name
+            : $sale->subModel->name)
           : 'ยังไม่ผูกรถ',
 
         'color'      => $color,

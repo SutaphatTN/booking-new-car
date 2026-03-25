@@ -571,6 +571,7 @@ $(document).ready(function () {
   const $searchInput = $('#carOrderSearch');
   const $modal = $('#modalSearchCarOrder');
   const $tableBody = $('#tableSelectCarOrder tbody');
+  const userBrand = $('#user_brand').val();
 
   $searchInput.on('keypress', function (e) {
     if (e.which === 13) {
@@ -625,6 +626,14 @@ $(document).ready(function () {
           $tableBody.append(`<tr><td colspan="7" class="text-center">ไม่พบข้อมูล Car Oder</td></tr>`);
         } else {
           res.forEach(c => {
+            let dynamicColumn = '';
+
+            if (userBrand == 2) {
+              dynamicColumn = `<td>${c.format_order_stock_date ?? '-'}</td>`;
+            } else {
+              dynamicColumn = `<td>${c.option ?? '-'}</td>`;
+            }
+
             $tableBody.append(`
               <tr>
               <td>${c.order_code ?? '-'}</td>
@@ -635,7 +644,7 @@ $(document).ready(function () {
                   </div>
                 </td>
                 <td>${c.vin_number ?? '-'}</td>
-                <td>${c.option ?? '-'}</td>
+                ${dynamicColumn}
                 <td>
                   ${c.display_color ?? '-'}
                   ${c.display_interior_color ? '<br><small class="text-muted">สีภายใน: ' + c.display_interior_color + '</small>' : ''}
@@ -2572,22 +2581,16 @@ document.addEventListener('DOMContentLoaded', function () {
     let DeliveryInDMSDate = formatThaiDate('DeliveryInDMSDate');
     let DeliveryInCKDate = formatThaiDate('DeliveryInCKDate');
 
-    const AdminSignature = document.querySelector('#AdminSignature').checked
-     ? 'เช็ครายการเรียบร้อยแล้ว'
-      : '-';
+    const AdminSignature = document.querySelector('#AdminSignature').checked ? 'เช็ครายการเรียบร้อยแล้ว' : '-';
     let AdminCheckedDate = formatThaiDate('AdminCheckedDate');
     const CheckerID = document.querySelector('#CheckerID').checked ? 'เช็ครายการเรียบร้อยแล้ว' : '-';
     let CheckerCheckedDate = formatThaiDate('CheckerCheckedDate');
     const SMSignature = document.querySelector('#SMSignature').checked ? 'อนุมัติเรียบร้อยแล้ว' : '-';
     let SMCheckedDate = formatThaiDate('SMCheckedDate');
 
-    const ApprovalSignature = document.querySelector('#ApprovalSignature').checked
-     ? 'อนุมัติเรียบร้อยแล้ว'
-      : '-';
+    const ApprovalSignature = document.querySelector('#ApprovalSignature').checked ? 'อนุมัติเรียบร้อยแล้ว' : '-';
     let ApprovalSignatureDate = formatThaiDate('ApprovalSignatureDate');
-    const GMApprovalSignature = document.querySelector('#GMApprovalSignature').checked
-     ? 'อนุมัติเรียบร้อยแล้ว'
-      : '-';
+    const GMApprovalSignature = document.querySelector('#GMApprovalSignature').checked ? 'อนุมัติเรียบร้อยแล้ว' : '-';
     let GMApprovalSignatureDate = formatThaiDate('GMApprovalSignatureDate');
     let DeliveryEstimateDate = formatThaiDate('DeliveryEstimateDate', 'month');
 

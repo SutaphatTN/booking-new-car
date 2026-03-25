@@ -42,10 +42,10 @@
             <thead>
               <tr>
                 <th>No.</th>
-                <th>วันที่สั่งซื้อในระบบ</th>
                 <th>รุ่นรถ</th>
                 <th>Vin Number</th>
                 <th>J Number</th>
+                <th>วันที่</th>
                 <th>สถานะ</th>
                 <th width="150px">Action</th>
               </tr>

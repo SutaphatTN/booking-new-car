@@ -59,9 +59,44 @@ class CarOrderController extends Controller
 
             $statusDisplay = "รถ : {$status}<br>การจอง : {$c->car_status}";
 
+            $sysDate = $c->format_system_date ?? '-';
+            $esDate = $c->format_estimated_stock_date ?? '-';
+            $invDate = $c->format_order_invoice_date ?? '-';
+            $stDate = $c->format_order_stock_date ?? '-';
+
+            // $allDate = "สั่งในระบบ : {$sysDate}<br>คาดว่าสินค้ามาถึง : {$esDate}<br>ออกใบกำกับ : {$invDate}<br>สต็อก : {$stDate}";
+            $allDate = '
+            <div>
+            <div>
+            <i class="bx bx-calendar text-primary me-1"
+                data-bs-toggle="tooltip"
+                title="วันที่สั่งในระบบ"></i>
+                : ' . $sysDate . '
+            </div>
+            <div>
+                <i class="bx bx-time text-warning me-1"
+                data-bs-toggle="tooltip"
+                title="วันที่คาดว่าสินค้ามาถึง"></i>
+                : ' . $esDate . '
+            </div>
+            <div>
+                <i class="bx bx-receipt text-info me-1"
+                data-bs-toggle="tooltip"
+                title="วันที่ออกใบกำกับ"></i>
+                : ' . $invDate . '
+            </div>
+            <div>
+                <i class="bx bx-package text-success me-1"
+                data-bs-toggle="tooltip"
+                title="วันที่ Stock"></i>
+                : ' . $stDate . '
+            </div>
+            </div>
+            ';
+
             return [
                 'No' => $index + 1,
-                'date' => $c->format_system_date,
+                'date' => $allDate,
                 'car' => $car,
                 'vin_number' => $c->vin_number ?? '-',
                 'j_number' => $c->j_number ?? '-',
@@ -244,6 +279,8 @@ class CarOrderController extends Controller
                 $item->display_color = $item->color ?? '-';
                 $item->display_interior_color = null;
             }
+
+            $item->format_order_stock_date = $item->format_order_stock_date;
 
             return $item;
         });
