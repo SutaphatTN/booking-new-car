@@ -2,10 +2,8 @@
 
 namespace App\Exports\gwm;
 
-use App\Models\CarOrder;
-use App\Models\CarOrderHistory;
+use App\Models\Salecar;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -19,12 +17,12 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 
 class BookingGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
-  protected $fromDate;
+  protected $request;
 
-  public function __construct($fromDate = null)
-  {
-    $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m-d');
-  }
+    public function __construct($request)
+    {
+        $this->request = $request;
+    }
 
   public function title(): string
   {
@@ -82,8 +80,7 @@ class BookingGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Sh
           $sheet->getRowDimension($row)->setRowHeight(20);
         }
 
-        // ไม่เอา filter ที่ no
-        $sheet->setAutoFilter("B1:{$highestCol}{$highestRow}");
+        $sheet->setAutoFilter("A1:{$highestCol}{$highestRow}");
 
         // freeze header
         $sheet->freezePane('A2');
@@ -96,42 +93,40 @@ class BookingGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Sh
 
   public function view(): View
   {
-    $date = Carbon::createFromFormat('Y-m', $this->fromDate);
-
-    $month = $date->month;
-    $year  = $date->year;
-
-    $carHistory = CarOrderHistory::with([
-      'carOrder',
-      'carOrder.model',
-      'carOrder.subModel',
-      'carOrder.gwmColor',
-      'carOrder.interiorColor'
+    $salecars = Salecar::with([
+      'model',
+      'subModel',
+      'gwmColor',
+      'interiorColor',
     ])
-      ->whereMonth('changed_at', $month)
-      ->whereYear('changed_at', $year)
+      ->where('brand', 2)
+      ->whereNULL('carOrderID')
       ->get();
 
-    $data = $carHistory
-      ->groupBy('carOrder.subModel_id')
-      ->map(function ($r) {
+    $data = $salecars
+      ->groupBy(function ($r) {
+        return ($r->subModel_id ?? 'null') . '_' . ($r->gwm_color ?? 'null') . '_' . ($r->interior_color ?? 'null');
+      })
+      ->map(function ($rows) {
+        $first = $rows->first();
 
-        $first = $r->first();
+        $mainModel     = $first->model->Name_TH ?? '-';
+        $subModel      = $first->subModel->name ?? '-';
+        $color         = $first->gwmColor->name ?? '-';
+        $interiorColor = $first->interiorColor->name ?? '-';
 
-        $model = $first->carOrder->model->Name_TH ?? '';
-        $sub   = $first->carOrder->subModel->name ?? '';
-        $car   = "{$model} {$sub}";
-
-        $color = $first->carOrder->gwmColor->name ?? '-';
-        $interiorColor = $first->carOrder->interiorColor->name ?? '-';
-        $his = $r->sortByDesc('changed_at')->first();
+        $total        = $rows->count();
+        $withCar      = $rows->whereNotNull('CarOrderID')->count();
+        $withoutCar   = $rows->whereNull('CarOrderID')->count();
 
         return [
-          'model' => $car,
-          'color' => $color,
+          'mainModel'     => $mainModel,
+          'subModel'      => $subModel,
+          'color'         => $color,
           'interiorColor' => $interiorColor,
-          'date' => $his?->format_changed_date ?? '-',
-          'units' => $r->count(),
+          'total'         => $total,
+          'withCustomer'  => $withCar,
+          'available'     => $withoutCar,
         ];
       });
 

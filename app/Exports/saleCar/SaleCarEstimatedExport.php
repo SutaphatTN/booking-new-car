@@ -92,6 +92,7 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
 
                 // format comma
                 $numberColumns = [
+                    'H',
                     'I',
                     'J'
                 ];

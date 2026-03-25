@@ -4,7 +4,6 @@ namespace App\Exports\gwm;
 
 use App\Models\CarOrder;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithStyles;
@@ -18,11 +17,11 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 
 class StockGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
-  protected $fromDate;
+  protected $request;
 
-  public function __construct($fromDate = null)
+  public function __construct($request)
   {
-    $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m-d');
+    $this->request = $request;
   }
 
   public function title(): string
@@ -81,8 +80,7 @@ class StockGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Shou
           $sheet->getRowDimension($row)->setRowHeight(20);
         }
 
-        // ไม่เอา filter ที่ no
-        $sheet->setAutoFilter("B1:{$highestCol}{$highestRow}");
+        $sheet->setAutoFilter("A1:{$highestCol}{$highestRow}");
 
         // freeze header
         $sheet->freezePane('A2');
@@ -95,19 +93,8 @@ class StockGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Shou
 
   public function view(): View
   {
-    $date = Carbon::createFromFormat('Y-m', $this->fromDate);
-
-    $month = $date->month;
-    $year  = $date->year;
-
-    $startOfMonth = $date->copy()->startOfMonth();
-    $endOfMonth = $date->copy()->endOfMonth();
-
     $carOrders = CarOrder::with([
-      'historyCar' => function ($q) use ($month, $year) {
-        $q->whereMonth('changed_at', $month)
-          ->whereYear('changed_at', $year);
-      },
+      'historyCar',
       'salecars',
       'model',
       'subModel',
@@ -116,35 +103,28 @@ class StockGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Shou
     ])
       ->whereNotNull('approver_date')
       ->whereNot('status', 'rejected')
+      ->whereNot('car_status', 'Delivered')
       ->get();
 
     $data = $carOrders
-      ->groupBy('subModel_id')
-      ->map(function ($rows) use ($startOfMonth, $endOfMonth) {
+      ->groupBy(function ($r) {
+        return $r->subModel_id . '_' . $r->gwm_color . '_' . $r->interior_color;
+      })
+      ->map(function ($rows) {
         $first = $rows->first();
 
-        $model = $first->model->Name_TH ?? '';
-        $sub   = $first->subModel->name ?? '';
-        $car   = "{$model} {$sub}";
-
-        $color = $first->gwmColor->name ?? '-';
+        $mainModel     = $first->model->Name_TH ?? '';
+        $subModel      = $first->subModel->name ?? '';
+        $color         = $first->gwmColor->name ?? '-';
         $interiorColor = $first->interiorColor->name ?? '-';
-        $his = $rows->flatMap(function ($r) {
-          return $r->historyCar;
-        })
-          ->sortByDesc('changed_at')
-          ->first();
 
-        $stock = $rows->filter(function ($r) use ($startOfMonth, $endOfMonth) {
-
-          if (!$r->approver_date || $r->approver_date > $endOfMonth) {
-            return false;
-          }
-
+        $stock = $rows->filter(function ($r) {
           $deliveredBefore = $r->salecars
-            ->where('DeliveryDate', '<', $startOfMonth)
+            ->where(function ($q) {
+              $q->whereNull('DeliveryDate')
+                ->orWhere('DeliveryDate', '');
+            })
             ->count();
-
           return $deliveredBefore == 0;
         })->count();
 
@@ -152,25 +132,25 @@ class StockGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Shou
           return $r->historyCar->pluck('CarOrderID');
         });
 
-        $deliveryIds = $rows->flatMap(function ($r) use ($startOfMonth, $endOfMonth) {
+        $deliveryIds = $rows->flatMap(function ($r) {
           return $r->salecars
-            ->whereBetween('DeliveryDate', [$startOfMonth, $endOfMonth])
+            ->where(function ($q) {
+              $q->whereNull('DeliveryDate')
+                ->orWhere('DeliveryDate', '');
+            })
             ->pluck('CarOrderID');
         });
 
-        $totalBooking = $historyIds
-          ->merge($deliveryIds)
-          ->unique()
-          ->count();
+        $withCustomer = $historyIds->merge($deliveryIds)->unique()->count();
 
         return [
-          'model' => $car,
-          'color' => $color,
+          'mainModel'     => $mainModel,
+          'subModel'      => $subModel,
+          'color'         => $color,
           'interiorColor' => $interiorColor,
-          'date' => $his?->format_changed_date ?? '-',
-          'stock' => $stock,
-          'total_booking' => $totalBooking,
-          'total' => $stock - $totalBooking
+          'total'         => $stock,
+          'withCustomer'  => $withCustomer,
+          'available'     => $stock - $withCustomer,
         ];
       });
 

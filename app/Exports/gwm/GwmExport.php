@@ -6,18 +6,18 @@ use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
 class GwmExport implements WithMultipleSheets
 {
-    protected $fromDate;
+    protected $request;
 
-    public function __construct($fromDate = null)
+    public function __construct($request)
     {
-        $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m');
+        $this->request = $request;
     }
 
     public function sheets(): array
   {
     return [
-      new StockGWMSheet($this->fromDate),
-      new BookingGWMSheet($this->fromDate),
+      new StockGWMSheet($this->request),
+      new BookingGWMSheet($this->request),
     ];
   }
 }

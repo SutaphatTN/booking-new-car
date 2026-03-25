@@ -204,7 +204,7 @@
           "slug": "report.saleBooking-export"
         },
         {
-          "url": "purchase-order/view-export-gwm-stock",
+          "url": "purchase-order/gwm-stock-export",
           "name": "Stock GWM",
           "slug": "report.gwm-stock-export"
         }

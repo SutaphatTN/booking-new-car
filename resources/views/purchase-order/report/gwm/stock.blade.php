@@ -1,14 +1,13 @@
 <table>
   <thead>
     <tr>
-      <th>No</th>
-      <th>Model</th>
-      <th>Exterior Color</th>
-      <th>Interior Color</th>
-      <th>Month</th>
-      <th>Stock</th>
-      <th>จอง / ส่งมอบ</th>
-      <th>คงเหลือที่ขายได้</th>
+      <th>รุ่นรถหลัก</th>
+      <th>รุ่นย่อย</th>
+      <th>สี</th>
+      <th>สีภายใน</th>
+      <th>รถทั้งหมด (คัน)</th>
+      <th>มีลูกค้าแล้ว (คัน)</th>
+      <th>ว่าง (คัน)</th>
     </tr>
   </thead>
   <tbody>
@@ -18,18 +17,17 @@
     $endRow = count($stock) + 1;
     @endphp
       <tr>
-        <td>{{ $loop->iteration }}</td>
-        <td>{{ $s['model'] }}</td>
+        <td>{{ $s['mainModel'] }}</td>
+        <td>{{ $s['subModel'] }}</td>
         <td>{{ $s['color'] }}</td>
         <td>{{ $s['interiorColor'] }}</td>
-        <td>{{ $s['date'] }}</td>
-        <td>{{ $s['stock'] }}</td>
-        <td>{{ $s['total_booking'] }}</td>
         <td>{{ $s['total'] }}</td>
+        <td>{{ $s['withCustomer'] }}</td>
+        <td>{{ $s['available'] }}</td>
       </tr>
     @empty
       <tr>
-        <td colspan="8" align="center">
+        <td colspan="7" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>
@@ -37,15 +35,10 @@
 
     @if(count($stock) > 0)
     <tr>
-      <td>Total</td>
-      <td></td>
-      <td></td>
-      <td></td>
-      <td></td>
-
+      <td colspan="4" align="center">รวมทั้งหมด</td>
+      <td>=SUM(E{{ $startRow }}:E{{ $endRow }})</td>
       <td>=SUM(F{{ $startRow }}:F{{ $endRow }})</td>
       <td>=SUM(G{{ $startRow }}:G{{ $endRow }})</td>
-      <td>=SUM(H{{ $startRow }}:H{{ $endRow }})</td>
     </tr>
     @endif
   </tbody>

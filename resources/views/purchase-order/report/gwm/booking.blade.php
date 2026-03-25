@@ -1,12 +1,13 @@
  <table>
   <thead>
     <tr>
-      <th>No</th>
-      <th>Model</th>
-      <th>Exterior Color</th>
-      <th>Interior Color</th>
-      <th>Month</th>
-      <th>Units</th>
+      <th>รุ่นรถหลัก</th>
+      <th>รุ่นย่อย</th>
+      <th>สี</th>
+      <th>สีภายใน</th>
+      <th>รถทั้งหมด (คัน)</th>
+      {{-- <th>มีลูกค้าแล้ว (คัน)</th>
+      <th>ว่าง (คัน)</th> --}}
     </tr>
   </thead>
   <tbody>
@@ -16,16 +17,17 @@
     $endRow = count($book) + 1;
     @endphp
       <tr>
-        <td>{{ $loop->iteration }}</td>
-        <td>{{ $b['model'] }}</td>
+        <td>{{ $b['mainModel'] }}</td>
+        <td>{{ $b['subModel'] }}</td>
         <td>{{ $b['color'] }}</td>
         <td>{{ $b['interiorColor'] }}</td>
-        <td>{{ $b['date'] }}</td>
-        <td>{{ $b['units'] }}</td>
+        <td>{{ $b['total'] }}</td>
+        {{-- <td>{{ $b['withCustomer'] }}</td>
+        <td>{{ $b['available'] }}</td> --}}
       </tr>
     @empty
       <tr>
-        <td colspan="6" align="center">
+        <td colspan="5" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>
@@ -33,13 +35,10 @@
 
     @if(count($book) > 0)
     <tr>
-      <td>Total</td>
-      <td></td>
-      <td></td>
-      <td></td>
-      <td></td>
-
-      <td>=SUM(F{{ $startRow }}:F{{ $endRow }})</td>
+      <td colspan="4" align="center">รวมทั้งหมด</td>
+      <td>=SUM(E{{ $startRow }}:E{{ $endRow }})</td>
+      {{-- <td>=SUM(F{{ $startRow }}:F{{ $endRow }})</td>
+      <td>=SUM(G{{ $startRow }}:G{{ $endRow }})</td> --}}
     </tr>
     @endif
   </tbody>
