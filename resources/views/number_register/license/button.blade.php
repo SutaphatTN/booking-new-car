@@ -15,7 +15,7 @@
   @if ($history?->finance_approved)
     {{-- <span class="badge bg-success">อนุมัติแล้ว</span> --}}
   @else
-    @if (in_array(auth()->user()->role, ['finance', 'admin', 'audit']))
+    @if (in_array(auth()->user()->role, ['account', 'admin', 'audit']))
       <button class="btn btn-icon btn-success btnApproveFinance" data-id="{{ $history?->id }}"
         title="ยืนยันการจ่ายเงินจริง" {{ $history ? '' : 'disabled' }}>
         <i class="bx bx-check"></i>

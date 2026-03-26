@@ -87,7 +87,7 @@
                             <select id="role" class="form-control @error('role') is-invalid @enderror" name="role" required>
                                 <option value="sale" {{ $user->role == 'sale' ? 'selected' : '' }}>Sale</option>
                                 <option value="audit" {{ $user->role == 'audit' ? 'selected' : '' }}>Audit</option>
-                                <option value="finance" {{ $user->role == 'finance' ? 'selected' : '' }}>Finance</option>
+                                <option value="account" {{ $user->role == 'account' ? 'selected' : '' }}>Account</option>
                                 <option value="manager" {{ $user->role == 'manager' ? 'selected' : '' }}>Manager</option>
                                 <option value="md" {{ $user->role == 'md' ? 'selected' : '' }}>MD</option>
                             </select>

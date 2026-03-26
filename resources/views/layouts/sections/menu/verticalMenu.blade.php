@@ -38,6 +38,10 @@
         @continue
       @endif
 
+      @if ($userRole == 'registration' && $menu->slug !== 'vehicle')
+        @continue
+      @endif
+
       @if (auth()->user()->brand == 2 && $menu->slug === 'sale.viewCommission')
         @continue
       @endif

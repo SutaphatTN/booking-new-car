@@ -18,6 +18,8 @@ use App\Http\Controllers\model_car\SubModelCarController;
 use App\Http\Controllers\purchase_order\PurchaseOrderController;
 use App\Http\Controllers\vehicle\LicenseController;
 use App\Http\Controllers\vehicle\VehicleController;
+use App\Http\Controllers\BrandSwitchController;
+use App\Http\Controllers\invoice\InvoiceController;
 
 Route::get('/', fn() => redirect()->route('login'));
 
@@ -41,9 +43,17 @@ Route::get('/keep-alive', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/accessory/search', [PurchaseOrderController::class, 'searchAccessory'])->name('accessory.search');
+    Route::post('/switch-brand', [BrandSwitchController::class, 'switch'])->name('brand.switch');
+    Route::post('/switch-brand/reset', [BrandSwitchController::class, 'reset'])->name('brand.reset');
 });
 
 Route::middleware(['auth', 'notsale'])->group(function () {
+    // invoice
+    Route::get('invoice', [InvoiceController::class, 'index'])->name('invoice.index');
+    Route::get('invoice/create', [InvoiceController::class, 'create'])->name('invoice.create');
+    Route::post('invoice', [InvoiceController::class, 'store'])->name('invoice.store');
+    Route::get('invoice/list', [InvoiceController::class, 'list'])->name('invoice.list');
+
 
     // purchase-order
     Route::get('purchase-order/viewFN', [FinanceController::class, 'viewFN'])->name('purchase-order.viewFN');

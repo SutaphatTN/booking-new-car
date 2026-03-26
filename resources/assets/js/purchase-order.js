@@ -78,8 +78,8 @@ $(document).ready(function () {
   purchaseTable = $('#purchaseTable').DataTable({
     ajax: '/purchase-order/list',
     columns: [
-      { data: 'No' },
-      { data: 'FullName' },
+      { data: 'No', orderable: false },
+      { data: 'FullName', orderable: false },
       { data: 'model' },
       { data: 'order' },
       { data: 'statusSale' },
@@ -88,7 +88,7 @@ $(document).ready(function () {
     paging: true,
     lengthChange: true,
     searching: true,
-    ordering: false,
+    ordering: true,
     info: true,
     pageLength: 10,
     autoWidth: false,
@@ -104,6 +104,19 @@ $(document).ready(function () {
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
+    }
+  });
+
+  purchaseTable.on('order.dt', function () {
+    var order = purchaseTable.order();
+    $('#purchaseTable thead th .sort-icon')
+      .removeClass('bx-up-arrow-alt bx-down-arrow-alt text-primary')
+      .addClass('bx-sort-alt-2');
+    if (order.length) {
+      var colIdx = order[0][0];
+      var dir = order[0][1];
+      var $icon = $($('#purchaseTable thead th').get(colIdx)).find('.sort-icon');
+      $icon.removeClass('bx-sort-alt-2').addClass(dir === 'asc' ? 'bx-up-arrow-alt' : 'bx-down-arrow-alt').addClass('text-primary');
     }
   });
 

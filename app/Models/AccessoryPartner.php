@@ -25,7 +25,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class AccessoryPartner extends Model
 {
 	use SoftDeletes;
-	use UserAccessScope;
 	
 	protected $table = 'accessory_partner';
 

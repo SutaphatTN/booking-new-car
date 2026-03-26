@@ -130,7 +130,7 @@ class PurchaseOrderController extends Controller
         $query = Salecar::with('customer.prefix', 'conStatus')->whereNotIn('con_status', [5, 9]);
 
         if ($user->role === 'sale') {
-            $query->where('UserInsert', $user->id);
+            $query->where('SaleID', $user->id);
         }
 
         if ($statusFilter) {
@@ -1417,7 +1417,7 @@ class PurchaseOrderController extends Controller
             ->where('con_status', '5');
 
         if ($user->role === 'sale') {
-            $query->where('UserInsert', $user->id);
+            $query->where('SaleID', $user->id);
         }
 
         $saleCar = $query->get();
