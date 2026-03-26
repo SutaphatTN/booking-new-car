@@ -3,6 +3,7 @@
     <tr>
       <th>No</th>
       <th>ชื่อ - นามสกุล ลูกค้า</th>
+      <th>ฝ่ายขาย</th>
       <th>รุ่นรถหลัก</th>
       <th>รุ่นรถย่อย</th>
       @if (auth()->user()->brand != 2)
@@ -31,6 +32,7 @@
       <tr>
         <td>{{ $loop->iteration }}</td>
         <td>{{ $s['customer'] }}</td>
+        <td>{{ $s['sale'] }}</td>
         <td>{{ $s['model'] }}</td>
         <td>{{ $s['subModel'] }}</td>
         @if (auth()->user()->brand != 2)
@@ -55,7 +57,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="18" align="center">
+        <td colspan="19" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

@@ -143,6 +143,7 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
 
             return [
                 'customer' => $customerName,
+                'sale' => $r->saleUser?->name ?? '-',
                 'model' => $model,
                 'subModel' => $subModel,
                 'option'     => $r->option ?? '-',
