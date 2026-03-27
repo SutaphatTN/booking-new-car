@@ -49,10 +49,9 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'notsale'])->group(function () {
     // invoice
-    Route::get('invoice', [InvoiceController::class, 'index'])->name('invoice.index');
-    Route::get('invoice/create', [InvoiceController::class, 'create'])->name('invoice.create');
-    Route::post('invoice', [InvoiceController::class, 'store'])->name('invoice.store');
     Route::get('invoice/list', [InvoiceController::class, 'list'])->name('invoice.list');
+    Route::get('invoice/{id}/pdf', [InvoiceController::class, 'pdf'])->name('invoice.pdf');
+    Route::post('invoice/{id}/approve', [InvoiceController::class, 'approve'])->name('invoice.approve');
 
 
     // purchase-order
@@ -200,6 +199,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::resource('car-order', CarOrderController::class);
     Route::resource('color', ColorController::class);
     Route::resource('vehicle', VehicleController::class);
+    Route::resource('invoice', InvoiceController::class);
 
     Route::resource('license', LicenseController::class)->names([
         'index' => 'vehicle.license.index',
