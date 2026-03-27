@@ -16,7 +16,7 @@ trait UserAccessScope
       $table = $query->getModel()->getTable();
 
       // ไม่จำกัด zone — filter แค่ brand (ที่อาจถูก override โดย BrandSwitcher middleware)
-      if (in_array($user->role, ['account', 'admin'])) {
+      if (in_array($user->role, ['account', 'admin','audit'])) {
         if ($user->brand) {
           $query->where($table . '.brand', $user->brand);
         }
