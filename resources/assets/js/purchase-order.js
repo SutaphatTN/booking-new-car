@@ -322,6 +322,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const bankSection = document.getElementById('bankSection');
   const checkSection = document.getElementById('checkSection');
   const creditSection = document.getElementById('creditSection');
+  const danuSection = document.getElementById('danuSection');
 
   if (!radios.length || !bankSection || !checkSection || !creditSection) return;
 
@@ -329,16 +330,21 @@ document.addEventListener('DOMContentLoaded', function () {
     bankSection.style.display = 'none';
     checkSection.style.display = 'none';
     creditSection.style.display = 'none';
+    if (danuSection) danuSection.style.display = 'none';
 
     const selected = document.querySelector('input[name="reservationCondition"]:checked');
     if (!selected) return;
 
     if (selected.value === 'transfer') {
       bankSection.style.display = 'block';
+      if (danuSection) danuSection.style.display = 'block';
     } else if (selected.value === 'check') {
       checkSection.style.display = 'block';
+      if (danuSection) danuSection.style.display = 'block';
     } else if (selected.value === 'credit') {
       creditSection.style.display = 'block';
+    } else if (selected.value === 'cash') {
+      if (danuSection) danuSection.style.display = 'block';
     }
   }
 
@@ -362,7 +368,9 @@ $(document).on('change', '#model_id', function () {
       // console.log('data:', data);
       if (data.length > 0) {
         data.forEach(function (sub) {
-          $subModelSelect.append(`<option value="${sub.id}">${sub.detail} - ${sub.name}</option>`);
+          let text = sub.detail ? `${sub.detail} - ${sub.name}` : sub.name;
+
+          $subModelSelect.append(`<option value="${sub.id}">${text}</option>`);
         });
       } else {
         $subModelSelect.append('<option value="">-- ไม่มีรุ่นย่อย --</option>');
@@ -1871,7 +1879,7 @@ $(document).ready(function () {
 
 //edit : radio reservation payment
 $(document).ready(function () {
-  $('#bankReservation, #checkReservation, #creditReservation').hide();
+  $('#bankReservation, #checkReservation, #creditReservation, #danuReservation').hide();
 
   const selected = $('input[name="reservationCondition"]:checked').val();
   if (selected) {
@@ -1884,11 +1892,12 @@ $(document).ready(function () {
   });
 
   function showRemaining(type) {
-    $('#bankReservation, #creditReservation, #checkReservation').hide();
+    $('#bankReservation, #creditReservation, #checkReservation, #danuReservation').hide();
 
     if (type === 'credit') $('#creditReservation').show();
     else if (type === 'check') $('#checkReservation').show();
     else if (type === 'transfer') $('#bankReservation').show();
+    else if (type === 'cash') $('#danuReservation').show();
   }
 });
 

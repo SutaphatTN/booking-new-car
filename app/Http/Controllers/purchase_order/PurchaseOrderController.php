@@ -294,11 +294,14 @@ class PurchaseOrderController extends Controller
                     'userZone' => $request->userZone  ?? null,
                 ];
 
+                $isBrand2 = Auth::user()->brand == 2;
+
                 switch ($request->reservationCondition) {
                     case 'transfer':
                         $data['transfer_bank'] = $request->reservation_transfer_bank ?? null;
                         $data['transfer_branch'] = $request->reservation_transfer_branch ?? null;
                         $data['transfer_no'] = $request->reservation_transfer_no ?? null;
+                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
 
                         $data['check_bank'] = null;
                         $data['check_branch'] = null;
@@ -311,6 +314,7 @@ class PurchaseOrderController extends Controller
                         $data['check_bank'] = $request->reservation_check_bank ?? null;
                         $data['check_branch'] = $request->reservation_check_branch ?? null;
                         $data['check_no'] = $request->reservation_check_no ?? null;
+                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -322,6 +326,7 @@ class PurchaseOrderController extends Controller
                     case 'credit':
                         $data['credit'] = $request->reservation_credit ?? null;
                         $data['tax_credit'] = $request->reservation_tax_credit ? str_replace(',', '', $request->reservation_tax_credit) : null;
+                        $data['danu_date'] = null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -333,6 +338,8 @@ class PurchaseOrderController extends Controller
 
                     case 'cash':
                     default:
+                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
+
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
                         $data['transfer_no'] = null;
@@ -872,11 +879,14 @@ class PurchaseOrderController extends Controller
                     'userZone' => $request->userZone  ?? null,
                 ];
 
+                $isBrand2 = Auth::user()->brand == 2;
+
                 switch ($request->reservationCondition) {
                     case 'transfer':
                         $data['transfer_bank'] = $request->reservation_transfer_bank;
                         $data['transfer_branch'] = $request->reservation_transfer_branch;
                         $data['transfer_no'] = $request->reservation_transfer_no;
+                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
 
                         $data['check_bank'] = null;
                         $data['check_branch'] = null;
@@ -889,6 +899,7 @@ class PurchaseOrderController extends Controller
                         $data['check_bank'] = $request->reservation_check_bank;
                         $data['check_branch'] = $request->reservation_check_branch;
                         $data['check_no'] = $request->reservation_check_no;
+                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -900,6 +911,7 @@ class PurchaseOrderController extends Controller
                     case 'credit':
                         $data['credit'] = $request->reservation_credit;
                         $data['tax_credit'] = $request->reservation_tax_credit ? str_replace(',', '', $request->reservation_tax_credit) : null;
+                        $data['danu_date'] = null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -911,6 +923,8 @@ class PurchaseOrderController extends Controller
 
                     case 'cash':
                     default:
+                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
+
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
                         $data['transfer_no'] = null;

@@ -387,6 +387,13 @@
               </div>
             </div>
 
+            @if(auth()->user()->brand == 2)
+            <div id="danuSection" class="col-md-2" style="display:none;">
+              <label class="form-label" for="danu_date">วันที่ใช้บัตรคุณดนู</label>
+              <input id="danu_date" type="date" class="form-control" name="danu_date">
+            </div>
+            @endif
+
             <div id="turnCarFields" class="row mt-6 g-5" style="display:none;">
               <h4>รถเทิร์น</h4>
               <div class="col-md-3">
