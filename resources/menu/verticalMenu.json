@@ -33,9 +33,19 @@
           "slug": "purchase-order.create"
         },
         {
+          "url": "sale/viewCommission",
+          "name": "ค่าคอมมิชชั่น",
+          "slug": "purchase-order.viewCommission"
+        },
+        {
           "url": "purchase-order/history",
           "name": "ประวัติที่ส่งมอบแล้ว",
           "slug": "purchase-order.history"
+        },
+        {
+          "url": "purchase-order/cancellation",
+          "name": "ถอนจอง",
+          "slug": "purchase-order.cancellation"
         },
         {
           "url": "purchase-order/viewFN",
@@ -45,119 +55,125 @@
       ]
     },
     {
-      "name": "ค่าคอมมิชชั่น",
-      "icon": "menu-icon icon-base bx bx-money",
-      "slug": "sale.viewCommission",
-      "url": "sale/viewCommission"
-    },
-    {
-      "name": "ข้อมูลรถ",
-      "icon": "menu-icon icon-base bx bx-car",
-      "slug": "model",
+      "name": "การตั้งค่า",
+      "icon": "menu-icon icon-base bx bx-cog",
+      "slug": [
+        "model",
+        "car-order",
+        "accessory",
+        "campaign",
+        "finance"
+      ],
       "submenu": [
         {
-          "url": "model-car",
-          "name": "ข้อมูลรถรุ่นหลัก",
-          "slug": "model-car.index"
+          "name": "ข้อมูลรถ",
+          "icon": "menu-icon icon-base bx bx-car",
+          "slug": "model",
+          "submenu": [
+            {
+              "url": "model-car",
+              "name": "ข้อมูลรถรุ่นหลัก",
+              "slug": "model-car.index"
+            },
+            {
+              "url": "sub-model-car",
+              "name": "ข้อมูลรถรุ่นย่อย",
+              "slug": "model.sub-model.index"
+            },
+            {
+              "url": "color",
+              "name": "ข้อมูลสีรถ",
+              "slug": "model.color.index"
+            }
+          ]
         },
         {
-          "url": "sub-model-car",
-          "name": "ข้อมูลรถรุ่นย่อย",
-          "slug": "model.sub-model.index"
+          "name": "ระบบรถ",
+          "icon": "menu-icon icon-base bx bx-book-content",
+          "slug": "car-order",
+          "submenu": [
+            {
+              "url": "car-order",
+              "name": "รายการรถ",
+              "slug": "car-order.index"
+            },
+            {
+              "url": "car-order/pending",
+              "name": "รายการคำขอสั่งรถ",
+              "slug": "car-order.pending"
+            },
+            {
+              "url": "car-order/process",
+              "name": "รออนุมัติ",
+              "slug": "car-order.process"
+            },
+            {
+              "url": "car-order/approve",
+              "name": "ผลการอนุมัติ",
+              "slug": "car-order.approve"
+            },
+            {
+              "url": "forecast",
+              "name": "คำนวนคำพยากรณ์สั่งรถ",
+              "slug": "car-order.form"
+            }
+          ]
         },
         {
-          "url": "color",
-          "name": "ข้อมูลสีรถ",
-          "slug": "model.color.index"
-        }
-      ]
-    },
-    {
-      "name": "ระบบรถ",
-      "icon": "menu-icon icon-base bx bx-book-content",
-      "slug": "car-order",
-      "submenu": [
-        {
-          "url": "car-order",
-          "name": "รายการรถ",
-          "slug": "car-order.index"
-        },
-        {
-          "url": "car-order/pending",
-          "name": "รายการคำขอสั่งรถ",
-          "slug": "car-order.pending"
-        },
-        {
-          "url": "car-order/process",
-          "name": "รออนุมัติ",
-          "slug": "car-order.process"
-        },
-        {
-          "url": "car-order/approve",
-          "name": "ผลการอนุมัติ",
-          "slug": "car-order.approve"
-        }
-      ]
-    },
-    {
-      "name": "คำนวนคำพยากรณ์สั่งรถ",
-      "icon": "menu-icon icon-base bx bx-line-chart",
-      "slug": "forecast.form",
-      "url": "forecast"
-    },
-    {
-      "name": "ประดับยนต์",
-      "icon": "menu-icon icon-base bx bx-wrench",
-      "slug": "accessory",
-      "submenu": [
-        {
-          "url": "accessory/partner",
-          "name": "แหล่งที่มา",
-          "slug": "accessory.partner"
-        },
-        {
-          "url": "accessory",
           "name": "ประดับยนต์",
-          "slug": "accessory.index"
+          "icon": "menu-icon icon-base bx bx-wrench",
+          "slug": "accessory",
+          "submenu": [
+            {
+              "url": "accessory/partner",
+              "name": "แหล่งที่มา",
+              "slug": "accessory.partner"
+            },
+            {
+              "url": "accessory",
+              "name": "ประดับยนต์",
+              "slug": "accessory.index"
+            },
+            {
+              "url": "accessory/view-export-accessory",
+              "name": "รายงานต้นทุน",
+              "slug": "accessory.view-export-accessory"
+            }
+          ]
         },
         {
-          "url": "accessory/view-export-accessory",
-          "name": "รายงานต้นทุน",
-          "slug": "accessory.view-export-accessory"
-        }
-      ]
-    },
-    {
-      "name": "แคมเปญ",
-      "icon": "menu-icon icon-base bx bxs-megaphone",
-      "slug": "campaign",
-      "submenu": [
-        {
-          "url": "campaign/appellation",
-          "name": "ชื่อแคมเปญ",
-          "slug": "campaign.appellation"
+          "name": "แคมเปญ",
+          "icon": "menu-icon icon-base bx bxs-megaphone",
+          "slug": "campaign",
+          "submenu": [
+            {
+              "url": "campaign/appellation",
+              "name": "ชื่อแคมเปญ",
+              "slug": "campaign.appellation"
+            },
+            {
+              "url": "campaign",
+              "name": "ข้อมูลแคมเปญ",
+              "slug": "campaign.index"
+            }
+          ]
         },
         {
-          "url": "campaign",
-          "name": "ข้อมูลแคมเปญ",
-          "slug": "campaign.index"
-        }
-      ]
-    },
-    {
-      "name": "ไฟแนนซ์",
-      "icon": "menu-icon icon-base bx bx-buildings",
-      "slug": "finance",
-      "submenu": [
-        {
-          "url": "finance",
-          "name": "ข้อมูลไฟแนนซ์",
-          "slug": "finance.index"
-        },
-        {
-          "url": "finance/extra-com",
-          "name": "Com Extra",
-          "slug": "finance.extra-com"
+          "name": "ไฟแนนซ์",
+          "icon": "menu-icon icon-base bx bx-buildings",
+          "slug": "finance",
+          "submenu": [
+            {
+              "url": "finance",
+              "name": "ข้อมูลไฟแนนซ์",
+              "slug": "finance.index"
+            },
+            {
+              "url": "finance/extra-com",
+              "name": "Com Extra",
+              "slug": "finance.extra-com"
+            }
+          ]
         }
       ]
     },

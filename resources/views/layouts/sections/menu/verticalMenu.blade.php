@@ -11,8 +11,8 @@
         <img src="{{ asset('assets/img/Gwm_logoCrop.png') }}" width="180" class="me-2">
         {{-- <span class="app-brand-text demo menu-text fw-bold ms-2">GWM</span> --}}
       @elseif (auth()->user()->brand == 3)
-        <img src="{{ asset('assets/img/Wuling_logoCrop.jpg') }}" width="50" class="me-2">
-        <span class="app-brand-text demo menu-text fw-bold ms-2">Wuling</span>
+        <img src="{{ asset('assets/img/Wuling_logo.png') }}" width="200" class="me-2">
+        {{-- <span class="app-brand-text demo menu-text fw-bold ms-2">Wuling</span> --}}
       @else
         <img src="{{ asset('assets/img/Mitsubishi_logoCrop.png') }}" width="40" class="me-2">
         <span class="app-brand-text demo menu-text fw-bold ms-2">New Car</span>
@@ -31,7 +31,7 @@
   <ul class="menu-inner py-1">
     @foreach ($menuData[0]->menu as $menu)
       @php
-        $hideForSale = ['model', 'car-order', 'accessory', 'campaign', 'finance', 'report', 'forecast.form', 'vehicle'];
+        $hideForSale = ['model', 'car-order', 'accessory', 'campaign', 'finance', 'report', 'car-order.form', 'vehicle', 'invoice'];
       @endphp
 
       @if ($userRole == 'sale' && in_array($menu->slug, $hideForSale))

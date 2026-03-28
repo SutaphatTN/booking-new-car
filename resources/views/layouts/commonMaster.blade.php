@@ -32,9 +32,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/img/GWM-Steed.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/GWM-Steed.png') }}">
     @elseif (auth()->user()->brand == 3)
-    <link rel="icon" type="image/png" href="{{ asset('assets/img/Wuling_logoCrop32.jpg') }}">
-    <link rel="icon" type="image/png" href="{{ asset('assets/img/Wuling_logoCrop16.jpg') }}">
-    <link rel="apple-touch-icon" href="{{ asset('assets/img/Wuling_logoCrop180.jpg') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/img/Wuling-Steed.svg') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/img/Wuling-Steed.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/img/Wuling-Steed.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/Wuling-Steed.png') }}">
     @else
     <link rel="icon" type="image/png" href="{{ asset('assets/img/Mitsubishi_logoCrop32.png') }}">
     <link rel="icon" type="image/png" href="{{ asset('assets/img/Mitsubishi_logoCrop16.png') }}">
