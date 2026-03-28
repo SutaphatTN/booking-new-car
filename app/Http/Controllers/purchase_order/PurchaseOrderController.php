@@ -15,7 +15,6 @@ use App\Models\AccessoryPrice;
 use App\Models\Campaign;
 use App\Models\CarOrder;
 use App\Models\CarOrderHistory;
-use App\Models\Customer;
 use App\Models\Finance;
 use App\Models\LicensePlateHistory;
 use App\Models\PaymentType;
@@ -31,7 +30,6 @@ use App\Models\TbSalePurchaseType;
 use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
 use App\Models\User;
-use App\Services\OneDriveService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -67,11 +65,8 @@ class PurchaseOrderController extends Controller
 
         $model = TbCarmodel::all();
         $type = TbSalecarType::all();
-        $brandFilter = $authUser->brand == 3
-            ? [1, 3]
-            : [$authUser->brand];
         $saleUser = User::where('role', 'sale')
-            ->whereIn('brand', $brandFilter)
+            ->where('brand', $authUser->brand)
             ->get();
         $typeSale = TbSalePurchaseType::all();
         $interiorColor = TbInteriorColor::all();
@@ -287,24 +282,6 @@ class PurchaseOrderController extends Controller
                 'interior_color' => Auth::user()->brand == 2 ? $request->interior_color : null,
             ]);
 
-            if ($request->hasFile('attachments')) {
-                $customer = Customer::find($request->CusID);
-                $customerFolder = $customer->id . '-' . ($customer->FirstName ?? 'unknown');
-                $brandName = Auth::user()->brandInfo->name ?? 'Other';
-                $folder = "New Car/{$brandName}/หลักฐานการจอง/{$customerFolder}";
-
-                $oneDrive = new OneDriveService();
-                $urls = [];
-
-                foreach ($request->file('attachments') as $index => $file) {
-                    $fileName = 'booking_' . $salecar->id . '_' . ($index + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
-                    $urls[] = $oneDrive->upload($file->getRealPath(), $fileName, $folder);
-                }
-
-                $salecar->update(['attachment_url' => $urls]);
-            }
-
-
             if ($request->filled('reservationCondition')) {
                 $data = [
                     'saleCar_id' => $salecar->id,
@@ -317,14 +294,11 @@ class PurchaseOrderController extends Controller
                     'userZone' => $request->userZone  ?? null,
                 ];
 
-                $isBrand2 = Auth::user()->brand == 2;
-
                 switch ($request->reservationCondition) {
                     case 'transfer':
                         $data['transfer_bank'] = $request->reservation_transfer_bank ?? null;
                         $data['transfer_branch'] = $request->reservation_transfer_branch ?? null;
                         $data['transfer_no'] = $request->reservation_transfer_no ?? null;
-                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
 
                         $data['check_bank'] = null;
                         $data['check_branch'] = null;
@@ -337,7 +311,6 @@ class PurchaseOrderController extends Controller
                         $data['check_bank'] = $request->reservation_check_bank ?? null;
                         $data['check_branch'] = $request->reservation_check_branch ?? null;
                         $data['check_no'] = $request->reservation_check_no ?? null;
-                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -349,7 +322,6 @@ class PurchaseOrderController extends Controller
                     case 'credit':
                         $data['credit'] = $request->reservation_credit ?? null;
                         $data['tax_credit'] = $request->reservation_tax_credit ? str_replace(',', '', $request->reservation_tax_credit) : null;
-                        $data['danu_date'] = null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -361,8 +333,6 @@ class PurchaseOrderController extends Controller
 
                     case 'cash':
                     default:
-                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
-
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
                         $data['transfer_no'] = null;
@@ -902,14 +872,11 @@ class PurchaseOrderController extends Controller
                     'userZone' => $request->userZone  ?? null,
                 ];
 
-                $isBrand2 = Auth::user()->brand == 2;
-
                 switch ($request->reservationCondition) {
                     case 'transfer':
                         $data['transfer_bank'] = $request->reservation_transfer_bank;
                         $data['transfer_branch'] = $request->reservation_transfer_branch;
                         $data['transfer_no'] = $request->reservation_transfer_no;
-                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
 
                         $data['check_bank'] = null;
                         $data['check_branch'] = null;
@@ -922,7 +889,6 @@ class PurchaseOrderController extends Controller
                         $data['check_bank'] = $request->reservation_check_bank;
                         $data['check_branch'] = $request->reservation_check_branch;
                         $data['check_no'] = $request->reservation_check_no;
-                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -934,7 +900,6 @@ class PurchaseOrderController extends Controller
                     case 'credit':
                         $data['credit'] = $request->reservation_credit;
                         $data['tax_credit'] = $request->reservation_tax_credit ? str_replace(',', '', $request->reservation_tax_credit) : null;
-                        $data['danu_date'] = null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -946,8 +911,6 @@ class PurchaseOrderController extends Controller
 
                     case 'cash':
                     default:
-                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
-
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
                         $data['transfer_no'] = null;
@@ -1266,7 +1229,7 @@ class PurchaseOrderController extends Controller
         ]);
     }
 
-    function destroy(Request $request, $id)
+    function destroy($id)
     {
         try {
             $saleCar = Salecar::findOrFail($id);
@@ -1276,9 +1239,7 @@ class PurchaseOrderController extends Controller
                 $saleCar->carOrderHistories()->delete();
             }
 
-            $saleCar->CancelGCIPDate = $request->cancel_gcip_date;
-            $saleCar->con_status = 9;
-            $saleCar->save();
+            $saleCar->delete();
 
             return response()->json([
                 'success' => true,

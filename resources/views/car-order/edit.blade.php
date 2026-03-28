@@ -432,11 +432,13 @@
                   value="{{ $order->order_invoice_date }}">
               </div>
 
+              @if (auth()->user()->brand == 2)
                 <div class="col-md-3 mb-3">
                   <label for="fp_date" class="form-label">วันที่จ่าย FP</label>
                   <input type="date" id="fp_date" name="fp_date" class="form-control"
                     value="{{ $order->fp_date }}">
                 </div>
+              @endif
             </div>
 
             <div id="fieldStock" class="col-md-12 row d-none">

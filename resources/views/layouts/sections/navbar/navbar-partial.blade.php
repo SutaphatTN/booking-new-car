@@ -122,7 +122,7 @@
                   @endif
                 </small>
                 @foreach (TbBrand::all() as $tbBrand)
-                  @if (!in_array($userRole, ['admin', 'account', 'audit']) && $tbBrand->id == 2)
+                  @if (!in_array($userRole, ['admin', 'account']) && $tbBrand->id == 2)
                     @continue
                   @endif
                   @php

@@ -38,7 +38,6 @@ class PaymentType extends Model
         'po_number',
         'po_date',
         'contract_date',
-        'danu_date',
         'userZone',
         'brand'
     ];
