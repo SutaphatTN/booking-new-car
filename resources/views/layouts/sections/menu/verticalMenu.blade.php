@@ -34,7 +34,7 @@
         $hideForSale = ['model', 'car-order', 'accessory', 'campaign', 'finance', 'report', 'car-order.form', 'vehicle', 'invoice'];
       @endphp
 
-      @if ($userRole == 'sale' && in_array($menu->slug, $hideForSale))
+      @if ($userRole == 'sale' && (in_array($menu->slug, $hideForSale) || (is_array($menu->slug) && !empty(array_intersect($menu->slug, $hideForSale)))))
         @continue
       @endif
 
