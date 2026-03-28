@@ -179,6 +179,23 @@
       ]
     },
     {
+      "name": "ใบสั่งซื้อ",
+      "icon": "menu-icon icon-base bx bx-receipt",
+      "slug": "invoice",
+      "submenu": [
+        {
+          "url": "invoice",
+          "name": "รายการใบสั่งซื้อ",
+          "slug": "invoice.index"
+        },
+        {
+          "url": "invoice/create",
+          "name": "สร้างใบสั่งซื้อ",
+          "slug": "invoice.create"
+        }
+      ]
+    },
+    {
       "name": "รายงาน",
       "icon": "menu-icon icon-base bx bx-file-blank",
       "slug": "report",

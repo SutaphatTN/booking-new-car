@@ -358,6 +358,14 @@
                             name="reservation_check_no"
                             value="{{ old('reservation_check_no', $reservationPayment->check_no ?? '') }}">
                         </div>
+
+                        @if(auth()->user()->brand == 2)
+                        <div class="col-md-2">
+                          <label class="form-label">วันที่ใช้บัตรคุณดนู</label>
+                          <input type="date" class="form-control" name="danu_date"
+                            value="{{ old('danu_date', $reservationPayment->danu_date ?? '') }}" {{ $disabled }}>
+                        </div>
+                        @endif
                       </div>
                     </div>
                   @endif
@@ -384,6 +392,26 @@
                           <input id="reservation_transfer_no" type="text" class="form-control"
                             name="reservation_transfer_no"
                             value="{{ old('reservation_transfer_no', $reservationPayment->transfer_no ?? '') }}">
+                        </div>
+
+                        @if(auth()->user()->brand == 2)
+                        <div class="col-md-2">
+                          <label class="form-label">วันที่ใช้บัตรคุณดนู</label>
+                          <input type="date" class="form-control" name="danu_date"
+                            value="{{ old('danu_date', $reservationPayment->danu_date ?? '') }}" {{ $disabled }}>
+                        </div>
+                        @endif
+                      </div>
+                    </div>
+                  @endif
+
+                  @if(auth()->user()->brand == 2 && (!$isHistory || $reservationType === 'cash'))
+                    <div id="danuReservation" {{ $reservationType !== 'cash' ? 'style=display:none;' : '' }}>
+                      <div class="row">
+                        <div class="col-md-2">
+                          <label class="form-label">วันที่ใช้บัตรคุณดนู</label>
+                          <input type="date" class="form-control" name="danu_date"
+                            value="{{ old('danu_date', $reservationPayment->danu_date ?? '') }}" {{ $disabled }}>
                         </div>
                       </div>
                     </div>

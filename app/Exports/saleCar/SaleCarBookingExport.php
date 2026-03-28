@@ -148,6 +148,7 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
 
             return [
                 'customer' => $customerName,
+                'sale' => $r->saleUser?->name ?? '-',
                 'model' => $model,
                 'subModel' => $subModel,
                 'option'     => $r->option ?? '-',
