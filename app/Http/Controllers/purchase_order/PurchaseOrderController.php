@@ -15,6 +15,7 @@ use App\Models\AccessoryPrice;
 use App\Models\Campaign;
 use App\Models\CarOrder;
 use App\Models\CarOrderHistory;
+use App\Models\Customer;
 use App\Models\Finance;
 use App\Models\LicensePlateHistory;
 use App\Models\PaymentType;
@@ -30,6 +31,7 @@ use App\Models\TbSalePurchaseType;
 use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
 use App\Models\User;
+use App\Services\OneDriveService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -65,8 +67,11 @@ class PurchaseOrderController extends Controller
 
         $model = TbCarmodel::all();
         $type = TbSalecarType::all();
+        $brandFilter = $authUser->brand == 3
+            ? [1, 3]
+            : [$authUser->brand];
         $saleUser = User::where('role', 'sale')
-            ->where('brand', $authUser->brand)
+            ->whereIn('brand', $brandFilter)
             ->get();
         $typeSale = TbSalePurchaseType::all();
         $interiorColor = TbInteriorColor::all();
@@ -281,6 +286,24 @@ class PurchaseOrderController extends Controller
                 'gwm_color' => Auth::user()->brand == 2 ? $request->gwm_color : null,
                 'interior_color' => Auth::user()->brand == 2 ? $request->interior_color : null,
             ]);
+
+            if ($request->hasFile('attachments')) {
+                $customer = Customer::find($request->CusID);
+                $customerFolder = $customer->id . '-' . ($customer->FirstName ?? 'unknown');
+                $brandName = Auth::user()->brandInfo->name ?? 'Other';
+                $folder = "New Car/{$brandName}/หลักฐานการจอง/{$customerFolder}";
+
+                $oneDrive = new OneDriveService();
+                $urls = [];
+
+                foreach ($request->file('attachments') as $index => $file) {
+                    $fileName = 'booking_' . $salecar->id . '_' . ($index + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    $urls[] = $oneDrive->upload($file->getRealPath(), $fileName, $folder);
+                }
+
+                $salecar->update(['attachment_url' => $urls]);
+            }
+
 
             if ($request->filled('reservationCondition')) {
                 $data = [
@@ -1243,7 +1266,7 @@ class PurchaseOrderController extends Controller
         ]);
     }
 
-    function destroy($id)
+    function destroy(Request $request, $id)
     {
         try {
             $saleCar = Salecar::findOrFail($id);
@@ -1253,7 +1276,9 @@ class PurchaseOrderController extends Controller
                 $saleCar->carOrderHistories()->delete();
             }
 
-            $saleCar->delete();
+            $saleCar->CancelGCIPDate = $request->cancel_gcip_date;
+            $saleCar->con_status = 9;
+            $saleCar->save();
 
             return response()->json([
                 'success' => true,

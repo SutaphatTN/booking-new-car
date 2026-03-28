@@ -14,6 +14,7 @@
     "laravel/framework": "^12.0",
     "laravel/tinker": "^2.10.1",
     "maatwebsite/excel": "^3.1",
+    "microsoft/microsoft-graph": "^1.109",
     "reliese/laravel": "^1.4"
   },
   "require-dev": {
@@ -69,7 +70,8 @@
     "sort-packages": true,
     "allow-plugins": {
       "pestphp/pest-plugin": true,
-      "php-http/discovery": true
+      "php-http/discovery": true,
+      "tbachert/spi": true
     }
   },
   "minimum-stability": "stable",

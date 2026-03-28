@@ -11,16 +11,19 @@
         @continue
       @endif
 
-      @if ($userRole == 'sale' && $submenu->slug == 'purchase-order.viewFN')
+      @if (
+          $userRole == 'sale' &&
+              in_array($submenu->slug, [
+                  'purchase-order.viewFN',
+                  'purchase-order.cancellation',
+                  'accessory.view-export-accessory',
+              ]))
         @continue
       @endif
 
       {{-- @if ($submenu->slug == 'accessory.view-export-accessory' && (in_array($userRole, ['sale', 'manager']) || in_array($userBrand, [2, 3])))
         @continue
       @endif --}}
-      @if ($submenu->slug == 'accessory.view-export-accessory' && $userRole == 'sale')
-        @continue
-      @endif
 
       {{-- active menu method --}}
       @php

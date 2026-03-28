@@ -82,15 +82,19 @@ class InvoiceController extends Controller
     {
         $user = Auth::user();
         $canApprove = in_array($user->role, ['admin', 'manager', 'md']);
+        $canConfirmReceipt = in_array($user->role, ['admin', 'account']);
 
-        $rows = InvoiceCustomer::orderByDesc('id')->get();
-        $data = $rows->map(function ($item, $i) use ($canApprove) {
+        $rows = InvoiceCustomer::whereNull('receipt_confirmed_at')->orderByDesc('id')->get();
+        $data = $rows->map(function ($item, $i) use ($canApprove, $canConfirmReceipt) {
             if ($item->UserApproved) {
-                $action = '<a href="' . route('invoice.pdf', $item->id) . '" target="_blank" class="btn btn-md btn-danger" title="PDF"><i class="bx bxs-file-pdf"></i></a>';
+                $action = '<a href="' . route('invoice.pdf', $item->id) . '" target="_blank" class="btn btn-icon btn-danger text-white" title="PDF"><i class="bx bxs-file-pdf"></i></a>';
+                if ($canConfirmReceipt) {
+                    $action .= ' <button class="btn btn-icon btn-warning btn-confirm-receipt text-white" data-id="' . $item->id . '" title="ยืนยันออกใบเสร็จ"><i class="bx bx-receipt"></i></button>';
+                }
             } elseif ($canApprove) {
-                $action = '<button class="btn btn-md btn-success btn-approve" data-id="' . $item->id . '" title="อนุมัติ"><i class="bx bx-check-circle"></i></button>';
+                $action = '<button class="btn btn-icon btn-success btn-approve text-white" data-id="' . $item->id . '" title="อนุมัติ"><i class="bx bx-check-circle"></i></button>';
             } else {
-                $action = '<button class="btn btn-md btn-success" style="filter:blur(2px);pointer-events:none;" title="อนุมัติ" disabled><i class="bx bx-check-circle"></i></button>';
+                $action = '<button class="btn btn-icon btn-success text-white" style="filter:blur(2px);pointer-events:none;" title="อนุมัติ" disabled><i class="bx bx-check-circle"></i></button>';
             }
 
             return [
@@ -104,6 +108,18 @@ class InvoiceController extends Controller
             ];
         });
         return response()->json(['data' => $data]);
+    }
+
+    public function confirmReceipt($id)
+    {
+        $user = Auth::user();
+        if (!in_array($user->role, ['admin', 'account'])) {
+            return response()->json(['success' => false], 403);
+        }
+
+        $invoice = InvoiceCustomer::findOrFail($id);
+        $invoice->update(['receipt_confirmed_at' => now()]);
+        return response()->json(['success' => true]);
     }
 
     public function approve($id)

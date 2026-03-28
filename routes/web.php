@@ -15,6 +15,7 @@ use App\Http\Controllers\forecast\ForecastController;
 use App\Http\Controllers\home\HomeController;
 use App\Http\Controllers\model_car\ModelCarController;
 use App\Http\Controllers\model_car\SubModelCarController;
+use App\Http\Controllers\purchase_order\CancellationController;
 use App\Http\Controllers\purchase_order\PurchaseOrderController;
 use App\Http\Controllers\vehicle\LicenseController;
 use App\Http\Controllers\vehicle\VehicleController;
@@ -52,6 +53,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('invoice/list', [InvoiceController::class, 'list'])->name('invoice.list');
     Route::get('invoice/{id}/pdf', [InvoiceController::class, 'pdf'])->name('invoice.pdf');
     Route::post('invoice/{id}/approve', [InvoiceController::class, 'approve'])->name('invoice.approve');
+    Route::post('invoice/{id}/confirm-receipt', [InvoiceController::class, 'confirmReceipt'])->name('invoice.confirmReceipt');
 
 
     // purchase-order
@@ -230,7 +232,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
 
     // forecast
     Route::get('/forecast', [ForecastController::class, 'forecastForm'])
-        ->name('forecast.form');
+        ->name('car-order.form');
 
     Route::post('/forecast/calculate', [ForecastController::class, 'forecastCalculate'])
         ->name('forecast.calculate');
@@ -262,9 +264,17 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/purchase-order/{id}/cancel-car-order', [PurchaseOrderController::class, 'cancelCarOrder']);
     Route::get('/purchase-order/search', [PurchaseOrderController::class, 'search'])->name('purchase-order.search');
     //commission sale
-    Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('sale.viewCommission');
+    Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('purchase-order.viewCommission');
     Route::get('purchase-order/list-Commission', [PurchaseOrderController::class, 'listCommission']);
-
+    // cancellation
+    Route::get('purchase-order/cancellation', [CancellationController::class, 'index'])->name('purchase-order.cancellation');
+    Route::get('purchase-order/list-cancellation', [CancellationController::class, 'list']);
+    Route::get('purchase-order/cancellation-data/{id}', [CancellationController::class, 'getData']);
+    Route::put('purchase-order/cancellation/{id}/refund', [CancellationController::class, 'updateRefund']);
+    Route::put('purchase-order/cancellation/{id}', [CancellationController::class, 'update']);
+    Route::post('purchase-order/cancellation/{id}/withdraw-attachment', [CancellationController::class, 'uploadWithdrawAttachment']);
+    Route::delete('purchase-order/cancellation/{id}/withdraw-attachment', [CancellationController::class, 'deleteWithdrawAttachment']);
+    Route::post('purchase-order/cancellation/{id}/confirm-withdraw', [CancellationController::class, 'confirmWithdraw']);
     //all resource
     Route::resource('customer', CustomerController::class);
     Route::resource('purchase-order', PurchaseOrderController::class);

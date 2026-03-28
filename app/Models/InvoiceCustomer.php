@@ -28,7 +28,8 @@ class InvoiceCustomer extends Model
         'UserApproved',
         'approved_date',
         'brand',
-        'userZone'
+        'userZone',
+        'receipt_confirmed_at',
     ];
 
     protected $dates = ['deleted_at'];
