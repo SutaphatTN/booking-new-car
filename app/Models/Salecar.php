@@ -141,6 +141,7 @@ class Salecar extends Model
 		'type_sale',
 		'model_id',
 		'Color',
+		'type_color',
 		'gwm_color',
 		'interior_color',
 		'Year',
@@ -226,7 +227,8 @@ class Salecar extends Model
 		'approval_requested_at',
 		'userZone',
 		'brand',
-		'UserInsert'
+		'UserInsert',
+		'branch'
 	];
 
 	protected $dates = ['deleted_at'];

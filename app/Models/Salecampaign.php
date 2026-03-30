@@ -49,7 +49,8 @@ class Salecampaign extends Model
 		'CashSupportDeduct',
 		'CashSupportFinal',
 		'userZone',
-		'brand'
+		'brand',
+		'branch',
 	];
 
 	protected $dates = ['deleted_at'];

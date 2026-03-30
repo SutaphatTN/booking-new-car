@@ -79,7 +79,8 @@ class Customer extends Model
 		'Mobilephone2',
 		'userZone',
 		'brand',
-		'UserInsert'
+		'UserInsert',
+		'branch',
 	];
 
 	protected $dates = ['deleted_at'];

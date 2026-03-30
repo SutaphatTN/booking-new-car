@@ -33,6 +33,7 @@ class CarOrder extends Model
         'order_code',
         'order_date',
         'color',
+        'type_color',
         'gwm_color',
         'interior_color',
         'year',
@@ -59,7 +60,8 @@ class CarOrder extends Model
         'reason',
         'userZone',
         'brand',
-        'UserInsert'
+        'UserInsert',
+        'branch'
     ];
 
     protected $dates = ['deleted_at'];

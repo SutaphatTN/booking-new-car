@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
+use App\Models\Traits\BrandScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 class LicensePlateHistory extends Model
 {
 	use SoftDeletes;
-	use UserAccessScope;
+	use BrandScope;
 
 	protected $table = 'license_plate_history';
 
@@ -29,7 +29,8 @@ class LicensePlateHistory extends Model
 		'refund_amount',
 		'note',
 		'userZone',
-		'brand'
+		'brand',
+		'branch',
 	];
 
 	protected $dates = ['deleted_at'];

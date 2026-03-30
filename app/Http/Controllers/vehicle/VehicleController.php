@@ -160,6 +160,7 @@ class VehicleController extends Controller
         try {
             $userZone = Auth::user()->userZone ?? null;
             $brand = Auth::user()->brand ?? null;
+            $branch = Auth::user()->branch ?? null;
 
             $data = $request->except(['_token', '_method']);
             $data['withdrawal_total'] = $request->withdrawal_total
@@ -173,6 +174,7 @@ class VehicleController extends Controller
                 'SaleID' => $id,
                 'userZone' => $userZone,
                 'brand' => $brand,
+                'branch' => $branch,
             ]);
 
             $vl->fill($data);
@@ -227,6 +229,7 @@ class VehicleController extends Controller
     {
         $userZone = Auth::user()->userZone ?? null;
         $brand = Auth::user()->brand ?? null;
+        $branch = Auth::user()->branch ?? null;
 
         foreach ($request->items as $item) {
 
@@ -242,6 +245,7 @@ class VehicleController extends Controller
                     'withdrawal_total' => $item['total'] ? str_replace(',', '', $item['total']) : null,
                     'userZone' => $userZone,
                     'brand' => $brand,
+                    'branch' => $branch,
                 ]
             );
         }

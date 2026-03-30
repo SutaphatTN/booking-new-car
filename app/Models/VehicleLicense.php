@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
+use App\Models\Traits\BrandScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 class VehicleLicense extends Model
 {
 	use SoftDeletes;
-	use UserAccessScope;
+	use BrandScope;
 
 	protected $table = 'vehicle_license';
 
@@ -34,7 +34,8 @@ class VehicleLicense extends Model
 		'labe_status',
 		'note',
 		'userZone',
-		'brand'
+		'brand',
+		'branch',
 	];
 
 	protected $dates = ['deleted_at'];

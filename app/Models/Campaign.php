@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
+use App\Models\Traits\BrandScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Campaign extends Model
 {
 	use SoftDeletes;
-	use UserAccessScope;
+	use BrandScope;
 
 	protected $table = 'campaign';
 
@@ -28,6 +28,7 @@ class Campaign extends Model
 		'cashSupport_final',
 		'userZone',
 		'brand',
+		'branch',
 		'startDate',
 		'endDate',
 		'startYear',

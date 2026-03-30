@@ -2,19 +2,19 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
-use Carbon\Carbon;
+use App\Models\Traits\BrandScope;
 use Illuminate\Database\Eloquent\Model;
 
 class TbCampaignType extends Model
 {
-	use UserAccessScope;
+	use BrandScope;
 	
 	protected $table = 'tb_campaign_type';
 
 	protected $fillable = [
 		'name',
 		'userZone',
-		'brand'
+		'brand',
+		'branch',
 	];
 }

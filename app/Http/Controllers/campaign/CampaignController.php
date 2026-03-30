@@ -121,6 +121,7 @@ class CampaignController extends Controller
                     : null,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
+                'branch' => Auth::user()->branch ?? null,
                 'startDate' => $request->startDate,
                 'endDate' => $request->endDate,
                 'startYear' => $request->startYear,
@@ -248,6 +249,7 @@ class CampaignController extends Controller
                 'name' => $request->name,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
+                'branch' => Auth::user()->branch ?? null,
             ];
 
             CampaignName::create($data);

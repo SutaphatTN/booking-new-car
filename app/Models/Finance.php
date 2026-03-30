@@ -6,7 +6,6 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -25,7 +24,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Finance extends Model
 {
 	use SoftDeletes;
-	use UserAccessScope;
 	
 	protected $table = 'finances';
 
@@ -36,6 +34,7 @@ class Finance extends Model
 		'Active',
 		'userZone',
 		'brand',
+		'branch',
 	];
 
 	protected $dates = ['deleted_at'];

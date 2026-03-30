@@ -40,7 +40,8 @@ class PaymentType extends Model
         'contract_date',
         'danu_date',
         'userZone',
-        'brand'
+        'brand',
+        'branch',
     ];
 
     protected $dates = ['deleted_at'];

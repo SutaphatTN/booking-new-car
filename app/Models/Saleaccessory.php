@@ -44,7 +44,8 @@ class Saleaccessory extends Model
 		'commission',
 		'type',
 		'userZone',
-		'brand'
+		'brand',
+		'branch',
 	];
 
 	protected $dates = ['deleted_at'];

@@ -58,6 +58,7 @@ class ModelCarController extends Controller
                     : null,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
+                'branch' => Auth::user()->branch ?? null,
             ];
 
             TbCarmodel::create($data);

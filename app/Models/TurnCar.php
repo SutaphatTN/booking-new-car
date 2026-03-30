@@ -48,7 +48,8 @@ class TurnCar extends Model
 		'cost_turn',
 		'com_turn',
 		'userZone',
-		'brand'
+		'brand',
+		'branch',
 	];
 
 	protected $dates = ['deleted_at'];

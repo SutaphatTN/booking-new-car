@@ -27,6 +27,7 @@ class Address extends Model
         'post_id',
         'userZone',
         'brand',
+        'branch',
     ];
 
     protected $dates = ['deleted_at'];

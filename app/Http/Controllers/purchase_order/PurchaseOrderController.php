@@ -278,6 +278,7 @@ class PurchaseOrderController extends Controller
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
                 'UserInsert' => Auth::id(),
+                'branch' => Auth::user()->branch ?? null,
                 'gwm_color' => Auth::user()->brand == 2 ? $request->gwm_color : null,
                 'interior_color' => Auth::user()->brand == 2 ? $request->interior_color : null,
             ]);
@@ -292,6 +293,7 @@ class PurchaseOrderController extends Controller
                         : null,
                     'date' => $request->reservation_date,
                     'userZone' => $request->userZone  ?? null,
+                    'branch' => Auth::user()->branch ?? null,
                 ];
 
                 $isBrand2 = Auth::user()->brand == 2;
@@ -782,6 +784,7 @@ class PurchaseOrderController extends Controller
                     'changed_at' => now(),
                     'userZone' => Auth::user()->userZone ?? null,
                     'brand' => Auth::user()->brand ?? null,
+                    'branch' => Auth::user()->branch ?? null,
                 ]);
 
                 if ($oldCarOrderID) {
@@ -821,6 +824,7 @@ class PurchaseOrderController extends Controller
                         'UserInsert' => Auth::id(),
                         'userZone' => Auth::user()->userZone ?? null,
                         'brand' => Auth::user()->brand ?? null,
+                        'branch' => Auth::user()->branch ?? null,
                     ]);
                 }
             }
@@ -877,6 +881,7 @@ class PurchaseOrderController extends Controller
                         : null,
                     'date' => $request->reservation_date,
                     'userZone' => $request->userZone  ?? null,
+                    'branch' => Auth::user()->branch ?? null,
                 ];
 
                 $isBrand2 = Auth::user()->brand == 2;
@@ -960,6 +965,7 @@ class PurchaseOrderController extends Controller
                     'cost' => $cost,
                     'date' => $request->remaining_date,
                     'userZone' => $request->userZone ?? null,
+                    'branch' => Auth::user()->branch ?? null,
                 ];
 
                 $fieldsToClear = [
@@ -1040,6 +1046,7 @@ class PurchaseOrderController extends Controller
                         : null,
                     'date' => $request->delivery_date,
                     'userZone' => $request->userZone  ?? null,
+                    'branch' => Auth::user()->branch ?? null,
                 ];
 
                 switch ($request->deliveryCondition) {

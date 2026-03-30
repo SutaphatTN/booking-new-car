@@ -6,7 +6,7 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
+use App\Models\Traits\BrandScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -36,7 +36,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class AccessoryPrice extends Model
 {
 	use SoftDeletes;
-	use UserAccessScope;
+	use BrandScope;
 
 	protected $table = 'accessory_price';
 
@@ -67,6 +67,7 @@ class AccessoryPrice extends Model
 		'promo',
 		'userZone',
 		'brand',
+		'branch',
 		'startDate',
 		'endDate',
 		'active',

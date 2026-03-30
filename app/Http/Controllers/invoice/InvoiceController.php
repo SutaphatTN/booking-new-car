@@ -48,6 +48,7 @@ class InvoiceController extends Controller
                 'UserInsert'     => $user->id,
                 'brand'          => $user->brand,
                 'userZone'       => $user->userZone,
+                'branch'         => $user->branch,
             ]);
 
             if ($request->has('accessories')) {
@@ -62,6 +63,7 @@ class InvoiceController extends Controller
                         'sale_price'  => $item['sale_price'] ? str_replace(',', '', $item['sale_price']) : null,
                         'brand'       => $user->brand,
                         'userZone'    => $user->userZone,
+                        'branch'      => $user->branch,
                     ]);
                 }
             }

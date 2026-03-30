@@ -11,6 +11,7 @@ use App\Models\TbCarmodel;
 use App\Models\TbInteriorColor;
 use App\Models\TbOrderStatus;
 use App\Models\TbPurchaseType;
+use App\Models\TbPricelistCar;
 use App\Models\TbSubcarmodel;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -438,6 +439,7 @@ class CarOrderController extends Controller
                 'type' => $request->type,
                 'order_date' => $request->order_date,
                 'color' => $request->color ?? null,
+                'type_color' => $request->type_color ?? null,
                 'year' => $request->year,
                 'purchase_type' => $request->purchase_type,
                 'order_status' => 1,
@@ -457,6 +459,7 @@ class CarOrderController extends Controller
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
                 'UserInsert' => Auth::id(),
+                'branch' => Auth::user()->branch ?? null,
             ];
 
             if (Auth::user()->brand == 2) {
@@ -488,6 +491,7 @@ class CarOrderController extends Controller
                         'changed_at' => now(),
                         'userZone' => Auth::user()->userZone ?? null,
                         'brand' => Auth::user()->brand ?? null,
+                        'branch' => Auth::user()->branch ?? null,
                     ]);
 
                     // คืนสถานะ order เก่า (ถ้ามี)

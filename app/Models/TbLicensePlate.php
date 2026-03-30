@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
+use App\Models\Traits\BrandScope;
 use Illuminate\Database\Eloquent\Model;
 
 class TbLicensePlate extends Model
 {
-	use UserAccessScope;
+	use BrandScope;
 	
 	protected $table = 'tb_license_plate';
 
@@ -15,7 +15,8 @@ class TbLicensePlate extends Model
 		'number',
 		'is_used',
 		'userZone',
-		'brand'
+		'brand',
+		'branch',
 	];
 
 	public function histories()

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
+use App\Models\Traits\BrandScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 class FinancesExtraCom extends Model
 {
     use SoftDeletes;
-    use UserAccessScope;
+    use BrandScope;
 
     protected $table = 'finances_extracom';
 
@@ -20,6 +20,7 @@ class FinancesExtraCom extends Model
         'com',
         'userZone',
 		'brand',
+        'branch',
     ];
 
     protected $dates = ['deleted_at'];

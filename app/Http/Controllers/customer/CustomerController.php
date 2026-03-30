@@ -73,6 +73,7 @@ class CustomerController extends Controller
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
                 'UserInsert' => Auth::id(),
+                'branch' => Auth::user()->branch ?? null,
             ]);
 
             Address::create([
@@ -89,6 +90,7 @@ class CustomerController extends Controller
                 'postal_code' => $request->current_postal_code,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
+                'branch' => Auth::user()->branch ?? null,
                 'post_id' => $request->current_post_id ?: null,
             ]);
 
@@ -106,6 +108,7 @@ class CustomerController extends Controller
                 'postal_code' => $request->doc_postal_code,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
+                'branch' => Auth::user()->branch ?? null,
                 'post_id' => $request->doc_post_id ?: null,
             ]);
 

@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
+use App\Models\Traits\BrandScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CampaignName extends Model
 {
 	use SoftDeletes;
-	use UserAccessScope;
+	use BrandScope;
 
 	protected $table = 'campaign_name';
 
@@ -17,6 +17,7 @@ class CampaignName extends Model
 		'name',
 		'userZone',
 		'brand',
+		'branch',
 	];
 
 	protected $dates = ['deleted_at'];

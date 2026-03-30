@@ -17,7 +17,8 @@ class SaleCarPayment extends Model
         'cost',
         'date',
         'userZone',
-		'brand'
+		'brand',
+        'branch',
     ];
 
     protected $dates = ['deleted_at'];

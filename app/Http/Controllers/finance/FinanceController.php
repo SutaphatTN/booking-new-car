@@ -58,6 +58,7 @@ class FinanceController extends Controller
                 'max_year' => $request->max_year,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
+                'branch' => Auth::user()->branch ?? null,
             ];
 
             Finance::create($data);
@@ -166,6 +167,7 @@ class FinanceController extends Controller
                     : null,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
+                'branch' => Auth::user()->branch ?? null,
             ];
 
             FinancesExtraCom::create($data);
@@ -442,6 +444,7 @@ class FinanceController extends Controller
                 'date' => $request->date,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
+                'branch' => Auth::user()->branch ?? null,
             ];
 
             // fill + save (รองรับทั้ง create และ update)

@@ -43,6 +43,7 @@ class FinancesConfirm extends Model
         'date',
         'userZone',
 		'brand',
+        'branch',
     ];
 
     protected $dates = ['deleted_at'];

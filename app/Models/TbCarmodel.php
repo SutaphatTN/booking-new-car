@@ -39,7 +39,8 @@ class TbCarmodel extends Model
 		'per_budget',
 		'money_min',
 		'userZone',
-		'brand'
+		'brand',
+		'branch',
 	];
 
 	protected $dates = ['deleted_at'];

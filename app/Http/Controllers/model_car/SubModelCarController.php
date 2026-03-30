@@ -100,6 +100,7 @@ class SubModelCarController extends Controller
                 'type_carOrder' => $request->type_carOrder,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
+                'branch' => Auth::user()->branch ?? null,
             ];
 
             TbSubcarmodel::create($data);

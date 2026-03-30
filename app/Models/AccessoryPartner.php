@@ -6,7 +6,6 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -31,7 +30,8 @@ class AccessoryPartner extends Model
 	protected $fillable = [
 		'name',
 		'userZone',
-		'brand'
+		'brand',
+		'branch'
 	];
 
 	protected $dates = ['deleted_at'];

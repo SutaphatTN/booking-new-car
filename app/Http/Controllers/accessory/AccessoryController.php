@@ -137,6 +137,7 @@ class AccessoryController extends Controller
                     : null,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
+                'branch' => Auth::user()->branch ?? null,
                 'startDate' => $request->startDate,
                 'endDate' => $request->endDate,
                 'active' => $active,
@@ -274,6 +275,7 @@ class AccessoryController extends Controller
                 'name' => $request->name,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
+                'branch' => Auth::user()->branch ?? null,
             ];
 
             AccessoryPartner::create($data);
