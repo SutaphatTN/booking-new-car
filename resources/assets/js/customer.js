@@ -9,13 +9,16 @@ $.ajaxSetup({
 //view : table
 let customerTable;
 
-$(document).ready(function () {
+function initCustomerTable(keyword) {
   if ($.fn.DataTable.isDataTable('#customerTable')) {
     $('#customerTable').DataTable().destroy();
   }
 
   customerTable = $('#customerTable').DataTable({
-    ajax: '/customer/list',
+    ajax: {
+      url: '/customer/list',
+      data: { keyword: keyword }
+    },
     columns: [
       { data: 'No' },
       { data: 'FullName' },
@@ -23,12 +26,8 @@ $(document).ready(function () {
       {
         data: 'Mobilephone',
         render: function (data, type, row) {
-          if (type === 'display') {
-            return data;
-          }
-          if (type === 'filter') {
-            return row.MobilephoneRaw;
-          }
+          if (type === 'display') return data;
+          if (type === 'filter') return row.MobilephoneRaw;
           return data;
         }
       },
@@ -36,7 +35,7 @@ $(document).ready(function () {
     ],
     paging: true,
     lengthChange: true,
-    searching: true,
+    searching: false,
     ordering: false,
     info: true,
     pageLength: 10,
@@ -46,7 +45,6 @@ $(document).ready(function () {
       zeroRecords: 'ไม่พบข้อมูล',
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
       infoEmpty: 'ไม่มีข้อมูล',
-      search: 'ค้นหา:',
       paginate: {
         first: '',
         last: '',
@@ -54,6 +52,23 @@ $(document).ready(function () {
         previous: 'ก่อนหน้า'
       }
     }
+  });
+}
+
+$(document).ready(function () {
+  initCustomerTable('');
+
+  $('#btnSearchCustomer').on('click', function () {
+    const keyword = $('#customerSearchInput').val().trim();
+    if (keyword === '') {
+      Swal.fire({ icon: 'warning', title: 'กรุณากรอกคำค้นหา', timer: 1500, showConfirmButton: false });
+      return;
+    }
+    initCustomerTable(keyword);
+  });
+
+  $('#customerSearchInput').on('keydown', function (e) {
+    if (e.key === 'Enter') $('#btnSearchCustomer').trigger('click');
   });
 });
 

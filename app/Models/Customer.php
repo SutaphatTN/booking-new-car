@@ -6,7 +6,6 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -46,7 +45,6 @@ use Illuminate\Support\Facades\Auth;
 class Customer extends Model
 {
 	use SoftDeletes;
-	use UserAccessScope;
 
 	protected $table = 'customers';
 

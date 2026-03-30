@@ -125,9 +125,21 @@ class CustomerController extends Controller
         }
     }
 
-    public function listCustomer()
+    public function listCustomer(Request $request)
     {
-        $customers = Customer::with('prefix')->get();
+        $keyword = trim($request->input('keyword', ''));
+
+        if ($keyword === '') {
+            return response()->json(['data' => []]);
+        }
+
+        $customers = Customer::with('prefix')
+            ->where(function ($q) use ($keyword) {
+                $q->where('FirstName', 'like', "%{$keyword}%")
+                    ->orWhere('LastName', 'like', "%{$keyword}%")
+                    ->orWhere('Mobilephone1', 'like', "%{$keyword}%");
+            })
+            ->get();
 
         $data = $customers->map(function ($c, $index) {
             $prefixText = $c->prefix ? $c->prefix->Name_TH : '';
