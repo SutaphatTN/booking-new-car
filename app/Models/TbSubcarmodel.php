@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
+use App\Models\Traits\BrandScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TbSubcarmodel extends Model
 {
 	use SoftDeletes;
-	use UserAccessScope;
+	use BrandScope;
 
 	protected $table = 'tb_subcarmodels';
 
