@@ -258,6 +258,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'allocation_status' => $allocationStatus,
         'allocation_date' => $allocationDate,
         'note_accessory' => $order->note_accessory ?? '-',
+        'Note' => '-',
       ]);
     }
 
@@ -323,6 +324,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'allocation_status' => '',
         'allocation_date' => '',
         'note_accessory' => '-',
+        'Note' => $sale->Note ?? '-',
       ]);
     }
 

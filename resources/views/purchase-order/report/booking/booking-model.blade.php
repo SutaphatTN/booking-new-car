@@ -26,6 +26,7 @@
       <th>สถานะรถจัดสรร</th>
       <th>วันที่จัดสรร</th>
       <th>ประดับยนต์ของรถ</th>
+      <th>หมายเหตุ</th>
     </tr>
   </thead>
   <tbody>
@@ -56,11 +57,12 @@
         <td>{{ $r['allocation_status'] }}</td>
         <td>{{ $r['allocation_date'] }}</td>
         <td>{{ $r['note_accessory'] }}</td>
+        <td>{{ $r['Note'] }}</td>
       </tr>
     @empty
       <tr>
         {{-- <td colspan="{{ auth()->user()->brand == 2 ? 21 : 20 }}" align="center"> --}}
-          <td colspan="20" align="center">
+          <td colspan="21" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>
