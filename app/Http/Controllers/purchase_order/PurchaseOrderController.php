@@ -27,6 +27,7 @@ use App\Models\TbLicensePlate;
 use App\Models\TbProvinces;
 use App\Models\TbSalecarType;
 use App\Models\TbSalePurchaseType;
+use App\Models\TbPricelistCar;
 use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
 use App\Models\User;
@@ -270,6 +271,7 @@ class PurchaseOrderController extends Controller
                 'Color' => $request->Color ?? null,
                 'Year' => $request->Year,
                 'option' => $request->option ?? null,
+                'type_color' => $request->type_color ?? null,
                 'payment_mode' => $request->payment_mode,
                 'CusID' => $request->CusID,
                 'BookingDate' => $request->BookingDate,
@@ -472,7 +474,16 @@ class PurchaseOrderController extends Controller
 
         $selected_campaigns = $saleCar->campaigns->pluck('CampaignID')->toArray();
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor'));
+        $pricelistRows = $subModel_id
+            ? TbPricelistCar::where('subModel_id', $subModel_id)
+                ->select('color', 'year')
+                ->distinct()
+                ->orderBy('color')
+                ->orderBy('year')
+                ->get()
+            : collect();
+
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows'));
     }
 
     public function update(Request $request, $id)
@@ -613,6 +624,7 @@ class PurchaseOrderController extends Controller
                 'Year' => $request->Year,
                 'CarOrderID' => $request->CarOrderID,
                 'option' => $request->option ?? null,
+                'type_color' => $request->type_color ?? null,
                 'payment_mode' => $request->payment_mode,
                 'CusID' => $request->CusID,
                 'FinanceID' => $request->FinanceID,

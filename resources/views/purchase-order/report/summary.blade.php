@@ -146,11 +146,14 @@
         รุ่นรถ :
         <span style="font-weight: normal;">
           {{ $saleCar->subModel->name ?? '-' }}
-        </span> &nbsp;&nbsp;
-        Option :
-        <span style="font-weight: normal;">
-          {{ $saleCar->option ?? '-' }}
         </span>
+        @if (auth()->user()->brand == 1)
+          &nbsp;&nbsp;
+          Option :
+          <span style="font-weight: normal;">
+            {{ $saleCar->option ?? '-' }}
+          </span>
+        @endif
       </span>
 
       @if (auth()->user()->brand == 2)
@@ -165,6 +168,13 @@
           สีภายในรถ :
           <span style="font-weight: normal;">
             {{ $saleCar->interiorColor->name ?? '-' }}
+          </span>
+        </span>
+      @elseif (auth()->user()->brand == 3)
+        <span class="label">
+          สีรถ :
+          <span style="font-weight: normal;">
+            {{ $saleCar->gwmColor->name ?? '-' }}
           </span>
         </span>
       @else
@@ -575,7 +585,9 @@
           $balanceCamHalf2 = $saleCar->balanceCampaign ?? null;
           $perBudgetHalf2 = $saleCar->model->per_budget ?? 0;
           $isNegativeHalf2 = is_numeric($balanceCamHalf2) && $balanceCamHalf2 < 0;
-          $displayBalanceCamHalf2 = $isNegativeHalf2 ? $balanceCamHalf2 * 2 * ($perBudgetHalf2 / 100) : $balanceCamHalf2;
+          $displayBalanceCamHalf2 = $isNegativeHalf2
+              ? $balanceCamHalf2 * 2 * ($perBudgetHalf2 / 100)
+              : $balanceCamHalf2;
         @endphp
         <span class="label">
           {{ $isNegativeHalf2 ? 'หักคอม' : 'เหลืองบ (แบ่ง 2 ส่วน)' }} :

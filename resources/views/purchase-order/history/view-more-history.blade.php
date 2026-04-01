@@ -15,15 +15,18 @@
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ชื่อลูกค้า :</strong>
-              <span>{{ $saleCar->customer?->prefix->Name_TH ?? '' }} {{ $saleCar->customer?->FirstName ?? '' }} {{ $saleCar->customer?->LastName ?? '' }}</span>
+              <span>{{ $saleCar->customer?->prefix->Name_TH ?? '' }} {{ $saleCar->customer?->FirstName ?? '' }}
+                {{ $saleCar->customer?->LastName ?? '' }}</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ที่อยู่ปัจจุบัน :</strong>
-              <span style="width:60%; text-align:right;">{{ $saleCar->customer->currentAddress?->full_address ?? '-' }}</span>
+              <span
+                style="width:60%; text-align:right;">{{ $saleCar->customer->currentAddress?->full_address ?? '-' }}</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ที่อยู่สำหรับส่งเอกสาร :</strong>
-              <span style="width:60%; text-align:right;">{{ $saleCar->customer->documentAddress?->full_address ?? '-' }}</span>
+              <span
+                style="width:60%; text-align:right;">{{ $saleCar->customer->documentAddress?->full_address ?? '-' }}</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>เบอร์มือถือ :</strong>
@@ -37,26 +40,38 @@
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>รุ่นรถย่อย :</strong>
-              <span>{{ $saleCar->subModel?->detail }} - {{ $saleCar->subModel?->name }}</span>
+              <span>
+                {{ !empty($saleCar->subModel)
+                    ? ($saleCar->subModel->detail
+                        ? $saleCar->subModel->detail . ' - ' . $saleCar->subModel->name
+                        : $saleCar->subModel->name)
+                    : '' }}
+              </span>
             </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>Option :</strong>
-              <span>{{ $saleCar->option ?? '-' }}</span>
-            </div>
-            @if(auth()->user()->brand == 2)
-            <div class="d-flex justify-content-between mb-2">
-              <strong>สี :</strong>
-              <span>{{ $saleCar->gwmColor->name ?? '-' }}</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>สีภายใน :</strong>
-              <span>{{ $saleCar->interiorColor->name ?? '-' }}</span>
-            </div>
+            @if (auth()->user()->brand == 2)
+              <div class="d-flex justify-content-between mb-2">
+                <strong>สี :</strong>
+                <span>{{ $saleCar->gwmColor->name ?? '-' }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>สีภายใน :</strong>
+                <span>{{ $saleCar->interiorColor->name ?? '-' }}</span>
+              </div>
+            @elseif (auth()->user()->brand == 3)
+              <div class="d-flex justify-content-between mb-2">
+                <strong>สี :</strong>
+                <span>{{ $saleCar->gwmColor->name ?? '-' }}</span>
+              </div>
             @else
-            <div class="d-flex justify-content-between mb-2">
-              <strong>สี :</strong>
-              <span>{{ $saleCar->Color ?? '-' }}</span>
-            </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>Option :</strong>
+                <span>{{ $saleCar->option ?? '-' }}</span>
+              </div>
+
+              <div class="d-flex justify-content-between mb-2">
+                <strong>สี :</strong>
+                <span>{{ $saleCar->Color ?? '-' }}</span>
+              </div>
             @endif
 
             <div class="d-flex justify-content-between mb-2">
@@ -65,7 +80,8 @@
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ราคา :</strong>
-              <span>{{ $saleCar->carOrder?->car_DNP !== null ? number_format($saleCar->carOrder->car_DNP, 2) : '-' }} บาท</span>
+              <span>{{ $saleCar->carOrder?->car_DNP !== null ? number_format($saleCar->carOrder->car_DNP, 2) : '-' }}
+                บาท</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>เงินจอง :</strong>
@@ -73,105 +89,117 @@
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>รถเทิร์น :</strong>
-              <span>{{ $saleCar->turnCar?->cost_turn !== null ? number_format($saleCar->turnCar->cost_turn, 2) : '-' }} บาท</span>
+              <span>{{ $saleCar->turnCar?->cost_turn !== null ? number_format($saleCar->turnCar->cost_turn, 2) : '-' }}
+                บาท</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ลูกค้าจ่ายเพิ่ม :</strong>
-              <span>{{ $saleCar->total_extra_used !== null ? number_format($saleCar->total_extra_used, 2) : '-' }} บาท</span>
+              <span>{{ $saleCar->total_extra_used !== null ? number_format($saleCar->total_extra_used, 2) : '-' }}
+                บาท</span>
             </div>
 
             @if ($saleCar->payment_mode === 'finance')
-            <div class="d-flex justify-content-between mb-2">
-              <strong>เงินดาวน์ :</strong>
-              <span>{{ $saleCar->DownPayment !== null ? number_format($saleCar->DownPayment, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>เปอร์เซ็นต์เงินดาวน์ :</strong>
-              <span>{{ $saleCar->DownPaymentPercentage }} %</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ส่วนลดเงินดาวน์ :</strong>
-              <span>{{ $saleCar->DownPaymentDiscount !== null ? number_format($saleCar->DownPaymentDiscount, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ส่วนลดราคารถ :</strong>
-              <span>{{ $saleCar->discount !== null ? number_format($saleCar->discount, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ค่าใช้จ่ายอื่นๆ :</strong>
-              <span>{{ $saleCar->other_cost_fi !== null ? number_format($saleCar->other_cost_fi, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>หมายเหตุ ค่าใช้จ่ายอื่นๆ :</strong>
-              <span>{{ $saleCar->reason_other_cost_fi ?? '-' }}</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>Vat ซื้อเพิ่ม :</strong>
-              <span>{{ $saleCar->AccessoryExtraVat !== null ? number_format($saleCar->AccessoryExtraVat, 2) : '-' }} บาท</span>
-            </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>เงินดาวน์ :</strong>
+                <span>{{ $saleCar->DownPayment !== null ? number_format($saleCar->DownPayment, 2) : '-' }} บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>เปอร์เซ็นต์เงินดาวน์ :</strong>
+                <span>{{ $saleCar->DownPaymentPercentage }} %</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ส่วนลดเงินดาวน์ :</strong>
+                <span>{{ $saleCar->DownPaymentDiscount !== null ? number_format($saleCar->DownPaymentDiscount, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ส่วนลดราคารถ :</strong>
+                <span>{{ $saleCar->discount !== null ? number_format($saleCar->discount, 2) : '-' }} บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ค่าใช้จ่ายอื่นๆ :</strong>
+                <span>{{ $saleCar->other_cost_fi !== null ? number_format($saleCar->other_cost_fi, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>หมายเหตุ ค่าใช้จ่ายอื่นๆ :</strong>
+                <span>{{ $saleCar->reason_other_cost_fi ?? '-' }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>Vat ซื้อเพิ่ม :</strong>
+                <span>{{ $saleCar->AccessoryExtraVat !== null ? number_format($saleCar->AccessoryExtraVat, 2) : '-' }}
+                  บาท</span>
+              </div>
 
-            <h5 class="pb-2 mb-3"></h5>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>สรุปค่าใช้จ่ายวันออกรถ :</strong>
-              <span>{{ $saleCar->TotalPaymentatDeliveryCar !== null ? number_format($saleCar->TotalPaymentatDeliveryCar, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>Po Number :</strong>
-              <span>{{ $saleCar->remainingPayment?->po_number ?? '-' }}</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ไฟแนนซ์ :</strong>
-              <span>{{ $saleCar->remainingPayment->financeInfo?->FinanceCompany }}</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ยอดจัดไฟแนนซ์ :</strong>
-              <span>{{ $saleCar->balanceFinance !== null ? number_format($saleCar->balanceFinance, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ดอกเบี้ย :</strong>
-              <span>{{ $saleCar->remainingPayment?->interest }} %</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>งวดผ่อน :</strong>
-              <span>{{ $saleCar->remainingPayment?->period }} งวด</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ค่างวด (กรณีไม่มี ALP) :</strong>
-              <span>{{ $saleCar->remainingPayment?->alp !== null ? number_format($saleCar->remainingPayment->alp, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ค่างวด (รวม ALP) :</strong>
-              <span>{{ $saleCar->remainingPayment?->including_alp !== null ? number_format($saleCar->remainingPayment->including_alp, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ยอดเงิน ALP ที่หักจากใบเสร็จดาวน์ :</strong>
-              <span>{{ $saleCar->remainingPayment?->total_alp !== null ? number_format($saleCar->remainingPayment->total_alp, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ดอกเบี้ยคอม :</strong>
-              <span>{{ 'C' . $saleCar->remainingPayment?->type_com }}</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ยอดเงินค่าคอม :</strong>
-              <span>{{ $saleCar->remainingPayment?->total_com !== null ? number_format($saleCar->remainingPayment->total_com, 2) : '-' }} บาท</span>
-            </div>
+              <h5 class="pb-2 mb-3"></h5>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>สรุปค่าใช้จ่ายวันออกรถ :</strong>
+                <span>{{ $saleCar->TotalPaymentatDeliveryCar !== null ? number_format($saleCar->TotalPaymentatDeliveryCar, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>Po Number :</strong>
+                <span>{{ $saleCar->remainingPayment?->po_number ?? '-' }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ไฟแนนซ์ :</strong>
+                <span>{{ $saleCar->remainingPayment->financeInfo?->FinanceCompany }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ยอดจัดไฟแนนซ์ :</strong>
+                <span>{{ $saleCar->balanceFinance !== null ? number_format($saleCar->balanceFinance, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ดอกเบี้ย :</strong>
+                <span>{{ $saleCar->remainingPayment?->interest }} %</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>งวดผ่อน :</strong>
+                <span>{{ $saleCar->remainingPayment?->period }} งวด</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ค่างวด (กรณีไม่มี ALP) :</strong>
+                <span>{{ $saleCar->remainingPayment?->alp !== null ? number_format($saleCar->remainingPayment->alp, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ค่างวด (รวม ALP) :</strong>
+                <span>{{ $saleCar->remainingPayment?->including_alp !== null ? number_format($saleCar->remainingPayment->including_alp, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ยอดเงิน ALP ที่หักจากใบเสร็จดาวน์ :</strong>
+                <span>{{ $saleCar->remainingPayment?->total_alp !== null ? number_format($saleCar->remainingPayment->total_alp, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ดอกเบี้ยคอม :</strong>
+                <span>{{ 'C' . $saleCar->remainingPayment?->type_com }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ยอดเงินค่าคอม :</strong>
+                <span>{{ $saleCar->remainingPayment?->total_com !== null ? number_format($saleCar->remainingPayment->total_com, 2) : '-' }}
+                  บาท</span>
+              </div>
             @else
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ส่วนลด :</strong>
-              <span>{{ $saleCar->PaymentDiscount !== null ? number_format($saleCar->PaymentDiscount, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ค่าใช้จ่ายอื่นๆ :</strong>
-              <span>{{ $saleCar->other_cost !== null ? number_format($saleCar->other_cost, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>หมายเหตุ ค่าใช้จ่ายอื่นๆ :</strong>
-              <span>{{ $saleCar->reason_other_cost ?? '-' }}</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>คงเหลือ :</strong>
-              <span>{{ $saleCar->balance !== null ? number_format($saleCar->balance, 2) : '-' }} บาท</span>
-            </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ส่วนลด :</strong>
+                <span>{{ $saleCar->PaymentDiscount !== null ? number_format($saleCar->PaymentDiscount, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ค่าใช้จ่ายอื่นๆ :</strong>
+                <span>{{ $saleCar->other_cost !== null ? number_format($saleCar->other_cost, 2) : '-' }} บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>หมายเหตุ ค่าใช้จ่ายอื่นๆ :</strong>
+                <span>{{ $saleCar->reason_other_cost ?? '-' }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>คงเหลือ :</strong>
+                <span>{{ $saleCar->balance !== null ? number_format($saleCar->balance, 2) : '-' }} บาท</span>
+              </div>
             @endif
 
             <h5 class="border-bottom pb-2 mb-3">จังหวัดที่ขึ้นทะเบียน</h5>
@@ -187,204 +215,218 @@
             </div>
             <div class="d-flex justify-content-between mb-2">
               <strong>ยอดเงินค่าแนะนำ :</strong>
-              <span>{{ $saleCar->ReferrerAmount !== null ? number_format($saleCar->ReferrerAmount, 2) : '-' }} บาท</span>
+              <span>{{ $saleCar->ReferrerAmount !== null ? number_format($saleCar->ReferrerAmount, 2) : '-' }}
+                บาท</span>
             </div>
 
             <h5 class="border-bottom pb-2 mb-3">แคมเปญ</h5>
             <div class="d-flex justify-content-between mb-2">
               <strong>ข้อมูลแคมเปญ :</strong>
-              <span id="viewMoreCampaignText"
-                data-campaign="{{ $campaignText }}">
+              <span id="viewMoreCampaignText" data-campaign="{{ $campaignText }}">
                 {{ $campaignText ?: '-' }}
               </span>
             </div>
 
             @php
 
-            $totalCam = $saleCar->TotalSaleCampaign;
-            $gift = $saleCar->TotalAccessoryGift;
-            $refA = $saleCar->ReferrerAmount;
-            $vatGift = $saleCar->AccessoryGiftVat;
-            $kickback = $saleCar->kickback;
+              $totalCam = $saleCar->TotalSaleCampaign;
+              $gift = $saleCar->TotalAccessoryGift;
+              $refA = $saleCar->ReferrerAmount;
+              $vatGift = $saleCar->AccessoryGiftVat;
+              $kickback = $saleCar->kickback;
 
-            $markUp = $saleCar->Markup90;
-            $totalCamMark = $totalCam + $markUp + $kickback;
+              $markUp = $saleCar->Markup90;
+              $totalCamMark = $totalCam + $markUp + $kickback;
 
-            $downPay = $saleCar->DownPaymentDiscount;
-            $disC = $saleCar->discount;
-            $totalUseFi = $downPay + $gift + $refA + $vatGift + $disC;
+              $downPay = $saleCar->DownPaymentDiscount;
+              $disC = $saleCar->discount;
+              $totalUseFi = $downPay + $gift + $refA + $vatGift + $disC;
 
-            $totalBalanceFi = $totalCamMark - $totalUseFi;
-            $totalBalanceFi2 = $totalBalanceFi * 2;
+              $totalBalanceFi = $totalCamMark - $totalUseFi;
+              $totalBalanceFi2 = $totalBalanceFi * 2;
 
-            $discount = $saleCar->PaymentDiscount;
-            $totalUseCash = $discount + $gift + $refA;
+              $discount = $saleCar->PaymentDiscount;
+              $totalUseCash = $discount + $gift + $refA;
 
-            $totalBalanceCash = $totalCam - $totalUseCash;
-            $totalBalanceCash2 = $totalBalanceCash * 2;
+              $totalBalanceCash = $totalCam - $totalUseCash;
+              $totalBalanceCash2 = $totalBalanceCash * 2;
 
             @endphp
 
             @if ($saleCar->payment_mode === 'finance')
-            <div class="d-flex justify-content-between mb-2">
-              <strong>รวมงบแคมเปญ :</strong>
-              <span>{{ $saleCar->TotalSaleCampaign !== null ? number_format($saleCar->TotalSaleCampaign, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>บวกหัว (90%) :</strong>
-              <span>{{ $saleCar->Markup90 !== null ? number_format($saleCar->Markup90, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>Kick Back :</strong>
-              <span>{{ $saleCar->kickback !== null ? number_format($saleCar->kickback, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ยอดรวมแคมเปญ (รวมบวกหัว 90%) :</strong>
-              <span>{{ $totalCamMark !== null ? number_format($totalCamMark, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ส่วนลดเงินดาวน์ :</strong>
-              <span>{{ $saleCar->DownPaymentDiscount !== null ? number_format($saleCar->DownPaymentDiscount, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ส่วนลดราคารถ :</strong>
-              <span>{{ $saleCar->discount !== null ? number_format($saleCar->discount, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ส่วนต่างของแถม :</strong>
-              <span>{{ $saleCar->TotalAccessoryGift !== null ? number_format($saleCar->TotalAccessoryGift, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>Vat ของแถม :</strong>
-              <span>{{ $saleCar->AccessoryGiftVat !== null ? number_format($saleCar->AccessoryGiftVat, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ค่าแนะนำ :</strong>
-              <span>{{ $saleCar->ReferrerAmount !== null ? number_format($saleCar->ReferrerAmount, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ยอดรวมรายการที่ใช้ :</strong>
-              <span>{{ $totalUseFi !== null ? number_format($totalUseFi, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>คงเหลือ :</strong>
-              <span>{{ $totalBalanceFi2 !== null ? number_format($totalBalanceFi2, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>คงเหลือ(แบ่ง 2 ส่วน) :</strong>
-              <span>{{ $totalBalanceFi !== null ? number_format($totalBalanceFi, 2) : '-' }} บาท</span>
-            </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>รวมงบแคมเปญ :</strong>
+                <span>{{ $saleCar->TotalSaleCampaign !== null ? number_format($saleCar->TotalSaleCampaign, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>บวกหัว (90%) :</strong>
+                <span>{{ $saleCar->Markup90 !== null ? number_format($saleCar->Markup90, 2) : '-' }} บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>Kick Back :</strong>
+                <span>{{ $saleCar->kickback !== null ? number_format($saleCar->kickback, 2) : '-' }} บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ยอดรวมแคมเปญ (รวมบวกหัว 90%) :</strong>
+                <span>{{ $totalCamMark !== null ? number_format($totalCamMark, 2) : '-' }} บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ส่วนลดเงินดาวน์ :</strong>
+                <span>{{ $saleCar->DownPaymentDiscount !== null ? number_format($saleCar->DownPaymentDiscount, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ส่วนลดราคารถ :</strong>
+                <span>{{ $saleCar->discount !== null ? number_format($saleCar->discount, 2) : '-' }} บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ส่วนต่างของแถม :</strong>
+                <span>{{ $saleCar->TotalAccessoryGift !== null ? number_format($saleCar->TotalAccessoryGift, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>Vat ของแถม :</strong>
+                <span>{{ $saleCar->AccessoryGiftVat !== null ? number_format($saleCar->AccessoryGiftVat, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ค่าแนะนำ :</strong>
+                <span>{{ $saleCar->ReferrerAmount !== null ? number_format($saleCar->ReferrerAmount, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ยอดรวมรายการที่ใช้ :</strong>
+                <span>{{ $totalUseFi !== null ? number_format($totalUseFi, 2) : '-' }} บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>คงเหลือ :</strong>
+                <span>{{ $totalBalanceFi2 !== null ? number_format($totalBalanceFi2, 2) : '-' }} บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>คงเหลือ(แบ่ง 2 ส่วน) :</strong>
+                <span>{{ $totalBalanceFi !== null ? number_format($totalBalanceFi, 2) : '-' }} บาท</span>
+              </div>
             @else
-            <div class="d-flex justify-content-between mb-2">
-              <strong>รวมงบแคมเปญ :</strong>
-              <span>{{ $saleCar->TotalSaleCampaign !== null ? number_format($saleCar->TotalSaleCampaign, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ส่วนลด :</strong>
-              <span>{{ $saleCar->PaymentDiscount !== null ? number_format($saleCar->PaymentDiscount, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ส่วนต่างของแถม :</strong>
-              <span>{{ $saleCar->TotalAccessoryGift !== null ? number_format($saleCar->TotalAccessoryGift, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ค่าแนะนำ :</strong>
-              <span>{{ $saleCar->ReferrerAmount !== null ? number_format($saleCar->ReferrerAmount, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>ยอดรวมรายการที่ใช้ :</strong>
-              <span>{{ $totalUseCash !== null ? number_format($totalUseCash, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>คงเหลือ :</strong>
-              <span>{{ $totalBalanceCash2 !== null ? number_format($totalBalanceCash2, 2) : '-' }} บาท</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-              <strong>คงเหลือ(แบ่ง 2 ส่วน) :</strong>
-              <span>{{ $totalBalanceCash !== null ? number_format($totalBalanceCash, 2) : '-' }} บาท</span>
-            </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>รวมงบแคมเปญ :</strong>
+                <span>{{ $saleCar->TotalSaleCampaign !== null ? number_format($saleCar->TotalSaleCampaign, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ส่วนลด :</strong>
+                <span>{{ $saleCar->PaymentDiscount !== null ? number_format($saleCar->PaymentDiscount, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ส่วนต่างของแถม :</strong>
+                <span>{{ $saleCar->TotalAccessoryGift !== null ? number_format($saleCar->TotalAccessoryGift, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ค่าแนะนำ :</strong>
+                <span>{{ $saleCar->ReferrerAmount !== null ? number_format($saleCar->ReferrerAmount, 2) : '-' }}
+                  บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>ยอดรวมรายการที่ใช้ :</strong>
+                <span>{{ $totalUseCash !== null ? number_format($totalUseCash, 2) : '-' }} บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>คงเหลือ :</strong>
+                <span>{{ $totalBalanceCash2 !== null ? number_format($totalBalanceCash2, 2) : '-' }} บาท</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <strong>คงเหลือ(แบ่ง 2 ส่วน) :</strong>
+                <span>{{ $totalBalanceCash !== null ? number_format($totalBalanceCash, 2) : '-' }} บาท</span>
+              </div>
             @endif
 
           </div>
           <div class="col-md-6 ps-3">
             <h5 class="border-bottom pb-2 mb-3">รายละเอียดอุปกรณ์ตกแต่ง (แถม)</h5>
             @php
-            $giftAccessories = $saleCar->accessories->where('pivot.type', 'gift');
+              $giftAccessories = $saleCar->accessories->where('pivot.type', 'gift');
             @endphp
-            @if($giftAccessories->isNotEmpty())
-            <div class="table-responsive text-nowrap">
-              <table class="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>ลำดับ</th>
-                    <th>รหัส</th>
-                    <th>รายละเอียด</th>
-                    <th>ประเภทราคา</th>
-                    <th>ราคา</th>
-                    <th>ค่าคอม</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @foreach($giftAccessories as $index => $giftAccessories)
-                  <tr>
-                    <td style="text-align: center;">{{ $index + 1 }}</td>
-                    <td style="text-align: center;">{{ $giftAccessories->accessory_id ?? '-' }}</td>
-                    <td style="text-align: center;">{{ $giftAccessories->detail ?? '-' }}</td>
-                    <td style="text-align: center;">{{ $giftAccessories->pivot->price_type ?? '-' }}</td>
-                    <td style="text-align: right;">{{ number_format($giftAccessories->pivot->price, 2) }}</td>
-                    <td style="text-align: right;">{{ number_format($giftAccessories->pivot->commission, 2) }}</td>
-                  </tr>
-                  @endforeach
-                  <tr>
-                    <td colspan="4" style="text-align: center; font-weight: bold;">รวมทั้งหมด</td>
-                    <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->TotalAccessoryGift ?? 0, 2) }}</td>
-                    <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->AccessoryGiftCom ?? 0, 2) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            @if ($giftAccessories->isNotEmpty())
+              <div class="table-responsive text-nowrap">
+                <table class="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th>ลำดับ</th>
+                      <th>รหัส</th>
+                      <th>รายละเอียด</th>
+                      <th>ประเภทราคา</th>
+                      <th>ราคา</th>
+                      <th>ค่าคอม</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @foreach ($giftAccessories as $index => $giftAccessories)
+                      <tr>
+                        <td style="text-align: center;">{{ $index + 1 }}</td>
+                        <td style="text-align: center;">{{ $giftAccessories->accessory_id ?? '-' }}</td>
+                        <td style="text-align: center;">{{ $giftAccessories->detail ?? '-' }}</td>
+                        <td style="text-align: center;">{{ $giftAccessories->pivot->price_type ?? '-' }}</td>
+                        <td style="text-align: right;">{{ number_format($giftAccessories->pivot->price, 2) }}</td>
+                        <td style="text-align: right;">{{ number_format($giftAccessories->pivot->commission, 2) }}</td>
+                      </tr>
+                    @endforeach
+                    <tr>
+                      <td colspan="4" style="text-align: center; font-weight: bold;">รวมทั้งหมด</td>
+                      <td style="text-align: right; font-weight: bold;">
+                        {{ number_format($saleCar->TotalAccessoryGift ?? 0, 2) }}</td>
+                      <td style="text-align: right; font-weight: bold;">
+                        {{ number_format($saleCar->AccessoryGiftCom ?? 0, 2) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             @else
-            <p class="text-center">- ไม่มีข้อมูลรายการซื้อเพิ่ม -</p>
+              <p class="text-center">- ไม่มีข้อมูลรายการซื้อเพิ่ม -</p>
             @endif
 
             <h5 class="border-bottom pb-2 mb-3 mt-3">รายการซื้อเพิ่ม</h5>
             @php
-            $extraAccessories = $saleCar->accessories->where('pivot.type', 'extra');
+              $extraAccessories = $saleCar->accessories->where('pivot.type', 'extra');
             @endphp
-            @if($extraAccessories->isNotEmpty())
-            <div class="table-responsive text-nowrap">
-              <table class="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>ลำดับ</th>
-                    <th>รหัส</th>
-                    <th>รายละเอียด</th>
-                    <th>ประเภทราคา</th>
-                    <th>ราคา</th>
-                    <th>ค่าคอม</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @foreach($extraAccessories as $index => $extraAccessories)
-                  <tr>
-                    <td style="text-align: center;">{{ $index + 1 }}</td>
-                    <td style="text-align: center;">{{ $extraAccessories->accessory_id ?? '-' }}</td>
-                    <td style="text-align: center;">{{ $extraAccessories->detail ?? '-' }}</td>
-                    <td style="text-align: center;">{{ $extraAccessories->pivot->price_type ?? '-' }}</td>
-                    <td style="text-align: right;">{{ number_format($extraAccessories->pivot->price, 2) }}</td>
-                    <td style="text-align: right;">{{ number_format($extraAccessories->pivot->commission, 2) }}</td>
-                  </tr>
-                  @endforeach
-                  <tr>
-                    <td colspan="4" style="text-align: center; font-weight: bold;">รวมทั้งหมด</td>
-                    <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->TotalAccessoryExtra ?? 0, 2) }}</td>
-                    <td style="text-align: right; font-weight: bold;">{{ number_format($saleCar->AccessoryExtraCom ?? 0, 2) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            @if ($extraAccessories->isNotEmpty())
+              <div class="table-responsive text-nowrap">
+                <table class="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th>ลำดับ</th>
+                      <th>รหัส</th>
+                      <th>รายละเอียด</th>
+                      <th>ประเภทราคา</th>
+                      <th>ราคา</th>
+                      <th>ค่าคอม</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @foreach ($extraAccessories as $index => $extraAccessories)
+                      <tr>
+                        <td style="text-align: center;">{{ $index + 1 }}</td>
+                        <td style="text-align: center;">{{ $extraAccessories->accessory_id ?? '-' }}</td>
+                        <td style="text-align: center;">{{ $extraAccessories->detail ?? '-' }}</td>
+                        <td style="text-align: center;">{{ $extraAccessories->pivot->price_type ?? '-' }}</td>
+                        <td style="text-align: right;">{{ number_format($extraAccessories->pivot->price, 2) }}</td>
+                        <td style="text-align: right;">{{ number_format($extraAccessories->pivot->commission, 2) }}
+                        </td>
+                      </tr>
+                    @endforeach
+                    <tr>
+                      <td colspan="4" style="text-align: center; font-weight: bold;">รวมทั้งหมด</td>
+                      <td style="text-align: right; font-weight: bold;">
+                        {{ number_format($saleCar->TotalAccessoryExtra ?? 0, 2) }}</td>
+                      <td style="text-align: right; font-weight: bold;">
+                        {{ number_format($saleCar->AccessoryExtraCom ?? 0, 2) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             @else
-            <p class="text-center">- ไม่มีข้อมูลรายการซื้อเพิ่ม -</p>
+              <p class="text-center">- ไม่มีข้อมูลรายการซื้อเพิ่ม -</p>
             @endif
 
             <h5 class="border-bottom pb-2 mb-3">ข้อมูลวันส่งมอบ</h5>
@@ -413,10 +455,10 @@
             <div class="d-flex justify-content-between mb-2">
               <strong>ผู้เช็ครายการ (แอดมินขาย) :</strong>
               <span>
-                @if(($saleCar->AdminSignature ?? null) == 1)
-                เช็ครายการเรียบร้อยแล้ว
+                @if (($saleCar->AdminSignature ?? null) == 1)
+                  เช็ครายการเรียบร้อยแล้ว
                 @else
-                -
+                  -
                 @endif
               </span>
             </div>
@@ -427,10 +469,10 @@
             <div class="d-flex justify-content-between mb-2">
               <strong>ผู้ตรวจสอบรายการ (IA) :</strong>
               <span>
-                @if(($saleCar->CheckerID ?? null) == 1)
-                เช็ครายการเรียบร้อยแล้ว
+                @if (($saleCar->CheckerID ?? null) == 1)
+                  เช็ครายการเรียบร้อยแล้ว
                 @else
-                -
+                  -
                 @endif
               </span>
             </div>
@@ -441,10 +483,10 @@
             <div class="d-flex justify-content-between mb-2">
               <strong>ผู้จัดการ อนุมัติการขาย :</strong>
               <span>
-                @if(($saleCar->SMSignature ?? null) == 1)
-                อนุมัติเรียบร้อยแล้ว
+                @if (($saleCar->SMSignature ?? null) == 1)
+                  อนุมัติเรียบร้อยแล้ว
                 @else
-                -
+                  -
                 @endif
               </span>
             </div>
@@ -455,10 +497,10 @@
             <div class="d-flex justify-content-between mb-2">
               <strong>ผู้จัดการ อนุมัติกรณีงบเกิน :</strong>
               <span>
-                @if(($saleCar->ApprovalSignature ?? null) == 1)
-                อนุมัติเรียบร้อยแล้ว
+                @if (($saleCar->ApprovalSignature ?? null) == 1)
+                  อนุมัติเรียบร้อยแล้ว
                 @else
-                -
+                  -
                 @endif
               </span>
             </div>
@@ -469,10 +511,10 @@
             <div class="d-flex justify-content-between mb-2">
               <strong>GM อนุมัติกรณีงบเกิน (N) :</strong>
               <span>
-                @if(($saleCar->GMApprovalSignature ?? null) == 1)
-                อนุมัติเรียบร้อยแล้ว
+                @if (($saleCar->GMApprovalSignature ?? null) == 1)
+                  อนุมัติเรียบร้อยแล้ว
                 @else
-                -
+                  -
                 @endif
               </span>
             </div>

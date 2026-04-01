@@ -142,6 +142,9 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('/car-order/search', [CarOrderController::class, 'search'])->name('car-order.search');
     //get color
     Route::get('/api/car-order/color', [CarOrderController::class, 'getColorBySubModel']);
+    //price list car
+    Route::get('/api/car-order/pricelist-options', [CarOrderController::class, 'getPricelistOptions']);
+    Route::get('/api/car-order/pricelist-data', [CarOrderController::class, 'getPricelistData']);
     //car-order history
     Route::get('car-order/history', [CarOrderController::class, 'history'])->name('car-order.history');
     Route::get('car-order/history/list', [CarOrderController::class, 'listHistory']);

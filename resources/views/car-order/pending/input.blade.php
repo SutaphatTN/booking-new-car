@@ -20,12 +20,6 @@
                 <option value="stock">Stock</option>
                 <option value="auction">Auction</option>
               </select>
-
-              @error('type')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-              @enderror
             </div>
 
             <div class="col-md-4 mb-5">
@@ -39,18 +33,12 @@
                 @if (auth()->user()->brand == 2)
                   <option value="GWM">GWM</option>
                 @endif
-
+                
                 @if (auth()->user()->brand == 3)
                   <option value="WULING">WULING</option>
                 @endif
                 <option value="OTHDealer">OTHDealer</option>
               </select>
-
-              @error('purchase_source')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-              @enderror
             </div>
 
             <div class="col-md-5 mb-5">
@@ -61,12 +49,6 @@
                   <option value="{{ @$t->id }}">{{ @$t->name }}</option>
                 @endforeach
               </select>
-
-              @error('purchase_type')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-              @enderror
             </div>
 
             <input type="hidden" name="salecar_id" id="salecar_id">
@@ -102,12 +84,6 @@
                   <option value="{{ $m->id }}">{{ $m->Name_TH }}</option>
                 @endforeach
               </select>
-
-              @error('model_id')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-              @enderror
             </div>
 
             <div class="col-md-7 mb-5">
@@ -116,12 +92,6 @@
                 required>
                 <option value="">-- เลือกรุ่นรถย่อย --</option>
               </select>
-
-              @error('subModel_id')
-                <span class="invalid-feedback" role="alert">
-                  <strong>{{ $message }}</strong>
-                </span>
-              @enderror
             </div>
 
             @if (auth()->user()->brand == 2)
@@ -130,12 +100,6 @@
                 <select id="gwm_color" name="gwm_color" class="form-select" required>
                   <option value="">-- เลือกสี --</option>
                 </select>
-
-                @error('gwm_color')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
               </div>
 
               <div class="col-md-4 mb-5">
@@ -146,50 +110,27 @@
                     <option value="{{ @$t->id }}">{{ @$t->name }}</option>
                   @endforeach
                 </select>
-
-                @error('interior_color')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
               </div>
 
               <div class="col-md-4 mb-5">
-                <label for="year" class="form-label">ปี</label>
-                <input id="year" type="text" class="form-control @error('year') is-invalid @enderror"
-                  name="year" required>
-
-                @error('year')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
+                <label class="form-label">ปี</label>
+                <select id="pricelist_year" name="year" class="form-select" required disabled>
+                  <option value="">-- เลือกปี --</option>
+                </select>
               </div>
 
               <div class="col-md-4 mb-5">
                 <label for="car_DNP" class="form-label">ราคาทุน</label>
                 <input id="car_DNP" type="text"
                   class="form-control text-end money-input @error('car_DNP') is-invalid @enderror" name="car_DNP"
-                  required>
-
-                @error('car_DNP')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
+                  readonly>
               </div>
 
               <div class="col-md-4 mb-5">
                 <label for="car_MSRP" class="form-label">ราคาขาย</label>
                 <input id="car_MSRP" type="text"
                   class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror" name="car_MSRP"
-                  required>
-
-                @error('car_MSRP')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
+                  readonly>
               </div>
 
               <div class="col-md-4 mb-5">
@@ -197,191 +138,104 @@
                 <select id="approver" name="approver" class="form-select" required>
                   <option value="">-- เลือกผู้อนุมัติ --</option>
                   @foreach ($approvers as $u)
-                    <option value="{{ $u->id }}">
-                      {{ $u->name }}
-                    </option>
+                    <option value="{{ $u->id }}">{{ $u->name }}</option>
                   @endforeach
                 </select>
-
-                @error('approver')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
               </div>
             @elseif(auth()->user()->brand == 3)
               <div class="col-md-4 mb-5">
-                <label for="color" class="form-label">สี</label>
-                <input id="color" type="text" class="form-control @error('color') is-invalid @enderror"
-                  name="color" required>
-
-                @error('color')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
+                <label for="gwm_color" class="form-label">สี</label>
+                <select id="gwm_color" name="gwm_color" class="form-select" required>
+                  <option value="">-- เลือกสี --</option>
+                </select>
               </div>
 
               <div class="col-md-4 mb-5">
-                <label for="year" class="form-label">ปี</label>
-                <input id="year" type="text" class="form-control @error('year') is-invalid @enderror"
-                  name="year" required>
-
-                @error('year')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
+                <label class="form-label">ปี</label>
+                <select id="pricelist_year" name="year" class="form-select" required disabled>
+                  <option value="">-- เลือกปี --</option>
+                </select>
               </div>
 
               <div class="col-md-4 mb-5">
                 <label for="car_DNP" class="form-label">ราคาทุน</label>
                 <input id="car_DNP" type="text"
                   class="form-control text-end money-input @error('car_DNP') is-invalid @enderror" name="car_DNP"
-                  required>
-
-                @error('car_DNP')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
+                  readonly>
               </div>
 
               <div class="col-md-4 mb-5">
                 <label for="car_MSRP" class="form-label">ราคาขาย</label>
                 <input id="car_MSRP" type="text"
                   class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror" name="car_MSRP"
-                  required>
-
-                @error('car_MSRP')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
+                  readonly>
               </div>
 
-              <div class="col-md-3 mb-5">
-                <label for="RI" class="form-label">RI</label>
-                <input id="RI" type="text"
-                  class="form-control text-end money-input @error('RI') is-invalid @enderror" name="RI"
-                  required>
-
-                @error('RI')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
-              </div>
-
-              <div class="col-md-5 mb-5">
+              <div class="col-md-4 mb-5">
                 <label for="approver" class="form-label">ผู้อนุมัติ</label>
                 <select id="approver" name="approver" class="form-select" required>
                   <option value="">-- เลือกผู้อนุมัติ --</option>
                   @foreach ($approvers as $u)
-                    <option value="{{ $u->id }}">
-                      {{ $u->name }}
-                    </option>
+                    <option value="{{ $u->id }}">{{ $u->name }}</option>
                   @endforeach
                 </select>
-
-                @error('approver')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
               </div>
             @else
-              <div class="col-md-2 mb-5">
-                <label for="option" class="form-label">Option</label>
-                <input id="option" type="text" class="form-control @error('option') is-invalid @enderror"
-                  name="option" required>
+              <div class="col-md-3 mb-5">
+                <label class="form-label">ประเภทสี</label>
+                <select id="pricelist_color" name="type_color" class="form-select" required disabled>
+                  <option value="">-- เลือก --</option>
+                </select>
+              </div>
 
-                @error('option')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
+              <div class="col-md-3 mb-5">
+                <label class="form-label">ปี</label>
+                <select id="pricelist_year" name="year" class="form-select" required disabled>
+                  <option value="">-- เลือก --</option>
+                </select>
               </div>
 
               <div class="col-md-3 mb-5">
                 <label for="color" class="form-label">สี</label>
                 <input id="color" type="text" class="form-control @error('color') is-invalid @enderror"
                   name="color" required>
-
-                @error('color')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
               </div>
 
               <div class="col-md-3 mb-5">
-                <label for="year" class="form-label">ปี</label>
-                <input id="year" type="text" class="form-control @error('year') is-invalid @enderror"
-                  name="year" required>
-
-                @error('year')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
+                <label for="option" class="form-label">Option</label>
+                <input id="option" type="text" class="form-control @error('option') is-invalid @enderror"
+                  name="option" readonly>
               </div>
 
-              <div class="col-md-4 mb-5">
+              <div class="col-md-3 mb-5">
                 <label for="car_DNP" class="form-label">ราคาทุน</label>
                 <input id="car_DNP" type="text"
                   class="form-control text-end money-input @error('car_DNP') is-invalid @enderror" name="car_DNP"
-                  required>
-
-                @error('car_DNP')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
-              </div>
-
-              <div class="col-md-4 mb-5">
-                <label for="car_MSRP" class="form-label">ราคาขาย</label>
-                <input id="car_MSRP" type="text"
-                  class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror" name="car_MSRP"
-                  required>
-
-                @error('car_MSRP')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
+                  readonly>
               </div>
 
               <div class="col-md-3 mb-5">
+                <label for="car_MSRP" class="form-label">ราคาขาย</label>
+                <input id="car_MSRP" type="text"
+                  class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror" name="car_MSRP"
+                  readonly>
+              </div>
+
+              <div class="col-md-2 mb-5">
                 <label for="RI" class="form-label">RI</label>
                 <input id="RI" type="text"
                   class="form-control text-end money-input @error('RI') is-invalid @enderror" name="RI"
-                  required>
-
-                @error('RI')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
+                  readonly>
               </div>
 
-              <div class="col-md-5 mb-5">
+              <div class="col-md-4 mb-5">
                 <label for="approver" class="form-label">ผู้อนุมัติ</label>
                 <select id="approver" name="approver" class="form-select" required>
                   <option value="">-- เลือกผู้อนุมัติ --</option>
                   @foreach ($approvers as $u)
-                    <option value="{{ $u->id }}">
-                      {{ $u->name }}
-                    </option>
+                    <option value="{{ $u->id }}">{{ $u->name }}</option>
                   @endforeach
                 </select>
-
-                @error('approver')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
               </div>
 
             @endif

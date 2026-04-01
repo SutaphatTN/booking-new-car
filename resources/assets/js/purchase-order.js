@@ -116,7 +116,10 @@ $(document).ready(function () {
       var colIdx = order[0][0];
       var dir = order[0][1];
       var $icon = $($('#purchaseTable thead th').get(colIdx)).find('.sort-icon');
-      $icon.removeClass('bx-sort-alt-2').addClass(dir === 'asc' ? 'bx-up-arrow-alt' : 'bx-down-arrow-alt').addClass('text-primary');
+      $icon
+        .removeClass('bx-sort-alt-2')
+        .addClass(dir === 'asc' ? 'bx-up-arrow-alt' : 'bx-down-arrow-alt')
+        .addClass('text-primary');
     }
   });
 
@@ -358,6 +361,8 @@ $(document).on('change', '#model_id', function () {
   const $subModelSelect = $('#subModel_id');
 
   $subModelSelect.empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>');
+  clearPricelistFields();
+  $('#gwm_color').prop('disabled', true).empty().append('<option value="">-- เลือกสี --</option>');
 
   if (!modelId) return;
 
@@ -382,31 +387,119 @@ $(document).on('change', '#model_id', function () {
   });
 });
 
-//input : get color
+//input : price list car เลือก submodel แล้วโหลด color,year จาก TbPricelistCar
+document.addEventListener('DOMContentLoaded', function () {
+  const $colorSel = $('#pricelist_color');
+  if ($colorSel.length) {
+    const rows = $colorSel.data('pricelist-rows');
+    if (rows && rows.length) $colorSel.data('pricelistRows', rows);
+  }
+});
+
+function clearPricelistFields() {
+  $('#pricelist_color').prop('disabled', true).empty().append('<option value="">-- เลือก --</option>');
+  $('#pricelist_year').prop('disabled', true).empty().append('<option value="">-- เลือกปี --</option>');
+  $('#option').val('');
+  $('#car_DNP').val('');
+  $('#car_MSRP').val('');
+  $('#RI').val('');
+  $('#price_sub').val('');
+}
+
+function loadPricelistData() {
+  const subModelId = $('#subModel_id').val();
+  const year = $('#pricelist_year').val();
+  const color = $('#pricelist_color').val() || '';
+
+  if (!subModelId || !year) return;
+
+  $.get('/api/car-order/pricelist-data', { sub_model_id: subModelId, year: year, color: color }, function (data) {
+    if (data) {
+      $('#option').val(data.option ?? '');
+      $('#car_DNP').val(data.dnp ? Number(data.dnp).toLocaleString() : '');
+      $('#car_MSRP').val(data.msrp ? Number(data.msrp).toLocaleString() : '');
+      $('#RI').val(data.ri ? Number(data.ri).toLocaleString() : '');
+      $('#price_sub').val(data.msrp ? Number(data.msrp).toLocaleString() : '');
+    } else {
+      $('#option').val('');
+      $('#car_DNP').val('');
+      $('#car_MSRP').val('');
+      $('#RI').val('');
+      $('#price_sub').val('');
+    }
+
+    // trigger recalculation after price_sub is set
+    if (typeof calculateCarPrice === 'function') calculateCarPrice();
+    if (typeof calculateBalance === 'function') calculateBalance();
+  });
+}
+
 $(document).on('change', '#subModel_id', function () {
+  clearPricelistFields();
+
   const subModelId = $(this).val();
-  const $color = $('#gwm_color');
-
-  $color.prop('disabled', true).empty().append('<option value="">-- เลือกสี --</option>');
-
   if (!subModelId) return;
 
-  $.ajax({
-    url: '/api/car-order/color',
-    data: {
-      sub_model_id: subModelId
-    },
-    success: function (data) {
-      if (data.length) {
-        data.forEach(color => {
-          $color.append(`<option value="${color.id}">${color.name}</option>`);
-        });
-        $color.prop('disabled', false);
-      } else {
-        $color.append('<option value="">-- รุ่นนี้ไม่มีตัวเลือกสี --</option>');
+  // brand 2: get color
+  const $gwmColor = $('#gwm_color');
+  if ($gwmColor.length) {
+    $gwmColor.prop('disabled', true).empty().append('<option value="">-- เลือกสี --</option>');
+    $.ajax({
+      url: '/api/car-order/color',
+      data: { sub_model_id: subModelId },
+      success: function (data) {
+        if (data.length) {
+          data.forEach(color => {
+            $gwmColor.append(`<option value="${color.id}">${color.name}</option>`);
+          });
+          $gwmColor.prop('disabled', false);
+        } else {
+          $gwmColor.append('<option value="">-- รุ่นนี้ไม่มีตัวเลือกสี --</option>');
+        }
       }
+    });
+  }
+
+  $.get('/api/car-order/pricelist-options', { sub_model_id: subModelId }, function (res) {
+    if (!res.data || !res.data.length) return;
+
+    if (res.type === 'color_year') {
+      // brand 1: แสดง color ก่อน ปีจะโหลดหลังเลือกสี
+      const colors = [...new Set(res.data.map(r => r.color))];
+      const $colorSel = $('#pricelist_color');
+      $colorSel.empty().append('<option value="">-- เลือก --</option>');
+      colors.forEach(c => $colorSel.append(`<option value="${c}">${c}</option>`));
+      $colorSel.prop('disabled', false).data('pricelistRows', res.data);
+    } else {
+      // brand 2,3: แสดง year เลย
+      const $yearSel = $('#pricelist_year');
+      $yearSel.empty().append('<option value="">-- เลือกปี --</option>');
+      res.data.forEach(r => $yearSel.append(`<option value="${r.year}">${r.year}</option>`));
+      $yearSel.prop('disabled', false);
     }
   });
+});
+
+$(document).on('change', '#pricelist_color', function () {
+  const selectedColor = $(this).val();
+  const rows = $(this).data('pricelistRows') || [];
+  const $yearSel = $('#pricelist_year');
+
+  $yearSel.prop('disabled', true).empty().append('<option value="">-- เลือกปี --</option>');
+  $('#option').val('');
+  $('#car_DNP').val('');
+  $('#car_MSRP').val('');
+  $('#RI').val('');
+
+  if (!selectedColor) return;
+
+  const years = [...new Set(rows.filter(r => r.color === selectedColor).map(r => r.year))];
+  years.forEach(y => $yearSel.append(`<option value="${y}">${y}</option>`));
+  $yearSel.prop('disabled', false);
+});
+
+$(document).on('change', '#pricelist_year', function () {
+  loadPricelistData();
 });
 
 //input : save purchase
@@ -620,7 +713,7 @@ $(document).ready(function () {
       model_id: $('#model_id').val() || '',
       sub_model_id: $('#subModel_id').val() || '',
       option: $('#option').val() || '',
-      year: $('#Year').val() || '',
+      year: $('#pricelist_year').val() || $('#Year').val() || ''
     };
     if (isBrand2) {
       data.color_id = $('#gwm_color').val() || '';
@@ -1385,7 +1478,7 @@ $(document).ready(function () {
   function loadCampaign() {
     const model_id = $('#model_id').val();
     const subModel_id = $('#subModel_id').val();
-    const year = $('#Year').val();
+    const year = $('#pricelist_year').val() || $('#Year').val();
 
     if (!model_id) {
       showCampaignWarning('กรุณาเลือกรถรุ่นหลักก่อน');
@@ -1469,7 +1562,7 @@ $(document).ready(function () {
     loadCampaign();
   });
 
-  $('#Year').on('keyup change', function () {
+  $('#Year, #pricelist_year').on('keyup change', function () {
     clearCampaignSelection();
     loadCampaign();
   });
@@ -1478,7 +1571,7 @@ $(document).ready(function () {
 
   if (isEditPage) {
     calcTotalCampaign();
-  } else if ($('#subModel_id').val() && $('#Year').val()) {
+  } else if ($('#subModel_id').val() && ($('#pricelist_year').val() || $('#Year').val())) {
     loadCampaign();
   } else {
     resetCampaign();
@@ -2095,6 +2188,9 @@ document.addEventListener('DOMContentLoaded', function () {
   const userRole = document.getElementById('userRole')?.value || '';
   const hasApproval = document.getElementById('hasApproval').value === '1';
 
+  //check brand
+  const userBrand = document.getElementById('userBrand')?.value || '';
+
   // button
   const btnSave = document.getElementById('btnUpdatePurchase');
   const btnRequestNormal = document.getElementById('btnRequestNormal');
@@ -2158,6 +2254,18 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="d-flex justify-content-between mb-2">
         <strong>สีภายใน :</strong>
         <span>${interiorColor}</span>
+    </div>
+  `;
+    }
+
+    //option
+    let optionHtml = '';
+
+    if (userBrand != 2) {
+      optionHtml = `
+    <div class="d-flex justify-content-between mb-2">
+      <strong>Option :</strong>
+      <span>${option}</span>
     </div>
   `;
     }
@@ -2733,10 +2841,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <strong>รุ่นรถย่อย :</strong>
             <span>${subModel}</span>
           </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>Option :</strong>
-            <span>${option}</span>
-          </div>
+          ${optionHtml}
           <div class="d-flex justify-content-between mb-2">
               <strong>สี :</strong>
               <span>${color}</span>

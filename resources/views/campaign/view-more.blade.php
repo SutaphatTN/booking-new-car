@@ -14,12 +14,19 @@
 
           <div class="col-md-7 mb-5">
             <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
-            <input id="subModel_id" class="form-control" type="text" value="{{ $cam->subModel->name }}" disabled />
+            <input id="subModel_id" class="form-control" type="text"
+              value="{{ !empty($cam->subModel)
+                  ? ($cam->subModel->detail
+                      ? $cam->subModel->detail . ' - ' . $cam->subModel->name
+                      : $cam->subModel->name)
+                  : '' }}"
+              disabled />
           </div>
 
           <div class="col-md-7 mb-5">
             <label for="name" class="form-label">ชื่อแคมเปญ</label>
-            <input id="name" class="form-control" type="text" value="{{ $cam->appellation->name }}" autocomplete="off" disabled />
+            <input id="name" class="form-control" type="text" value="{{ $cam->appellation->name }}"
+              autocomplete="off" disabled />
           </div>
 
           <div class="col-md-5 mb-5">
@@ -29,23 +36,22 @@
 
           <div class="col-md-4 mb-5">
             <label for="cashSupport" class="form-label">เงินการขาย</label>
-            <input id="cashSupport" class="form-control text-end money-input" type="text" 
-            value="{{ $cam->cashSupport !== null ? number_format($cam->cashSupport, 2) : '-' }}"
-            disabled />
+            <input id="cashSupport" class="form-control text-end money-input" type="text"
+              value="{{ $cam->cashSupport !== null ? number_format($cam->cashSupport, 2) : '-' }}" disabled />
           </div>
 
           <div class="col-md-4 mb-5">
             <label for="cashSupport_deduct" class="form-label">เงินหัก</label>
-            <input id="cashSupport_deduct" class="form-control text-end money-input" type="text" 
-            value="{{ $cam->cashSupport_deduct !== null ? number_format($cam->cashSupport_deduct, 2) : '-' }}"
-            disabled />
+            <input id="cashSupport_deduct" class="form-control text-end money-input" type="text"
+              value="{{ $cam->cashSupport_deduct !== null ? number_format($cam->cashSupport_deduct, 2) : '-' }}"
+              disabled />
           </div>
 
           <div class="col-md-4 mb-5">
             <label for="cashSupport_final" class="form-label">จำนวนเงินที่เหลือ</label>
-            <input id="cashSupport_final" class="form-control text-end money-input" type="text" 
-            value="{{ $cam->cashSupport_final !== null ? number_format($cam->cashSupport_final, 2) : '-' }}"
-            disabled />
+            <input id="cashSupport_final" class="form-control text-end money-input" type="text"
+              value="{{ $cam->cashSupport_final !== null ? number_format($cam->cashSupport_final, 2) : '-' }}"
+              disabled />
           </div>
 
           <div class="col-md-3 mb-5">

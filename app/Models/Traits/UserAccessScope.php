@@ -15,8 +15,15 @@ trait UserAccessScope
       $user = Auth::user();
       $table = $query->getModel()->getTable();
 
+      if ($user->role === 'admin') {
+        if ($user->brand) {
+          $query->where($table . '.brand', $user->brand);
+        }
+        return;
+      }
+
       // ไม่จำกัด zone — filter แค่ brand (ที่อาจถูก override โดย BrandSwitcher middleware)
-      if (in_array($user->role, ['account', 'admin', 'audit'])) {
+      if (in_array($user->role, ['account', 'audit'])) {
         if ($user->brand) {
           $query->where($table . '.brand', $user->brand);
         }

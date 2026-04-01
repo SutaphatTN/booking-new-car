@@ -349,7 +349,7 @@ class CarOrderController extends Controller
             $subModelOrder = $p->subModel ? $p->subModel->name : '';
             $subDetail = $p->subModel ? $p->subModel->detail : '';
 
-            if ($p->brand == 2) {
+            if ($p->brand == 2 || $p->brand == 3) {
                 $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>สี : {$p->display_color}<br>ราคาขาย : " . number_format($p->car_MSRP);
             } else {
                 $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$p->display_color}<br>ราคาขาย : " . number_format($p->car_MSRP);
@@ -462,9 +462,15 @@ class CarOrderController extends Controller
                 'branch' => Auth::user()->branch ?? null,
             ];
 
-            if (Auth::user()->brand == 2) {
+            $brand = Auth::user()->brand;
+
+            if ($brand == 2) {
                 $data['gwm_color'] = $request->gwm_color;
                 $data['interior_color'] = $request->interior_color;
+            }
+
+            if ($brand == 3) {
+                $data['gwm_color'] = $request->gwm_color;
             }
 
             $order = CarOrder::create($data);
@@ -561,6 +567,56 @@ class CarOrderController extends Controller
             ->select('id', 'name');
 
         return response()->json($colors);
+    }
+
+    public function getPricelistOptions(Request $request)
+    {
+        $subModelId = $request->sub_model_id;
+        $brand = Auth::user()->brand;
+
+        if (!$subModelId) {
+            return response()->json([]);
+        }
+
+        $query = TbPricelistCar::where('subModel_id', $subModelId);
+
+        if ($brand == 1) {
+            $rows = $query->select('color', 'year')->distinct()->orderBy('year')->orderBy('color')->get();
+            return response()->json(['type' => 'color_year', 'data' => $rows]);
+        } else {
+            $rows = $query->select('year')->distinct()->orderBy('year')->get();
+            return response()->json(['type' => 'year_only', 'data' => $rows]);
+        }
+    }
+
+    public function getPricelistData(Request $request)
+    {
+        $subModelId = $request->sub_model_id;
+        $year = $request->year;
+        $brand = Auth::user()->brand;
+
+        if (!$subModelId || !$year) {
+            return response()->json(null);
+        }
+
+        $query = TbPricelistCar::where('subModel_id', $subModelId)->where('year', $year);
+
+        if ($brand == 1 && $request->color) {
+            $query->where('color', $request->color);
+        }
+
+        $row = $query->first();
+
+        if (!$row) {
+            return response()->json(null);
+        }
+
+        return response()->json([
+            'option' => $row->option,
+            'dnp'    => $row->dnp,
+            'msrp'   => $row->msrp,
+            'ri'     => $row->ri,
+        ]);
     }
 
     public function editPending($id)

@@ -8,6 +8,7 @@ use App\Models\TbCarmodel;
 use App\Models\TbColor;
 use App\Models\TbSubcarmodel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ColorController extends Controller
 {
@@ -60,10 +61,21 @@ class ColorController extends Controller
                 $request->input('subcarmodel_id')
             );
 
-            $subModel->colors()
-                ->syncWithoutDetaching(
-                    $request->input('color_id')
-                );
+            $userBrand = Auth::user()->brand;
+
+            $colorIds = (array) $request->input('color_id', []);
+
+            $syncData = [];
+
+            foreach ($colorIds as $colorId) {
+                $syncData[$colorId] = [
+                    'brand' => $userBrand
+                ];
+            }
+
+            if (!empty($syncData)) {
+                $subModel->colors()->syncWithoutDetaching($syncData);
+            }
 
             return response()->json([
                 'success' => true,

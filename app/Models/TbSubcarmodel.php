@@ -46,6 +46,8 @@ class TbSubcarmodel extends Model
 			'color_submodel',
 			'subcarmodel_id',
 			'color_id'
-		)->withTimestamps();
+		)->using(ColorSubmodel::class)
+			->withPivot('brand')
+			->withTimestamps();
 	}
 }

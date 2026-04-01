@@ -1280,3 +1280,78 @@ $(document).on('click', '.btnApproveCarOrder', function () {
 //     $modal.modal('show');
 //   });
 // });
+
+// price list car : โหลด type_color และ year จาก TbPricelistCar
+function clearPricelistFields() {
+  $('#pricelist_color').prop('disabled', true).empty().append('<option value="">-- เลือก --</option>');
+  $('#pricelist_year').prop('disabled', true).empty().append('<option value="">-- เลือกปี --</option>');
+  $('#option').val('');
+  $('#car_DNP').val('');
+  $('#car_MSRP').val('');
+  $('#RI').val('');
+}
+
+function loadPricelistData() {
+  const subModelId = $('#subModel_id').val();
+  const year = $('#pricelist_year').val();
+  const typeColor = $('#pricelist_color').val() || '';
+
+  if (!subModelId || !year) return;
+
+  $.get('/api/car-order/pricelist-data', { sub_model_id: subModelId, year: year, color: typeColor }, function (data) {
+    if (data) {
+      $('#option').val(data.option ?? '');
+      $('#car_DNP').val(data.dnp ? Number(data.dnp).toLocaleString() : '');
+      $('#car_MSRP').val(data.msrp ? Number(data.msrp).toLocaleString() : '');
+      $('#RI').val(data.ri ? Number(data.ri).toLocaleString() : '');
+    } else {
+      $('#option').val('');
+      $('#car_DNP').val('');
+      $('#car_MSRP').val('');
+      $('#RI').val('');
+    }
+  });
+}
+
+$(document).on('change', '#subModel_id', function () {
+  clearPricelistFields();
+
+  const subModelId = $(this).val();
+  if (!subModelId) return;
+
+  $.get('/api/car-order/pricelist-options', { sub_model_id: subModelId }, function (res) {
+    if (!res.data || !res.data.length) return;
+
+    if (res.type === 'color_year') {
+      const colors = [...new Set(res.data.map(r => r.color))];
+      const $colorSel = $('#pricelist_color');
+      $colorSel.empty().append('<option value="">-- เลือก --</option>');
+      colors.forEach(c => $colorSel.append(`<option value="${c}">${c}</option>`));
+      $colorSel.prop('disabled', false).data('pricelistRows', res.data);
+    } else {
+      const $yearSel = $('#pricelist_year');
+      $yearSel.empty().append('<option value="">-- เลือกปี --</option>');
+      res.data.forEach(r => $yearSel.append(`<option value="${r.year}">${r.year}</option>`));
+      $yearSel.prop('disabled', false);
+    }
+  });
+});
+
+$(document).on('change', '#pricelist_color', function () {
+  const selectedColor = $(this).val();
+  const rows = $(this).data('pricelistRows') || [];
+  const $yearSel = $('#pricelist_year');
+
+  $yearSel.prop('disabled', true).empty().append('<option value="">-- เลือกปี --</option>');
+  $('#option').val(''); $('#car_DNP').val(''); $('#car_MSRP').val(''); $('#RI').val('');
+
+  if (!selectedColor) return;
+
+  const years = [...new Set(rows.filter(r => r.color === selectedColor).map(r => r.year))];
+  years.forEach(y => $yearSel.append(`<option value="${y}">${y}</option>`));
+  $yearSel.prop('disabled', false);
+});
+
+$(document).on('change', '#pricelist_year', function () {
+  loadPricelistData();
+});

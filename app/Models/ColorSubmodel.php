@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\BrandScope;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class ColorSubmodel extends Model
+class ColorSubmodel extends Pivot
 {
+    use BrandScope;
+
     protected $table = 'color_submodel';
 
     protected $fillable = [
         'color_id',
-        'subcarmodel_id'
+        'subcarmodel_id',
+        'brand'
     ];
 
     public function gwmColor()

@@ -20,9 +20,9 @@
             <div class="row g-5">
 
               <!-- <div class="col-md-2">
-                  <label for="sale_card" class="form-label">รหัสผู้ขาย</label>
-                  <input id="sale_card" type="text" class="form-control" value="{{ Auth::user()->format_card_id }}" readonly>
-                </div> -->
+                        <label for="sale_card" class="form-label">รหัสผู้ขาย</label>
+                        <input id="sale_card" type="text" class="form-control" value="{{ Auth::user()->format_card_id }}" readonly>
+                      </div> -->
               @if (auth()->user()->role == 'sale')
                 <input type="hidden" name="SaleID" value="{{ Auth::user()->id }}">
                 <div class="col-md-3">
@@ -142,7 +142,7 @@
               </div>
 
               @if (auth()->user()->brand == 2)
-                <div class="col-md-3">
+                <div class="col-md-2">
                   <label class="form-label" for="model_id">รุ่นรถหลัก</label>
                   <select id="model_id" name="model_id" class="form-select" required>
                     <option value="">-- เลือกรุ่นรถหลัก --</option>
@@ -171,10 +171,12 @@
                   @enderror
                 </div>
 
-                <div class="col-md-1">
-                  <label class="form-label" for="Year">ปี</label>
-                  <input id="Year" type="text" class="form-control @error('Year') is-invalid @enderror"
-                    name="Year" required>
+                <div class="col-md-2">
+                  <label class="form-label">ปี</label>
+                  <select id="pricelist_year" name="Year" class="form-select @error('Year') is-invalid @enderror"
+                    required disabled>
+                    <option value="">-- เลือกปี --</option>
+                  </select>
 
                   @error('Year')
                     <span class="invalid-feedback" role="alert">
@@ -210,7 +212,7 @@
                     </span>
                   @enderror
                 </div>
-              @else
+              @elseif (auth()->user()->brand == 1)
                 <div class="col-md-3">
                   <label class="form-label" for="model_id">รุ่นรถหลัก</label>
                   <select id="model_id" name="model_id" class="form-select" required>
@@ -226,7 +228,7 @@
                     </span>
                   @enderror
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
                   <select id="subModel_id" name="subModel_id"
                     class="form-select @error('subModel_id') is-invalid @enderror" required>
@@ -239,7 +241,63 @@
                     </span>
                   @enderror
                 </div>
+                <div class="col-md-2">
+                  <label class="form-label">ประเภทสี</label>
+                  <select id="pricelist_color" name="type_color" class="form-select" required disabled>
+                    <option value="">-- เลือก --</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">ปี</label>
+                  <select id="pricelist_year" name="Year" class="form-select" required disabled>
+                    <option value="">-- เลือกปี --</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label" for="Color">สี</label>
+                  <input id="Color" type="text" class="form-control @error('Color') is-invalid @enderror"
+                    name="Color" required>
+
+                  @error('Color')
+                    <span class="invalid-feedback" role="alert">
+                      <strong>{{ $message }}</strong>
+                    </span>
+                  @enderror
+                </div>
                 <div class="col-md-1">
+                  <label class="form-label" for="option">Option</label>
+                  <input id="option" type="text" class="form-control" name="option" readonly>
+                </div>
+              @else
+                <div class="col-md-2">
+                  <label class="form-label" for="model_id">รุ่นรถหลัก</label>
+                  <select id="model_id" name="model_id" class="form-select" required>
+                    <option value="">-- เลือกรุ่นรถหลัก --</option>
+                    @foreach ($model as $m)
+                      <option value="{{ $m->id }}">{{ $m->Name_TH }}</option>
+                    @endforeach
+                  </select>
+
+                  @error('model_id')
+                    <span class="invalid-feedback" role="alert">
+                      <strong>{{ $message }}</strong>
+                    </span>
+                  @enderror
+                </div>
+                <div class="col-md-3">
+                  <label for="subModel_id" class="form-label">รุ่นรถย่อย</label>
+                  <select id="subModel_id" name="subModel_id"
+                    class="form-select @error('subModel_id') is-invalid @enderror" required>
+                    <option value="">-- เลือกรุ่นรถย่อย --</option>
+                  </select>
+
+                  @error('subModel_id')
+                    <span class="invalid-feedback" role="alert">
+                      <strong>{{ $message }}</strong>
+                    </span>
+                  @enderror
+                </div>
+                {{-- <div class="col-md-1">
                   <label class="form-label" for="option">Option</label>
                   <input id="option" type="text" class="form-control @error('option') is-invalid @enderror"
                     name="option" required>
@@ -249,25 +307,20 @@
                       <strong>{{ $message }}</strong>
                     </span>
                   @enderror
-                </div>
-
-                <div class="col-md-1">
-                  <label class="form-label" for="Year">ปี</label>
-                  <input id="Year" type="text" class="form-control @error('Year') is-invalid @enderror"
-                    name="Year" required>
-
-                  @error('Year')
-                    <span class="invalid-feedback" role="alert">
-                      <strong>{{ $message }}</strong>
-                    </span>
-                  @enderror
+                </div> --}}
+                <div class="col-md-2">
+                  <label class="form-label">ปี</label>
+                  <select id="pricelist_year" name="Year" class="form-select" required disabled>
+                    <option value="">-- เลือกปี --</option>
+                  </select>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label" for="Color">สี</label>
-                  <input id="Color" type="text" class="form-control @error('Color') is-invalid @enderror"
-                    name="Color" required>
+                  <label class="form-label" for="gwm_color">สี</label>
+                  <select id="gwm_color" name="gwm_color" class="form-select" required>
+                    <option value="">-- เลือกสี --</option>
+                  </select>
 
-                  @error('Color')
+                  @error('gwm_color')
                     <span class="invalid-feedback" role="alert">
                       <strong>{{ $message }}</strong>
                     </span>
@@ -292,7 +345,7 @@
                 <input id="reservation_date" type="date" class="form-control" name="reservation_date" required>
               </div>
 
-              <div class="col-md-6">
+              <div class="col-md-5">
                 <fieldset class="mb-0">
                   <legend class="form-label fw-semibold mb-2" style="font-size: 1rem;">ประเภทการจ่ายเงินจอง</legend>
 

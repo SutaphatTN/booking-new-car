@@ -228,7 +228,9 @@ $(document).on('change', '#model_id', function () {
       console.log('data:', data);
       if (data.length > 0) {
         data.forEach(function (sub) {
-          $subModelSelect.append(`<option value="${sub.id}">${sub.detail} - ${sub.name}</option>`);
+          let text = sub.detail ? `${sub.detail} - ${sub.name}` : sub.name;
+
+          $subModelSelect.append(`<option value="${sub.id}">${text}</option>`);
         });
       } else {
         $subModelSelect.append('<option value="">-- ไม่มีรุ่นย่อย --</option>');
