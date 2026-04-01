@@ -587,3 +587,294 @@ $(document).on('click', '.btnDeleteSubCar', function () {
     }
   });
 });
+
+//view : table price list car
+let pricelistCarTable;
+const userBrand = parseInt($('#userBrand').val());
+const hide = [2, 3].includes(userBrand);
+
+$(document).ready(function () {
+  if ($.fn.DataTable.isDataTable('.pricelistCarTable')) {
+    $('.pricelistCarTable').DataTable().destroy();
+  }
+
+  pricelistCarTable = $('.pricelistCarTable').DataTable({
+    ajax: '/pricelist-car/list',
+    columns: [
+      { data: 'No' },
+      { data: 'car' },
+      { data: 'option', visible: !hide },
+      { data: 'year' },
+      { data: 'color', visible: !hide },
+      { data: 'dnp' },
+      { data: 'msrp' },
+      { data: 'dm', visible: !hide },
+      { data: 'ri', visible: !hide },
+      { data: 'ws', visible: !hide },
+      { data: 'Action', orderable: false, searchable: false }
+    ],
+    paging: true,
+    lengthChange: true,
+    searching: true,
+    ordering: false,
+    info: true,
+    pageLength: 10,
+    autoWidth: false,
+    language: {
+      lengthMenu: 'แสดง _MENU_ แถว',
+      zeroRecords: 'ไม่พบข้อมูล',
+      info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
+      infoEmpty: 'ไม่มีข้อมูล',
+      search: 'ค้นหา:',
+      paginate: {
+        first: '',
+        last: '',
+        next: 'ถัดไป',
+        previous: 'ก่อนหน้า'
+      }
+    }
+  });
+});
+
+// blur focus inputPricelistCar
+$(document).on('hide.bs.modal', '.inputPricelistCar', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
+//input : modal pricelist-car
+$(document).on('click', '.btnInputPricelistCar', function () {
+  $.get('/pricelist-car/create', function (html) {
+    $('.inputPricelistCarModal').html(html);
+    $('.inputPricelistCar').modal('show');
+  });
+});
+
+//input : get subModel
+$(document).on('change', '#pl_model_id', function () {
+  const modelId = $(this).val();
+  const $subSelect = $('#pl_subModel_id');
+
+  $subSelect.empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>').prop('disabled', true);
+
+  if (!modelId) return;
+
+  $.get('/api/pricelist-car/sub-model/' + modelId, function (data) {
+    $.each(data, function (i, item) {
+      $subSelect.append($('<option>', { value: item.id, text: item.name }));
+    });
+    $subSelect.prop('disabled', false);
+  });
+});
+
+//input : save pricelist-car
+$(document).on('click', '.btnStorePricelistCar', function (e) {
+  e.preventDefault();
+
+  const $btn = $(this);
+  const form = $btn.closest('form')[0];
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+
+  const url = $(form).attr('action');
+  const formData = new FormData(form);
+
+  $.ajax({
+    url: url,
+    type: 'POST',
+    data: formData,
+    contentType: false,
+    processData: false,
+    beforeSend: function () {
+      $('.inputPricelistCar').modal('hide');
+
+      Swal.fire({
+        title: 'กำลังบันทึกข้อมูล...',
+        text: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+      $btn.prop('disabled', true);
+    },
+    success: function (res) {
+      Swal.fire({
+        icon: 'success',
+        title: 'สำเร็จ',
+        text: res.message,
+        timer: 2000,
+        showConfirmButton: true
+      });
+
+      pricelistCarTable.ajax.reload(null, false);
+    },
+    error: function (xhr) {
+      let errMsg = 'ไม่สามารถบันทึกข้อมูลได้';
+      if (xhr.responseJSON && xhr.responseJSON.message) {
+        errMsg = xhr.responseJSON.message;
+      }
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: errMsg
+      });
+    },
+    complete: function () {
+      $btn.prop('disabled', false);
+    }
+  });
+});
+
+// blur focus editPricelistCar
+$(document).on('hide.bs.modal', '.editPricelistCar', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
+//edit : modal pricelist-car
+$(document).on('click', '.btnEditPricelistCar', function () {
+  const id = $(this).data('id');
+  const $btn = $(this);
+
+  $.get('/pricelist-car/' + id + '/edit', function (html) {
+    $('.editPricelistCarModal').html(html);
+    const $modal = $('.editPricelistCar');
+    $modal.modal('show');
+
+    //โหลดรุ่นรถย่อยเมื่อเปลี่ยนรุ่นหลัก
+    $modal
+      .find('#edit_pl_model_id')
+      .off('change')
+      .on('change', function () {
+        const modelId = $(this).val();
+        const $subSelect = $modal.find('#edit_pl_subModel_id');
+
+        $subSelect.empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>').prop('disabled', true);
+
+        if (!modelId) return;
+
+        $.get('/api/pricelist-car/sub-model/' + modelId, function (data) {
+          $.each(data, function (i, item) {
+            $subSelect.append($('<option>', { value: item.id, text: item.name }));
+          });
+          $subSelect.prop('disabled', false);
+        });
+      });
+
+    $modal
+      .find('.btnUpdatePricelistCar')
+      .off('click')
+      .on('click', function (e) {
+        e.preventDefault();
+
+        const form = $modal.find('form')[0];
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        const formData = new FormData(form);
+
+        $.ajax({
+          url: form.action,
+          type: 'POST',
+          data: formData,
+          processData: false,
+          contentType: false,
+
+          beforeSend: function () {
+            $modal.modal('hide');
+
+            Swal.fire({
+              title: 'กำลังบันทึกข้อมูล...',
+              text: 'กรุณารอสักครู่',
+              allowOutsideClick: false,
+              didOpen: () => Swal.showLoading()
+            });
+            $btn.prop('disabled', true);
+          },
+          success: function (res) {
+            Swal.fire({
+              icon: 'success',
+              title: 'สำเร็จ!',
+              text: res.message,
+              timer: 2000,
+              showConfirmButton: true
+            });
+
+            pricelistCarTable.ajax.reload(null, false);
+          },
+          error: function (xhr) {
+            $modal.modal('hide');
+            Swal.fire({
+              icon: 'error',
+              title: 'เกิดข้อผิดพลาด!',
+              text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้'
+            });
+          },
+          complete: function () {
+            $btn.prop('disabled', false);
+          }
+        });
+      });
+  });
+});
+
+//delete pricelist-car
+$(document).on('click', '.btnDeletePricelistCar', function () {
+  let id = $(this).data('id');
+
+  Swal.fire({
+    title: 'คุณแน่ใจหรือไม่?',
+    text: 'คุณต้องการลบข้อมูลนี้ใช่หรือไม่?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'ใช่, ลบเลย!',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (result.isConfirmed) {
+      $.ajax({
+        url: '/pricelist-car/' + id,
+        type: 'DELETE',
+
+        success: function (res) {
+          if (res.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'สำเร็จ',
+              text: res.message,
+              timer: 2000,
+              showConfirmButton: true
+            });
+
+            pricelistCarTable.ajax.reload(null, false);
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'เกิดข้อผิดพลาด',
+              text: 'ไม่สามารถลบข้อมูลได้'
+            });
+          }
+        },
+        error: function (xhr) {
+          let errMsg = 'ไม่สามารถลบข้อมูลได้';
+          if (xhr.responseJSON && xhr.responseJSON.message) {
+            errMsg = xhr.responseJSON.message;
+          }
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: errMsg
+          });
+        }
+      });
+    }
+  });
+});

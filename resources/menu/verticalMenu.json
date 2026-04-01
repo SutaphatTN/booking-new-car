@@ -84,6 +84,11 @@
               "url": "color",
               "name": "ข้อมูลสีรถ",
               "slug": "model.color.index"
+            },
+            {
+              "url": "pricelist-car",
+              "name": "ราคารถ",
+              "slug": "model.pricelist-car.index"
             }
           ]
         },

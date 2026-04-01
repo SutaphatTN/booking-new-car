@@ -7,7 +7,7 @@
       </div>
       <div class="modal-body">
         <form
-          action="{{ route('color.store') }}"
+          action="{{ route('model.color.store') }}"
           method="POST"
           enctype="multipart/form-data">
           @csrf

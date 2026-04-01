@@ -21,6 +21,7 @@ use App\Http\Controllers\vehicle\LicenseController;
 use App\Http\Controllers\vehicle\VehicleController;
 use App\Http\Controllers\BrandSwitchController;
 use App\Http\Controllers\invoice\InvoiceController;
+use App\Http\Controllers\pricelist_car\PricelistCarController;
 
 Route::get('/', fn() => redirect()->route('login'));
 
@@ -129,6 +130,10 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('finance/view-export-firm', [FinanceController::class, 'viewExportFirm'])->name('finance.view-export-firm');
     Route::get('/finance/firm-export', [FinanceController::class, 'exportFirm'])->name('finance.firm-export');
 
+    //pricelist-car
+    Route::get('pricelist-car/list', [PricelistCarController::class, 'listPricelist']);
+    Route::get('/api/pricelist-car/sub-model/{model_id}', [PricelistCarController::class, 'getSubModel']);
+
     //car
     Route::get('model-car/list', [ModelCarController::class, 'listCar']);
     Route::get('sub-model-car/list', [SubModelCarController::class, 'listSubCar']);
@@ -202,7 +207,6 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::resource('user', UserController::class);
     Route::resource('finance', FinanceController::class);
     Route::resource('car-order', CarOrderController::class);
-    Route::resource('color', ColorController::class);
     Route::resource('vehicle', VehicleController::class);
     Route::resource('invoice', InvoiceController::class);
 
@@ -231,6 +235,24 @@ Route::middleware(['auth', 'notsale'])->group(function () {
         'edit' => 'model.sub-model.edit',
         'update' => 'model.sub-model.update',
         'destroy' => 'model.sub-model.destroy',
+    ]);
+
+    Route::resource('color', ColorController::class)->names([
+        'index' => 'model.color.index',
+        'create' => 'model.color.create',
+        'store' => 'model.color.store',
+        'edit' => 'model.color.edit',
+        'update' => 'model.color.update',
+        'destroy' => 'model.color.destroy',
+    ]);
+
+    Route::resource('pricelist-car', PricelistCarController::class)->names([
+        'index'   => 'model.pricelist-car.index',
+        'create'  => 'model.pricelist-car.create',
+        'store'   => 'model.pricelist-car.store',
+        'edit' => 'model.pricelist-car.edit',
+        'update' => 'model.pricelist-car.update',
+        'destroy' => 'model.pricelist-car.destroy',
     ]);
 
     // forecast
