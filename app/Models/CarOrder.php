@@ -46,6 +46,7 @@ class CarOrder extends Model
         'car_DNP',
         'car_MSRP',
         'RI',
+        'WS',
         'estimated_stock_date',
         'stock_id',
         'car_status',

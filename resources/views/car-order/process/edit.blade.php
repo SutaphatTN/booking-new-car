@@ -167,7 +167,7 @@
                   value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}" disabled />
               </div>
 
-              <div class="col-md-4 mb-5">
+              <div class="col-md-3 mb-5">
                 <label for="car_MSRP" class="form-label">ราคาขาย</label>
                 <input id="car_MSRP" class="form-control text-end" type="text"
                   value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}" disabled />
@@ -179,7 +179,13 @@
                   value="{{ $order->RI !== null ? number_format($order->RI, 2) : '-' }}" disabled />
               </div>
 
-              <div class="col-md-5 mb-5">
+              <div class="col-md-2 mb-5">
+                <label for="WS" class="form-label">WS</label>
+                <input id="WS" class="form-control text-end" type="text"
+                  value="{{ $order->WS !== null ? number_format($order->WS, 2) : '-' }}" disabled />
+              </div>
+
+              <div class="col-md-4 mb-5">
                 <label for="approver" class="form-label">ผู้อนุมัติ</label>
                 <input id="approver" class="form-control" type="text"
                   value="{{ $order->approvers->name ?? '-' }}" disabled />

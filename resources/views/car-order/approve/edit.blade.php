@@ -155,10 +155,15 @@
             </div>
 
             @if (!in_array(auth()->user()->brand, [2, 3]))
-            <div class="col-md-4 mb-5">
+            <div class="col-md-2 mb-5">
               <label for="RI" class="form-label">RI</label>
               <input id="RI" class="form-control text-end" type="text"
                 value="{{ $order->RI !== null ? number_format($order->RI, 2) : '-' }}" disabled />
+            </div>
+            <div class="col-md-2 mb-5">
+              <label for="WS" class="form-label">WS</label>
+              <input id="WS" class="form-control text-end" type="text"
+                value="{{ $order->WS !== null ? number_format($order->WS, 2) : '-' }}" disabled />
             </div>
             @endif
             

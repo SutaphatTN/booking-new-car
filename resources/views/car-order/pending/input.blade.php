@@ -221,14 +221,21 @@
                   readonly>
               </div>
 
-              <div class="col-md-2 mb-5">
+              <div class="col-md-3 mb-5">
                 <label for="RI" class="form-label">RI</label>
                 <input id="RI" type="text"
                   class="form-control text-end money-input @error('RI') is-invalid @enderror" name="RI"
                   readonly>
               </div>
 
-              <div class="col-md-4 mb-5">
+              <div class="col-md-3 mb-5">
+                <label for="WS" class="form-label">WS</label>
+                <input id="WS" type="text"
+                  class="form-control text-end money-input @error('WS') is-invalid @enderror" name="WS"
+                  readonly>
+              </div>
+
+              <div class="col-md-6 mb-5">
                 <label for="approver" class="form-label">ผู้อนุมัติ</label>
                 <select id="approver" name="approver" class="form-select" required>
                   <option value="">-- เลือกผู้อนุมัติ --</option>

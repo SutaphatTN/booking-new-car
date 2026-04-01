@@ -140,13 +140,13 @@
               <input id="year" class="form-control" type="text" value="{{ $order->year }}" disabled />
             </div>
 
-            <div class="col-md-3 mb-5">
+            <div class="col-md-2 mb-5">
               <label for="car_DNP" class="form-label">ราคาทุน</label>
               <input id="car_DNP" class="form-control text-end" type="text"
                 value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}" disabled />
             </div>
 
-            <div class="col-md-3 mb-5">
+            <div class="col-md-2 mb-5">
               <label for="car_MSRP" class="form-label">ราคาขาย</label>
               <input id="car_MSRP" class="form-control text-end" type="text"
                 value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}" disabled />
@@ -156,6 +156,12 @@
               <label for="RI" class="form-label">RI</label>
               <input id="RI" class="form-control text-end" type="text"
                 value="{{ $order->RI !== null ? number_format($order->RI, 2) : '-' }}" disabled />
+            </div>
+
+            <div class="col-md-2 mb-5">
+              <label for="WS" class="form-label">WS</label>
+              <input id="WS" class="form-control text-end" type="text"
+                value="{{ $order->WS !== null ? number_format($order->WS, 2) : '-' }}" disabled />
             </div>
           @endif
 
