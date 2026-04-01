@@ -7,7 +7,7 @@
         <th>สีภายใน</th>
       @endif
       <th>ปี</th>
-      @if (auth()->user()->brand != 2)
+      @if (!in_array(auth()->user()->brand, [2,3]))
         <th>Option</th>
       @endif
       <th>ราคาขาย</th>
@@ -38,7 +38,7 @@
           <td>{{ $r['interior_color'] }}</td>
         @endif
         <td>{{ $r['year'] }}</td>
-        @if (auth()->user()->brand != 2)
+        @if (!in_array(auth()->user()->brand, [2,3]))
           <td>{{ $r['option'] }}</td>
         @endif
         <td>{{ $r['car_MSRP'] }}</td>

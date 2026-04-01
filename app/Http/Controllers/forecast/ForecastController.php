@@ -50,6 +50,21 @@ class ForecastController extends Controller
                         $item->gwm_color . '_' .
                         $item->interior_color;
                 });
+        } elseif ($brand == 3) {
+
+            $query->with(['gwmColor'])
+                ->selectRaw('model_id, subModel_id, gwm_color, COUNT(*) as total')
+                ->groupBy('model_id', 'subModel_id', 'gwm_color');
+
+            $stocks = $stockQuery
+                ->selectRaw('model_id, subModel_id, gwm_color, COUNT(*) as stock_total')
+                ->groupBy('model_id', 'subModel_id', 'gwm_color')
+                ->get()
+                ->keyBy(function ($item) {
+                    return $item->model_id . '_' .
+                        $item->subModel_id . '_' .
+                        $item->gwm_color;
+                });
         } else {
 
             $query->selectRaw('model_id, subModel_id, Color, COUNT(*) as total')
@@ -98,6 +113,13 @@ class ForecastController extends Controller
                     $sale->subModel_id . '_' .
                     $sale->gwm_color . '_' .
                     $sale->interior_color;
+            } elseif ($brand == 3) {
+
+                $color = optional($sale->gwmColor)->name ?? '-';
+
+                $key = $sale->model_id . '_' .
+                    $sale->subModel_id . '_' .
+                    $sale->gwm_color;
             } else {
 
                 $color = $sale->Color ?? '-';

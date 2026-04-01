@@ -52,7 +52,7 @@ class CarOrderController extends Controller
             $subDetail = $c->subModel ? $c->subModel->detail : '';
             $status = $c->orderStatus ? $c->orderStatus->name : '';
 
-            if ($c->brand == 2) {
+            if ($c->brand == 2 || $c->brand == 3) {
                 $car = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>สี : {$c->display_color}<br>ราคาขาย : " . number_format($c->car_MSRP);
             } else {
                 $car = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$c->display_color}<br>ราคาขาย : " . number_format($c->car_MSRP);
@@ -280,6 +280,10 @@ class CarOrderController extends Controller
             if ($item->brand == 2) {
                 $item->display_color = $item->gwmColor->name ?? '-';
                 $item->display_interior_color = $item->interiorColor->name ?? '-';
+            }
+            elseif ($item->brand == 3) {
+                $item->display_color = $item->gwmColor->name ?? '-';
+                $item->display_interior_color = null;
             } else {
                 $item->display_color = $item->color ?? '-';
                 $item->display_interior_color = null;

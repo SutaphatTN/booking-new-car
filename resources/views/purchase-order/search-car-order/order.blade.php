@@ -21,7 +21,7 @@
                 <th>รุ่นรถย่อย</th>
                 <th>Vin-number</th>
 
-                @if ($brand == 2)
+                @if ($brand == 2 || $brand == 3)
                   <th>วันที่ Stock</th>
                 @else
                   <th>Option</th>

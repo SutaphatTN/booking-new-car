@@ -6,7 +6,7 @@
       <th>ฝ่ายขาย</th>
       <th>รุ่นรถหลัก</th>
       <th>รุ่นรถย่อย</th>
-      @if (auth()->user()->brand != 2)
+      @if (!in_array(auth()->user()->brand, [2,3]))
         <th>Option</th>
       @endif
       <th>สี</th>
@@ -35,7 +35,7 @@
         <td>{{ $s['sale'] }}</td>
         <td>{{ $s['model'] }}</td>
         <td>{{ $s['subModel'] }}</td>
-        @if (auth()->user()->brand != 2)
+        @if (!in_array(auth()->user()->brand, [2,3]))
           <td>{{ $s['option'] }}</td>
         @endif
         <td>{{ $s['color'] }}</td>

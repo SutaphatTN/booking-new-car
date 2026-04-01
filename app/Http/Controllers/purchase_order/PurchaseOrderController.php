@@ -150,7 +150,7 @@ class PurchaseOrderController extends Controller
             $subDetail = $s->subModel ? $s->subModel->detail : '';
             $statusSale = $s->conStatus ? $s->conStatus->name : '';
 
-            if ($s->brand == 2) {
+            if ($s->brand == 2 || $s->brand == 3) {
                 $car = "รุ่นหลัก : {$model}<br>รุ่นย่อย : {$subModelSale}";
             } else {
                 $car = "รุ่นหลัก : {$model}<br>รุ่นย่อย : {$subModelSale}<br>{$subDetail}";
@@ -281,7 +281,7 @@ class PurchaseOrderController extends Controller
                 'brand' => Auth::user()->brand ?? null,
                 'UserInsert' => Auth::id(),
                 'branch' => Auth::user()->branch ?? null,
-                'gwm_color' => Auth::user()->brand == 2 ? $request->gwm_color : null,
+                'gwm_color' => in_array(Auth::user()->brand, [2, 3]) ? $request->gwm_color : null,
                 'interior_color' => Auth::user()->brand == 2 ? $request->interior_color : null,
             ]);
 
@@ -476,11 +476,11 @@ class PurchaseOrderController extends Controller
 
         $pricelistRows = $subModel_id
             ? TbPricelistCar::where('subModel_id', $subModel_id)
-                ->select('color', 'year')
-                ->distinct()
-                ->orderBy('color')
-                ->orderBy('year')
-                ->get()
+            ->select('color', 'year')
+            ->distinct()
+            ->orderBy('color')
+            ->orderBy('year')
+            ->get()
             : collect();
 
         return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows'));
@@ -764,9 +764,11 @@ class PurchaseOrderController extends Controller
                 'con_status' => $request->con_status,
             ];
 
-            //for GWM
-            if (Auth::user()->brand == 2) {
+            if (in_array(Auth::user()->brand, [2, 3])) {
                 $data['gwm_color'] = $request->gwm_color;
+            }
+
+            if (Auth::user()->brand == 2) {
                 $data['interior_color'] = $request->interior_color;
             }
 

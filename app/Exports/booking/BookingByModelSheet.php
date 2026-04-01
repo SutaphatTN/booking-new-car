@@ -195,7 +195,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         }
       }
 
-      $color = $order->brand == 2
+      $color = in_array($order->brand, [2,3])
         ? ($order->gwmColor->name ?? '-')
         : ($order->color ?? '-');
 
@@ -280,7 +280,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
 
     foreach ($orphanSales as $sale) {
 
-      $color = $sale->brand == 2
+      $color = in_array($sale->brand, [2,3])
         ? ($sale->gwmColor->name ?? '-')
         : ($sale->Color ?? '-');
 
