@@ -129,23 +129,32 @@ $(document).ready(function () {
 });
 
 //view : delete
-$(document).on('click', '.btnDeleteSale', function () {
-  let id = $(this).data('id');
+function askCancelDate(id) {
+  let today = new Date().toISOString().split('T')[0];
 
   Swal.fire({
-    title: 'คุณแน่ใจหรือไม่?',
-    text: 'คุณต้องการลบข้อมูลการจองของลูกค้าคนนี้ใช่หรือไม่?',
-    icon: 'warning',
+    title: 'ระบุวันที่ยกเลิก',
+    html: `<input type="date" id="swal-cancel-date" value="${today}" max="${today}"
+             style="border:1px solid #d9d9d9; border-radius:6px; padding:8px 12px; font-size:1rem; outline:none; width:35%;">`,
     showCancelButton: true,
     confirmButtonColor: '#6c5ffc',
     cancelButtonColor: '#d33',
-    confirmButtonText: 'ใช่, ลบเลย!',
-    cancelButtonText: 'ยกเลิก'
+    confirmButtonText: 'ยืนยัน',
+    cancelButtonText: 'ยกเลิก',
+    preConfirm: () => {
+      const cancelDate = document.getElementById('swal-cancel-date').value;
+      if (!cancelDate) {
+        Swal.showValidationMessage('กรุณาระบุวันที่ยกเลิก');
+        return false;
+      }
+      return cancelDate;
+    }
   }).then(result => {
     if (result.isConfirmed) {
       $.ajax({
         url: '/purchase-order/' + id,
         type: 'DELETE',
+        data: { cancel_gcip_date: result.value },
 
         success: function (res) {
           if (res.success) {
@@ -180,6 +189,11 @@ $(document).on('click', '.btnDeleteSale', function () {
       });
     }
   });
+}
+
+$(document).on('click', '.btnDeleteSale', function () {
+  let id = $(this).data('id');
+  askCancelDate(id);
 });
 
 //view more
@@ -322,32 +336,33 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
 //input : radio payment reservation
 document.addEventListener('DOMContentLoaded', function () {
   const radios = document.querySelectorAll('input[name="reservationCondition"]');
+  const cashSection = document.getElementById('cashSection');
   const bankSection = document.getElementById('bankSection');
   const checkSection = document.getElementById('checkSection');
   const creditSection = document.getElementById('creditSection');
-  const danuSection = document.getElementById('danuSection');
 
   if (!radios.length || !bankSection || !checkSection || !creditSection) return;
 
+  const allSections = [cashSection, creditSection, checkSection, bankSection].filter(Boolean);
+
   function toggleSection() {
-    bankSection.style.display = 'none';
-    checkSection.style.display = 'none';
-    creditSection.style.display = 'none';
-    if (danuSection) danuSection.style.display = 'none';
+    allSections.forEach(s => {
+      s.style.display = 'none';
+      s.querySelectorAll('input').forEach(i => (i.disabled = true));
+    });
 
     const selected = document.querySelector('input[name="reservationCondition"]:checked');
     if (!selected) return;
 
-    if (selected.value === 'transfer') {
-      bankSection.style.display = 'block';
-      if (danuSection) danuSection.style.display = 'block';
-    } else if (selected.value === 'check') {
-      checkSection.style.display = 'block';
-      if (danuSection) danuSection.style.display = 'block';
-    } else if (selected.value === 'credit') {
-      creditSection.style.display = 'block';
-    } else if (selected.value === 'cash') {
-      if (danuSection) danuSection.style.display = 'block';
+    let active = null;
+    if (selected.value === 'cash') active = cashSection;
+    if (selected.value === 'credit') active = creditSection;
+    if (selected.value === 'check') active = checkSection;
+    if (selected.value === 'transfer') active = bankSection;
+
+    if (active) {
+      active.style.display = 'block';
+      active.querySelectorAll('input').forEach(i => (i.disabled = false));
     }
   }
 

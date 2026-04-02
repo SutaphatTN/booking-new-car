@@ -375,21 +375,46 @@
                 </fieldset>
               </div>
 
+              {{-- เงินสด --}}
+              <div id="cashSection" style="display:none;">
+                <div class="row">
+                  @if (auth()->user()->brand == 2)
+                    <div class="col-md-2">
+                      <label class="form-label" for="danu_date_cash">วันที่ใช้บัตรคุณดนู</label>
+                      <input id="danu_date_cash" type="date" class="form-control" name="danu_date">
+                    </div>
+                  @endif
+                  <div class="col-md-4">
+                    <label class="form-label">แนบรูป</label>
+                    <input type="file" class="form-control" name="attachments[]" accept=".pdf,.jpg,.jpeg,.png"
+                      multiple>
+                    <small class="text-muted">รองรับไฟล์ PDF, JPG, PNG</small>
+                  </div>
+                </div>
+              </div>
+
+              {{-- บัตรเครดิต --}}
               <div id="creditSection" style="display:none;">
                 <div class="row">
                   <div class="col-md-4">
                     <label class="form-label" for="reservation_credit">บัตรเครดิต</label>
                     <input id="reservation_credit" type="text" class="form-control" name="reservation_credit">
                   </div>
-
                   <div class="col-md-2">
                     <label class="form-label" for="reservation_tax_credit">ค่าธรรมเนียม</label>
                     <input id="reservation_tax_credit" type="text" class="form-control text-end money-input"
                       name="reservation_tax_credit">
                   </div>
+                  <div class="col-md-4">
+                    <label class="form-label">แนบรูป</label>
+                    <input type="file" class="form-control" name="attachments[]" accept=".pdf,.jpg,.jpeg,.png"
+                      multiple>
+                    <small class="text-muted">รองรับไฟล์ PDF, JPG, PNG</small>
+                  </div>
                 </div>
               </div>
 
+              {{-- เช็คธนาคาร --}}
               <div id="checkSection" style="display:none;">
                 <div class="row">
                   <div class="col-md-3">
@@ -397,20 +422,42 @@
                     <input id="reservation_check_bank" type="text" class="form-control"
                       name="reservation_check_bank">
                   </div>
-
-                  <div class="col-md-4">
+                  <div class="col-md-3">
                     <label class="form-label" for="reservation_check_branch">สาขา</label>
                     <input id="reservation_check_branch" type="text" class="form-control"
                       name="reservation_check_branch">
                   </div>
-
                   <div class="col-md-3">
                     <label class="form-label" for="reservation_check_no">เลขที่</label>
                     <input id="reservation_check_no" type="text" class="form-control" name="reservation_check_no">
                   </div>
+                  @if (auth()->user()->brand == 2)
+                    <div class="col-md-3">
+                      <label class="form-label" for="danu_date_check">วันที่ใช้บัตรคุณดนู</label>
+                      <input id="danu_date_check" type="date" class="form-control" name="danu_date">
+                    </div>
+                  @else
+                    <div class="col-md-3">
+                      <label class="form-label">แนบรูป</label>
+                      <input type="file" class="form-control" name="attachments[]" accept=".pdf,.jpg,.jpeg,.png"
+                        multiple>
+                      <small class="text-muted">รองรับไฟล์ PDF, JPG, PNG</small>
+                    </div>
+                  @endif
                 </div>
+                @if (auth()->user()->brand == 2)
+                  <div class="row mt-2">
+                    <div class="col-md-4">
+                      <label class="form-label">แนบรูป</label>
+                      <input type="file" class="form-control" name="attachments[]" accept=".pdf,.jpg,.jpeg,.png"
+                        multiple>
+                      <small class="text-muted">รองรับไฟล์ PDF, JPG, PNG</small>
+                    </div>
+                  </div>
+                @endif
               </div>
 
+              {{-- เงินโอน --}}
               <div id="bankSection" style="display:none;">
                 <div class="row">
                   <div class="col-md-3">
@@ -418,27 +465,41 @@
                     <input id="reservation_transfer_bank" type="text" class="form-control"
                       name="reservation_transfer_bank">
                   </div>
-
-                  <div class="col-md-4">
+                  <div class="col-md-3">
                     <label class="form-label" for="reservation_transfer_branch">สาขา</label>
                     <input id="reservation_transfer_branch" type="text" class="form-control"
                       name="reservation_transfer_branch">
                   </div>
-
                   <div class="col-md-3">
                     <label class="form-label" for="reservation_transfer_no">เลขที่</label>
                     <input id="reservation_transfer_no" type="text" class="form-control"
                       name="reservation_transfer_no">
                   </div>
+                  @if (auth()->user()->brand == 2)
+                    <div class="col-md-3">
+                      <label class="form-label" for="danu_date_transfer">วันที่ใช้บัตรคุณดนู</label>
+                      <input id="danu_date_transfer" type="date" class="form-control" name="danu_date">
+                    </div>
+                  @else
+                    <div class="col-md-3">
+                      <label class="form-label">แนบรูป</label>
+                      <input type="file" class="form-control" name="attachments[]" accept=".pdf,.jpg,.jpeg,.png"
+                        multiple>
+                      <small class="text-muted">รองรับไฟล์ PDF, JPG, PNG</small>
+                    </div>
+                  @endif
                 </div>
+                @if (auth()->user()->brand == 2)
+                  <div class="row mt-2">
+                    <div class="col-md-4">
+                      <label class="form-label">แนบรูป</label>
+                      <input type="file" class="form-control" name="attachments[]" accept=".pdf,.jpg,.jpeg,.png"
+                        multiple>
+                      <small class="text-muted">รองรับไฟล์ PDF, JPG, PNG</small>
+                    </div>
+                  </div>
+                @endif
               </div>
-
-              @if (auth()->user()->brand == 2)
-                <div id="danuSection" class="col-md-2" style="display:none;">
-                  <label class="form-label" for="danu_date">วันที่ใช้บัตรคุณดนู</label>
-                  <input id="danu_date" type="date" class="form-control" name="danu_date">
-                </div>
-              @endif
 
               <div id="turnCarFields" class="row mt-6 g-5" style="display:none;">
                 <h4>รถเทิร์น</h4>

@@ -22,7 +22,11 @@ class GPQuery
             'carOrder.model',
             'carOrder.subModel',
             'carOrder',
-            'financeConfirm'
+            'financeConfirm',
+            'remainingPayment.financeInfo',
+            'salePurType',
+            'saleUser.branchInfo',
+            'campaigns.campaign.type'
         ])
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')

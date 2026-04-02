@@ -82,6 +82,8 @@ class Salecar extends Model
 	protected $table = 'salecars';
 
 	protected $casts = [
+		'attachment_url' => 'array',
+		'withdraw_attachment_url' => 'array',
 		'CusID' => 'int',
 		'KeyInDate' => 'datetime',
 		'SaleID' => 'int',
@@ -157,6 +159,9 @@ class Salecar extends Model
 		'DeliveryInDMSDate',
 		'DeliveryInCKDate',
 		'CancelDate',
+		'CancelGCIPDate',
+		'RefundMotorDate',
+		'RefundDate',
 		'RegistrationProvince',
 		'RedPlateReceived',
 		'RedPlateAmount',
@@ -170,6 +175,10 @@ class Salecar extends Model
 		'DownPaymentDiscount',
 		'PaymentDiscount',
 		'CashDeposit',
+		'attachment_url',
+		'withdraw_user',
+		'withdraw_date',
+		'withdraw_attachment_url',
 		'TradeinAddition',
 		'AdditionFromCustomer',
 		'TotalPaymentatDelivery',

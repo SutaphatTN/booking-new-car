@@ -116,6 +116,7 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
         $rows = SaleBookingQuery::base()
             ->whereMonth('DeliveryEstimateDate', $month)
             ->whereYear('DeliveryEstimateDate', $year)
+            ->whereNotIn('con_status', [5, 9])
             ->get();
 
         $data = $rows->map(function ($r) {
