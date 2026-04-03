@@ -657,13 +657,18 @@ $(document).on('change', '#pl_model_id', function () {
   const modelId = $(this).val();
   const $subSelect = $('#pl_subModel_id');
 
-  $subSelect.empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>').prop('disabled', true);
+  $subSelect.prop('disabled', true).empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>');
 
-  if (!modelId) return;
+  if (!modelId) {
+    pricelistCarTable.ajax.reload();
+    return;
+  }
 
   $.get('/api/pricelist-car/sub-model/' + modelId, function (data) {
     $.each(data, function (i, item) {
-      $subSelect.append($('<option>', { value: item.id, text: item.name }));
+      let text = item.detail ? `${item.detail} - ${item.name}` : item.name;
+
+      $subSelect.append($('<option>', { value: item.id, text: text }));
     });
     $subSelect.prop('disabled', false);
   });
@@ -760,7 +765,9 @@ $(document).on('click', '.btnEditPricelistCar', function () {
 
         $.get('/api/pricelist-car/sub-model/' + modelId, function (data) {
           $.each(data, function (i, item) {
-            $subSelect.append($('<option>', { value: item.id, text: item.name }));
+            let text = item.detail ? `${item.detail} - ${item.name}` : item.name;
+
+            $subSelect.append($('<option>', { value: item.id, text: text }));
           });
           $subSelect.prop('disabled', false);
         });

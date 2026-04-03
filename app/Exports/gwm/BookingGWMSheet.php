@@ -101,6 +101,7 @@ class BookingGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Sh
     ])
       ->where('brand', 2)
       ->whereNULL('carOrderID')
+      ->whereNotIn('con_status', [5, 9])
       ->get();
 
     $data = $salecars

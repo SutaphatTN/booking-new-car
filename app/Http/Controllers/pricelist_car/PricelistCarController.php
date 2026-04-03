@@ -63,7 +63,7 @@ class PricelistCarController extends Controller
     public function getSubModel($model_id)
     {
         $subModels = TbSubcarmodel::where('model_id', $model_id)
-            ->select('id', 'name')
+            ->select('id', 'name', 'detail')
             ->orderBy('name')
             ->get();
 
@@ -115,7 +115,7 @@ class PricelistCarController extends Controller
         $price    = TbPricelistCar::findOrFail($id);
         $models   = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $price->model_id)
-            ->select('id', 'name')
+            ->select('id', 'name', 'detail')
             ->orderBy('name')
             ->get();
         $brand = Auth::user()->brand ?? null;
