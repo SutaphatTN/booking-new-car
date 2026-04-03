@@ -245,6 +245,11 @@
           "url": "purchase-order/gwm-stock-export",
           "name": "Stock GWM",
           "slug": "report.gwm-stock-export"
+        },
+        {
+          "url": "purchase-order/view-export-monthlyDelivery",
+          "name": "ส่งมอบประจำเดือน",
+          "slug": "report.monthlyDelivery-export"
         }
       ]
     }

@@ -18,12 +18,10 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
   protected $fromDate;
-  protected $toDate;
 
-  public function __construct($fromDate = null, $toDate = null)
+  public function __construct($fromDate = null)
   {
-    $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m-d');
-    $this->toDate   = $toDate   ?? now()->format('Y-m-d');
+    $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m');
   }
 
   public function title(): string
@@ -145,7 +143,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
   public function view(): View
   {
 
-    $rows = GPQuery::base($this->fromDate, $this->toDate)->get();
+    $rows = GPQuery::base($this->fromDate)->get();
 
     $data = $rows->map(function ($r) {
       $customerName = trim(

@@ -3247,3 +3247,17 @@ document.addEventListener('DOMContentLoaded', function () {
     window.history.back();
   });
 });
+
+//view report monthly delivery
+document.addEventListener('DOMContentLoaded', function () {
+  const modalEl = document.querySelector('.viewExportMonthlyDelivery');
+  if (!modalEl) return;
+
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+
+  // ปิด modal แล้วกลับหน้าก่อนหน้า
+  modalEl.addEventListener('hidden.bs.modal', function () {
+    window.history.back();
+  });
+});

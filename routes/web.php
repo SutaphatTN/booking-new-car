@@ -80,6 +80,9 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     //report gwm stock
     Route::get('purchase-order/view-export-gwm-stock', [PurchaseOrderController::class, 'viewExportGwmStock'])->name('purchase-order.view-export-gwm-stock');
     Route::get('/purchase-order/gwm-stock-export', [PurchaseOrderController::class, 'gwmStockExport'])->name('purchase-order.gwm-stock-export');
+    //delivery report
+    Route::get('purchase-order/view-export-monthlyDelivery', [PurchaseOrderController::class, 'viewExportMonthlyDelivery'])->name('purchase-order.view-export-monthlyDelivery');
+    Route::get('/purchase-order/monthlyDelivery-export', [PurchaseOrderController::class, 'exportMonthlyDelivery'])->name('purchase-order.monthlyDelivery-export');
 
     //accessory partner
     Route::get('accessory/partner', [AccessoryController::class, 'viewPartner'])->name('accessory.partner');

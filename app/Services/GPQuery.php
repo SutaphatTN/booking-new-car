@@ -7,15 +7,11 @@ use Illuminate\Support\Carbon;
 
 class GPQuery
 {
-    public static function base($fromDate = null, $toDate = null)
+    public static function base($fromDate = null)
     {
-        $fromDate = $fromDate
-            ? Carbon::parse($fromDate)->startOfDay()
+        $date = $fromDate
+            ? Carbon::createFromFormat('Y-m', $fromDate)->startOfMonth()
             : now()->startOfMonth();
-
-        $toDate = $toDate
-            ? Carbon::parse($toDate)->endOfDay()
-            : now()->endOfDay();
 
         return Salecar::with([
             'customer.prefix',
@@ -30,9 +26,7 @@ class GPQuery
         ])
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
-            ->whereBetween('DeliveryInCKDate', [
-                $fromDate,
-                $toDate
-            ]);
+            ->whereMonth('DeliveryInCKDate', $date->month)
+            ->whereYear('DeliveryInCKDate', $date->year);
     }
 }

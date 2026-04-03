@@ -8,6 +8,7 @@ use App\Exports\gp\GPExport;
 use App\Exports\gwm\GwmExport;
 use App\Exports\saleCar\SaleCarBookingExport;
 use App\Exports\saleCar\SaleCarEstimatedExport;
+use App\Exports\saleCar\MonthlyDeliveryExport;
 use App\Http\Controllers\Controller;
 use App\Mail\SaleRequestMail;
 use App\Models\TbCarmodel;
@@ -1606,10 +1607,9 @@ class PurchaseOrderController extends Controller
 
     public function exportGP(Request $request)
     {
-        $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
-        $toDate   = $request->to_date   ?? now()->format('Y-m-d');
+        $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
 
-        return Excel::download(new GPExport($fromDate, $toDate), 'gp-report.xlsx');
+        return Excel::download(new GPExport($fromDate), 'gp-report.xlsx');
     }
 
     // report sale Estimated
@@ -1652,5 +1652,19 @@ class PurchaseOrderController extends Controller
         $status   = $request->con_status ?: null;
 
         return Excel::download(new SaleCarBookingExport($fromDate, $toDate, $status), 'ข้อมูลการจอง.xlsx');
+    }
+    
+    //delivery report
+    public function viewExportMonthlyDelivery()
+    {
+        return view('purchase-order.report.saleCar.monthlyDelivery.view');
+    }
+
+    public function exportMonthlyDelivery(Request $request)
+    {
+        $fromDate   = $request->from_date ?? now()->startOfMonth()->format('Y-m');
+        $dateType   = $request->date_type ?? 'dms';
+
+        return Excel::download(new MonthlyDeliveryExport($fromDate, $dateType), 'ส่งมอบประจำเดือน.xlsx');
     }
 }

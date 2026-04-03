@@ -18,12 +18,10 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 class GPSummary implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
     protected $fromDate;
-    protected $toDate;
 
-    public function __construct($fromDate = null, $toDate = null)
+    public function __construct($fromDate = null)
     {
-        $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m-d');
-        $this->toDate   = $toDate   ?? now()->format('Y-m-d');
+        $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m');
     }
 
 
@@ -94,7 +92,7 @@ class GPSummary implements FromView, WithTitle, WithStyles, WithEvents, ShouldAu
 
     public function view(): View
     {
-        $rows = GPQuery::base($this->fromDate, $this->toDate)->get();
+        $rows = GPQuery::base($this->fromDate)->get();
 
         $totalSalePrice = $rows->sum(fn($r) => $r->carOrder->car_MSRP ?? 0);
         $totalCostPrice = $rows->sum(fn($r) => $r->carOrder->car_DNP ?? 0);

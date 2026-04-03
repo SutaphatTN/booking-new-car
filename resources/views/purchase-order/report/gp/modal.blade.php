@@ -1,5 +1,5 @@
 <div class="modal fade viewExportGP" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-lg" role="document">
+  <div class="modal-dialog modal-sm" role="document">
     <div class="modal-content">
       <div class="modal-header border-bottom">
         <h4 class="modal-title mb-2" id="viewExportGPLabel">ข้อมูล GP ประจำเดือน</h4>
@@ -9,19 +9,11 @@
         <form action="{{ route('purchase-order.gp-export') }}" method="GET">
 
           <div class="row">
-            <div class="col-6">
+            <div class="col-12">
               <div class="form-group row mb-1">
-                <label for="from_date" class="col-sm-3 col-form-label text-right">จากวันที่ : </label>
+                <label for="from_date" class="col-sm-3 col-form-label text-right">เลือกเดือน : </label>
                 <div class="col-sm-8">
-                  <input type="date" id="from_date" name="from_date" class="form-control" />
-                </div>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="form-group row mb-1">
-                <label for="to_date" class="col-sm-3 col-form-label text-right">ถึงวันที่ : </label>
-                <div class="col-sm-8">
-                  <input type="date" id="to_date" name="to_date" class="form-control" />
+                  <input type="month" id="from_date" name="from_date" class="form-control" />
                 </div>
               </div>
             </div>

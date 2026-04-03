@@ -26,12 +26,19 @@ class PricelistCarController extends Controller
 
         $models    = TbCarmodel::whereIn('id', $modelIds)->pluck('Name_TH', 'id');
         $subModels = TbSubcarmodel::whereIn('id', $subModelIds)->pluck('name', 'id');
+        $subModelsDetail = TbSubcarmodel::whereIn('id', $subModelIds)->pluck('detail', 'id');
 
-        $data = $prices->map(function ($p, $index) use ($models, $subModels, $userBrand) {
+        $data = $prices->map(function ($p, $index) use ($models, $subModels, $subModelsDetail, $userBrand) {
             $hide = in_array($userBrand, [2, 3]);
 
             $model_id = $models[$p->model_id] ?? '-';
             $subModel_id = $subModels[$p->subModel_id] ?? '-';
+            $subModelDetail = $subModelsDetail[$p->subModel_id] ?? null;
+
+            if ($userBrand == 1 && $subModelDetail) {
+                $subModel_id = "{$subModelDetail}<br>{$subModel_id}";
+            }
+
             $car = "รหลัก : {$model_id}<br>ย่อย : {$subModel_id}";
 
             return [
