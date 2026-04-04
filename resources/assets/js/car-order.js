@@ -426,17 +426,26 @@ $(document).on('change', '#purchase_type', function () {
   toggleTestDriveFields($modal);
 
   $('#modelError').addClass('d-none').text('');
-  
 });
 
 //input : hide select customer
 function togglePurchaseFields($modal) {
   const selected = $modal.find('#type').val();
+  const isWaiting = selected === 'stock' || selected === 'auction';
 
   $modal.find('#fieldPurchase').addClass('d-none');
+  $modal.find('#fieldCountOrder').addClass('d-none');
+  $modal.find('#count_order').removeAttr('required');
+
+  // ปรับ col ของแหล่งที่มา และประเภทการซื้อ
+  $modal.find('#wrapPurchaseSource').toggleClass('col-md-5', !isWaiting).toggleClass('col-md-3', isWaiting);
+  $modal.find('#wrapPurchaseType').toggleClass('col-md-4', !isWaiting).toggleClass('col-md-3', isWaiting);
 
   if (selected === 'customer') {
     $modal.find('#fieldPurchase').removeClass('d-none');
+  } else if (isWaiting) {
+    $modal.find('#fieldCountOrder').removeClass('d-none');
+    $modal.find('#count_order').attr('required', true);
   }
 }
 
@@ -662,7 +671,7 @@ $(document).on('change', '#subModel_id', function () {
   });
 });
 
-//input : save cam
+//input : save car order
 $(document).on('click', '.btnStoreCarOrder', function (e) {
   e.preventDefault();
 
@@ -673,7 +682,9 @@ $(document).on('click', '.btnStoreCarOrder', function (e) {
     return;
   }
 
-  const url = $(form).attr('action');
+  const type = $(form).find('#type').val();
+  const isWaiting = type === 'stock' || type === 'auction';
+  const url = isWaiting ? '/car-order/store-waiting' : $(form).attr('action');
   const formData = new FormData(form);
 
   $.ajax({
@@ -848,6 +859,122 @@ $(document).on('click', '.btnDeletePendingOrder', function () {
             icon: 'error',
             title: 'เกิดข้อผิดพลาด',
             text: errMsg
+          });
+        }
+      });
+    }
+  });
+});
+
+// blur focus editWaitingOrder
+$(document).on('hide.bs.modal', '.editWaitingOrder', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
+//edit waiting (pending page)
+$(document).on('click', '.btnEditWaiting', function () {
+  const id = $(this).data('id');
+  const $btn = $(this);
+
+  $.get('/car-order/edit-waiting/' + id, function (html) {
+    $('.editWaitingOrderModal').html(html);
+    const $modal = $('.editWaitingOrder');
+    $modal.modal('show');
+
+    $modal
+      .find('.btnUpdateWaitingOrder')
+      .off('click')
+      .on('click', function (e) {
+        e.preventDefault();
+
+        const form = $modal.find('form')[0];
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        const formData = new FormData(form);
+
+        $.ajax({
+          url: form.action,
+          type: 'POST',
+          data: formData,
+          processData: false,
+          contentType: false,
+          beforeSend: function () {
+            $modal.modal('hide');
+            Swal.fire({
+              title: 'กำลังบันทึกข้อมูล...',
+              didOpen: () => Swal.showLoading(),
+              allowOutsideClick: false
+            });
+            $btn.prop('disabled', true);
+          },
+          success: function (res) {
+            Swal.fire({
+              icon: 'success',
+              title: 'สำเร็จ!',
+              text: res.message,
+              timer: 2000,
+              showConfirmButton: true
+            });
+            pendingOrderTable.ajax.reload(null, false);
+          },
+          error: function (xhr) {
+            Swal.fire({
+              icon: 'error',
+              title: 'เกิดข้อผิดพลาด!',
+              text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้'
+            });
+          },
+          complete: function () {
+            $btn.prop('disabled', false);
+          }
+        });
+      });
+  });
+});
+
+//delete waiting (pending page)
+$(document).on('click', '.btnDeleteWaiting', function () {
+  const id = $(this).data('id');
+
+  Swal.fire({
+    title: 'คุณแน่ใจหรือไม่?',
+    text: 'คุณต้องการลบข้อมูลนี้ใช่หรือไม่?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'ใช่, ลบเลย!',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (result.isConfirmed) {
+      $.ajax({
+        url: '/car-order/destroy-waiting/' + id,
+        type: 'DELETE',
+        success: function (res) {
+          if (res.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'สำเร็จ',
+              text: res.message,
+              timer: 2000,
+              showConfirmButton: true
+            });
+            pendingOrderTable.ajax.reload(null, false);
+          } else {
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถลบข้อมูลได้' });
+          }
+        },
+        error: function (xhr) {
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: xhr.responseJSON?.message || 'ไม่สามารถลบข้อมูลได้'
           });
         }
       });
@@ -1103,6 +1230,156 @@ $(document).on('click', '.btnRejectProcess', function () {
   }
 });
 
+// blur focus viewWaitingOrder
+$(document).on('hide.bs.modal', '.viewWaitingOrder', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
+// ดูรายละเอียด waiting (stock/auction)
+$(document).on('click', '.btnViewWaiting', function () {
+  const id = $(this).data('id');
+
+  $.get('/car-order/view-waiting/' + id, function (html) {
+    $('.viewWaitingOrderModal').html(html);
+    $('.viewWaitingOrder').modal('show');
+  });
+});
+
+// อนุมัติ waiting (stock/auction)
+$(document).on('click', '.btnApproveWaiting', function () {
+  const id = $(this).data('id');
+  const countOrder = $(this).data('count-order');
+
+  Swal.fire({
+    title: 'อนุมัติคำขอสั่งรถ',
+    html: `
+      <p class="mb-3 text-center">จำนวนที่สั่ง : <strong>${countOrder} คัน</strong></p>
+      <div class="d-flex justify-content-center align-items-center gap-2">
+        <label class="fw-semibold mb-0">สั่งจริง (คัน) :</label>
+        <input type="number" id="swal-received" 
+          class="form-control w-auto text-center" 
+          style="max-width: 120px;"
+          value="${countOrder}" min="0">
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'ยืนยัน',
+    cancelButtonText: 'ยกเลิก',
+    preConfirm: () => {
+      const val = parseInt($('#swal-received').val());
+      if (isNaN(val) || val < 0) {
+        Swal.showValidationMessage('กรุณากรอกจำนวนที่ถูกต้อง');
+        return false;
+      }
+      return val;
+    }
+  }).then(result => {
+    if (!result.isConfirmed) return;
+
+    const formData = new FormData();
+    formData.append('received_order', result.value);
+    formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+
+    $.ajax({
+      url: '/car-order/approve-waiting/' + id,
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      beforeSend: function () {
+        Swal.fire({
+          title: 'กำลังบันทึกข้อมูล...',
+          didOpen: () => Swal.showLoading(),
+          allowOutsideClick: false
+        });
+      },
+      success: function (res) {
+        Swal.fire({
+          icon: 'success',
+          title: 'สำเร็จ!',
+          text: res.message,
+          timer: 2000,
+          showConfirmButton: true
+        });
+        processOrderTable.ajax.reload(null, false);
+      },
+      error: function (xhr) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด!',
+          text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้'
+        });
+      }
+    });
+  });
+});
+
+// ไม่อนุมัติ waiting (stock/auction)
+$(document).on('click', '.btnRejectWaiting', function () {
+  const id = $(this).data('id');
+
+  Swal.fire({
+    title: 'ระบุเหตุผลที่ไม่อนุมัติ',
+    input: 'textarea',
+    inputPlaceholder: 'กรอกเหตุผลที่ไม่อนุมัติ...',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'บันทึก',
+    cancelButtonText: 'ยกเลิก',
+    preConfirm: reason => {
+      if (!reason || reason.trim() === '') {
+        Swal.showValidationMessage('กรุณากรอกเหตุผลก่อนบันทึก');
+        return false;
+      }
+      return reason;
+    }
+  }).then(result => {
+    if (!result.isConfirmed) return;
+
+    const formData = new FormData();
+    formData.append('reason', result.value);
+    formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+
+    $.ajax({
+      url: '/car-order/reject-waiting/' + id,
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      beforeSend: function () {
+        Swal.fire({
+          title: 'กำลังดำเนินการ...',
+          didOpen: () => Swal.showLoading(),
+          allowOutsideClick: false
+        });
+      },
+      success: function (res) {
+        Swal.fire({
+          icon: 'success',
+          title: 'สำเร็จ!',
+          text: res.message,
+          timer: 2000,
+          showConfirmButton: true
+        });
+        processOrderTable.ajax.reload(null, false);
+      },
+      error: function (xhr) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด!',
+          text: xhr.responseJSON?.message || 'ไม่สามารถดำเนินการได้'
+        });
+      }
+    });
+  });
+});
+
 function submitProcessDirect(id, action, reason) {
   const formData = new FormData();
   formData.append('action_status', action);
@@ -1194,6 +1471,79 @@ $(document).on('hide.bs.modal', '.editApproveOrder', function () {
     document.activeElement.blur();
     $('body').trigger('focus');
   }, 1);
+});
+
+// edit approve waiting car-order
+// blur focus editApproveWaitingOrder
+$(document).on('hide.bs.modal', '.editApproveWaitingOrder', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
+// แก้ไขวันที่ waiting approve
+$(document).on('click', '.btnApproveWaitingEdit', function () {
+  const id = $(this).data('id');
+  const $btn = $(this);
+
+  $.get('/car-order/edit-approve-waiting/' + id, function (html) {
+    $('.editApproveWaitingOrderModal').html(html);
+    const $modal = $('.editApproveWaitingOrder');
+    $modal.modal('show');
+
+    $modal
+      .find('.btnUpdateApproveWaitingOrder')
+      .off('click')
+      .on('click', function (e) {
+        e.preventDefault();
+
+        const form = $modal.find('form')[0];
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        const formData = new FormData(form);
+
+        $.ajax({
+          url: form.action,
+          type: 'POST',
+          data: formData,
+          processData: false,
+          contentType: false,
+          beforeSend: function () {
+            $modal.modal('hide');
+            Swal.fire({
+              title: 'กำลังบันทึกข้อมูล...',
+              didOpen: () => Swal.showLoading(),
+              allowOutsideClick: false
+            });
+            $btn.prop('disabled', true);
+          },
+          success: function (res) {
+            Swal.fire({
+              icon: 'success',
+              title: 'สำเร็จ!',
+              text: res.message,
+              timer: 2000,
+              showConfirmButton: true
+            });
+            approveOrderTable.ajax.reload(null, false);
+          },
+          error: function (xhr) {
+            Swal.fire({
+              icon: 'error',
+              title: 'เกิดข้อผิดพลาด!',
+              text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้'
+            });
+          },
+          complete: function () {
+            $btn.prop('disabled', false);
+          }
+        });
+      });
+  });
 });
 
 // edit approve car-order
@@ -1346,7 +1696,11 @@ $(document).on('change', '#pricelist_color', function () {
   const $yearSel = $('#pricelist_year');
 
   $yearSel.prop('disabled', true).empty().append('<option value="">-- เลือกปี --</option>');
-  $('#option').val(''); $('#car_DNP').val(''); $('#car_MSRP').val(''); $('#RI').val(''); $('#WS').val('');
+  $('#option').val('');
+  $('#car_DNP').val('');
+  $('#car_MSRP').val('');
+  $('#RI').val('');
+  $('#WS').val('');
 
   if (!selectedColor) return;
 

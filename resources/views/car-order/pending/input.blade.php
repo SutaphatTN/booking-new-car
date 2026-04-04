@@ -22,7 +22,12 @@
               </select>
             </div>
 
-            <div class="col-md-4 mb-5">
+            <div id="fieldCountOrder" class="col-md-3 mb-5 d-none">
+              <label for="count_order" class="form-label">จำนวนที่สั่ง (คัน)</label>
+              <input id="count_order" type="number" class="form-control" name="count_order" value="1" min="1">
+            </div>
+
+            <div id="wrapPurchaseSource" class="col-md-5 mb-5">
               <label for="purchase_source" class="form-label">แหล่งที่มา</label>
               <select id="purchase_source" name="purchase_source" class="form-select" required>
                 <option value="">-- เลือกแหล่งที่มา --</option>
@@ -41,7 +46,7 @@
               </select>
             </div>
 
-            <div class="col-md-5 mb-5">
+            <div id="wrapPurchaseType" class="col-md-4 mb-5">
               <label for="purchase_type" class="form-label">ประเภทการซื้อรถ</label>
               <select id="purchase_type" name="purchase_type" class="form-select" required>
                 <option value="">-- เลือกประเภท --</option>

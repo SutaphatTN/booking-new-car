@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\ApproveCarOrderMail;
 use App\Models\CarOrder;
 use App\Models\CarOrderHistory;
+use App\Models\CarOrderWaiting;
 use App\Models\Salecar;
 use App\Models\TbCarmodel;
 use App\Models\TbInteriorColor;
@@ -280,8 +281,7 @@ class CarOrderController extends Controller
             if ($item->brand == 2) {
                 $item->display_color = $item->gwmColor->name ?? '-';
                 $item->display_interior_color = $item->interiorColor->name ?? '-';
-            }
-            elseif ($item->brand == 3) {
+            } elseif ($item->brand == 3) {
                 $item->display_color = $item->gwmColor->name ?? '-';
                 $item->display_interior_color = null;
             } else {
@@ -348,14 +348,20 @@ class CarOrderController extends Controller
 
     public function listPending()
     {
-        $order = CarOrder::with('model', 'subModel', 'gwmColor')
+        $orders = CarOrder::with('model', 'subModel', 'gwmColor')
             ->where('status', 'pending')
             ->get();
 
-        $data = $order->map(function ($p, $index) {
-            $modelOrder = $p->model ? $p->model->Name_TH : '';
+        $waitings = CarOrderWaiting::with('model', 'subModel', 'gwmColor')
+            ->where('status', 'pending')
+            ->get();
+
+        $data = collect();
+
+        foreach ($orders as $p) {
+            $modelOrder    = $p->model ? $p->model->Name_TH : '';
             $subModelOrder = $p->subModel ? $p->subModel->name : '';
-            $subDetail = $p->subModel ? $p->subModel->detail : '';
+            $subDetail     = $p->subModel ? $p->subModel->detail : '';
 
             if ($p->brand == 2 || $p->brand == 3) {
                 $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>สี : {$p->display_color}<br>ราคาขาย : " . number_format($p->car_MSRP);
@@ -363,14 +369,42 @@ class CarOrderController extends Controller
                 $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$p->display_color}<br>ราคาขาย : " . number_format($p->car_MSRP);
             }
 
-            return [
-                'No' => $index + 1,
+            $data->push([
+                'No'         => 0,
                 'order_code' => $p->order_code,
-                'date' => $p->format_order_date,
-                'type' => $p->type,
-                'model' => $modelDisplay,
-                'Action' => view('car-order.pending.button', compact('p'))->render()
-            ];
+                'date'       => $p->format_order_date,
+                'type'       => $p->type,
+                'model'      => $modelDisplay,
+                'Action'     => view('car-order.pending.button', compact('p'))->render(),
+            ]);
+        }
+
+        foreach ($waitings as $w) {
+            $modelOrder    = $w->model ? $w->model->Name_TH : '';
+            $subModelOrder = $w->subModel ? $w->subModel->name : '';
+            $subDetail     = $w->subModel ? $w->subModel->detail : '';
+            $colorDisplay  = $w->display_color;
+            $msrp          = $w->car_MSRP ? number_format($w->car_MSRP) : '-';
+
+            if ($w->brand == 2 || $w->brand == 3) {
+                $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>สี : {$colorDisplay}<br>ราคาขาย : {$msrp}<br><span class='badge bg-label-warning'>รอ : {$w->count_order} คัน</span>";
+            } else {
+                $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$colorDisplay}<br>ราคาขาย : {$msrp}<br><span class='badge bg-label-warning'>รอ : {$w->count_order} คัน</span>";
+            }
+
+            $data->push([
+                'No'         => 0,
+                'order_code' => $w->order_code . '<br> <span class="badge bg-label-warning mt-1">Waiting</span>',
+                'date'       => $w->format_order_date,
+                'type'       => $w->type,
+                'model'      => $modelDisplay,
+                'Action'     => view('car-order.pending.button-waiting', compact('w'))->render(),
+            ]);
+        }
+
+        $data = $data->values()->map(function ($item, $index) {
+            $item['No'] = $index + 1;
+            return $item;
         });
 
         return response()->json(['data' => $data]);
@@ -547,6 +581,195 @@ class CarOrderController extends Controller
         }
     }
 
+    public function storeWaiting(Request $request)
+    {
+        try {
+            if (!$request->filled('order_date')) {
+                $request->merge(['order_date' => now()]);
+            }
+
+            $request->validate([
+                'order_date' => 'required|date',
+                'model_id'   => 'required|integer|exists:tb_carmodels,id',
+            ]);
+
+            $OrderYear  = Carbon::parse($request->order_date)->format('Y');
+            $OrderMonth = Carbon::parse($request->order_date)->format('m');
+            $OrderDate  = Carbon::parse($request->order_date)->format('d');
+
+            $model  = TbCarmodel::findOrFail($request->model_id);
+            $prefix = "{$OrderYear}-{$OrderMonth}-{$OrderDate}-{$model->id}-";
+
+            $lastCode = CarOrderWaiting::where('order_code', 'like', $prefix . '%')
+                ->orderBy('order_code', 'desc')
+                ->first();
+
+            $newNumber  = $lastCode
+                ? str_pad(intval(substr($lastCode->order_code, -4)) + 1, 4, '0', STR_PAD_LEFT)
+                : '0001';
+
+            $order_code = $prefix . $newNumber;
+
+            $data = [
+                'model_id'       => $request->model_id,
+                'subModel_id'    => $request->subModel_id,
+                'option'         => $request->option,
+                'purchase_source' => $request->purchase_source,
+                'order_code'     => $order_code,
+                'type'           => $request->type,
+                'order_date'     => $request->order_date,
+                'color'          => $request->color ?? null,
+                'type_color'     => $request->type_color ?? null,
+                'year'           => $request->year,
+                'purchase_type'  => $request->purchase_type,
+                'car_DNP'        => $request->filled('car_DNP')  ? str_replace(',', '', $request->car_DNP)  : null,
+                'car_MSRP'       => $request->filled('car_MSRP') ? str_replace(',', '', $request->car_MSRP) : null,
+                'RI'             => $request->filled('RI')  ? str_replace(',', '', $request->RI)  : null,
+                'WS'             => $request->filled('WS')  ? str_replace(',', '', $request->WS)  : null,
+                'count_order'    => $request->count_order ?? 1,
+                'approver'       => $request->approver,
+                'note'           => $request->note,
+                'status'         => CarOrderWaiting::STATUS_PENDING,
+                'userZone'       => Auth::user()->userZone ?? null,
+                'brand'          => Auth::user()->brand ?? null,
+                'UserInsert'     => Auth::id(),
+                'branch'         => Auth::user()->branch ?? null,
+            ];
+
+            $brand = Auth::user()->brand;
+            if ($brand == 2) {
+                $data['gwm_color']     = $request->gwm_color;
+                $data['interior_color'] = $request->interior_color;
+            }
+            if ($brand == 3) {
+                $data['gwm_color'] = $request->gwm_color;
+            }
+
+            CarOrderWaiting::create($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'เพิ่มข้อมูลรออนุมัติเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            // return response()->json([
+            //     'success' => false,
+            //     'message' => $e->getMessage(),
+            //     'trace' => $e->getTraceAsString(),
+            // ], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
+    }
+
+    public function approveWaiting(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'received_order' => 'required|integer|min:0',
+            ]);
+
+            $waiting = CarOrderWaiting::findOrFail($id);
+            $received = (int) $request->received_order;
+
+            DB::transaction(function () use ($waiting, $received) {
+                for ($i = 0; $i < $received; $i++) {
+                    $OrderYear  = Carbon::parse($waiting->order_date ?? now())->format('Y');
+                    $OrderMonth = Carbon::parse($waiting->order_date ?? now())->format('m');
+                    $OrderDate  = Carbon::parse($waiting->order_date ?? now())->format('d');
+
+                    $prefix = "{$OrderYear}-{$OrderMonth}-{$OrderDate}-{$waiting->model_id}-";
+
+                    $lastCode = CarOrder::where('order_code', 'like', $prefix . '%')
+                        ->orderBy('order_code', 'desc')
+                        ->lockForUpdate()
+                        ->first();
+
+                    $newNumber  = $lastCode
+                        ? str_pad(intval(substr($lastCode->order_code, -4)) + 1, 4, '0', STR_PAD_LEFT)
+                        : '0001';
+
+                    $order_code = $prefix . $newNumber;
+
+                    CarOrder::create([
+                        'model_id'       => $waiting->model_id,
+                        'subModel_id'    => $waiting->subModel_id,
+                        'option'         => $waiting->option,
+                        'purchase_source' => $waiting->purchase_source,
+                        'order_code'     => $order_code,
+                        'type'           => $waiting->type,
+                        'order_date'     => $waiting->order_date ?? now(),
+                        'color'          => $waiting->color,
+                        'type_color'     => $waiting->type_color,
+                        'gwm_color'      => $waiting->gwm_color,
+                        'interior_color' => $waiting->interior_color,
+                        'year'           => $waiting->year,
+                        'purchase_type'  => $waiting->purchase_type,
+                        'order_status'   => 1,
+                        'car_DNP'        => $waiting->car_DNP,
+                        'car_MSRP'       => $waiting->car_MSRP,
+                        'RI'             => $waiting->RI,
+                        'WS'             => $waiting->WS,
+                        'car_status'     => 'Available',
+                        'approver'       => $waiting->approver,
+                        'note'           => $waiting->note,
+                        'status'         => CarOrder::STATUS_APPROVED,
+                        'approved_by'    => Auth::id(),
+                        'approver_date'  => now(),
+                        'userZone'       => $waiting->userZone,
+                        'brand'          => $waiting->brand,
+                        'UserInsert'     => $waiting->UserInsert,
+                        'branch'         => $waiting->branch,
+                        'waiting_id'     => $waiting->id,
+                    ]);
+                }
+
+                $waiting->update([
+                    'received_order' => $received,
+                    'status'         => CarOrderWaiting::STATUS_APPROVED,
+                    'approved_by'    => Auth::id(),
+                    'approved_at'    => now(),
+                ]);
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => "อนุมัติเรียบร้อย สร้าง รายการรถ จำนวน {$received} คัน"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
+    }
+
+    public function rejectWaiting(Request $request, $id)
+    {
+        try {
+            $waiting = CarOrderWaiting::findOrFail($id);
+            $waiting->update([
+                'status'      => CarOrderWaiting::STATUS_REJECTED,
+                'approved_by' => Auth::id(),
+                'approved_at' => now(),
+                'reason'        => $request->reason,
+            ]);
+            $waiting->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกการไม่อนุมัติเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
+    }
+
     //get sub model from model
     public function getSubModelCarOrder(Request $request)
     {
@@ -580,6 +803,7 @@ class CarOrderController extends Controller
         return response()->json($colors);
     }
 
+    //get price list car option
     public function getPricelistOptions(Request $request)
     {
         $subModelId = $request->sub_model_id;
@@ -600,6 +824,7 @@ class CarOrderController extends Controller
         }
     }
 
+    //get price list data
     public function getPricelistData(Request $request)
     {
         $subModelId = $request->sub_model_id;
@@ -718,28 +943,55 @@ class CarOrderController extends Controller
 
     public function listProcess()
     {
-        $order = CarOrder::with('model', 'subModel')
+        $orders = CarOrder::with('model', 'subModel')
             ->where('status', 'pending')
             ->get();
 
-        $data = $order->map(function ($p, $index) {
+        $waitings = CarOrderWaiting::with('model', 'subModel')
+            ->where('status', 'pending')
+            ->get();
+
+        $data = collect();
+
+        foreach ($orders as $p) {
             $modelOrder = $p->model ? $p->model->Name_TH : '';
             $subModelOrder = $p->subModel ? $p->subModel->name : '';
             $subDetail = $p->subModel ? $p->subModel->detail : null;
-            $subModelFull = $subDetail
-                ? "{$subDetail} - {$subModelOrder}"
-                : $subModelOrder;
+            $subModelFull = $subDetail ? "{$subDetail} - {$subModelOrder}" : $subModelOrder;
 
-            return [
-                'No' => $index + 1,
-                'date' => $p->format_order_date,
-                'type' => $p->type,
-                'model_id' => $modelOrder,
+            $data->push([
+                'No'        => 0,
+                'date'      => $p->format_order_date,
+                'type'      => $p->type,
+                'model_id'  => $modelOrder,
                 'subModel_id' => $subModelFull,
-                'color' => $p->display_color,
-                'cost' => number_format($p->car_MSRP, 2),
-                'Action' => view('car-order.process.button', compact('p'))->render()
-            ];
+                'color'     => $p->display_color,
+                'cost'      => number_format($p->car_MSRP, 2),
+                'Action'    => view('car-order.process.button', compact('p'))->render(),
+            ]);
+        }
+
+        foreach ($waitings as $w) {
+            $modelOrder = $w->model ? $w->model->Name_TH : '';
+            $subModelOrder = $w->subModel ? $w->subModel->name : '';
+            $subDetail = $w->subModel ? $w->subModel->detail : null;
+            $subModelFull = $subDetail ? "{$subDetail} - {$subModelOrder}" : $subModelOrder;
+
+            $data->push([
+                'No'        => 0,
+                'date'      => $w->format_order_date,
+                'type'      => $w->type,
+                'model_id'  => $modelOrder,
+                'subModel_id' => $subModelFull,
+                'color'     => $w->display_color,
+                'cost'      => $w->car_MSRP ? number_format($w->car_MSRP, 2) : '-',
+                'Action'    => view('car-order.process.button-waiting', compact('w'))->render(),
+            ]);
+        }
+
+        $data = $data->values()->map(function ($item, $index) {
+            $item['No'] = $index + 1;
+            return $item;
         });
 
         return response()->json(['data' => $data]);
@@ -803,37 +1055,76 @@ class CarOrderController extends Controller
 
     public function listApprove()
     {
-        $order = CarOrder::with('model', 'subModel')
+        $orders = CarOrder::with('model', 'subModel')
             ->whereIn('status', ['approved', 'rejected'])
+            ->where(function ($q) {
+                $q->whereNull('waiting_id')
+                    ->orWhere('status', 'rejected');
+            })
             ->get();
 
-        $data = $order->map(function ($a, $index) {
-            $modelOrder = $a->model ? $a->model->Name_TH : '';
+        $waitings = CarOrderWaiting::with('model', 'subModel')
+            ->whereIn('status', ['approved', 'rejected'])
+            ->whereNull('system_date')
+            ->get();
+
+        $data = collect();
+
+        foreach ($orders as $a) {
+            $modelOrder    = $a->model ? $a->model->Name_TH : '';
             $subModelOrder = $a->subModel ? $a->subModel->name : '';
-            $subDetail = $a->subModel ? $a->subModel->detail : null;
-            $subModelFull = $subDetail
-                ? "{$subDetail} - {$subModelOrder}"
-                : $subModelOrder;
+            $subDetail     = $a->subModel ? $a->subModel->detail : null;
+            $subModelFull  = $subDetail ? "{$subDetail} - {$subModelOrder}" : $subModelOrder;
 
             if ($a->status === 'approved') {
                 $statusBadge = '<span class="badge bg-label-success">อนุมัติ</span>';
-            } elseif ($a->status === 'rejected') {
-                $statusBadge = '<span class="badge bg-label-danger">ไม่อนุมัติ</span>';
             } else {
-                $statusBadge = '<span class="badge bg-label-secondary">' . $a->status . '</span>';
+                $statusBadge = '<span class="badge bg-label-danger">ไม่อนุมัติ</span>';
             }
 
-            return [
-                'No' => $index + 1,
-                'date' => $a->format_approver_date,
-                'type' => $a->type,
-                'model_id' => $modelOrder,
+            $data->push([
+                'No'         => 0,
+                'date'       => $a->format_approver_date,
+                'type'       => $a->type,
+                'model_id'   => $modelOrder,
                 'subModel_id' => $subModelFull,
-                'color' => $a->display_color,
-                'cost' => number_format($a->car_MSRP, 2),
-                'status' => $statusBadge,
-                'Action' => view('car-order.approve.button', compact('a'))->render()
-            ];
+                'color'      => $a->display_color,
+                'cost'       => number_format($a->car_MSRP, 2),
+                'status'     => $statusBadge,
+                'Action'     => view('car-order.approve.button', compact('a'))->render(),
+            ]);
+        }
+
+        foreach ($waitings as $w) {
+            $modelOrder    = $w->model ? $w->model->Name_TH : '';
+            $subModelOrder = $w->subModel ? $w->subModel->name : '';
+            $subDetail     = $w->subModel ? $w->subModel->detail : null;
+            $subModelFull  = $subDetail ? "{$subDetail} - {$subModelOrder}" : $subModelOrder;
+            $colorDisplay  = $w->color ?? ($w->gwmColor ? $w->gwmColor->name : '-');
+
+            if ($w->status === 'approved') {
+                $statusBadgeWait = '<span class="badge bg-label-success">อนุมัติ</span><br><span class="badge bg-label-info mt-2">' . $w->received_order . ' คัน</span>';
+                // 'status'     => '<span class="badge bg-label-success">อนุมัติ</span><br><span class="badge bg-label-info">' . $w->received_order . '/' . $w->count_order . ' คัน</span>';
+            } else {
+                $statusBadgeWait = '<span class="badge bg-label-danger">ไม่อนุมัติ</span>';
+            }
+
+            $data->push([
+                'No'         => 0,
+                'date'       => $w->format_approved_at,
+                'type'       => $w->type,
+                'model_id'   => $modelOrder,
+                'subModel_id' => $subModelFull,
+                'color'      => $colorDisplay,
+                'cost'       => $w->car_MSRP ? number_format($w->car_MSRP, 2) : '-',
+                'status'     => $statusBadgeWait,
+                'Action'     => view('car-order.approve.button-waiting', compact('w'))->render(),
+            ]);
+        }
+
+        $data = $data->values()->map(function ($item, $index) {
+            $item['No'] = $index + 1;
+            return $item;
         });
 
         return response()->json(['data' => $data]);
@@ -941,5 +1232,111 @@ class CarOrderController extends Controller
             'success' => true,
             'data' => $models
         ]);
+    }
+
+    // waiting
+    public function viewWaiting($id)
+    {
+        $waiting = CarOrderWaiting::with(['model', 'subModel', 'approvers', 'purchaseType', 'gwmColor', 'interiorColor'])->findOrFail($id);
+        return view('car-order.process.view-waiting', compact('waiting'));
+    }
+
+    public function editWaiting($id)
+    {
+        $authUser = Auth::user();
+
+        $waiting = CarOrderWaiting::findOrFail($id);
+        $purchaseType = TbPurchaseType::all();
+        $approvers = User::whereIn('role', ['audit', 'md'])
+            ->where('brand', $authUser->brand)
+            ->get();
+        $gwmColor = $waiting->subModel
+            ? $waiting->subModel->colors
+            : collect();
+        $interiorColor = TbInteriorColor::all();
+
+        return view('car-order.pending.edit-waiting', compact('waiting', 'purchaseType', 'approvers', 'gwmColor', 'interiorColor'));
+    }
+
+    public function updateWaiting(Request $request, $id)
+    {
+        try {
+            $waiting = CarOrderWaiting::findOrFail($id);
+
+            $data = $request->except(['_token', '_method']);
+
+            $data['car_DNP']  = $request->filled('car_DNP')  ? str_replace(',', '', $request->car_DNP)  : null;
+            $data['car_MSRP'] = $request->filled('car_MSRP') ? str_replace(',', '', $request->car_MSRP) : null;
+            $data['RI']       = $request->filled('RI')  ? str_replace(',', '', $request->RI)  : null;
+            $data['WS']       = $request->filled('WS')  ? str_replace(',', '', $request->WS)  : null;
+
+            $waiting->update($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'แก้ไขข้อมูลเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
+    }
+
+    public function destroyWaiting($id)
+    {
+        try {
+            CarOrderWaiting::findOrFail($id)->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ลบข้อมูลเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
+    }
+
+    public function editApproveWaiting($id)
+    {
+        $waiting = CarOrderWaiting::with(['model', 'subModel', 'approvers', 'purchaseType', 'gwmColor', 'interiorColor'])->findOrFail($id);
+
+        return view('car-order.approve.edit-waiting', compact('waiting'));
+    }
+
+    public function updateApproveWaiting(Request $request, $id)
+    {
+        $request->validate([
+            'system_date' => 'required|date',
+        ], [
+            'system_date.required' => 'กรุณากรอกวันที่',
+            'system_date.date'     => 'รูปแบบวันที่ไม่ถูกต้อง',
+        ]);
+
+        try {
+            $waiting = CarOrderWaiting::findOrFail($id);
+
+            CarOrder::where('waiting_id', $id)->update([
+                'system_date'  => $request->system_date,
+                'order_status' => 2,
+                'status'       => CarOrder::STATUS_FINISHED,
+            ]);
+
+            $waiting->update(['system_date' => $request->system_date]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
     }
 }

@@ -62,7 +62,8 @@ class CarOrder extends Model
         'userZone',
         'brand',
         'UserInsert',
-        'branch'
+        'branch',
+        'waiting_id',
     ];
 
     protected $dates = ['deleted_at'];

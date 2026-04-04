@@ -162,6 +162,14 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('car-order/edit-pending/{id}', [CarOrderController::class, 'editPending'])->name('car-order.editPending');
     Route::put('car-order/update-pending/{id}', [CarOrderController::class, 'updatePending'])->name('car-order.updatePending');
     Route::delete('car-order/destroy-pending/{id}', [CarOrderController::class, 'destroyPending']);
+    // waiting
+    Route::post('car-order/store-waiting', [CarOrderController::class, 'storeWaiting'])->name('car-order.storeWaiting');
+    Route::get('car-order/view-waiting/{id}', [CarOrderController::class, 'viewWaiting'])->name('car-order.viewWaiting');
+    Route::get('car-order/edit-waiting/{id}', [CarOrderController::class, 'editWaiting'])->name('car-order.editWaiting');
+    Route::put('car-order/update-waiting/{id}', [CarOrderController::class, 'updateWaiting'])->name('car-order.updateWaiting');
+    Route::delete('car-order/destroy-waiting/{id}', [CarOrderController::class, 'destroyWaiting'])->name('car-order.destroyWaiting');
+    Route::post('car-order/approve-waiting/{id}', [CarOrderController::class, 'approveWaiting'])->name('car-order.approveWaiting');
+    Route::post('car-order/reject-waiting/{id}', [CarOrderController::class, 'rejectWaiting'])->name('car-order.rejectWaiting');
     //car-order process
     Route::get('car-order/process', [CarOrderController::class, 'process'])->name('car-order.process');
     Route::get('car-order/process/list', [CarOrderController::class, 'listProcess']);
@@ -172,6 +180,9 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('car-order/approve/list', [CarOrderController::class, 'listApprove']);
     Route::get('car-order/edit-approve/{id}', [CarOrderController::class, 'editApprove'])->name('car-order.editApprove');
     Route::put('car-order/update-approve/{id}', [CarOrderController::class, 'updateApprove'])->name('car-order.updateApprove');
+    // waiting
+    Route::get('car-order/edit-approve-waiting/{id}', [CarOrderController::class, 'editApproveWaiting'])->name('car-order.editApproveWaiting');
+    Route::put('car-order/update-approve-waiting/{id}', [CarOrderController::class, 'updateApproveWaiting'])->name('car-order.updateApproveWaiting');
     Route::delete('car-order/destroy-approve/{id}', [CarOrderController::class, 'destroyApprove']);
     //condition select ca model 
     Route::get('/api/car-order/models-by-customer', [CarOrderController::class, 'getModelsByCustomer']);

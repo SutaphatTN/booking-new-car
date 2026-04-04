@@ -7,6 +7,7 @@
 
 @section('content')
 <div class="editProcessOrderModal"></div>
+<div class="viewWaitingOrderModal"></div>
 <div id="openIdHolder" data-open-id="{{ $openId ?? '' }}"></div>
 <div class="row">
   <div class="col-12">

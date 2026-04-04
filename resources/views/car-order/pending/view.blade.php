@@ -8,6 +8,7 @@
 @section('content')
 <div class="inputCarOrderModal"></div>
 <div class="editPendingOrderModal"></div>
+<div class="editWaitingOrderModal"></div>
 <div class="row">
   <div class="col-12">
     <div class="card">
