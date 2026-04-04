@@ -1568,12 +1568,26 @@ class PurchaseOrderController extends Controller
 
         $saleCar = $query
             ->groupBy('SaleID')
+            ->orderByRaw('SUM(CommissionSale) DESC')
             ->get();
 
-        $data = $saleCar->map(function ($s, $index) {
+        $showEmoji = $user->role !== 'sale' && $saleCar->count() > 1;
+        $lastIndex = $saleCar->count() - 1;
+
+        $data = $saleCar->map(function ($s, $index) use ($showEmoji, $lastIndex) {
             $nameSale = $s->saleUser->name;
             $branchSale = $s->saleUser->branchInfo->name;
-            $sale = "{$nameSale}<br>(สาขา : {$branchSale})";
+
+            $emoji = '';
+            if ($showEmoji) {
+                if ($index === 0) {
+                    $emoji = ' 😊';
+                } elseif ($index === $lastIndex) {
+                    $emoji = ' 😢';
+                }
+            }
+
+            $sale = "{$nameSale}{$emoji}<br>(สาขา : {$branchSale})";
 
             return [
                 'No' => $index + 1,
