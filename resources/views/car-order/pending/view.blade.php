@@ -14,8 +14,10 @@
       <h4 class="card-header">รายการคำขอสั่งรถ</h4>
       <div class="card-body">
         <div class="table-responsive text-nowrap">
-          <div class="d-flex justify-content-end">
-            <button class="btn btn-secondary btnInputCarOrder">เพิ่ม</button>
+          <div class="d-flex justify-content-end mb-2">
+            <button class="btn btn-secondary btnInputCarOrder">
+              <i class="bx bx-plus me-1"></i>เพิ่ม
+            </button>
           </div>
           <table class="table table-bordered pendingOrderTable">
             <thead>

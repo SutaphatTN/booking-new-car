@@ -11,10 +11,11 @@
   <div class="row">
     <div class="col-12">
       <div class="card">
-        <h4 class="card-header" style="text-align:center;">ข้อมูลรายการจองของลูกค้า</h4>
+        <h4 class="card-header">ข้อมูลรายการจองของลูกค้า</h4>
         <div class="card-body">
 
-          <div class="d-flex justify-content-end">
+          <div class="d-flex align-items-center justify-content-end gap-2 mb-3">
+            <label class="mb-0 text-nowrap">สถานะ :</label>
             <select id="filterStatus" class="form-select w-auto">
               <option value="">-- ทั้งหมด --</option>
               @foreach($conStatus as $status)

@@ -9,7 +9,7 @@
   <div class="row">
     <div class="col-12">
       <div class="card">
-        <h4 class="card-header" style="text-align:center;">รายการถอนจอง</h4>
+        <h4 class="card-header">รายการถอนจอง</h4>
         <div class="card-body">
           <div class="table-responsive text-nowrap">
             <table class="table table-bordered" id="cancellationTable">

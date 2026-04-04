@@ -83,7 +83,7 @@
       </div>
       <div class="col-md-2 d-flex align-items-end">
         <button class="btn btn-primary" id="btnCalculate">
-          คำนวณ
+          <i class="bx bx-calculator me-1"></i>คำนวณ
         </button>
       </div>
     </div>
