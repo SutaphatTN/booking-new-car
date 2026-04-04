@@ -109,7 +109,7 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
     foreach ($carOrders as $order) {
 
       $sale = $order->salecars
-        ->first(fn($s) => !in_array($s->con_status, [5, 9]));
+        ->first(fn($s) => !in_array($s->con_status, [5, 7, 8, 9]));
 
       $color = in_array($order->brand, [2,3])
         ? ($order->gwmColor->name ?? '-')

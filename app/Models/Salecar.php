@@ -502,4 +502,14 @@ class Salecar extends Model
 	{
 		return $this->CancelDate ? Carbon::parse($this->CancelDate)->format('d-m-Y') : null;
 	}
+
+	public function getCancelGcipDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getFormatCancelGcipDateAttribute()
+	{
+		return $this->CancelGCIPDate ? Carbon::parse($this->CancelGCIPDate)->format('d-m-Y') : null;
+	}
 }

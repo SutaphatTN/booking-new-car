@@ -58,7 +58,7 @@ class BookingReportQuery
     ])
       ->whereNull('CarOrderID')
       ->where('model_id', $modelId)
-      ->whereNotIn('con_status', [5, 9]);
+      ->whereNotIn('con_status', [5, 7, 8, 9]);
   }
 
   public static function agingCars()

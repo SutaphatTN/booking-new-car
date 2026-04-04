@@ -131,16 +131,16 @@ class PurchaseOrderController extends Controller
         $statusFilter = $request->con_status;
         $user = Auth::user();
 
-        $query = Salecar::with('customer.prefix', 'conStatus')->whereNotIn('con_status', [5, 9]);
+        $query = Salecar::with('customer.prefix', 'conStatus');
 
         if ($user->role === 'sale') {
             $query->where('SaleID', $user->id);
         }
 
         if ($statusFilter) {
-            $query->whereHas('conStatus', function ($q) use ($statusFilter) {
-                $q->where('name', $statusFilter);
-            });
+            $query->where('con_status', $statusFilter);
+        } else {
+            $query->whereIn('con_status', [1, 2, 3, 4, 6]);
         }
 
         $saleCar = $query->get();
@@ -801,11 +801,12 @@ class PurchaseOrderController extends Controller
             $saleCar->update($data);
 
             //ยกเลิกการจอง
-            if ($request->con_status == 9) {
+            if (in_array($request->con_status, [7, 8, 9])) {
                 if ($saleCar->CarOrderID) {
                     CarOrder::where('id', $saleCar->CarOrderID)
                         ->update(['car_status' => 'Available']);
                 }
+
                 $saleCar->carOrderHistories()->delete();
             }
 
@@ -1653,7 +1654,7 @@ class PurchaseOrderController extends Controller
 
         return Excel::download(new SaleCarBookingExport($fromDate, $toDate, $status), 'ข้อมูลการจอง.xlsx');
     }
-    
+
     //delivery report
     public function viewExportMonthlyDelivery()
     {

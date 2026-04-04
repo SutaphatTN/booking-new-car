@@ -13,6 +13,16 @@
       <div class="card">
         <h4 class="card-header" style="text-align:center;">ข้อมูลรายการจองของลูกค้า</h4>
         <div class="card-body">
+
+          <div class="d-flex justify-content-end">
+            <select id="filterStatus" class="form-select w-auto">
+              <option value="">-- ทั้งหมด --</option>
+              @foreach($conStatus as $status)
+                <option value="{{ $status->id }}">{{ $status->name }}</option>
+              @endforeach
+            </select>
+          </div>
+
           <div class="table-responsive text-nowrap">
             <table class="table table-bordered" id="purchaseTable">
               <thead>

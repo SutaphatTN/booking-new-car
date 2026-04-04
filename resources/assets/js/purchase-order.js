@@ -76,7 +76,12 @@ $(document).ready(function () {
   }
 
   purchaseTable = $('#purchaseTable').DataTable({
-    ajax: '/purchase-order/list',
+    ajax: {
+      url: '/purchase-order/list',
+      data: function (d) {
+        d.con_status = $('#filterStatus').val();
+      }
+    },
     columns: [
       { data: 'No', orderable: false },
       { data: 'FullName', orderable: false },

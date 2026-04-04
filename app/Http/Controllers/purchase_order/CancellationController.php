@@ -22,7 +22,7 @@ class CancellationController extends Controller
 
         $query = Salecar::withTrashed()
             ->with(['customer.prefix', 'model'])
-            ->where('con_status', 9)
+            ->whereIn('con_status', [7, 9])
             ->whereNull('withdraw_date');
 
         if ($user->role === 'sale') {
@@ -42,9 +42,7 @@ class CancellationController extends Controller
                     $c->LastName ?? null,
                 ])),
                 'model' => $s->model?->Name_TH ?? '-',
-                'CancelGCIPDate' => $s->CancelGCIPDate
-                    ? Carbon::parse($s->CancelGCIPDate)->format('d/m/Y')
-                    : '-',
+                'CancelGCIPDate' => $s->format_cancel_gcip_date ?? '-',
                 'Action' => view('purchase-order.cancellation.button', compact('s'))->render(),
             ];
         });

@@ -164,7 +164,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
     foreach ($carOrders as $order) {
 
       $sale = $order->salecars
-        ->first(fn($s) => !in_array($s->con_status, [5, 9]));
+        ->first(fn($s) => !in_array($s->con_status, [5, 7, 8, 9]));
 
       //เงื่อนไข การจัดสรรรถใหม่
       $bookingDate = $sale?->BookingDate
