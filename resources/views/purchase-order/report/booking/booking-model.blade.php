@@ -10,6 +10,7 @@
       @if (!in_array(auth()->user()->brand, [2,3]))
         <th>Option</th>
       @endif
+      <th>ราคาทุน</th>
       <th>ราคาขาย</th>
       <th>สถานะรถ</th>
       <th>Vin - Number</th>
@@ -41,6 +42,7 @@
         @if (!in_array(auth()->user()->brand, [2,3]))
           <td>{{ $r['option'] }}</td>
         @endif
+        <td>{{ $r['car_DNP'] }}</td>
         <td>{{ $r['car_MSRP'] }}</td>
         <td>{{ $r['order_status'] }}</td>
         <td>{{ $r['vin_number'] }}</td>
@@ -62,7 +64,7 @@
     @empty
       <tr>
         {{-- <td colspan="{{ auth()->user()->brand == 2 ? 21 : 20 }}" align="center"> --}}
-          <td colspan="21" align="center">
+          <td colspan="22" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

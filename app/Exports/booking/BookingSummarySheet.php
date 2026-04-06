@@ -187,6 +187,7 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 'interior_color' => $interiorColor,
                 'year'       => $order->year ?? '-',
                 'option'     => $order->option ?? '-',
+                'car_DNP' => $order->car_DNP ?? null,
                 'car_MSRP' => $order->car_MSRP ?? null,
                 'purchase_type'     => $order->purchaseType->name ?? '-',
                 'order_status'     => $order->orderStatus->name ?? '-',

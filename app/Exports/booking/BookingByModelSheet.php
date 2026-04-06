@@ -213,6 +213,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'interior_color' => $interiorColor,
         'year'        => $order->year ?? '-',
         'option'      => $order->option ?? '-',
+        'car_DNP' => $order->car_DNP ?? null,
         'car_MSRP' => $order->car_MSRP ?? null,
         // 'purchase_type' =>  $order->purchase_type ?? '-',
         'order_status'     => $order->orderStatus->name ?? '-',
@@ -300,6 +301,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'year'        => $sale->Year ?? '-',
         'option'      => $sale->option ?? '-',
 
+        'car_DNP' => '-',
         'car_MSRP'    => $sale->price_sub ?? '-',
         'order_status' => 'ยังไม่มีรถ',
         'vin_number'  => '',
