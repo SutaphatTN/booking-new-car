@@ -30,7 +30,8 @@ class VehicleController extends Controller
             'financeConfirm'
         ])
             ->whereNotNull('CarOrderID')
-            ->whereNotNull('red_license')
+            ->whereNotNull('DeliveryDate')
+            // ->where('con_status', 5)
             ->where(function ($q) {
                 $q->where('payment_mode', 'non-finance')
                     ->orWhere(function ($q2) {
@@ -196,7 +197,7 @@ class VehicleController extends Controller
     {
         $withdrawalData = Salecar::with(['carOrder', 'vehicleLicense', 'customer'])
             ->whereNotNull('CarOrderID')
-            ->whereNotNull('red_license')
+            ->whereNotNull('DeliveryDate')
             ->where(function ($q) {
                 $q->where('payment_mode', 'non-finance')
                     ->orWhere(function ($q2) {
@@ -215,7 +216,7 @@ class VehicleController extends Controller
 
         $clearData = Salecar::with(['carOrder', 'vehicleLicense', 'customer'])
             ->whereNotNull('CarOrderID')
-            ->whereNotNull('red_license')
+            ->whereNotNull('DeliveryDate')
             ->whereHas('vehicleLicense', function ($q) {
                 $q->whereNotNull('withdrawal_date')
                     ->whereNull('backup_clear_date');

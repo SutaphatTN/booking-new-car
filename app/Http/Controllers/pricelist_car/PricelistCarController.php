@@ -39,7 +39,7 @@ class PricelistCarController extends Controller
                 $subModel_id = "{$subModelDetail}<br>{$subModel_id}";
             }
 
-            $car = "รหลัก : {$model_id}<br>ย่อย : {$subModel_id}";
+            $car = "หลัก : {$model_id}<br>ย่อย : {$subModel_id}";
 
             return [
                 'No'         => $index + 1,
