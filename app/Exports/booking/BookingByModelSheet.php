@@ -301,7 +301,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'year'        => $sale->Year ?? '-',
         'option'      => $sale->option ?? '-',
 
-        'car_DNP' => '-',
+        'car_DNP' => $sale->carOrder?->car_DNP ?? '-',
         'car_MSRP'    => $sale->price_sub ?? '-',
         'order_status' => 'ยังไม่มีรถ',
         'vin_number'  => '',
