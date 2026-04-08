@@ -48,6 +48,10 @@
                     : '' }}
               </span>
             </div>
+            <div class="d-flex justify-content-between mb-2">
+              <strong>Vin-Number :</strong>
+              <span>{{ $saleCar->carOrder?->vin_number ?? '-' }}</span>
+            </div>
             @if (auth()->user()->brand == 2)
               <div class="d-flex justify-content-between mb-2">
                 <strong>สี :</strong>

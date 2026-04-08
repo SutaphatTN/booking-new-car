@@ -2247,6 +2247,7 @@ document.addEventListener('DOMContentLoaded', function () {
     //ข้อมูลการขาย
     const model = document.querySelector('#model_id option:checked')?.textContent || '-';
     const subModel = document.querySelector('#subModel_id option:checked')?.textContent || '-';
+    const vinNumber = document.getElementById('carOrderVin')?.value || '-';
     const option = document.getElementById('option')?.value || '-';
 
     //color
@@ -2860,6 +2861,10 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="d-flex justify-content-between mb-2">
             <strong>รุ่นรถย่อย :</strong>
             <span>${subModel}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <strong>Vin-Number :</strong>
+            <span>${vinNumber}</span>
           </div>
           ${optionHtml}
           <div class="d-flex justify-content-between mb-2">
