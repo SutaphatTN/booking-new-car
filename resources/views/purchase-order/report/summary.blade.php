@@ -156,6 +156,18 @@
         @endif
       </span>
 
+      <span class="label">
+        Vin-Number :
+        <span style="font-weight: normal;">
+          {{ $saleCar->carOrder?->vin_number ?? '-' }}
+        </span>
+          &nbsp;&nbsp;
+          เลขถัง :
+          <span style="font-weight: normal;">
+            {{ $saleCar->carOrder?->engine_number ?? '-' }}
+          </span>
+      </span>
+
       @if (auth()->user()->brand == 2)
         <span class="label">
           สีรถ :
