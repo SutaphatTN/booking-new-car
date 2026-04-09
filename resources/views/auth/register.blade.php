@@ -80,6 +80,9 @@
                 <option value="sale">Sale</option>
                 <option value="audit">Audit</option>
                 <option value="account">Account</option>
+                <option value="registration">Registration</option>
+                <option value="bp">BP</option>
+                <option value="cs">CS</option>
                 <option value="manager">Manager</option>
                 <option value="md">MD</option>
               </select>

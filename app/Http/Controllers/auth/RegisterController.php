@@ -27,7 +27,7 @@ class RegisterController extends Controller
             'username' => ['required', 'string', 'max:255', 'unique:users'],
             'cardID' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:6'],
-            'role' => ['required', 'string', 'in:sale,audit,account,finance,manager,md'],
+            'role' => ['required', 'string', 'in:sale,audit,account,finance,manager,md,bp,cs,registration'],
         ]);
 
         try {

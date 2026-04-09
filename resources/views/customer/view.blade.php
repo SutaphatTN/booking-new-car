@@ -15,7 +15,7 @@
         <h4 class="card-header">ข้อมูลรายชื่อลูกค้า</h4>
         <div class="card-body">
           <div class="d-flex gap-2 mb-3">
-            <input type="text" id="customerSearchInput" class="form-control" placeholder="ค้นหาด้วย ชื่อ, นามสกุล หรือเบอร์โทร" style="max-width: 400px;">
+            <input type="text" id="customerSearchInput" class="form-control" placeholder="ค้นหาด้วย ชื่อ, นามสกุล หรือเบอร์โทร" style="max-width: 300px;">
             <button type="button" id="btnSearchCustomer" class="btn btn-primary">
               <i class="bx bx-search me-1"></i> ค้นหา
             </button>

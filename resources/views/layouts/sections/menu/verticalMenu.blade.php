@@ -42,6 +42,10 @@
         @continue
       @endif
 
+      @if (in_array($userRole, ['bp', 'cs']) && $menu->slug !== 'invoice')
+        @continue
+      @endif
+
       @if (auth()->user()->brand == 2 && $menu->slug === 'sale.viewCommission')
         @continue
       @endif

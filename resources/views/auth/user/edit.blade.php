@@ -88,6 +88,9 @@
                                 <option value="sale" {{ $user->role == 'sale' ? 'selected' : '' }}>Sale</option>
                                 <option value="audit" {{ $user->role == 'audit' ? 'selected' : '' }}>Audit</option>
                                 <option value="account" {{ $user->role == 'account' ? 'selected' : '' }}>Account</option>
+                                <option value="registration" {{ $user->role == 'registration' ? 'selected' : '' }}>Registration</option>
+                                <option value="bp" {{ $user->role == 'bp' ? 'selected' : '' }}>BP</option>
+                                <option value="cs" {{ $user->role == 'cs' ? 'selected' : '' }}>CS</option>
                                 <option value="manager" {{ $user->role == 'manager' ? 'selected' : '' }}>Manager</option>
                                 <option value="md" {{ $user->role == 'md' ? 'selected' : '' }}>MD</option>
                             </select>

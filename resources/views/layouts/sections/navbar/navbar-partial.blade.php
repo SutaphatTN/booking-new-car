@@ -62,7 +62,7 @@
                                   </div> -->
                 <div class="flex-grow-1">
                   <h6 class="mb-0">{{ Auth::user()->name }}</h6>
-                  <small class="text-muted">{{ Auth::user()->role }}</small>
+                  <small class="text-muted text-uppercase">{{ Auth::user()->role }}</small>
                 </div>
               </div>
             </a>
@@ -107,7 +107,7 @@
           @php
             $userRole = Auth::user()->role;
             $userBrand = Auth::user()->getOriginal('brand');
-            $canSwitchBrand = $userBrand != 2 && in_array($userRole, ['admin', 'account', 'audit', 'manager', 'md', 'sale']);
+            $canSwitchBrand = $userBrand != 2 && in_array($userRole, ['admin', 'account', 'audit', 'manager', 'md', 'sale', 'registration', 'bp', 'cs']);
           @endphp
           @if ($canSwitchBrand)
             <li>
