@@ -5,6 +5,7 @@
       <th>วันที่วางบิล</th>
       <th>ชื่อร้าน</th>
       <th>รายละเอียด</th>
+      <th>เลข Vin</th>
       <th>เลขถัง</th>
       <th>ชื่อ - นามสกุล ลูกค้า</th>
       <th>ยอดเงิน</th>
@@ -19,6 +20,7 @@
         <td>{{ $i['date'] }}</td>
         <td>{{ $i['partner_name'] }}</td>
         <td>{{ $i['detail'] }}</td>
+        <td>{{ $i['vin_number'] }}</td>
         <td>{{ $i['engine_number'] }}</td>
         <td>{{ $i['customer_name'] }}</td>
         <td>{{ $i['total_price'] }}</td>
@@ -27,7 +29,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="9" align="center">
+        <td colspan="10" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

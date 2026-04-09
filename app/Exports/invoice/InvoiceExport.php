@@ -114,6 +114,7 @@ class InvoiceExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
                 'date'                 => $item->format_date ?? '-',
                 'partner_name'         => $firstAcc?->partner?->name ?? '-',
                 'detail'               => $firstAcc?->detail ?? '-',
+                'vin_number'           => $item->vin_number ?? '-',
                 'engine_number'        => $item->engine_number ?? '-',
                 'customer_name'        => $item->customer_name,
                 'total_price'          => $item->total_price ? number_format($item->total_price, 2) : '-',
