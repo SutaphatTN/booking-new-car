@@ -110,7 +110,7 @@ class InvoiceController extends Controller
         $data = $rows->map(function ($item, $i) use ($canApprove, $canConfirmReceipt) {
             if ($item->UserApproved) {
                 $action = '<a href="' . route('invoice.pdf', $item->id) . '" target="_blank" class="btn btn-icon btn-danger text-white" title="PDF"><i class="bx bxs-file-pdf"></i></a>';
-                if ($canConfirmReceipt) {
+                if ($canConfirmReceipt && !$item->receipt_confirmed_at) {
                     $action .= ' <button class="btn btn-icon btn-warning btn-confirm-receipt text-white" data-id="' . $item->id . '" title="ยืนยันออกใบเสร็จ"><i class="bx bx-receipt"></i></button>';
                 }
             } elseif ($canApprove) {
