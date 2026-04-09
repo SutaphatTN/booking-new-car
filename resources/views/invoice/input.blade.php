@@ -64,8 +64,8 @@
             </div>
 
             <div class="col-md-4">
-              <label class="form-label">ผู้อนุมัติ</label>
-              <select name="approved_by" class="form-select">
+              <label class="form-label">ผู้อนุมัติ <span class="text-danger">*</span></label>
+              <select name="approved_by" class="form-select" required>
                 <option value="">-- เลือกผู้อนุมัติ --</option>
                 @foreach($approvers as $approver)
                   <option value="{{ $approver->id }}" {{ old('approved_by') == $approver->id ? 'selected' : '' }}>
@@ -100,7 +100,7 @@
               <tbody id="accessoryBody">
                 <tr class="accessory-row">
                   <td>
-                    <select name="accessories[0][acc_partner]" class="form-select form-select-md">
+                    <select name="accessories[0][acc_partner]" class="form-select form-select-md" required>
                       <option value="">-- เลือกร้าน --</option>
                       @foreach($partners as $p)
                         <option value="{{ $p->id }}">{{ $p->name }}</option>
@@ -108,13 +108,13 @@
                     </select>
                   </td>
                   <td>
-                    <input type="text" name="accessories[0][detail]" class="form-control form-control-md" placeholder="รายละเอียด">
+                    <input type="text" name="accessories[0][detail]" class="form-control form-control-md" placeholder="รายละเอียด" required>
                   </td>
                   <td>
-                    <input type="text" name="accessories[0][cost_price]" class="form-control form-control-sm money-input" placeholder="0.00">
+                    <input type="text" name="accessories[0][cost_price]" class="form-control form-control-sm money-input" placeholder="0.00" required>
                   </td>
                   <td>
-                    <input type="text" name="accessories[0][sale_price]" class="form-control form-control-sm money-input" placeholder="0.00">
+                    <input type="text" name="accessories[0][sale_price]" class="form-control form-control-sm money-input" placeholder="0.00" required>
                   </td>
                   <td class="text-center">
                     <button type="button" class="btn btn-sm btn-danger btnRemoveRow">

@@ -131,7 +131,7 @@ class CarOrderController extends Controller
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
         $approvers = User::whereIn('role', ['audit', 'md'])
-            ->where('brand', $authUser->brand)
+            ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
         $purchaseType = TbPurchaseType::all();
         $interiorColor = TbInteriorColor::all();
@@ -418,7 +418,7 @@ class CarOrderController extends Controller
         $model = TbCarmodel::all();
         $orderStatus = TbOrderStatus::all();
         $approvers = User::whereIn('role', ['audit', 'md'])
-            ->where('brand', $authUser->brand)
+            ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
         $purchaseType = TbPurchaseType::all();
         $interiorColor = TbInteriorColor::all();
@@ -865,7 +865,7 @@ class CarOrderController extends Controller
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
         $approvers = User::whereIn('role', ['audit', 'md'])
-            ->where('brand', $authUser->brand)
+            ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
         $purchaseType = TbPurchaseType::all();
         $gwmColor = $order->subModel
@@ -1006,7 +1006,7 @@ class CarOrderController extends Controller
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
         $approvers = User::whereIn('role', ['audit', 'md'])
-            ->where('brand', $authUser->brand)
+            ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
 
         return view('car-order.process.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers'));
@@ -1139,7 +1139,7 @@ class CarOrderController extends Controller
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
         $approvers = User::whereIn('role', ['audit', 'md'])
-            ->where('brand', $authUser->brand)
+            ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
 
         return view('car-order.approve.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers'));
@@ -1248,7 +1248,7 @@ class CarOrderController extends Controller
         $waiting = CarOrderWaiting::findOrFail($id);
         $purchaseType = TbPurchaseType::all();
         $approvers = User::whereIn('role', ['audit', 'md'])
-            ->where('brand', $authUser->brand)
+            ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
         $gwmColor = $waiting->subModel
             ? $waiting->subModel->colors

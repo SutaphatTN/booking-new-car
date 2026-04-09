@@ -106,19 +106,19 @@ $(document).ready(function () {
       tr.className = 'accessory-row';
       tr.innerHTML = `
         <td>
-          <select name="accessories[${rowIndex}][acc_partner]" class="form-select form-select-sm">
+          <select name="accessories[${rowIndex}][acc_partner]" class="form-select form-select-sm" required>
             <option value="">-- เลือกร้าน --</option>
             ${partnerOptions}
           </select>
         </td>
         <td>
-          <input type="text" name="accessories[${rowIndex}][detail]" class="form-control form-control-sm" placeholder="รายละเอียด">
+          <input type="text" name="accessories[${rowIndex}][detail]" class="form-control form-control-sm" placeholder="รายละเอียด" required>
         </td>
         <td>
-          <input type="text" name="accessories[${rowIndex}][cost_price]" class="form-control form-control-sm money-input" placeholder="0.00">
+          <input type="text" name="accessories[${rowIndex}][cost_price]" class="form-control form-control-sm money-input" placeholder="0.00" required>
         </td>
         <td>
-          <input type="text" name="accessories[${rowIndex}][sale_price]" class="form-control form-control-sm money-input" placeholder="0.00">
+          <input type="text" name="accessories[${rowIndex}][sale_price]" class="form-control form-control-sm money-input" placeholder="0.00" required>
         </td>
         <td class="text-center">
           <button type="button" class="btn btn-sm btn-danger btnRemoveRow">
