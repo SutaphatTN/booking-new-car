@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
+use App\Models\Traits\BrandScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 class InvoiceCustomer extends Model
 {
     use SoftDeletes;
-    use UserAccessScope;
+    use BrandScope;
 
     protected $table = 'invoice_customer';
 
@@ -28,6 +28,7 @@ class InvoiceCustomer extends Model
         'UserApproved',
         'approved_date',
         'brand',
+        'branch',
         'userZone',
         'receipt_confirmed_at',
         'total_price'

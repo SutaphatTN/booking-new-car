@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
-use App\Models\Traits\UserAccessScope;
+use App\Models\Traits\BrandScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class InvoiceAccessory extends Model
 {
     use SoftDeletes;
-	use UserAccessScope;
+	use BrandScope;
 
 	protected $table = 'invoice_accessory';
 
@@ -20,6 +20,7 @@ class InvoiceAccessory extends Model
         'cost_price',
         'sale_price',
         'brand',
+        'branch',
         'userZone'
         ];
 
