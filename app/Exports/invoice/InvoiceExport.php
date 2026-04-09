@@ -90,6 +90,17 @@ class InvoiceExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
 
                 // สี sheet
                 $sheet->getTabColor()->setRGB('ffa2be');
+
+                // format comma
+                $numberColumns = [
+                    'H'
+                ];
+
+                foreach ($numberColumns as $col) {
+                    $sheet->getStyle("{$col}2:{$col}{$highestRow}")
+                        ->getNumberFormat()
+                        ->setFormatCode('#,##0.00');
+                }
             },
         ];
     }
@@ -117,7 +128,7 @@ class InvoiceExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
                 'vin_number'           => $item->vin_number ?? '-',
                 'engine_number'        => $item->engine_number ?? '-',
                 'customer_name'        => $item->customer_name,
-                'total_price'          => $item->total_price ? number_format($item->total_price, 2) : '-',
+                'total_price'          => $item->total_price ?? '-',
                 'receipt_confirmed_at' => $item->format_receipt_confirmed ?? '-',
                 'user_insert'          => $item->insertInvoice?->name ?? '-',
             ];
