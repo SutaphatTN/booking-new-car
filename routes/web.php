@@ -56,6 +56,10 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::post('invoice/{id}/approve', [InvoiceController::class, 'approve'])->name('invoice.approve');
     Route::post('invoice/{id}/confirm-receipt', [InvoiceController::class, 'confirmReceipt'])->name('invoice.confirmReceipt');
 
+    //report 
+    Route::get('invoice/view-export-report', [InvoiceController::class, 'viewExportReport'])->name('invoice.view-export-report');
+    Route::get('/invoice/report-export', [InvoiceController::class, 'exportReport'])->name('invoice.report-export');
+    
 
     // purchase-order
     Route::get('purchase-order/viewFN', [FinanceController::class, 'viewFN'])->name('purchase-order.viewFN');

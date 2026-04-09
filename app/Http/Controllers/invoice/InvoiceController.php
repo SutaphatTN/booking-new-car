@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\invoice;
 
+use App\Exports\invoice\InvoiceExport;
 use App\Http\Controllers\Controller;
 use App\Models\AccessoryPartner;
 use App\Models\InvoiceAccessory;
@@ -12,6 +13,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 
 class InvoiceController extends Controller
 {
@@ -51,22 +53,27 @@ class InvoiceController extends Controller
                 'branch'         => $user->branch,
             ]);
 
+            $totalPrice = 0;
             if ($request->has('accessories')) {
                 foreach ($request->accessories as $item) {
                     if (empty($item['acc_partner']) && empty($item['detail'])) continue;
+
+                    $salePrice = $item['sale_price'] ? (float) str_replace(',', '', $item['sale_price']) : null;
+                    $totalPrice += $salePrice ?? 0;
 
                     InvoiceAccessory::create([
                         'inv_cust_id' => $invoice->id,
                         'acc_partner' => $item['acc_partner'] ?? null,
                         'detail'      => $item['detail'] ?? null,
                         'cost_price'  => $item['cost_price'] ? str_replace(',', '', $item['cost_price']) : null,
-                        'sale_price'  => $item['sale_price'] ? str_replace(',', '', $item['sale_price']) : null,
+                        'sale_price'  => $salePrice,
                         'brand'       => $user->brand,
                         'userZone'    => $user->userZone,
                         'branch'      => $user->branch,
                     ]);
                 }
             }
+            $invoice->update(['total_price' => $totalPrice]);
 
             return response()->json([
                 'success' => true,
@@ -80,32 +87,70 @@ class InvoiceController extends Controller
         }
     }
 
-    public function list()
+    public function list(Request $request)
     {
         $user = Auth::user();
-        $canApprove = in_array($user->role, ['admin', 'manager', 'md']);
+        $canApprove = in_array($user->role, ['admin', 'audit', 'manager', 'md']);
+        $canConfirmReceipt = in_array($user->role, ['admin', 'account']);
 
-        $rows = InvoiceCustomer::orderByDesc('id')->get();
-        $data = $rows->map(function ($item, $i) use ($canApprove) {
+        $filter = $request->query('filter', 'pending');
+        $query = InvoiceCustomer::orderByDesc('id');
+        if ($filter === 'pending') {
+            $query->whereNull('receipt_confirmed_at');
+        } elseif ($filter === 'paid') {
+            $query->whereNotNull('receipt_confirmed_at');
+        }
+        $rows = $query->get();
+        $data = $rows->map(function ($item, $i) use ($canApprove, $canConfirmReceipt) {
             if ($item->UserApproved) {
-                $action = '<a href="' . route('invoice.pdf', $item->id) . '" target="_blank" class="btn btn-md btn-danger" title="PDF"><i class="bx bxs-file-pdf"></i></a>';
+                $action = '<a href="' . route('invoice.pdf', $item->id) . '" target="_blank" class="btn btn-icon btn-danger text-white" title="PDF"><i class="bx bxs-file-pdf"></i></a>';
+                if ($canConfirmReceipt) {
+                    $action .= ' <button class="btn btn-icon btn-warning btn-confirm-receipt text-white" data-id="' . $item->id . '" title="ยืนยันออกใบเสร็จ"><i class="bx bx-receipt"></i></button>';
+                }
             } elseif ($canApprove) {
-                $action = '<button class="btn btn-md btn-success btn-approve" data-id="' . $item->id . '" title="อนุมัติ"><i class="bx bx-check-circle"></i></button>';
+                $action = '<button class="btn btn-icon btn-success btn-approve text-white" data-id="' . $item->id . '" title="อนุมัติ"><i class="bx bx-check-circle"></i></button>';
             } else {
-                $action = '<button class="btn btn-md btn-success" style="filter:blur(2px);pointer-events:none;" title="อนุมัติ" disabled><i class="bx bx-check-circle"></i></button>';
+                $action = '<button class="btn btn-icon btn-success text-white" style="filter:blur(2px);pointer-events:none;" title="อนุมัติ" disabled><i class="bx bx-check-circle"></i></button>';
             }
 
+            $vin = $item->vin_number ?? '-';
+            $engine = $item->engine_number ?? '-';
+            $license = $item->license_plate ?? '-';
+            $detail_car = "vin : {$vin}<br>engine : {$engine}<br>ทะเบียน : {$license}";
+
+            $date_inv = $item->format_date ?? '-';
+            $date_receipt = $item->format_receipt_confirmed ?? '-';
+            $date = "วางบิล : {$date_inv}<br>จ่ายเงิน : {$date_receipt}";
+
+            $total = $item->total_price ? number_format($item->total_price, 2) : '-';
+
             return [
-                'No'             => $i + 1,
-                'code_number'    => $item->code_number,
-                'customer_name'  => $item->customer_name,
-                'customer_phone' => $item->formatted_phone,
-                'license_plate'  => $item->license_plate ?? '-',
-                'date'           => $item->date ? Carbon::parse($item->date)->format('d/m/Y') : '-',
-                'Action'         => $action,
+                'No'            => $i + 1,
+                'customer_name' => $item->customer_name,
+                'partner_name'  => $item->accessories->first()?->partner?->name ?? '-',
+                'detail'        => $detail_car,
+                'total_price'   => $total,
+                'date'          => $date,
+                'Action'        => $action,
             ];
         });
         return response()->json(['data' => $data]);
+    }
+
+    public function confirmReceipt(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!in_array($user->role, ['admin', 'account'])) {
+            return response()->json(['success' => false], 403);
+        }
+
+        $date = $request->input('receipt_date')
+            ? Carbon::parse($request->input('receipt_date'))->startOfDay()
+            : now();
+
+        $invoice = InvoiceCustomer::findOrFail($id);
+        $invoice->update(['receipt_confirmed_at' => $date]);
+        return response()->json(['success' => true]);
     }
 
     public function approve($id)
@@ -141,5 +186,18 @@ class InvoiceController extends Controller
 
         $seq = $last ? (int) substr($last, -4) + 1 : 1;
         return $prefix . str_pad($seq, 4, '0', STR_PAD_LEFT);
+    }
+
+    public function viewExportReport()
+    {
+        return view('invoice.report.view');
+    }
+
+    public function exportReport(Request $request)
+    {
+        $fromDate = $request->from_date ?: null;
+        $toDate   = $request->to_date   ?: null;
+
+        return Excel::download(new InvoiceExport($fromDate, $toDate), 'ข้อมูลใบสั่งซื้อ.xlsx');
     }
 }

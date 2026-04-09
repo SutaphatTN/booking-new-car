@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Traits\BrandScope;
+use App\Models\Traits\UserAccessScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 class InvoiceCustomer extends Model
 {
     use SoftDeletes;
-    use BrandScope;
+    use UserAccessScope;
 
     protected $table = 'invoice_customer';
 
@@ -29,7 +29,8 @@ class InvoiceCustomer extends Model
         'approved_date',
         'brand',
         'userZone',
-        'branch',
+        'receipt_confirmed_at',
+        'total_price'
     ];
 
     protected $dates = ['deleted_at'];
@@ -85,4 +86,14 @@ class InvoiceCustomer extends Model
             ? Carbon::parse($this->approved_date)->locale('th')->translatedFormat('d M Y')
             : '-';
     }
+
+    public function getFormatDateAttribute()
+	{
+		return $this->date ? Carbon::parse($this->date)->format('d-m-Y') : null;
+	}
+
+    public function getFormatReceiptConfirmedAttribute()
+	{
+		return $this->receipt_confirmed_at ? Carbon::parse($this->receipt_confirmed_at)->format('d-m-Y') : null;
+	}
 }

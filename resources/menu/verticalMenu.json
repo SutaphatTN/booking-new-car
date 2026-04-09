@@ -213,6 +213,11 @@
           "url": "invoice/create",
           "name": "สร้างใบสั่งซื้อ",
           "slug": "invoice.create"
+        },
+        {
+          "url": "invoice/view-export-report",
+          "name": "รายงานใบสั่งซื้อ",
+          "slug": "invoice.view-export-report"
         }
       ]
     },

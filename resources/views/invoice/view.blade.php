@@ -9,13 +9,8 @@
   <div class="row">
     <div class="col-12">
       <div class="card">
-        <div class="d-flex card-header justify-content-center align-items-center position-relative">
-          <h4 class="mb-0">รายการใบสั่งซื้อ</h4>
-          <a href="{{ route('invoice.create') }}" class="btn btn-primary btn-md position-absolute end-0 me-3">
-            <i class="bx bx-plus me-2"></i>สร้างใบสั่งซื้อ
-          </a>
-        </div>
-
+        <h4 class="card-header">รายการใบสั่งซื้อ</h4>
+        
         <div class="card-body">
           @if (session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -23,15 +18,29 @@
               <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
           @endif
+
           <div class="table-responsive text-nowrap">
+            <div class="d-flex justify-content-between mb-3">
+              <a href="{{ route('invoice.create') }}" class="btn btn-primary">
+                <i class="bx bx-plus me-2"></i>สร้างใบสั่งซื้อ
+              </a>
+
+              <div>
+                <select id="invoiceStatusFilter" class="form-select">
+                  <option value="pending" selected>วางบิล</option>
+                  <option value="paid">จ่ายเงิน</option>
+                  <option value="all">ทั้งหมด</option>
+                </select>
+              </div>
+            </div>
             <table class="table table-bordered invoiceTable">
               <thead>
                 <tr>
                   <th>No.</th>
-                  <th>รหัส</th>
                   <th>ชื่อลูกค้า</th>
-                  <th>เบอร์</th>
-                  <th>ป้ายทะเบียน</th>
+                  <th>ชื่อร้าน</th>
+                  <th>รายละเอียด</th>
+                  <th>ยอดเงิน</th>
                   <th>วันที่</th>
                   <th width="80px">Action</th>
                 </tr>
@@ -42,4 +51,25 @@
       </div>
     </div>
   </div>
+
+  {{-- Modal ยืนยันออกใบเสร็จ --}}
+  <div class="modal fade" id="confirmReceiptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">ยืนยันออกใบเสร็จ</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label">วันที่รับเงิน <span class="text-danger">*</span></label>
+          <input type="date" id="receiptConfirmedDate" class="form-control">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" id="btnSubmitConfirmReceipt" class="btn btn-warning text-white">ยืนยัน</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 @endsection

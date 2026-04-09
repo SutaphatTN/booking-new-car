@@ -10,42 +10,55 @@ let invoiceTable;
 $(document).ready(function () {
   if (!$('.invoiceTable').length) return;
 
-  if ($.fn.DataTable.isDataTable('.invoiceTable')) {
-    $('.invoiceTable').DataTable().destroy();
+  let currentFilter = 'pending';
+
+  function initTable(filter) {
+    if ($.fn.DataTable.isDataTable('.invoiceTable')) {
+      $('.invoiceTable').DataTable().destroy();
+    }
+
+    invoiceTable = $('.invoiceTable').DataTable({
+      ajax: { url: '/invoice/list', data: { filter: filter } },
+      columns: [
+        { data: 'No', orderable: false },
+        { data: 'customer_name', orderable: false },
+        { data: 'partner_name', orderable: false },
+        { data: 'detail', orderable: false },
+        { data: 'total_price', orderable: false, searchable: false, className: 'text-end' },
+        { data: 'date', orderable: false },
+        { data: 'Action', orderable: false, searchable: false }
+      ],
+      paging: true,
+      lengthChange: true,
+      searching: true,
+      ordering: false,
+      info: true,
+      pageLength: 10,
+      autoWidth: false,
+      language: {
+        lengthMenu: 'แสดง _MENU_ แถว',
+        zeroRecords: 'ไม่พบข้อมูล',
+        info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
+        infoEmpty: 'ไม่มีข้อมูล',
+        search: 'ค้นหา:',
+        paginate: {
+          first: '',
+          last: '',
+          next: 'ถัดไป',
+          previous: 'ก่อนหน้า'
+        }
+      }
+    });
   }
 
-  invoiceTable = $('.invoiceTable').DataTable({
-    ajax: '/invoice/list',
-    columns: [
-      { data: 'No', orderable: false },
-      { data: 'code_number' },
-      { data: 'customer_name', orderable: false },
-      { data: 'customer_phone', orderable: false },
-      { data: 'license_plate', orderable: false },
-      { data: 'date', orderable: false },
-      { data: 'Action', orderable: false, searchable: false }
-    ],
-    paging: true,
-    lengthChange: true,
-    searching: true,
-    ordering: false,
-    info: true,
-    pageLength: 10,
-    autoWidth: false,
-    language: {
-      lengthMenu: 'แสดง _MENU_ แถว',
-      zeroRecords: 'ไม่พบข้อมูล',
-      info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
-      infoEmpty: 'ไม่มีข้อมูล',
-      search: 'ค้นหา:',
-      paginate: {
-        first: '',
-        last: '',
-        next: 'ถัดไป',
-        previous: 'ก่อนหน้า'
-      }
-    }
+  // filter
+  $(document).on('change', '#invoiceStatusFilter', function () {
+    currentFilter = $(this).val();
+    initTable(currentFilter);
   });
+
+  // default filter
+  initTable(currentFilter);
 });
 
 // save
@@ -126,6 +139,41 @@ $(document).ready(function () {
   }
 });
 
+// ยืนยันออกใบเสร็จ
+let confirmReceiptId = null;
+
+$(document).on('click', '.btn-confirm-receipt', function () {
+  confirmReceiptId = $(this).data('id');
+  const today = new Date().toISOString().split('T')[0];
+  $('#receiptConfirmedDate').val(today);
+  $('#confirmReceiptModal').modal('show');
+});
+
+$('#btnSubmitConfirmReceipt').on('click', function () {
+  const date = $('#receiptConfirmedDate').val();
+  if (!date) {
+    Swal.fire('กรุณาเลือกวันที่', '', 'warning');
+    return;
+  }
+
+  $.post('/invoice/' + confirmReceiptId + '/confirm-receipt', { receipt_date: date, _token: $('meta[name="csrf-token"]').attr('content') })
+    .done(function () {
+      $('#confirmReceiptModal').modal('hide');
+      Swal.fire({
+        title: 'ยืนยันเรียบร้อย!',
+        text: 'ยืนยันการออกใบเสร็จสำเร็จ',
+        icon: 'success',
+        confirmButtonColor: '#6c5ffc',
+        confirmButtonText: 'ตกลง'
+      }).then(() => {
+        invoiceTable.ajax.reload(null, false);
+      });
+    })
+    .fail(function () {
+      Swal.fire('เกิดข้อผิดพลาด', 'กรุณาลองใหม่', 'error');
+    });
+});
+
 // อนุมัติ
 $(document).on('click', '.btn-approve', function () {
   const id = $(this).data('id');
@@ -171,7 +219,7 @@ $(document).on('focus', '.money-input', function () {
 });
 
 //format phone
-document.getElementById('customer_phone').addEventListener('input', function (e) {
+document.getElementById('customer_phone')?.addEventListener('input', function (e) {
   let value = e.target.value.replace(/\D/g, '');
 
   if (value.length > 10) value = value.substring(0, 10);
@@ -189,4 +237,18 @@ document.getElementById('customer_phone').addEventListener('input', function (e)
   }
 
   e.target.value = formatted;
+});
+
+//report
+document.addEventListener('DOMContentLoaded', function () {
+  const modalEl = document.querySelector('.viewExportInvoice');
+  if (!modalEl) return;
+
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+
+  // ปิด modal แล้วกลับหน้าก่อนหน้า
+  modalEl.addEventListener('hidden.bs.modal', function () {
+    window.history.back();
+  });
 });
