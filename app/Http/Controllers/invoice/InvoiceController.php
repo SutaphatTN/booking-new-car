@@ -26,7 +26,7 @@ class InvoiceController extends Controller
     {
         $partners = AccessoryPartner::orderBy('name')->get();
         $today = now()->format('Y-m-d');
-        $approvers = User::whereIn('role', ['manager', 'md'])->orderBy('name')->get();
+        $approvers = User::whereIn('role', ['audit', 'manager', 'md'])->orderBy('name')->get();
 
         return view('invoice.input', compact('partners', 'today', 'approvers'));
     }
