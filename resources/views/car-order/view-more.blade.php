@@ -97,8 +97,9 @@
             </div>
 
             <div class="col-md-4 mb-5">
-              <label for="color" class="form-label">สี</label>
-              <input id="color" class="form-control" type="text" value="{{ $order->color }}" disabled />
+              <label for="gwm_color" class="form-label">สี</label>
+              <input id="gwm_color" class="form-control" type="text" value="{{ $order->gwmColor->name ?? '-' }}"
+                disabled />
             </div>
 
             <div class="col-md-4 mb-5">

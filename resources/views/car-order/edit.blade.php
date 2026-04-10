@@ -143,15 +143,9 @@
               </div>
 
               <div class="col-md-4 mb-5">
-                <label for="color" class="form-label">สี</label>
-                <input id="color" type="text" class="form-control @error('color') is-invalid @enderror"
-                  name="color" value="{{ $order->color }}" disabled>
-
-                @error('color')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
+                <label for="gwm_color" class="form-label">สี</label>
+                <input id="gwm_color" type="text" class="form-control" name="gwm_color"
+                  value="{{ $order->gwmColor->name ?? '-' }}" disabled>
               </div>
 
               <div class="col-md-4 mb-5">
