@@ -104,7 +104,7 @@
                   value="{{ $order->interiorColor->name ?? '-' }}" disabled>
               </div>
 
-              <div class="col-md-2 mb-5">
+              <div class="col-md-3 mb-5">
                 <label for="car_DNP" class="form-label">ราคาทุน</label>
                 <input id="car_DNP" type="text"
                   class="form-control text-end money-input @error('car_DNP') is-invalid @enderror" name="car_DNP"
@@ -117,7 +117,7 @@
                 @enderror
               </div>
 
-              <div class="col-md-2 mb-5">
+              <div class="col-md-3 mb-5">
                 <label for="car_MSRP" class="form-label">ราคาขาย</label>
                 <input id="car_MSRP" type="text"
                   class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror" name="car_MSRP"
@@ -129,33 +129,8 @@
                   </span>
                 @enderror
               </div>
-
-              <div class="col-md-2 mb-5">
-                <label for="RI" class="form-label">RI</label>
-                <input id="RI" type="text"
-                  class="form-control text-end money-input @error('RI') is-invalid @enderror" name="RI"
-                  value="{{ $order->RI !== null ? number_format($order->RI, 2) : '' }}" required>
-
-                @error('RI')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
-              </div>
             @elseif(auth()->user()->brand == 3)
-              <div class="col-md-3 mb-5">
-                <label for="color" class="form-label">สี</label>
-                <input id="color" type="text" class="form-control @error('color') is-invalid @enderror"
-                  name="color" value="{{ $order->color }}" disabled>
-
-                @error('color')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
-              </div>
-
-              <div class="col-md-3 mb-5">
+              <div class="col-md-2 mb-5">
                 <label for="year" class="form-label">ปี</label>
                 <input id="year" type="text" class="form-control @error('year') is-invalid @enderror"
                   name="year" value="{{ $order->year }}" readonly>
@@ -167,7 +142,19 @@
                 @enderror
               </div>
 
-              <div class="col-md-3 mb-5">
+              <div class="col-md-4 mb-5">
+                <label for="color" class="form-label">สี</label>
+                <input id="color" type="text" class="form-control @error('color') is-invalid @enderror"
+                  name="color" value="{{ $order->color }}" disabled>
+
+                @error('color')
+                  <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                  </span>
+                @enderror
+              </div>
+
+              <div class="col-md-4 mb-5">
                 <label for="car_DNP" class="form-label">ราคาทุน</label>
                 <input id="car_DNP" type="text"
                   class="form-control text-end money-input @error('car_DNP') is-invalid @enderror" name="car_DNP"
@@ -180,26 +167,13 @@
                 @enderror
               </div>
 
-              <div class="col-md-3 mb-5">
+              <div class="col-md-4 mb-5">
                 <label for="car_MSRP" class="form-label">ราคาขาย</label>
                 <input id="car_MSRP" type="text"
                   class="form-control text-end money-input @error('car_MSRP') is-invalid @enderror" name="car_MSRP"
                   value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}" readonly>
 
                 @error('car_MSRP')
-                  <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                  </span>
-                @enderror
-              </div>
-
-              <div class="col-md-2 mb-5">
-                <label for="RI" class="form-label">RI</label>
-                <input id="RI" type="text"
-                  class="form-control text-end money-input @error('RI') is-invalid @enderror" name="RI"
-                  value="{{ $order->RI !== null ? number_format($order->RI, 2) : '' }}" required>
-
-                @error('RI')
                   <span class="invalid-feedback" role="alert">
                     <strong>{{ $message }}</strong>
                   </span>
@@ -445,11 +419,11 @@
                   value="{{ $order->order_invoice_date }}">
               </div>
 
-                <div class="col-md-3 mb-3">
-                  <label for="fp_date" class="form-label">วันที่จ่าย FP</label>
-                  <input type="date" id="fp_date" name="fp_date" class="form-control"
-                    value="{{ $order->fp_date }}">
-                </div>
+              <div class="col-md-3 mb-3">
+                <label for="fp_date" class="form-label">วันที่จ่าย FP</label>
+                <input type="date" id="fp_date" name="fp_date" class="form-control"
+                  value="{{ $order->fp_date }}">
+              </div>
             </div>
 
             <div id="fieldStock" class="col-md-12 row d-none">

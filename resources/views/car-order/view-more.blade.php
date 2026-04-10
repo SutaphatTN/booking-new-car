@@ -79,50 +79,38 @@
                 value="{{ $order->interiorColor->name ?? '-' }}" disabled />
             </div>
 
-            <div class="col-md-2 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="car_DNP" class="form-label">ราคาทุน</label>
               <input id="car_DNP" class="form-control text-end" type="text"
                 value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}" disabled />
             </div>
 
-            <div class="col-md-2 mb-5">
+            <div class="col-md-3 mb-5">
               <label for="car_MSRP" class="form-label">ราคาขาย</label>
               <input id="car_MSRP" class="form-control text-end" type="text"
                 value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}" disabled />
             </div>
-
-            <div class="col-md-2 mb-5">
-              <label for="RI" class="form-label">RI</label>
-              <input id="RI" class="form-control text-end" type="text"
-                value="{{ $order->RI !== null ? number_format($order->RI, 2) : '-' }}" disabled />
-            </div>
           @elseif (auth()->user()->brand == 3)
-            <div class="col-md-3 mb-5">
-              <label for="color" class="form-label">สี</label>
-              <input id="color" class="form-control" type="text" value="{{ $order->color }}" disabled />
-            </div>
-
-            <div class="col-md-3 mb-5">
+            <div class="col-md-2 mb-5">
               <label for="year" class="form-label">ปี</label>
               <input id="year" class="form-control" type="text" value="{{ $order->year }}" disabled />
             </div>
 
-            <div class="col-md-3 mb-5">
+            <div class="col-md-4 mb-5">
+              <label for="color" class="form-label">สี</label>
+              <input id="color" class="form-control" type="text" value="{{ $order->color }}" disabled />
+            </div>
+
+            <div class="col-md-4 mb-5">
               <label for="car_DNP" class="form-label">ราคาทุน</label>
               <input id="car_DNP" class="form-control text-end" type="text"
                 value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}" disabled />
             </div>
 
-            <div class="col-md-3 mb-5">
+            <div class="col-md-4 mb-5">
               <label for="car_MSRP" class="form-label">ราคาขาย</label>
               <input id="car_MSRP" class="form-control text-end" type="text"
                 value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}" disabled />
-            </div>
-
-            <div class="col-md-2 mb-5">
-              <label for="RI" class="form-label">RI</label>
-              <input id="RI" class="form-control text-end" type="text"
-                value="{{ $order->RI !== null ? number_format($order->RI, 2) : '-' }}" disabled />
             </div>
           @else
             <div class="col-md-2 mb-5">
@@ -244,11 +232,11 @@
               value="{{ $order->format_order_invoice_date }}" disabled />
           </div>
 
-            <div class="col-md-3 mb-3">
-              <label for="fp_date" class="form-label">วันที่จ่าย FP</label>
-              <input type="text" id="fp_date" name="fp_date" class="form-control"
-                value="{{ $order->format_fp_date }}" disabled />
-            </div>
+          <div class="col-md-3 mb-3">
+            <label for="fp_date" class="form-label">วันที่จ่าย FP</label>
+            <input type="text" id="fp_date" name="fp_date" class="form-control"
+              value="{{ $order->format_fp_date }}" disabled />
+          </div>
 
           <div class="col-md-3 mb-5">
             <label for="order_stock_date" class="form-label">วันที่สต็อค</label>
