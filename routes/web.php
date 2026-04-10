@@ -20,6 +20,7 @@ use App\Http\Controllers\purchase_order\PurchaseOrderController;
 use App\Http\Controllers\vehicle\LicenseController;
 use App\Http\Controllers\vehicle\VehicleController;
 use App\Http\Controllers\BrandSwitchController;
+use App\Http\Controllers\delivery_form\DeliveryFormController;
 use App\Http\Controllers\invoice\InvoiceController;
 use App\Http\Controllers\pricelist_car\PricelistCarController;
 
@@ -59,7 +60,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     //report 
     Route::get('invoice/view-export-report', [InvoiceController::class, 'viewExportReport'])->name('invoice.view-export-report');
     Route::get('/invoice/report-export', [InvoiceController::class, 'exportReport'])->name('invoice.report-export');
-    
+
 
     // purchase-order
     Route::get('purchase-order/viewFN', [FinanceController::class, 'viewFN'])->name('purchase-order.viewFN');
@@ -221,6 +222,11 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('/vehicle/vehicle-export', [VehicleController::class, 'exportVehicle'])->name('vehicle.vehicle-export');
     Route::get('/vehicle/export-license-plate', [VehicleController::class, 'exportLicensePlate'])->name('vehicle.export-license-plate');
 
+    // delivery-form
+    Route::get('delivery-form', [DeliveryFormController::class, 'index'])->name('delivery-form.index');
+    Route::get('delivery-form/search', [DeliveryFormController::class, 'search'])->name('delivery-form.search');
+    Route::get('delivery-form/{id}', [DeliveryFormController::class, 'show'])->name('delivery-form.show');
+
     Route::resource('accessory', AccessoryController::class);
     Route::resource('campaign', CampaignController::class);
     Route::resource('user', UserController::class);
@@ -319,6 +325,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('purchase-order/cancellation/{id}/withdraw-attachment', [CancellationController::class, 'uploadWithdrawAttachment']);
     Route::delete('purchase-order/cancellation/{id}/withdraw-attachment', [CancellationController::class, 'deleteWithdrawAttachment']);
     Route::post('purchase-order/cancellation/{id}/confirm-withdraw', [CancellationController::class, 'confirmWithdraw']);
+
     //all resource
     Route::resource('customer', CustomerController::class);
     Route::resource('purchase-order', PurchaseOrderController::class);

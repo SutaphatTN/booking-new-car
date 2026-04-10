@@ -222,6 +222,12 @@
       ]
     },
     {
+      "name": "ฟอร์มส่งมอบรถ",
+      "icon": "menu-icon icon-base bx bx-clipboard",
+      "slug": "delivery-form",
+      "url": "delivery-form"
+    },
+    {
       "name": "รายงาน",
       "icon": "menu-icon icon-base bx bx-file-blank",
       "slug": "report",

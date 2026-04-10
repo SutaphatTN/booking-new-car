@@ -54,6 +54,10 @@
         @continue
       @endif
 
+      @if (auth()->user()->brand != 3 && $menu->slug === 'delivery-form')
+        @continue
+      @endif
+
       {{-- adding active and open class if child is active --}}
 
       {{-- menu headers --}}
