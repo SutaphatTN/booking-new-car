@@ -16,8 +16,14 @@
           </div>
 
           <div class="col-md-4 mb-5">
-            <label for="vin_number" class="form-label">เลขตัวถัง</label>
+            <label for="vin_number" class="form-label">Vin-Number</label>
             <input id="vin_number" type="text" class="form-control" value="{{ $veh->carOrder?->vin_number ?? '-' }}"
+              disabled />
+          </div>
+
+          <div class="col-md-4 mb-5">
+            <label for="engine_number" class="form-label">เลขถัง</label>
+            <input id="engine_number" type="text" class="form-control" value="{{ $veh->carOrder?->engine_number ?? '-' }}"
               disabled />
           </div>
 
@@ -34,7 +40,7 @@
               value="{{ number_format($veh->vehicleLicense?->receipt_total ?? 0, 2) }}" disabled />
           </div>
 
-          <div class="col-md-3 mb-5">
+          <div class="col-md-2 mb-5">
             <label for="red_license" class="form-label">เลขป้ายแดง</label>
             <input id="red_license" type="text" class="form-control"
               value="{{ $veh->licensePlateRed?->number ?? '-' }}" disabled />
@@ -58,11 +64,11 @@
                 'customer' => 'ลูกค้ารับเอง',
             ];
           @endphp
-          <div class="col-md-3 mb-5">
+          {{-- <div class="col-md-3 mb-5">
             <label for="labe_status" class="form-label">ประเภท</label>
             <input id="labe_status" type="text" class="form-control"
               value="{{ $statusMap[$veh->vehicleLicense?->labe_status] ?? '-' }}" disabled />
-          </div>
+          </div> --}}
 
           <div class="col-md-3 mb-5">
             <label for="license_name" class="form-label">ตัวอักษร</label>

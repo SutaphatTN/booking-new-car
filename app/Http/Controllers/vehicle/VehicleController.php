@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\vehicle;
 
 use App\Exports\vehicle\VehicleExport;
+use App\Exports\vehicle\VehicleLicensePlateExport;
 use App\Http\Controllers\Controller;
 use App\Models\Salecar;
 use App\Models\TbProvinces;
@@ -58,12 +59,29 @@ class VehicleController extends Controller
             });
         }
 
+        if ($status === 'cleared') {
+            $query->whereHas('vehicleLicense', function ($q) {
+                $q->whereNotNull('withdrawal_date')
+                    ->whereNotNull('backup_clear_date')
+                    ->whereNull('license_name')
+                    ->whereNull('license_number');
+            });
+        }
+
+        if ($status === 'all') {
+            $query->orderByDesc('id');
+        }
+
         $saleCar = $query->get();
 
         $data = $saleCar->map(function ($s, $index) {
             $prefix = $s->customer?->prefix?->Name_TH;
             $first  = $s->customer?->FirstName;
             $last   = $s->customer?->LastName;
+
+            $vin_num = $s->carOrder?->vin_number ?? '-';
+            $eng_num = $s->carOrder?->engine_number ?? '-';
+            $vin = "Vin : {$vin_num}<br>Engine : {$eng_num}";
 
             return [
                 'No' => $index + 1,
@@ -72,7 +90,7 @@ class VehicleController extends Controller
                     $first ?? null,
                     $last ?? null,
                 ])),
-                'vin' => $s->carOrder?->vin_number,
+                'vin' => $vin,
                 'province' => $s->provinces?->name,
                 'withdrawn_cost' => $s->vehicleLicense?->withdrawal_total !== null ? number_format($s->vehicleLicense?->withdrawal_total, 2) : '-',
                 'receipt_total' => $s->vehicleLicense?->receipt_total !== null ? number_format($s->vehicleLicense?->receipt_total, 2) : '-',
@@ -323,6 +341,11 @@ class VehicleController extends Controller
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
         $toDate   = $request->to_date   ?? now()->format('Y-m-d');
 
-        return Excel::download(new VehicleExport($fromDate, $toDate), 'vehicle-report.xlsx');
+        return Excel::download(new VehicleExport($fromDate, $toDate), 'รายงานการส่งเบิก/เคลียร์.xlsx');
+    }
+
+    public function exportLicensePlate()
+    {
+        return Excel::download(new VehicleLicensePlateExport(), 'รายงานป้ายทะเบียน.xlsx');
     }
 }

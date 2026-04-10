@@ -42,7 +42,11 @@
         @continue
       @endif
 
-      @if (in_array($userRole, ['bp', 'cs']) && $menu->slug !== 'invoice')
+      @php
+        $menuSlugs = is_array($menu->slug) ? $menu->slug : [$menu->slug];
+        $bpCsAllowed = ['invoice', 'accessory'];
+      @endphp
+      @if (in_array($userRole, ['bp', 'cs']) && empty(array_intersect($menuSlugs, $bpCsAllowed)))
         @continue
       @endif
 

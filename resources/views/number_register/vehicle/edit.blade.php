@@ -21,9 +21,15 @@
             </div>
 
             <div class="col-md-4 mb-5">
-              <label for="vin_number" class="form-label">เลขตัวถัง</label>
+              <label for="vin_number" class="form-label">Vin-Number</label>
               <input id="vin_number" type="text" class="form-control"
                 value="{{ $veh->carOrder?->vin_number ?? '-' }}" disabled />
+            </div>
+
+            <div class="col-md-4 mb-5">
+              <label for="engine_number" class="form-label">เลขถัง</label>
+              <input id="engine_number" type="text" class="form-control"
+                value="{{ $veh->carOrder?->engine_number ?? '-' }}" disabled />
             </div>
 
             <div class="col-md-2 mb-5">
@@ -39,7 +45,7 @@
                 value="{{ number_format($veh->vehicleLicense?->receipt_total ?? 0, 2) }}" />
             </div>
 
-            <div class="col-md-3 mb-5">
+            <div class="col-md-2 mb-5">
               <label for="red_license" class="form-label">เลขป้ายแดง</label>
               <input id="red_license" type="text" class="form-control"
                 value="{{ $veh->licensePlateRed?->number ?? '-' }}" disabled />
@@ -48,16 +54,16 @@
             <div class="col-md-3 mb-5">
               <label for="withdrawal_date" class="form-label">วันที่ตั้งเบิก</label>
               <input id="withdrawal_date" name="withdrawal_date" type="date" class="form-control"
-                value="{{ $veh->vehicleLicense?->withdrawal_date ?? '' }}" disabled />
+                value="{{ $veh->vehicleLicense?->withdrawal_date ?? '' }}" />
             </div>
 
             <div class="col-md-3 mb-5">
               <label for="backup_clear_date" class="form-label">วันที่รับป้ายจากขนส่ง</label>
               <input id="backup_clear_date" name="backup_clear_date" type="date" class="form-control"
-                value="{{ $veh->vehicleLicense?->backup_clear_date ?? '-' }}" disabled />
+                value="{{ $veh->vehicleLicense?->backup_clear_date ?? '-' }}" />
             </div>
 
-            <div class="col-md-3 mb-5">
+            {{-- <div class="col-md-3 mb-5">
               <label for="labe_status" class="form-label">ประเภท</label>
               <select id="labe_status" name="labe_status" class="form-select">
                 <option value="">- เลือก -</option>
@@ -66,7 +72,7 @@
                 <option value="customer" {{ $veh->vehicleLicense?->labe_status == 'customer' ? 'selected' : '' }}>
                   ลูกค้ารับเอง</option>
               </select>
-            </div>
+            </div> --}}
 
             <div class="col-md-3 mb-5">
               <label for="license_name" class="form-label">ตัวอักษร</label>

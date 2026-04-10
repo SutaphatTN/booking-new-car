@@ -219,6 +219,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     //export vehicle
     Route::get('vehicle/view-export-vehicle', [VehicleController::class, 'viewExportVehicle'])->name('vehicle.view-export-vehicle');
     Route::get('/vehicle/vehicle-export', [VehicleController::class, 'exportVehicle'])->name('vehicle.vehicle-export');
+    Route::get('/vehicle/export-license-plate', [VehicleController::class, 'exportLicensePlate'])->name('vehicle.export-license-plate');
 
     Route::resource('accessory', AccessoryController::class);
     Route::resource('campaign', CampaignController::class);

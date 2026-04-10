@@ -11,6 +11,10 @@
         @continue
       @endif
 
+      @if (in_array($userRole, ['bp', 'cs']) && !in_array($submenu->slug, ['accessory', 'accessory.partner', 'invoice.index', 'invoice.create', 'invoice.view-export-report']))
+        @continue
+      @endif
+
       @if ($submenu->slug == 'report.gwm-stock-export' && $userBrand != 2)
         @continue
       @endif

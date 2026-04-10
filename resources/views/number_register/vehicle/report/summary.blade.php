@@ -17,7 +17,7 @@
       <th>ค่าช่องเคลียร์</th>
       <th>ใบเสร็จเคลียร์</th>
       <th>รวมเคลียร์</th>
-      <th>ช่องทางรับป้าย</th>
+      {{-- <th>ช่องทางรับป้าย</th> --}}
     </tr>
   </thead>
   <tbody>
@@ -39,11 +39,11 @@
       <td>{{ $v['receipt_channel'] }}</td>
       <td>{{ $v['receipt_bill'] }}</td>
       <td>{{ $v['receipt_total'] }}</td>
-      <td>{{ $v['labe_status'] }}</td>
+      {{-- <td>{{ $v['labe_status'] }}</td> --}}
     </tr>
     @empty
     <tr>
-      <td colspan="17" align="center">
+      <td colspan="16" align="center">
         ไม่มีข้อมูล
       </td>
     </tr>

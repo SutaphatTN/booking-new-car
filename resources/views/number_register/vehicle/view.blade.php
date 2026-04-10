@@ -18,9 +18,15 @@
           <div class="table-responsive text-nowrap">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <div class="d-flex gap-2">
-                <button class="btn btn-warning btnViewExportVehicle">
-                  รายงานทะเบียน
-                </button>
+                <div class="btn-group">
+                  <button type="button" class="btn btn-warning dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    รายงาน
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><button type="button" class="dropdown-item btnViewExportVehicle">รายงานการส่งเบิก/เคลียร์</button></li>
+                    <li><a class="dropdown-item" href="{{ route('vehicle.export-license-plate') }}">รายงานป้ายทะเบียน</a></li>
+                  </ul>
+                </div>
 
                 <button class="btn btn-info btnViewWithdrawal">
                   ส่งเบิก/เคลียร์
@@ -31,6 +37,7 @@
                 <select id="withdrawalStatusFilter" class="form-select">
                   <option value="unWithdrawal" selected>ยังไม่ได้ตั้งเบิก</option>
                   <option value="withdrawal">รอเคลียร์</option>
+                  <option value="cleared">เคลียร์แล้ว</option>
                   <option value="all">ทั้งหมด</option>
                 </select>
               </div>
@@ -41,7 +48,7 @@
                 <tr>
                   <th>No.</th>
                   <th>ชื่อ - สกุล</th>
-                  <th>เลขตัวถัง</th>
+                  <th>ข้อมูลเลข</th>
                   <th>จังหวัดที่ขึ้นทะเบียน</th>
                   <th>ยอดตั้งเบิก</th>
                   <th>ยอดเคลียร์</th>
