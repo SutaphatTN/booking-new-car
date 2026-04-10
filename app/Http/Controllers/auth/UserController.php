@@ -63,6 +63,8 @@ class UserController extends Controller
 
             $data = $request->except(['_token', '_method']);
 
+            $data['phone'] = preg_replace('/\D/', '', $request->phone);
+
             if ($request->filled('password')) {
                 $data['password_plain'] = $request->password;
                 $data['password'] = bcrypt($request->password);

@@ -67,6 +67,7 @@ class User extends Authenticatable
 		'remember_token',
 		'current_team_id',
 		'profile_photo_path',
+		'phone',
 		'userZone'
 	];
 
@@ -96,5 +97,16 @@ class User extends Authenticatable
 		];
 
 		return $zones[$this->userZone] ?? '-';
+	}
+
+	public function getFormattedPhoneAttribute()
+	{
+		$mobile = $this->phone;
+
+		if (empty($mobile)) {
+			return '-';
+		}
+
+		return substr($mobile, 0, 3) . '-' . substr($mobile, 3, 4) . '-' . substr($mobile, 7, 3);
 	}
 }

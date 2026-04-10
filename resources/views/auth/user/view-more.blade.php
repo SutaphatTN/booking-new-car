@@ -94,6 +94,17 @@
                     </div>
                 </div>
 
+                <div class="row mb-3">
+                    <label for="phone"
+                        class="col-md-4 col-form-label text-md-end">{{ __('เบอร์โทร') }}</label>
+
+                    <div class="col-md-6">
+                        <input id="phone" type="text"
+                            class="form-control readonly-field bg-light"
+                            name="phone" value="{{ $user->formatted_phone ?? '' }}">
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

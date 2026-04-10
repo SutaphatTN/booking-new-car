@@ -193,3 +193,18 @@ $(document).on('click', '.btnDeleteUser', function () {
     }
   });
 });
+
+//view more and edit : format phone
+function formatPhone(value) {
+  const digits = value.replace(/\D/g, '').substring(0, 10);
+
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) {
+    return digits.substring(0, 3) + '-' + digits.substring(3);
+  }
+  return digits.substring(0, 3) + '-' + digits.substring(3, 7) + '-' + digits.substring(7);
+}
+
+$(document).on('input', '.phone-input', function () {
+  this.value = formatPhone(this.value);
+});

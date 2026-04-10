@@ -145,6 +145,24 @@
                         </div>
                     </div>
 
+                    <div class="row mb-3">
+                        <label for="phone"
+                            class="col-md-4 col-form-label text-md-end">{{ __('เบอร์โทร') }}</label>
+
+                        <div class="col-md-6">
+                            <input id="phone" type="text"
+                                class="form-control phone-input @error('phone') is-invalid @enderror"
+                                name="phone" maxlength="12"
+                                value="{{ $user->formatted_phone }}">
+
+                            @error('phone')
+                            <span class="invalid-feedback" role="alert">
+                                <strong>{{ $message }}</strong>
+                            </span>
+                            @enderror
+                        </div>
+                    </div>
+
                     <div class="row mb-0">
                         <div class="col-md-6 offset-md-4">
                             <button type="button" class="btn btn-primary btnUpdateUser">
