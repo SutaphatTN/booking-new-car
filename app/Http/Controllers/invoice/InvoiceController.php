@@ -96,7 +96,7 @@ class InvoiceController extends Controller
     public function list(Request $request)
     {
         $user = Auth::user();
-        $canApprove = in_array($user->role, ['admin', 'audit', 'manager', 'md']);
+        $canApprove = in_array($user->role, ['admin', 'audit', 'manager', 'md', 'bp', 'cs']);
         $canConfirmReceipt = in_array($user->role, ['admin', 'account']);
 
         $filter = $request->query('filter', 'pending');
