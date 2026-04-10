@@ -27,7 +27,7 @@ class InvoiceController extends Controller
         $partners = AccessoryPartner::orderBy('name')->get();
         $today = now()->format('Y-m-d');
         $user = Auth::user();
-        $approvers = User::whereIn('role', ['audit', 'manager', 'md'])
+        $approvers = User::whereIn('role', ['audit', 'manager', 'md', 'bp', 'cs'])
             ->where('brand', $user->brand == 2 ? 2 : 1)
             ->where('branch', $user->branch)
             ->where('userZone', $user->userZone)

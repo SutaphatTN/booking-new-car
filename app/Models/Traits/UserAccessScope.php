@@ -23,7 +23,7 @@ trait UserAccessScope
       }
 
       // ไม่จำกัด zone — filter แค่ brand (ที่อาจถูก override โดย BrandSwitcher middleware)
-      if (in_array($user->role, ['account', 'audit'])) {
+      if (in_array($user->role, ['account', 'audit', 'registration'])) {
         if ($user->brand) {
           $query->where($table . '.brand', $user->brand);
         }
