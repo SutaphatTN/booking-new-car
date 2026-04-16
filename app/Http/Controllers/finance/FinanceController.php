@@ -270,7 +270,7 @@ class FinanceController extends Controller
                 $q->whereNotNull('date');
             });
         }
-
+        $query->orderByDesc('id');
         $saleCar = $query->get();
 
         // ->where('payment_mode', 'finance')
