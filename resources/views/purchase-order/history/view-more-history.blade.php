@@ -19,6 +19,10 @@
                 {{ $saleCar->customer?->LastName ?? '' }}</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
+              <strong>ชื่อฝ่ายขาย :</strong>
+              <span>{{ $saleCar->saleUser?->name ?? '-' }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
               <strong>ที่อยู่ปัจจุบัน :</strong>
               <span
                 style="width:60%; text-align:right;">{{ $saleCar->customer->currentAddress?->full_address ?? '-' }}</span>

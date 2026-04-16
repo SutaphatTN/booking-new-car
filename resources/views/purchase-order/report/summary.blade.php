@@ -103,6 +103,11 @@
       </span>
 
       <span class="label">
+        ชื่อฝ่ายขาย :
+        <span style="font-weight: normal;">{{ $saleCar->saleUser?->name ?? '-' }}</span>
+      </span>
+
+      <span class="label">
         ที่อยู่ปัจจุบัน :
         <span style="font-weight: normal;">
           {{ $saleCar->customer->currentAddress->short_address ?? '-' }}
