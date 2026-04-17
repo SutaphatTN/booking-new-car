@@ -40,7 +40,7 @@
     /* ══ TOP ACCENT BAR ══ */
     .page-bar {
       height: 5px;
-      background: #000;
+      /* background: #000; */
       margin-bottom: 4px;
     }
 
