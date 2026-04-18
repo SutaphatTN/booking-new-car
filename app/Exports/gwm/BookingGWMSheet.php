@@ -93,12 +93,14 @@ class BookingGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Sh
 
   public function view(): View
   {
-    $salecars = Salecar::with([
-      'model',
-      'subModel',
-      'gwmColor',
-      'interiorColor',
-    ])
+    $salecars = Salecar::withoutGlobalScope('userAccess')
+      ->with([
+        'model',
+        'subModel',
+        'gwmColor',
+        'interiorColor',
+        'branchInfo',
+      ])
       ->where('brand', 2)
       ->whereNULL('carOrderID')
       ->whereNotIn('con_status', [5, 7, 8, 9])
@@ -106,11 +108,12 @@ class BookingGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Sh
 
     $data = $salecars
       ->groupBy(function ($r) {
-        return ($r->subModel_id ?? 'null') . '_' . ($r->gwm_color ?? 'null') . '_' . ($r->interior_color ?? 'null');
+        return ($r->subModel_id ?? 'null') . '_' . ($r->gwm_color ?? 'null') . '_' . ($r->interior_color ?? 'null') . '_' . ($r->branch ?? 'null');
       })
       ->map(function ($rows) {
         $first = $rows->first();
 
+        $branch        = $first->branchInfo->name ?? '-';
         $mainModel     = $first->model->Name_TH ?? '-';
         $subModel      = $first->subModel->name ?? '-';
         $color         = $first->gwmColor->name ?? '-';
@@ -121,6 +124,7 @@ class BookingGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Sh
         $withoutCar   = $rows->whereNull('CarOrderID')->count();
 
         return [
+          'branch'        => $branch,
           'mainModel'     => $mainModel,
           'subModel'      => $subModel,
           'color'         => $color,

@@ -1,6 +1,7 @@
 <table>
   <thead>
     <tr>
+      <th>สาขา</th>
       <th>รุ่นรถหลัก</th>
       <th>รุ่นย่อย</th>
       <th>สี</th>
@@ -17,6 +18,7 @@
     $endRow = count($stock) + 1;
     @endphp
       <tr>
+        <td>{{ $s['branch'] }}</td>
         <td>{{ $s['mainModel'] }}</td>
         <td>{{ $s['subModel'] }}</td>
         <td>{{ $s['color'] }}</td>
@@ -27,7 +29,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="7" align="center">
+        <td colspan="8" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>
@@ -35,10 +37,10 @@
 
     @if(count($stock) > 0)
     <tr>
-      <td colspan="4" align="center">รวมทั้งหมด</td>
-      <td>=SUM(E{{ $startRow }}:E{{ $endRow }})</td>
+      <td colspan="5" align="center">รวมทั้งหมด</td>
       <td>=SUM(F{{ $startRow }}:F{{ $endRow }})</td>
       <td>=SUM(G{{ $startRow }}:G{{ $endRow }})</td>
+      <td>=SUM(H{{ $startRow }}:H{{ $endRow }})</td>
     </tr>
     @endif
   </tbody>

@@ -93,14 +93,17 @@ class StockGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Shou
 
   public function view(): View
   {
-    $carOrders = CarOrder::with([
-      'historyCar',
-      'salecars',
-      'model',
-      'subModel',
-      'gwmColor',
-      'interiorColor'
-    ])
+    $carOrders = CarOrder::withoutGlobalScope('userAccess')
+      ->with([
+        'historyCar',
+        'salecars',
+        'model',
+        'subModel',
+        'gwmColor',
+        'interiorColor',
+        'branchInfo',
+      ])
+      ->where('brand', 2)
       ->whereNotNull('approver_date')
       ->whereNot('status', 'rejected')
       ->whereNot('car_status', 'Delivered')
@@ -108,11 +111,12 @@ class StockGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Shou
 
     $data = $carOrders
       ->groupBy(function ($r) {
-        return $r->subModel_id . '_' . $r->gwm_color . '_' . $r->interior_color;
+        return $r->subModel_id . '_' . $r->gwm_color . '_' . $r->interior_color . '_' . $r->branch;
       })
       ->map(function ($rows) {
         $first = $rows->first();
 
+        $branch        = $first->branchInfo->name ?? '-';
         $mainModel     = $first->model->Name_TH ?? '';
         $subModel      = $first->subModel->name ?? '';
         $color         = $first->gwmColor->name ?? '-';
@@ -144,6 +148,7 @@ class StockGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Shou
         $withCustomer = $historyIds->merge($deliveryIds)->unique()->count();
 
         return [
+          'branch'        => $branch,
           'mainModel'     => $mainModel,
           'subModel'      => $subModel,
           'color'         => $color,
