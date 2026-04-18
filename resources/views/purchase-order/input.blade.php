@@ -2,7 +2,7 @@
 @section('title', 'Add Purchase Order')
 
 @section('page-style')
-  @vite(['resources/assets/css/purchase-order.css'])
+  @vite(['resources/css/app.css'])
 @endsection
 
 @section('page-script')
@@ -11,16 +11,16 @@
 
 @section('content')
   <div id="searchCustomer"></div>
-  
+
   {{-- Page Title --}}
-    <div class="pur-page-title">
-      <div class="pur-page-icon">
-        <i class="bx bx-plus-circle"></i>
-      </div>
-      <div>
-        <h5 class="pur-page-name">เพิ่มข้อมูลการจอง</h5>
-      </div>
+  <div class="pur-page-title">
+    <div class="pur-page-icon">
+      <i class="bx bx-plus-circle"></i>
     </div>
+    <div>
+      <h5 class="pur-page-name">เพิ่มข้อมูลการจอง</h5>
+    </div>
+  </div>
 
   <form action="{{ route('purchase-order.store') }}" method="POST" enctype="multipart/form-data">
     @csrf
@@ -409,8 +409,8 @@
                     <div class="col-md-8">
                       <label for="attachments_cash" class="po-label">แนบเอกสาร</label>
                       <div class="upload-area">
-                        <input id="attachments_cash" type="file" class="form-control border-0 bg-transparent p-0" name="attachments[]"
-                          accept=".pdf,.jpg,.jpeg,.png" multiple>
+                        <input id="attachments_cash" type="file" class="form-control border-0 bg-transparent p-0"
+                          name="attachments[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
                         <small class="text-muted mt-1 d-block">PDF, JPG, PNG</small>
                       </div>
                     </div>
@@ -438,8 +438,8 @@
                     <div class="col-md-8">
                       <label for="attachments_credit" class="po-label">แนบเอกสาร</label>
                       <div class="upload-area">
-                        <input id="attachments_credit" type="file" class="form-control border-0 bg-transparent p-0" name="attachments[]"
-                          accept=".pdf,.jpg,.jpeg,.png" multiple>
+                        <input id="attachments_credit" type="file" class="form-control border-0 bg-transparent p-0"
+                          name="attachments[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
                         <small class="text-muted mt-1 d-block">PDF, JPG, PNG</small>
                       </div>
                     </div>
@@ -475,8 +475,8 @@
                       <div class="col-md-8">
                         <label for="attachments_check" class="po-label">แนบเอกสาร</label>
                         <div class="upload-area">
-                          <input id="attachments_check" type="file" class="form-control border-0 bg-transparent p-0" name="attachments[]"
-                            accept=".pdf,.jpg,.jpeg,.png" multiple>
+                          <input id="attachments_check" type="file" class="form-control border-0 bg-transparent p-0"
+                            name="attachments[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
                           <small class="text-muted mt-1 d-block">PDF, JPG, PNG</small>
                         </div>
                       </div>
@@ -487,7 +487,8 @@
                       <div class="col-md-8">
                         <label for="attachments_check2" class="po-label">แนบเอกสาร</label>
                         <div class="upload-area">
-                          <input id="attachments_check2" type="file" class="form-control border-0 bg-transparent p-0" name="attachments[]"
+                          <input id="attachments_check2" type="file"
+                            class="form-control border-0 bg-transparent p-0" name="attachments[]"
                             accept=".pdf,.jpg,.jpeg,.png" multiple>
                           <small class="text-muted mt-1 d-block">PDF, JPG, PNG</small>
                         </div>
@@ -525,8 +526,8 @@
                       <div class="col-md-8">
                         <label for="attachments_bank" class="po-label">แนบเอกสาร</label>
                         <div class="upload-area">
-                          <input id="attachments_bank" type="file" class="form-control border-0 bg-transparent p-0" name="attachments[]"
-                            accept=".pdf,.jpg,.jpeg,.png" multiple>
+                          <input id="attachments_bank" type="file" class="form-control border-0 bg-transparent p-0"
+                            name="attachments[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
                           <small class="text-muted mt-1 d-block">PDF, JPG, PNG</small>
                         </div>
                       </div>
@@ -537,8 +538,8 @@
                       <div class="col-md-8">
                         <label for="attachments_bank2" class="po-label">แนบเอกสาร</label>
                         <div class="upload-area">
-                          <input id="attachments_bank2" type="file" class="form-control border-0 bg-transparent p-0" name="attachments[]"
-                            accept=".pdf,.jpg,.jpeg,.png" multiple>
+                          <input id="attachments_bank2" type="file" class="form-control border-0 bg-transparent p-0"
+                            name="attachments[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
                           <small class="text-muted mt-1 d-block">PDF, JPG, PNG</small>
                         </div>
                       </div>

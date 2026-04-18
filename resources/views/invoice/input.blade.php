@@ -2,7 +2,7 @@
 @section('title', 'create invoice')
 
 @section('page-style')
-  @vite(['resources/assets/css/invoice.css'])
+  @vite(['resources/css/app.css'])
 @endsection
 
 @section('page-script')
@@ -162,16 +162,16 @@
                     </select>
                   </td>
                   <td style="padding:8px 14px;">
-                    <input type="text" name="accessories[0][detail]" class="form-control"
-                      placeholder="รายละเอียด" required>
+                    <input type="text" name="accessories[0][detail]" class="form-control" placeholder="รายละเอียด"
+                      required>
                   </td>
                   <td style="padding:8px 14px;">
-                    <input type="text" name="accessories[0][cost_price]"
-                      class="form-control money-input text-end" placeholder="0.00" required>
+                    <input type="text" name="accessories[0][cost_price]" class="form-control money-input text-end"
+                      placeholder="0.00" required>
                   </td>
                   <td style="padding:8px 14px;">
-                    <input type="text" name="accessories[0][sale_price]"
-                      class="form-control money-input text-end" placeholder="0.00" required>
+                    <input type="text" name="accessories[0][sale_price]" class="form-control money-input text-end"
+                      placeholder="0.00" required>
                   </td>
                   <td class="text-center" style="padding:8px 14px;">
                     <button type="button" class="btn btn-danger btnRemoveRow">

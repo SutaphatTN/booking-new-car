@@ -2,7 +2,7 @@
 @section('title', 'Data Customer Add')
 
 @section('page-style')
-@vite(['resources/assets/css/customer.css'])
+  @vite(['resources/css/app.css'])
 @endsection
 
 @section('page-script')
@@ -50,7 +50,8 @@
               </div>
 
               <div class="col-md-3">
-                <label for="FirstName" class="po-label"><i class='bx bx-user'></i> ชื่อ <span class="text-danger">*</span></label>
+                <label for="FirstName" class="po-label"><i class='bx bx-user'></i> ชื่อ <span
+                    class="text-danger">*</span></label>
                 <input id="FirstName" type="text" class="form-control @error('FirstName') is-invalid @enderror"
                   name="FirstName" value="" required>
                 @error('FirstName')
@@ -89,7 +90,8 @@
               </div>
 
               <div class="col-md-3">
-                <label for="IDNumber" class="po-label"><i class='bx bx-id-card'></i> เลขบัตรประชาชน <span class="text-danger">*</span></label>
+                <label for="IDNumber" class="po-label"><i class='bx bx-id-card'></i> เลขบัตรประชาชน <span
+                    class="text-danger">*</span></label>
                 <input id="IDNumber" type="text" class="form-control @error('IDNumber') is-invalid @enderror"
                   name="IDNumber" maxlength="17" required>
                 @error('IDNumber')
@@ -139,7 +141,8 @@
               </div>
 
               <div class="col-md-2">
-                <label for="Mobilephone1" class="po-label"><i class='bx bx-phone'></i> เบอร์โทรหลัก <span class="text-danger">*</span></label>
+                <label for="Mobilephone1" class="po-label"><i class='bx bx-phone'></i> เบอร์โทรหลัก <span
+                    class="text-danger">*</span></label>
                 <input id="Mobilephone1" type="text"
                   class="form-control @error('Mobilephone1') is-invalid @enderror" name="Mobilephone1" maxlength="12"
                   required>
@@ -173,7 +176,8 @@
             <div class="row g-3 pb-2">
 
               <div class="col-md-2">
-                <label for="current_house_number" class="po-label"><i class='bx bx-home'></i> เลขที่ <span class="text-danger">*</span></label>
+                <label for="current_house_number" class="po-label"><i class='bx bx-home'></i> เลขที่ <span
+                    class="text-danger">*</span></label>
                 <input id="current_house_number" type="text" name="current_house_number" class="form-control"
                   required>
               </div>
@@ -199,21 +203,24 @@
               </div>
 
               <div class="col-md-6">
-                <label for="current_province" class="po-label"><i class='bx bx-map'></i> จังหวัด <span class="text-danger">*</span></label>
+                <label for="current_province" class="po-label"><i class='bx bx-map'></i> จังหวัด <span
+                    class="text-danger">*</span></label>
                 <select id="current_province" name="current_province" class="form-select" required>
                   <option value="">— เลือกจังหวัด —</option>
                 </select>
               </div>
 
               <div class="col-md-5">
-                <label for="current_district" class="po-label"><i class='bx bx-map-alt'></i> อำเภอ/เขต <span class="text-danger">*</span></label>
+                <label for="current_district" class="po-label"><i class='bx bx-map-alt'></i> อำเภอ/เขต <span
+                    class="text-danger">*</span></label>
                 <select id="current_district" name="current_district" class="form-select" required disabled>
                   <option value="">— เลือกอำเภอ —</option>
                 </select>
               </div>
 
               <div class="col-md-4">
-                <label for="current_subdistrict" class="po-label"><i class="bx bx-navigation"></i> ตำบล/แขวง <span class="text-danger">*</span></label>
+                <label for="current_subdistrict" class="po-label"><i class="bx bx-navigation"></i> ตำบล/แขวง <span
+                    class="text-danger">*</span></label>
                 <select id="current_subdistrict" name="current_subdistrict" class="form-select" required disabled>
                   <option value="">— เลือกตำบล —</option>
                 </select>
@@ -248,7 +255,8 @@
             <div class="row g-3 pb-2">
 
               <div class="col-md-2">
-                <label for="doc_house_number" class="po-label"><i class='bx bx-home'></i> เลขที่ <span class="text-danger">*</span></label>
+                <label for="doc_house_number" class="po-label"><i class='bx bx-home'></i> เลขที่ <span
+                    class="text-danger">*</span></label>
                 <input id="doc_house_number" type="text" name="doc_house_number" class="form-control" required>
               </div>
 
@@ -273,21 +281,24 @@
               </div>
 
               <div class="col-md-6">
-                <label for="doc_province" class="po-label"><i class='bx bx-map'></i> จังหวัด <span class="text-danger">*</span></label>
+                <label for="doc_province" class="po-label"><i class='bx bx-map'></i> จังหวัด <span
+                    class="text-danger">*</span></label>
                 <select id="doc_province" name="doc_province" class="form-select" required>
                   <option value="">— เลือกจังหวัด —</option>
                 </select>
               </div>
 
               <div class="col-md-5">
-                <label for="doc_district" class="po-label"><i class='bx bx-map-alt'></i> อำเภอ/เขต <span class="text-danger">*</span></label>
+                <label for="doc_district" class="po-label"><i class='bx bx-map-alt'></i> อำเภอ/เขต <span
+                    class="text-danger">*</span></label>
                 <select id="doc_district" name="doc_district" class="form-select" required disabled>
                   <option value="">— เลือกอำเภอ —</option>
                 </select>
               </div>
 
               <div class="col-md-4">
-                <label for="doc_subdistrict" class="po-label"><i class="bx bx-navigation"></i> ตำบล/แขวง <span class="text-danger">*</span></label>
+                <label for="doc_subdistrict" class="po-label"><i class="bx bx-navigation"></i> ตำบล/แขวง <span
+                    class="text-danger">*</span></label>
                 <select id="doc_subdistrict" name="doc_subdistrict" class="form-select" required disabled>
                   <option value="">— เลือกตำบล —</option>
                 </select>
