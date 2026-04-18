@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function toggleTurnCarFields() {
     if (!turnCarFields) return;
-    turnCarFields.style.display = yesRadio.checked ? 'flex' : 'none';
+    turnCarFields.style.display = yesRadio.checked ? 'block' : 'none';
   }
 
   yesRadio.addEventListener('change', toggleTurnCarFields);
@@ -331,6 +331,24 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
       $(phoneInput).val(data.mobile);
       $(idInput).val(data.idnumber);
       $(hiddenId).val(data.id);
+
+      // Update display divs
+      const setDisplay = (id, val) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = val || '—';
+        el.classList.toggle('empty', !val);
+      };
+      if (nameInput === '#customerName') {
+        setDisplay('customerName-display', data.name);
+        setDisplay('customerID-display', data.idnumber);
+        setDisplay('customerPhone-display', data.mobile);
+      }
+      if (nameInput === '#customerNameRef') {
+        setDisplay('customerNameRef-display', data.name);
+        setDisplay('customerIDRef-display', data.idnumber);
+        setDisplay('customerPhoneRef-display', data.mobile);
+      }
 
       $modal.modal('hide');
       $search.val('');
@@ -1460,6 +1478,15 @@ $(document).ready(function () {
     width: '100%'
   });
 
+  // ป้ายแดง — searchable select
+  if ($('#red_license').length) {
+    $('#red_license').select2({
+      placeholder: 'พิมพ์เลขป้าย...',
+      allowClear: true,
+      width: '100%'
+    });
+  }
+
   // ล้างค่ายอดรวม
   function clearCampaignSelection() {
     $('#CampaignID').val(null).empty().prop('disabled', true).trigger('change.select2');
@@ -2016,16 +2043,25 @@ $(document).ready(function () {
 
 //edit : radio payment remaining
 $(document).ready(function () {
-  $('#financeRemain, #bankRemain, #checkRemain, #creditRemain, #nonFinanceSelect').hide();
+  $('#financeSection1, #financeSection2, #bankRemain, #checkRemain, #creditRemain, #nonFinanceSelect').hide();
+
+  function updateTab2Label(mode) {
+    if (mode === 'finance') {
+      $('#sumTab2Label').text('ข้อมูลไฟแนนซ์');
+    } else {
+      $('#sumTab2Label').text('ข้อมูลการจ่ายเงิน');
+    }
+  }
 
   function showCorrectSection() {
     const mode = $('#payment_mode').val();
     const type = $('#remainingConditionSelect').val();
 
-    $('#financeRemain, #bankRemain, #checkRemain, #creditRemain, #nonFinanceSelect').hide();
+    $('#financeSection1, #financeSection2, #bankRemain, #checkRemain, #creditRemain, #nonFinanceSelect').hide();
 
     if (mode === 'finance') {
-      $('#financeRemain').show();
+      $('#financeSection1').show();
+      $('#financeSection2').show();
       $('#remainingCondition').val('finance');
     } else if (mode === 'non-finance') {
       $('#nonFinanceSelect').show();
@@ -2038,6 +2074,7 @@ $(document).ready(function () {
       $('#remainingCondition').val('');
     }
 
+    updateTab2Label(mode);
     updateProvince();
     updateRemainingDate();
     calculateBalanceCampaign();
@@ -2272,24 +2309,14 @@ document.addEventListener('DOMContentLoaded', function () {
       const selectedOption = interiorSelect.options[interiorSelect.selectedIndex];
       const interiorColor = selectedOption?.text || '-';
 
-      interiorColorHtml = `
-    <div class="d-flex justify-content-between mb-2">
-        <strong>สีภายใน :</strong>
-        <span>${interiorColor}</span>
-    </div>
-  `;
+      interiorColorHtml = `<div class="mf-info-row"><span class="mf-info-label">สีภายใน</span><span class="mf-info-val">${interiorColor}</span></div>`;
     }
 
     //option
     let optionHtml = '';
 
     if (userBrand != 2) {
-      optionHtml = `
-    <div class="d-flex justify-content-between mb-2">
-      <strong>Option :</strong>
-      <span>${option}</span>
-    </div>
-  `;
+      optionHtml = `<div class="mf-info-row"><span class="mf-info-label">Option</span><span class="mf-info-val">${option}</span></div>`;
     }
 
     const carSale = document.getElementById('price_sub')?.value || '-';
@@ -2409,171 +2436,56 @@ document.addEventListener('DOMContentLoaded', function () {
       price = document.getElementById('CarSalePriceFinal')?.value || '-';
 
       discountHtml = `
-          <div class="d-flex justify-content-between mb-2">
-            <strong>เงินดาวน์ :</strong>
-            <span>${downPayment} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>เปอร์เซ็นต์เงินดาวน์ :</strong>
-            <span>${downPaymentPercentage} %</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ส่วนลดเงินดาวน์ :</strong>
-            <span>${downPaymentDiscount} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ส่วนลดราคารถ :</strong>
-            <span>${discount} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ค่าใช้จ่ายอื่นๆ :</strong>
-            <span>${otherCostFi} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>หมายเหตุ ค่าใช้จ่ายอื่นๆ :</strong>
-            <span>${reasonOtherCostFi}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>Vat ซื้อเพิ่ม :</strong>
-            <span>${vatExtra} บาท</span>
-          </div>
-
-          <h5 class="pb-2 mb-3"></h5>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>สรุปค่าใช้จ่ายวันออกรถ :</strong>
-            <span>${TotalPaymentatDeliveryCar} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>Po Number :</strong>
-            <span>${poNumber}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ไฟแนนซ์ :</strong>
-            <span>${financeCompany}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ยอดจัดไฟแนนซ์ :</strong>
-            <span>${balanceFinanceDisplay} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ดอกเบี้ย :</strong>
-            <span>${interest} %</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>งวดผ่อน :</strong>
-            <span>${period}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ค่างวด (กรณีไม่มี ALP) :</strong>
-            <span>${alp} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ค่างวด (รวม ALP) :</strong>
-            <span>${includingAlp} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ยอดเงิน ALP ที่หักจากใบเสร็จดาวน์ :</strong>
-            <span>${totalAlp} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ดอกเบี้ยคอม :</strong>
-            <span>${typeCom}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ยอดเงินค่าคอม :</strong>
-            <span>${totalCom} บาท</span>
-          </div>
+          <div class="mf-info-row"><span class="mf-info-label">เงินดาวน์</span><span class="mf-info-val">${downPayment} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">เปอร์เซ็นต์เงินดาวน์</span><span class="mf-info-val">${downPaymentPercentage} %</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ส่วนลดเงินดาวน์</span><span class="mf-info-val">${downPaymentDiscount} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ส่วนลดราคารถ</span><span class="mf-info-val">${discount} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ค่าใช้จ่ายอื่นๆ</span><span class="mf-info-val">${otherCostFi} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">หมายเหตุ ค่าใช้จ่ายอื่นๆ</span><span class="mf-info-val">${reasonOtherCostFi}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">Vat ซื้อเพิ่ม</span><span class="mf-info-val">${vatExtra} บาท</span></div>
+          <p class="mf-sub-heading mt-2">วันออกรถ</p>
+          <div class="mf-info-row"><span class="mf-info-label">สรุปค่าใช้จ่ายวันออกรถ</span><span class="mf-info-val">${TotalPaymentatDeliveryCar} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">Po Number</span><span class="mf-info-val">${poNumber}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ไฟแนนซ์</span><span class="mf-info-val">${financeCompany}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ยอดจัดไฟแนนซ์</span><span class="mf-info-val">${balanceFinanceDisplay} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ดอกเบี้ย</span><span class="mf-info-val">${interest} %</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">งวดผ่อน</span><span class="mf-info-val">${period}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ค่างวด (กรณีไม่มี ALP)</span><span class="mf-info-val">${alp} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ค่างวด (รวม ALP)</span><span class="mf-info-val">${includingAlp} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ยอดเงิน ALP ที่หักจากใบเสร็จดาวน์</span><span class="mf-info-val">${totalAlp} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ดอกเบี้ยคอม</span><span class="mf-info-val">${typeCom}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ยอดเงินค่าคอม</span><span class="mf-info-val">${totalCom} บาท</span></div>
       `;
 
       campaignHtml = `
-          <div class="d-flex justify-content-between mb-2">
-            <strong>รวมงบแคมเปญ :</strong>
-            <span>${totalCampaign.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>บวกหัว (90%) :</strong>
-            <span>${markup90.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>Kick Back :</strong>
-            <span>${kickback.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ยอดรวมแคมเปญ (รวมบวกหัว 90%) :</strong>
-            <span>${totalcam90.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ส่วนลดเงินดาวน์ :</strong>
-            <span>${downPaymentDiscount} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ส่วนลดราคารถ :</strong>
-            <span>${discount} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ส่วนต่างของแถม :</strong>
-            <span>${giftTotal} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ค่าแนะนำ :</strong>
-            <span>${ReferrerAmount} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>Vat ของแถม :</strong>
-            <span>${vatGift.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ยอดรวมรายการที่ใช้ :</strong>
-            <span>${totalUseFinance.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>คงเหลือ :</strong>
-            <span>${totalBalanceFinance.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>คงเหลือ(แบ่ง 2 ส่วน) :</strong>
-            <span>${balanceCampaignDisplay} บาท</span>
-          </div>
+          <div class="mf-info-row"><span class="mf-info-label">รวมงบแคมเปญ</span><span class="mf-info-val">${totalCampaign.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">บวกหัว (90%)</span><span class="mf-info-val">${markup90.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">Kick Back</span><span class="mf-info-val">${kickback.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ยอดรวมแคมเปญ (รวมบวกหัว 90%)</span><span class="mf-info-val">${totalcam90.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ส่วนลดเงินดาวน์</span><span class="mf-info-val">${downPaymentDiscount} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ส่วนลดราคารถ</span><span class="mf-info-val">${discount} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ส่วนต่างของแถม</span><span class="mf-info-val">${giftTotal} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ค่าแนะนำ</span><span class="mf-info-val">${ReferrerAmount} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">Vat ของแถม</span><span class="mf-info-val">${vatGift.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ยอดรวมรายการที่ใช้</span><span class="mf-info-val">${totalUseFinance.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">คงเหลือ</span><span class="mf-info-val">${totalBalanceFinance.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">คงเหลือ (แบ่ง 2 ส่วน)</span><span class="mf-info-val">${balanceCampaignDisplay} บาท</span></div>
       `;
     } else {
       price = document.getElementById('price_sub')?.value || '-';
 
       discountHtml = `
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ส่วนลด :</strong>
-            <span>${paymentDiscount}  บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ค่าใช้จ่ายอื่นๆ :</strong>
-            <span>${otherCost} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>หมายเหตุ ค่าใช้จ่ายอื่นๆ :</strong>
-            <span>${reasonOtherCost}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>คงเหลือ :</strong>
-            <span>${balanceDisplay}  บาท</span>
-          </div>
+          <div class="mf-info-row"><span class="mf-info-label">ส่วนลด</span><span class="mf-info-val">${paymentDiscount} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ค่าใช้จ่ายอื่นๆ</span><span class="mf-info-val">${otherCost} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">หมายเหตุ ค่าใช้จ่ายอื่นๆ</span><span class="mf-info-val">${reasonOtherCost}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">คงเหลือ</span><span class="mf-info-val">${balanceDisplay} บาท</span></div>
       `;
 
       campaignHtml = `
-          <div class="d-flex justify-content-between mb-2">
-            <strong>รวมงบแคมเปญ :</strong>
-            <span>${totalCampaign.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ส่วนลด :</strong>
-            <span>${paymentDiscount} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ส่วนต่างของแถม :</strong>
-            <span>${giftTotal} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ค่าแนะนำ :</strong>
-            <span>${ReferrerAmount} บาท</span>
-          </div>
+          <div class="mf-info-row"><span class="mf-info-label">รวมงบแคมเปญ</span><span class="mf-info-val">${totalCampaign.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ส่วนลด</span><span class="mf-info-val">${paymentDiscount} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ส่วนต่างของแถม</span><span class="mf-info-val">${giftTotal} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ค่าแนะนำ</span><span class="mf-info-val">${ReferrerAmount} บาท</span></div>
           <div class="d-flex justify-content-between mb-2">
             <strong>ยอดรวมรายการที่ใช้ :</strong>
             <span>${totalUse.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
@@ -2610,8 +2522,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let totalGiftCom = 0;
 
     if (giftRows.length > 0 && !document.getElementById('no-data-row')) {
-      giftHtml += `<table class="table table-bordered">
-      <thead>
+      giftHtml += `<table class="table table-sm table-bordered">
+      <thead class="table-light">
         <tr>
           <th>ลำดับ</th>
           <th>รายละเอียด</th>
@@ -2672,8 +2584,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let totalExtraCom = 0;
 
     if (extraRows.length > 0 && !document.getElementById('no-data-extra')) {
-      extraHtml += `<table class="table table-bordered">
-      <thead>
+      extraHtml += `<table class="table table-sm table-bordered">
+      <thead class="table-light">
         <tr>
           <th>ลำดับ</th>
           <th>รายละเอียด</th>
@@ -2765,189 +2677,134 @@ document.addEventListener('DOMContentLoaded', function () {
     let dateAppHtml = '';
     if (userRole === 'admin' || userRole === 'audit' || userRole === 'manager' || userRole === 'md') {
       dateAppHtml = `
-      <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ส่งมอบของบริษัท :</strong>
-            <span>${DeliveryInDMSDate}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ส่งมอบของฝ่ายขาย :</strong>
-            <span>${DeliveryInCKDate}</span>
-          </div>
-            <div class="d-flex justify-content-between mb-2">
-            <strong>ประมาณการส่งมอบ :</strong>
-            <span>${DeliveryEstimateDate}</span>
-          </div>
-
-          <h5 class="border-bottom pb-2 mb-3 mt-4">ผู้อนุมัติ</h5>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้เช็ครายการ (แอดมินขาย) :</strong>
-            <span>${AdminSignature}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่แอดมินเช็ครายการ :</strong>
-            <span>${AdminCheckedDate}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้ตรวจสอบรายการ (IA) :</strong>
-            <span>${CheckerID}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ฝ่ายตรวจสอบเช็ครายการ :</strong>
-            <span>${CheckerCheckedDate}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้จัดการ อนุมัติการขาย :</strong>
-            <span>${SMSignature}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ผู้จัดการขายอนุมัติ :</strong>
-            <span>${SMCheckedDate}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้จัดการ อนุมัติกรณีงบเกิน :</strong>
-            <span>${ApprovalSignature}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ผู้จัดการอนุมัติการขาย :</strong>
-            <span>${ApprovalSignatureDate}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>GM อนุมัติกรณีงบเกิน (N) :</strong>
-            <span>${GMApprovalSignature}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ GM อนุมัติกรณีงบเกิน :</strong>
-            <span>${GMApprovalSignatureDate}</span>
-          </div>
-        
-          <h5 class="border-bottom pb-2 mb-3 mt-4">สถานะ</h5>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>สถานะ :</strong>
-            <span>${con_status}</span>
-          </div>
+          <div class="mf-info-row"><span class="mf-info-label">วันที่ส่งมอบของบริษัท</span><span class="mf-info-val">${DeliveryInDMSDate}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">วันที่ส่งมอบของฝ่ายขาย</span><span class="mf-info-val">${DeliveryInCKDate}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ประมาณการส่งมอบ</span><span class="mf-info-val">${DeliveryEstimateDate}</span></div>
+          <p class="mf-sub-heading mt-2">ผู้อนุมัติ</p>
+          <div class="mf-info-row"><span class="mf-info-label">ผู้เช็ครายการ (แอดมินขาย)</span><span class="mf-info-val">${AdminSignature}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">วันที่แอดมินเช็ครายการ</span><span class="mf-info-val">${AdminCheckedDate}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ผู้ตรวจสอบรายการ (IA)</span><span class="mf-info-val">${CheckerID}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">วันที่ฝ่ายตรวจสอบเช็ครายการ</span><span class="mf-info-val">${CheckerCheckedDate}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ผู้จัดการ อนุมัติการขาย</span><span class="mf-info-val">${SMSignature}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">วันที่ผู้จัดการขายอนุมัติ</span><span class="mf-info-val">${SMCheckedDate}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ผู้จัดการ อนุมัติกรณีงบเกิน</span><span class="mf-info-val">${ApprovalSignature}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">วันที่ผู้จัดการอนุมัติการขาย</span><span class="mf-info-val">${ApprovalSignatureDate}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">GM อนุมัติกรณีงบเกิน (N)</span><span class="mf-info-val">${GMApprovalSignature}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">วันที่ GM อนุมัติกรณีงบเกิน</span><span class="mf-info-val">${GMApprovalSignatureDate}</span></div>
+          <p class="mf-sub-heading mt-2">สถานะ</p>
+          <div class="mf-info-row"><span class="mf-info-label">สถานะ</span><span class="mf-info-val">${con_status}</span></div>
     `;
     }
 
     const html = `
-      <div class="row">
+      <div class="row g-3">
+
         <!-- ฝั่งซ้าย -->
-        <div class="col-md-6 border-end pe-3">
-          <h5 class="border-bottom pb-2 mb-3">ข้อมูลลูกค้า</h5>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่จอง :</strong>
-            <span>${BookingDate}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ชื่อลูกค้า :</strong>
-            <span>${customerName}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ชื่อฝ่ายขาย :</strong>
-            <span>${customerSale}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ที่อยู่ปัจจุบัน :</strong>
-            <span style="width:60%; text-align:right;">${currentAddress}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ที่อยู่สำหรับส่งเอกสาร :</strong>
-            <span style="width:60%; text-align:right;">${documentAddress}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>เบอร์มือถือ :</strong>
-            <span>${customerMobile}</span>
+        <div class="col-md-6">
+
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon sky"><i class="bx bx-user"></i></div>
+              <span class="mf-section-title">ข้อมูลลูกค้า</span>
+            </div>
+            <div class="mf-section-body">
+              <div class="mf-info-row"><span class="mf-info-label">วันที่จอง</span><span class="mf-info-val">${BookingDate}</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">ชื่อลูกค้า</span><span class="mf-info-val">${customerName}</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">ชื่อฝ่ายขาย</span><span class="mf-info-val">${customerSale}</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">ที่อยู่ปัจจุบัน</span><span class="mf-info-val">${currentAddress}</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">ที่อยู่สำหรับส่งเอกสาร</span><span class="mf-info-val">${documentAddress}</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">เบอร์มือถือ</span><span class="mf-info-val">${customerMobile}</span></div>
+            </div>
           </div>
 
-          <h5 class="border-bottom pb-2 mb-3">ข้อมูลการขาย</h5>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>รุ่นรถหลัก :</strong>
-            <span>${model}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>รุ่นรถย่อย :</strong>
-            <span>${subModel}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>Vin-Number :</strong>
-            <span>${vinNumber}</span>
-          </div>
-          ${optionHtml}
-          <div class="d-flex justify-content-between mb-2">
-              <strong>สี :</strong>
-              <span>${color}</span>
-          </div>
-
-          ${interiorColorHtml}
-          
-          <!-- <div class="d-flex justify-content-between mb-2">
-            <strong>ประเภทการชำระเงิน :</strong>
-            <span>${paymentType}</span>
-          </div> -->
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ราคา :</strong>
-            <span>${price} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>เงินจอง :</strong>
-            <span>${cashDeposit} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>รถเทิร์น :</strong>
-            <span>${turn} บาท</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ลูกค้าจ่ายเพิ่ม :</strong>
-            <span>${summaryExtraTotal} บาท</span>
-          </div>
-          ${discountHtml}
-
-          <h5 class="border-bottom pb-2 mb-3">จังหวัดที่ขึ้นทะเบียน</h5>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>จังหวัดที่ขึ้นทะเบียน :</strong>
-            <span>${RegistrationProvince}</span>
-          </div>
-          
-          <h5 class="border-bottom pb-2 mb-3">แนะนำ</h5>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ผู้แนะนำ :</strong>
-            <span>${customerIDRef}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ยอดเงินค่าแนะนำ :</strong>
-            <span>${ReferrerAmount} บาท</span>
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon indigo"><i class="bx bx-car"></i></div>
+              <span class="mf-section-title">ข้อมูลการขาย</span>
+            </div>
+            <div class="mf-section-body">
+              <div class="mf-info-row"><span class="mf-info-label">รุ่นรถหลัก</span><span class="mf-info-val">${model}</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">รุ่นรถย่อย</span><span class="mf-info-val">${subModel}</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">Vin-Number</span><span class="mf-info-val">${vinNumber}</span></div>
+              ${optionHtml}
+              <div class="mf-info-row"><span class="mf-info-label">สี</span><span class="mf-info-val">${color}</span></div>
+              ${interiorColorHtml}
+              <div class="mf-info-row"><span class="mf-info-label">ราคา</span><span class="mf-info-val">${price} บาท</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">เงินจอง</span><span class="mf-info-val">${cashDeposit} บาท</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">รถเทิร์น</span><span class="mf-info-val">${turn} บาท</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">ลูกค้าจ่ายเพิ่ม</span><span class="mf-info-val">${summaryExtraTotal} บาท</span></div>
+              ${discountHtml}
+            </div>
           </div>
 
-          <h5 class="border-bottom pb-2 mb-3">แคมเปญ</h5>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>ข้อมูลแคมเปญ :</strong>
-            <span style="width:60%; text-align:right;">${campaignText}</span>
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon emerald"><i class="bx bx-map-pin"></i></div>
+              <span class="mf-section-title">จังหวัดที่ขึ้นทะเบียน</span>
+            </div>
+            <div class="mf-section-body">
+              <div class="mf-info-row"><span class="mf-info-label">จังหวัดที่ขึ้นทะเบียน</span><span class="mf-info-val">${RegistrationProvince}</span></div>
+            </div>
           </div>
-          ${campaignHtml}
+
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon pink"><i class="bx bx-user-plus"></i></div>
+              <span class="mf-section-title">แนะนำ</span>
+            </div>
+            <div class="mf-section-body">
+              <div class="mf-info-row"><span class="mf-info-label">ผู้แนะนำ</span><span class="mf-info-val">${customerIDRef}</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">ยอดเงินค่าแนะนำ</span><span class="mf-info-val">${ReferrerAmount} บาท</span></div>
+            </div>
+          </div>
+
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon amber"><i class="bx bx-purchase-tag"></i></div>
+              <span class="mf-section-title">แคมเปญ</span>
+            </div>
+            <div class="mf-section-body">
+              <div class="mf-info-row"><span class="mf-info-label">ข้อมูลแคมเปญ</span><span class="mf-info-val">${campaignText}</span></div>
+              ${campaignHtml}
+            </div>
+          </div>
+
         </div>
 
         <!-- ฝั่งขวา -->
-        <div class="col-md-6 ps-3">
-          <h5 class="border-bottom pb-2 mb-3">รายละเอียดอุปกรณ์ตกแต่ง (แถม)</h5>
-          <div class="table-responsive text-nowrap">
-            ${giftHtml}
+        <div class="col-md-6">
+
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon emerald"><i class="bx bx-gift"></i></div>
+              <span class="mf-section-title">รายละเอียดอุปกรณ์ตกแต่ง (แถม)</span>
+            </div>
+            <div class="mf-section-body">
+              <div class="table-responsive text-nowrap">${giftHtml}</div>
+            </div>
           </div>
 
-          <h5 class="border-bottom pb-2 mb-3 mt-4">รายการซื้อเพิ่ม</h5>
-          <div class="table-responsive text-nowrap">
-            ${extraHtml}
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon sky"><i class="bx bx-plus-circle"></i></div>
+              <span class="mf-section-title">รายการซื้อเพิ่ม</span>
+            </div>
+            <div class="mf-section-body">
+              <div class="table-responsive text-nowrap">${extraHtml}</div>
+            </div>
           </div>
 
-          <h5 class="border-bottom pb-2 mb-3 mt-4">ข้อมูลวันส่งมอบ</h5>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันที่ส่งเอกสารสรุปการขาย :</strong>
-            <span>${KeyInDate}</span>
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon rose"><i class="bx bx-calendar-check"></i></div>
+              <span class="mf-section-title">ข้อมูลวันส่งมอบ</span>
+            </div>
+            <div class="mf-section-body">
+              <div class="mf-info-row"><span class="mf-info-label">วันที่ส่งเอกสารสรุปการขาย</span><span class="mf-info-val">${KeyInDate}</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">วันส่งมอบจริง (วันที่แจ้งประกัน)</span><span class="mf-info-val">${DeliveryDate}</span></div>
+              ${dateAppHtml}
+            </div>
           </div>
-          <div class="d-flex justify-content-between mb-2">
-            <strong>วันส่งมอบจริง (วันที่แจ้งประกัน) :</strong>
-            <span>${DeliveryDate}</span>
-          </div>
-          
-          ${dateAppHtml}
 
         </div>
       </div>
@@ -3183,30 +3040,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
   btnAdd.addEventListener('click', function () {
     const newRow = `
-      <div class="row g-3 mt-2 payment-row">
-      <input type="hidden" name="payment_id[]" value="">
-
-        <div class="col-md-4">
-          <label class="form-label">ประเภท</label>
+      <div class="payment-row row g-2 align-items-end mt-2 pt-2 border-top">
+        <input type="hidden" name="payment_id[]" value="">
+        <div class="col-md-3">
+          <label class="po-label"><i class="bx bx-credit-card me-1"></i>ประเภท</label>
           <select name="payment_type[]" class="form-select">
             <option value="">-- เลือกประเภท --</option>
             <option value="cash">เงินสด</option>
             <option value="transfer">เงินโอน</option>
           </select>
         </div>
-
         <div class="col-md-4">
-          <label class="form-label">จำนวนเงิน</label>
-          <input type="text" name="payment_cost[]" class="form-control text-end money-input">
+          <label class="po-label"><i class="bx bx-money me-1"></i>จำนวนเงิน</label>
+          <div class="money-wrap">
+            <input type="text" name="payment_cost[]" class="form-control text-end money-input">
+            <span class="money-suffix">฿</span>
+          </div>
         </div>
-
-        <div class="col-md-3">
-          <label class="form-label">วันที่จ่ายเงิน</label>
+        <div class="col-md-4">
+          <label class="po-label"><i class="bx bx-calendar me-1"></i>วันที่จ่ายเงิน</label>
           <input type="date" name="payment_date[]" class="form-control">
         </div>
-
         <div class="col-md-1 d-flex align-items-end">
-          <button type="button" class="btn btn-danger btnRemove">
+          <button type="button" class="btn btn-outline-danger btnRemove" title="ลบ">
             <i class="bx bx-trash"></i>
           </button>
         </div>

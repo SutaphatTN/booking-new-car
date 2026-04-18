@@ -15,7 +15,7 @@
         <div class="card-body">
 
           <div class="d-flex align-items-center justify-content-end gap-2 mb-3">
-            <label class="mb-0 text-nowrap">สถานะ :</label>
+            <label for="filterStatus" class="mb-0 text-nowrap">สถานะ :</label>
             <select id="filterStatus" class="form-select w-auto">
               <option value="">-- ทั้งหมด --</option>
               @foreach($conStatus as $status)

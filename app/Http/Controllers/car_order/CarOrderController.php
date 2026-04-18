@@ -9,6 +9,7 @@ use App\Models\CarOrderHistory;
 use App\Models\CarOrderWaiting;
 use App\Models\Salecar;
 use App\Models\TbCarmodel;
+use App\Models\TbBranch;
 use App\Models\TbInteriorColor;
 use App\Models\TbOrderStatus;
 use App\Models\TbPurchaseType;
@@ -116,7 +117,8 @@ class CarOrderController extends Controller
             'model',
             'subModel',
             'gwmColor',
-            'interiorColor'
+            'interiorColor',
+            'approvers'
         ])->find($id);
 
         return view('car-order.view-more', compact('order'));
@@ -135,8 +137,9 @@ class CarOrderController extends Controller
             ->get();
         $purchaseType = TbPurchaseType::all();
         $interiorColor = TbInteriorColor::all();
+        $branches = TbBranch::all();
 
-        return view('car-order.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType', 'interiorColor'));
+        return view('car-order.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType', 'interiorColor', 'branches'));
     }
 
     public function update(Request $request, $id)
@@ -756,7 +759,6 @@ class CarOrderController extends Controller
                 'approved_at' => now(),
                 'reason'        => $request->reason,
             ]);
-            $waiting->delete();
 
             return response()->json([
                 'success' => true,
@@ -1065,7 +1067,10 @@ class CarOrderController extends Controller
 
         $waitings = CarOrderWaiting::with('model', 'subModel')
             ->whereIn('status', ['approved', 'rejected'])
-            ->whereNull('system_date')
+            ->where(function ($q) {
+                $q->whereNull('system_date')
+                    ->orWhere('status', 'rejected');
+            })
             ->get();
 
         $data = collect();
@@ -1092,6 +1097,7 @@ class CarOrderController extends Controller
                 'cost'       => number_format($a->car_MSRP, 2),
                 'status'     => $statusBadge,
                 'Action'     => view('car-order.approve.button', compact('a'))->render(),
+                '_sort_date' => $a->approver_date,
             ]);
         }
 
@@ -1119,10 +1125,12 @@ class CarOrderController extends Controller
                 'cost'       => $w->car_MSRP ? number_format($w->car_MSRP, 2) : '-',
                 'status'     => $statusBadgeWait,
                 'Action'     => view('car-order.approve.button-waiting', compact('w'))->render(),
+                '_sort_date' => $w->approved_at,
             ]);
         }
 
-        $data = $data->values()->map(function ($item, $index) {
+        $data = $data->sortByDesc('_sort_date')->values()->map(function ($item, $index) {
+            unset($item['_sort_date']);
             $item['No'] = $index + 1;
             return $item;
         });

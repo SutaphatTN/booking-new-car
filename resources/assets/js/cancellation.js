@@ -74,6 +74,13 @@ $(document).on('click', '.btnConfirmWithdraw', function () {
   });
 });
 
+$(document).on('hide.bs.modal', '#cancellationViewModal', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 //view modal
 let currentViewId = null;
 
@@ -108,6 +115,7 @@ $(document).on('click', '.btnViewCancellation', function () {
     $('#cancellationViewModal').modal('show');
   });
 });
+
 
 // $('#btnSaveRefundDate').on('click', function () {
 //   if (!currentViewId) return;
@@ -172,6 +180,13 @@ $(document).on('click', '.btnEditCancellation', function () {
     renderWithdrawAttachments(res.withdraw_attachments);
     $('#cancellationEditModal').modal('show');
   });
+});
+
+$(document).on('hide.bs.modal', '#cancellationEditModal', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
 });
 
 // ลบไฟล์แนบ

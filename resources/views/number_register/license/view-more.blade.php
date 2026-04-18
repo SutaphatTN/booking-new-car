@@ -1,115 +1,200 @@
 <div class="modal fade viewLicense" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content">
-      <div class="modal-header border-bottom">
-        <h4 class="modal-title mb-2" id="viewLicenseLabel">ข้อมูลป้ายแดง</h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-content border-0 shadow mf-content mf-content--view">
+
+      {{-- Header --}}
+      <div class="modal-header mf-header mf-header--view px-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="mf-hd-icon">
+            <i class="bx bx-id-card fs-5 text-white"></i>
+          </div>
+          <div>
+            <h6 class="mb-0 fw-bold text-white mf-hd-title">ข้อมูลป้ายแดง</h6>
+            <small class="text-white mf-hd-sub">{{ $lic->licenseLic?->number ?? '-' }}</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <div class="row">
-          <div class="col-md-3 mb-5">
-            <label for="licenseID" class="form-label">เลขป้ายแดง</label>
-            <input id="licenseID" type="text" class="form-control" name="licenseID"
-              value="{{ $lic->licenseLic?->number ?? '' }}" disabled>
+
+      <div class="modal-body mf-body">
+
+        {{-- Section 1 : ป้ายและวันที่ --}}
+        <div class="mf-section">
+          <div class="mf-section-hd">
+            <div class="mf-section-icon sky">
+              <i class="bx bx-id-card"></i>
+            </div>
+            <span class="mf-section-title">ข้อมูลป้ายและวันที่</span>
           </div>
+          <div class="mf-section-body">
+            <div class="row g-3">
 
-          <div class="col-md-3 mb-5">
-            <label for="license_full" class="form-label">เลขป้ายขาว</label>
-            <input id="license_full" type="text" class="form-control"
-              value="{{ $lic->saleCarLic?->vehicleLicense?->license_name ?? '' }} {{ $lic->saleCarLic?->vehicleLicense?->license_number ?? '' }}"
-              disabled>
-          </div>
-
-          <div class="col-md-3 mb-5">
-            <label for="delivery_date" class="form-label">วันที่ส่งมอบ</label>
-            <input id="delivery_date" type="text" class="form-control"
-              value="{{ $lic->saleCarLic?->format_delivery_date ?? '-' }}" disabled>
-          </div>
-
-          <div class="col-md-3 mb-5">
-            <label for="clear_date" class="form-label">วันที่รับป้ายขาว</label>
-            <input id="clear_date" type="text" class="form-control"
-              value="{{ $lic->saleCarLic?->vehicleLicense?->format_backup_clear_date ?? '-' }}" disabled>
-          </div>
-
-          <div class="col-md-6 mb-5">
-            <label for="customer_fullname" class="form-label">ลูกค้า</label>
-            <input id="customer_fullname" type="text" class="form-control"
-              value="{{ $lic->saleCarLic?->customer?->prefix?->Name_TH ?? '' }} {{ $lic->saleCarLic?->customer?->FirstName ?? '' }} {{ $lic->saleCarLic?->customer?->LastName ?? '' }}"
-              disabled />
-          </div>
-
-          <div class="col-md-6 mb-5">
-            <label for="sale_fullname" class="form-label">ฝ่ายขาย</label>
-            <input id="sale_fullname" type="text" class="form-control"
-              value="{{ $lic->saleCarLic?->saleUser?->name ?? '-' }}" disabled>
-          </div>
-
-          <div class="col-md-12 mb-5">
-            <label class="form-label">เอกสารป้ายแดง</label>
-
-            <div class="row">
-              <div class="col-md-4">
-                <label class="border rounded p-2 d-flex align-items-center gap-2 w-100" style="cursor:pointer;">
-                  <input type="checkbox" name="license_red_front" value="1"
-                    {{ $lic->license_red_front ? 'checked' : '' }} disabled>
-                  <span>ป้ายแดงหน้า</span>
+              <div class="col-md-3">
+                <label for="licenseID" class="mf-label form-label">
+                  <i class="bx bx-hash ci-sky"></i> เลขป้ายแดง
                 </label>
+                <input id="licenseID" type="text" class="form-control"
+                  value="{{ $lic->licenseLic?->number ?? '-' }}"
+                  style="background:#f8fafc;color:#64748b;" disabled>
               </div>
 
-              <div class="col-md-4">
-                <label class="border rounded p-2 d-flex align-items-center gap-2 w-100" style="cursor:pointer;">
-                  <input type="checkbox" name="license_red_back" value="1"
-                    {{ $lic->license_red_back ? 'checked' : '' }} disabled>
-                  <span>ป้ายแดงหลัง</span>
+              <div class="col-md-3">
+                <label for="license_full" class="mf-label form-label">
+                  <i class="bx bx-card ci-sky"></i> เลขป้ายขาว
                 </label>
+                <input id="license_full" type="text" class="form-control"
+                  value="{{ $lic->saleCarLic?->vehicleLicense?->license_name ?? '' }} {{ $lic->saleCarLic?->vehicleLicense?->license_number ?? '' }}"
+                  style="background:#f8fafc;color:#64748b;" disabled>
               </div>
 
-              <div class="col-md-4">
-                <label class="border rounded p-2 d-flex align-items-center gap-2 w-100" style="cursor:pointer;">
-                  <input type="checkbox" name="license_red_book" value="1"
-                    {{ $lic->license_red_book ? 'checked' : '' }} disabled>
-                  <span>สมุดป้ายแดง</span>
+              <div class="col-md-3">
+                <label for="delivery_date" class="mf-label form-label">
+                  <i class="bx bx-calendar ci-sky"></i> วันที่ส่งมอบ
                 </label>
+                <input id="delivery_date" type="text" class="form-control"
+                  value="{{ $lic->saleCarLic?->format_delivery_date ?? '-' }}"
+                  style="background:#f8fafc;color:#64748b;" disabled>
               </div>
+
+              <div class="col-md-3">
+                <label for="clear_date" class="mf-label form-label">
+                  <i class="bx bx-calendar-check ci-sky"></i> วันที่รับป้ายขาว
+                </label>
+                <input id="clear_date" type="text" class="form-control"
+                  value="{{ $lic->saleCarLic?->vehicleLicense?->format_backup_clear_date ?? '-' }}"
+                  style="background:#f8fafc;color:#64748b;" disabled>
+              </div>
+
             </div>
           </div>
-
-          <div class="col-md-3 mb-5">
-            <label for="cust_refund_date" class="form-label">วันที่คืนเงินลูกค้า</label>
-            <input id="cust_refund_date" type="text" class="form-control"
-              value="{{ $lic->format_cust_refund_date ?? '-' }}" disabled>
-          </div>
-
-          <div class="col-md-2 mb-5">
-            <label for="refund_amount" class="form-label">ยอดคืนเงิน</label>
-            <input id="refund_amount" type="text" class="form-control text-end money-input"
-              value="{{ number_format($lic->refund_amount, 2) ?? '' }}" disabled>
-          </div>
-
-          @php
-            $statusType = [
-                'cash' => 'เงินสด',
-                'transfer' => 'โอน',
-            ];
-          @endphp
-          <div class="col-md-2 mb-5">
-            <label for="type_refund" class="form-label">ประเภท</label>
-            <input id="type_refund" type="text" class="form-control" 
-            value="{{ $statusType[$lic->type_refund] ?? '-' }}" disabled>
-          </div>
-
-          {{-- <div class="col-md-5 mb-5">
-            <label for="finance_approved" class="form-label">การเงิน</label>
-            <input id="finance_approved" type="text" class="form-control" value="{{ $lic->financeUser?->name ?? '-' }}" disabled>
-          </div> --}}
-
-          <div class="col-md-5 mb-5">
-            <label for="note" class="form-label">หมายเหตุ</label>
-            <textarea id="note" class="form-control" name="note" rows="1" disabled>{{ $lic->note }}</textarea>
-          </div>
-
         </div>
+
+        {{-- Section 2 : ผู้เกี่ยวข้อง --}}
+        <div class="mf-section">
+          <div class="mf-section-hd">
+            <div class="mf-section-icon indigo">
+              <i class="bx bx-user"></i>
+            </div>
+            <span class="mf-section-title">ผู้เกี่ยวข้อง</span>
+          </div>
+          <div class="mf-section-body">
+            <div class="row g-3">
+
+              <div class="col-md-6">
+                <label for="customer_fullname" class="mf-label form-label">
+                  <i class="bx bx-user ci-indigo"></i> ลูกค้า
+                </label>
+                <input id="customer_fullname" type="text" class="form-control"
+                  value="{{ $lic->saleCarLic?->customer?->prefix?->Name_TH ?? '' }} {{ $lic->saleCarLic?->customer?->FirstName ?? '' }} {{ $lic->saleCarLic?->customer?->LastName ?? '' }}"
+                  style="background:#f8fafc;color:#64748b;" disabled>
+              </div>
+
+              <div class="col-md-6">
+                <label for="sale_fullname" class="mf-label form-label">
+                  <i class="bx bx-user-check ci-indigo"></i> ฝ่ายขาย
+                </label>
+                <input id="sale_fullname" type="text" class="form-control"
+                  value="{{ $lic->saleCarLic?->saleUser?->name ?? '-' }}"
+                  style="background:#f8fafc;color:#64748b;" disabled>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {{-- Section 3 : เอกสารป้ายแดง --}}
+        <div class="mf-section">
+          <div class="mf-section-hd">
+            <div class="mf-section-icon emerald">
+              <i class="bx bx-file-blank"></i>
+            </div>
+            <span class="mf-section-title">เอกสารป้ายแดง</span>
+          </div>
+          <div class="mf-section-body">
+            <div class="row g-2">
+
+              <div class="col-md-4">
+                <label class="border rounded p-2 d-flex align-items-center gap-2 w-100" style="cursor:pointer;font-size:.82rem;">
+                  <input type="checkbox" name="license_red_front" value="1"
+                    {{ $lic->license_red_front ? 'checked' : '' }} disabled>
+                  ป้ายแดงหน้า
+                </label>
+              </div>
+
+              <div class="col-md-4">
+                <label class="border rounded p-2 d-flex align-items-center gap-2 w-100" style="cursor:pointer;font-size:.82rem;">
+                  <input type="checkbox" name="license_red_back" value="1"
+                    {{ $lic->license_red_back ? 'checked' : '' }} disabled>
+                  ป้ายแดงหลัง
+                </label>
+              </div>
+
+              <div class="col-md-4">
+                <label class="border rounded p-2 d-flex align-items-center gap-2 w-100" style="cursor:pointer;font-size:.82rem;">
+                  <input type="checkbox" name="license_red_book" value="1"
+                    {{ $lic->license_red_book ? 'checked' : '' }} disabled>
+                  สมุดป้ายแดง
+                </label>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {{-- Section 4 : การคืนเงิน --}}
+        <div class="mf-section">
+          <div class="mf-section-hd">
+            <div class="mf-section-icon amber">
+              <i class="bx bx-money"></i>
+            </div>
+            <span class="mf-section-title">การคืนเงิน</span>
+          </div>
+          <div class="mf-section-body">
+            <div class="row g-3">
+
+              <div class="col-md-3">
+                <label for="cust_refund_date" class="mf-label form-label">
+                  <i class="bx bx-calendar ci-amber"></i> วันที่คืนเงินลูกค้า
+                </label>
+                <input id="cust_refund_date" type="text" class="form-control"
+                  value="{{ $lic->format_cust_refund_date ?? '-' }}"
+                  style="background:#f8fafc;color:#64748b;" disabled>
+              </div>
+
+              <div class="col-md-3">
+                <label for="refund_amount" class="mf-label form-label">
+                  <i class="bx bx-coin ci-amber"></i> ยอดคืนเงิน
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text ig-amber">฿</span>
+                  <input id="refund_amount" type="text" class="form-control text-end"
+                    value="{{ number_format($lic->refund_amount, 2) ?? '' }}" disabled>
+                </div>
+              </div>
+
+              @php
+                $statusType = ['cash' => 'เงินสด', 'transfer' => 'โอน'];
+              @endphp
+              <div class="col-md-2">
+                <label for="type_refund" class="mf-label form-label">
+                  <i class="bx bx-transfer ci-amber"></i> ประเภท
+                </label>
+                <input id="type_refund" type="text" class="form-control"
+                  value="{{ $statusType[$lic->type_refund] ?? '-' }}"
+                  style="background:#f8fafc;color:#64748b;" disabled>
+              </div>
+
+              <div class="col-md-4">
+                <label for="note" class="mf-label form-label">
+                  <i class="bx bx-note ci-amber"></i> หมายเหตุ
+                </label>
+                <textarea id="note" class="form-control" rows="1" disabled>{{ $lic->note }}</textarea>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

@@ -464,7 +464,7 @@ class PurchaseOrderController extends Controller
         $interiorColor = TbInteriorColor::all();
 
         //history
-        $isHistory = $saleCar->con_status == 5;
+        $isHistory = in_array($saleCar->con_status, [5, 9]);
 
         $subModel_id = $saleCar->subModel_id;
 

@@ -179,6 +179,8 @@ $(document).on('click', '.btnApproveFinance', function () {
     text: 'กดแล้วจะไม่สามารถย้อนกลับได้',
     icon: 'warning',
     showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
     confirmButtonText: 'ใช่, ยืนยัน',
     cancelButtonText: 'ยกเลิก'
   }).then(result => {

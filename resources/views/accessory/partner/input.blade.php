@@ -1,39 +1,63 @@
 <div class="modal fade inputPart" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-sm" role="document">
-    <div class="modal-content">
-      <div class="modal-header border-bottom">
-        <h4 class="modal-title mb-2" id="inputPartLabel">เพิ่มข้อมูลแหล่งที่มา</h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content border-0 shadow mf-content mf-content--input">
+
+      {{-- Header --}}
+      <div class="modal-header mf-header mf-header--input px-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="mf-hd-icon">
+            <i class="bx bx-store fs-5 text-white"></i>
+          </div>
+          <div>
+            <h6 class="mb-0 fw-bold text-white mf-hd-title">เพิ่มข้อมูลแหล่งที่มา</h6>
+            <small class="text-white mf-hd-sub">Add Partner</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <form
-          action="{{ route('accessory.storePartner') }}"
-          method="POST"
-          enctype="multipart/form-data">
+
+      <div class="modal-body mf-body">
+        <form action="{{ route('accessory.storePartner') }}" method="POST" enctype="multipart/form-data">
           @csrf
 
-          <div class="row">
-            <div class="col-md-12 mb-5">
-              <label for="name" class="form-label">ชื่อแหล่งที่มา</label>
-              <input id="name" type="text"
-                class="form-control @error('name') is-invalid @enderror"
-                name="name" autocomplete="off" required>
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon indigo">
+                <i class="bx bx-purchase-tag"></i>
+              </div>
+              <span class="mf-section-title">ข้อมูลแหล่งที่มา</span>
+            </div>
+            <div class="mf-section-body">
+              <div class="row g-3">
 
-              @error('name')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
+                <div class="col-12">
+                  <label for="inp_part_name" class="mf-label form-label">
+                    <i class="bx bx-font"></i> ชื่อแหล่งที่มา <span class="text-danger">*</span>
+                  </label>
+                  <input id="inp_part_name" type="text" class="form-control @error('name') is-invalid @enderror"
+                    name="name" autocomplete="off" placeholder="ระบุชื่อแหล่งที่มา..." required>
+                  @error('name')
+                    <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                  @enderror
+                </div>
+
+              </div>
             </div>
           </div>
 
-          <div class="d-flex justify-content-end gap-2">
-            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ยกเลิก</button>
-            <button type="button" class="btn btn-primary btnStorePartner">บันทึก</button>
+          {{-- Actions --}}
+          <div class="d-flex justify-content-end gap-2 pt-1">
+            <button type="button" class="btn btn-danger px-4" data-bs-dismiss="modal">
+              <i class="bx bx-x me-1"></i>ยกเลิก
+            </button>
+            <button type="button" class="btn btn-primary px-5 btnStorePartner">
+              <i class="bx bx-save me-1"></i>บันทึก
+            </button>
           </div>
 
         </form>
       </div>
+
     </div>
   </div>
 </div>

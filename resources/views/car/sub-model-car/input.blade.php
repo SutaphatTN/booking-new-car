@@ -1,107 +1,118 @@
 <div class="modal fade inputSubCar" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-sm" role="document">
-    <div class="modal-content">
-      <div class="modal-header border-bottom">
-        <h4 class="modal-title mb-2" id="inputSubCarLabel">เพิ่มข้อมูลรถรุ่นย่อย</h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content border-0 shadow mf-content mf-content--input">
+
+      {{-- Header --}}
+      <div class="modal-header mf-header mf-header--input px-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="mf-hd-icon">
+            <i class="bx bx-car fs-5 text-white"></i>
+          </div>
+          <div>
+            <h6 class="mb-0 fw-bold text-white mf-hd-title">เพิ่มข้อมูลรถรุ่นย่อย</h6>
+            <small class="text-white mf-hd-sub">Add New Sub Model</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <form
-          action="{{ route('model.sub-model.store') }}"
-          method="POST"
-          enctype="multipart/form-data">
+
+      <div class="modal-body mf-body">
+        <form action="{{ route('model.sub-model.store') }}" method="POST" enctype="multipart/form-data">
           @csrf
 
-          <div class="row">
-            <div class="col-md-12 mb-5">
-              <label for="model_id" class="form-label">รุ่นรถหลัก</label>
-              <select id="model_id" name="model_id" class="form-select @error('model_id') is-invalid @enderror" required>
-                <option value="">-- เลือกรุ่นรถหลัก --</option>
-                @foreach ($model as $m)
-                <option value="{{ $m->id }}">{{ $m->Name_TH }}</option>
-                @endforeach
-              </select>
-
-              @error('model_id')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
+          {{-- Section : ข้อมูลรุ่นรถ --}}
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon indigo">
+                <i class="bx bx-purchase-tag"></i>
+              </div>
+              <span class="mf-section-title">ข้อมูลรุ่นรถ</span>
             </div>
+            <div class="mf-section-body">
+              <div class="row g-3">
 
-            <div class="col-md-12 mb-5">
-              <label for="type_carOrder" class="form-label">ประเภท</label>
-              <select id="type_carOrder" name="type_carOrder" class="form-select">
-                <option value="">-- เลือกประเภท --</option>
-                @foreach ($typeCar as $item)
-                <option value="{{ @$item->id }}">{{ @$item->name }}</option>
-                @endforeach
-              </select>
+                <div class="col-md-8">
+                  <label for="inp_sub_model_id" class="mf-label form-label">
+                    <i class="bx bx-car"></i> รุ่นรถหลัก <span class="text-danger">*</span>
+                  </label>
+                  <select id="inp_sub_model_id" name="model_id"
+                    class="form-select @error('model_id') is-invalid @enderror" required>
+                    <option value="">— เลือกรุ่นรถหลัก —</option>
+                    @foreach ($model as $m)
+                      <option value="{{ $m->id }}">{{ $m->Name_TH }}</option>
+                    @endforeach
+                  </select>
+                  @error('model_id')
+                    <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                  @enderror
+                </div>
+
+                <div class="col-md-4">
+                  <label for="inp_sub_type_carOrder" class="mf-label form-label">
+                    <i class="bx bx-list-ul"></i> ประเภท
+                  </label>
+                  <select id="inp_sub_type_carOrder" name="type_carOrder" class="form-select">
+                    <option value="">— เลือกประเภท —</option>
+                    @foreach ($typeCar as $item)
+                      <option value="{{ @$item->id }}">{{ @$item->name }}</option>
+                    @endforeach
+                  </select>
+                </div>
+
+                <div class="col-12">
+                  <label for="inp_sub_name" class="mf-label form-label">
+                    <i class="bx bx-font"></i> ชื่อรุ่นรถย่อย <span class="text-danger">*</span>
+                  </label>
+                  <input id="inp_sub_name" type="text" class="form-control @error('name') is-invalid @enderror"
+                    name="name" autocomplete="off" placeholder="ระบุชื่อรุ่นย่อย..." required>
+                  @error('name')
+                    <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                  @enderror
+                </div>
+
+              </div>
             </div>
-
-            <div class="col-md-12 mb-5">
-              <label for="name" class="form-label">ชื่อรุ่นรถย่อย</label>
-              <input id="name" type="text"
-                class="form-control @error('name') is-invalid @enderror"
-                name="name" autocomplete="off" required>
-
-              @error('name')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <!-- <div class="col-md-8 mb-5">
-              <label for="code" class="form-label">รหัสรถ</label>
-              <input id="code" type="text"
-                class="form-control @error('code') is-invalid @enderror"
-                name="code" required>
-
-              @error('code')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div> -->
-
-            <div class="col-md-12 mb-5">
-              <label for="detail" class="form-label">รายละเอียด</label>
-              <textarea id="detail"
-                class="form-control @error('detail') is-invalid @enderror"
-                name="detail"
-                rows="3">{{ old('detail') }}</textarea>
-
-              @error('detail')
-              <span class="invalid-feedback" role="alert">
-                <strong>{{ $message }}</strong>
-              </span>
-              @enderror
-            </div>
-
-            <!-- <div class="col-md-5 mb-5">
-              <label for="year" class="form-label">ปี</label>
-              <input id="year" type="text"
-                class="form-control text-end"
-                name="year">
-            </div> -->
-
-            <!-- <div class="col-md-12 mb-5">
-              <label for="over_budget" class="form-label">ยอดเงินเกินงบ</label>
-              <input id="over_budget" type="text"
-                class="form-control text-end money-input"
-                name="over_budget">
-            </div> -->
-
           </div>
 
-          <div class="d-flex justify-content-end gap-2">
-            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ยกเลิก</button>
-            <button type="button" class="btn btn-primary btnStoreSubCar">บันทึก</button>
+          {{-- Section : รายละเอียด --}}
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon emerald">
+                <i class="bx bx-notepad"></i>
+              </div>
+              <span class="mf-section-title">รายละเอียด</span>
+            </div>
+            <div class="mf-section-body">
+              <div class="row g-3">
+
+                <div class="col-12">
+                  <label for="inp_sub_detail" class="mf-label form-label">
+                    <i class="bx bx-align-left ci-emerald"></i> รายละเอียด
+                  </label>
+                  <textarea id="inp_sub_detail" class="form-control @error('detail') is-invalid @enderror" name="detail" rows="3"
+                    placeholder="ระบุรายละเอียดเพิ่มเติม...">{{ old('detail') }}</textarea>
+                  @error('detail')
+                    <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                  @enderror
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          {{-- Actions --}}
+          <div class="d-flex justify-content-end gap-2 pt-1">
+            <button type="button" class="btn btn-danger px-4" data-bs-dismiss="modal">
+              <i class="bx bx-x me-1"></i>ยกเลิก
+            </button>
+            <button type="button" class="btn btn-primary px-5 btnStoreSubCar">
+              <i class="bx bx-save me-1"></i>บันทึก
+            </button>
           </div>
 
         </form>
       </div>
+
     </div>
   </div>
 </div>

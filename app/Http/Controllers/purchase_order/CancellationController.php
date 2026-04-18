@@ -29,6 +29,7 @@ class CancellationController extends Controller
             $query->where('SaleID', $user->id);
         }
 
+        $query->orderByDesc('id');
         $saleCars = $query->get();
 
         $data = $saleCars->map(function ($s, $index) {

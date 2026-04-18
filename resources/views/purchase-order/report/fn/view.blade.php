@@ -1,40 +1,31 @@
 <div class="modal fade viewExportFN" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content">
-      <div class="modal-header border-bottom">
-        <h4 class="modal-title mb-2" id="viewExportFNLabel">ข้อมูลยอดเฟิร์มเงิน FN ประจำเดือน</h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal-dialog modal-md" role="document">
+    <div class="modal-content border-0 shadow mf-content mf-content--view">
+      <div class="modal-header mf-header mf-header--view px-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="mf-hd-icon"><i class="bx bx-download fs-5 text-white"></i></div>
+          <div>
+            <h6 class="mb-0 fw-bold text-white mf-hd-title">ยอดเฟิร์มเงิน FN</h6>
+            <small class="text-white mf-hd-sub">เลือกช่วงวันที่ที่ต้องการ</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body text-sm">
+      <div class="modal-body mf-body">
         <form action="{{ route('finance.firm-export') }}" method="GET">
-
-          <div class="row">
+          <div class="row g-3">
             <div class="col-6">
-              <div class="form-group row mb-1">
-                <label for="from_date" class="col-sm-3 col-form-label text-right">จากวันที่ : </label>
-                <div class="col-sm-8">
-                  <input type="date" id="from_date" name="from_date" class="form-control" />
-                </div>
-              </div>
+              <label for="from_date" class="mf-label form-label"><i class="bx bx-calendar"></i> จากวันที่</label>
+              <input type="date" id="from_date" name="from_date" class="form-control">
             </div>
             <div class="col-6">
-              <div class="form-group row mb-1">
-                <label for="to_date" class="col-sm-3 col-form-label text-right">ถึงวันที่ : </label>
-                <div class="col-sm-8">
-                  <input type="date" id="to_date" name="to_date" class="form-control" />
-                </div>
-              </div>
+              <label for="to_date" class="mf-label form-label"><i class="bx bx-calendar-check"></i> ถึงวันที่</label>
+              <input type="date" id="to_date" name="to_date" class="form-control">
             </div>
           </div>
-
-          <br>
-          <div class="text-center">
-            <button type="submit" class="btn bg-success text-white" style="margin-right: 3px;">
-              <i class="bx bxs-file"></i>&nbsp;Export
-            </button>
-            <button type="button" class="btn bg-danger text-white" data-bs-dismiss="modal">
-              <i class="fas fa-times"></i> ยกเลิก
-            </button>
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-danger px-4" data-bs-dismiss="modal"><i class="bx bx-x me-1"></i>ยกเลิก</button>
+            <button type="submit" class="btn btn-success px-4"><i class="bx bx-download me-1"></i>Export</button>
           </div>
         </form>
       </div>

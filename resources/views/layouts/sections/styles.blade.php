@@ -22,3 +22,4 @@
 
 @yield('vendor-style')
 @yield('page-style')
+@vite('resources/assets/css/modal-form.css')

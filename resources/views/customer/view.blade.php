@@ -1,6 +1,10 @@
 @extends('layouts/contentNavbarLayout')
 @section('title', 'Data Customer')
 
+@section('page-style')
+@vite(['resources/assets/css/customer.css'])
+@endsection
+
 @section('page-script')
 @vite(['resources/assets/js/customer.js'])
 @endsection

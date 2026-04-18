@@ -61,7 +61,7 @@ $(document).ready(function () {
   $('#btnSearchCustomer').on('click', function () {
     const keyword = $('#customerSearchInput').val().trim();
     if (keyword === '') {
-      Swal.fire({ icon: 'warning', title: 'กรุณากรอกคำค้นหา', timer: 1500, showConfirmButton: false });
+      Swal.fire({ icon: 'warning', title: 'กรุณากรอกคำค้นหา', timer: 1500, showConfirmButton: true });
       return;
     }
     initCustomerTable(keyword);

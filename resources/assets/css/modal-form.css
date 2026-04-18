@@ -1,0 +1,252 @@
+/* ==========================================================================
+   modal-form.css — Shared styles for modal dialogs (input / edit / view-more)
+   Prefix: mf-  (modal form)
+   ========================================================================== */
+
+/* ─── Modal shell ──────────────────────────────────────────────────────────── */
+
+.mf-content {
+  border-radius: 0.75rem;
+}
+
+/* ─── Theme: label-icon color cascades from modal type ─────────────────────── */
+
+.mf-content--input .mf-label i { color: #6366f1; }
+.mf-content--edit  .mf-label i { color: #e97f07; }
+.mf-content--view  .mf-label i { color: #0284c7; }
+
+/* ─── Modal header ─────────────────────────────────────────────────────────── */
+
+.mf-header {
+  border-radius: 0.75rem 0.75rem 0 0;
+  padding: 12px 20px;
+  border: 0;
+}
+
+/* Input  – indigo/violet */
+.mf-header--input {
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+}
+
+/* Edit   – amber/orange */
+.mf-header--edit {
+  background: linear-gradient(135deg, #e97f07 0%, #f3a319 100%);
+}
+
+/* View-more – sky/blue */
+.mf-header--view {
+  background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+}
+
+/* ─── Header icon box ──────────────────────────────────────────────────────── */
+
+.mf-hd-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ─── Header text ──────────────────────────────────────────────────────────── */
+
+.mf-hd-title {
+  font-size: 1rem;
+}
+
+.mf-hd-sub {
+  opacity: 0.7;
+  font-size: 0.76rem;
+}
+
+/* ─── Modal body ───────────────────────────────────────────────────────────── */
+
+.mf-body {
+  background: #f5f6fa;
+  border-radius: 0 0 0.75rem 0.75rem;
+  padding: 1.25rem;
+}
+
+/* ─── Section card ─────────────────────────────────────────────────────────── */
+
+.mf-section {
+  background: #fff;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  margin-bottom: 12px;
+}
+
+/* ─── Section header bar ───────────────────────────────────────────────────── */
+
+.mf-section-hd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafbfc;
+}
+
+/* ─── Section icon ─────────────────────────────────────────────────────────── */
+
+.mf-section-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.mf-section-icon.indigo  { background: #ede9fe; color: #6366f1; }
+.mf-section-icon.sky     { background: #e0f2fe; color: #0284c7; }
+.mf-section-icon.emerald { background: #d1fae5; color: #059669; }
+.mf-section-icon.amber   { background: #fef3c7; color: #d97706; }
+.mf-section-icon.rose    { background: #fee2e2; color: #dc2626; }
+.mf-section-icon.pink    { background: #f8e0ec; color: #ec4899; }
+
+/* ─── Section title ────────────────────────────────────────────────────────── */
+
+.mf-section-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* ─── Section body padding ─────────────────────────────────────────────────── */
+
+.mf-section-body {
+  padding: 16px 18px 12px;
+}
+
+/* ─── Field label ──────────────────────────────────────────────────────────── */
+
+.mf-label {
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ─── Input-group addon color variants ────────────────────────────────────── */
+
+.ig-indigo  { background: #ede9fe !important; color: #6366f1 !important; font-weight: 600; border-color: #dee2e6 !important; }
+.ig-sky     { background: #e0f2fe !important; color: #0284c7 !important; font-weight: 600; border-color: #dee2e6 !important; }
+.ig-emerald { background: #d1fae5 !important; color: #059669 !important; font-weight: 600; border-color: #dee2e6 !important; }
+.ig-amber   { background: #fef3c7 !important; color: #d97706 !important; font-weight: 600; border-color: #dee2e6 !important; }
+.ig-rose    { background: #fee2e2 !important; color: #dc2626 !important; font-weight: 600; border-color: #dee2e6 !important; }
+.ig-pink    { background: #f8e0ec !important; color: #ec4899 !important; font-weight: 600; border-color: #dee2e6 !important; }
+.ig-slate   { background: #f1f5f9 !important; color: #94a3b8 !important; font-weight: 600; border-color: #dee2e6 !important; }
+
+/* ─── Icon color utilities (for label icons in mixed-color sections) ────────── */
+/* Use !important to override the .mf-content--{type} .mf-label i cascade rule */
+
+.ci-indigo  { color: #6366f1 !important; }
+.ci-sky     { color: #0284c7 !important; }
+.ci-emerald { color: #059669 !important; }
+.ci-amber   { color: #d97706 !important; }
+.ci-rose    { color: #dc2626 !important; }
+.ci-pink    { color: #ec4899 !important; }
+.ci-slate   { color: #94a3b8 !important; }
+
+/* ─── Readonly input display ─────────────────────────────────────────────── */
+
+.form-control-plaintext-mf {
+  background: #f8fafc !important;
+  color: #64748b !important;
+}
+
+/* ─── Auto-calc label note ────────────────────────────────────────────────── */
+
+.mf-label-note {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* ─── Compact info rows (dense data in view-more) ────────────────────────── */
+
+.mf-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 6px 0;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 8px;
+  min-height: 30px;
+}
+
+.mf-info-row:last-child {
+  border-bottom: none;
+}
+
+.mf-info-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.mf-info-val {
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: #1e293b;
+  text-align: right;
+}
+
+.mf-info-val.is-empty {
+  color: #b0bac4;
+}
+
+/* ─── Section sub-heading inside mf-section ──────────────────────────────── */
+
+.mf-sub-heading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6366f1;
+  border-bottom: 2px solid #e0e7ff;
+  padding-bottom: 0.3rem;
+  margin: 14px 0 10px;
+}
+
+/* ─── View-more read-only value box ───────────────────────────────────────── */
+
+.mf-val {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #1e293b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 7px 12px;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+}
+
+.mf-val.is-empty {
+  color: #b0bac4;
+  font-weight: 400;
+}
+
+/* ─── Narrow input (date / short fields) ─────────────────────────────────── */
+
+.mf-input-narrow {
+  max-width: 280px;
+}
+
+table .fn-thead th {
+  font-size: 0.90rem !important;
+}

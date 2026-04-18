@@ -414,10 +414,10 @@ document.addEventListener('shown.bs.modal', function (event) {
 function toggleTestDriveFields($modal) {
   const selected = $modal.find('#purchase_type').val();
 
-  $modal.find('#fieldTestDrive').addClass('d-none');
+  $modal.find('.fieldTestDrive').addClass('d-none');
 
   if (selected == '1') {
-    $modal.find('#fieldTestDrive').removeClass('d-none');
+    $modal.find('.fieldTestDrive').removeClass('d-none');
   }
 }
 
