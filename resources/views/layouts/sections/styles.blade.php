@@ -8,10 +8,8 @@
 <link rel="stylesheet" href="{{ asset('assets/css/demo.css') }}">
 
 <!-- Sarabun (override Bootstrap variable) -->
-<link rel="stylesheet" href="{{ asset('assets/css/fonts.css') }}">
+@vite(['resources/css/app.css'])
 
-<link rel="stylesheet" href="{{ asset('assets/css/inputs.css') }}">
-<link rel="stylesheet" href="{{ asset('assets/css/tables.css') }}">
 
 <link rel="stylesheet" href="{{ asset('assets/vendor/libs/datatables/datatables.min.css') }}">
 <link rel="stylesheet" href="{{ asset('assets/vendor/libs/select2/select2.min.css') }}">
@@ -22,4 +20,3 @@
 
 @yield('vendor-style')
 @yield('page-style')
-@vite('resources/assets/css/modal-form.css')
