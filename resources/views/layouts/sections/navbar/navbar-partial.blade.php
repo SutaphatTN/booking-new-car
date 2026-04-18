@@ -2,6 +2,7 @@
   use Illuminate\Support\Facades\Auth;
   use Illuminate\Support\Facades\Route;
   use App\Models\TbBrand;
+  use App\Models\TbBranch;
 @endphp
 
 <!--  Brand demo (display only for navbar-full and hide on below xl) -->
@@ -141,6 +142,49 @@
                 @endforeach
                 @if (session('brand_switch'))
                   <form method="POST" action="{{ route('brand.reset') }}" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-danger mb-1">
+                      <i class="bx bx-reset me-1"></i>Reset
+                    </button>
+                  </form>
+                @endif
+              </div>
+            </li>
+          @endif
+          @if (in_array(Auth::user()->brand, [1, 2]))
+            @php
+              $userBranch = Auth::user()->getOriginal('branch');
+              $branchIds = Auth::user()->brand == 2 ? [1, 3] : [1, 2];
+              $gwmBranches = TbBranch::whereIn('id', $branchIds)->get();
+            @endphp
+            <li>
+              <div class="dropdown-divider my-1"></div>
+            </li>
+            <li>
+              <div class="px-3 py-2">
+                <small class="text-muted d-block mb-2">
+                  <i class="bx bx-building-house me-1"></i>สลับสาขา
+                  @if (session('branch_switch'))
+                    <span class="badge bg-warning text-dark ms-1">Active</span>
+                  @endif
+                </small>
+                @foreach ($gwmBranches as $br)
+                  @php
+                    $brIsActive = session('branch_switch')
+                        ? session('branch_switch') == $br->id
+                        : $userBranch == $br->id;
+                  @endphp
+                  <form method="POST" action="{{ route('branch.switch') }}" class="d-inline">
+                    @csrf
+                    <input type="hidden" name="branch_id" value="{{ $br->id }}">
+                    <button type="submit"
+                      class="btn btn-sm {{ $brIsActive ? 'btn-success' : 'btn-outline-secondary' }} me-1 mb-1">
+                      {{ $br->name }}
+                    </button>
+                  </form>
+                @endforeach
+                @if (session('branch_switch'))
+                  <form method="POST" action="{{ route('branch.reset') }}" class="d-inline">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-outline-danger mb-1">
                       <i class="bx bx-reset me-1"></i>Reset

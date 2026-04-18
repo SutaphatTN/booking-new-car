@@ -133,6 +133,11 @@ class CarOrder extends Model
         return $this->belongsTo(TbInteriorColor::class, 'interior_color', 'id');
     }
 
+    public function branchInfo()
+    {
+        return $this->belongsTo(TbBranch::class, 'branch', 'id');
+    }
+
     public function getFormatOrderDateAttribute()
     {
         return $this->order_date ? Carbon::parse($this->order_date)->format('d-m-Y') : null;

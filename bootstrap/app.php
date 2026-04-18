@@ -5,6 +5,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\NotSale;
 use App\Http\Middleware\BrandSwitcher;
+use App\Http\Middleware\BranchSwitcher;
 
 return Application::configure(basePath: dirname(__DIR__))
   ->withRouting(
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
       'notsale' => NotSale::class,
     ]);
     $middleware->appendToGroup('web', BrandSwitcher::class);
+    $middleware->appendToGroup('web', BranchSwitcher::class);
   })
   ->withExceptions(function (Exceptions $exceptions) {
     //

@@ -363,6 +363,11 @@ class Salecar extends Model
 		return $this->belongsTo(TbInteriorColor::class, 'interior_color', 'id');
 	}
 
+	public function branchInfo()
+	{
+		return $this->belongsTo(TbBranch::class, 'branch', 'id');
+	}
+
 	public function getBookingDateAttribute($value)
 	{
 		return $value ? Carbon::parse($value)->format('Y-m-d') : null;

@@ -20,6 +20,7 @@ use App\Http\Controllers\purchase_order\PurchaseOrderController;
 use App\Http\Controllers\vehicle\LicenseController;
 use App\Http\Controllers\vehicle\VehicleController;
 use App\Http\Controllers\BrandSwitchController;
+use App\Http\Controllers\BranchSwitchController;
 use App\Http\Controllers\delivery_form\DeliveryFormController;
 use App\Http\Controllers\invoice\InvoiceController;
 use App\Http\Controllers\pricelist_car\PricelistCarController;
@@ -48,6 +49,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/accessory/search', [PurchaseOrderController::class, 'searchAccessory'])->name('accessory.search');
     Route::post('/switch-brand', [BrandSwitchController::class, 'switch'])->name('brand.switch');
     Route::post('/switch-brand/reset', [BrandSwitchController::class, 'reset'])->name('brand.reset');
+    Route::post('/switch-branch', [BranchSwitchController::class, 'switch'])->name('branch.switch');
+    Route::post('/switch-branch/reset', [BranchSwitchController::class, 'reset'])->name('branch.reset');
 });
 
 Route::middleware(['auth', 'notsale'])->group(function () {
