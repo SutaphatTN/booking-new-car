@@ -17,9 +17,6 @@ function GetFilesArray(query) {
 // Page JS Files
 const pageJsFiles = GetFilesArray('resources/assets/js/*.js');
 
-// Processing Custom CSS Files
-const CustomCssFiles = GetFilesArray('resources/assets/css/*.css');
-
 // Processing Vendor JS Files
 const vendorJsFiles = GetFilesArray('resources/assets/vendor/js/*.js');
 
@@ -45,7 +42,6 @@ export default defineConfig({
         'resources/css/app.css',
         'resources/js/app.js',
         ...pageJsFiles,
-        ...CustomCssFiles,
         ...vendorJsFiles,
         ...LibsJsFiles,
         ...CoreScssFiles,
