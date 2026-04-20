@@ -5,8 +5,3 @@
 @import '../assets/css/invoice.css';
 @import '../assets/css/modal-form.css';
 @import '../assets/css/purchase-order.css';
-
-:root {
-  --bs-body-bg: #ffffff;
-  --bs-body-bg-rgb: 255, 255, 255;
-}
