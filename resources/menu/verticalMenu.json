@@ -55,6 +55,28 @@
       ]
     },
     {
+      "name": "การติดตามลูกค้า",
+      "icon": "menu-icon icon-base bx bx-user-check",
+      "slug": "customer-tracking",
+      "submenu": [
+        {
+          "url": "customer-tracking",
+          "name": "รายการติดตาม",
+          "slug": "customer-tracking.index"
+        },
+        {
+          "url": "customer-tracking/create",
+          "name": "เพิ่มการติดตาม",
+          "slug": "customer-tracking.create"
+        },
+        {
+          "url": "customer-tracking/export-excel",
+          "name": "รายงานการติดตาม",
+          "slug": "customer-tracking.exportExcel"
+        }
+      ]
+    },
+    {
       "name": "การตั้งค่า",
       "icon": "menu-icon icon-base bx bx-cog",
       "slug": [

@@ -31,10 +31,23 @@
   <ul class="menu-inner py-1">
     @foreach ($menuData[0]->menu as $menu)
       @php
-        $hideForSale = ['model', 'car-order', 'accessory', 'campaign', 'finance', 'report', 'car-order.form', 'vehicle', 'invoice'];
+        $hideForSale = [
+            'model',
+            'car-order',
+            'accessory',
+            'campaign',
+            'finance',
+            'report',
+            'car-order.form',
+            'vehicle',
+            'invoice',
+        ];
       @endphp
 
-      @if ($userRole == 'sale' && (in_array($menu->slug, $hideForSale) || (is_array($menu->slug) && !empty(array_intersect($menu->slug, $hideForSale)))))
+      @if (
+          $userRole == 'sale' &&
+              (in_array($menu->slug, $hideForSale) ||
+                  (is_array($menu->slug) && !empty(array_intersect($menu->slug, $hideForSale)))))
         @continue
       @endif
 
@@ -54,7 +67,7 @@
         @continue
       @endif
 
-      @if (auth()->user()->brand != 3 && $menu->slug === 'delivery-form')
+      @if (auth()->user()->brand != 3 && in_array($menu->slug, ['delivery-form', 'customer-tracking']))
         @continue
       @endif
 

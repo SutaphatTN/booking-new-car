@@ -24,6 +24,7 @@ use App\Http\Controllers\BranchSwitchController;
 use App\Http\Controllers\delivery_form\DeliveryFormController;
 use App\Http\Controllers\invoice\InvoiceController;
 use App\Http\Controllers\pricelist_car\PricelistCarController;
+use App\Http\Controllers\customer_tracking\CustomerTrackingController;
 
 Route::get('/', fn() => redirect()->route('login'));
 
@@ -156,11 +157,6 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('car-order/{id}/view-more', [CarOrderController::class, 'viewMore'])->name('car-order.viewMore');
     Route::get('/api/car-order/sub-model', [CarOrderController::class, 'getSubModelCarOrder']);
     Route::get('/car-order/search', [CarOrderController::class, 'search'])->name('car-order.search');
-    //get color
-    Route::get('/api/car-order/color', [CarOrderController::class, 'getColorBySubModel']);
-    //price list car
-    Route::get('/api/car-order/pricelist-options', [CarOrderController::class, 'getPricelistOptions']);
-    Route::get('/api/car-order/pricelist-data', [CarOrderController::class, 'getPricelistData']);
     //car-order history
     Route::get('car-order/history', [CarOrderController::class, 'history'])->name('car-order.history');
     Route::get('car-order/history/list', [CarOrderController::class, 'listHistory']);
@@ -302,6 +298,13 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/api/thailand/districts', [CustomerController::class, 'getDistricts']);
     Route::get('/api/thailand/tambons', [CustomerController::class, 'getTambons']);
 
+    // car-order
+    //get color
+    Route::get('/api/car-order/color', [CarOrderController::class, 'getColorBySubModel']);
+    //price list car
+    Route::get('/api/car-order/pricelist-options', [CarOrderController::class, 'getPricelistOptions']);
+    Route::get('/api/car-order/pricelist-data', [CarOrderController::class, 'getPricelistData']);
+    
     Route::get('purchase-order/list', [PurchaseOrderController::class, 'listPurchaseOrder']);
     Route::get('/purchase-order/get-campaign', [PurchaseOrderController::class, 'getCampaign']);
     Route::get('purchase-order/summary/{id}', [PurchaseOrderController::class, 'summaryPurchase'])->name('purchase-order.summary');
@@ -329,7 +332,15 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('purchase-order/cancellation/{id}/withdraw-attachment', [CancellationController::class, 'deleteWithdrawAttachment']);
     Route::post('purchase-order/cancellation/{id}/confirm-withdraw', [CancellationController::class, 'confirmWithdraw']);
 
+    // customer tracking
+    Route::get('customer-tracking/list', [CustomerTrackingController::class, 'list']);
+    Route::get('customer-tracking/report', [CustomerTrackingController::class, 'report'])->name('customer-tracking.report');
+    Route::get('customer-tracking/export-excel', [CustomerTrackingController::class, 'exportExcel'])->name('customer-tracking.exportExcel');
+    Route::post('customer-tracking/{id}/detail', [CustomerTrackingController::class, 'addDetail'])->name('customer-tracking.addDetail');
+    Route::delete('customer-tracking/{id}', [CustomerTrackingController::class, 'destroy'])->name('customer-tracking.destroy');
+    
     //all resource
+    Route::resource('customer-tracking', CustomerTrackingController::class);
     Route::resource('customer', CustomerController::class);
     Route::resource('purchase-order', PurchaseOrderController::class);
 });

@@ -3119,6 +3119,55 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+// pre-fill จาก customer tracking
+document.addEventListener('DOMContentLoaded', function () {
+  const el = document.getElementById('prefillData');
+  if (!el) return;
+
+  const d = el.dataset;
+
+  if (d.saleId && $('#SaleID').length) {
+    $('#SaleID').val(d.saleId);
+  }
+
+  const modelId = d.modelId;
+  if (!modelId) return;
+
+  $('#model_id').val(modelId).trigger('change');
+
+  const subModelId = d.subModelId;
+  const year = d.year;
+  const colorId = d.colorId;
+
+  if (!subModelId) return;
+
+  const waitForSubModel = setInterval(function () {
+    const $opt = $(`#subModel_id option[value="${subModelId}"]`);
+    if (!$opt.length) return;
+
+    clearInterval(waitForSubModel);
+    $('#subModel_id').val(subModelId).trigger('change');
+
+    if (!year) return;
+    const waitForYear = setInterval(function () {
+      const $yearOpt = $(`#pricelist_year option[value="${year}"]`);
+      if (!$yearOpt.length) return;
+
+      clearInterval(waitForYear);
+      $('#pricelist_year').val(year).trigger('change');
+
+      if (!colorId) return;
+      const waitForColor = setInterval(function () {
+        const $colorOpt = $(`#gwm_color option[value="${colorId}"]`);
+        if (!$colorOpt.length) return;
+
+        clearInterval(waitForColor);
+        $('#gwm_color').val(colorId);
+      }, 100);
+    }, 100);
+  }, 100);
+});
+
 //view report monthly delivery
 document.addEventListener('DOMContentLoaded', function () {
   const modalEl = document.querySelector('.viewExportMonthlyDelivery');

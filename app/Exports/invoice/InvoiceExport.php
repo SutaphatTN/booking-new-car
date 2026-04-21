@@ -130,7 +130,7 @@ class InvoiceExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
                 'customer_name'        => $item->customer_name,
                 'total_price'          => $item->total_price ?? '-',
                 'receipt_confirmed_at' => $item->format_receipt_confirmed ?? '-',
-                'user_insert'          => $item->insertInvoice?->name ?? '-',
+                'UserInsert'          => $item->insertInvoice?->name ?? '-',
             ];
         });
 

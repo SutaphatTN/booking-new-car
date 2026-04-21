@@ -76,25 +76,47 @@
               </div>
             </div>
 
-            <input type="hidden" id="CusID" name="CusID">
+            <input type="hidden" id="CusID" name="CusID" value="{{ $prefill['customer_id'] ?? '' }}">
             <input id="customerName" type="hidden">
             <input id="customerID" type="hidden">
             <input id="customerPhone" type="hidden">
+
+            {{-- prefill data สำหรับ JS --}}
+            @if($prefill)
+              <div id="prefillData"
+                data-customer-id="{{ $prefill['customer_id'] }}"
+                data-customer-name="{{ $prefill['customer_name'] }}"
+                data-customer-id-number="{{ $prefill['customer_id_number'] }}"
+                data-customer-phone="{{ $prefill['customer_phone'] }}"
+                data-model-id="{{ $prefill['model_id'] }}"
+                data-sub-model-id="{{ $prefill['sub_model_id'] }}"
+                data-year="{{ $prefill['year'] }}"
+                data-color-id="{{ $prefill['color_id'] }}"
+                data-sale-id="{{ $prefill['sale_id'] }}"
+                style="display:none;">
+              </div>
+            @endif
 
             {{-- แถว 2 : ข้อมูลลูกค้า (auto-fill) --}}
             <div class="customer-info-row mb-3">
               <div class="row g-3">
                 <div class="col-12">
                   <div class="po-label"><i class='bx bxs-user'></i> ชื่อ - นามสกุล</div>
-                  <div class="info-val empty" id="customerName-display">— ยังไม่ได้เลือกลูกค้า —</div>
+                  <div class="info-val {{ $prefill ? '' : 'empty' }}" id="customerName-display">
+                    {{ $prefill['customer_name'] ?? '— ยังไม่ได้เลือกลูกค้า —' }}
+                  </div>
                 </div>
                 <div class="col-md-6">
                   <div class="po-label"><i class='bx bx-id-card'></i> เลขบัตรประชาชน</div>
-                  <div class="info-val empty" id="customerID-display">—</div>
+                  <div class="info-val {{ $prefill ? '' : 'empty' }}" id="customerID-display">
+                    {{ $prefill['customer_id_number'] ?? '—' }}
+                  </div>
                 </div>
                 <div class="col-md-6">
                   <div class="po-label"><i class='bx bx-phone'></i> เบอร์โทรศัพท์</div>
-                  <div class="info-val empty" id="customerPhone-display">—</div>
+                  <div class="info-val {{ $prefill ? '' : 'empty' }}" id="customerPhone-display">
+                    {{ $prefill['customer_phone'] ?? '—' }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -153,7 +175,9 @@
                 <select id="type" name="type" class="form-select" required>
                   <option value="">— เลือก —</option>
                   @foreach ($type as $item)
-                    <option value="{{ $item->id }}">{{ $item->name }}</option>
+                    <option value="{{ $item->id }}" {{ isset($prefill['source_id']) && $prefill['source_id'] == $item->id ? 'selected' : '' }}>
+                      {{ $item->name }}
+                    </option>
                   @endforeach
                 </select>
               </div>

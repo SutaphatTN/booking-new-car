@@ -1,14 +1,12 @@
 <div class="modal fade editCust" tabindex="-1" role="dialog" data-bs-backdrop="static">
   <div class="modal-dialog modal-xl" role="document">
-    <div class="modal-content border-0 shadow">
+    <div class="modal-content border-0 shadow mf-content mf-content--edit">
 
       {{-- ── Header ── --}}
-      <div class="modal-header border-0 px-4 py-3"
-        style="background: linear-gradient(135deg, #e97f07 0%, #f3a319 100%); border-radius:0.5rem 0.5rem 0 0;">
+      <div class="modal-header mf-header mf-header--edit px-4">
         <div class="d-flex align-items-center gap-3">
-          <div class="vm-section-icon"
-            style="background:rgba(255,255,255,.2);color:#fff;width:40px;height:40px;border-radius:10px;">
-            <i class="bx bx-edit fs-5"></i>
+          <div class="mf-hd-icon">
+            <i class="bx bx-edit-alt fs-5 text-white"></i>
           </div>
           <div>
             <h6 class="mb-0 fw-bold text-white mf-hd-title">แก้ไขข้อมูลลูกค้า</h6>
@@ -18,7 +16,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <div class="modal-body p-4" style="background:#f5f6fa;border-radius:0 0 0.5rem 0.5rem;">
+      <div class="modal-body mf-body">
         <form action="{{ route('customer.update', $customers->id) }}" method="POST" enctype="multipart/form-data">
           @csrf
           @method('PUT')

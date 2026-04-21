@@ -25,7 +25,7 @@
         <td>{{ $i['customer_name'] }}</td>
         <td>{{ $i['total_price'] }}</td>
         <td>{{ $i['receipt_confirmed_at'] }}</td>
-        <td>{{ $i['user_insert'] }}</td>
+        <td>{{ $i['UserInsert'] }}</td>
       </tr>
     @empty
       <tr>

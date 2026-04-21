@@ -23,6 +23,7 @@ use App\Models\PaymentType;
 use App\Models\Salecampaign;
 use App\Models\Salecar;
 use App\Models\SaleCarPayment;
+use App\Models\CustomerTracking;
 use App\Models\TbConStatus;
 use App\Models\TbInteriorColor;
 use App\Models\TbLicensePlate;
@@ -63,7 +64,7 @@ class PurchaseOrderController extends Controller
         return view('purchase-order.view-more', compact('saleCar'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $authUser = Auth::user();
 
@@ -74,7 +75,33 @@ class PurchaseOrderController extends Controller
             ->get();
         $typeSale = TbSalePurchaseType::all();
         $interiorColor = TbInteriorColor::all();
-        return view('purchase-order.input', compact('model', 'type', 'typeSale', 'interiorColor', 'saleUser'));
+
+        $prefill = null;
+        if ($request->filled('from_tracking')) {
+            $tracking = CustomerTracking::with([
+                'customer.prefix',
+                'sale',
+                'subModel',
+            ])->find($request->from_tracking);
+
+            if ($tracking && $tracking->customer) {
+                $c = $tracking->customer;
+                $prefill = [
+                    'customer_id'        => $c->id,
+                    'customer_name'      => trim(($c->prefix->Name_TH ?? '') . ' ' . $c->FirstName . ' ' . $c->LastName),
+                    'customer_id_number' => $c->formatted_id_number ?? $c->IDNumber,
+                    'customer_phone'     => $c->formatted_mobile ?? $c->Mobilephone1,
+                    'sale_id'            => $tracking->sale_id,
+                    'source_id'          => $tracking->source_id,
+                    'model_id'           => $tracking->model_id,
+                    'sub_model_id'       => $tracking->sub_model_id,
+                    'year'               => $tracking->year,
+                    'color_id'           => $tracking->color_id,
+                ];
+            }
+        }
+
+        return view('purchase-order.input', compact('model', 'type', 'typeSale', 'interiorColor', 'saleUser', 'prefill'));
     }
 
     public function searchAccessory(Request $request)
