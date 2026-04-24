@@ -96,7 +96,11 @@ class PurchaseOrderController extends Controller
                     'model_id'           => $tracking->model_id,
                     'sub_model_id'       => $tracking->sub_model_id,
                     'year'               => $tracking->year,
+                    'pricelist_color'    => $tracking->pricelist_color,
+                    'option'             => $tracking->option,
                     'color_id'           => $tracking->color_id,
+                    'interior_color_id'  => $tracking->interior_color_id,
+                    'color_text'         => $tracking->color_text,
                 ];
             }
         }

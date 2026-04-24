@@ -95,8 +95,9 @@ class CustomerTrackingExport implements FromView, WithTitle, WithStyles, WithEve
             // 'details.decision', // ใช้แทน latestDetail เมื่อต้องการแสดงทุก detail
             'wuColor',
         ])
-        ->whereNotIn('customer_id', $bookedCustomerIds)
-        ->get();
+            ->whereNotIn('customer_id', $bookedCustomerIds)
+            ->whereNull('cancelled_at')
+            ->get();
 
         $no = 1;
         $rows = $trackings->map(function ($t) use (&$no) {

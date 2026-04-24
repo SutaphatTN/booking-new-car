@@ -303,6 +303,11 @@
   background: #f5f3ff;
 }
 
+.pay-type-group.is-invalid-group label {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
 /* ── Field group divider inside po-section ── */
 .fi-group-label {
   display: flex;
@@ -1535,4 +1540,179 @@
   margin-top: 2px;
   flex-shrink: 0;
   color: #94a3b8;
+}
+
+/* ── tracking-detail-card accent variants ── */
+.tracking-detail-card.accent-indigo {
+  border-left-color: #6366f1;
+}
+
+/* ── view-more: main tab nav ── */
+.vm-tab-wrapper {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e8edf3;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  padding: 6px 8px;
+  display: inline-flex;
+}
+
+.vm-tab-nav {
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.vm-tab-nav .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #64748b;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+
+.vm-tab-nav .nav-link:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.vm-tab-nav .nav-link.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+}
+
+.vm-tab-badge {
+  background: rgba(255,255,255,.3);
+  color: #fff;
+  border-radius: 20px;
+  padding: 1px 7px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.vm-tab-nav .nav-link:not(.active) .vm-tab-badge {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+/* ── view-more: customer banner ── */
+.vm-customer-banner {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 16px;
+  padding: 20px 24px;
+}
+
+.vm-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.vm-customer-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0c4a6e;
+}
+
+.vm-customer-meta {
+  font-size: 0.82rem;
+  color: #0369a1;
+  display: flex;
+  align-items: center;
+}
+
+/* ── view-more: sub-tab bar ── */
+.vm-subtab-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+  padding: 6px 10px 6px 6px;
+}
+
+.vm-subtab-nav {
+  display: flex;
+  gap: 3px;
+}
+
+.vm-subtab-nav .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.84rem;
+  color: #64748b;
+  transition: background .15s, color .15s;
+}
+
+.vm-subtab-nav .nav-link:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.vm-subtab-nav .nav-link.active {
+  background: #fff;
+  color: #1e293b;
+  box-shadow: 0 1px 4px rgba(0,0,0,.1);
+}
+
+.vm-subtab-count {
+  background: #e2e8f0;
+  color: #64748b;
+  border-radius: 20px;
+  padding: 1px 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.5;
+  transition: background .15s, color .15s;
+}
+
+.vm-subtab-nav .nav-link.active .vm-subtab-count {
+  background: #6366f1;
+  color: #fff;
+}
+
+/* ── view-more: empty state ── */
+.vm-empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: #94a3b8;
+}
+
+.vm-empty-state i {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 10px;
+  opacity: .45;
+}
+
+.vm-empty-state p {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+/* ── info-val (standalone) ── */
+.info-val {
+  font-size: 0.9rem;
+  color: #1e293b;
+  padding: 2px 0;
 }

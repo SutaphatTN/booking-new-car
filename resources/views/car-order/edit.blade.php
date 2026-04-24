@@ -245,7 +245,7 @@
                       <input id="car_DNP" type="text"
                         class="form-control text-end money-input form-control-plaintext-mf @error('car_DNP') is-invalid @enderror"
                         name="car_DNP"
-                        value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}" readonly>
+                        value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}">
                     </div>
                     @error('car_DNP')
                       <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
@@ -261,7 +261,7 @@
                       <input id="car_MSRP" type="text"
                         class="form-control text-end money-input form-control-plaintext-mf @error('car_MSRP') is-invalid @enderror"
                         name="car_MSRP"
-                        value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}" readonly>
+                        value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}">
                     </div>
                     @error('car_MSRP')
                       <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
@@ -277,7 +277,7 @@
                       <input id="car_DNP" type="text"
                         class="form-control text-end money-input form-control-plaintext-mf @error('car_DNP') is-invalid @enderror"
                         name="car_DNP"
-                        value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}" readonly>
+                        value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}">
                     </div>
                     @error('car_DNP')
                       <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
@@ -293,7 +293,7 @@
                       <input id="car_MSRP" type="text"
                         class="form-control text-end money-input form-control-plaintext-mf @error('car_MSRP') is-invalid @enderror"
                         name="car_MSRP"
-                        value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}" readonly>
+                        value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}">
                     </div>
                     @error('car_MSRP')
                       <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
@@ -309,7 +309,7 @@
                       <input id="car_DNP" type="text"
                         class="form-control text-end money-input form-control-plaintext-mf @error('car_DNP') is-invalid @enderror"
                         name="car_DNP"
-                        value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}" readonly>
+                        value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '' }}">
                     </div>
                     @error('car_DNP')
                       <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
@@ -325,7 +325,7 @@
                       <input id="car_MSRP" type="text"
                         class="form-control text-end money-input form-control-plaintext-mf @error('car_MSRP') is-invalid @enderror"
                         name="car_MSRP"
-                        value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}" readonly>
+                        value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '' }}">
                     </div>
                     @error('car_MSRP')
                       <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>

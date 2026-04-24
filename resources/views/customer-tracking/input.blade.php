@@ -47,10 +47,10 @@
     </div>
   </div>
 
-  @if($errors->any())
+  @if ($errors->any())
     <div class="alert alert-danger mb-3">
       <ul class="mb-0">
-        @foreach($errors->all() as $err)
+        @foreach ($errors->all() as $err)
           <li>{{ $err }}</li>
         @endforeach
       </ul>
@@ -106,49 +106,135 @@
           </div>
         </div>
 
-        {{-- SECTION 2 : ข้อมูลผู้ขาย --}}
+        {{-- SECTION 2 : ข้อมูลรถ --}}
         <div class="po-section">
           <div class="po-section-header">
-            <div class="po-section-icon indigo"><i class="bx bx-user-pin"></i></div>
-            <h6 class="po-section-title">ข้อมูลผู้ขาย</h6>
+            <div class="po-section-icon emerald"><i class="bx bx-car"></i></div>
+            <h6 class="po-section-title">ข้อมูลรถที่สนใจ</h6>
           </div>
           <div class="po-section-body">
             <div class="row g-3 pb-2">
 
-              {{-- ผู้ขาย --}}
-              @if(auth()->user()->role == 'sale')
-                <input type="hidden" name="sale_id" value="{{ Auth::user()->id }}">
-                <div class="col-md-6">
-                  <div class="po-label"><i class='bx bx-user'></i> ชื่อ - นามสกุล ผู้ขาย</div>
-                  <div class="info-pill">
-                    <i class="bx bx-check-circle me-2" style="color:#10b981;"></i>
-                    {{ Auth::user()->name }}
-                  </div>
-                </div>
-              @else
-                <div class="col-md-6">
-                  <label class="po-label" for="sale_id"><i class='bx bx-user'></i> ชื่อ - นามสกุล ผู้ขาย</label>
-                  <select id="sale_id" name="sale_id" class="form-select @error('sale_id') is-invalid @enderror">
-                    <option value="">— เลือกผู้ขาย —</option>
-                    @foreach($saleUser as $s)
-                      <option value="{{ $s->id }}" {{ old('sale_id') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+              @if (auth()->user()->brand == 1)
+                {{-- Mitsubishi --}}
+                {{-- รุ่นหลัก --}}
+                <div class="col-md-12">
+                  <label class="po-label" for="model_id"><i class='bx bx-cube'></i> รุ่นรถหลัก</label>
+                  <select id="model_id" name="model_id" class="form-select">
+                    <option value="">— เลือกรุ่นรถหลัก —</option>
+                    @foreach ($model as $m)
+                      <option value="{{ $m->id }}" {{ old('model_id') == $m->id ? 'selected' : '' }}>
+                        {{ $m->Name_TH }}</option>
                     @endforeach
                   </select>
-                  @error('sale_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                </div>
+
+                {{-- รุ่นย่อย (ทุก brand) --}}
+                <div class="col-md-9">
+                  <label class="po-label" for="sub_model_id"><i class='bx bx-list-ul'></i> รุ่นรถย่อย</label>
+                  <select id="sub_model_id" name="sub_model_id" class="form-select" disabled>
+                    <option value="">— เลือกรุ่นรถย่อย —</option>
+                  </select>
+                </div>
+
+                <div class="col-md-3">
+                  <label class="po-label" for="pricelist_color"><i class='bx bx-droplet'></i> ประเภทสี</label>
+                  <select id="pricelist_color" name="pricelist_color" class="form-select" disabled>
+                    <option value="">— เลือก —</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="po-label" for="year"><i class='bx bx-calendar-alt'></i> ปี</label>
+                  <select id="year" name="year" class="form-select" disabled>
+                    <option value="">— เลือกปี —</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="po-label" for="option"><i class="bx bx-code-block"></i> Option</label>
+                  <input id="option" type="text" class="form-control" name="option" readonly>
+                </div>
+                <div class="col-md-5">
+                  <label class="po-label" for="color_text"><i class='bx bx-palette'></i> สี</label>
+                  <input id="color_text" name="color_text" type="text" class="form-control" placeholder="สี...">
+                </div>
+              @elseif(auth()->user()->brand == 2)
+                {{-- GWM --}}
+                {{-- รุ่นหลัก --}}
+                <div class="col-md-6">
+                  <label class="po-label" for="model_id"><i class='bx bx-cube'></i> รุ่นรถหลัก</label>
+                  <select id="model_id" name="model_id" class="form-select">
+                    <option value="">— เลือกรุ่นรถหลัก —</option>
+                    @foreach ($model as $m)
+                      <option value="{{ $m->id }}" {{ old('model_id') == $m->id ? 'selected' : '' }}>
+                        {{ $m->Name_TH }}</option>
+                    @endforeach
+                  </select>
+                </div>
+
+                {{-- รุ่นย่อย (ทุก brand) --}}
+                <div class="col-md-6">
+                  <label class="po-label" for="sub_model_id"><i class='bx bx-list-ul'></i> รุ่นรถย่อย</label>
+                  <select id="sub_model_id" name="sub_model_id" class="form-select" disabled>
+                    <option value="">— เลือกรุ่นรถย่อย —</option>
+                  </select>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="po-label" for="year"><i class='bx bx-calendar-alt'></i> ปี</label>
+                  <select id="year" name="year" class="form-select" disabled>
+                    <option value="">— เลือกปี —</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="po-label" for="color_id"><i class='bx bx-palette'></i> สีภายนอก</label>
+                  <select id="color_id" name="color_id" class="form-select" disabled>
+                    <option value="">— เลือกสี —</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="po-label" for="interior_color_id"><i class='bx bx-paint'></i> สีภายใน</label>
+                  <select id="interior_color_id" name="interior_color_id" class="form-select">
+                    <option value="">— เลือกสี —</option>
+                    @foreach ($interiorColor as $ic)
+                      <option value="{{ $ic->id }}">{{ $ic->name }}</option>
+                    @endforeach
+                  </select>
+                </div>
+              @else
+                {{-- Wuling / others --}}
+                {{-- รุ่นหลัก --}}
+                <div class="col-md-6">
+                  <label class="po-label" for="model_id"><i class='bx bx-cube'></i> รุ่นรถหลัก</label>
+                  <select id="model_id" name="model_id" class="form-select">
+                    <option value="">— เลือกรุ่นรถหลัก —</option>
+                    @foreach ($model as $m)
+                      <option value="{{ $m->id }}" {{ old('model_id') == $m->id ? 'selected' : '' }}>
+                        {{ $m->Name_TH }}</option>
+                    @endforeach
+                  </select>
+                </div>
+
+                {{-- รุ่นย่อย (ทุก brand) --}}
+                <div class="col-md-6">
+                  <label class="po-label" for="sub_model_id"><i class='bx bx-list-ul'></i> รุ่นรถย่อย</label>
+                  <select id="sub_model_id" name="sub_model_id" class="form-select" disabled>
+                    <option value="">— เลือกรุ่นรถย่อย —</option>
+                  </select>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="po-label" for="year"><i class='bx bx-calendar-alt'></i> ปี</label>
+                  <select id="year" name="year" class="form-select" disabled>
+                    <option value="">— เลือกปี —</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="po-label" for="color_id"><i class='bx bx-palette'></i> สี</label>
+                  <select id="color_id" name="color_id" class="form-select" disabled>
+                    <option value="">— เลือกสี —</option>
+                  </select>
                 </div>
               @endif
-
-              {{-- แหล่งที่มา --}}
-              <div class="col-md-6">
-                <label class="po-label" for="source_id"><i class='bx bx-map-pin'></i> แหล่งที่มา</label>
-                <select id="source_id" name="source_id" class="form-select @error('source_id') is-invalid @enderror" required>
-                  <option value="">— เลือก —</option>
-                  @foreach($sources as $s)
-                    <option value="{{ $s->id }}" {{ old('source_id') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
-                  @endforeach
-                </select>
-                @error('source_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-              </div>
 
             </div>
           </div>
@@ -158,44 +244,56 @@
 
       <div class="col-md-6">
 
-        {{-- SECTION 3 : ข้อมูลรถ --}}
+        {{-- SECTION 3 : ข้อมูลผู้ขาย --}}
         <div class="po-section">
           <div class="po-section-header">
-            <div class="po-section-icon emerald"><i class="bx bx-car"></i></div>
-            <h6 class="po-section-title">ข้อมูลรถที่สนใจ</h6>
+            <div class="po-section-icon indigo"><i class="bx bx-user-pin"></i></div>
+            <h6 class="po-section-title">ข้อมูลผู้ขาย</h6>
           </div>
           <div class="po-section-body">
             <div class="row g-3 pb-2">
 
-              <div class="col-md-6">
-                <label class="po-label" for="model_id"><i class='bx bx-cube'></i> รุ่นรถหลัก</label>
-                <select id="model_id" name="model_id" class="form-select">
-                  <option value="">— เลือกรุ่นรถหลัก —</option>
-                  @foreach($model as $m)
-                    <option value="{{ $m->id }}" {{ old('model_id') == $m->id ? 'selected' : '' }}>{{ $m->Name_TH }}</option>
+              {{-- ผู้ขาย --}}
+              @if (auth()->user()->role == 'sale')
+                <input type="hidden" name="sale_id" value="{{ Auth::user()->id }}">
+                <div class="col-md-7">
+                  <div class="po-label"><i class='bx bx-user'></i> ชื่อ - นามสกุล ผู้ขาย</div>
+                  <div class="info-pill">
+                    <i class="bx bx-check-circle me-2" style="color:#10b981;"></i>
+                    {{ Auth::user()->name }}
+                  </div>
+                </div>
+              @else
+                <div class="col-md-7">
+                  <label class="po-label" for="sale_id"><i class='bx bx-user'></i> ชื่อ - นามสกุล ผู้ขาย</label>
+                  <select id="sale_id" name="sale_id" class="form-select @error('sale_id') is-invalid @enderror"
+                    required>
+                    <option value="">— เลือกผู้ขาย —</option>
+                    @foreach ($saleUser as $s)
+                      <option value="{{ $s->id }}" {{ old('sale_id') == $s->id ? 'selected' : '' }}>
+                        {{ $s->name }}</option>
+                    @endforeach
+                  </select>
+                  @error('sale_id')
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                  @enderror
+                </div>
+              @endif
+
+              {{-- แหล่งที่มา --}}
+              <div class="col-md-5">
+                <label class="po-label" for="source_id"><i class='bx bx-map-pin'></i> แหล่งที่มา</label>
+                <select id="source_id" name="source_id" class="form-select @error('source_id') is-invalid @enderror"
+                  required>
+                  <option value="">— เลือก —</option>
+                  @foreach ($sources as $s)
+                    <option value="{{ $s->id }}" {{ old('source_id') == $s->id ? 'selected' : '' }}>
+                      {{ $s->name }}</option>
                   @endforeach
                 </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="po-label" for="sub_model_id"><i class='bx bx-list-ul'></i> รุ่นรถย่อย</label>
-                <select id="sub_model_id" name="sub_model_id" class="form-select" disabled>
-                  <option value="">— เลือกรุ่นรถย่อย —</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="po-label" for="year"><i class='bx bx-calendar-alt'></i> ปี</label>
-                <select id="year" name="year" class="form-select" disabled>
-                  <option value="">— เลือกปี —</option>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="po-label" for="color_id"><i class='bx bx-palette'></i> สี</label>
-                <select id="color_id" name="color_id" class="form-select" disabled>
-                  <option value="">— เลือกสี —</option>
-                </select>
+                @error('source_id')
+                  <div class="invalid-feedback d-block">{{ $message }}</div>
+                @enderror
               </div>
 
             </div>
@@ -205,7 +303,7 @@
         {{-- SECTION 4 : รายละเอียดการติดตาม --}}
         <div class="po-section">
           <div class="po-section-header">
-            <div class="po-section-icon" style="background:#f59e0b22;color:#f59e0b;"><i class="bx bx-notepad"></i></div>
+            <div class="po-section-icon amber"><i class="bx bx-notepad"></i></div>
             <h6 class="po-section-title">รายละเอียดการติดตาม</h6>
           </div>
           <div class="po-section-body">
@@ -217,16 +315,19 @@
                 <input id="contact_date" type="date" name="contact_date"
                   class="form-control @error('contact_date') is-invalid @enderror"
                   value="{{ old('contact_date', date('Y-m-d')) }}" required>
-                @error('contact_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                @error('contact_date')
+                  <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
               </div>
 
               {{-- สถานะการตัดสินใจ --}}
               <div class="col-md-7">
                 <label class="po-label" for="decision_id"><i class='bx bx-target-lock'></i> สถานะการตัดสินใจ</label>
-                <select id="decision_id" name="decision_id" class="form-select">
+                <select id="decision_id" name="decision_id" class="form-select" required>
                   <option value="">— เลือก —</option>
-                  @foreach($decisions as $d)
-                    <option value="{{ $d->id }}" {{ old('decision_id') == $d->id ? 'selected' : '' }}>{{ $d->name }}</option>
+                  @foreach ($decisions as $d)
+                    <option value="{{ $d->id }}" {{ old('decision_id') == $d->id ? 'selected' : '' }}>
+                      {{ $d->name }}</option>
                   @endforeach
                 </select>
               </div>
@@ -242,7 +343,9 @@
                     {{ old('contact_status') == '0' ? 'checked' : '' }}>
                   <label for="contactNo">ติดต่อไม่ได้</label>
                 </div>
-                @error('contact_status')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                @error('contact_status')
+                  <div class="invalid-feedback d-block">{{ $message }}</div>
+                @enderror
               </div>
 
               {{-- Comment sale --}}

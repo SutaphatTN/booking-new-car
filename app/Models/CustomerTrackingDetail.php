@@ -15,7 +15,10 @@ class CustomerTrackingDetail extends Model
         'contact_status',
         'decision_id',
         'comment_sale',
+        'entry_type',
+        'is_checkpoint',
         'UserInsert',
+        'UserUpdate',
     ];
 
     public function tracking()

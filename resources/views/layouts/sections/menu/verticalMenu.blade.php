@@ -67,7 +67,7 @@
         @continue
       @endif
 
-      @if (auth()->user()->brand != 3 && in_array($menu->slug, ['delivery-form', 'customer-tracking']))
+      @if (auth()->user()->brand != 3 && in_array($menu->slug, ['delivery-form']))
         @continue
       @endif
 
@@ -89,13 +89,19 @@
           } elseif (isset($menu->submenu)) {
               if (gettype($menu->slug) === 'array') {
                   foreach ($menu->slug as $slug) {
-                      if (str_contains($currentRouteName, $slug) and strpos($currentRouteName, $slug) === 0) {
-                          $activeClass = 'active open';
+                      if (strpos($currentRouteName, $slug) === 0) {
+                          $nextChar = substr($currentRouteName, strlen($slug), 1);
+                          if ($nextChar === '' || $nextChar === '.') {
+                              $activeClass = 'active open';
+                          }
                       }
                   }
               } else {
-                  if (str_contains($currentRouteName, $menu->slug) and strpos($currentRouteName, $menu->slug) === 0) {
-                      $activeClass = 'active open';
+                  if (strpos($currentRouteName, $menu->slug) === 0) {
+                      $nextChar = substr($currentRouteName, strlen($menu->slug), 1);
+                      if ($nextChar === '' || $nextChar === '.') {
+                          $activeClass = 'active open';
+                      }
                   }
               }
           }

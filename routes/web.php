@@ -25,6 +25,7 @@ use App\Http\Controllers\delivery_form\DeliveryFormController;
 use App\Http\Controllers\invoice\InvoiceController;
 use App\Http\Controllers\pricelist_car\PricelistCarController;
 use App\Http\Controllers\customer_tracking\CustomerTrackingController;
+use App\Http\Controllers\service_check_tracking\ServiceCheckTrackingController;
 
 Route::get('/', fn() => redirect()->route('login'));
 
@@ -334,13 +335,24 @@ Route::group(['middleware' => 'auth'], function () {
 
     // customer tracking
     Route::get('customer-tracking/list', [CustomerTrackingController::class, 'list']);
+    Route::get('customer-tracking/check-duplicate', [CustomerTrackingController::class, 'checkDuplicate']);
     Route::get('customer-tracking/report', [CustomerTrackingController::class, 'report'])->name('customer-tracking.report');
     Route::get('customer-tracking/export-excel', [CustomerTrackingController::class, 'exportExcel'])->name('customer-tracking.exportExcel');
     Route::post('customer-tracking/{id}/detail', [CustomerTrackingController::class, 'addDetail'])->name('customer-tracking.addDetail');
+    Route::put('customer-tracking/detail/{detailId}', [CustomerTrackingController::class, 'updateDetail'])->name('customer-tracking.updateDetail');
+    Route::post('customer-tracking/detail/{detailId}/continue', [CustomerTrackingController::class, 'continueTracking'])->name('customer-tracking.continueTracking');
+    Route::post('customer-tracking/{id}/cancel', [CustomerTrackingController::class, 'cancelTracking'])->name('customer-tracking.cancel');
     Route::delete('customer-tracking/{id}', [CustomerTrackingController::class, 'destroy'])->name('customer-tracking.destroy');
-    
+
+    // service check tracking
+    Route::get('service-check-tracking/list', [ServiceCheckTrackingController::class, 'list'])->name('service-check-tracking.list');
+    Route::get('service-check-tracking/search-salecar', [ServiceCheckTrackingController::class, 'searchSalecar'])->name('service-check-tracking.searchSalecar');
+    Route::post('service-check-tracking/{id}/detail', [ServiceCheckTrackingController::class, 'addDetail'])->name('service-check-tracking.addDetail');
+    Route::delete('service-check-tracking/{id}', [ServiceCheckTrackingController::class, 'destroy'])->name('service-check-tracking.destroy');
+
     //all resource
     Route::resource('customer-tracking', CustomerTrackingController::class);
+    Route::resource('service-check-tracking', ServiceCheckTrackingController::class);
     Route::resource('customer', CustomerController::class);
     Route::resource('purchase-order', PurchaseOrderController::class);
 });

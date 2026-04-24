@@ -553,6 +553,19 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
+    if (!$('input[name="reservationCondition"]:checked').val()) {
+      const $err = $('#payTypeError');
+      const $group = $('#payTypeGroup');
+      $err.show();
+      $group.addClass('is-invalid-group');
+      $group[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      $('input[name="reservationCondition"]').one('change', function () {
+        $err.hide();
+        $group.removeClass('is-invalid-group');
+      });
+      return;
+    }
+
     if (!$('#CusID').val()) {
       Swal.fire({
         icon: 'warning',
@@ -3130,14 +3143,21 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#SaleID').val(d.saleId);
   }
 
+  // Brand 2: interior_color โหลดจาก server-side → set ตรงได้เลย
+  if (d.interiorColorId && $('#interior_color').length) {
+    $('#interior_color').val(d.interiorColorId);
+  }
+
   const modelId = d.modelId;
   if (!modelId) return;
 
   $('#model_id').val(modelId).trigger('change');
 
-  const subModelId = d.subModelId;
-  const year = d.year;
-  const colorId = d.colorId;
+  const subModelId  = d.subModelId;
+  const year        = d.year;
+  const colorId     = d.colorId;
+  const pricelistColor = d.pricelistColor;
+  const colorText   = d.colorText;
 
   if (!subModelId) return;
 
@@ -3148,6 +3168,36 @@ document.addEventListener('DOMContentLoaded', function () {
     clearInterval(waitForSubModel);
     $('#subModel_id').val(subModelId).trigger('change');
 
+    // ── Brand 1 (Mitsubishi): cascade คือ pricelist_color → pricelist_year ──
+    if ($('#pricelist_color').length) {
+      if (!pricelistColor) return; // ไม่มีข้อมูล pricelist_color → user เลือกเอง
+
+      let attempts = 0;
+      const waitForColorOpts = setInterval(function () {
+        attempts++;
+        if ($('#pricelist_color option').length > 1) {
+          clearInterval(waitForColorOpts);
+          $('#pricelist_color').val(pricelistColor).trigger('change');
+
+          if (!year) return;
+          let yAttempts = 0;
+          const waitForYear1 = setInterval(function () {
+            yAttempts++;
+            const $yOpt = $(`#pricelist_year option[value="${year}"]`);
+            if ($yOpt.length) {
+              clearInterval(waitForYear1);
+              $('#pricelist_year').val(year).trigger('change');
+              if (colorText && $('#Color').length) $('#Color').val(colorText);
+            }
+            if (yAttempts > 30) clearInterval(waitForYear1);
+          }, 100);
+        }
+        if (attempts > 30) clearInterval(waitForColorOpts);
+      }, 100);
+      return;
+    }
+
+    // ── Brand 2/3: cascade คือ pricelist_year (+ gwm_color พร้อมกัน) ──
     if (!year) return;
     const waitForYear = setInterval(function () {
       const $yearOpt = $(`#pricelist_year option[value="${year}"]`);
@@ -3157,12 +3207,16 @@ document.addEventListener('DOMContentLoaded', function () {
       $('#pricelist_year').val(year).trigger('change');
 
       if (!colorId) return;
+      let colorAttempts = 0;
       const waitForColor = setInterval(function () {
+        colorAttempts++;
         const $colorOpt = $(`#gwm_color option[value="${colorId}"]`);
-        if (!$colorOpt.length) return;
-
-        clearInterval(waitForColor);
-        $('#gwm_color').val(colorId);
+        if ($colorOpt.length) {
+          clearInterval(waitForColor);
+          $('#gwm_color').val(colorId);
+          return;
+        }
+        if (colorAttempts > 30) clearInterval(waitForColor);
       }, 100);
     }, 100);
   }, 100);

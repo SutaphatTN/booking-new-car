@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Traits\UserAccessScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\TbInteriorColor;
 
 class CustomerTracking extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, UserAccessScope;
 
     protected $table = 'customer_trackings';
 
@@ -18,11 +20,17 @@ class CustomerTracking extends Model
         'model_id',
         'sub_model_id',
         'year',
+        'pricelist_color',
+        'option',
         'color_id',
+        'interior_color_id',
+        'color_text',
         'userZone',
         'brand',
         'branch',
         'UserInsert',
+        'cancelled_at',
+        'CancelledBy',
     ];
 
     public function customer()
@@ -60,8 +68,31 @@ class CustomerTracking extends Model
         return $this->hasOne(CustomerTrackingDetail::class, 'tracking_id')->latestOfMany();
     }
 
+    // entry ผู้จัดการที่ใกล้ที่สุดในอนาคต (> วันนี้)
+    public function nextManagerDetail()
+    {
+        return $this->hasOne(CustomerTrackingDetail::class, 'tracking_id')
+            ->ofMany(['contact_date' => 'min'], function ($q) {
+                $q->where('entry_type', 'manager')
+                  ->where('contact_date', '>', now()->toDateString());
+            });
+    }
+
+    public function latestManagerDetail()
+    {
+        return $this->hasOne(CustomerTrackingDetail::class, 'tracking_id')
+            ->ofMany(['contact_date' => 'max'], function ($q) {
+                $q->where('entry_type', 'manager');
+            });
+    }
+
     public function wuColor()
     {
         return $this->belongsTo(TbColor::class, 'color_id');
+    }
+
+    public function interiorColor()
+    {
+        return $this->belongsTo(TbInteriorColor::class, 'interior_color_id');
     }
 }

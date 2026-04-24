@@ -44,16 +44,19 @@
         } elseif (isset($submenu->submenu)) {
             if (gettype($submenu->slug) === 'array') {
                 foreach ($submenu->slug as $slug) {
-                    if (str_contains($currentRouteName, $slug) and strpos($currentRouteName, $slug) === 0) {
-                        $activeClass = $active;
+                    if (strpos($currentRouteName, $slug) === 0) {
+                        $nextChar = substr($currentRouteName, strlen($slug), 1);
+                        if ($nextChar === '' || $nextChar === '.') {
+                            $activeClass = $active;
+                        }
                     }
                 }
             } else {
-                if (
-                    str_contains($currentRouteName, $submenu->slug) and
-                    strpos($currentRouteName, $submenu->slug) === 0
-                ) {
-                    $activeClass = $active;
+                if (strpos($currentRouteName, $submenu->slug) === 0) {
+                    $nextChar = substr($currentRouteName, strlen($submenu->slug), 1);
+                    if ($nextChar === '' || $nextChar === '.') {
+                        $activeClass = $active;
+                    }
                 }
             }
         }

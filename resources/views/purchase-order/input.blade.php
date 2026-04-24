@@ -82,17 +82,21 @@
             <input id="customerPhone" type="hidden">
 
             {{-- prefill data สำหรับ JS --}}
-            @if($prefill)
+            @if ($prefill)
               <div id="prefillData"
                 data-customer-id="{{ $prefill['customer_id'] }}"
                 data-customer-name="{{ $prefill['customer_name'] }}"
                 data-customer-id-number="{{ $prefill['customer_id_number'] }}"
                 data-customer-phone="{{ $prefill['customer_phone'] }}"
+                data-sale-id="{{ $prefill['sale_id'] }}"
                 data-model-id="{{ $prefill['model_id'] }}"
                 data-sub-model-id="{{ $prefill['sub_model_id'] }}"
                 data-year="{{ $prefill['year'] }}"
+                data-pricelist-color="{{ $prefill['pricelist_color'] ?? '' }}"
+                data-option="{{ $prefill['option'] ?? '' }}"
                 data-color-id="{{ $prefill['color_id'] }}"
-                data-sale-id="{{ $prefill['sale_id'] }}"
+                data-interior-color-id="{{ $prefill['interior_color_id'] ?? '' }}"
+                data-color-text="{{ $prefill['color_text'] ?? '' }}"
                 style="display:none;">
               </div>
             @endif
@@ -146,7 +150,7 @@
               @else
                 <div class="col-md-6">
                   <label class="po-label" for="SaleID"><i class='bx bx-user'></i> ชื่อ - นามสกุล ผู้ขาย</label>
-                  <select id="SaleID" name="SaleID" class="form-select">
+                  <select id="SaleID" name="SaleID" class="form-select" required>
                     <option value="">— เลือกผู้ขาย —</option>
                     @foreach ($saleUser as $s)
                       <option value="{{ $s->id }}">{{ $s->name }}</option>
@@ -175,7 +179,8 @@
                 <select id="type" name="type" class="form-select" required>
                   <option value="">— เลือก —</option>
                   @foreach ($type as $item)
-                    <option value="{{ $item->id }}" {{ isset($prefill['source_id']) && $prefill['source_id'] == $item->id ? 'selected' : '' }}>
+                    <option value="{{ $item->id }}"
+                      {{ isset($prefill['source_id']) && $prefill['source_id'] == $item->id ? 'selected' : '' }}>
                       {{ $item->name }}
                     </option>
                   @endforeach
@@ -266,7 +271,7 @@
                 </div>
                 {{-- Mitsubishi --}}
               @elseif (auth()->user()->brand == 1)
-                <div class="col-md-6">
+                <div class="col-md-12">
                   <label class="po-label" for="model_id"><i class='bx bx-cube'></i> รุ่นรถหลัก</label>
                   <select id="model_id" name="model_id" class="form-select" required>
                     <option value="">— เลือกรุ่นรถหลัก —</option>
@@ -278,7 +283,7 @@
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                   @enderror
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-9">
                   <label class="po-label" for="subModel_id"><i class='bx bx-list-ul'></i> รุ่นรถย่อย</label>
                   <select id="subModel_id" name="subModel_id"
                     class="form-select @error('subModel_id') is-invalid @enderror" required>
@@ -294,20 +299,20 @@
                     <option value="">— เลือก —</option>
                   </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                   <label for="pricelist_year" class="po-label"><i class='bx bx-calendar-alt'></i> ปี</label>
                   <select id="pricelist_year" name="Year" class="form-select" required disabled>
                     <option value="">— ปี —</option>
                   </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                   <label class="po-label" for="option"><i class="bx bx-code-block"></i> Option</label>
                   <input id="option" type="text" class="form-control" name="option" readonly>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-5">
                   <label class="po-label" for="Color"><i class='bx bx-palette'></i> สี</label>
                   <input id="Color" type="text" class="form-control @error('Color') is-invalid @enderror"
-                    name="Color" required>
+                    name="Color" placeholder="สี..." required>
                   @error('Color')
                     <div class="invalid-feedback">{{ $message }}</div>
                   @enderror
@@ -403,7 +408,7 @@
             <div class="row g-9 pb-2">
               <div class="col-12">
                 <div class="po-label"><i class='bx bx-money'></i> ประเภทการจ่ายเงินจอง</div>
-                <div class="pay-type-group mt-1">
+                <div class="pay-type-group mt-1" id="payTypeGroup">
                   <input type="radio" name="reservationCondition" id="cashRes" value="cash">
                   <label for="cashRes"><i class="bx bx-money me-1"></i>เงินสด</label>
 
@@ -415,6 +420,9 @@
 
                   <input type="radio" name="reservationCondition" id="tranRes" value="transfer">
                   <label for="tranRes"><i class="bx bx-transfer-alt me-1"></i>เงินโอน</label>
+                </div>
+                <div id="payTypeError" class="text-danger small mt-1" style="display:none;">
+                  <i class="bx bx-error-circle me-1"></i>กรุณาเลือกประเภทการจ่ายเงินจอง
                 </div>
               </div>
             </div>
