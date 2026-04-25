@@ -104,8 +104,6 @@ $(document).ready(function () {
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
@@ -2905,8 +2903,6 @@ $(document).ready(function () {
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
@@ -3006,8 +3002,6 @@ $(document).ready(function () {
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
@@ -3153,11 +3147,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   $('#model_id').val(modelId).trigger('change');
 
-  const subModelId  = d.subModelId;
-  const year        = d.year;
-  const colorId     = d.colorId;
+  const subModelId = d.subModelId;
+  const year = d.year;
+  const colorId = d.colorId;
   const pricelistColor = d.pricelistColor;
-  const colorText   = d.colorText;
+  const colorText = d.colorText;
 
   if (!subModelId) return;
 

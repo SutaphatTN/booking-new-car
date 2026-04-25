@@ -38,8 +38,6 @@ $(document).ready(function () {
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
@@ -403,11 +401,7 @@ $(document).ready(function () {
 
   campaignAppellationTable = $('.campaignAppellationTable').DataTable({
     ajax: '/campaign/appellation/list',
-    columns: [
-      { data: 'No' }, 
-      { data: 'name' }, 
-      { data: 'Action', orderable: false, searchable: false }
-    ],
+    columns: [{ data: 'No' }, { data: 'name' }, { data: 'Action', orderable: false, searchable: false }],
     paging: true,
     lengthChange: true,
     searching: true,
@@ -422,8 +416,6 @@ $(document).ready(function () {
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }

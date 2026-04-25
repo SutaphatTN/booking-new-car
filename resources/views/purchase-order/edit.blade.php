@@ -1122,12 +1122,14 @@
                           <i class="bx bx-calendar-event me-1"></i> ข้อมูลวันส่งมอบ
                         </button>
                       </li>
+                      @if (auth()->user()->brand != 2)
                       <li class="nav-item" role="presentation">
                         <button class="nav-link" id="sum-tab5-tab" data-bs-toggle="tab" data-bs-target="#sum-tab5"
                           type="button" role="tab">
                           <i class="bx bx-dollar-circle me-1"></i> ยอดค่าคอม Sale
                         </button>
                       </li>
+                      @endif
                     </ul>
 
                     <div class="tab-content" id="summaryTabsContent">
@@ -1975,9 +1977,9 @@
                       </div>{{-- /sum-tab4 --}}
 
                       {{-- ══ Tab 5: ยอดค่าคอม Sale ══ --}}
+                      @if (auth()->user()->brand != 2)
                       <div class="tab-pane fade" id="sum-tab5" role="tabpanel">
 
-                        @if (auth()->user()->brand != 2)
                           {{-- ── ยอดค่าคอม sale ── --}}
                           <div class="po-section mt-2">
                             <div class="po-section-header">
@@ -2034,9 +2036,8 @@
                               </div>
                             </div>
                           </div>
-                        @endif
-
                       </div>{{-- /sum-tab5 --}}
+                      @endif
 
                     </div>{{-- /tab-content #summaryTabsContent --}}
 

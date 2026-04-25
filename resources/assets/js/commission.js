@@ -14,12 +14,7 @@ $(document).ready(function () {
 
   commissionTable = $('.commissionTable').DataTable({
     ajax: '/purchase-order/list-Commission',
-    columns: [
-      { data: 'No' }, 
-      { data: 'name' }, 
-      { data: 'total_car' }, 
-      { data: 'com' }
-    ],
+    columns: [{ data: 'No' }, { data: 'name' }, { data: 'total_car' }, { data: 'com' }],
     paging: true,
     lengthChange: true,
     searching: true,
@@ -34,8 +29,6 @@ $(document).ready(function () {
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }

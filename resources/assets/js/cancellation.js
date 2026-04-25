@@ -31,8 +31,6 @@ $(document).ready(function () {
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
@@ -115,7 +113,6 @@ $(document).on('click', '.btnViewCancellation', function () {
     $('#cancellationViewModal').modal('show');
   });
 });
-
 
 // $('#btnSaveRefundDate').on('click', function () {
 //   if (!currentViewId) return;

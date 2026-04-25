@@ -43,8 +43,6 @@ $(document).ready(function () {
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
@@ -333,8 +331,6 @@ $(document).ready(function () {
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
@@ -375,8 +371,6 @@ $(document).ready(function () {
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
@@ -1017,8 +1011,6 @@ $(document).ready(function () {
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
@@ -1456,8 +1448,6 @@ $(document).ready(function () {
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
       paginate: {
-        first: '',
-        last: '',
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
