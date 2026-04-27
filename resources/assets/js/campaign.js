@@ -210,10 +210,10 @@ $(document).on('click', '.btnStoreCampaign', function (e) {
   });
 });
 
-//input : get sub model
-$(document).on('change', '#model_id', function () {
+//input + edit : get sub model
+$(document).on('change', '#inp_cam_model_id, #edit_cam_model_id', function () {
   const modelId = $(this).val();
-  const $subModelSelect = $('#subModel_id');
+  const $subModelSelect = $(this).closest('form').find('[name="subModel_id"]');
 
   $subModelSelect.empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>');
 
@@ -223,7 +223,6 @@ $(document).on('change', '#model_id', function () {
     url: '/api/campaign/sub-model/' + modelId,
     type: 'GET',
     success: function (data) {
-      console.log('data:', data);
       if (data.length > 0) {
         data.forEach(function (sub) {
           let text = sub.detail ? `${sub.detail} - ${sub.name}` : sub.name;

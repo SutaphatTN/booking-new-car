@@ -258,7 +258,7 @@ $(document).on('click', '.btnDeleteColorSub', function () {
 });
 
 //input : get sub model
-$(document).on('change', '#model_id', function () {
+$(document).on('change', '#color_model_id', function () {
   const modelId = $(this).val();
   const $subModelSelect = $('#subcarmodel_id');
 
