@@ -319,19 +319,19 @@ $(document).on('click', '.btnEditCam', function () {
 
 //calculate
 function updateCashSupportFinal() {
-  let cashSupport = parseFloat($('#cashSupport').val().replace(/,/g, '')) || 0;
-  let cashSupportDeduct = parseFloat($('#cashSupport_deduct').val().replace(/,/g, '')) || 0;
+  let cashSupport = parseFloat($('[name="cashSupport"]').val().replace(/,/g, '')) || 0;
+  let cashSupportDeduct = parseFloat($('[name="cashSupport_deduct"]').val().replace(/,/g, '')) || 0;
 
   let cashSupportFinal = cashSupport - cashSupportDeduct;
 
-  $('#cashSupport_final').val(
+  $('[name="cashSupport_final"]').val(
     cashSupportFinal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   );
 }
 
-$(document).on('input change blur keyup', '#cashSupport, #cashSupport_deduct', updateCashSupportFinal);
+$(document).on('input change blur keyup', '[name="cashSupport"], [name="cashSupport_deduct"]', updateCashSupportFinal);
 
-$(document).on('focus', '#cashSupport, #cashSupport_deduct', function () {
+$(document).on('focus', '[name="cashSupport"], [name="cashSupport_deduct"]', function () {
   setTimeout(updateCashSupportFinal, 50);
 });
 
