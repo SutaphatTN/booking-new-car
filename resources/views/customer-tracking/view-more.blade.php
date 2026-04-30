@@ -14,8 +14,8 @@
   @php
     $c = $tracking->customer;
     $isSale = auth()->user()->role === 'sale';
-    $saleDetails = $tracking->details->where('entry_type', 'sale')->sortByDesc('contact_date');
-    $managerDetails = $tracking->details->where('entry_type', 'manager')->sortByDesc('contact_date');
+    $saleDetails = $tracking->details->where('entry_type', 'sale')->sortBy([['contact_date', 'desc'], ['id', 'desc']]);
+    $managerDetails = $tracking->details->where('entry_type', 'manager')->sortBy([['contact_date', 'desc'], ['id', 'desc']]);
     $fullName = trim(($c->prefix->Name_TH ?? '') . ' ' . ($c->FirstName ?? '') . ' ' . ($c->LastName ?? ''));
     $totalDetails = $tracking->details->count();
     $hasLockedManagerDecision = $managerDetails->whereIn('decision_id', [1, 2])->isNotEmpty();
