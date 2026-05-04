@@ -5,6 +5,7 @@ namespace App\Http\Controllers\customer;
 use App\Http\Controllers\Controller;
 use App\Models\Address;
 use App\Models\Customer;
+use App\Models\CustomerTracking;
 use App\Models\Salecar;
 use App\Models\TbPrefixname;
 use App\Models\TbThailand;
@@ -367,8 +368,9 @@ class CustomerController extends Controller
 
     public function search(Request $request)
     {
-        $keyword      = $request->input('keyword');
-        $checkSalecar = $request->boolean('check_salecar');
+        $keyword         = $request->input('keyword');
+        $checkSalecar    = $request->boolean('check_salecar');
+        $checkTracking   = $request->boolean('check_tracking');
 
         $customers = Customer::with('prefix')
             ->where(function ($query) use ($keyword) {
@@ -379,7 +381,7 @@ class CustomerController extends Controller
             })
             ->limit(10)
             ->get()
-            ->map(function ($c) use ($checkSalecar) {
+            ->map(function ($c) use ($checkSalecar, $checkTracking) {
                 $c->PrefixNameTH = $c->prefix->Name_TH ?? null;
                 if ($checkSalecar) {
                     $c->has_active_salecar = Salecar::whereNull('deleted_at')
@@ -387,6 +389,12 @@ class CustomerController extends Controller
                         ->whereNull('DeliveryDate')
                         ->where('CusID', $c->id)
                         ->where('brand', Auth::user()->brand)
+                        ->exists();
+                }
+                if ($checkTracking) {
+                    $c->has_active_tracking = CustomerTracking::where('customer_id', $c->id)
+                        ->where('brand', Auth::user()->brand)
+                        ->whereNull('cancelled_at')
                         ->exists();
                 }
                 return $c;

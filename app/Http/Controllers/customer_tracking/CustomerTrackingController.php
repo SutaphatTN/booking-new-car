@@ -123,6 +123,7 @@ class CustomerTrackingController extends Controller
     {
         $exists = CustomerTracking::where('customer_id', $request->customer_id)
             ->where('brand', Auth::user()->brand)
+            ->whereNull('cancelled_at')
             ->exists();
 
         return response()->json(['exists' => $exists]);
@@ -137,6 +138,7 @@ class CustomerTrackingController extends Controller
 
             $alreadyTracked = CustomerTracking::where('customer_id', $request->customer_id)
                 ->where('brand', $authUser->brand)
+                ->whereNull('cancelled_at')
                 ->exists();
 
             if ($alreadyTracked) {

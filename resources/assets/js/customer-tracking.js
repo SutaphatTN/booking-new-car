@@ -110,21 +110,26 @@ $(document).ready(function () {
 
   function searchCustomer(keyword) {
     if (!keyword.trim()) return;
-    $.get('/customers/search', { keyword, check_salecar: 1 }, function (res) {
+    $.get('/customers/search', { keyword, check_salecar: 1, check_tracking: 1 }, function (res) {
       $tableBody.empty();
       if (!res.length) {
         $tableBody.append('<tr><td colspan="4" class="text-center">ไม่พบข้อมูลลูกค้า</td></tr>');
       } else {
         res.forEach(c => {
-          const actionBtn = c.has_active_salecar
-            ? `<span class="badge bg-secondary">มีการจองแล้ว</span>`
-            : `<button class="btn btn-sm btn-primary btnSelectCustomer"
+          let actionBtn;
+          if (c.has_active_salecar) {
+            actionBtn = `<span class="badge bg-secondary">มีการจองแล้ว</span>`;
+          } else if (c.has_active_tracking) {
+            actionBtn = `<span class="badge bg-warning text-dark">มีการติดตามแล้ว</span>`;
+          } else {
+            actionBtn = `<button class="btn btn-sm btn-primary btnSelectCustomer"
                 data-id="${c.id}"
                 data-name="${(c.PrefixNameTH ?? '') + ' ' + (c.FirstName ?? '') + ' ' + (c.LastName ?? '')}"
                 data-mobile="${c.formatted_mobile ?? ''}"
                 data-idnumber="${c.formatted_id_number ?? ''}">
                 เลือก
               </button>`;
+          }
           $tableBody.append(`
             <tr>
               <td>${c.PrefixNameTH ?? ''} ${c.FirstName ?? ''} ${c.LastName ?? ''}</td>
@@ -152,32 +157,20 @@ $(document).ready(function () {
   $(document).on('click', '.btnSelectCustomer', function () {
     const d = $(this).data();
 
-    $.get('/customer-tracking/check-duplicate', { customer_id: d.id }, function (res) {
-      if (res.exists) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'มีข้อมูลการติดตามอยู่แล้ว',
-          text: `${d.name} มีข้อมูลการติดตามอยู่ในระบบแล้ว ไม่สามารถเพิ่มซ้ำได้`,
-          confirmButtonText: 'ตกลง'
-        });
-        return;
-      }
+    $('#CusID').val(d.id);
 
-      $('#CusID').val(d.id);
+    const setDisplay = (id, val) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = val || '—';
+      el.classList.toggle('empty', !val);
+    };
+    setDisplay('customerName-display', d.name);
+    setDisplay('customerID-display', d.idnumber);
+    setDisplay('customerPhone-display', d.mobile);
 
-      const setDisplay = (id, val) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.textContent = val || '—';
-        el.classList.toggle('empty', !val);
-      };
-      setDisplay('customerName-display', d.name);
-      setDisplay('customerID-display', d.idnumber);
-      setDisplay('customerPhone-display', d.mobile);
-
-      $modal.modal('hide');
-      $('#customerSearch').val('');
-    });
+    $modal.modal('hide');
+    $('#customerSearch').val('');
   });
 
   $(document).on('hide.bs.modal', '#modalSearchCustomer', function () {
