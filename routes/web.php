@@ -343,6 +343,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('customer-tracking/detail/{detailId}/continue', [CustomerTrackingController::class, 'continueTracking'])->name('customer-tracking.continueTracking');
     Route::post('customer-tracking/{id}/cancel', [CustomerTrackingController::class, 'cancelTracking'])->name('customer-tracking.cancel');
     Route::delete('customer-tracking/{id}', [CustomerTrackingController::class, 'destroy'])->name('customer-tracking.destroy');
+    Route::post('customer-tracking/quick-store-customer', [CustomerTrackingController::class, 'quickStoreCustomer'])->name('customer-tracking.quickStoreCustomer');
 
     // service check tracking
     Route::get('service-check-tracking/list', [ServiceCheckTrackingController::class, 'list'])->name('service-check-tracking.list');

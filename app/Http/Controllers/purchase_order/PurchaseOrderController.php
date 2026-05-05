@@ -27,6 +27,7 @@ use App\Models\CustomerTracking;
 use App\Models\TbConStatus;
 use App\Models\TbInteriorColor;
 use App\Models\TbLicensePlate;
+use App\Models\TbPrefixname;
 use App\Models\TbProvinces;
 use App\Models\TbSalecarType;
 use App\Models\TbSalePurchaseType;
@@ -105,7 +106,9 @@ class PurchaseOrderController extends Controller
             }
         }
 
-        return view('purchase-order.input', compact('model', 'type', 'typeSale', 'interiorColor', 'saleUser', 'prefill'));
+        $prefixes = TbPrefixname::all();
+
+        return view('purchase-order.input', compact('model', 'type', 'typeSale', 'interiorColor', 'saleUser', 'prefill', 'prefixes'));
     }
 
     public function searchAccessory(Request $request)
@@ -223,6 +226,8 @@ class PurchaseOrderController extends Controller
                 ])),
                 'model' => $car,
                 'order' => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
+                'date' => $s->format_booking_date,
+                'sale' => $s->saleUser?->name,
                 'statusSale' => $status,
                 'Action' => view('purchase-order.button', compact('s'))->render()
             ];
@@ -534,7 +539,9 @@ class PurchaseOrderController extends Controller
             ->get()
             : collect();
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows'));
+        $prefixes = TbPrefixname::all();
+
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes'));
     }
 
     public function update(Request $request, $id)

@@ -87,6 +87,8 @@ $(document).ready(function () {
       { data: 'FullName', orderable: false },
       { data: 'model' },
       { data: 'order' },
+      { data: 'date' },
+      { data: 'sale' },
       { data: 'statusSale' },
       { data: 'Action', orderable: false, searchable: false }
     ],
@@ -267,6 +269,121 @@ $(document).on('hide.bs.modal', '#modalSearchCustomer', function () {
   }, 1);
 });
 
+// การเพิ่มข้อมูลแบบลัด
+let _activePoSearch = null;
+
+// quick add customer (purchase-order pages)
+$(document).ready(function () {
+  if (!$('#modalAddCustomerPO').length) return;
+
+  // inject footer button into shared search modal
+  if ($('#modalSearchCustomer .modal-footer').length === 0) {
+    $('#modalSearchCustomer .modal-content').append(
+      `<div class="modal-footer justify-content-end">
+        <button type="button" class="btn btn-sm btn-primary" id="btnOpenAddCustomerPO">
+          <i class="bx bx-user-plus me-1"></i> เพิ่มข้อมูลลูกค้า
+        </button>
+      </div>`
+    );
+  }
+
+  function formatPhonePO(v) {
+    const d = v.replace(/\D/g, '').substring(0, 10);
+    const p = [];
+    if (d.length > 0) p.push(d.substring(0, 3));
+    if (d.length > 3) p.push(d.substring(3, 7));
+    if (d.length > 7) p.push(d.substring(7, 10));
+    return p.join('-');
+  }
+
+  function formatIDCardPO(v) {
+    const d = v.replace(/\D/g, '').substring(0, 13);
+    const p = [];
+    if (d.length > 0) p.push(d.substring(0, 1));
+    if (d.length > 1) p.push(d.substring(1, 5));
+    if (d.length > 5) p.push(d.substring(5, 10));
+    if (d.length > 10) p.push(d.substring(10, 12));
+    if (d.length > 12) p.push(d.substring(12, 13));
+    return p.join('-');
+  }
+
+  $('#qcpo_phone').on('input', function () { this.value = formatPhonePO(this.value); });
+  $('#qcpo_id_number').on('input', function () { this.value = formatIDCardPO(this.value); });
+
+  $(document).on('click', '#btnOpenAddCustomerPO', function () {
+    $('#qcpo_prefix').val('');
+    $('#qcpo_first_name, #qcpo_last_name, #qcpo_phone, #qcpo_id_number').val('');
+    $('#modalSearchCustomer').modal('hide');
+    $('#modalAddCustomerPO').modal('show');
+  });
+
+  $(document).on('click', '#btnCloseAddCustomerPO, #btnCancelAddCustomerPO', function () {
+    $('#modalAddCustomerPO').modal('hide');
+    $('#modalSearchCustomer').modal('show');
+  });
+
+  $(document).on('click', '#btnSaveQuickCustomerPO', function () {
+    const prefix   = $('#qcpo_prefix').val();
+    const first    = $('#qcpo_first_name').val().trim();
+    const last     = $('#qcpo_last_name').val().trim();
+    const phone    = $('#qcpo_phone').val().trim();
+    const idNumber = $('#qcpo_id_number').val().trim();
+
+    if (!prefix || !first || !last || !phone) {
+      Swal.fire({ icon: 'warning', title: 'กรุณากรอกข้อมูลให้ครบ', text: 'คำนำหน้า ชื่อ นามสกุล และเบอร์โทร จำเป็นต้องกรอก' });
+      return;
+    }
+
+    const $btn = $(this).prop('disabled', true).text('กำลังบันทึก...');
+
+    $.ajax({
+      url: '/customer-tracking/quick-store-customer',
+      type: 'POST',
+      data: { PrefixName: prefix, FirstName: first, LastName: last, Mobilephone1: phone, IDNumber: idNumber || null },
+      success: function (res) {
+        if (!res.success) {
+          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: res.message ?? 'ไม่สามารถบันทึกได้' });
+          return;
+        }
+        $('#modalAddCustomerPO').modal('hide');
+
+        if (_activePoSearch) {
+          $(_activePoSearch.nameInput).val(res.name);
+          $(_activePoSearch.phoneInput).val(res.mobile);
+          $(_activePoSearch.idInput).val(res.id_number);
+          $(_activePoSearch.hiddenId).val(res.id);
+
+          const setDisplay = (id, val) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = val || '—';
+            el.classList.toggle('empty', !val);
+          };
+          if (_activePoSearch.nameInput === '#customerName') {
+            setDisplay('customerName-display', res.name);
+            setDisplay('customerID-display', res.id_number);
+            setDisplay('customerPhone-display', res.mobile);
+          }
+          if (_activePoSearch.nameInput === '#customerNameRef') {
+            setDisplay('customerNameRef-display', res.name);
+            setDisplay('customerIDRef-display', res.id_number);
+            setDisplay('customerPhoneRef-display', res.mobile);
+          }
+        }
+
+        Swal.fire({ icon: 'success', title: 'เพิ่มลูกค้าสำเร็จ', timer: 1500, showConfirmButton: true });
+      },
+      error: function (xhr) {
+        const msg = xhr.responseJSON?.message ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: msg });
+      },
+      complete: function () {
+        $btn.prop('disabled', false).html('<i class="bx bx-save me-1"></i> บันทึก');
+      }
+    });
+  });
+});
+
 function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hiddenId }) {
   const $search = $(searchInput);
   const $modal = $('#modalSearchCustomer');
@@ -279,7 +396,7 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
     }
   });
 
-  $search.siblings('.btnSearchCustomer').on('click', function () {
+  $search.siblings('.btnSearchCustomer, .btnSearchCustomerEdit').on('click', function () {
     searchCustomer($search.val());
   });
 
@@ -302,7 +419,7 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
                 <td>${c.formatted_mobile ?? '-'}</td>
                 <td>${c.formatted_id_number ?? '-'}</td>
                 <td>
-                  <button class="btn btn-sm btn-primary btnSelectCustomer"
+                  <button class="btn btn-sm btn-success btnSelectCustomer"
                     data-id="${c.id}"
                     data-name="${c.PrefixNameTH ?? ''} ${c.FirstName ?? ''} ${c.LastName ?? ''}"
                     data-mobile="${c.formatted_mobile ?? ''}"
@@ -316,6 +433,7 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
           });
         }
 
+        _activePoSearch = { searchInput, nameInput, phoneInput, idInput, hiddenId };
         $modal.modal('show');
       }
     });

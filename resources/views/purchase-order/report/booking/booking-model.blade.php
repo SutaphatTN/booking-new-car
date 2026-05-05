@@ -7,7 +7,7 @@
         <th>สีภายใน</th>
       @endif
       <th>ปี</th>
-      @if (!in_array(auth()->user()->brand, [2,3]))
+      @if (!in_array(auth()->user()->brand, [2, 3]))
         <th>Option</th>
       @endif
       <th>ราคาทุน</th>
@@ -24,6 +24,7 @@
       <th>วันประมาณการ</th>
       <th>สถานะสัญญา</th>
       <th>ระยะเวลาการจอง</th>
+      <th>PO Date</th>
       <th>สถานะรถจัดสรร</th>
       <th>วันที่จัดสรร</th>
       <th>ประดับยนต์ของรถ</th>
@@ -39,7 +40,7 @@
           <td>{{ $r['interior_color'] }}</td>
         @endif
         <td>{{ $r['year'] }}</td>
-        @if (!in_array(auth()->user()->brand, [2,3]))
+        @if (!in_array(auth()->user()->brand, [2, 3]))
           <td>{{ $r['option'] }}</td>
         @endif
         <td>{{ $r['car_DNP'] }}</td>
@@ -56,6 +57,7 @@
         <td>{{ $r['DeliveryEstimateDate'] }}</td>
         <td>{{ $r['status'] }}</td>
         <td>{{ $r['daysBind'] }}</td>
+        <td>{{ $s['po_date'] }}</td>
         <td>{{ $r['allocation_status'] }}</td>
         <td>{{ $r['allocation_date'] }}</td>
         <td>{{ $r['note_accessory'] }}</td>
@@ -64,7 +66,7 @@
     @empty
       <tr>
         {{-- <td colspan="{{ auth()->user()->brand == 2 ? 21 : 20 }}" align="center"> --}}
-          <td colspan="22" align="center">
+        <td colspan="23" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

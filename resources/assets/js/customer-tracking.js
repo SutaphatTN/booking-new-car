@@ -13,7 +13,8 @@ $(document).ready(function () {
       { data: 'FullName' },
       { data: 'model' },
       { data: 'sale' },
-      { data: 'detail', orderable: false },
+      { data: 'date' },
+      { data: 'status' },
       {
         data: 'id',
         orderable: false,
@@ -120,9 +121,9 @@ $(document).ready(function () {
           if (c.has_active_salecar) {
             actionBtn = `<span class="badge bg-secondary">มีการจองแล้ว</span>`;
           } else if (c.has_active_tracking) {
-            actionBtn = `<span class="badge bg-warning text-dark">มีการติดตามแล้ว</span>`;
+            actionBtn = `<span class="badge bg-warning">มีการติดตามแล้ว</span>`;
           } else {
-            actionBtn = `<button class="btn btn-sm btn-primary btnSelectCustomer"
+            actionBtn = `<button class="btn btn-sm btn-success btnSelectCustomer"
                 data-id="${c.id}"
                 data-name="${(c.PrefixNameTH ?? '') + ' ' + (c.FirstName ?? '') + ' ' + (c.LastName ?? '')}"
                 data-mobile="${c.formatted_mobile ?? ''}"
@@ -178,6 +179,117 @@ $(document).ready(function () {
       document.activeElement.blur();
       $('body').trigger('focus');
     }, 1);
+  });
+
+  // การเพิ่มข้อมูลลูกค้า แบบไม่ลัด
+  function formatPhone(value) {
+    const digits = value.replace(/\D/g, '').substring(0, 10);
+    const parts = [];
+    if (digits.length > 0) parts.push(digits.substring(0, 3));
+    if (digits.length > 3) parts.push(digits.substring(3, 7));
+    if (digits.length > 7) parts.push(digits.substring(7, 10));
+    return parts.join('-');
+  }
+
+  function formatIDCard(value) {
+    const digits = value.replace(/\D/g, '').substring(0, 13);
+    const parts = [];
+    if (digits.length > 0) parts.push(digits.substring(0, 1));
+    if (digits.length > 1) parts.push(digits.substring(1, 5));
+    if (digits.length > 5) parts.push(digits.substring(5, 10));
+    if (digits.length > 10) parts.push(digits.substring(10, 12));
+    if (digits.length > 12) parts.push(digits.substring(12, 13));
+    return parts.join('-');
+  }
+
+  $('#qc_phone').on('input', function () {
+    this.value = formatPhone(this.value);
+  });
+
+  $('#qc_id_number').on('input', function () {
+    this.value = formatIDCard(this.value);
+  });
+
+  function openAddCustomerModal() {
+    // reset form
+    $('#qc_prefix').val('');
+    $('#qc_first_name').val('');
+    $('#qc_last_name').val('');
+    $('#qc_phone').val('');
+    $('#qc_id_number').val('');
+    $modal.modal('hide');
+    $('#modalAddCustomer').modal('show');
+  }
+
+  function closeAddCustomerModal() {
+    $('#modalAddCustomer').modal('hide');
+    $modal.modal('show');
+  }
+
+  $('#btnOpenAddCustomer').on('click', openAddCustomerModal);
+  $('#btnCloseAddCustomer, #btnCancelAddCustomer').on('click', closeAddCustomerModal);
+
+  $(document).on('hide.bs.modal', '#modalAddCustomer', function () {
+    setTimeout(() => {
+      document.activeElement.blur();
+      $('body').trigger('focus');
+    }, 1);
+  });
+
+  $('#btnSaveQuickCustomer').on('click', function () {
+    const prefix = $('#qc_prefix').val();
+    const first = $('#qc_first_name').val().trim();
+    const last = $('#qc_last_name').val().trim();
+    const phone = $('#qc_phone').val().trim();
+    const idNumber = $('#qc_id_number').val().trim();
+
+    if (!prefix || !first || !last || !phone) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณากรอกข้อมูลให้ครบ',
+        text: 'คำนำหน้า ชื่อ นามสกุล และเบอร์โทร จำเป็นต้องกรอก'
+      });
+      return;
+    }
+
+    const $btn = $(this).prop('disabled', true).text('กำลังบันทึก...');
+
+    $.ajax({
+      url: '/customer-tracking/quick-store-customer',
+      type: 'POST',
+      data: { PrefixName: prefix, FirstName: first, LastName: last, Mobilephone1: phone, IDNumber: idNumber || null },
+      success: function (res) {
+        if (!res.success) {
+          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: res.message ?? 'ไม่สามารถบันทึกได้' });
+          return;
+        }
+
+        // ปิด modal เพิ่มลูกค้า และ modal ค้นหา แล้วเลือกลูกค้าที่เพิ่งเพิ่ม
+        $('#modalAddCustomer').modal('hide');
+
+        $('#CusID').val(res.id);
+        const setDisplay = (id, val) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.textContent = val || '—';
+          el.classList.toggle('empty', !val);
+        };
+        setDisplay('customerName-display', res.name);
+        setDisplay('customerID-display', res.id_number);
+        setDisplay('customerPhone-display', res.mobile);
+
+        $('#customerSearch').val('');
+
+        Swal.fire({ icon: 'success', title: 'เพิ่มลูกค้าสำเร็จ', timer: 1500, showConfirmButton: true });
+      },
+      error: function (xhr) {
+        const msg = xhr.responseJSON?.message ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: msg });
+      },
+      complete: function () {
+        $btn.prop('disabled', false).html('<i class="bx bx-save me-1"></i> บันทึก');
+      }
+    });
   });
 
   // --- Car Cascades ---
@@ -422,7 +534,7 @@ $(document).ready(function () {
       confirmButtonColor: '#6c5ffc',
       cancelButtonColor: '#d33',
       confirmButtonText: 'ยืนยัน',
-      cancelButtonText: 'ไม่ใช่',
+      cancelButtonText: 'ไม่ใช่'
     }).then(result => {
       if (!result.isConfirmed) return;
 
@@ -434,7 +546,7 @@ $(document).ready(function () {
             icon: 'success',
             title: 'ยกเลิกการติดตามเรียบร้อยแล้ว',
             timer: 1500,
-            showConfirmButton: true,
+            showConfirmButton: true
           });
           setTimeout(() => {
             window.location.href = '/customer-tracking';
@@ -442,7 +554,7 @@ $(document).ready(function () {
         },
         error: function () {
           Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถยกเลิกการติดตามได้' });
-        },
+        }
       });
     });
   });

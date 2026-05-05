@@ -7,9 +7,11 @@ use App\Http\Controllers\Controller;
 use App\Models\CustomerTracking;
 use App\Models\CustomerTrackingDetail;
 use App\Models\Salecar;
+use App\Models\Customer;
 use App\Models\TbCarmodel;
 use App\Models\TbDecision;
 use App\Models\TbInteriorColor;
+use App\Models\TbPrefixname;
 use App\Models\TbSalecarType;
 use App\Models\User;
 use Carbon\Carbon;
@@ -76,21 +78,22 @@ class CustomerTrackingController extends Controller
             $source = $t->source->name ?? '-';
 
             if ($t->nextManagerDetail) {
-                $dateLabel    = 'วันที่ติดต่อครั้งถัดไป';
+                $dateLabel    = 'ติดต่อครั้งถัดไป';
                 $dateValue    = $t->nextManagerDetail->format_contact_date;
                 $activeDetail = $t->nextManagerDetail;
             } elseif ($t->latestManagerDetail) {
-                $dateLabel    = 'วันที่ติดต่อล่าสุด';
+                $dateLabel    = 'ติดต่อล่าสุด';
                 $dateValue    = $t->latestManagerDetail->format_contact_date;
                 $activeDetail = $t->latestManagerDetail;
             } else {
-                $dateLabel    = 'วันที่ติดต่อล่าสุด';
+                $dateLabel    = 'ติดต่อล่าสุด';
                 $dateValue    = $latestDetail?->format_contact_date ?? '-';
                 $activeDetail = $latestDetail;
             }
 
             $decision = $activeDetail?->decision?->name ?? '-';
 
+            $date = "{$dateLabel} : {$dateValue}";
             $detail = "ที่มา : {$source}<br>{$dateLabel} : {$dateValue}<br>การตัดสินใจ : {$decision}";
 
             return [
@@ -99,7 +102,8 @@ class CustomerTrackingController extends Controller
                 'FullName'     => trim($fullName),
                 'model'        => $car,
                 'sale'         => $t->sale->name ?? '-',
-                'detail'       => $detail,
+                'date'         => $date,
+                'status'       => $decision,
                 'decision_id'  => $activeDetail?->decision_id ?? '',
             ];
         });
@@ -115,8 +119,9 @@ class CustomerTrackingController extends Controller
         $decisions     = TbDecision::all();
         $saleUser      = User::where('role', 'sale')->where('brand', $authUser->brand)->get();
         $interiorColor = $authUser->brand == 2 ? TbInteriorColor::all() : collect();
+        $prefixes      = TbPrefixname::all();
 
-        return view('customer-tracking.input', compact('model', 'sources', 'decisions', 'saleUser', 'interiorColor'));
+        return view('customer-tracking.input', compact('model', 'sources', 'decisions', 'saleUser', 'interiorColor', 'prefixes'));
     }
 
     public function checkDuplicate(Request $request)
@@ -185,8 +190,8 @@ class CustomerTrackingController extends Controller
             // auto-generate follow-up entries สำหรับ role ที่ไม่ใช่ sale
             if ($authUser->role !== 'sale' && $decisionId) {
                 $followUpDays = match ((int) $decisionId) {
-                    2 => [3, 6],
-                    1 => [30, 60],
+                    1 => [3, 6],
+                    2 => [30, 60],
                     default => [],
                 };
 
@@ -267,8 +272,8 @@ class CustomerTrackingController extends Controller
 
             if ($user->role !== 'sale' && $decisionId) {
                 $followUpDays = match ((int) $decisionId) {
-                    2 => [3, 6],
-                    1 => [30, 60],
+                    1 => [3, 6],
+                    2 => [30, 60],
                     default => [],
                 };
 
@@ -325,8 +330,8 @@ class CustomerTrackingController extends Controller
         $isAutoDecision = in_array((int) $request->decision_id, [1, 2]);
 
         $followUpDays = match ((int) $request->decision_id) {
-            2 => [3, 6, 9],
-            1 => [30, 60, 90],
+            1 => [3, 6, 9],
+            2 => [30, 60, 90],
             default => [0],
         };
 
@@ -384,5 +389,42 @@ class CustomerTrackingController extends Controller
     {
         CustomerTracking::findOrFail($id)->delete();
         return response()->json(['success' => true]);
+    }
+
+    public function quickStoreCustomer(Request $request)
+    {
+        $request->validate([
+            'PrefixName'   => 'required|integer|exists:tb_prefixname,id',
+            'FirstName'    => 'required|string|max:100',
+            'LastName'     => 'required|string|max:100',
+            'Mobilephone1' => 'required|string|max:20',
+            'IDNumber'     => 'nullable|string|max:17',
+        ]);
+
+        $authUser = Auth::user();
+        $idNumber = $request->IDNumber ? preg_replace('/\D/', '', $request->IDNumber) : null;
+
+        $customer = Customer::create([
+            'PrefixName'   => $request->PrefixName,
+            'FirstName'    => $request->FirstName,
+            'LastName'     => $request->LastName,
+            'Mobilephone1' => preg_replace('/\D/', '', $request->Mobilephone1),
+            'IDNumber'     => $idNumber,
+            'userZone'     => $authUser->userZone,
+            'brand'        => $authUser->brand,
+            'branch'       => $authUser->branch,
+            'UserInsert'   => $authUser->id,
+        ]);
+
+        $customer->load('prefix');
+        $prefixName = $customer->prefix?->Name_TH ?? '';
+
+        return response()->json([
+            'success'   => true,
+            'id'        => $customer->id,
+            'name'      => trim("{$prefixName} {$customer->FirstName} {$customer->LastName}"),
+            'mobile'    => $customer->formatted_mobile,
+            'id_number' => $idNumber ? $customer->formatted_id_number : '-',
+        ]);
     }
 }

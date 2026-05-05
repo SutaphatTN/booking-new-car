@@ -90,10 +90,9 @@
               </div>
 
               <div class="col-md-3">
-                <label for="IDNumber" class="po-label"><i class='bx bx-id-card'></i> เลขบัตรประชาชน <span
-                    class="text-danger">*</span></label>
+                <label for="IDNumber" class="po-label"><i class='bx bx-id-card'></i> เลขบัตรประชาชน</label>
                 <input id="IDNumber" type="text" class="form-control @error('IDNumber') is-invalid @enderror"
-                  name="IDNumber" maxlength="17" required>
+                  name="IDNumber" maxlength="17">
                 @error('IDNumber')
                   <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
                 @enderror

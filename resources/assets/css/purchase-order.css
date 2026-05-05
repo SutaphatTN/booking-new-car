@@ -354,7 +354,8 @@
 
 #turnCarNo:checked + label,
 #contactNo:checked + label,
-#addContactNo:checked + label {
+#addContactNo:checked + label,
+#editContactNo:checked + label {
   background: #fee2e2;
   border-color: #ef4444;
   color: #b91c1c;

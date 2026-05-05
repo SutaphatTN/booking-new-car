@@ -83,21 +83,15 @@
 
             {{-- prefill data สำหรับ JS --}}
             @if ($prefill)
-              <div id="prefillData"
-                data-customer-id="{{ $prefill['customer_id'] }}"
+              <div id="prefillData" data-customer-id="{{ $prefill['customer_id'] }}"
                 data-customer-name="{{ $prefill['customer_name'] }}"
                 data-customer-id-number="{{ $prefill['customer_id_number'] }}"
-                data-customer-phone="{{ $prefill['customer_phone'] }}"
-                data-sale-id="{{ $prefill['sale_id'] }}"
-                data-model-id="{{ $prefill['model_id'] }}"
-                data-sub-model-id="{{ $prefill['sub_model_id'] }}"
-                data-year="{{ $prefill['year'] }}"
-                data-pricelist-color="{{ $prefill['pricelist_color'] ?? '' }}"
-                data-option="{{ $prefill['option'] ?? '' }}"
-                data-color-id="{{ $prefill['color_id'] }}"
+                data-customer-phone="{{ $prefill['customer_phone'] }}" data-sale-id="{{ $prefill['sale_id'] }}"
+                data-model-id="{{ $prefill['model_id'] }}" data-sub-model-id="{{ $prefill['sub_model_id'] }}"
+                data-year="{{ $prefill['year'] }}" data-pricelist-color="{{ $prefill['pricelist_color'] ?? '' }}"
+                data-option="{{ $prefill['option'] ?? '' }}" data-color-id="{{ $prefill['color_id'] }}"
                 data-interior-color-id="{{ $prefill['interior_color_id'] ?? '' }}"
-                data-color-text="{{ $prefill['color_text'] ?? '' }}"
-                style="display:none;">
+                data-color-text="{{ $prefill['color_text'] ?? '' }}" style="display:none;">
               </div>
             @endif
 
@@ -662,4 +656,63 @@
   </form>
 
   @include('purchase-order.search-customer.search')
+
+  {{-- modal เพิ่มลูกค้าใหม่ (quick add) --}}
+  <div class="modal fade" id="modalAddCustomerPO" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow mf-content mf-content--input">
+
+        <div class="modal-header mf-header mf-header--input px-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="mf-hd-icon">
+              <i class="bx bx-user-plus fs-5 text-white"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 fw-bold text-white mf-hd-title">เพิ่มข้อมูลลูกค้าใหม่</h6>
+              <small class="text-white mf-hd-sub">Add New Customer</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+            aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="po-label" for="qcpo_prefix">คำนำหน้า <span class="text-danger">*</span></label>
+              <select id="qcpo_prefix" class="form-select">
+                <option value="">— เลือก —</option>
+                @foreach ($prefixes as $p)
+                  <option value="{{ $p->id }}">{{ $p->Name_TH }}</option>
+                @endforeach
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="po-label" for="qcpo_first_name">ชื่อ <span class="text-danger">*</span></label>
+              <input id="qcpo_first_name" type="text" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="po-label" for="qcpo_last_name">นามสกุล <span class="text-danger">*</span></label>
+              <input id="qcpo_last_name" type="text" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="po-label" for="qcpo_phone">เบอร์โทร <span class="text-danger">*</span></label>
+              <input id="qcpo_phone" type="text" class="form-control" maxlength="12" placeholder="xxx-xxxx-xxx">
+            </div>
+            <div class="col-md-6">
+              <label class="po-label" for="qcpo_id_number">เลขบัตรประชาชน</label>
+              <input id="qcpo_id_number" type="text" class="form-control" maxlength="17"
+                placeholder="x-xxxx-xxxxx-xx-x">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" id="btnCancelAddCustomerPO"><i class="bx bx-x me-1"></i>ยกเลิก</button>
+          <button type="button" class="btn btn-primary" id="btnSaveQuickCustomerPO">
+            <i class="bx bx-save me-1"></i> บันทึก
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 @endsection

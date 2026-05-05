@@ -32,6 +32,8 @@
                   <th>ชื่อ - นามสกุล</th>
                   <th>รุ่นรถ</th>
                   <th>รหัส Car Order</th>
+                  <th>วันที่จอง</th>
+                  <th>ชื่อฝ่ายขาย</th>
                   <th>สถานะ</th>
                   <th width="150px">Action</th>
                 </tr>
