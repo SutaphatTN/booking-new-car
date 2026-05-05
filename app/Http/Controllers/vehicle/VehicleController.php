@@ -31,17 +31,17 @@ class VehicleController extends Controller
             'financeConfirm'
         ])
             ->whereNotNull('CarOrderID')
-            ->whereNotNull('DeliveryDate')
-            // ->where('con_status', 5)
-            ->where(function ($q) {
-                $q->where('payment_mode', 'non-finance')
-                    ->orWhere(function ($q2) {
-                        $q2->where('payment_mode', 'finance')
-                            ->whereHas('financeConfirm', function ($q3) {
-                                $q3->whereNotNull('firm_date');
-                            });
-                    });
-            });
+            // ->whereNotNull('DeliveryDate')
+            ->where('con_status', 5);
+            // ->where(function ($q) {
+            //     $q->where('payment_mode', 'non-finance')
+            //         ->orWhere(function ($q2) {
+            //             $q2->where('payment_mode', 'finance')
+            //                 ->whereHas('financeConfirm', function ($q3) {
+            //                     $q3->whereNotNull('firm_date');
+            //                 });
+            //         });
+            // });
 
         if ($status === 'unWithdrawal') {
             $query->where(function ($q) {
@@ -215,16 +215,17 @@ class VehicleController extends Controller
     {
         $withdrawalData = Salecar::with(['carOrder', 'vehicleLicense', 'customer'])
             ->whereNotNull('CarOrderID')
-            ->whereNotNull('DeliveryDate')
-            ->where(function ($q) {
-                $q->where('payment_mode', 'non-finance')
-                    ->orWhere(function ($q2) {
-                        $q2->where('payment_mode', 'finance')
-                            ->whereHas('financeConfirm', function ($q3) {
-                                $q3->whereNotNull('firm_date');
-                            });
-                    });
-            })
+            ->where('con_status', 5)
+            // ->whereNotNull('DeliveryDate')
+            // ->where(function ($q) {
+            //     $q->where('payment_mode', 'non-finance')
+            //         ->orWhere(function ($q2) {
+            //             $q2->where('payment_mode', 'finance')
+            //                 ->whereHas('financeConfirm', function ($q3) {
+            //                     $q3->whereNotNull('firm_date');
+            //                 });
+            //         });
+            // })
             ->where(function ($q) {
                 $q->doesntHave('vehicleLicense')
                     ->orWhereHas('vehicleLicense', function ($qq) {
@@ -234,7 +235,8 @@ class VehicleController extends Controller
 
         $clearData = Salecar::with(['carOrder', 'vehicleLicense', 'customer'])
             ->whereNotNull('CarOrderID')
-            ->whereNotNull('DeliveryDate')
+            ->where('con_status', 5)
+            // ->whereNotNull('DeliveryDate')
             ->whereHas('vehicleLicense', function ($q) {
                 $q->whereNotNull('withdrawal_date')
                     ->whereNull('backup_clear_date');
