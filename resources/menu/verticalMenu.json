@@ -135,6 +135,16 @@
               "url": "pricelist-car",
               "name": "ราคารถ",
               "slug": "model.pricelist-car.index"
+            },
+            {
+              "url": "gwm-incentive",
+              "name": "GWM Incentive",
+              "slug": "gwm-incentive.index"
+            },
+            {
+              "url": "gwm-incentive/report",
+              "name": "รายงาน GWM Incentive",
+              "slug": "gwm-incentive.report"
             }
           ]
         },

@@ -25,6 +25,7 @@ use App\Http\Controllers\delivery_form\DeliveryFormController;
 use App\Http\Controllers\invoice\InvoiceController;
 use App\Http\Controllers\pricelist_car\PricelistCarController;
 use App\Http\Controllers\customer_tracking\CustomerTrackingController;
+use App\Http\Controllers\gwm_incentive\GwmIncentiveController;
 use App\Http\Controllers\service_check_tracking\ServiceCheckTrackingController;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -278,6 +279,25 @@ Route::middleware(['auth', 'notsale'])->group(function () {
         'edit' => 'model.pricelist-car.edit',
         'update' => 'model.pricelist-car.update',
         'destroy' => 'model.pricelist-car.destroy',
+    ]);
+
+    // gwm-incentive
+    Route::get('gwm-incentive/list', [GwmIncentiveController::class, 'list'])->name('gwm-incentive.list');
+    Route::get('gwm-incentive/create', [GwmIncentiveController::class, 'create'])->name('gwm-incentive.create');
+    Route::get('/api/gwm-incentive/sub-models/{model_id}', [GwmIncentiveController::class, 'getSubModels'])->name('gwm-incentive.subModels');
+    Route::get('/api/gwm-incentive/check', [GwmIncentiveController::class, 'checkExisting'])->name('gwm-incentive.check');
+    Route::get('/api/gwm-incentive/kpi',   [GwmIncentiveController::class, 'getKpi'])->name('gwm-incentive.kpi.get');
+    Route::post('/gwm-incentive/kpi',      [GwmIncentiveController::class, 'storeKpi'])->name('gwm-incentive.kpi.store');
+
+    Route::get('gwm-incentive/report',         [GwmIncentiveController::class, 'report'])->name('gwm-incentive.report');
+    Route::get('gwm-incentive/report/export',  [GwmIncentiveController::class, 'exportReport'])->name('gwm-incentive.report.export');
+
+    Route::resource('gwm-incentive', GwmIncentiveController::class)->names([
+        'index'   => 'gwm-incentive.index',
+        'store'   => 'gwm-incentive.store',
+        'edit'    => 'gwm-incentive.edit',
+        'update'  => 'gwm-incentive.update',
+        'destroy' => 'gwm-incentive.destroy',
     ]);
 
     // forecast
