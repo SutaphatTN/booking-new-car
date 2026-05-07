@@ -1702,3 +1702,17 @@ $(document).on('change', '#pricelist_color', function () {
 $(document).on('change', '#pricelist_year', function () {
   loadPricelistData();
 });
+
+//view report car order stock
+document.addEventListener('DOMContentLoaded', function () {
+  const modalEl = document.querySelector('.viewExportCarOrderStock');
+  if (!modalEl) return;
+
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+
+  // ปิด modal แล้วกลับหน้าก่อนหน้า
+  modalEl.addEventListener('hidden.bs.modal', function () {
+    window.history.back();
+  });
+});
