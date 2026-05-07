@@ -36,6 +36,15 @@ class BookingExport implements WithMultipleSheets
 
                 // sheet สำหรับ submodel 9
                 $sheets[] = new BookingByModelSheet($model, 'only9');
+
+            } elseif ($model->id == 9) {
+
+                // sheet สำหรับ submodel 40, 41
+                $sheets[] = new BookingByModelSheet($model, 'sub_4041');
+
+                // sheet สำหรับ submodel 53, 62
+                $sheets[] = new BookingByModelSheet($model, 'sub_5362');
+
             } else {
 
                 $sheets[] = new BookingByModelSheet($model);

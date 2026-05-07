@@ -33,7 +33,8 @@
           <div class="row g-2">
             <div class="col-12">
               <div class="po-label">ชื่อ - นามสกุล</div>
-              <div class="info-val">{{ ($c->prefix->Name_TH ?? '') . ' ' . ($c->FirstName ?? '') . ' ' . ($c->LastName ?? '') }}</div>
+              <div class="info-val">
+                {{ ($c->prefix->Name_TH ?? '') . ' ' . ($c->FirstName ?? '') . ' ' . ($c->LastName ?? '') }}</div>
             </div>
             <div class="col-md-6">
               <div class="po-label">เลขบัตรประชาชน</div>
@@ -65,7 +66,7 @@
             </div>
             <div class="col-md-6">
               <div class="po-label">สี</div>
-              <div class="info-val">{{ $s?->gwmColor?->name ?? $s?->Color ?? '-' }}</div>
+              <div class="info-val">{{ $s?->gwmColor?->name ?? ($s?->Color ?? '-') }}</div>
             </div>
             <div class="col-md-6">
               <div class="po-label">ปี</div>
@@ -108,7 +109,7 @@
                   {{ number_format($detail->mileage) }} กม.
                 </span>
               </div>
-              @if($detail->note)
+              @if ($detail->note)
                 <div class="tracking-detail-comment">
                   <span>{{ $detail->note }}</span>
                 </div>
@@ -156,20 +157,22 @@
             </div>
             <div class="col-md-6">
               <label class="po-label" for="add_mileage">เลขไมล์ (กม.)</label>
-              <input type="number" id="add_mileage" class="form-control" min="0" placeholder="เช่น 10000" required>
+              <input type="number" id="add_mileage" class="form-control" min="0" placeholder="เช่น 10000"
+                required>
             </div>
             <div class="col-12">
               <label class="po-label" for="add_note">หมายเหตุ</label>
               <textarea id="add_note" class="form-control" rows="3" placeholder="รายละเอียดเพิ่มเติม..."></textarea>
             </div>
           </div>
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" class="btn btn-primary" id="btnSaveDetail" data-tracking-id="{{ $tracking->id }}">
+              <i class="bx bx-save me-1"></i> บันทึก
+            </button>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ยกเลิก</button>
-          <button type="button" class="btn btn-primary" id="btnSaveDetail" data-tracking-id="{{ $tracking->id }}">
-            <i class="bx bx-save me-1"></i> บันทึก
-          </button>
-        </div>
+
       </div>
     </div>
   </div>

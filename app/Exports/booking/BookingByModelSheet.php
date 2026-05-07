@@ -35,6 +35,14 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
       return $this->model->initials . '-AT';
     }
 
+    if ($this->model->id == 9 && $this->filter == 'sub_4041') {
+      return $this->model->initials . '-PHEV';
+    }
+
+    if ($this->model->id == 9 && $this->filter == 'sub_5362') {
+      return $this->model->initials . '-HEV';
+    }
+
     return $this->model->initials;
   }
 
@@ -146,6 +154,17 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
 
       if ($this->filter == 'exclude9') {
         $query->where('subModel_id', '!=', 9);
+      }
+    }
+
+    if ($this->model->id == 9) {
+
+      if ($this->filter == 'sub_4041') {
+        $query->whereIn('subModel_id', [40, 41]);
+      }
+
+      if ($this->filter == 'sub_5362') {
+        $query->whereIn('subModel_id', [53, 62]);
       }
     }
 
@@ -275,6 +294,17 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
 
       if ($this->filter == 'exclude9') {
         $orphanSales->where('subModel_id', '!=', 9);
+      }
+    }
+
+    if ($this->model->id == 9) {
+
+      if ($this->filter == 'sub_4041') {
+        $orphanSales->whereIn('subModel_id', [40, 41]);
+      }
+
+      if ($this->filter == 'sub_5362') {
+        $orphanSales->whereIn('subModel_id', [53, 62]);
       }
     }
 

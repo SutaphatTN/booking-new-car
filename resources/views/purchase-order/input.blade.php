@@ -705,13 +705,16 @@
                 placeholder="x-xxxx-xxxxx-xx-x">
             </div>
           </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-danger" id="btnCancelAddCustomerPO"><i
+                class="bx bx-x me-1"></i>ยกเลิก</button>
+            <button type="button" class="btn btn-primary" id="btnSaveQuickCustomerPO">
+              <i class="bx bx-save me-1"></i> บันทึก
+            </button>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-danger" id="btnCancelAddCustomerPO"><i class="bx bx-x me-1"></i>ยกเลิก</button>
-          <button type="button" class="btn btn-primary" id="btnSaveQuickCustomerPO">
-            <i class="bx bx-save me-1"></i> บันทึก
-          </button>
-        </div>
+
       </div>
     </div>
   </div>

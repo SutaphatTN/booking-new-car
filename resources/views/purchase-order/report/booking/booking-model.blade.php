@@ -57,7 +57,7 @@
         <td>{{ $r['DeliveryEstimateDate'] }}</td>
         <td>{{ $r['status'] }}</td>
         <td>{{ $r['daysBind'] }}</td>
-        <td>{{ $s['po_date'] }}</td>
+        <td>{{ $r['po_date'] }}</td>
         <td>{{ $r['allocation_status'] }}</td>
         <td>{{ $r['allocation_date'] }}</td>
         <td>{{ $r['note_accessory'] }}</td>

@@ -122,10 +122,14 @@ $(document).on('click', '.btnEditCust', function () {
 
         const form = $modal.find('form')[0];
 
-        const disabledSelects = form.querySelectorAll('select[name$="_province"],select[name$="_district"],select[name$="_subdistrict"]');
-        disabledSelects.forEach(el => el.disabled = false);
+        const disabledSelects = form.querySelectorAll(
+          'select[name$="_province"],select[name$="_district"],select[name$="_subdistrict"]'
+        );
+        disabledSelects.forEach(el => (el.disabled = false));
         const formData = new FormData(form);
-        disabledSelects.forEach(el => { if (!el.value) el.disabled = true; });
+        disabledSelects.forEach(el => {
+          if (!el.value) el.disabled = true;
+        });
 
         $.ajax({
           url: form.action,
@@ -227,7 +231,7 @@ $(document).on('click', '.btnDeleteCust', function () {
   });
 });
 
-// ─── Thailand Address Dropdowns ──────────────────────────────────────────────
+// ─── Thailand Address Dropdowns ──
 
 function thLoadProvinces(sel, preselect, afterLoad) {
   $.get('/api/thailand/provinces').done(function (data) {
@@ -246,7 +250,10 @@ function thLoadProvinces(sel, preselect, afterLoad) {
 function thLoadDistricts(sel, province, preselect, afterLoad) {
   sel.innerHTML = '<option value="">-- เลือกอำเภอ --</option>';
   sel.disabled = true;
-  if (!province) { if (afterLoad) afterLoad(); return; }
+  if (!province) {
+    if (afterLoad) afterLoad();
+    return;
+  }
   $.get('/api/thailand/districts', { province: province }).done(function (data) {
     data.forEach(function (d) {
       const opt = document.createElement('option');
@@ -265,7 +272,10 @@ function thLoadTambons(tambonSel, postalInput, postIdInput, province, district, 
   tambonSel.disabled = true;
   if (postalInput) postalInput.value = '';
   if (postIdInput) postIdInput.value = '';
-  if (!province || !district) { if (afterLoad) afterLoad(); return; }
+  if (!province || !district) {
+    if (afterLoad) afterLoad();
+    return;
+  }
   $.get('/api/thailand/tambons', { province: province, district: district }).done(function (data) {
     data.forEach(function (t) {
       const opt = document.createElement('option');
@@ -291,7 +301,7 @@ function thLoadTambons(tambonSel, postalInput, postIdInput, province, district, 
 function initAddressSection(container, prefix) {
   const provinceSel = container.querySelector(`[name="${prefix}_province"]`);
   const districtSel = container.querySelector(`[name="${prefix}_district"]`);
-  const tambonSel   = container.querySelector(`[name="${prefix}_subdistrict"]`);
+  const tambonSel = container.querySelector(`[name="${prefix}_subdistrict"]`);
   const postalInput = container.querySelector(`[name="${prefix}_postal_code"]`);
   const postIdInput = container.querySelector(`[name="${prefix}_post_id"]`);
 
@@ -310,8 +320,8 @@ function initAddressSection(container, prefix) {
   } else {
     // create form: no pre-rendered options, load via AJAX
     const preProvince = provinceSel.dataset.value || '';
-    const preDistrict = districtSel ? (districtSel.dataset.value || '') : '';
-    const preTambon   = tambonSel   ? (tambonSel.dataset.value   || '') : '';
+    const preDistrict = districtSel ? districtSel.dataset.value || '' : '';
+    const preTambon = tambonSel ? tambonSel.dataset.value || '' : '';
 
     thLoadProvinces(provinceSel, preProvince, function () {
       if (preProvince && districtSel) {
@@ -327,7 +337,10 @@ function initAddressSection(container, prefix) {
   $(provinceSel).on('change', function () {
     const province = this.value;
     if (districtSel) thLoadDistricts(districtSel, province, '', null);
-    if (tambonSel)   { tambonSel.innerHTML = '<option value="">-- เลือกตำบล --</option>'; tambonSel.disabled = true; }
+    if (tambonSel) {
+      tambonSel.innerHTML = '<option value="">-- เลือกตำบล --</option>';
+      tambonSel.disabled = true;
+    }
     if (postalInput) postalInput.value = '';
     if (postIdInput) postIdInput.value = '';
   });
@@ -358,18 +371,23 @@ function initAddressSection(container, prefix) {
 function syncDocFromCurrent(container) {
   const province = container.querySelector('[name="current_province"]')?.value || '';
   const district = container.querySelector('[name="current_district"]')?.value || '';
-  const tambon   = container.querySelector('[name="current_subdistrict"]')?.value || '';
+  const tambon = container.querySelector('[name="current_subdistrict"]')?.value || '';
 
   const docProvinceSel = container.querySelector('[name="doc_province"]');
   const docDistrictSel = container.querySelector('[name="doc_district"]');
-  const docTambonSel   = container.querySelector('[name="doc_subdistrict"]');
-  const docPostal      = container.querySelector('[name="doc_postal_code"]');
-  const docPostId      = container.querySelector('[name="doc_post_id"]');
+  const docTambonSel = container.querySelector('[name="doc_subdistrict"]');
+  const docPostal = container.querySelector('[name="doc_postal_code"]');
+  const docPostId = container.querySelector('[name="doc_post_id"]');
 
   // if doc selects already have the correct values pre-rendered, skip AJAX reload
-  if (docProvinceSel && docProvinceSel.value === province &&
-      docDistrictSel && docDistrictSel.value === district &&
-      docTambonSel   && docTambonSel.value   === tambon) {
+  if (
+    docProvinceSel &&
+    docProvinceSel.value === province &&
+    docDistrictSel &&
+    docDistrictSel.value === district &&
+    docTambonSel &&
+    docTambonSel.value === tambon
+  ) {
     if (tambon) {
       const selectedOpt = docTambonSel.options[docTambonSel.selectedIndex];
       if (selectedOpt && selectedOpt.dataset.postal) {
@@ -431,12 +449,18 @@ function bindCustomerFormEvents(container = document) {
         });
         const docProvinceSel = container.querySelector('[name="doc_province"]');
         const docDistrictSel = container.querySelector('[name="doc_district"]');
-        const docTambonSel   = container.querySelector('[name="doc_subdistrict"]');
-        const docPostal      = container.querySelector('[name="doc_postal_code"]');
-        const docPostId      = container.querySelector('[name="doc_post_id"]');
+        const docTambonSel = container.querySelector('[name="doc_subdistrict"]');
+        const docPostal = container.querySelector('[name="doc_postal_code"]');
+        const docPostId = container.querySelector('[name="doc_post_id"]');
         if (docProvinceSel) docProvinceSel.value = '';
-        if (docDistrictSel) { docDistrictSel.innerHTML = '<option value="">-- เลือกอำเภอ --</option>'; docDistrictSel.disabled = true; }
-        if (docTambonSel)   { docTambonSel.innerHTML   = '<option value="">-- เลือกตำบล --</option>';  docTambonSel.disabled   = true; }
+        if (docDistrictSel) {
+          docDistrictSel.innerHTML = '<option value="">-- เลือกอำเภอ --</option>';
+          docDistrictSel.disabled = true;
+        }
+        if (docTambonSel) {
+          docTambonSel.innerHTML = '<option value="">-- เลือกตำบล --</option>';
+          docTambonSel.disabled = true;
+        }
         if (docPostal) docPostal.value = '';
         if (docPostId) docPostId.value = '';
       }
@@ -484,7 +508,9 @@ function bindCustomerFormEvents(container = document) {
             syncing = true;
             syncDocFromCurrent(container);
             // reset flag after async load finishes (give generous timeout)
-            setTimeout(() => { syncing = false; }, 2000);
+            setTimeout(() => {
+              syncing = false;
+            }, 2000);
           }
         });
       }
@@ -542,10 +568,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const url = $(form).attr('action');
 
     // enable disabled address selects so FormData includes their values
-    const disabledSelects = form.querySelectorAll('select[name$="_province"],select[name$="_district"],select[name$="_subdistrict"]');
-    disabledSelects.forEach(el => el.disabled = false);
+    const disabledSelects = form.querySelectorAll(
+      'select[name$="_province"],select[name$="_district"],select[name$="_subdistrict"]'
+    );
+    disabledSelects.forEach(el => (el.disabled = false));
     const formData = new FormData(form);
-    disabledSelects.forEach(el => { if (!el.value) el.disabled = true; });
+    disabledSelects.forEach(el => {
+      if (!el.value) el.disabled = true;
+    });
 
     $.ajax({
       url: url,
