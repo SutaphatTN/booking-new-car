@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\car_order;
 
+use App\Exports\carOrder\CarOrderStockExport;
 use App\Http\Controllers\Controller;
 use App\Mail\ApproveCarOrderMail;
 use App\Models\CarOrder;
@@ -21,6 +22,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CarOrderController extends Controller
 {
@@ -1346,5 +1348,18 @@ class CarOrderController extends Controller
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
             ], 500);
         }
+    }
+
+    public function viewExportStock()
+    {
+        return view('car-order.report.view');
+    }
+
+    public function exportStock(Request $request)
+    {
+        $fromDate = $request->from_date ?: now()->startOfMonth()->format('Y-m-d');
+        $toDate   = $request->to_date   ?: now()->format('Y-m-d');
+
+        return Excel::download(new CarOrderStockExport($fromDate, $toDate), 'ข้อมูลรับรถเข้า Stock.xlsx');
     }
 }

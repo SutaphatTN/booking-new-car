@@ -27,6 +27,7 @@ use App\Http\Controllers\pricelist_car\PricelistCarController;
 use App\Http\Controllers\customer_tracking\CustomerTrackingController;
 use App\Http\Controllers\gwm_incentive\GwmIncentiveController;
 use App\Http\Controllers\service_check_tracking\ServiceCheckTrackingController;
+use App\Http\Controllers\customer_relation\PreDeliveryInspectionController;
 
 Route::get('/', fn() => redirect()->route('login'));
 
@@ -94,6 +95,9 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     //delivery report
     Route::get('purchase-order/view-export-monthlyDelivery', [PurchaseOrderController::class, 'viewExportMonthlyDelivery'])->name('purchase-order.view-export-monthlyDelivery');
     Route::get('/purchase-order/monthlyDelivery-export', [PurchaseOrderController::class, 'exportMonthlyDelivery'])->name('purchase-order.monthlyDelivery-export');
+    // car order stock report
+    Route::get('car-order/view-export-stock', [CarOrderController::class, 'viewExportStock'])->name('car-order.view-export-stock');
+    Route::get('car-order/stock-export', [CarOrderController::class, 'exportStock'])->name('car-order.stock-export');
 
     //accessory partner
     Route::get('accessory/partner', [AccessoryController::class, 'viewPartner'])->name('accessory.partner');
@@ -370,6 +374,15 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('service-check-tracking/search-salecar', [ServiceCheckTrackingController::class, 'searchSalecar'])->name('service-check-tracking.searchSalecar');
     Route::post('service-check-tracking/{id}/detail', [ServiceCheckTrackingController::class, 'addDetail'])->name('service-check-tracking.addDetail');
     Route::delete('service-check-tracking/{id}', [ServiceCheckTrackingController::class, 'destroy'])->name('service-check-tracking.destroy');
+
+    // pre-delivery inspection (ลูกค้าสัมพันธ์ - ตรวจรถก่อนส่งมอบ)
+    Route::get('pre-delivery-inspection/list', [PreDeliveryInspectionController::class, 'list'])->name('pre-delivery-inspection.list');
+    Route::get('pre-delivery-inspection/{salecarId}/data', [PreDeliveryInspectionController::class, 'getInspection'])->name('pre-delivery-inspection.data');
+    Route::post('pre-delivery-inspection/{salecarId}/save', [PreDeliveryInspectionController::class, 'save'])->name('pre-delivery-inspection.save');
+    Route::delete('pre-delivery-inspection/{id}/file', [PreDeliveryInspectionController::class, 'deleteFile'])->name('pre-delivery-inspection.deleteFile');
+    Route::get('pre-delivery-inspection/{inspectionId}/proxy', [PreDeliveryInspectionController::class, 'proxyFile'])->name('pre-delivery-inspection.proxy');
+    Route::get('pre-delivery-inspection/{salecarId}/view-data', [PreDeliveryInspectionController::class, 'viewData'])->name('pre-delivery-inspection.viewData');
+    Route::get('pre-delivery-inspection', [PreDeliveryInspectionController::class, 'index'])->name('pre-delivery-inspection.index');
 
     //all resource
     Route::resource('customer-tracking', CustomerTrackingController::class);

@@ -55,6 +55,18 @@
       ]
     },
     {
+      "name": "ลูกค้าสัมพันธ์",
+      "icon": "menu-icon icon-base bx bx-heart",
+      "slug": "pre-delivery-inspection",
+      "submenu": [
+        {
+          "url": "pre-delivery-inspection",
+          "name": "ตรวจรถก่อนส่งมอบ",
+          "slug": "pre-delivery-inspection.index"
+        }
+      ]
+    },
+    {
       "name": "การติดตาม",
       "icon": "menu-icon icon-base bx bx-map-pin",
       "slug": ["service-check-tracking", "customer-tracking"],
@@ -317,6 +329,11 @@
           "url": "purchase-order/view-export-monthlyDelivery",
           "name": "ส่งมอบประจำเดือน",
           "slug": "report.monthlyDelivery-export"
+        },
+        {
+          "url": "car-order/view-export-stock",
+          "name": "ข้อมูลรับรถเข้า Stock",
+          "slug": "car-order.view-export-stock"
         }
       ]
     }
