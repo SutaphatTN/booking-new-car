@@ -48,17 +48,17 @@
       <div class="modal-content border-0 shadow mf-content mf-content--input">
 
         <div class="modal-header mf-header mf-header--input px-4">
-        <div class="d-flex align-items-center gap-3">
-          <div class="mf-hd-icon">
-            <i class="bx bx-user-plus fs-5 text-white"></i>
+          <div class="d-flex align-items-center gap-3">
+            <div class="mf-hd-icon">
+              <i class="bx bx-user-plus fs-5 text-white"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 fw-bold text-white mf-hd-title">เพิ่มข้อมูลลูกค้าใหม่</h6>
+              <small class="text-white mf-hd-sub">Add New Customer</small>
+            </div>
           </div>
-          <div>
-            <h6 class="mb-0 fw-bold text-white mf-hd-title">เพิ่มข้อมูลลูกค้าใหม่</h6>
-            <small class="text-white mf-hd-sub">Add New Customer</small>
-          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
 
         <div class="modal-body">
           <div class="row g-3">
@@ -89,13 +89,17 @@
               <input id="qc_id_number" type="text" class="form-control" maxlength="17" placeholder="x-xxxx-xxxxx-xx-x">
             </div>
           </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-danger" id="btnCancelAddCustomer"><i
+                class="bx bx-x me-1"></i>ยกเลิก</button>
+            <button type="button" class="btn btn-primary" id="btnSaveQuickCustomer">
+              <i class="bx bx-save me-1"></i> บันทึก
+            </button>
+          </div>
+
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-danger" id="btnCancelAddCustomer"><i class="bx bx-x me-1"></i>ยกเลิก</button>
-          <button type="button" class="btn btn-primary" id="btnSaveQuickCustomer">
-            <i class="bx bx-save me-1"></i> บันทึก
-          </button>
-        </div>
+
       </div>
     </div>
   </div>

@@ -1,5 +1,5 @@
 <div class="modal fade viewWithdrawal" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-xl" role="document">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content border-0 shadow mf-content mf-content--input">
 
       {{-- Header --}}
@@ -42,6 +42,15 @@
                   <i class="bx bx-upload"></i>
                 </div>
                 <span class="mf-section-title">รายการรอส่งเบิก</span>
+                <div class="ms-auto" style="width:260px;">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0">
+                      <i class="bx bx-search text-muted"></i>
+                    </span>
+                    <input type="text" id="searchWithdrawal" class="form-control border-start-0 ps-0"
+                      placeholder="ค้นหาชื่อลูกค้า / VIN...">
+                  </div>
+                </div>
               </div>
               <div class="mf-section-body p-0">
                 <div class="table-responsive">
@@ -99,11 +108,6 @@
               </div>
             </div>
 
-            <div class="d-flex justify-content-end mt-2">
-              <button class="btn btn-success px-5 btnConfirmWithdrawal">
-                <i class="bx bx-upload me-1"></i> ยืนยันส่งเบิก
-              </button>
-            </div>
           </div>
 
           {{-- ════ TAB ส่งเคลียร์ ════ --}}
@@ -114,6 +118,15 @@
                   <i class="bx bx-check-circle"></i>
                 </div>
                 <span class="mf-section-title">รายการรอส่งเคลียร์</span>
+                <div class="ms-auto" style="width:260px;">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0">
+                      <i class="bx bx-search text-muted"></i>
+                    </span>
+                    <input type="text" id="searchClear" class="form-control border-start-0 ps-0"
+                      placeholder="ค้นหาชื่อลูกค้า / VIN...">
+                  </div>
+                </div>
               </div>
               <div class="mf-section-body p-0">
                 <div class="table-responsive">
@@ -171,16 +184,59 @@
               </div>
             </div>
 
-            <div class="d-flex justify-content-end mt-2">
-              <button class="btn btn-primary px-5 btnConfirmClear">
-                <i class="bx bx-check-circle me-1"></i> ยืนยันส่งเคลียร์
-              </button>
-            </div>
           </div>
 
         </div>
       </div>
 
+      {{-- Footer ติดล่าง --}}
+      <div class="modal-footer justify-content-end mt-4">
+        <button class="btn btn-success px-5 btnConfirmWithdrawal" id="footerBtnWithdrawal">
+          <i class="bx bx-upload me-1"></i> ยืนยันส่งเบิก
+        </button>
+        <button class="btn btn-primary px-5 btnConfirmClear d-none" id="footerBtnClear">
+          <i class="bx bx-check-circle me-1"></i> ยืนยันส่งเคลียร์
+        </button>
+      </div>
+
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  function filterTable(inputId, tbodySelector) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    input.addEventListener('input', function () {
+      const q = this.value.trim().toLowerCase();
+      document.querySelectorAll(tbodySelector + ' tr').forEach(function (row) {
+        const name = (row.cells[1]?.textContent || '').toLowerCase();
+        const vin  = (row.cells[2]?.textContent || '').toLowerCase();
+        row.style.display = (!q || name.includes(q) || vin.includes(q)) ? '' : 'none';
+      });
+    });
+  }
+
+  filterTable('searchWithdrawal', '#tab-withdrawal tbody');
+  filterTable('searchClear',      '#tab-clear tbody');
+
+  // สลับปุ่ม footer ตาม tab ที่ active
+  document.querySelectorAll('[data-bs-toggle="pill"]').forEach(function (btn) {
+    btn.addEventListener('shown.bs.tab', function () {
+      const target = this.getAttribute('data-bs-target');
+      document.getElementById('footerBtnWithdrawal').classList.toggle('d-none', target !== '#tab-withdrawal');
+      document.getElementById('footerBtnClear').classList.toggle('d-none',      target !== '#tab-clear');
+    });
+  });
+
+  // auto-check เมื่อกรอกใบเสร็จ
+  document.addEventListener('input', function (e) {
+    if (e.target.classList.contains('withdrawal-bill') || e.target.classList.contains('receipt-bill')) {
+      const row      = e.target.closest('tr');
+      const checkbox = row?.querySelector('input[type="checkbox"]');
+      if (checkbox) checkbox.checked = e.target.value.trim() !== '';
+    }
+  });
+})();
+</script>

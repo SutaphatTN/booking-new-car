@@ -10,7 +10,7 @@
     <div class="col-12">
       <div class="card">
         <h4 class="card-header">รายการใบสั่งซื้อ</h4>
-        
+
         <div class="card-body">
           @if (session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -53,21 +53,34 @@
   </div>
 
   {{-- Modal ยืนยันออกใบเสร็จ --}}
-  <div class="modal fade" id="confirmReceiptModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">ยืนยันออกใบเสร็จ</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <div class="modal fade" id="confirmReceiptModal" tabindex="-1" role="dialog" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+      <div class="modal-content border-0 shadow mf-content mf-content--input">
+
+        {{-- Header --}}
+        <div class="modal-header mf-header mf-header--input px-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="mf-hd-icon">
+              <i class="bx bx-receipt fs-5 text-white"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 fw-bold text-white mf-hd-title">ยืนยันออกใบเสร็จ</h6>
+              <small class="text-white mf-hd-sub">Confirm Receipt</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body">
+
+        <div class="modal-body mf-body">
           <label class="form-label">วันที่รับเงิน <span class="text-danger">*</span></label>
           <input type="date" id="receiptConfirmedDate" class="form-control">
+
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" id="btnSubmitConfirmReceipt" class="btn btn-primary text-white">ยืนยัน</button>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-          <button type="button" id="btnSubmitConfirmReceipt" class="btn btn-warning text-white">ยืนยัน</button>
-        </div>
+
       </div>
     </div>
   </div>
