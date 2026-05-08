@@ -6,13 +6,14 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BrandScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Class Finance
- * 
+ *
  * @property int $id
  * @property string|null $FinanceCompany
  * @property string $Active
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Finance extends Model
 {
 	use SoftDeletes;
+	use BrandScope;
 	
 	protected $table = 'finances';
 
