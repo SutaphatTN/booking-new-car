@@ -81,7 +81,7 @@ class CarOrderStockExport implements FromView, WithTitle, WithStyles, WithEvents
                 $sheet->freezePane('A2');
                 $sheet->getTabColor()->setRGB('c6efce');
 
-                foreach (['I', 'J'] as $col) {
+                foreach (['L', 'M'] as $col) {
                     $sheet->getStyle("{$col}2:{$col}{$highestRow}")
                         ->getNumberFormat()
                         ->setFormatCode('#,##0.00');
