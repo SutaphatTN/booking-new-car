@@ -233,6 +233,7 @@
                         value="{{ optional($fnCon)->excellent_diff !== null ? number_format(optional($fnCon)->excellent_diff, 2) : '' }}"
                         disabled></td>
                   </tr>
+                  @if (auth()->user()->brand != 2)
                   <tr class="border-bottom">
                     <td class="text-center text-muted">2</td>
                     <td class="fw-semibold">Com Fin</td>
@@ -302,6 +303,7 @@
                         value="{{ optional($fnCon)->com_subsidy_diff !== null ? number_format(optional($fnCon)->com_subsidy_diff, 2) : '' }}"
                         disabled></td>
                   </tr>
+                  @endif
                   <tr class="border-bottom">
                     <td class="text-center text-muted">6</td>
                     <td class="fw-semibold">ค่างวดล่วงหน้า</td>

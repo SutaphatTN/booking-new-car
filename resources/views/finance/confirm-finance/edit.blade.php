@@ -244,6 +244,7 @@
                           class="form-control form-control-sm text-end money-input form-control-plaintext-mf"
                           name="excellent_diff" readonly></td>
                     </tr>
+                    @if (auth()->user()->brand != 2)
                     <tr class="border-bottom">
                       <td class="text-center text-muted">2</td>
                       <td class="fw-semibold">Com Fin</td>
@@ -300,6 +301,7 @@
                           class="form-control form-control-sm text-end money-input form-control-plaintext-mf"
                           name="com_subsidy_diff" readonly></td>
                     </tr>
+                    @endif
                     <tr class="border-bottom">
                       <td class="text-center text-muted">6</td>
                       <td class="fw-semibold">ค่างวดล่วงหน้า</td>
