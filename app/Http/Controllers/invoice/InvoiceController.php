@@ -28,7 +28,10 @@ class InvoiceController extends Controller
         $today = now()->format('Y-m-d');
         $user = Auth::user();
         $approvers = User::whereIn('role', ['audit', 'manager', 'md', 'bp', 'cs'])
-            ->where('brand', $user->brand == 2 ? 2 : 1)
+            ->where(function ($q) use ($user) {
+                $q->where('brand', $user->brand == 2 ? 2 : 1)
+                  ->orWhereIn('id', [3, 45]);
+            })
             ->where('branch', $user->branch)
             ->where('userZone', $user->userZone)
             ->orderBy('name')
