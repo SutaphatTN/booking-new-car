@@ -149,7 +149,7 @@
                       <i class="bx bx-receipt ci-indigo"></i> ภาษีหัก ณ ที่จ่าย
                     </label>
                     <input id="view_tax" type="text" class="form-control" name="tax"
-                      value="{{ $sale->remainingPayment?->financeInfo?->tax . '%' ?? '-' }}"
+                      value="{{ $sale->remainingPayment?->financeInfo?->tax !== null ? $sale->remainingPayment->financeInfo->tax . '%' : '-' }}"
                       style="background:#f8fafc;color:#64748b;" disabled>
                   </div>
 
@@ -234,75 +234,77 @@
                         disabled></td>
                   </tr>
                   @if (auth()->user()->brand != 2)
-                  <tr class="border-bottom">
-                    <td class="text-center text-muted">2</td>
-                    <td class="fw-semibold">Com Fin</td>
-                    <td><input id="com_fin" type="text"
-                        class="form-control form-control-sm text-end form-control-plaintext-mf" name="com_fin"
-                        value="{{ optional($fnCon)->com_fin !== null ? number_format(optional($fnCon)->com_fin, 2) : '' }}"
-                        disabled></td>
-                    <td><input id="com_fin_accept" type="text"
-                        class="form-control form-control-sm text-end form-control-plaintext-mf" name="com_fin_accept"
-                        value="{{ optional($fnCon)->com_fin_accept !== null ? number_format(optional($fnCon)->com_fin_accept, 2) : '' }}"
-                        disabled></td>
-                    <td><input id="com_fin_diff" type="text"
-                        class="form-control form-control-sm text-end form-control-plaintext-mf" name="com_fin_diff"
-                        value="{{ optional($fnCon)->com_fin_diff !== null ? number_format(optional($fnCon)->com_fin_diff, 2) : '' }}"
-                        disabled></td>
-                  </tr>
-                  <tr class="border-bottom">
-                    <td class="text-center text-muted">3</td>
-                    <td class="fw-semibold">Com Extra</td>
-                    <td><input id="com_extra" type="text"
-                        class="form-control form-control-sm text-end form-control-plaintext-mf" name="com_extra"
-                        value="{{ optional($fnCon)->com_extra !== null ? number_format(optional($fnCon)->com_extra, 2) : '' }}"
-                        disabled></td>
-                    <td><input id="com_extra_accept" type="text"
-                        class="form-control form-control-sm text-end form-control-plaintext-mf"
-                        name="com_extra_accept"
-                        value="{{ optional($fnCon)->com_extra_accept !== null ? number_format(optional($fnCon)->com_extra_accept, 2) : '' }}"
-                        disabled></td>
-                    <td><input id="com_extra_diff" type="text"
-                        class="form-control form-control-sm text-end form-control-plaintext-mf" name="com_extra_diff"
-                        value="{{ optional($fnCon)->com_extra_diff !== null ? number_format(optional($fnCon)->com_extra_diff, 2) : '' }}"
-                        disabled></td>
-                  </tr>
-                  <tr class="border-bottom">
-                    <td class="text-center text-muted">4</td>
-                    <td class="fw-semibold">Com Kickback</td>
-                    <td><input id="view_kickback" type="text"
-                        class="form-control form-control-sm text-end form-control-plaintext-mf" name="kickback"
-                        value="{{ $sale->kickback !== null ? number_format($sale->kickback, 2) : '-' }}" disabled>
-                    </td>
-                    <td><input id="com_kickback_accept" type="text"
-                        class="form-control form-control-sm text-end form-control-plaintext-mf"
-                        name="com_kickback_accept"
-                        value="{{ optional($fnCon)->com_kickback_accept !== null ? number_format(optional($fnCon)->com_kickback_accept, 2) : '' }}"
-                        disabled></td>
-                    <td><input id="com_kickback_diff" type="text"
-                        class="form-control form-control-sm text-end form-control-plaintext-mf"
-                        name="com_kickback_diff"
-                        value="{{ optional($fnCon)->com_kickback_diff !== null ? number_format(optional($fnCon)->com_kickback_diff, 2) : '' }}"
-                        disabled></td>
-                  </tr>
-                  <tr class="border-bottom">
-                    <td class="text-center text-muted">5</td>
-                    <td class="fw-semibold">Com Subsidy</td>
-                    <td><input id="com_subsidy" type="text"
-                        class="form-control form-control-sm text-end form-control-plaintext-mf" name="com_subsidy"
-                        value="{{ optional($fnCon)->com_subsidy !== null ? number_format(optional($fnCon)->com_subsidy, 2) : '' }}"
-                        disabled></td>
-                    <td><input id="com_subsidy_accept" type="text"
-                        class="form-control form-control-sm text-end form-control-plaintext-mf"
-                        name="com_subsidy_accept"
-                        value="{{ optional($fnCon)->com_subsidy_accept !== null ? number_format(optional($fnCon)->com_subsidy_accept, 2) : '' }}"
-                        disabled></td>
-                    <td><input id="com_subsidy_diff" type="text"
-                        class="form-control form-control-sm text-end form-control-plaintext-mf"
-                        name="com_subsidy_diff"
-                        value="{{ optional($fnCon)->com_subsidy_diff !== null ? number_format(optional($fnCon)->com_subsidy_diff, 2) : '' }}"
-                        disabled></td>
-                  </tr>
+                    <tr class="border-bottom">
+                      <td class="text-center text-muted">2</td>
+                      <td class="fw-semibold">Com Fin</td>
+                      <td><input id="com_fin" type="text"
+                          class="form-control form-control-sm text-end form-control-plaintext-mf" name="com_fin"
+                          value="{{ optional($fnCon)->com_fin !== null ? number_format(optional($fnCon)->com_fin, 2) : '' }}"
+                          disabled></td>
+                      <td><input id="com_fin_accept" type="text"
+                          class="form-control form-control-sm text-end form-control-plaintext-mf"
+                          name="com_fin_accept"
+                          value="{{ optional($fnCon)->com_fin_accept !== null ? number_format(optional($fnCon)->com_fin_accept, 2) : '' }}"
+                          disabled></td>
+                      <td><input id="com_fin_diff" type="text"
+                          class="form-control form-control-sm text-end form-control-plaintext-mf" name="com_fin_diff"
+                          value="{{ optional($fnCon)->com_fin_diff !== null ? number_format(optional($fnCon)->com_fin_diff, 2) : '' }}"
+                          disabled></td>
+                    </tr>
+                    <tr class="border-bottom">
+                      <td class="text-center text-muted">3</td>
+                      <td class="fw-semibold">Com Extra</td>
+                      <td><input id="com_extra" type="text"
+                          class="form-control form-control-sm text-end form-control-plaintext-mf" name="com_extra"
+                          value="{{ optional($fnCon)->com_extra !== null ? number_format(optional($fnCon)->com_extra, 2) : '' }}"
+                          disabled></td>
+                      <td><input id="com_extra_accept" type="text"
+                          class="form-control form-control-sm text-end form-control-plaintext-mf"
+                          name="com_extra_accept"
+                          value="{{ optional($fnCon)->com_extra_accept !== null ? number_format(optional($fnCon)->com_extra_accept, 2) : '' }}"
+                          disabled></td>
+                      <td><input id="com_extra_diff" type="text"
+                          class="form-control form-control-sm text-end form-control-plaintext-mf"
+                          name="com_extra_diff"
+                          value="{{ optional($fnCon)->com_extra_diff !== null ? number_format(optional($fnCon)->com_extra_diff, 2) : '' }}"
+                          disabled></td>
+                    </tr>
+                    <tr class="border-bottom">
+                      <td class="text-center text-muted">4</td>
+                      <td class="fw-semibold">Com Kickback</td>
+                      <td><input id="view_kickback" type="text"
+                          class="form-control form-control-sm text-end form-control-plaintext-mf" name="kickback"
+                          value="{{ $sale->kickback !== null ? number_format($sale->kickback, 2) : '-' }}" disabled>
+                      </td>
+                      <td><input id="com_kickback_accept" type="text"
+                          class="form-control form-control-sm text-end form-control-plaintext-mf"
+                          name="com_kickback_accept"
+                          value="{{ optional($fnCon)->com_kickback_accept !== null ? number_format(optional($fnCon)->com_kickback_accept, 2) : '' }}"
+                          disabled></td>
+                      <td><input id="com_kickback_diff" type="text"
+                          class="form-control form-control-sm text-end form-control-plaintext-mf"
+                          name="com_kickback_diff"
+                          value="{{ optional($fnCon)->com_kickback_diff !== null ? number_format(optional($fnCon)->com_kickback_diff, 2) : '' }}"
+                          disabled></td>
+                    </tr>
+                    <tr class="border-bottom">
+                      <td class="text-center text-muted">5</td>
+                      <td class="fw-semibold">Com Subsidy</td>
+                      <td><input id="com_subsidy" type="text"
+                          class="form-control form-control-sm text-end form-control-plaintext-mf" name="com_subsidy"
+                          value="{{ optional($fnCon)->com_subsidy !== null ? number_format(optional($fnCon)->com_subsidy, 2) : '' }}"
+                          disabled></td>
+                      <td><input id="com_subsidy_accept" type="text"
+                          class="form-control form-control-sm text-end form-control-plaintext-mf"
+                          name="com_subsidy_accept"
+                          value="{{ optional($fnCon)->com_subsidy_accept !== null ? number_format(optional($fnCon)->com_subsidy_accept, 2) : '' }}"
+                          disabled></td>
+                      <td><input id="com_subsidy_diff" type="text"
+                          class="form-control form-control-sm text-end form-control-plaintext-mf"
+                          name="com_subsidy_diff"
+                          value="{{ optional($fnCon)->com_subsidy_diff !== null ? number_format(optional($fnCon)->com_subsidy_diff, 2) : '' }}"
+                          disabled></td>
+                    </tr>
                   @endif
                   <tr class="border-bottom">
                     <td class="text-center text-muted">6</td>

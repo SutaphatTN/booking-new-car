@@ -93,7 +93,7 @@ class InvoiceExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
 
                 // format comma
                 $numberColumns = [
-                    'H'
+                    'H', 'I', 'J'
                 ];
 
                 foreach ($numberColumns as $col) {
@@ -128,9 +128,11 @@ class InvoiceExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
                 'vin_number'           => $item->vin_number ?? '-',
                 'engine_number'        => $item->engine_number ?? '-',
                 'customer_name'        => $item->customer_name,
+                'cost_price'           => $item->accessories->sum('cost_price'),
+                'sale_price'           => $item->accessories->sum('sale_price'),
                 'total_price'          => $item->total_price ?? '-',
                 'receipt_confirmed_at' => $item->format_receipt_confirmed ?? '-',
-                'UserInsert'          => $item->insertInvoice?->name ?? '-',
+                'UserInsert'           => $item->insertInvoice?->name ?? '-',
             ];
         });
 
