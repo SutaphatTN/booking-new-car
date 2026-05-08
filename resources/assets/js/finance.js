@@ -711,7 +711,7 @@ function calculateComFin() {
 
   let realYear = periodMonth / 12;
 
-  let useYear = Math.min(realYear, maxYear);
+  let useYear = maxYear > 0 ? Math.min(realYear, maxYear) : realYear;
 
   let base = excellent + alp;
   let per = type_com * interest * useYear;
@@ -731,7 +731,7 @@ function calculateTotal() {
   let comSubsidy = parseNumber($('#com_subsidy').val() || 0);
   let actually_received = parseNumber($('#actually_received').val() || 0);
 
-  console.log('comFin', comFin);
+  // console.log('comFin', comFin);
   let total = excellent - advance + comFin + comExtra + comKickback + comSubsidy;
   let diff = total - actually_received;
 
