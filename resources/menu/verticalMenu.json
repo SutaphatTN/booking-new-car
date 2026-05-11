@@ -57,58 +57,42 @@
     {
       "name": "ลูกค้าสัมพันธ์",
       "icon": "menu-icon icon-base bx bx-heart",
-      "slug": "pre-delivery-inspection",
+      "slug": [
+        "pre-delivery-inspection",
+        "ssi"
+      ],
       "submenu": [
         {
           "url": "pre-delivery-inspection",
           "name": "ตรวจรถก่อนส่งมอบ",
           "slug": "pre-delivery-inspection.index"
+        },
+        {
+          "url": "ssi",
+          "name": "SSI หลังส่งมอบ",
+          "slug": "ssi.index"
         }
       ]
     },
     {
-      "name": "การติดตาม",
-      "icon": "menu-icon icon-base bx bx-map-pin",
-      "slug": ["service-check-tracking", "customer-tracking"],
+      "name": "การติดตามลูกค้า",
+      "icon": "menu-icon icon-base bx bx-user-check",
+      "slug": "customer-tracking",
       "submenu": [
         {
-          "name": "ติดตามเช็คระยะ",
-          "icon": "menu-icon icon-base bx bx-chip",
-          "slug": "service-check-tracking",
-          "submenu": [
-            {
-              "url": "service-check-tracking/create",
-              "name": "ติดตามเช็คระยะ",
-              "slug": "service-check-tracking.create"
-            },
-            {
-              "url": "service-check-tracking",
-              "name": "รายการติดตามเช็คระยะ",
-              "slug": "service-check-tracking.index"
-            }
-          ]
+          "url": "customer-tracking",
+          "name": "รายการติดตาม",
+          "slug": "customer-tracking.index"
         },
         {
-          "name": "การติดตามลูกค้า",
-          "icon": "menu-icon icon-base bx bx-user-check",
-          "slug": "customer-tracking",
-          "submenu": [
-            {
-              "url": "customer-tracking",
-              "name": "รายการติดตาม",
-              "slug": "customer-tracking.index"
-            },
-            {
-              "url": "customer-tracking/create",
-              "name": "เพิ่มการติดตาม",
-              "slug": "customer-tracking.create"
-            },
-            {
-              "url": "customer-tracking/export-excel",
-              "name": "รายงานการติดตาม",
-              "slug": "customer-tracking.exportExcel"
-            }
-          ]
+          "url": "customer-tracking/create",
+          "name": "เพิ่มการติดตาม",
+          "slug": "customer-tracking.create"
+        },
+        {
+          "url": "customer-tracking/export-excel",
+          "name": "รายงานการติดตาม",
+          "slug": "customer-tracking.exportExcel"
         }
       ]
     },
@@ -117,6 +101,8 @@
       "icon": "menu-icon icon-base bx bx-cog",
       "slug": [
         "model",
+        "model-car",
+        "gwm-incentive",
         "car-order",
         "accessory",
         "campaign",
@@ -126,7 +112,11 @@
         {
           "name": "ข้อมูลรถ",
           "icon": "menu-icon icon-base bx bx-car",
-          "slug": "model",
+          "slug": [
+            "model",
+            "model-car",
+            "gwm-incentive"
+          ],
           "submenu": [
             {
               "url": "model-car",

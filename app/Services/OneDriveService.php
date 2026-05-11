@@ -66,4 +66,37 @@ class OneDriveService
 
         return $shareResponse->getBody()['link']['webUrl'];
     }
+
+    /**
+     * Get a preauthenticated direct download URL from a sharing URL (for inline display).
+     */
+    public function getDownloadUrl(string $shareUrl): string
+    {
+        return $this->getDownloadInfo($shareUrl)['url'];
+    }
+
+    /**
+     * Get download URL and original filename from a sharing URL.
+     *
+     * @return array{url: string, name: string}
+     */
+    public function getDownloadInfo(string $shareUrl): array
+    {
+        $shareId = 'u!' . rtrim(strtr(base64_encode($shareUrl), '+/', '-_'), '=');
+
+        $response = $this->graph
+            ->createRequest('GET', "/shares/{$shareId}/driveItem")
+            ->execute();
+
+        $body = $response->getBody();
+
+        if (!isset($body['@microsoft.graph.downloadUrl'])) {
+            throw new \RuntimeException('Download URL not available for this file');
+        }
+
+        return [
+            'url'  => $body['@microsoft.graph.downloadUrl'],
+            'name' => $body['name'] ?? 'file',
+        ];
+    }
 }

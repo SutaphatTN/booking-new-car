@@ -8,20 +8,37 @@
 @section('content')
 <div class="inputPricelistCarModal"></div>
 <div class="editPricelistCarModal"></div>
+<input type="hidden" id="userBrand" value="{{ auth()->user()->brand }}">
 <div class="row">
   <div class="col-12">
-    <div class="card">
-      <h4 class="card-header">ข้อมูลราคารถ</h4>
-      <div class="card-body">
-        <div class="table-responsive text-nowrap">
-          <div class="d-flex justify-content-end mb-2">
-            <button class="btn btn-secondary btnInputPricelistCar">เพิ่ม</button>
-          </div>
-          <table class="table table-bordered pricelistCarTable">
-            <input type="hidden" id="userBrand" value="{{ auth()->user()->brand }}">
+    <div class="card tbl-card">
+
+      {{-- ── Card header ── --}}
+      <div class="po-card-header d-flex align-items-center gap-3">
+        <div class="po-hd-icon">
+          <i class="bx bx-purchase-tag fs-4 text-white"></i>
+        </div>
+        <div>
+          <div class="text-white fw-bold mf-hd-title">ข้อมูลราคารถ</div>
+          <div class="text-white mf-hd-sub">Price List Car</div>
+        </div>
+      </div>
+
+      <div class="card-body pt-3">
+
+        {{-- ── Action bar ── --}}
+        <div class="po-filter-bar d-flex align-items-center justify-content-end">
+          <button class="btn btn-secondary btn-sm btnInputPricelistCar">
+            <i class="bx bx-plus me-1"></i> เพิ่ม
+          </button>
+        </div>
+
+        {{-- ── Table ── --}}
+        <div class="table-responsive">
+          <table class="table table-bordered tbl-table tbl-styled pricelistCarTable">
             <thead>
               <tr>
-                <th>No.</th>
+                <th class="tbl-th-no">No.</th>
                 <th>รุ่นรถ</th>
                 <th>Option</th>
                 <th>ปี</th>
@@ -31,11 +48,12 @@
                 <th>DM</th>
                 <th>RI</th>
                 <th>WS</th>
-                <th width="100px">Action</th>
+                <th class="tbl-th-action" style="width:100px;">Action</th>
               </tr>
             </thead>
           </table>
         </div>
+
       </div>
     </div>
   </div>

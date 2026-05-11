@@ -1,0 +1,89 @@
+@extends('layouts/contentNavbarLayout')
+@section('title', 'SSI หลังส่งมอบ')
+
+@section('page-script')
+  <script>
+    $(document).ready(function() {
+
+      const table = $('#ssiTable').DataTable({
+        ajax: {
+          url: '{{ route('ssi.list') }}',
+          dataSrc: 'data',
+        },
+        columns: [
+          { data: 'No' },
+          { data: 'FullName', orderable: false },
+          { data: 'Phone', orderable: false },
+          { data: 'model', orderable: false },
+          { data: 'DeliveryDate', orderable: false },
+          {
+            data: null,
+            orderable: false,
+            className: 'text-center',
+            render: function(data, type, row) {
+              return `
+                <div class="d-flex gap-1 justify-content-center">
+                  <a href="/ssi/${row.salecar_id}/edit"
+                     class="btn btn-icon btn-warning text-white"
+                     title="แก้ไข / บันทึก SSI">
+                    <i class="bx bx-edit"></i>
+                  </a>
+                </div>`;
+            },
+          },
+        ],
+        language: {
+          lengthMenu: 'แสดง _MENU_ แถว',
+          zeroRecords: 'ไม่พบข้อมูล',
+          info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
+          infoEmpty: 'ไม่มีข้อมูล',
+          search: 'ค้นหา:',
+          paginate: { next: 'ถัดไป', previous: 'ก่อนหน้า' },
+        },
+        pageLength: 10,
+        order: [[0, 'asc']],
+      });
+
+    });
+  </script>
+@endsection
+
+@section('content')
+
+  <div class="row">
+    <div class="col-12">
+      <div class="card tbl-card">
+
+        {{-- ── Card header ── --}}
+        <div class="po-card-header d-flex align-items-center gap-3">
+          <div class="po-hd-icon">
+            <i class="bx bx-star fs-4 text-white"></i>
+          </div>
+          <div>
+            <div class="text-white fw-bold mf-hd-title">SSI หลังส่งมอบ</div>
+            <div class="text-white mf-hd-sub">Customer Satisfaction Survey</div>
+          </div>
+        </div>
+
+        <div class="card-body pt-3">
+          <div class="table-responsive">
+            <table class="table table-bordered tbl-table tbl-styled" id="ssiTable">
+              <thead>
+                <tr>
+                  <th class="tbl-th-no">No.</th>
+                  <th>ชื่อ - นามสกุลลูกค้า</th>
+                  <th>เบอร์โทร</th>
+                  <th>รุ่นรถ</th>
+                  <th class="text-center">วันที่ส่งมอบ</th>
+                  <th class="tbl-th-action" style="width:100px;">Action</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+@endsection

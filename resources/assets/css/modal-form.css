@@ -1,21 +1,27 @@
-/* ==========================================================================
+/* ==
    modal-form.css — Shared styles for modal dialogs (input / edit / view-more)
    Prefix: mf-  (modal form)
-   ========================================================================== */
+   == */
 
-/* ─── Modal shell ──────────────────────────────────────────────────────────── */
+/* ── Modal shell ── */
 
 .mf-content {
   border-radius: 0.75rem;
 }
 
-/* ─── Theme: label-icon color cascades from modal type ─────────────────────── */
+/* ── Theme: label-icon color cascades from modal type ── */
 
-.mf-content--input .mf-label i { color: #6366f1; }
-.mf-content--edit  .mf-label i { color: #e97f07; }
-.mf-content--view  .mf-label i { color: #0284c7; }
+.mf-content--input .mf-label i {
+  color: #6366f1;
+}
+.mf-content--edit .mf-label i {
+  color: #e97f07;
+}
+.mf-content--view .mf-label i {
+  color: #0284c7;
+}
 
-/* ─── Modal header ─────────────────────────────────────────────────────────── */
+/* ── Modal header ── */
 
 .mf-header {
   border-radius: 0.75rem 0.75rem 0 0;
@@ -38,7 +44,7 @@
   background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
 }
 
-/* ─── Header icon box ──────────────────────────────────────────────────────── */
+/* ── Header icon box ── */
 
 .mf-hd-icon {
   width: 40px;
@@ -51,7 +57,7 @@
   flex-shrink: 0;
 }
 
-/* ─── Header text ──────────────────────────────────────────────────────────── */
+/* ── Header text ── */
 
 .mf-hd-title {
   font-size: 1rem;
@@ -62,7 +68,7 @@
   font-size: 0.76rem;
 }
 
-/* ─── Modal body ───────────────────────────────────────────────────────────── */
+/* ── Modal body ── */
 
 .mf-body {
   background: #f5f6fa;
@@ -70,7 +76,7 @@
   padding: 1.25rem;
 }
 
-/* ─── Section card ─────────────────────────────────────────────────────────── */
+/* ── Section card ── */
 
 .mf-section {
   background: #fff;
@@ -81,7 +87,7 @@
   margin-bottom: 12px;
 }
 
-/* ─── Section header bar ───────────────────────────────────────────────────── */
+/* ── Section header bar ── */
 
 .mf-section-hd {
   display: flex;
@@ -92,7 +98,7 @@
   background: #fafbfc;
 }
 
-/* ─── Section icon ─────────────────────────────────────────────────────────── */
+/* ── Section icon ── */
 
 .mf-section-icon {
   width: 30px;
@@ -105,14 +111,32 @@
   font-size: 0.9rem;
 }
 
-.mf-section-icon.indigo  { background: #ede9fe; color: #6366f1; }
-.mf-section-icon.sky     { background: #e0f2fe; color: #0284c7; }
-.mf-section-icon.emerald { background: #d1fae5; color: #059669; }
-.mf-section-icon.amber   { background: #fef3c7; color: #d97706; }
-.mf-section-icon.rose    { background: #fee2e2; color: #dc2626; }
-.mf-section-icon.pink    { background: #f8e0ec; color: #ec4899; }
+.mf-section-icon.indigo {
+  background: #ede9fe;
+  color: #6366f1;
+}
+.mf-section-icon.sky {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+.mf-section-icon.emerald {
+  background: #d1fae5;
+  color: #059669;
+}
+.mf-section-icon.amber {
+  background: #fef3c7;
+  color: #d97706;
+}
+.mf-section-icon.rose {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.mf-section-icon.pink {
+  background: #f8e0ec;
+  color: #ec4899;
+}
 
-/* ─── Section title ────────────────────────────────────────────────────────── */
+/* ── Section title ─── */
 
 .mf-section-title {
   font-size: 0.88rem;
@@ -120,13 +144,13 @@
   color: #1e293b;
 }
 
-/* ─── Section body padding ─────────────────────────────────────────────────── */
+/* ── Section body padding ── */
 
 .mf-section-body {
   padding: 16px 18px 12px;
 }
 
-/* ─── Field label ──────────────────────────────────────────────────────────── */
+/* ── Field label ── */
 
 .mf-label {
   font-size: 0.82rem !important;
@@ -138,35 +162,84 @@
   gap: 5px;
 }
 
-/* ─── Input-group addon color variants ────────────────────────────────────── */
+/* ── Input-group addon color variants ── */
 
-.ig-indigo  { background: #ede9fe !important; color: #6366f1 !important; font-weight: 600; border-color: #dee2e6 !important; }
-.ig-sky     { background: #e0f2fe !important; color: #0284c7 !important; font-weight: 600; border-color: #dee2e6 !important; }
-.ig-emerald { background: #d1fae5 !important; color: #059669 !important; font-weight: 600; border-color: #dee2e6 !important; }
-.ig-amber   { background: #fef3c7 !important; color: #d97706 !important; font-weight: 600; border-color: #dee2e6 !important; }
-.ig-rose    { background: #fee2e2 !important; color: #dc2626 !important; font-weight: 600; border-color: #dee2e6 !important; }
-.ig-pink    { background: #f8e0ec !important; color: #ec4899 !important; font-weight: 600; border-color: #dee2e6 !important; }
-.ig-slate   { background: #f1f5f9 !important; color: #94a3b8 !important; font-weight: 600; border-color: #dee2e6 !important; }
+.ig-indigo {
+  background: #ede9fe !important;
+  color: #6366f1 !important;
+  font-weight: 600;
+  border-color: #dee2e6 !important;
+}
+.ig-sky {
+  background: #e0f2fe !important;
+  color: #0284c7 !important;
+  font-weight: 600;
+  border-color: #dee2e6 !important;
+}
+.ig-emerald {
+  background: #d1fae5 !important;
+  color: #059669 !important;
+  font-weight: 600;
+  border-color: #dee2e6 !important;
+}
+.ig-amber {
+  background: #fef3c7 !important;
+  color: #d97706 !important;
+  font-weight: 600;
+  border-color: #dee2e6 !important;
+}
+.ig-rose {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  font-weight: 600;
+  border-color: #dee2e6 !important;
+}
+.ig-pink {
+  background: #f8e0ec !important;
+  color: #ec4899 !important;
+  font-weight: 600;
+  border-color: #dee2e6 !important;
+}
+.ig-slate {
+  background: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  font-weight: 600;
+  border-color: #dee2e6 !important;
+}
 
-/* ─── Icon color utilities (for label icons in mixed-color sections) ────────── */
+/* ── Icon color utilities (for label icons in mixed-color sections) ── */
 /* Use !important to override the .mf-content--{type} .mf-label i cascade rule */
 
-.ci-indigo  { color: #6366f1 !important; }
-.ci-sky     { color: #0284c7 !important; }
-.ci-emerald { color: #059669 !important; }
-.ci-amber   { color: #d97706 !important; }
-.ci-rose    { color: #dc2626 !important; }
-.ci-pink    { color: #ec4899 !important; }
-.ci-slate   { color: #94a3b8 !important; }
+.ci-indigo {
+  color: #6366f1 !important;
+}
+.ci-sky {
+  color: #0284c7 !important;
+}
+.ci-emerald {
+  color: #059669 !important;
+}
+.ci-amber {
+  color: #d97706 !important;
+}
+.ci-rose {
+  color: #dc2626 !important;
+}
+.ci-pink {
+  color: #ec4899 !important;
+}
+.ci-slate {
+  color: #94a3b8 !important;
+}
 
-/* ─── Readonly input display ─────────────────────────────────────────────── */
+/* ── Readonly input display ── */
 
 .form-control-plaintext-mf {
   background: #f8fafc !important;
   color: #64748b !important;
 }
 
-/* ─── Auto-calc label note ────────────────────────────────────────────────── */
+/* ── Auto-calc label note ── */
 
 .mf-label-note {
   font-size: 0.72rem;
@@ -174,7 +247,7 @@
   font-weight: 400;
 }
 
-/* ─── Compact info rows (dense data in view-more) ────────────────────────── */
+/* ── Compact info rows (dense data in view-more) ── */
 
 .mf-info-row {
   display: flex;
@@ -208,7 +281,7 @@
   color: #b0bac4;
 }
 
-/* ─── Section sub-heading inside mf-section ──────────────────────────────── */
+/* ── Section sub-heading inside mf-section ── */
 
 .mf-sub-heading {
   font-size: 0.72rem;
@@ -221,7 +294,7 @@
   margin: 14px 0 10px;
 }
 
-/* ─── View-more read-only value box ───────────────────────────────────────── */
+/* ── View-more read-only value box ── */
 
 .mf-val {
   font-size: 0.88rem;
@@ -241,12 +314,115 @@
   font-weight: 400;
 }
 
-/* ─── Narrow input (date / short fields) ─────────────────────────────────── */
+/* ── Narrow input (date / short fields) ── */
 
 .mf-input-narrow {
   max-width: 280px;
 }
 
 table .fn-thead th {
-  font-size: 0.90rem !important;
+  font-size: 0.9rem !important;
+}
+
+/* ==
+   SSI — Score buttons & rows
+   == */
+
+.score-group {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.score-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+}
+
+.score-btn:hover {
+  border-color: #696cff;
+  color: #696cff;
+  background: #ede9fe;
+}
+
+.score-btn.selected.score-low  { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
+.score-btn.selected.score-mid  { background: #fef3c7; border-color: #d97706; color: #92400e; }
+.score-btn.selected.score-high { background: #d1fae5; border-color: #10b981; color: #065f46; }
+
+.score-row {
+  padding: 10px 14px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.score-row:nth-child(even) {
+  background: #f8fafc;
+}
+
+.score-row-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  min-width: 300px;
+  flex: 1;
+}
+
+/* ==
+   SSI — Contact timeline card
+   == */
+
+.contact-card {
+  border-left: 4px solid #6366f1;
+  border-radius: 0 10px 10px 0;
+  background: #fff;
+  border-top: 1px solid #e8edf3;
+  border-right: 1px solid #e8edf3;
+  border-bottom: 1px solid #e8edf3;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.contact-card-no {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6366f1;
+  margin-bottom: 6px;
+}
+
+/* ==
+   SSI — Interview radio: ไม่เรียบร้อย → amber
+   == */
+
+#ssi_int_no:checked + label {
+  background: #fef3c7;
+  border-color: #d97706;
+  color: #92400e;
+  font-weight: 600;
+}
+
+/* ==
+   SSI — Diff display
+   == */
+
+#diff_display {
+  font-weight: 700;
+  text-align: right;
+  background: #f8fafc;
 }

@@ -1,0 +1,145 @@
+/* ==
+   table-form.css — Shared table / list-page utilities
+   Prefix: tbl-  (shared), po-  (purchase order)
+   == */
+
+/* ── Layout utilities ── */
+
+.tbl-card {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.08);
+}
+
+.tbl-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.tbl-th-no {
+  width: 50px;
+  text-align: center;
+}
+
+.tbl-th-action {
+  text-align: center;
+}
+
+/* ── Filter bar ── */
+
+.po-card-header {
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  border-radius: 0.75rem 0.75rem 0 0;
+  padding: 14px 20px;
+}
+
+.po-hd-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.po-filter-bar {
+  background: #f8fafc;
+  border: 1px solid #e8edf3;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 1rem;
+}
+
+.po-filter-bar label {
+  font-size: 0.83rem;
+  white-space: nowrap;
+}
+
+.po-filter-bar .tbl-filter-text {
+  font-size: 0.83rem;
+}
+
+.po-filter-bar select,
+.po-filter-bar input[type="text"] {
+  border-radius: 8px !important;
+}
+
+.po-filter-bar .btn {
+  border-radius: 8px;
+}
+
+/* ── Styled table (shared — add class tbl-styled to any table) ── */
+
+.tbl-styled thead tr {
+  background: linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%);
+}
+
+.tbl-styled thead th {
+  color: #3730a3;
+  font-weight: 700;
+  font-size: 0.9rem !important;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border-bottom: 2px solid #c7d2fe !important;
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+
+.tbl-styled.table-bordered th,
+.tbl-styled.table-bordered td {
+  border-color: #c7d2fe !important;
+}
+
+.tbl-styled tbody tr + tr td {
+  border-top: 1.5px solid #a5b4fc !important;
+}
+
+.tbl-styled tbody tr:last-child td {
+  border-bottom: 1.5px solid #a5b4fc !important;
+}
+
+.tbl-styled tbody tr {
+  transition: background 0.12s;
+}
+
+.tbl-styled tbody tr:hover td {
+  background: #f5f3ff;
+}
+
+.tbl-styled tbody td {
+  vertical-align: middle;
+  font-size: 0.83rem;
+  padding: 7px 10px;
+  border-color: #c7d2fe !important;
+}
+
+.tbl-styled tbody tr:nth-child(even) td {
+  background: #fafbff;
+}
+
+.tbl-styled tbody tr:nth-child(even):hover td {
+  background: #f5f3ff;
+}
+
+/* ── Action column (applies only when btn-icon exists) ── */
+
+.tbl-styled tbody td:last-child {
+  white-space: nowrap;
+  text-align: center;
+}
+
+.tbl-styled tbody td:last-child .btn-icon {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border-radius: 7px !important;
+}
+
+.tbl-styled tbody td:last-child .btn-icon i {
+  font-size: 1rem !important;
+}

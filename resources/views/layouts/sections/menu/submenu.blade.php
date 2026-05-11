@@ -19,6 +19,10 @@
         @continue
       @endif
 
+      @if (in_array($submenu->slug, ['gwm-incentive.index', 'gwm-incentive.report']) && $userBrand != 2)
+        @continue
+      @endif
+
       @if (
           $userRole == 'sale' &&
               in_array($submenu->slug, [

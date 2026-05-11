@@ -10,23 +10,41 @@
 <div class="editCamAppellationModal"></div>
 <div class="row">
   <div class="col-12">
-    <div class="card">
-      <h4 class="card-header">ข้อมูลชื่อแคมเปญ</h4>
-      <div class="card-body">
-        <div class="table-responsive text-nowrap">
-          <div class="d-flex justify-content-end">
-            <button class="btn btn-secondary btnInputCamAppellation">เพิ่ม</button>
-          </div>
-          <table class="table table-bordered campaignAppellationTable">
+    <div class="card tbl-card">
+
+      {{-- ── Card header ── --}}
+      <div class="po-card-header d-flex align-items-center gap-3">
+        <div class="po-hd-icon">
+          <i class="bx bx-purchase-tag fs-4 text-white"></i>
+        </div>
+        <div>
+          <div class="text-white fw-bold mf-hd-title">ข้อมูลชื่อแคมเปญ</div>
+          <div class="text-white mf-hd-sub">Campaign Appellation</div>
+        </div>
+      </div>
+
+      <div class="card-body pt-3">
+
+        {{-- ── Action bar ── --}}
+        <div class="po-filter-bar d-flex align-items-center justify-content-end">
+          <button class="btn btn-secondary btn-sm btnInputCamAppellation">
+            <i class="bx bx-plus me-1"></i> เพิ่ม
+          </button>
+        </div>
+
+        {{-- ── Table ── --}}
+        <div class="table-responsive">
+          <table class="table table-bordered tbl-table tbl-styled campaignAppellationTable">
             <thead>
               <tr>
-                <th>No.</th>
+                <th class="tbl-th-no">No.</th>
                 <th>ชื่อแคมเปญ</th>
-                <th width="150px">Action</th>
+                <th class="tbl-th-action" style="width:150px;">Action</th>
               </tr>
             </thead>
           </table>
         </div>
+
       </div>
     </div>
   </div>

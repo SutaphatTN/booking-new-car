@@ -2,19 +2,73 @@ $.ajaxSetup({
   headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
 });
 
+// ── Tracking table column filter ──
+let ctTrackingTable;
+let ctSaleFilterActive = null, ctAllSaleNames = [];
+let ctStatusFilterActive = null, ctAllStatusNames = [];
+
+$.fn.dataTable.ext.search.push(function (settings, data) {
+  if (settings.nTable.id !== 'trackingTable') return true;
+  const saleOk = ctSaleFilterActive === null
+    || (ctSaleFilterActive.length > 0 && ctSaleFilterActive.includes(data[3] || ''));
+  const statusOk = ctStatusFilterActive === null
+    || (ctStatusFilterActive.length > 0 && ctStatusFilterActive.includes(data[5] || ''));
+  return saleOk && statusOk;
+});
+
+function ctRefreshNames() {
+  const saleSeen = new Set(), statusSeen = new Set();
+  ctTrackingTable.rows().data().each(function (row) {
+    if (row.sale) saleSeen.add(row.sale);
+    if (row.status) statusSeen.add(row.status);
+  });
+  ctAllSaleNames = Array.from(saleSeen).sort((a, b) => a.localeCompare(b, 'th'));
+  ctAllStatusNames = Array.from(statusSeen).sort((a, b) => a.localeCompare(b, 'th'));
+}
+
+function ctBuildList($list, allNames, activeFilter, chkClass, idPfx) {
+  $list.empty();
+  const allSelected = activeFilter === null;
+  $list.append(
+    `<div class="col-filter-item col-filter-all">
+      <input type="checkbox" id="${idPfx}ChkAll" ${allSelected ? 'checked' : ''}>
+      <label for="${idPfx}ChkAll">(เลือกทั้งหมด)</label>
+    </div>`
+  );
+  allNames.forEach(function (name, i) {
+    const chk = allSelected || (activeFilter !== null && activeFilter.includes(name)) ? 'checked' : '';
+    $list.append(
+      `<div class="col-filter-item">
+        <input type="checkbox" class="${chkClass}" id="${idPfx}${i}" value="${name}" ${chk}>
+        <label for="${idPfx}${i}">${name}</label>
+      </div>`
+    );
+  });
+  ctSyncAll(idPfx + 'ChkAll', chkClass);
+}
+
+function ctSyncAll(allId, itemClass) {
+  const $items = $('.' + itemClass + ':visible');
+  const total = $items.length, checked = $items.filter(':checked').length;
+  const $all = $('#' + allId);
+  if (total === 0 || checked === 0) $all.prop({ indeterminate: false, checked: false });
+  else if (checked === total) $all.prop({ indeterminate: false, checked: true });
+  else $all.prop({ indeterminate: true, checked: false });
+}
+
 // list
 $(document).ready(function () {
   if (!$('#trackingTable').length) return;
 
-  const table = $('#trackingTable').DataTable({
+  ctTrackingTable = $('#trackingTable').DataTable({
     ajax: { url: '/customer-tracking/list' },
     columns: [
-      { data: 'No', orderable: false, searchable: false },
-      { data: 'FullName' },
-      { data: 'model' },
-      { data: 'sale' },
-      { data: 'date' },
-      { data: 'status' },
+      { data: 'No' },
+      { data: 'FullName', orderable: false },
+      { data: 'model', orderable: false },
+      { data: 'sale', orderable: false },
+      { data: 'date', orderable: false },
+      { data: 'status', orderable: false },
       {
         data: 'id',
         orderable: false,
@@ -43,9 +97,7 @@ $(document).ready(function () {
       this.api()
         .column(0, { search: 'applied', order: 'applied' })
         .nodes()
-        .each(function (cell, i) {
-          cell.innerHTML = i + 1;
-        });
+        .each(function (cell, i) { cell.innerHTML = i + 1; });
     },
     language: {
       search: 'ค้นหา:',
@@ -57,12 +109,15 @@ $(document).ready(function () {
     }
   });
 
+  ctTrackingTable.on('init.dt', function () {
+    ctRefreshNames();
+    ctBuildList($('#ctSaleFilterList'), ctAllSaleNames, ctSaleFilterActive, 'ct-sale-chk', 'ctSale');
+    ctBuildList($('#ctStatusFilterList'), ctAllStatusNames, ctStatusFilterActive, 'ct-status-chk', 'ctStatus');
+  });
+
   $('#filterDecision').on('change', function () {
     const val = $(this).val();
-    table
-      .column(6)
-      .search(val === '' ? '' : '^' + val + '$', true, false)
-      .draw();
+    ctTrackingTable.column(6).search(val === '' ? '' : '^' + val + '$', true, false).draw();
   });
 
   // ลบ
@@ -83,14 +138,8 @@ $(document).ready(function () {
         url: `/customer-tracking/${id}`,
         type: 'DELETE',
         success: function () {
-          Swal.fire({
-            icon: 'success',
-            title: 'สำเร็จ',
-            text: 'ลบรายการเรียบร้อยแล้ว',
-            timer: 1500,
-            showConfirmButton: false
-          });
-          table.ajax.reload();
+          Swal.fire({ icon: 'success', title: 'สำเร็จ', text: 'ลบรายการเรียบร้อยแล้ว', timer: 1500, showConfirmButton: false });
+          ctTrackingTable.ajax.reload();
         },
         error: function (xhr) {
           const msg = xhr.responseJSON?.message ?? 'ไม่สามารถลบข้อมูลได้';
@@ -98,6 +147,100 @@ $(document).ready(function () {
         }
       });
     });
+  });
+
+  // ── Filter button toggles ──
+  $('#ctSaleFilterBtn').on('click', function (e) {
+    e.stopPropagation();
+    const $dd = $('#ctSaleFilterDropdown');
+    if ($dd.hasClass('show')) { $dd.removeClass('show'); $(this).removeClass('active'); return; }
+    $('#ctStatusFilterDropdown').removeClass('show'); $('#ctStatusFilterBtn').removeClass('active');
+    const rect = this.getBoundingClientRect();
+    $dd.css({ top: (rect.bottom + 4) + 'px', left: rect.left + 'px' }).addClass('show');
+    $(this).addClass('active');
+    ctBuildList($('#ctSaleFilterList'), ctAllSaleNames, ctSaleFilterActive, 'ct-sale-chk', 'ctSale');
+    $('#ctSaleFilterSearch').val('').trigger('input').focus();
+  });
+
+  $('#ctStatusFilterBtn').on('click', function (e) {
+    e.stopPropagation();
+    const $dd = $('#ctStatusFilterDropdown');
+    if ($dd.hasClass('show')) { $dd.removeClass('show'); $(this).removeClass('active'); return; }
+    $('#ctSaleFilterDropdown').removeClass('show'); $('#ctSaleFilterBtn').removeClass('active');
+    const rect = this.getBoundingClientRect();
+    $dd.css({ top: (rect.bottom + 4) + 'px', left: rect.left + 'px' }).addClass('show');
+    $(this).addClass('active');
+    ctBuildList($('#ctStatusFilterList'), ctAllStatusNames, ctStatusFilterActive, 'ct-status-chk', 'ctStatus');
+    $('#ctStatusFilterSearch').val('').trigger('input').focus();
+  });
+
+  $(document).on('click.ctFilter', function (e) {
+    if (!$(e.target).closest('#ctSaleFilterDropdown,#ctSaleFilterBtn,#ctStatusFilterDropdown,#ctStatusFilterBtn').length) {
+      $('#ctSaleFilterDropdown,#ctStatusFilterDropdown').removeClass('show');
+      $('#ctSaleFilterBtn,#ctStatusFilterBtn').removeClass('active');
+    }
+  });
+
+  // Select all
+  $(document).on('change', '#ctSaleChkAll', function () { $('.ct-sale-chk:visible').prop('checked', $(this).is(':checked')); });
+  $(document).on('change', '#ctStatusChkAll', function () { $('.ct-status-chk:visible').prop('checked', $(this).is(':checked')); });
+
+  // Individual → sync header
+  $(document).on('change', '.ct-sale-chk', function () { ctSyncAll('ctSaleChkAll', 'ct-sale-chk'); });
+  $(document).on('change', '.ct-status-chk', function () { ctSyncAll('ctStatusChkAll', 'ct-status-chk'); });
+
+  // Search within dropdown
+  $(document).on('input', '#ctSaleFilterSearch', function () {
+    const q = $(this).val().toLowerCase();
+    $('#ctSaleFilterList .col-filter-item:not(.col-filter-all)').each(function () {
+      $(this).toggle(!q || $(this).find('.ct-sale-chk').val().toLowerCase().includes(q));
+    });
+    ctSyncAll('ctSaleChkAll', 'ct-sale-chk');
+  });
+  $(document).on('input', '#ctStatusFilterSearch', function () {
+    const q = $(this).val().toLowerCase();
+    $('#ctStatusFilterList .col-filter-item:not(.col-filter-all)').each(function () {
+      $(this).toggle(!q || $(this).find('.ct-status-chk').val().toLowerCase().includes(q));
+    });
+    ctSyncAll('ctStatusChkAll', 'ct-status-chk');
+  });
+
+  // Apply
+  $(document).on('click', '#ctSaleFilterApply', function () {
+    const $items = $('.ct-sale-chk');
+    const checked = [];
+    $items.filter(':checked').each(function () { checked.push($(this).val()); });
+    ctSaleFilterActive = checked.length === $items.length ? null : checked;
+    $('#ctSaleFilterBtn').toggleClass('filtered', ctSaleFilterActive !== null);
+    ctTrackingTable.draw();
+    $('#ctSaleFilterDropdown').removeClass('show'); $('#ctSaleFilterBtn').removeClass('active');
+  });
+  $(document).on('click', '#ctStatusFilterApply', function () {
+    const $items = $('.ct-status-chk');
+    const checked = [];
+    $items.filter(':checked').each(function () { checked.push($(this).val()); });
+    ctStatusFilterActive = checked.length === $items.length ? null : checked;
+    $('#ctStatusFilterBtn').toggleClass('filtered', ctStatusFilterActive !== null);
+    ctTrackingTable.draw();
+    $('#ctStatusFilterDropdown').removeClass('show'); $('#ctStatusFilterBtn').removeClass('active');
+  });
+
+  // Clear
+  $(document).on('click', '#ctSaleFilterClear', function () {
+    ctSaleFilterActive = null;
+    $('.ct-sale-chk').prop('checked', true);
+    $('#ctSaleChkAll').prop({ indeterminate: false, checked: true });
+    $('#ctSaleFilterBtn').removeClass('filtered active');
+    ctTrackingTable.draw();
+    $('#ctSaleFilterDropdown').removeClass('show');
+  });
+  $(document).on('click', '#ctStatusFilterClear', function () {
+    ctStatusFilterActive = null;
+    $('.ct-status-chk').prop('checked', true);
+    $('#ctStatusChkAll').prop({ indeterminate: false, checked: true });
+    $('#ctStatusFilterBtn').removeClass('filtered active');
+    ctTrackingTable.draw();
+    $('#ctStatusFilterDropdown').removeClass('show');
   });
 });
 

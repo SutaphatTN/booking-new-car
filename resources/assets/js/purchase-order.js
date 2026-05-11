@@ -67,6 +67,62 @@ $(document).on('blur', '.money-input', function () {
 
 //view
 
+//view : sale column filter
+let saleFilterActive = null;
+
+$.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+  if (settings.nTable.id !== 'purchaseTable') return true;
+  if (saleFilterActive === null) return true;
+  if (saleFilterActive.length === 0) return false;
+  const sale = settings.aoData[dataIndex]?._aData?.sale ?? '';
+  return saleFilterActive.includes(sale);
+});
+
+function populateSaleFilterList() {
+  const rows = purchaseTable ? purchaseTable.rows().data().toArray() : [];
+  const seen = new Set();
+  rows.forEach(function (row) {
+    if (row.sale && row.sale !== '-') seen.add(row.sale);
+  });
+  const sorted = Array.from(seen).sort((a, b) => a.localeCompare(b, 'th'));
+
+  const $list = $('#saleFilterList').empty();
+  const allSelected = saleFilterActive === null;
+
+  $list.append(
+    `<div class="col-filter-item col-filter-all">
+      <input type="checkbox" id="saleChkAll" ${allSelected ? 'checked' : ''}>
+      <label for="saleChkAll">(เลือกทั้งหมด)</label>
+    </div>`
+  );
+
+  sorted.forEach(function (name, i) {
+    const checked = allSelected || (saleFilterActive !== null && saleFilterActive.includes(name)) ? 'checked' : '';
+    $list.append(
+      `<div class="col-filter-item">
+        <input type="checkbox" class="sale-chk-item" id="saleChk${i}" value="${name}" ${checked}>
+        <label for="saleChk${i}">${name}</label>
+      </div>`
+    );
+  });
+
+  syncSelectAll();
+}
+
+function syncSelectAll() {
+  const $items = $('.sale-chk-item:visible');
+  const total = $items.length;
+  const checked = $items.filter(':checked').length;
+  const $all = $('#saleChkAll');
+  if (total === 0 || checked === 0) {
+    $all.prop({ indeterminate: false, checked: false });
+  } else if (checked === total) {
+    $all.prop({ indeterminate: false, checked: true });
+  } else {
+    $all.prop({ indeterminate: true, checked: false });
+  }
+}
+
 //view : table
 let purchaseTable;
 
@@ -83,13 +139,13 @@ $(document).ready(function () {
       }
     },
     columns: [
-      { data: 'No', orderable: false },
+      { data: 'No' },
       { data: 'FullName', orderable: false },
-      { data: 'model' },
+      { data: 'model', orderable: false },
       { data: 'order' },
-      { data: 'date' },
-      { data: 'sale' },
-      { data: 'statusSale' },
+      { data: 'date', orderable: false },
+      { data: 'sale', orderable: false },
+      { data: 'statusSale', orderable: false },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
@@ -128,8 +184,89 @@ $(document).ready(function () {
     }
   });
 
+  purchaseTable.on('init.dt', function () {
+    populateSaleFilterList();
+  });
+
   $('#filterStatus').on('change', function () {
-    purchaseTable.ajax.reload();
+    saleFilterActive = null;
+    $('#saleFilterBtn').removeClass('filtered');
+    purchaseTable.ajax.reload(function () {
+      populateSaleFilterList();
+    });
+  });
+
+  // toggle dropdown – position via fixed coordinates to escape overflow clipping
+  $('#saleFilterBtn').on('click', function (e) {
+    e.stopPropagation();
+    const $dd = $('#saleFilterDropdown');
+    const isOpen = $dd.hasClass('show');
+
+    if (isOpen) {
+      $dd.removeClass('show');
+      $(this).removeClass('active');
+      return;
+    }
+
+    const rect = this.getBoundingClientRect();
+    $dd.css({ top: (rect.bottom + 4) + 'px', left: rect.left + 'px' });
+    $dd.addClass('show');
+    $(this).addClass('active');
+    populateSaleFilterList();
+    $('#saleFilterSearch').val('').trigger('input').focus();
+  });
+
+  // close on outside click
+  $(document).on('click.saleFilter', function (e) {
+    if (!$(e.target).closest('#saleFilterDropdown, #saleFilterBtn').length) {
+      $('#saleFilterDropdown').removeClass('show');
+      $('#saleFilterBtn').removeClass('active');
+    }
+  });
+
+  // select all
+  $(document).on('change', '#saleChkAll', function () {
+    $('.sale-chk-item:visible').prop('checked', $(this).is(':checked'));
+  });
+
+  // individual item → sync header
+  $(document).on('change', '.sale-chk-item', function () {
+    syncSelectAll();
+  });
+
+  // search within dropdown
+  $(document).on('input', '#saleFilterSearch', function () {
+    const q = $(this).val().toLowerCase();
+    $('.col-filter-item:not(.col-filter-all)').each(function () {
+      const name = $(this).find('.sale-chk-item').val().toLowerCase();
+      $(this).toggle(!q || name.includes(q));
+    });
+    syncSelectAll();
+  });
+
+  // apply
+  $(document).on('click', '#saleFilterApply', function () {
+    const $all = $('.sale-chk-item');
+    const checked = [];
+    $all.filter(':checked').each(function () {
+      checked.push($(this).val());
+    });
+    const isAll = checked.length === $all.length;
+    saleFilterActive = isAll ? null : checked;
+    $('#saleFilterBtn').toggleClass('filtered', saleFilterActive !== null);
+    purchaseTable.draw();
+    $('#saleFilterDropdown').removeClass('show');
+    $('#saleFilterBtn').removeClass('active');
+  });
+
+  // clear
+  $(document).on('click', '#saleFilterClear', function () {
+    saleFilterActive = null;
+    $('.sale-chk-item').prop('checked', true);
+    $('#saleChkAll').prop({ indeterminate: false, checked: true });
+    $('#saleFilterBtn').removeClass('filtered active');
+    purchaseTable.draw();
+    $('#saleFilterDropdown').removeClass('show');
   });
 });
 
@@ -3102,14 +3239,14 @@ $(document).ready(function () {
     ajax: '/purchase-order/list-history',
     columns: [
       { data: 'No' },
-      { data: 'FullName' },
-      { data: 'code' },
+      { data: 'FullName', orderable: false },
+      { data: 'code', orderable: false },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
     lengthChange: true,
     searching: true,
-    ordering: false,
+    ordering: true,
     info: true,
     pageLength: 10,
     autoWidth: false,
@@ -3345,5 +3482,60 @@ document.addEventListener('DOMContentLoaded', function () {
   // ปิด modal แล้วกลับหน้าก่อนหน้า
   modalEl.addEventListener('hidden.bs.modal', function () {
     window.history.back();
+  });
+});
+
+// file attachment preview
+function fileCardStyle(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (ext === 'pdf')                        return { bg: '#ef4444', label: 'PDF' };
+  if (['xlsx','xls','csv'].includes(ext))   return { bg: '#16a34a', label: ext.toUpperCase() };
+  if (['doc','docx'].includes(ext))         return { bg: '#2563eb', label: ext.toUpperCase() };
+  if (['ppt','pptx'].includes(ext))         return { bg: '#ea580c', label: ext.toUpperCase() };
+  if (['zip','rar','7z'].includes(ext))     return { bg: '#7c3aed', label: ext.toUpperCase() };
+  return { bg: '#64748b', label: ext ? ext.toUpperCase() : 'FILE' };
+}
+
+function renderFilePreviews(input, $preview) {
+  $preview.empty();
+  Array.from(input.files).forEach(function (file, idx) {
+    const isImg = /image/i.test(file.type);
+    const objUrl = isImg ? URL.createObjectURL(file) : null;
+    const st = isImg ? null : fileCardStyle(file.name);
+    const $item = $(
+      `<div class="position-relative d-inline-block m-1" style="width:80px;vertical-align:top;">
+        ${isImg
+          ? `<img src="${objUrl}" class="rounded border" style="width:80px;height:80px;object-fit:cover;">`
+          : `<div class="d-flex flex-column align-items-center justify-content-center rounded text-white" style="width:80px;height:80px;background:${st.bg};">
+               <i class="bx bx-file" style="font-size:1.8rem;"></i>
+               <span class="badge bg-white mt-1" style="font-size:.6rem;color:${st.bg};font-weight:700;">${st.label}</span>
+             </div>
+             <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;">${file.name}</div>`
+        }
+        <button type="button" class="btn btn-danger btn-remove-new-file position-absolute top-0 end-0" style="font-size:.8rem;line-height:1;padding:2px 5px;" title="ลบ"><i class="bx bx-x"></i></button>
+      </div>`
+    );
+    $item.find('.btn-remove-new-file').on('click', function () {
+      const dt = new DataTransfer();
+      Array.from(input.files).forEach(function (f, i) {
+        if (i !== idx) dt.items.add(f);
+      });
+      input.files = dt.files;
+      renderFilePreviews(input, $preview);
+    });
+    $preview.append($item);
+  });
+}
+
+[
+  ['attachments_cash',   'preview_cash'],
+  ['attachments_credit', 'preview_credit'],
+  ['attachments_check',  'preview_check'],
+  ['attachments_check2', 'preview_check2'],
+  ['attachments_bank',   'preview_bank'],
+  ['attachments_bank2',  'preview_bank2'],
+].forEach(function ([inputId, previewId]) {
+  $(document).on('change', '#' + inputId, function () {
+    renderFilePreviews(this, $('#' + previewId));
   });
 });

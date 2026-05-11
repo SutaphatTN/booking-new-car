@@ -232,6 +232,8 @@ class Salecar extends Model
 		'balance',
 		'balanceFinance',
 		'con_status',
+		'delivery_location',
+		'delivery_province',
 		'approval_type',
 		'approval_requested_at',
 		'userZone',
@@ -347,6 +349,11 @@ class Salecar extends Model
 	public function gwmColor()
 	{
 		return $this->belongsTo(TbColor::class, 'gwm_color');
+	}
+
+	public function preDeliveryInspection()
+	{
+		return $this->hasOne(PreDeliveryInspection::class, 'salecar_id', 'id');
 	}
 
 	public function getDisplayColorAttribute()

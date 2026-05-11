@@ -56,10 +56,20 @@ class CarOrderController extends Controller
             $subDetail = $c->subModel ? $c->subModel->detail : '';
             $status = $c->orderStatus ? $c->orderStatus->name : '';
 
+            $row = fn($icon, $class, $tip, $text) =>
+                "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
+
             if ($c->brand == 2 || $c->brand == 3) {
-                $car = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>สี : {$c->display_color}<br>ราคาขาย : " . number_format($c->car_MSRP);
+                $car = $row('bxs-car',         'text-primary', 'รุ่นหลัก', $modelOrder)
+                     . $row('bx-git-branch',   'text-info',    'รุ่นย่อย', $subModelOrder)
+                     . $row('bx-palette',      'text-danger',  'สี',       $c->display_color)
+                     . $row('bx-purchase-tag', 'text-success', 'ราคาขาย',  number_format($c->car_MSRP));
             } else {
-                $car = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$c->display_color}<br>ราคาขาย : " . number_format($c->car_MSRP);
+                $car = $row('bxs-car',         'text-primary', 'รุ่นหลัก',    $modelOrder)
+                     . $row('bx-git-branch',   'text-info',    'รุ่นย่อย',    $subModelOrder)
+                     . ($subDetail ? $row('bx-info-circle', 'text-warning', 'รายละเอียด', $subDetail) : '')
+                     . $row('bx-palette',      'text-danger',  'สี',          $c->display_color)
+                     . $row('bx-purchase-tag', 'text-success', 'ราคาขาย',     number_format($c->car_MSRP));
             }
 
             $statusDisplay = "รถ : {$status}<br>การจอง : {$c->car_status}";
@@ -71,30 +81,30 @@ class CarOrderController extends Controller
 
             // $allDate = "สั่งในระบบ : {$sysDate}<br>คาดว่าสินค้ามาถึง : {$esDate}<br>ออกใบกำกับ : {$invDate}<br>สต็อก : {$stDate}";
             $allDate = '
-            <div>
+            <div class="text-start">
             <div>
             <i class="bx bx-calendar text-primary me-1"
                 data-bs-toggle="tooltip"
                 title="วันที่สั่งในระบบ"></i>
-                : ' . $sysDate . '
+                :&nbsp;' . $sysDate . '
             </div>
             <div>
                 <i class="bx bx-time text-warning me-1"
                 data-bs-toggle="tooltip"
                 title="วันที่คาดว่าสินค้ามาถึง"></i>
-                : ' . $esDate . '
+                :&nbsp;' . $esDate . '
             </div>
             <div>
                 <i class="bx bx-receipt text-info me-1"
                 data-bs-toggle="tooltip"
                 title="วันที่ออกใบกำกับ"></i>
-                : ' . $invDate . '
+                :&nbsp;' . $invDate . '
             </div>
             <div>
                 <i class="bx bx-package text-success me-1"
                 data-bs-toggle="tooltip"
                 title="วันที่ Stock"></i>
-                : ' . $stDate . '
+                :&nbsp;' . $stDate . '
             </div>
             </div>
             ';
@@ -363,15 +373,25 @@ class CarOrderController extends Controller
 
         $data = collect();
 
+        $row = fn($icon, $class, $tip, $text) =>
+            "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
+
         foreach ($orders as $p) {
             $modelOrder    = $p->model ? $p->model->Name_TH : '';
             $subModelOrder = $p->subModel ? $p->subModel->name : '';
             $subDetail     = $p->subModel ? $p->subModel->detail : '';
 
             if ($p->brand == 2 || $p->brand == 3) {
-                $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>สี : {$p->display_color}<br>ราคาขาย : " . number_format($p->car_MSRP);
+                $modelDisplay = $row('bxs-car',         'text-primary', 'รุ่นหลัก', $modelOrder)
+                              . $row('bx-git-branch',   'text-info',    'รุ่นย่อย', $subModelOrder)
+                              . $row('bx-palette',      'text-danger',  'สี',       $p->display_color)
+                              . $row('bx-purchase-tag', 'text-success', 'ราคาขาย',  number_format($p->car_MSRP));
             } else {
-                $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$p->display_color}<br>ราคาขาย : " . number_format($p->car_MSRP);
+                $modelDisplay = $row('bxs-car',         'text-primary', 'รุ่นหลัก',    $modelOrder)
+                              . $row('bx-git-branch',   'text-info',    'รุ่นย่อย',    $subModelOrder)
+                              . ($subDetail ? $row('bx-info-circle', 'text-warning', 'รายละเอียด', $subDetail) : '')
+                              . $row('bx-palette',      'text-danger',  'สี',          $p->display_color)
+                              . $row('bx-purchase-tag', 'text-success', 'ราคาขาย',     number_format($p->car_MSRP));
             }
 
             $data->push([
@@ -392,9 +412,18 @@ class CarOrderController extends Controller
             $msrp          = $w->car_MSRP ? number_format($w->car_MSRP) : '-';
 
             if ($w->brand == 2 || $w->brand == 3) {
-                $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>สี : {$colorDisplay}<br>ราคาขาย : {$msrp}<br><span class='badge bg-label-warning'>รอ : {$w->count_order} คัน</span>";
+                $modelDisplay = $row('bxs-car',         'text-primary', 'รุ่นหลัก', $modelOrder)
+                              . $row('bx-git-branch',   'text-info',    'รุ่นย่อย', $subModelOrder)
+                              . $row('bx-palette',      'text-danger',  'สี',       $colorDisplay)
+                              . $row('bx-purchase-tag', 'text-success', 'ราคาขาย',  $msrp)
+                              . "<span class='badge bg-label-warning'>รอ : {$w->count_order} คัน</span>";
             } else {
-                $modelDisplay = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subModelOrder}<br>รายละเอียด : {$subDetail}<br>สี : {$colorDisplay}<br>ราคาขาย : {$msrp}<br><span class='badge bg-label-warning'>รอ : {$w->count_order} คัน</span>";
+                $modelDisplay = $row('bxs-car',         'text-primary', 'รุ่นหลัก',    $modelOrder)
+                              . $row('bx-git-branch',   'text-info',    'รุ่นย่อย',    $subModelOrder)
+                              . ($subDetail ? $row('bx-info-circle', 'text-warning', 'รายละเอียด', $subDetail) : '')
+                              . $row('bx-palette',      'text-danger',  'สี',          $colorDisplay)
+                              . $row('bx-purchase-tag', 'text-success', 'ราคาขาย',     $msrp)
+                              . "<span class='badge bg-label-warning'>รอ : {$w->count_order} คัน</span>";
             }
 
             $data->push([

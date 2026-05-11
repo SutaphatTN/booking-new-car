@@ -91,8 +91,8 @@
           </div>
 
           <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn btn-danger" id="btnCancelAddCustomer"><i
-                class="bx bx-x me-1"></i>ยกเลิก</button>
+            <button type="button" class="btn btn-danger" id="btnCancelAddCustomer">
+              <i class="bx bx-x me-1"></i>ยกเลิก</button>
             <button type="button" class="btn btn-primary" id="btnSaveQuickCustomer">
               <i class="bx bx-save me-1"></i> บันทึก
             </button>
