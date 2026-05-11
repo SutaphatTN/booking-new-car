@@ -106,37 +106,38 @@ class BookingGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Sh
       ->whereNotIn('con_status', [5, 7, 8, 9])
       ->get();
 
-    $data = $salecars
+    $branches = $salecars
+      ->map(fn($r) => $r->branchInfo->name ?? '-')
+      ->unique()
+      ->sort()
+      ->values();
+
+    $pivot = $salecars
       ->groupBy(function ($r) {
-        return ($r->subModel_id ?? 'null') . '_' . ($r->gwm_color ?? 'null') . '_' . ($r->interior_color ?? 'null') . '_' . ($r->branch ?? 'null');
+        return ($r->subModel_id ?? 'null') . '_' . ($r->gwm_color ?? 'null') . '_' . ($r->interior_color ?? 'null');
       })
-      ->map(function ($rows) {
+      ->map(function ($rows) use ($branches) {
         $first = $rows->first();
 
-        $branch        = $first->branchInfo->name ?? '-';
-        $mainModel     = $first->model->Name_TH ?? '-';
-        $subModel      = $first->subModel->name ?? '-';
-        $color         = $first->gwmColor->name ?? '-';
-        $interiorColor = $first->interiorColor->name ?? '-';
-
-        $total        = $rows->count();
-        $withCar      = $rows->whereNotNull('CarOrderID')->count();
-        $withoutCar   = $rows->whereNull('CarOrderID')->count();
+        $branchCounts = $rows
+          ->groupBy(fn($r) => $r->branchInfo->name ?? '-')
+          ->map->count();
 
         return [
-          'branch'        => $branch,
-          'mainModel'     => $mainModel,
-          'subModel'      => $subModel,
-          'color'         => $color,
-          'interiorColor' => $interiorColor,
-          'total'         => $total,
-          'withCustomer'  => $withCar,
-          'available'     => $withoutCar,
+          'mainModel'     => $first->model->Name_TH ?? '-',
+          'subModel'      => $first->subModel->name ?? '-',
+          'color'         => $first->gwmColor->name ?? '-',
+          'interiorColor' => $first->interiorColor->name ?? '-',
+          'branchCounts'  => $branchCounts,
+          'total'         => $rows->count(),
         ];
-      });
+      })
+      ->sortBy(fn($item) => $item['mainModel'] . '|' . $item['subModel'])
+      ->values();
 
     return view('purchase-order.report.gwm.booking', [
-      'book' => $data
+      'pivot'    => $pivot,
+      'branches' => $branches,
     ]);
   }
 }

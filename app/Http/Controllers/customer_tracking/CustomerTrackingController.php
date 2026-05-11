@@ -63,15 +63,23 @@ class CustomerTrackingController extends Controller
                 ? (($customer->prefix->Name_TH ?? '') . ' ' . $customer->FirstName . ' ' . $customer->LastName)
                 : '-';
 
-            $model = $t->model->Name_TH ?? '-';
-            $subMo = $t->subModel->name ?? '-';
-            $subDetail = $t->subModel ? $t->subModel->detail : '';
             $color = $t->wuColor->name ?? '-';
             $colorText = $t->color_text ?? '-';
+            
+            $model = $t->model ? $t->model->Name_TH : '';
+            $subModelSale = $t->subModel ? $t->subModel->name : '';
+            $subDetail = $t->subModel ? $t->subModel->detail : '';
+
+            $row = fn($icon, $class, $tip, $text) =>
+                "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
+
             if ($t->brand == 2 || $t->brand == 3) {
-                $car = "รุ่นหลัก : {$model}<br>รุ่นย่อย : {$subMo}<br>สี : {$color}";
+                $car = $row('bxs-car',       'text-primary', 'รุ่นหลัก', $model)
+                     . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale);
             } else {
-                $car = "รุ่นหลัก : {$model}<br>รุ่นย่อย : {$subMo}<br>{$subDetail}<br>สี : {$colorText}";
+                $car = $row('bxs-car',       'text-primary', 'รุ่นหลัก', $model)
+                     . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale)
+                     . ($subDetail ? $row('bx-info-circle', 'text-warning', 'รายละเอียด', $subDetail) : '');
             }
 
             $latestDetail = $t->latestDetail;

@@ -9,22 +9,34 @@
 <div class="viewMoreHistory"></div>
 <div class="row">
   <div class="col-12">
-    <div class="card">
-      <h4 class="card-header">ประวัติคำสั่งซื้อที่ส่งมอบแล้ว</h4>
-      <div class="card-body">
-        <div class="table-responsive text-nowrap">
-          <table class="table table-bordered historyFinalTable">
+    <div class="card tbl-card">
+
+      {{-- ── Card header ── --}}
+      <div class="po-card-header d-flex align-items-center gap-3">
+        <div class="po-hd-icon">
+          <i class="bx bx-history fs-4 text-white"></i>
+        </div>
+        <div>
+          <div class="text-white fw-bold mf-hd-title">ประวัติคำสั่งซื้อที่ส่งมอบแล้ว</div>
+          <div class="text-white mf-hd-sub">Purchase Order History</div>
+        </div>
+      </div>
+
+      <div class="card-body pt-3">
+        <div class="table-responsive">
+          <table class="table table-bordered tbl-table tbl-styled historyFinalTable">
             <thead>
               <tr>
-                <th>No.</th>
+                <th class="tbl-th-no">No.</th>
                 <th>ชื่อ - นามสกุล ลูกค้า</th>
                 <th>รหัส Car Order</th>
-                <th width="150px">Action</th>
+                <th class="tbl-th-action" style="width:150px;">Action</th>
               </tr>
             </thead>
           </table>
         </div>
       </div>
+
     </div>
   </div>
 </div>

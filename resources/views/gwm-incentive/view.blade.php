@@ -15,14 +15,25 @@
 
 <div class="row">
   <div class="col-12">
-    <div class="card">
-      <h4 class="card-header">ตั้งค่า GWM Incentive</h4>
-      <div class="card-body">
+    <div class="card tbl-card">
 
-        {{-- Filter --}}
-        <div class="row g-2 mb-3 align-items-end">
-          <div class="col-auto">
-            <label class="form-label mb-1">เดือน</label>
+      {{-- ── Card header ── --}}
+      <div class="po-card-header d-flex align-items-center gap-3">
+        <div class="po-hd-icon">
+          <i class="bx bx-award fs-4 text-white"></i>
+        </div>
+        <div>
+          <div class="text-white fw-bold mf-hd-title">ตั้งค่า GWM Incentive</div>
+          <div class="text-white mf-hd-sub">GWM Incentive Settings</div>
+        </div>
+      </div>
+
+      <div class="card-body pt-3">
+
+        {{-- ── Filter bar ── --}}
+        <div class="po-filter-bar d-flex align-items-center gap-3">
+          <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0">เดือน</label>
             <select id="filterMonth" class="form-select form-select-sm" style="min-width:110px">
               @foreach ($months as $num => $name)
                 <option value="{{ $num }}" {{ $num == $currentMonth ? 'selected' : '' }}>
@@ -31,28 +42,27 @@
               @endforeach
             </select>
           </div>
-          <div class="col-auto">
-            <label class="form-label mb-1">ปี (ค.ศ.)</label>
+          <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0">ปี (ค.ศ.)</label>
             <input id="filterYear" type="number" class="form-control form-control-sm"
               value="{{ $currentYear }}" min="2020" max="2099" style="width:90px">
           </div>
-          <div class="col-auto">
-            <button id="btnFilterIncentive" class="btn btn-sm btn-primary">
-              <i class="bx bx-search me-1"></i>แสดง
+          <button id="btnFilterIncentive" class="btn btn-sm btn-primary">
+            <i class="bx bx-search me-1"></i>แสดง
+          </button>
+          <div class="ms-auto">
+            <button class="btn btn-secondary btn-sm btnInputGwmIncentive">
+              <i class="bx bx-plus me-1"></i>เพิ่ม
             </button>
           </div>
         </div>
 
-        <div class="table-responsive text-nowrap">
-          <div class="d-flex justify-content-end mb-2">
-            <button class="btn btn-secondary btnInputGwmIncentive">
-              <i class="bx bx-plus me-1"></i>เพิ่ม
-            </button>
-          </div>
-          <table class="table table-bordered gwmIncentiveTable">
+        {{-- ── Table ── --}}
+        <div class="table-responsive">
+          <table class="table table-bordered tbl-table tbl-styled gwmIncentiveTable">
             <thead>
               <tr>
-                <th>No.</th>
+                <th class="tbl-th-no">No.</th>
                 <th>รุ่นรถ</th>
                 <th>Fixed</th>
                 <th>&lt;70%</th>
@@ -62,7 +72,7 @@
                 <th>x≥120%</th>
                 <th>Max</th>
                 <th>Target (คัน)</th>
-                <th width="120px">Action</th>
+                <th class="tbl-th-action" style="width:120px">Action</th>
               </tr>
             </thead>
           </table>

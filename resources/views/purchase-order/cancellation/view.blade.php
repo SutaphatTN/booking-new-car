@@ -8,23 +8,35 @@
 @section('content')
   <div class="row">
     <div class="col-12">
-      <div class="card">
-        <h4 class="card-header">รายการถอนจอง</h4>
-        <div class="card-body">
-          <div class="table-responsive text-nowrap">
-            <table class="table table-bordered" id="cancellationTable">
+      <div class="card tbl-card">
+
+        {{-- ── Card header ── --}}
+        <div class="po-card-header d-flex align-items-center gap-3">
+          <div class="po-hd-icon">
+            <i class="bx bx-x-circle fs-4 text-white"></i>
+          </div>
+          <div>
+            <div class="text-white fw-bold mf-hd-title">รายการถอนจอง</div>
+            <div class="text-white mf-hd-sub">Cancellation List</div>
+          </div>
+        </div>
+
+        <div class="card-body pt-3">
+          <div class="table-responsive">
+            <table class="table table-bordered tbl-table tbl-styled" id="cancellationTable">
               <thead>
                 <tr>
-                  <th>No.</th>
+                  <th class="tbl-th-no">No.</th>
                   <th>ชื่อ - นามสกุล</th>
                   <th>รุ่นรถ</th>
                   <th>วันที่ถอนจอง</th>
-                  <th width="150px">Action</th>
+                  <th class="tbl-th-action" style="width:150px;">Action</th>
                 </tr>
               </thead>
             </table>
           </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -123,7 +135,7 @@
               <span class="mf-section-title">หลักฐานการคืนเงินถอนจอง</span>
             </div>
             <div class="mf-section-body">
-              <div id="viewWithdrawAttachList" class="row g-2"></div>
+              <div id="viewWithdrawAttachList" class="d-flex flex-wrap"></div>
             </div>
           </div>
 
@@ -212,10 +224,11 @@
                   </label>
                   <input type="file" id="withdrawAttachmentInput" class="form-control"
                     accept=".pdf,.jpg,.jpeg,.png" multiple>
+                  <div id="newFilePreview" class="mt-2"></div>
                 </div>
 
                 <div class="col-12">
-                  <div id="withdrawAttachmentList" class="row g-2 mb-3"></div>
+                  <div id="withdrawAttachmentList" class="mb-3"></div>
                 </div>
 
               </div>

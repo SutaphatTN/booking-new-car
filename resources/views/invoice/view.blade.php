@@ -8,10 +8,20 @@
 @section('content')
   <div class="row">
     <div class="col-12">
-      <div class="card">
-        <h4 class="card-header">รายการใบสั่งซื้อ</h4>
+      <div class="card tbl-card">
 
-        <div class="card-body">
+        {{-- ── Card header ── --}}
+        <div class="po-card-header d-flex align-items-center gap-3">
+          <div class="po-hd-icon">
+            <i class="bx bx-receipt fs-4 text-white"></i>
+          </div>
+          <div>
+            <div class="text-white fw-bold mf-hd-title">รายการใบสั่งซื้อ</div>
+            <div class="text-white mf-hd-sub">Invoice List</div>
+          </div>
+        </div>
+
+        <div class="card-body pt-3">
           @if (session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
               {{ session('success') }}
@@ -19,30 +29,34 @@
             </div>
           @endif
 
-          <div class="table-responsive text-nowrap">
-            <div class="d-flex justify-content-between mb-3">
-              <a href="{{ route('invoice.create') }}" class="btn btn-primary">
-                <i class="bx bx-plus me-2"></i>สร้างใบสั่งซื้อ
-              </a>
-
-              <div>
-                <select id="invoiceStatusFilter" class="form-select">
-                  <option value="pending" selected>วางบิล</option>
-                  <option value="paid">จ่ายเงิน</option>
-                  <option value="all">ทั้งหมด</option>
-                </select>
-              </div>
+          {{-- ── Filter / action bar ── --}}
+          <div class="po-filter-bar d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ route('invoice.create') }}" class="btn btn-primary btn-sm">
+              <i class="bx bx-plus me-1"></i> สร้างใบสั่งซื้อ
+            </a>
+            <div class="ms-auto d-flex align-items-center gap-2">
+              <i class="bx bx-filter-alt text-muted"></i>
+              <label for="invoiceStatusFilter" class="mb-0 text-muted">สถานะ :</label>
+              <select id="invoiceStatusFilter" class="form-select form-select-sm" style="width:160px;">
+                <option value="pending" selected>วางบิล</option>
+                <option value="paid">จ่ายเงิน</option>
+                <option value="all">ทั้งหมด</option>
+              </select>
             </div>
-            <table class="table table-bordered invoiceTable">
+          </div>
+
+          {{-- ── Table ── --}}
+          <div class="table-responsive">
+            <table class="table table-bordered tbl-table tbl-styled invoiceTable">
               <thead>
                 <tr>
-                  <th>No.</th>
+                  <th class="tbl-th-no">No.</th>
                   <th>ชื่อลูกค้า</th>
                   <th>ชื่อร้าน</th>
                   <th>รายละเอียด</th>
                   <th>ยอดเงิน</th>
                   <th>วันที่</th>
-                  <th width="80px">Action</th>
+                  <th class="tbl-th-action" style="width:80px;">Action</th>
                 </tr>
               </thead>
             </table>

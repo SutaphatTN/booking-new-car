@@ -5,8 +5,8 @@ namespace App\Http\Controllers\purchase_order;
 use App\Http\Controllers\Controller;
 use App\Models\Salecar;
 use App\Services\OneDriveService;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class CancellationController extends Controller
@@ -100,7 +100,10 @@ class CancellationController extends Controller
 
             foreach ($request->file('attachments', []) as $index => $file) {
                 $fileName = 'withdraw_' . $saleCar->id . '_' . ($index + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
-                $urls[] = $oneDrive->upload($file->getRealPath(), $fileName, $folder);
+                $urls[] = [
+                    'url'  => $oneDrive->upload($file->getRealPath(), $fileName, $folder),
+                    'name' => $file->getClientOriginalName(),
+                ];
             }
 
             $saleCar->withdraw_attachment_url = $urls;
@@ -119,7 +122,7 @@ class CancellationController extends Controller
             $urlToRemove = $request->url;
 
             $urls = collect($saleCar->withdraw_attachment_url ?? [])
-                ->reject(fn($u) => $u === $urlToRemove)
+                ->reject(fn($u) => (is_array($u) ? ($u['url'] ?? '') : $u) === $urlToRemove)
                 ->values()
                 ->all();
 
@@ -129,6 +132,39 @@ class CancellationController extends Controller
             return response()->json(['success' => true, 'attachments' => $urls]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function proxyFile(Request $request, $id, $filename = null)
+    {
+        $saleCar  = Salecar::withTrashed()->findOrFail($id);
+        $shareUrl = $request->input('url');
+
+        $allowed = collect($saleCar->withdraw_attachment_url ?? [])->contains(function ($item) use ($shareUrl) {
+            return is_array($item) ? ($item['url'] ?? '') === $shareUrl : $item === $shareUrl;
+        });
+
+        if (!$allowed) {
+            abort(403);
+        }
+
+        try {
+            $oneDrive                  = new OneDriveService();
+            ['url' => $downloadUrl, 'name' => $filename] = $oneDrive->getDownloadInfo($shareUrl);
+
+            $guzzle   = new Client(['allow_redirects' => true]);
+            $response = $guzzle->get($downloadUrl);
+
+            $contentType = $response->getHeader('Content-Type')[0] ?? 'application/octet-stream';
+            $body        = $response->getBody()->getContents();
+
+            return response($body, 200, [
+                'Content-Type'        => $contentType,
+                'Content-Disposition' => "inline; filename=\"{$filename}\"",
+                'Cache-Control'       => 'private, max-age=3600',
+            ]);
+        } catch (\Exception $e) {
+            abort(404);
         }
     }
 

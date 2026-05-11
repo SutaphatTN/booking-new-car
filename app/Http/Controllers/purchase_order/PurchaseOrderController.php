@@ -37,6 +37,7 @@ use App\Models\TurnCar;
 use App\Models\User;
 use App\Services\OneDriveService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -165,7 +166,7 @@ class PurchaseOrderController extends Controller
         $statusFilter = $request->con_status;
         $user = Auth::user();
 
-        $query = Salecar::with('customer.prefix', 'conStatus');
+        $query = Salecar::with('customer.prefix', 'conStatus', 'saleUser');
 
         if ($user->role === 'sale') {
             $query->where('SaleID', $user->id);
@@ -187,10 +188,16 @@ class PurchaseOrderController extends Controller
             $subDetail = $s->subModel ? $s->subModel->detail : '';
             $statusSale = $s->conStatus ? $s->conStatus->name : '';
 
+            $row = fn($icon, $class, $tip, $text) =>
+                "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
+
             if ($s->brand == 2 || $s->brand == 3) {
-                $car = "รุ่นหลัก : {$model}<br>รุ่นย่อย : {$subModelSale}";
+                $car = $row('bxs-car',       'text-primary', 'รุ่นหลัก', $model)
+                     . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale);
             } else {
-                $car = "รุ่นหลัก : {$model}<br>รุ่นย่อย : {$subModelSale}<br>{$subDetail}";
+                $car = $row('bxs-car',       'text-primary', 'รุ่นหลัก', $model)
+                     . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale)
+                     . ($subDetail ? $row('bx-info-circle', 'text-warning', 'รายละเอียด', $subDetail) : '');
             }
 
             if (!empty($s->GMApprovalSignature)) {
@@ -215,7 +222,8 @@ class PurchaseOrderController extends Controller
             //     $approver = 'รอดำเนินการ';
             // }
 
-            $status = "ใบจอง : {$statusSale}<br>การตรวจสอบ : {$approver}";
+            $status = $row('bx-receipt',      'text-success', 'ใบจอง',        $statusSale)
+                    . $row('bx-check-shield', 'text-warning', 'การตรวจสอบ', $approver);
 
             return [
                 'No' => $index + 1,
@@ -335,7 +343,10 @@ class PurchaseOrderController extends Controller
 
                 foreach ($request->file('attachments') as $index => $file) {
                     $fileName = 'booking_' . $salecar->id . '_' . ($index + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
-                    $urls[] = $oneDrive->upload($file->getRealPath(), $fileName, $folder);
+                    $urls[] = [
+                        'url'  => $oneDrive->upload($file->getRealPath(), $fileName, $folder),
+                        'name' => $file->getClientOriginalName(),
+                    ];
                 }
 
                 $salecar->update(['attachment_url' => $urls]);
@@ -351,6 +362,7 @@ class PurchaseOrderController extends Controller
                         : null,
                     'date' => $request->reservation_date,
                     'userZone' => $request->userZone  ?? null,
+                    'brand' => Auth::user()->brand ?? null,
                     'branch' => Auth::user()->branch ?? null,
                 ];
 
@@ -820,6 +832,8 @@ class PurchaseOrderController extends Controller
                     ? str_replace(',', '', $request->balanceFinance)
                     : null,
                 'con_status' => $request->con_status,
+                'delivery_location' => $request->delivery_location,
+                'delivery_province' => $request->delivery_province,
             ];
 
             if (in_array(Auth::user()->brand, [2, 3])) {
@@ -954,6 +968,7 @@ class PurchaseOrderController extends Controller
                         : null,
                     'date' => $request->reservation_date,
                     'userZone' => $request->userZone  ?? null,
+                    'brand' => Auth::user()->brand ?? null,
                     'branch' => Auth::user()->branch ?? null,
                 ];
 
@@ -1038,6 +1053,7 @@ class PurchaseOrderController extends Controller
                     'cost' => $cost,
                     'date' => $request->remaining_date,
                     'userZone' => $request->userZone ?? null,
+                    'brand' => Auth::user()->brand ?? null,
                     'branch' => Auth::user()->branch ?? null,
                 ];
 
@@ -1119,6 +1135,7 @@ class PurchaseOrderController extends Controller
                         : null,
                     'date' => $request->delivery_date,
                     'userZone' => $request->userZone  ?? null,
+                    'brand' => Auth::user()->brand ?? null,
                     'branch' => Auth::user()->branch ?? null,
                 ];
 
@@ -1719,5 +1736,38 @@ class PurchaseOrderController extends Controller
         $dateType   = $request->date_type ?? 'dms';
 
         return Excel::download(new MonthlyDeliveryExport($fromDate, $dateType), 'ส่งมอบประจำเดือน.xlsx');
+    }
+
+    public function proxyAttachment(Request $request, $id, $filename = null)
+    {
+        $saleCar  = Salecar::findOrFail($id);
+        $shareUrl = $request->input('url');
+
+        $allowed = collect($saleCar->attachment_url ?? [])->contains(function ($item) use ($shareUrl) {
+            return is_array($item) ? ($item['url'] ?? '') === $shareUrl : $item === $shareUrl;
+        });
+
+        if (!$allowed) {
+            abort(403);
+        }
+
+        try {
+            $oneDrive                  = new OneDriveService();
+            ['url' => $downloadUrl, 'name' => $filename] = $oneDrive->getDownloadInfo($shareUrl);
+
+            $guzzle   = new Client(['allow_redirects' => true]);
+            $response = $guzzle->get($downloadUrl);
+
+            $contentType = $response->getHeader('Content-Type')[0] ?? 'application/octet-stream';
+            $body        = $response->getBody()->getContents();
+
+            return response($body, 200, [
+                'Content-Type'        => $contentType,
+                'Content-Disposition' => "inline; filename=\"{$filename}\"",
+                'Cache-Control'       => 'private, max-age=3600',
+            ]);
+        } catch (\Exception $e) {
+            abort(404);
+        }
     }
 }

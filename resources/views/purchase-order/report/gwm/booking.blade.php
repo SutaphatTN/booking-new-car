@@ -1,46 +1,48 @@
 <table>
   <thead>
     <tr>
-      <th>สาขา</th>
       <th>รุ่นรถหลัก</th>
       <th>รุ่นย่อย</th>
       <th>สี</th>
       <th>สีภายใน</th>
-      <th>รถทั้งหมด (คัน)</th>
-      {{-- <th>มีลูกค้าแล้ว (คัน)</th>
-      <th>ว่าง (คัน)</th> --}}
+      @foreach ($branches as $branch)
+      <th>{{ $branch }}</th>
+      @endforeach
+      <th>รวม</th>
     </tr>
   </thead>
   <tbody>
-    @forelse ($book as $b)
-    @php
-    $startRow = 2;
-    $endRow = count($book) + 1;
-    @endphp
+    @forelse ($pivot as $row)
       <tr>
-        <td>{{ $b['branch'] }}</td>
-        <td>{{ $b['mainModel'] }}</td>
-        <td>{{ $b['subModel'] }}</td>
-        <td>{{ $b['color'] }}</td>
-        <td>{{ $b['interiorColor'] }}</td>
-        <td>{{ $b['total'] }}</td>
-        {{-- <td>{{ $b['withCustomer'] }}</td>
-        <td>{{ $b['available'] }}</td> --}}
+        <td>{{ $row['mainModel'] }}</td>
+        <td>{{ $row['subModel'] }}</td>
+        <td>{{ $row['color'] }}</td>
+        <td>{{ $row['interiorColor'] }}</td>
+        @foreach ($branches as $branch)
+        <td>{{ $row['branchCounts'][$branch] ?? 0 }}</td>
+        @endforeach
+        <td>{{ $row['total'] }}</td>
       </tr>
     @empty
       <tr>
-        <td colspan="6" align="center">
-          ไม่มีข้อมูล
-        </td>
+        <td colspan="{{ 5 + count($branches) }}" align="center">ไม่มีข้อมูล</td>
       </tr>
     @endforelse
 
-    @if(count($book) > 0)
+    @if (count($pivot) > 0)
+    @php
+      $startRow = 2;
+      $endRow   = count($pivot) + 1;
+      $colOffset = 4;
+    @endphp
     <tr>
-      <td colspan="5" align="center">รวมทั้งหมด</td>
-      <td>=SUM(F{{ $startRow }}:F{{ $endRow }})</td>
-      {{-- <td>=SUM(G{{ $startRow }}:G{{ $endRow }})</td>
-      <td>=SUM(H{{ $startRow }}:H{{ $endRow }})</td> --}}
+      <td colspan="4" align="center">รวมทั้งหมด</td>
+      @foreach ($branches as $i => $branch)
+      @php $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colOffset + $i + 1); @endphp
+      <td>=SUM({{ $col }}{{ $startRow }}:{{ $col }}{{ $endRow }})</td>
+      @endforeach
+      @php $totalCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colOffset + count($branches) + 1); @endphp
+      <td>=SUM({{ $totalCol }}{{ $startRow }}:{{ $totalCol }}{{ $endRow }})</td>
     </tr>
     @endif
   </tbody>

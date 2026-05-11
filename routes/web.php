@@ -28,6 +28,7 @@ use App\Http\Controllers\customer_tracking\CustomerTrackingController;
 use App\Http\Controllers\gwm_incentive\GwmIncentiveController;
 use App\Http\Controllers\service_check_tracking\ServiceCheckTrackingController;
 use App\Http\Controllers\customer_relation\PreDeliveryInspectionController;
+use App\Http\Controllers\customer_relation\SsiController;
 
 Route::get('/', fn() => redirect()->route('login'));
 
@@ -335,6 +336,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/summary/{id}', [PurchaseOrderController::class, 'summaryPurchase'])->name('purchase-order.summary');
     Route::get('/api/purchase-order/sub-model/{model_id}', [PurchaseOrderController::class, 'getSubModelPurchase']);
     Route::get('purchase-order/{id}/preview', [PurchaseOrderController::class, 'preview'])->name('purchase-order.preview');
+    Route::get('purchase-order/{id}/proxy/{filename?}', [PurchaseOrderController::class, 'proxyAttachment'])->where('filename', '[^/]+')->name('purchase-order.proxy');
     Route::get('purchase-order/viewPO', [PurchaseOrderController::class, 'viewPO'])->name('purchase-order.viewPO');
     Route::get('purchase-order/list-po', [PurchaseOrderController::class, 'listPO']);
     Route::get('purchase-order/viewBooking', [PurchaseOrderController::class, 'viewBooking'])->name('purchase-order.viewBooking');
@@ -356,6 +358,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('purchase-order/cancellation/{id}/withdraw-attachment', [CancellationController::class, 'uploadWithdrawAttachment']);
     Route::delete('purchase-order/cancellation/{id}/withdraw-attachment', [CancellationController::class, 'deleteWithdrawAttachment']);
     Route::post('purchase-order/cancellation/{id}/confirm-withdraw', [CancellationController::class, 'confirmWithdraw']);
+    Route::get('purchase-order/cancellation/{id}/proxy/{filename?}', [CancellationController::class, 'proxyFile'])->where('filename', '[^/]+');
 
     // customer tracking
     Route::get('customer-tracking/list', [CustomerTrackingController::class, 'list']);
@@ -380,9 +383,17 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('pre-delivery-inspection/{salecarId}/data', [PreDeliveryInspectionController::class, 'getInspection'])->name('pre-delivery-inspection.data');
     Route::post('pre-delivery-inspection/{salecarId}/save', [PreDeliveryInspectionController::class, 'save'])->name('pre-delivery-inspection.save');
     Route::delete('pre-delivery-inspection/{id}/file', [PreDeliveryInspectionController::class, 'deleteFile'])->name('pre-delivery-inspection.deleteFile');
-    Route::get('pre-delivery-inspection/{inspectionId}/proxy', [PreDeliveryInspectionController::class, 'proxyFile'])->name('pre-delivery-inspection.proxy');
+    Route::get('pre-delivery-inspection/{inspectionId}/proxy/{filename?}', [PreDeliveryInspectionController::class, 'proxyFile'])->name('pre-delivery-inspection.proxy')->where('filename', '[^/]+');
     Route::get('pre-delivery-inspection/{salecarId}/view-data', [PreDeliveryInspectionController::class, 'viewData'])->name('pre-delivery-inspection.viewData');
     Route::get('pre-delivery-inspection', [PreDeliveryInspectionController::class, 'index'])->name('pre-delivery-inspection.index');
+
+    // SSI หลังส่งมอบ
+    Route::get('ssi', [SsiController::class, 'index'])->name('ssi.index');
+    Route::get('ssi/list', [SsiController::class, 'list'])->name('ssi.list');
+    Route::get('ssi/{salecarId}/edit', [SsiController::class, 'edit'])->name('ssi.edit');
+    Route::post('ssi/{salecarId}/contact', [SsiController::class, 'saveContact'])->name('ssi.contact.save');
+    Route::delete('ssi/{salecarId}/contact/{contactId}', [SsiController::class, 'deleteContact'])->name('ssi.contact.delete');
+    Route::post('ssi/{salecarId}/tab2', [SsiController::class, 'saveTab2'])->name('ssi.tab2.save');
 
     //all resource
     Route::resource('customer-tracking', CustomerTrackingController::class);

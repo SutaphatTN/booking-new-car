@@ -20,3 +20,24 @@
 
 @yield('vendor-style')
 @yield('page-style')
+
+<style>
+  /* Native scroll for vertical menu */
+  .menu-vertical .menu-inner {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  .menu-vertical .menu-inner::-webkit-scrollbar {
+    width: 4px;
+  }
+  .menu-vertical .menu-inner::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .menu-vertical .menu-inner::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 4px;
+  }
+  .menu-vertical .menu-inner::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.35);
+  }
+</style>

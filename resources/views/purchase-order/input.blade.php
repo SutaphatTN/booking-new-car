@@ -438,6 +438,7 @@
                         <input id="attachments_cash" type="file" class="form-control border-0 bg-transparent p-0"
                           name="attachments[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
                         <small class="text-muted mt-1 d-block">PDF, JPG, PNG</small>
+                        <div id="preview_cash" class="mt-2"></div>
                       </div>
                     </div>
                   </div>
@@ -467,6 +468,7 @@
                         <input id="attachments_credit" type="file" class="form-control border-0 bg-transparent p-0"
                           name="attachments[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
                         <small class="text-muted mt-1 d-block">PDF, JPG, PNG</small>
+                        <div id="preview_credit" class="mt-2"></div>
                       </div>
                     </div>
                   </div>
@@ -504,6 +506,7 @@
                           <input id="attachments_check" type="file" class="form-control border-0 bg-transparent p-0"
                             name="attachments[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
                           <small class="text-muted mt-1 d-block">PDF, JPG, PNG</small>
+                          <div id="preview_check" class="mt-2"></div>
                         </div>
                       </div>
                     @endif
@@ -517,6 +520,7 @@
                             class="form-control border-0 bg-transparent p-0" name="attachments[]"
                             accept=".pdf,.jpg,.jpeg,.png" multiple>
                           <small class="text-muted mt-1 d-block">PDF, JPG, PNG</small>
+                          <div id="preview_check2" class="mt-2"></div>
                         </div>
                       </div>
                     </div>
@@ -555,6 +559,7 @@
                           <input id="attachments_bank" type="file" class="form-control border-0 bg-transparent p-0"
                             name="attachments[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
                           <small class="text-muted mt-1 d-block">PDF, JPG, PNG</small>
+                          <div id="preview_bank" class="mt-2"></div>
                         </div>
                       </div>
                     @endif
@@ -567,6 +572,7 @@
                           <input id="attachments_bank2" type="file" class="form-control border-0 bg-transparent p-0"
                             name="attachments[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
                           <small class="text-muted mt-1 d-block">PDF, JPG, PNG</small>
+                          <div id="preview_bank2" class="mt-2"></div>
                         </div>
                       </div>
                     </div>
@@ -707,8 +713,8 @@
           </div>
 
           <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn btn-danger" id="btnCancelAddCustomerPO"><i
-                class="bx bx-x me-1"></i>ยกเลิก</button>
+            <button type="button" class="btn btn-danger" id="btnCancelAddCustomerPO">
+              <i class="bx bx-x me-1"></i>ยกเลิก</button>
             <button type="button" class="btn btn-primary" id="btnSaveQuickCustomerPO">
               <i class="bx bx-save me-1"></i> บันทึก
             </button>

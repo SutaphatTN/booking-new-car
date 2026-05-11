@@ -31,14 +31,15 @@
         }
 
         let html = `
-        <table class="table table-bordered">
+        <div class="table-responsive">
+        <table class="table table-bordered tbl-table tbl-styled">
             <thead>
                 <tr>
                     <th>รุ่น</th>
                     <th>สี</th>
                      ${res.brand == 2 ? '<th>ภายใน</th>' : ''}
                     <th>ขายได้ 3 เดือน</th>
-                     <th>จำนวนรถในสต็อค</th>
+                    <th>จำนวนรถในสต็อค</th>
                     <th>Mix %</th>
                     <th>ควรสั่ง</th>
                 </tr>
@@ -60,7 +61,7 @@
             `;
         });
 
-        html += `</tbody></table>`;
+        html += `</tbody></table></div>`;
 
         document.getElementById('forecastTableArea').innerHTML = html;
       });
@@ -69,27 +70,38 @@
 @endsection
 
 @section('content')
-<div class="card">
-  <div class="card-header">
-    <h4>Forecast สั่งรถเดือนนี้</h4>
-  </div>
+<div class="row">
+  <div class="col-12">
+    <div class="card tbl-card">
 
-  <div class="card-body">
-
-    <div class="row mb-3 d-flex justify-content-center">
-      <div class="col-md-3">
-        <label class="mb-2">ยอดที่ต้องการสั่งเดือนนี้</label>
-        <input type="number" id="target" class="form-control" placeholder="เช่น 15">
+      {{-- ── Card header ── --}}
+      <div class="po-card-header d-flex align-items-center gap-3">
+        <div class="po-hd-icon">
+          <i class="bx bx-line-chart fs-4 text-white"></i>
+        </div>
+        <div>
+          <div class="text-white fw-bold mf-hd-title">Forecast สั่งรถเดือนนี้</div>
+          <div class="text-white mf-hd-sub">Forecast Order</div>
+        </div>
       </div>
-      <div class="col-md-2 d-flex align-items-end">
-        <button class="btn btn-primary" id="btnCalculate">
-          <i class="bx bx-calculator me-1"></i>คำนวณ
-        </button>
+
+      <div class="card-body pt-3">
+
+        {{-- ── Filter bar ── --}}
+        <div class="po-filter-bar d-flex align-items-center gap-3 justify-content-center">
+          <div class="d-flex align-items-center gap-2">
+            <label class="mb-0">ยอดที่ต้องการสั่งเดือนนี้ :</label>
+            <input type="number" id="target" class="form-control form-control-sm" style="width:160px;" placeholder="เช่น 15">
+          </div>
+          <button class="btn btn-primary btn-sm" id="btnCalculate">
+            <i class="bx bx-calculator me-1"></i> คำนวณ
+          </button>
+        </div>
+
+        <div id="forecastTableArea"></div>
+
       </div>
     </div>
-
-    <div id="forecastTableArea"></div>
-
   </div>
 </div>
 @endsection

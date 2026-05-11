@@ -51,14 +51,21 @@ class AccessoryController extends Controller
                 }
             }
 
-            $fullName = "รหัส : {$a->accessory_id}<br>ชื่อ : {$a->detail}";
+            $row = fn($icon, $class, $tip, $text) =>
+                "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
+
+            $fullName = $row('bx-barcode', 'text-dark', 'รหัส', $a->accessory_id)
+                      . $row('bx-label',   'text-primary',   'ชื่อ', $a->detail);
 
             $costSpare = $a->cost_spare !== null ? number_format($a->cost_spare, 2) : '-';
             $cost = $a->cost !== null ? number_format($a->cost, 2) : '-';
             $sale = $a->sale !== null ? number_format($a->sale, 2) : '-';
             $promo = $a->promo !== null ? number_format($a->promo, 2) : '-';
 
-            $fullCost = "ราคาทุนอะไหล่ : {$costSpare}<br>ราคาทุน : {$cost}<br>ราคาขาย : {$sale}<br>ราคาพิเศษ : {$promo}";
+            $fullCost = $row('bx-box',          'text-warning', 'ราคาทุนอะไหล่', $costSpare)
+                      . $row('bx-dollar',       'text-danger',  'ราคาทุน',       $cost)
+                      . $row('bx-purchase-tag', 'text-success', 'ราคาขาย',       $sale)
+                      . $row('bx-gift',         'text-info',    'ราคาพิเศษ',     $promo);
 
             return [
                 'No' => $index + 1,

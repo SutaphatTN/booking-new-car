@@ -28,7 +28,12 @@ class CampaignController extends Controller
             $modelC = $c->model ? $c->model->Name_TH : '';
             $subModel = $c->subModel?->name ?? '-';
             $subDetail = $c->subModel ? $c->subModel->detail : '';
-            $subModelFull = "{$modelC}<br>{$subModel}<br>{$subDetail}";
+            $row = fn($icon, $class, $tip, $text) =>
+                "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
+
+            $subModelFull = $row('bxs-car',       'text-primary', 'รุ่นหลัก',    $modelC)
+                          . $row('bx-git-branch', 'text-info',    'รุ่นย่อย',    $subModel)
+                          . ($subDetail ? $row('bx-info-circle', 'text-warning', 'รายละเอียด', $subDetail) : '');
             $typeC = $c->type ? $c->type->name : '';
 
             $startY = $c->startYear ?? '';

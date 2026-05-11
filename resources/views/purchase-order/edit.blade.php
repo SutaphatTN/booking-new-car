@@ -499,31 +499,43 @@
                   <h6 class="po-section-title">หลักฐานการจอง</h6>
                 </div>
                 <div class="po-section-body-edit">
-                  <div class="row g-3">
-                    @foreach ($saleCar->attachment_url as $url)
+                  <div class="d-flex flex-wrap">
+                    @foreach ($saleCar->attachment_url as $item)
                       @php
-                        $ext = strtolower(pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION));
-                        $filename = basename(parse_url($url, PHP_URL_PATH));
+                        $url      = is_array($item) ? ($item['url']  ?? '') : $item;
+                        $name     = is_array($item) ? ($item['name'] ?? null) : null;
+                        $ext      = $name ? strtolower(pathinfo($name, PATHINFO_EXTENSION)) : null;
+                        $imgExts  = ['jpg','jpeg','png','gif','webp','bmp'];
+                        $isImg    = $ext && in_array($ext, $imgExts);
+                        $isFile   = $ext && !$isImg;
+                        $bgMap    = ['pdf'=>'#ef4444','xlsx'=>'#16a34a','xls'=>'#16a34a','csv'=>'#16a34a','doc'=>'#2563eb','docx'=>'#2563eb','ppt'=>'#ea580c','pptx'=>'#ea580c','zip'=>'#7c3aed','rar'=>'#7c3aed','7z'=>'#7c3aed'];
+                        $bg       = $ext ? ($bgMap[$ext] ?? '#6366f1') : '#6366f1';
+                        $label    = $ext ? strtoupper($ext) : 'FILE';
+                        $proxyBase = route('purchase-order.proxy', $saleCar->id);
+                        $proxyUrl  = $name
+                            ? $proxyBase . '/' . rawurlencode($name) . '?url=' . urlencode($url)
+                            : $proxyBase . '?url=' . urlencode($url);
                       @endphp
-                      <div class="col-md-3 col-sm-6">
-                        @if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']))
-                          <a href="{{ $url }}" target="_blank" class="attach-img-wrap d-block">
-                            <img src="{{ $url }}" alt="{{ $filename }}">
-                            <div class="attach-img-overlay">
-                              <i class="bx bx-zoom-in"></i>
-                            </div>
+                      <div class="d-inline-block m-1" style="width:80px;vertical-align:top;">
+                        @if($isFile)
+                          {{-- รู้ชัดว่าเป็นไฟล์ → แสดง card สีทันที + ชื่อไฟล์ด้านล่าง --}}
+                          <a href="{{ $proxyUrl }}" target="_blank" class="d-flex flex-column align-items-center justify-content-center rounded text-white text-decoration-none" style="width:80px;height:80px;background:{{ $bg }};">
+                            <i class="bx bx-file" style="font-size:1.8rem;"></i>
+                            <span class="badge bg-white mt-1" style="font-size:.6rem;color:{{ $bg }};font-weight:700;">{{ $label }}</span>
                           </a>
+                          @if($name)
+                            <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;" title="{{ $name }}">{{ $name }}</div>
+                          @endif
                         @else
-                          <a href="{{ $url }}" target="_blank" class="attach-file-card">
-                            <div class="attach-file-icon">
-                              <i class="bx bx-file"></i>
-                            </div>
-                            <div class="overflow-hidden">
-                              {{-- <div class="fw-semibold" style="font-size:.85rem;">เอกสาร {{ $loop->iteration }}</div> --}}
-                              <div class="fw-semibold" style="font-size:.85rem;">หลักฐานการโอน {{ $loop->iteration }}
-                              </div>
-                              <div style="font-size:.75rem;color:#94a3b8;">{{ strtoupper($ext) }} file</div>
-                            </div>
+                          {{-- รูปภาพ หรือไม่รู้ extension → ลอง load รูปก่อน onerror → card --}}
+                          <a href="{{ $proxyUrl }}" target="_blank" id="imgw-att-{{ $loop->index }}" style="display:block;">
+                            <img src="{{ $proxyUrl }}" class="rounded border" style="width:80px;height:80px;object-fit:cover;cursor:pointer;"
+                                 onerror="document.getElementById('imgw-att-{{ $loop->index }}').style.display='none';document.getElementById('filew-att-{{ $loop->index }}').style.display='flex';">
+                          </a>
+                          <a href="{{ $proxyUrl }}" target="_blank" id="filew-att-{{ $loop->index }}" class="text-decoration-none"
+                             style="display:none;width:80px;height:80px;border-radius:0.375rem;background:{{ $bg }};flex-direction:column;align-items:center;justify-content:center;color:white;">
+                            <i class="bx bx-file" style="font-size:1.8rem;"></i>
+                            <span class="badge bg-white mt-1" style="font-size:.6rem;color:{{ $bg }};font-weight:700;">{{ $label }}</span>
                           </a>
                         @endif
                       </div>
@@ -1123,12 +1135,12 @@
                         </button>
                       </li>
                       @if (auth()->user()->brand != 2)
-                      <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="sum-tab5-tab" data-bs-toggle="tab" data-bs-target="#sum-tab5"
-                          type="button" role="tab">
-                          <i class="bx bx-dollar-circle me-1"></i> ยอดค่าคอม Sale
-                        </button>
-                      </li>
+                        <li class="nav-item" role="presentation">
+                          <button class="nav-link" id="sum-tab5-tab" data-bs-toggle="tab"
+                            data-bs-target="#sum-tab5" type="button" role="tab">
+                            <i class="bx bx-dollar-circle me-1"></i> ยอดค่าคอม Sale
+                          </button>
+                        </li>
                       @endif
                     </ul>
 
@@ -1978,7 +1990,7 @@
 
                       {{-- ══ Tab 5: ยอดค่าคอม Sale ══ --}}
                       @if (auth()->user()->brand != 2)
-                      <div class="tab-pane fade" id="sum-tab5" role="tabpanel">
+                        <div class="tab-pane fade" id="sum-tab5" role="tabpanel">
 
                           {{-- ── ยอดค่าคอม sale ── --}}
                           <div class="po-section mt-2">
@@ -2036,7 +2048,7 @@
                               </div>
                             </div>
                           </div>
-                      </div>{{-- /sum-tab5 --}}
+                        </div>{{-- /sum-tab5 --}}
                       @endif
 
                     </div>{{-- /tab-content #summaryTabsContent --}}
@@ -2113,6 +2125,38 @@
                                     {{ $saleCar->con_status == $con->id ? 'selected' : '' }}>{{ @$con->name }}
                                   </option>
                                 @endif
+                              @endforeach
+                            </select>
+                          </div>
+
+                          <div class="col-md-3">
+                            <label for="delivery_location" class="mf-label form-label">
+                              <i class="bx bx-check-shield ci-emerald"></i> สถานที่ส่งมอบ
+                            </label>
+                            <select id="delivery_location" name="delivery_location" class="form-select" required>
+                              <option value="">-- เลือกสถานที่ --</option>
+                              <option value="Showroom"
+                                {{ $saleCar->delivery_location == 'Showroom' ? 'selected' : '' }}>
+                                โชว์รูม
+                              </option>
+                              <option value="Offsite"
+                                {{ $saleCar->delivery_location == 'Offsite' ? 'selected' : '' }}>นอกสถานที่
+                              </option>
+                            </select>
+                            @error('delivery_location')
+                              <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                            @enderror
+                          </div>
+
+                          <div class="col-md-3">
+                            <label for="delivery_province" class="po-label">จังหวัดที่ส่งมอบ</label>
+                            <select id="delivery_province" name="delivery_province"
+                              class="delivery_province form-select" required>
+                              <option value="">-- เลือกจังหวัด --</option>
+                              @foreach ($provinces as $p)
+                                <option value="{{ @$p->id }}"
+                                  {{ $saleCar->delivery_province == $p->id ? 'selected' : '' }}>
+                                  {{ @$p->name }}</option>
                               @endforeach
                             </select>
                           </div>
@@ -2323,20 +2367,24 @@
             </div>
             <div class="col-md-6">
               <label class="po-label" for="qcpo_phone">เบอร์โทร <span class="text-danger">*</span></label>
-              <input id="qcpo_phone" type="text" class="form-control" maxlength="12" placeholder="xxx-xxxx-xxx">
+              <input id="qcpo_phone" type="text" class="form-control" maxlength="12"
+                placeholder="xxx-xxxx-xxx">
             </div>
             <div class="col-md-6">
               <label class="po-label" for="qcpo_id_number">เลขบัตรประชาชน</label>
-              <input id="qcpo_id_number" type="text" class="form-control" maxlength="17" placeholder="x-xxxx-xxxxx-xx-x">
+              <input id="qcpo_id_number" type="text" class="form-control" maxlength="17"
+                placeholder="x-xxxx-xxxxx-xx-x">
             </div>
           </div>
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-danger" id="btnCancelAddCustomerPO">
+              <i class="bx bx-x me-1"></i>ยกเลิก</button>
+            <button type="button" class="btn btn-primary" id="btnSaveQuickCustomerPO">
+              <i class="bx bx-save me-1"></i> บันทึก
+            </button>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-danger" id="btnCancelAddCustomerPO"><i class="bx bx-x me-1"></i>ยกเลิก</button>
-          <button type="button" class="btn btn-primary" id="btnSaveQuickCustomerPO">
-            <i class="bx bx-save me-1"></i> บันทึก
-          </button>
-        </div>
+
       </div>
     </div>
   </div>
