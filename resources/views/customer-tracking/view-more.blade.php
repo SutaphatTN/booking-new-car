@@ -1,10 +1,6 @@
 @extends('layouts/contentNavbarLayout')
 @section('title', 'รายละเอียดการติดตาม')
 
-@section('page-style')
-  @vite(['resources/assets/css/purchase-order.css'])
-@endsection
-
 @section('page-script')
   @vite(['resources/assets/js/customer-tracking.js'])
 @endsection
