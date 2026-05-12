@@ -108,7 +108,7 @@
           @php
             $userRole = Auth::user()->role;
             $userBrand = Auth::user()->getOriginal('brand');
-            $canSwitchBrand = $userBrand != 2 && in_array($userRole, ['admin', 'account', 'audit', 'manager', 'md', 'sale', 'registration', 'bp', 'cs']);
+            $canSwitchBrand = ($userBrand != 2 || $userRole == 'md') && in_array($userRole, ['admin', 'account', 'audit', 'manager', 'md', 'sale', 'registration', 'bp', 'cs']);
           @endphp
           @if ($canSwitchBrand)
             <li>
@@ -123,7 +123,7 @@
                   @endif
                 </small>
                 @foreach (TbBrand::all() as $tbBrand)
-                  @if (!in_array($userRole, ['admin', 'account', 'audit', 'registration']) && $tbBrand->id == 2)
+                  @if (!in_array($userRole, ['admin', 'account', 'audit', 'registration', 'md']) && $tbBrand->id == 2)
                     @continue
                   @endif
                   @php
