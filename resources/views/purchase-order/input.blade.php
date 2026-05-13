@@ -253,11 +253,8 @@
                 </div>
                 <div class="col-md-4">
                   <label class="po-label" for="interior_color"><i class='bx bx-paint'></i> สีภายใน</label>
-                  <select id="interior_color" name="interior_color" class="form-select">
+                  <select id="interior_color" name="interior_color" class="form-select" disabled>
                     <option value="">— เลือกสี —</option>
-                    @foreach ($interiorColor as $t)
-                      <option value="{{ $t->id }}">{{ $t->name }}</option>
-                    @endforeach
                   </select>
                   @error('interior_color')
                     <div class="invalid-feedback d-block">{{ $message }}</div>

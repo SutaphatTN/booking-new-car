@@ -327,6 +327,8 @@ Route::group(['middleware' => 'auth'], function () {
     // car-order
     //get color
     Route::get('/api/car-order/color', [CarOrderController::class, 'getColorBySubModel']);
+    //get interior color by model
+    Route::get('/api/interior-color', [CarOrderController::class, 'getInteriorColorByModel']);
     //price list car
     Route::get('/api/car-order/pricelist-options', [CarOrderController::class, 'getPricelistOptions']);
     Route::get('/api/car-order/pricelist-data', [CarOrderController::class, 'getPricelistData']);

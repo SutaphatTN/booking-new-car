@@ -86,6 +86,15 @@ class CustomerTracking extends Model
             });
     }
 
+    // entry ล่าสุด (ทุกประเภท) ที่วันที่ <= วันนี้
+    public function latestPastDetail()
+    {
+        return $this->hasOne(CustomerTrackingDetail::class, 'tracking_id')
+            ->ofMany(['contact_date' => 'max'], function ($q) {
+                $q->whereDate('contact_date', '<=', now()->toDateString());
+            });
+    }
+
     public function wuColor()
     {
         return $this->belongsTo(TbColor::class, 'color_id');

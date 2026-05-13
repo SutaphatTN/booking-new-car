@@ -177,11 +177,8 @@
                     <label for="interior_color" class="mf-label form-label">
                       <i class="bx bx-color-fill ci-amber"></i> สีภายใน
                     </label>
-                    <select id="interior_color" name="interior_color" class="form-select">
+                    <select id="interior_color" name="interior_color" class="form-select" disabled>
                       <option value="">-- เลือกสี --</option>
-                      @foreach ($interiorColor as $t)
-                        <option value="{{ @$t->id }}">{{ @$t->name }}</option>
-                      @endforeach
                     </select>
                   </div>
 
