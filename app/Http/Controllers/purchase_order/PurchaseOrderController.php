@@ -510,7 +510,9 @@ class PurchaseOrderController extends Controller
         $gwmColor = $saleCar->subModel
             ? $saleCar->subModel->colors
             : collect();
-        $interiorColor = TbInteriorColor::all();
+        $interiorColor = $saleCar->model_id
+            ? TbInteriorColor::whereHas('models', fn($q) => $q->where('tb_carmodels.id', $saleCar->model_id))->get()
+            : collect();
 
         //history
         $isHistory = in_array($saleCar->con_status, [5, 9]);
