@@ -159,6 +159,24 @@
                 @enderror
               </div>
 
+              <div class="col-md-2">
+                <label for="LineID" class="po-label"><i class='bx bxl-whatsapp'></i> LineID</label>
+                <input id="LineID" type="text"
+                  class="form-control @error('LineID') is-invalid @enderror" name="LineID">
+                @error('LineID')
+                  <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                @enderror
+              </div>
+
+              <div class="col-md-2">
+                <label for="FacebookName" class="po-label"><i class='bx bxl-facebook-circle'></i> Facebook</label>
+                <input id="FacebookName" type="text"
+                  class="form-control @error('FacebookName') is-invalid @enderror" name="FacebookName">
+                @error('FacebookName')
+                  <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                @enderror
+              </div>
+
             </div>
           </div>
         </div>

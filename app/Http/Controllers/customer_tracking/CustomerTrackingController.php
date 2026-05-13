@@ -41,7 +41,7 @@ class CustomerTrackingController extends Controller
             ->unique()
             ->toArray();
 
-        $query = CustomerTracking::with(['customer.prefix', 'sale', 'source', 'model', 'subModel', 'latestDetail.decision', 'nextManagerDetail', 'latestManagerDetail', 'wuColor'])
+        $query = CustomerTracking::with(['customer.prefix', 'sale', 'source', 'model', 'subModel', 'latestDetail.decision', 'nextManagerDetail', 'latestManagerDetail', 'latestPastDetail', 'wuColor'])
             ->whereNotIn('customer_id', $bookedCustomerIds)
             ->whereNull('cancelled_at');
 
@@ -85,34 +85,36 @@ class CustomerTrackingController extends Controller
             $latestDetail = $t->latestDetail;
             $source = $t->source->name ?? '-';
 
+            $nextDate     = $t->nextManagerDetail?->format_contact_date ?? '-';
+            $nextDateSort = $t->nextManagerDetail?->contact_date ?? '9999-12-31';
+
+            $lastDate = $t->latestPastDetail?->format_contact_date ?? '-';
+
             if ($t->nextManagerDetail) {
-                $dateLabel    = 'ติดต่อครั้งถัดไป';
-                $dateValue    = $t->nextManagerDetail->format_contact_date;
                 $activeDetail = $t->nextManagerDetail;
             } elseif ($t->latestManagerDetail) {
-                $dateLabel    = 'ติดต่อล่าสุด';
-                $dateValue    = $t->latestManagerDetail->format_contact_date;
                 $activeDetail = $t->latestManagerDetail;
             } else {
-                $dateLabel    = 'ติดต่อล่าสุด';
-                $dateValue    = $latestDetail?->format_contact_date ?? '-';
                 $activeDetail = $latestDetail;
             }
 
             $decision = $activeDetail?->decision?->name ?? '-';
 
-            $date = "{$dateLabel} : {$dateValue}";
+            $dateLabel = $t->nextManagerDetail ? 'ติดต่อครั้งถัดไป' : 'ติดต่อล่าสุด';
+            $dateValue = $t->nextManagerDetail ? $nextDate : $lastDate;
             $detail = "ที่มา : {$source}<br>{$dateLabel} : {$dateValue}<br>การตัดสินใจ : {$decision}";
 
             return [
-                'No'           => $no++,
-                'id'           => $t->id,
-                'FullName'     => trim($fullName),
-                'model'        => $car,
-                'sale'         => $t->sale->name ?? '-',
-                'date'         => $date,
-                'status'       => $decision,
-                'decision_id'  => $activeDetail?->decision_id ?? '',
+                'No'            => $no++,
+                'id'            => $t->id,
+                'FullName'      => trim($fullName),
+                'model'         => $car,
+                'sale'          => $t->sale->name ?? '-',
+                'last_date'     => $lastDate,
+                'next_date'     => $nextDate,
+                'next_date_sort'=> $nextDateSort,
+                'status'        => $decision,
+                'decision_id'   => $activeDetail?->decision_id ?? '',
             ];
         });
 
@@ -402,22 +404,53 @@ class CustomerTrackingController extends Controller
     public function quickStoreCustomer(Request $request)
     {
         $request->validate([
-            'PrefixName'   => 'required|integer|exists:tb_prefixname,id',
+            'PrefixName'   => 'nullable|integer|exists:tb_prefixname,id',
             'FirstName'    => 'required|string|max:100',
-            'LastName'     => 'required|string|max:100',
+            'LastName'     => 'nullable|string|max:100',
             'Mobilephone1' => 'required|string|max:20',
             'IDNumber'     => 'nullable|string|max:17',
+            'LineID'       => 'nullable|string|max:100',
+            'FacebookName' => 'nullable|string|max:100',
         ]);
 
         $authUser = Auth::user();
         $idNumber = $request->IDNumber ? preg_replace('/\D/', '', $request->IDNumber) : null;
+        $mobile = preg_replace('/\D/', '', $request->Mobilephone1);
+
+        if ($idNumber) {
+            $idExists = Customer::where('IDNumber', $idNumber)->exists();
+            if ($idExists) {
+                return response()->json(['success' => false, 'message' => 'เลขบัตรประชาชนนี้มีอยู่ในระบบแล้ว'], 422);
+            }
+        }
+
+        $phoneExists = Customer::where('Mobilephone1', $mobile)->exists();
+        if ($phoneExists) {
+            return response()->json(['success' => false, 'message' => 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว'], 422);
+        }
+
+        if ($request->LineID) {
+            $lineExists = Customer::where('LineID', $request->LineID)->exists();
+            if ($lineExists) {
+                return response()->json(['success' => false, 'message' => 'Line ID นี้มีอยู่ในระบบแล้ว'], 422);
+            }
+        }
+
+        if ($request->FacebookName) {
+            $fbExists = Customer::where('FacebookName', $request->FacebookName)->exists();
+            if ($fbExists) {
+                return response()->json(['success' => false, 'message' => 'Facebook นี้มีอยู่ในระบบแล้ว'], 422);
+            }
+        }
 
         $customer = Customer::create([
-            'PrefixName'   => $request->PrefixName,
+            'PrefixName'   => $request->PrefixName ?: null,
             'FirstName'    => $request->FirstName,
-            'LastName'     => $request->LastName,
-            'Mobilephone1' => preg_replace('/\D/', '', $request->Mobilephone1),
+            'LastName'     => $request->LastName ?: null,
+            'Mobilephone1' => $mobile,
             'IDNumber'     => $idNumber,
+            'LineID'       => $request->LineID,
+            'FacebookName' => $request->FacebookName,
             'userZone'     => $authUser->userZone,
             'brand'        => $authUser->brand,
             'branch'       => $authUser->branch,

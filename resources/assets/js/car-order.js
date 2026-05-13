@@ -593,8 +593,19 @@ $(document).on('change', '#model_id', function () {
   const $subModel = $('#subModel_id');
 
   $subModel.prop('disabled', true).empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>');
+  $('#interior_color').prop('disabled', true).empty().append('<option value="">-- เลือกสี --</option>');
 
   if (!modelId || !type) return;
+
+  const $interiorColor = $('#interior_color');
+  if ($interiorColor.length) {
+    $.get('/api/interior-color', { model_id: modelId }, function (data) {
+      if (data.length) {
+        data.forEach(c => $interiorColor.append(`<option value="${c.id}">${c.name}</option>`));
+        $interiorColor.prop('disabled', false);
+      }
+    });
+  }
 
   let typeCarOrder = null;
   if (type === 'stock') typeCarOrder = 1;

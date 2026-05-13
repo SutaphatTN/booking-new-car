@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Exports\saleCar;
+namespace App\Exports\saleCar\estimated;
 
+use App\Models\TbBranch;
 use App\Services\SaleBookingQuery;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
@@ -19,15 +20,19 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
     protected $fromDate;
+    protected $branchId;
 
-    public function __construct($fromDate = null)
+    public function __construct($fromDate, $branchId)
     {
-        $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m');
+        $this->fromDate = $fromDate;
+        $this->branchId = $branchId;
     }
 
     public function title(): string
     {
-        return 'สรุปข้อมูลประมาณการ';
+        $branch = TbBranch::find($this->branchId);
+
+        return $branch?->name ?? 'ไม่ทราบสาขา';
     }
 
     public function styles(Worksheet $sheet)
@@ -113,11 +118,16 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
         $month = $date->month;
         $year  = $date->year;
 
-        $rows = SaleBookingQuery::base()
+        $query = SaleBookingQuery::base()
             ->whereMonth('DeliveryEstimateDate', $month)
             ->whereYear('DeliveryEstimateDate', $year)
-            ->whereNotIn('con_status', [7, 8, 9])
-            ->get();
+            ->whereNotIn('con_status', [7, 8, 9]);
+
+        if ($this->branchId) {
+            $query->where('branch', $this->branchId);
+        }
+
+        $rows = $query->get();
 
         $data = $rows->map(function ($r) {
             $customerName = trim(
@@ -134,7 +144,7 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
                 ? "{$detailModel} - {$sub}"
                 : $sub;
 
-            $color = in_array($r->brand, [2,3])
+            $color = in_array($r->brand, [2, 3])
                 ? ($r->gwmColor->name ?? '-')
                 : ($r->Color ?? '-');
 

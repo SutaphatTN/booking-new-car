@@ -65,7 +65,24 @@
                       </button>
                     </div>
                   </th>
-                  <th>วันที่</th>
+                  <th class="col-filter-th">
+                    <div class="col-filter-wrap">
+                      <span>วันที่ติดต่อล่าสุด</span>
+                      <button class="col-filter-btn" id="ctLastDateFilterBtn" type="button" title="กรองวันที่ติดต่อล่าสุด">
+                        <i class="bx bx-filter-alt"></i>
+                        <span class="col-filter-dot"></span>
+                      </button>
+                    </div>
+                  </th>
+                  <th class="col-filter-th">
+                    <div class="col-filter-wrap">
+                      <span>วันที่ติดต่อครั้งถัดไป</span>
+                      <button class="col-filter-btn" id="ctNextDateFilterBtn" type="button" title="กรองวันที่ติดต่อครั้งถัดไป">
+                        <i class="bx bx-filter-alt"></i>
+                        <span class="col-filter-dot"></span>
+                      </button>
+                    </div>
+                  </th>
                   <th class="col-filter-th">
                     <div class="col-filter-wrap">
                       <span>สถานะ</span>
@@ -95,6 +112,30 @@
   <div class="col-filter-actions">
     <button class="btn btn-sm btn-light" id="ctSaleFilterClear">ล้าง</button>
     <button class="btn btn-sm btn-primary" id="ctSaleFilterApply">ตกลง</button>
+  </div>
+</div>
+
+{{-- ── วันที่ติดต่อล่าสุด filter dropdown ── --}}
+<div class="col-filter-dropdown" id="ctLastDateFilterDropdown">
+  <div class="col-filter-search">
+    <input type="text" id="ctLastDateFilterSearch" placeholder="ค้นหา...">
+  </div>
+  <div class="col-filter-list" id="ctLastDateFilterList"></div>
+  <div class="col-filter-actions">
+    <button class="btn btn-sm btn-light" id="ctLastDateFilterClear">ล้าง</button>
+    <button class="btn btn-sm btn-primary" id="ctLastDateFilterApply">ตกลง</button>
+  </div>
+</div>
+
+{{-- ── วันที่ติดต่อครั้งถัดไป filter dropdown ── --}}
+<div class="col-filter-dropdown" id="ctNextDateFilterDropdown">
+  <div class="col-filter-search">
+    <input type="text" id="ctNextDateFilterSearch" placeholder="ค้นหา...">
+  </div>
+  <div class="col-filter-list" id="ctNextDateFilterList"></div>
+  <div class="col-filter-actions">
+    <button class="btn btn-sm btn-light" id="ctNextDateFilterClear">ล้าง</button>
+    <button class="btn btn-sm btn-primary" id="ctNextDateFilterApply">ตกลง</button>
   </div>
 </div>
 

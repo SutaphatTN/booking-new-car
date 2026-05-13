@@ -63,8 +63,8 @@
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-md-4">
-              <label class="po-label" for="qc_prefix">คำนำหน้า <span class="text-danger">*</span></label>
-              <select id="qc_prefix" class="form-select" required>
+              <label class="po-label" for="qc_prefix">คำนำหน้า</label>
+              <select id="qc_prefix" class="form-select">
                 <option value="">— เลือก —</option>
                 @foreach ($prefixes as $p)
                   <option value="{{ $p->id }}">{{ $p->Name_TH }}</option>
@@ -76,8 +76,8 @@
               <input id="qc_first_name" type="text" class="form-control" required>
             </div>
             <div class="col-md-4">
-              <label class="po-label" for="qc_last_name">นามสกุล <span class="text-danger">*</span></label>
-              <input id="qc_last_name" type="text" class="form-control" required>
+              <label class="po-label" for="qc_last_name">นามสกุล</label>
+              <input id="qc_last_name" type="text" class="form-control">
             </div>
             <div class="col-md-6">
               <label class="po-label" for="qc_phone">เบอร์โทร <span class="text-danger">*</span></label>
@@ -87,6 +87,14 @@
             <div class="col-md-6">
               <label class="po-label" for="qc_id_number">เลขบัตรประชาชน</label>
               <input id="qc_id_number" type="text" class="form-control" maxlength="17" placeholder="x-xxxx-xxxxx-xx-x">
+            </div>
+            <div class="col-md-6">
+              <label class="po-label" for="qc_line_id">Line ID</label>
+              <input id="qc_line_id" type="text" class="form-control" placeholder="Line ID...">
+            </div>
+            <div class="col-md-6">
+              <label class="po-label" for="qc_facebook">Facebook</label>
+              <input id="qc_facebook" type="text" class="form-control" placeholder="Facebook...">
             </div>
           </div>
 
@@ -144,7 +152,7 @@
                 <label class="po-label" for="customerSearch"><i class='bx bx-search-alt'></i> ค้นหาข้อมูลลูกค้า</label>
                 <div class="input-group">
                   <input id="customerSearch" type="text" class="form-control"
-                    placeholder="พิมพ์ชื่อ/เลขบัตร/เบอร์โทร">
+                    placeholder="พิมพ์ชื่อ/เลขบัตร/เบอร์โทร/Line ID/Facebook">
                   <button type="button" class="btn btnSearchCustomer px-3 border">
                     <i class="bx bx-search me-1"></i> ค้นหา
                   </button>
@@ -187,8 +195,8 @@
                 {{-- Mitsubishi --}}
                 {{-- รุ่นหลัก --}}
                 <div class="col-md-12">
-                  <label class="po-label" for="model_id"><i class='bx bx-cube'></i> รุ่นรถหลัก</label>
-                  <select id="model_id" name="model_id" class="form-select">
+                  <label class="po-label" for="model_id"><i class='bx bx-cube'></i> รุ่นรถหลัก <span class="text-danger">*</span></label>
+                  <select id="model_id" name="model_id" class="form-select" required>
                     <option value="">— เลือกรุ่นรถหลัก —</option>
                     @foreach ($model as $m)
                       <option value="{{ $m->id }}" {{ old('model_id') == $m->id ? 'selected' : '' }}>
@@ -199,21 +207,21 @@
 
                 {{-- รุ่นย่อย (ทุก brand) --}}
                 <div class="col-md-9">
-                  <label class="po-label" for="sub_model_id"><i class='bx bx-list-ul'></i> รุ่นรถย่อย</label>
-                  <select id="sub_model_id" name="sub_model_id" class="form-select" disabled>
+                  <label class="po-label" for="sub_model_id"><i class='bx bx-list-ul'></i> รุ่นรถย่อย <span class="text-danger">*</span></label>
+                  <select id="sub_model_id" name="sub_model_id" class="form-select" disabled required>
                     <option value="">— เลือกรุ่นรถย่อย —</option>
                   </select>
                 </div>
 
                 <div class="col-md-3">
-                  <label class="po-label" for="pricelist_color"><i class='bx bx-droplet'></i> ประเภทสี</label>
-                  <select id="pricelist_color" name="pricelist_color" class="form-select" disabled>
+                  <label class="po-label" for="pricelist_color"><i class='bx bx-droplet'></i> ประเภทสี <span class="text-danger">*</span></label>
+                  <select id="pricelist_color" name="pricelist_color" class="form-select" disabled required>
                     <option value="">— เลือก —</option>
                   </select>
                 </div>
                 <div class="col-md-4">
-                  <label class="po-label" for="year"><i class='bx bx-calendar-alt'></i> ปี</label>
-                  <select id="year" name="year" class="form-select" disabled>
+                  <label class="po-label" for="year"><i class='bx bx-calendar-alt'></i> ปี <span class="text-danger">*</span></label>
+                  <select id="year" name="year" class="form-select" disabled required>
                     <option value="">— เลือกปี —</option>
                   </select>
                 </div>
@@ -222,15 +230,15 @@
                   <input id="option" type="text" class="form-control" name="option" readonly>
                 </div>
                 <div class="col-md-5">
-                  <label class="po-label" for="color_text"><i class='bx bx-palette'></i> สี</label>
-                  <input id="color_text" name="color_text" type="text" class="form-control" placeholder="สี...">
+                  <label class="po-label" for="color_text"><i class='bx bx-palette'></i> สี <span class="text-danger">*</span></label>
+                  <input id="color_text" name="color_text" type="text" class="form-control" placeholder="สี..." required>
                 </div>
               @elseif(auth()->user()->brand == 2)
                 {{-- GWM --}}
                 {{-- รุ่นหลัก --}}
                 <div class="col-md-6">
-                  <label class="po-label" for="model_id"><i class='bx bx-cube'></i> รุ่นรถหลัก</label>
-                  <select id="model_id" name="model_id" class="form-select">
+                  <label class="po-label" for="model_id"><i class='bx bx-cube'></i> รุ่นรถหลัก <span class="text-danger">*</span></label>
+                  <select id="model_id" name="model_id" class="form-select" required>
                     <option value="">— เลือกรุ่นรถหลัก —</option>
                     @foreach ($model as $m)
                       <option value="{{ $m->id }}" {{ old('model_id') == $m->id ? 'selected' : '' }}>
@@ -241,39 +249,36 @@
 
                 {{-- รุ่นย่อย (ทุก brand) --}}
                 <div class="col-md-6">
-                  <label class="po-label" for="sub_model_id"><i class='bx bx-list-ul'></i> รุ่นรถย่อย</label>
-                  <select id="sub_model_id" name="sub_model_id" class="form-select" disabled>
+                  <label class="po-label" for="sub_model_id"><i class='bx bx-list-ul'></i> รุ่นรถย่อย <span class="text-danger">*</span></label>
+                  <select id="sub_model_id" name="sub_model_id" class="form-select" disabled required>
                     <option value="">— เลือกรุ่นรถย่อย —</option>
                   </select>
                 </div>
 
                 <div class="col-md-4">
-                  <label class="po-label" for="year"><i class='bx bx-calendar-alt'></i> ปี</label>
-                  <select id="year" name="year" class="form-select" disabled>
+                  <label class="po-label" for="year"><i class='bx bx-calendar-alt'></i> ปี <span class="text-danger">*</span></label>
+                  <select id="year" name="year" class="form-select" disabled required>
                     <option value="">— เลือกปี —</option>
                   </select>
                 </div>
                 <div class="col-md-4">
-                  <label class="po-label" for="color_id"><i class='bx bx-palette'></i> สีภายนอก</label>
-                  <select id="color_id" name="color_id" class="form-select" disabled>
+                  <label class="po-label" for="color_id"><i class='bx bx-palette'></i> สีภายนอก <span class="text-danger">*</span></label>
+                  <select id="color_id" name="color_id" class="form-select" disabled required>
                     <option value="">— เลือกสี —</option>
                   </select>
                 </div>
                 <div class="col-md-4">
-                  <label class="po-label" for="interior_color_id"><i class='bx bx-paint'></i> สีภายใน</label>
-                  <select id="interior_color_id" name="interior_color_id" class="form-select">
+                  <label class="po-label" for="interior_color_id"><i class='bx bx-paint'></i> สีภายใน <span class="text-danger">*</span></label>
+                  <select id="interior_color_id" name="interior_color_id" class="form-select" disabled required>
                     <option value="">— เลือกสี —</option>
-                    @foreach ($interiorColor as $ic)
-                      <option value="{{ $ic->id }}">{{ $ic->name }}</option>
-                    @endforeach
                   </select>
                 </div>
               @else
                 {{-- Wuling / others --}}
                 {{-- รุ่นหลัก --}}
                 <div class="col-md-6">
-                  <label class="po-label" for="model_id"><i class='bx bx-cube'></i> รุ่นรถหลัก</label>
-                  <select id="model_id" name="model_id" class="form-select">
+                  <label class="po-label" for="model_id"><i class='bx bx-cube'></i> รุ่นรถหลัก <span class="text-danger">*</span></label>
+                  <select id="model_id" name="model_id" class="form-select" required>
                     <option value="">— เลือกรุ่นรถหลัก —</option>
                     @foreach ($model as $m)
                       <option value="{{ $m->id }}" {{ old('model_id') == $m->id ? 'selected' : '' }}>
@@ -284,21 +289,21 @@
 
                 {{-- รุ่นย่อย (ทุก brand) --}}
                 <div class="col-md-6">
-                  <label class="po-label" for="sub_model_id"><i class='bx bx-list-ul'></i> รุ่นรถย่อย</label>
-                  <select id="sub_model_id" name="sub_model_id" class="form-select" disabled>
+                  <label class="po-label" for="sub_model_id"><i class='bx bx-list-ul'></i> รุ่นรถย่อย <span class="text-danger">*</span></label>
+                  <select id="sub_model_id" name="sub_model_id" class="form-select" disabled required>
                     <option value="">— เลือกรุ่นรถย่อย —</option>
                   </select>
                 </div>
 
                 <div class="col-md-6">
-                  <label class="po-label" for="year"><i class='bx bx-calendar-alt'></i> ปี</label>
-                  <select id="year" name="year" class="form-select" disabled>
+                  <label class="po-label" for="year"><i class='bx bx-calendar-alt'></i> ปี <span class="text-danger">*</span></label>
+                  <select id="year" name="year" class="form-select" disabled required>
                     <option value="">— เลือกปี —</option>
                   </select>
                 </div>
                 <div class="col-md-6">
-                  <label class="po-label" for="color_id"><i class='bx bx-palette'></i> สี</label>
-                  <select id="color_id" name="color_id" class="form-select" disabled>
+                  <label class="po-label" for="color_id"><i class='bx bx-palette'></i> สี <span class="text-danger">*</span></label>
+                  <select id="color_id" name="color_id" class="form-select" disabled required>
                     <option value="">— เลือกสี —</option>
                   </select>
                 </div>
@@ -418,7 +423,7 @@
 
               {{-- Comment sale --}}
               <div class="col-12">
-                <label class="po-label" for="comment_sale"><i class='bx bx-comment-detail'></i> Comment Sale</label>
+                <label class="po-label" for="comment_sale"><i class='bx bx-comment-detail'></i> หมายเหตุ</label>
                 <textarea id="comment_sale" name="comment_sale" class="form-control" rows="2"
                   placeholder="รายละเอียดเพิ่มเติม...">{{ old('comment_sale') }}</textarea>
               </div>

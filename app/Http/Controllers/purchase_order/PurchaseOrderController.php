@@ -6,8 +6,9 @@ use App\Exports\booking\BookingExport;
 use App\Exports\commission\SaleCommissionExport;
 use App\Exports\gp\GPExport;
 use App\Exports\gwm\GwmExport;
+use App\Exports\saleCar\estimated\EstimatedExport;
+use App\Exports\saleCar\estimated\SaleCarEstimatedExport;
 use App\Exports\saleCar\SaleCarBookingExport;
-use App\Exports\saleCar\SaleCarEstimatedExport;
 use App\Exports\saleCar\MonthlyDeliveryExport;
 use App\Http\Controllers\Controller;
 use App\Mail\SaleRequestMail;
@@ -1692,7 +1693,7 @@ class PurchaseOrderController extends Controller
     {
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
 
-        return Excel::download(new SaleCarEstimatedExport($fromDate), 'ข้อมูลประมาณการ.xlsx');
+        return Excel::download(new EstimatedExport($fromDate), 'ข้อมูลประมาณการ.xlsx');
     }
 
     //report gwm

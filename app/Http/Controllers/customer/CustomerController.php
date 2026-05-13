@@ -59,6 +59,41 @@ class CustomerController extends Controller
                 ], 422);
             }
 
+            $mobilephone1 = preg_replace('/\D/', '', $request->Mobilephone1);
+
+            if ($mobilephone1) {
+                $phoneExists = Customer::where('Mobilephone1', $mobilephone1)->exists();
+
+                if ($phoneExists) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว'
+                    ], 422);
+                }
+            }
+
+            if ($request->LineID) {
+                $lineExists = Customer::where('LineID', $request->LineID)->exists();
+
+                if ($lineExists) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Line ID นี้มีอยู่ในระบบแล้ว'
+                    ], 422);
+                }
+            }
+
+            if ($request->FacebookName) {
+                $fbExists = Customer::where('FacebookName', $request->FacebookName)->exists();
+
+                if ($fbExists) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Facebook นี้มีอยู่ในระบบแล้ว'
+                    ], 422);
+                }
+            }
+
             $customer = Customer::create([
                 'PrefixName' => $request->PrefixName,
                 'FirstName' => $request->FirstName,
@@ -70,6 +105,8 @@ class CustomerController extends Controller
                 'Gender' => $request->Gender,
                 'Nationality' => $request->Nationality,
                 'religion' => $request->religion,
+                'LineID' => $request->LineID,
+                'FacebookName' => $request->FacebookName,
                 'Mobilephone1' => preg_replace('/\D/', '', $request->Mobilephone1),
                 'Mobilephone2' => preg_replace('/\D/', '', $request->Mobilephone2),
                 'userZone' => Auth::user()->userZone ?? null,
@@ -241,6 +278,8 @@ class CustomerController extends Controller
                 'Gender' => $request->Gender,
                 'Nationality' => $request->Nationality,
                 'religion' => $request->religion,
+                'LineID' => $request->LineID,
+                'FacebookName' => $request->FacebookName,
                 'Mobilephone1' => preg_replace('/\D/', '', $request->Mobilephone1),
                 'Mobilephone2' => preg_replace('/\D/', '', $request->Mobilephone2),
             ];
@@ -377,7 +416,9 @@ class CustomerController extends Controller
                 $query->where('FirstName', 'like', "%{$keyword}%")
                     ->orWhere('LastName', 'like', "%{$keyword}%")
                     ->orWhere('Mobilephone1', 'like', "%{$keyword}%")
-                    ->orWhere('IDNumber', 'like', "%{$keyword}%");
+                    ->orWhere('IDNumber', 'like', "%{$keyword}%")
+                    ->orWhere('LineID', 'like', "%{$keyword}%")
+                    ->orWhere('FacebookName', 'like', "%{$keyword}%");
             })
             ->limit(10)
             ->get()

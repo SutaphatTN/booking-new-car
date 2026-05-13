@@ -836,6 +836,19 @@ class CarOrderController extends Controller
         return response()->json($colors);
     }
 
+    // get interior color by model_id
+    public function getInteriorColorByModel(Request $request)
+    {
+        $modelId = $request->model_id;
+
+        $colors = TbInteriorColor::whereHas('models', fn($q) => $q->where('tb_carmodels.id', $modelId))
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($colors);
+    }
+
     //get price list car option
     public function getPricelistOptions(Request $request)
     {

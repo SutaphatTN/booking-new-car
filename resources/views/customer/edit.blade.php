@@ -64,7 +64,7 @@
                   </select>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-2">
                   <label for="Birthday" class="vm-label"><i class="bx bx-calendar"></i> วัน/เดือน/ปีเกิด</label>
                   <input id="Birthday" type="date" class="form-control" name="Birthday" max="{{ date('Y-m-d') }}"
                     value="{{ $customers->Birthday }}">
@@ -77,20 +77,20 @@
                     value="{{ $customers->formatted_id_number }}" required>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-2">
                   <label for="NewCardDate" class="vm-label"><i class="bx bx-calendar-check"></i>
                     วันออกบัตรประชาชน</label>
                   <input id="NewCardDate" type="date" class="form-control" name="NewCardDate"
                     value="{{ $customers->NewCardDate }}">
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-2">
                   <label for="ExpireCard" class="vm-label"><i class="bx bx-calendar-x"></i> วันที่บัตรหมดอายุ</label>
                   <input id="ExpireCard" type="date" class="form-control" name="ExpireCard"
                     value="{{ $customers->ExpireCard }}">
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-md-3">
                   <label for="Nationality" class="vm-label"><i class="bx bx-flag"></i> สัญชาติ</label>
                   <input id="Nationality" type="text" class="form-control" name="Nationality"
                     value="{{ $customers->Nationality }}">
@@ -108,17 +108,29 @@
                   </select>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-2">
                   <label for="Mobilephone1" class="vm-label"><i class="bx bx-phone"></i> เบอร์โทรหลัก <span
                       class="text-danger">*</span></label>
                   <input id="Mobilephone1" type="text" class="form-control" name="Mobilephone1" maxlength="12"
                     value="{{ $customers->formatted_mobile }}" required>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-2">
                   <label for="Mobilephone2" class="vm-label"><i class="bx bxs-phone"></i> เบอร์โทรสำรอง</label>
                   <input id="Mobilephone2" type="text" class="form-control" name="Mobilephone2" maxlength="12"
                     value="{{ $customers->formatted_mobile_up }}">
+                </div>
+
+                <div class="col-md-2">
+                  <label for="LineID" class="vm-label"><i class="bx bxl-phone"></i> whatsapp</label>
+                  <input id="LineID" type="text" class="form-control" name="LineID"
+                    value="{{ $customers->LineID }}">
+                </div>
+
+                <div class="col-md-3">
+                  <label for="FacebookName" class="vm-label"><i class="bx bxl-facebook-circle"></i> Facebook</label>
+                  <input id="FacebookName" type="text" class="form-control" name="FacebookName"
+                    value="{{ $customers->FacebookName }}">
                 </div>
 
               </div>

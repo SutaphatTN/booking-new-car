@@ -65,20 +65,30 @@
                 <div class="vm-val {{ $customers->Nationality ? '' : 'is-empty' }}">
                   {{ $customers->Nationality ?: '—' }}</div>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <div class="vm-label"><i class="bx bx-book-open"></i> ศาสนา</div>
                 <div class="vm-val {{ $customers->religion_th ? '' : 'is-empty' }}">
                   {{ $customers->religion_th ?: '—' }}</div>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <div class="vm-label"><i class="bx bx-phone"></i> เบอร์โทรหลัก</div>
                 <div class="vm-val {{ $customers->formatted_mobile ? '' : 'is-empty' }}">
                   {{ $customers->formatted_mobile ?: '—' }}</div>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <div class="vm-label"><i class="bx bxs-phone"></i> เบอร์โทรสำรอง</div>
                 <div class="vm-val {{ $customers->formatted_mobile_up ? '' : 'is-empty' }}">
                   {{ $customers->formatted_mobile_up ?: '—' }}</div>
+              </div>
+              <div class="col-md-2">
+                <div class="vm-label"><i class="bx bxl-whatsapp"></i> LineID</div>
+                <div class="vm-val {{ $customers->LineID ? '' : 'is-empty' }}">
+                  {{ $customers->LineID ?: '—' }}</div>
+              </div>
+              <div class="col-md-3">
+                <div class="vm-label"><i class="bx bxl-facebook-circle"></i> Facebook</div>
+                <div class="vm-val {{ $customers->FacebookName ? '' : 'is-empty' }}">
+                  {{ $customers->FacebookName ?: '—' }}</div>
               </div>
 
             </div>
