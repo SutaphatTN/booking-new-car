@@ -52,6 +52,8 @@
   min-height: 40px;
   display: flex;
   align-items: center;
+  overflow-wrap: break-word;
+  word-break: break-all;
 }
 
 /* ── Dynamic sub-section ── */
@@ -1274,10 +1276,25 @@
   color: #065f46;
 }
 
+/* ── Sub-tab scrollable row ── */
+.vm-subtab-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.vm-subtab-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* ═══════════════════════════════════════
    Mobile responsive (max-width: 767.98px)
    ═══════════════════════════════════════ */
 @media (max-width: 767.98px) {
+  /* view-more: header buttons full-width split */
+  .vm-header-btns {
+    width: 100%;
+    justify-content: space-between;
+  }
   /* Outer price tabs */
   .nav-tabs-wrapper {
     -webkit-overflow-scrolling: touch;
@@ -1512,7 +1529,7 @@
   font-size: 0.78rem;
   font-weight: 500;
   color: #94a3b8;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .tracking-detail-value {
@@ -1716,4 +1733,32 @@
   font-size: 0.9rem;
   color: #1e293b;
   padding: 2px 0;
+}
+
+/* ── Detail card: decision row (inline on desktop, stacked on mobile) ── */
+.detail-decision-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.detail-decision-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.detail-decision-value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #555657;
+}
+
+@media (max-width: 767.98px) {
+  .detail-decision-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+  }
 }

@@ -334,7 +334,7 @@
       </div>
     </div>
     <a href="{{ route('ssi.index') }}" class="btn btn-outline-danger btn-sm">
-      <i class="bx bx-arrow-back me-1"></i> กลับ
+      <i class="bx bx-arrow-back me-1"></i> ย้อนกลับ
     </a>
   </div>
 
@@ -398,9 +398,7 @@
                   </div>
                   <div class="col-6">
                     <div class="po-label">เลขถัง (VIN)</div>
-                    <div class="info-pill" style="font-family: monospace; font-size:.85rem; letter-spacing:.04em;">
-                      {{ $info['vin_number'] ?: '-' }}
-                    </div>
+                    <div class="info-pill">{{ $info['vin_number'] ?: '-' }}</div>
                   </div>
                   <div class="col-6">
                     <div class="po-label">วันที่ส่งมอบ</div>

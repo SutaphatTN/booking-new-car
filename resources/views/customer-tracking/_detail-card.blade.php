@@ -1,36 +1,48 @@
 @php
   $accent = $accentColor ?? 'amber';
   $showEdit = $showEdit ?? false;
+  $accentClass = $accent === 'indigo' ? 'accent-indigo' : '';
 @endphp
-<div class="po-section mb-3" style="border-left:3px solid {{ $accent === 'indigo' ? '#6366f1' : '#d97706' }};">
-  <div class="po-section-body">
-    <div class="d-flex justify-content-between align-items-start mb-2">
-      <div class="d-flex align-items-center gap-2 text-muted" style="font-size:.82rem;">
-        <span class="d-flex align-items-center gap-1">
-          <i class="bx bx-calendar"></i> {{ $detail->format_contact_date }}
-        </span>
-        <span class="badge rounded {{ $detail->contact_status ? 'bg-success' : 'bg-danger' }} px-3">
-          <i class="bx {{ $detail->contact_status ? 'bx-check' : 'bx-x' }} me-1"></i>
-          {{ $detail->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้' }}
-        </span>
-      </div>
-      @if ($showEdit)
-        <button type="button" class="btn btn-icon btn-sm btn-warning btnEditDetail" data-id="{{ $detail->id }}"
-          data-contact-date="{{ $detail->format_contact_date }}" data-decision="{{ $detail->decision->name ?? '-' }}"
-          data-contact-status="{{ $detail->contact_status }}" data-comment="{{ $detail->comment_sale ?? '' }}"
-          data-is-checkpoint="{{ $detail->is_checkpoint ? '1' : '0' }}" title="แก้ไข">
-          <i class="bx bx-edit-alt"></i>
-        </button>
-      @endif
+<div class="tracking-detail-card {{ $accentClass }} mb-3">
+  {{-- Header: date + contact badge + edit button --}}
+  <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <span class="tracking-detail-date">
+        <i class="bx bx-calendar me-1 text-muted"></i>{{ $detail->format_contact_date }}
+      </span>
+      <span class="badge rounded {{ $detail->contact_status ? 'bg-success' : 'bg-danger' }} px-3"
+        style="font-size:.78rem;">
+        <i class="bx {{ $detail->contact_status ? 'bx-check' : 'bx-x' }} me-1"></i>
+        {{ $detail->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้' }}
+      </span>
     </div>
-    <div class="d-flex align-items-center gap-2 mb-1">
-      <span class="po-label mb-0"><i class="bx bx-target-lock me-1"></i>สถานะการตัดสินใจ :</span>
-      <span class="fw-semibold" style="font-size:.88rem;">{{ $detail->decision->name ?? '-' }}</span>
-    </div>
-    @if ($detail->comment_sale)
-      <div class="mt-2 p-2 rounded" style="background:#f8fafc;border:1px solid #e2e8f0;font-size:.85rem;color:#374151;">
-        {{ $detail->comment_sale }}
-      </div>
+    @if ($showEdit)
+      <button type="button" class="btn btn-icon btn-sm btn-warning btnEditDetail flex-shrink-0"
+        data-id="{{ $detail->id }}"
+        data-contact-date="{{ $detail->format_contact_date }}"
+        data-decision="{{ $detail->decision->name ?? '-' }}"
+        data-contact-status="{{ $detail->contact_status }}"
+        data-comment="{{ $detail->comment_sale ?? '' }}"
+        data-is-checkpoint="{{ $detail->is_checkpoint ? '1' : '0' }}"
+        title="แก้ไข">
+        <i class="bx bx-edit-alt"></i>
+      </button>
     @endif
   </div>
+
+  {{-- Decision status: inline on desktop, stacked on mobile --}}
+  <div class="detail-decision-row mb-1">
+    <span class="detail-decision-label">
+      <i class="bx bx-target-lock me-1"></i>สถานะการตัดสินใจ :
+    </span>
+    <span class="detail-decision-value">{{ $detail->decision->name ?? '-' }}</span>
+  </div>
+
+  {{-- Comment --}}
+  @if ($detail->comment_sale)
+    <div class="tracking-detail-comment">
+      <i class="bx bx-comment-detail flex-shrink-0"></i>
+      <span>{{ $detail->comment_sale }}</span>
+    </div>
+  @endif
 </div>
