@@ -28,9 +28,14 @@
         <small class="text-muted" style="font-size:0.8rem;">{{ $fullName }}</small>
       </div>
     </div>
-    <a href="{{ route('purchase-order.create', ['from_tracking' => $tracking->id]) }}" class="btn btn-secondary">
-      <i class="bx bx-file me-1"></i> สร้างการจอง
-    </a>
+    <div class="d-flex gap-2 vm-header-btns">
+      <a href="{{ route('customer-tracking.index') }}" class="btn btn-outline-danger">
+        <i class="bx bx-arrow-back me-1"></i> ย้อนกลับ
+      </a>
+      <a href="{{ route('purchase-order.create', ['from_tracking' => $tracking->id]) }}" class="btn btn-secondary ms-auto">
+        <i class="bx bx-file me-1"></i> สร้างการจอง
+      </a>
+    </div>
   </div>
 
   <div class="nav-align-top">
@@ -187,25 +192,28 @@
       <div class="tab-pane fade" id="tab-history" role="tabpanel">
 
         {{-- Sub-tab bar --}}
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-          <ul class="nav nav-pills gap-2 flex-wrap" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#sub-sale" type="button"
-                role="tab">
-                <i class="bx bx-user me-1"></i> บันทึกเซลล์
-                <span class="badge bg-label-warning rounded-pill ms-1">{{ $saleDetails->count() }}</span>
-              </button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" data-bs-toggle="pill" data-bs-target="#sub-manager" type="button"
-                role="tab">
-                <i class="bx bx-briefcase me-1"></i> บันทึกผู้จัดการ
-                <span class="badge bg-label-primary rounded-pill ms-1">{{ $managerDetails->count() }}</span>
-              </button>
-            </li>
-          </ul>
-
-          <div class="d-flex gap-2">
+        <div class="mb-3">
+          {{-- Row 1: tabs (scrollable on small screens) --}}
+          <div class="vm-subtab-scroll mb-2">
+            <ul class="nav nav-pills gap-2" style="flex-wrap:nowrap;min-width:max-content;" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#sub-sale" type="button"
+                  role="tab">
+                  <i class="bx bx-user me-1"></i> บันทึกเซลล์
+                  <span class="badge bg-label-warning rounded-pill ms-1">{{ $saleDetails->count() }}</span>
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#sub-manager" type="button"
+                  role="tab">
+                  <i class="bx bx-briefcase me-1"></i> บันทึกผู้จัดการ
+                  <span class="badge bg-label-primary rounded-pill ms-1">{{ $managerDetails->count() }}</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+          {{-- Row 2: action buttons right-aligned --}}
+          <div class="d-flex justify-content-end gap-2 flex-wrap">
             @if ($isSale)
               <button type="button" class="btn btn-warning btn-sm btnOpenAddDetail" data-entry-type="sale">
                 <i class="bx bx-plus me-1"></i> เพิ่มบันทึก
