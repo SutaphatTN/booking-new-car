@@ -127,7 +127,8 @@ class CustomerTrackingController extends Controller
         $model         = TbCarmodel::where('brand', $authUser->brand)->get();
         $sources       = TbSalecarType::all();
         $decisions     = TbDecision::all();
-        $saleUser      = User::where('role', 'sale')->where('brand', $authUser->brand)->get();
+        $brandForSale  = $authUser->brand == 3 ? 1 : $authUser->brand;
+        $saleUser      = User::where('role', 'sale')->where('brand', $brandForSale)->get();
         $interiorColor = $authUser->brand == 2 ? TbInteriorColor::all() : collect();
         $prefixes      = TbPrefixname::all();
 
