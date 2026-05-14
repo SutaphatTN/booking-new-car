@@ -73,8 +73,9 @@ class PurchaseOrderController extends Controller
 
         $model = TbCarmodel::all();
         $type = TbSalecarType::all();
+        $brandForSale = $authUser->brand == 3 ? 1 : $authUser->brand;
         $saleUser = User::where('role', 'sale')
-            ->where('brand', $authUser->brand)
+            ->where('brand', $brandForSale)
             ->get();
         $typeSale = TbSalePurchaseType::all();
         $interiorColor = TbInteriorColor::all();
