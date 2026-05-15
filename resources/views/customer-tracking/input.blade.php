@@ -10,108 +10,6 @@
 @endsection
 
 @section('content')
-  {{-- modal ค้นหาลูกค้า --}}
-  <div class="modal fade" id="modalSearchCustomer" tabindex="-1" aria-hidden="true" role="dialog">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">เลือกข้อมูลลูกค้า</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="table-responsive">
-            <table class="table table-bordered" id="tableSelectCustomer">
-              <thead>
-                <tr>
-                  <th>ชื่อ - นามสกุล</th>
-                  <th>เบอร์โทรศัพท์</th>
-                  <th>เลขบัตรประชาชน</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="modal-footer justify-content-end">
-          <button type="button" class="btn btn-sm btn-primary" id="btnOpenAddCustomer">
-            <i class="bx bx-user-plus me-1"></i> เพิ่มข้อมูลลูกค้า
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  {{-- modal เพิ่มลูกค้าใหม่ (quick add) --}}
-  <div class="modal fade" id="modalAddCustomer" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 shadow mf-content mf-content--input">
-
-        <div class="modal-header mf-header mf-header--input px-4">
-          <div class="d-flex align-items-center gap-3">
-            <div class="mf-hd-icon">
-              <i class="bx bx-user-plus fs-5 text-white"></i>
-            </div>
-            <div>
-              <h6 class="mb-0 fw-bold text-white mf-hd-title">เพิ่มข้อมูลลูกค้าใหม่</h6>
-              <small class="text-white mf-hd-sub">Add New Customer</small>
-            </div>
-          </div>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-
-        <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-md-4">
-              <label class="po-label" for="qc_prefix">คำนำหน้า</label>
-              <select id="qc_prefix" class="form-select">
-                <option value="">— เลือก —</option>
-                @foreach ($prefixes as $p)
-                  <option value="{{ $p->id }}">{{ $p->Name_TH }}</option>
-                @endforeach
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="po-label" for="qc_first_name">ชื่อ <span class="text-danger">*</span></label>
-              <input id="qc_first_name" type="text" class="form-control" required>
-            </div>
-            <div class="col-md-4">
-              <label class="po-label" for="qc_last_name">นามสกุล</label>
-              <input id="qc_last_name" type="text" class="form-control">
-            </div>
-            <div class="col-md-6">
-              <label class="po-label" for="qc_phone">เบอร์โทร <span class="text-danger">*</span></label>
-              <input id="qc_phone" type="text" class="form-control" maxlength="12" placeholder="xxx-xxxx-xxx"
-                required>
-            </div>
-            <div class="col-md-6">
-              <label class="po-label" for="qc_id_number">เลขบัตรประชาชน</label>
-              <input id="qc_id_number" type="text" class="form-control" maxlength="17" placeholder="x-xxxx-xxxxx-xx-x">
-            </div>
-            <div class="col-md-6">
-              <label class="po-label" for="qc_line_id">Line ID</label>
-              <input id="qc_line_id" type="text" class="form-control" placeholder="Line ID...">
-            </div>
-            <div class="col-md-6">
-              <label class="po-label" for="qc_facebook">Facebook</label>
-              <input id="qc_facebook" type="text" class="form-control" placeholder="Facebook...">
-            </div>
-          </div>
-
-          <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn btn-danger" id="btnCancelAddCustomer">
-              <i class="bx bx-x me-1"></i>ยกเลิก</button>
-            <button type="button" class="btn btn-primary" id="btnSaveQuickCustomer">
-              <i class="bx bx-save me-1"></i> บันทึก
-            </button>
-          </div>
-
-        </div>
-
-      </div>
-    </div>
-  </div>
-
   {{-- Page Title --}}
   <div class="pur-page-title">
     <div class="pur-page-icon">
@@ -146,39 +44,30 @@
             <h6 class="po-section-title">ข้อมูลลูกค้า</h6>
           </div>
           <div class="po-section-body">
-
-            <div class="row g-3 mb-3">
-              <div class="col-12">
-                <label class="po-label" for="customerSearch"><i class='bx bx-search-alt'></i> ค้นหาข้อมูลลูกค้า</label>
-                <div class="input-group">
-                  <input id="customerSearch" type="text" class="form-control"
-                    placeholder="พิมพ์ชื่อ/เลขบัตร/เบอร์โทร/Line ID/Facebook">
-                  <button type="button" class="btn btnSearchCustomer px-3 border">
-                    <i class="bx bx-search me-1"></i> ค้นหา
-                  </button>
-                </div>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="po-label" for="ct_prefix">คำนำหน้า</label>
+                <select id="ct_prefix" name="ct_prefix" class="form-select">
+                  <option value="">— เลือก —</option>
+                  @foreach ($prefixes as $p)
+                    <option value="{{ $p->id }}">{{ $p->Name_TH }}</option>
+                  @endforeach
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="po-label" for="ct_first_name">ชื่อ <span class="text-danger">*</span></label>
+                <input id="ct_first_name" name="ct_first_name" type="text" class="form-control" required>
+              </div>
+              <div class="col-md-4">
+                <label class="po-label" for="ct_last_name">นามสกุล</label>
+                <input id="ct_last_name" name="ct_last_name" type="text" class="form-control">
+              </div>
+              <div class="col-md-5">
+                <label class="po-label" for="ct_phone">เบอร์โทร <span class="text-danger">*</span></label>
+                <input id="ct_phone" name="ct_phone" type="text" class="form-control" maxlength="12" placeholder="xxx-xxxx-xxxx" required>
               </div>
             </div>
-
             <input type="hidden" id="CusID" name="customer_id">
-
-            <div class="customer-info-row mb-3">
-              <div class="row g-3">
-                <div class="col-12">
-                  <div class="po-label"><i class='bx bxs-user'></i> ชื่อ - นามสกุล</div>
-                  <div class="info-val empty" id="customerName-display">— ยังไม่ได้เลือกลูกค้า —</div>
-                </div>
-                <div class="col-md-6">
-                  <div class="po-label"><i class='bx bx-id-card'></i> เลขบัตรประชาชน</div>
-                  <div class="info-val empty" id="customerID-display">—</div>
-                </div>
-                <div class="col-md-6">
-                  <div class="po-label"><i class='bx bx-phone'></i> เบอร์โทรศัพท์</div>
-                  <div class="info-val empty" id="customerPhone-display">—</div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
 

@@ -145,6 +145,32 @@ class CustomerTrackingController extends Controller
         return response()->json(['exists' => $exists]);
     }
 
+    public function checkPhone(Request $request)
+    {
+        $phone = preg_replace('/\D/', '', $request->phone);
+        $customer = Customer::where('Mobilephone1', $phone)->first();
+
+        if (!$customer) {
+            return response()->json(['found' => false, 'has_tracking' => false]);
+        }
+
+        $tracking = CustomerTracking::where('customer_id', $customer->id)
+            ->where('brand', Auth::user()->brand)
+            ->whereNull('cancelled_at')
+            ->first();
+
+        $prefix = $customer->prefix?->Name_TH ?? '';
+        $name   = trim("{$prefix} {$customer->FirstName} {$customer->LastName}");
+
+        return response()->json([
+            'found'       => true,
+            'customer_id' => $customer->id,
+            'name'        => $name,
+            'has_tracking'=> $tracking !== null,
+            'tracking_id' => $tracking?->id,
+        ]);
+    }
+
     public function store(Request $request)
     {
         try {
@@ -384,6 +410,23 @@ class CustomerTrackingController extends Controller
     public function exportExcel()
     {
         return Excel::download(new CustomerTrackingExport(), 'รายงานการติดตามลูกค้า.xlsx');
+    }
+
+    public function saveGrade(Request $request, $id)
+    {
+        $tracking = CustomerTracking::findOrFail($id);
+
+        $tracking->update([
+            'delivery_timeline_scoring' => $request->delivery_timeline_scoring ?: null,
+            'test_drive_scoring'        => $request->test_drive_scoring ?: null,
+            'occupation_scoring'        => $request->occupation_scoring ?: null,
+            'revenue_scoring'           => $request->revenue_scoring ?: null,
+            'model_interest_scoring'    => $request->model_interest_scoring ?: null,
+            'purchase_type_scoring'     => $request->purchase_type_scoring ?: null,
+            'engagement_scoring'        => $request->engagement_scoring ?: null,
+        ]);
+
+        return response()->json(['success' => true]);
     }
 
     public function cancelTracking($id)
