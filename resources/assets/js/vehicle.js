@@ -230,7 +230,7 @@ $(document).on('click', '.btnConfirmWithdrawal', function () {
     let receipt = row.find('.withdrawal-bill').val().replace(/,/g, '');
     let total = row.find('.withdrawal-total').val().replace(/,/g, '');
 
-    let isComplete = check > 0 && channel > 0 && receipt > 0 && total > 0;
+    let isComplete = check > 0 && channel >= 0 && receipt > 0 && total > 0;
 
     if (!isComplete) return;
 
@@ -307,7 +307,7 @@ function checkWithdrawalRow(row) {
   let receipt = row.find('.withdrawal-bill').val().replace(/,/g, '');
   let total = row.find('.withdrawal-total').val().replace(/,/g, '');
 
-  let isComplete = check > 0 && channel > 0 && receipt > 0 && total > 0;
+  let isComplete = check > 0 && channel >= 0 && receipt > 0 && total > 0;
 
   let checkbox = row.find('.checkItem');
 
@@ -377,7 +377,7 @@ $(document).on('click', '.btnConfirmClear', function () {
     let receipt = row.find('.receipt-bill').val().replace(/,/g, '');
     let total = row.find('.receipt-total').val().replace(/,/g, '');
 
-    let isComplete = check > 0 && channel > 0 && receipt > 0 && total > 0;
+    let isComplete = check > 0 && channel >= 0 && receipt > 0 && total > 0;
 
     if (!isComplete) return;
 
@@ -454,7 +454,7 @@ function checkClearRow(row) {
   let receipt = row.find('.receipt-bill').val().replace(/,/g, '');
   let total = row.find('.receipt-total').val().replace(/,/g, '');
 
-  let isComplete = check > 0 && channel > 0 && receipt > 0 && total > 0;
+  let isComplete = check > 0 && channel >= 0 && receipt > 0 && total > 0;
 
   let checkbox = row.find('.checkItemClear');
 
