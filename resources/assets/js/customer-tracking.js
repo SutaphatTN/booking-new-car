@@ -348,87 +348,10 @@ $(document).ready(function () {
   });
 });
 
-// INPUT FORM — customer search + car cascades
+// INPUT FORM — phone formatting + car cascades
 $(document).ready(function () {
-  if (!$('#customerSearch').length) return;
+  if (!$('#ct_phone').length) return;
 
-  // --- Customer Search ---
-  const $modal = $('#modalSearchCustomer');
-  const $tableBody = $('#tableSelectCustomer tbody');
-
-  function searchCustomer(keyword) {
-    if (!keyword.trim()) return;
-    $.get('/customers/search', { keyword, check_salecar: 1, check_tracking: 1 }, function (res) {
-      $tableBody.empty();
-      if (!res.length) {
-        $tableBody.append('<tr><td colspan="4" class="text-center">ไม่พบข้อมูลลูกค้า</td></tr>');
-      } else {
-        res.forEach(c => {
-          let actionBtn;
-          if (c.has_active_salecar) {
-            actionBtn = `<span class="badge bg-secondary">มีการจองแล้ว</span>`;
-          } else if (c.has_active_tracking) {
-            actionBtn = `<span class="badge bg-warning">มีการติดตามแล้ว</span>`;
-          } else {
-            actionBtn = `<button class="btn btn-sm btn-success btnSelectCustomer"
-                data-id="${c.id}"
-                data-name="${(c.PrefixNameTH ?? '') + ' ' + (c.FirstName ?? '') + ' ' + (c.LastName ?? '')}"
-                data-mobile="${c.formatted_mobile ?? ''}"
-                data-idnumber="${c.formatted_id_number ?? ''}">
-                เลือก
-              </button>`;
-          }
-          $tableBody.append(`
-            <tr>
-              <td>${c.PrefixNameTH ?? ''} ${c.FirstName ?? ''} ${c.LastName ?? ''}</td>
-              <td>${c.formatted_mobile ?? '-'}</td>
-              <td>${c.formatted_id_number ?? '-'}</td>
-              <td>${actionBtn}</td>
-            </tr>`);
-        });
-      }
-      $modal.modal('show');
-    });
-  }
-
-  $('#customerSearch').on('keypress', function (e) {
-    if (e.which === 13) {
-      e.preventDefault();
-      searchCustomer($(this).val());
-    }
-  });
-
-  $('.btnSearchCustomer').on('click', function () {
-    searchCustomer($('#customerSearch').val());
-  });
-
-  $(document).on('click', '.btnSelectCustomer', function () {
-    const d = $(this).data();
-
-    $('#CusID').val(d.id);
-
-    const setDisplay = (id, val) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.textContent = val || '—';
-      el.classList.toggle('empty', !val);
-    };
-    setDisplay('customerName-display', d.name);
-    setDisplay('customerID-display', d.idnumber);
-    setDisplay('customerPhone-display', d.mobile);
-
-    $modal.modal('hide');
-    $('#customerSearch').val('');
-  });
-
-  $(document).on('hide.bs.modal', '#modalSearchCustomer', function () {
-    setTimeout(() => {
-      document.activeElement.blur();
-      $('body').trigger('focus');
-    }, 1);
-  });
-
-  // การเพิ่มข้อมูลลูกค้า แบบไม่ลัด
   function formatPhone(value) {
     const digits = value.replace(/\D/g, '').substring(0, 10);
     const parts = [];
@@ -438,109 +361,8 @@ $(document).ready(function () {
     return parts.join('-');
   }
 
-  function formatIDCard(value) {
-    const digits = value.replace(/\D/g, '').substring(0, 13);
-    const parts = [];
-    if (digits.length > 0) parts.push(digits.substring(0, 1));
-    if (digits.length > 1) parts.push(digits.substring(1, 5));
-    if (digits.length > 5) parts.push(digits.substring(5, 10));
-    if (digits.length > 10) parts.push(digits.substring(10, 12));
-    if (digits.length > 12) parts.push(digits.substring(12, 13));
-    return parts.join('-');
-  }
-
-  $('#qc_phone').on('input', function () {
+  $('#ct_phone').on('input', function () {
     this.value = formatPhone(this.value);
-  });
-
-  $('#qc_id_number').on('input', function () {
-    this.value = formatIDCard(this.value);
-  });
-
-  function openAddCustomerModal() {
-    // reset form
-    $('#qc_prefix').val('');
-    $('#qc_first_name').val('');
-    $('#qc_last_name').val('');
-    $('#qc_phone').val('');
-    $('#qc_id_number').val('');
-    $('#qc_line_id').val('');
-    $('#qc_facebook').val('');
-    $modal.modal('hide');
-    $('#modalAddCustomer').modal('show');
-  }
-
-  function closeAddCustomerModal() {
-    $('#modalAddCustomer').modal('hide');
-    $modal.modal('show');
-  }
-
-  $('#btnOpenAddCustomer').on('click', openAddCustomerModal);
-  $('#btnCloseAddCustomer, #btnCancelAddCustomer').on('click', closeAddCustomerModal);
-
-  $(document).on('hide.bs.modal', '#modalAddCustomer', function () {
-    setTimeout(() => {
-      document.activeElement.blur();
-      $('body').trigger('focus');
-    }, 1);
-  });
-
-  $('#btnSaveQuickCustomer').on('click', function () {
-    const prefix = $('#qc_prefix').val();
-    const first = $('#qc_first_name').val().trim();
-    const last = $('#qc_last_name').val().trim();
-    const phone = $('#qc_phone').val().trim();
-    const idNumber = $('#qc_id_number').val().trim();
-    const lineId = $('#qc_line_id').val().trim();
-    const facebook = $('#qc_facebook').val().trim();
-
-    if (!first || !phone) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'กรุณากรอกข้อมูลให้ครบ',
-        text: 'ชื่อ และเบอร์โทร จำเป็นต้องกรอก'
-      });
-      return;
-    }
-
-    const $btn = $(this).prop('disabled', true).text('กำลังบันทึก...');
-
-    $.ajax({
-      url: '/customer-tracking/quick-store-customer',
-      type: 'POST',
-      data: { PrefixName: prefix || null, FirstName: first, LastName: last || null, Mobilephone1: phone, IDNumber: idNumber || null, LineID: lineId || null, FacebookName: facebook || null },
-      success: function (res) {
-        if (!res.success) {
-          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: res.message ?? 'ไม่สามารถบันทึกได้' });
-          return;
-        }
-
-        // ปิด modal เพิ่มลูกค้า และ modal ค้นหา แล้วเลือกลูกค้าที่เพิ่งเพิ่ม
-        $('#modalAddCustomer').modal('hide');
-
-        $('#CusID').val(res.id);
-        const setDisplay = (id, val) => {
-          const el = document.getElementById(id);
-          if (!el) return;
-          el.textContent = val || '—';
-          el.classList.toggle('empty', !val);
-        };
-        setDisplay('customerName-display', res.name);
-        setDisplay('customerID-display', res.id_number);
-        setDisplay('customerPhone-display', res.mobile);
-
-        $('#customerSearch').val('');
-
-        Swal.fire({ icon: 'success', title: 'เพิ่มลูกค้าสำเร็จ', timer: 1500, showConfirmButton: true });
-      },
-      error: function (xhr) {
-        const msg = xhr.responseJSON?.message ?? 'เกิดข้อผิดพลาด กรุณาลองใหม่';
-        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: msg });
-      },
-      complete: function () {
-        $btn.prop('disabled', false).html('<i class="bx bx-save me-1"></i> บันทึก');
-      }
-    });
   });
 
   // --- Car Cascades ---
@@ -656,6 +478,34 @@ $(document).ready(function () {
 
 // INPUT FORM — save tracking
 document.addEventListener('DOMContentLoaded', function () {
+
+  function submitTrackingForm($btn, form) {
+    const url = $(form).attr('action');
+    const formData = new FormData(form);
+
+    $btn.prop('disabled', true);
+    $.ajax({
+      url: url,
+      type: 'POST',
+      data: formData,
+      contentType: false,
+      processData: false,
+      beforeSend: function () {
+        Swal.fire({ title: 'กำลังบันทึกข้อมูล...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      },
+      success: function (res) {
+        Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 2000, showConfirmButton: true });
+        setTimeout(() => { window.location.href = '/customer-tracking'; }, 1000);
+      },
+      error: function (xhr) {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message ?? 'ไม่สามารถบันทึกข้อมูลได้' });
+      },
+      complete: function () {
+        $btn.prop('disabled', false);
+      }
+    });
+  }
+
   $(document).on('click', '.btnSaveTracking', function (e) {
     e.preventDefault();
 
@@ -667,61 +517,64 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    if (!$('#CusID').val()) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'ยังไม่ได้เลือกลูกค้า',
-        text: 'กรุณาค้นหาและเลือกลูกค้าก่อนบันทึก',
-        confirmButtonText: 'ตกลง'
-      }).then(() => {
-        $('#customerSearch').focus();
-      });
+    const phone = $('#ct_phone').val().trim();
+    const firstName = $('#ct_first_name').val().trim();
+
+    if (!phone || !firstName) {
+      Swal.fire({ icon: 'warning', title: 'กรุณากรอกข้อมูลให้ครบ', text: 'ชื่อ และเบอร์โทร จำเป็นต้องกรอก' });
       return;
     }
 
-    const url = $(form).attr('action');
-    const formData = new FormData(form);
+    Swal.fire({ title: 'กำลังตรวจสอบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-    $.ajax({
-      url: url,
-      type: 'POST',
-      data: formData,
-      contentType: false,
-      processData: false,
-      beforeSend: function () {
-        Swal.fire({
-          title: 'กำลังบันทึกข้อมูล...',
-          text: 'กรุณารอสักครู่',
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          }
-        });
-        $btn.prop('disabled', true);
-      },
-      success: function (res) {
-        Swal.fire({
-          icon: 'success',
-          title: 'สำเร็จ',
-          text: res.message,
-          timer: 2000,
-          showConfirmButton: true
-        });
-        setTimeout(() => {
-          window.location.href = '/customer-tracking';
-        }, 1000);
-      },
-      error: function (xhr) {
-        let errMsg = 'ไม่สามารถบันทึกข้อมูลได้';
-        if (xhr.responseJSON && xhr.responseJSON.message) {
-          errMsg = xhr.responseJSON.message;
+    $.get('/customer-tracking/check-phone', { phone })
+      .done(function (res) {
+        if (res.has_tracking) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'ลูกค้ามีการติดตามอยู่แล้ว',
+            html: `<p><b>${res.name}</b> มีการติดตามในระบบอยู่แล้ว</p>`,
+            showCancelButton: true,
+            confirmButtonText: 'ไปยังหน้าการติดตาม',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#6c5ffc',
+            cancelButtonColor: '#6c757d',
+          }).then(result => {
+            if (result.isConfirmed) {
+              window.location.href = '/customer-tracking/' + res.tracking_id;
+            }
+          });
+          return;
         }
-        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: errMsg });
-      },
-      complete: function () {
-        $btn.prop('disabled', false);
-      }
-    });
+
+        if (res.found) {
+          $('#CusID').val(res.customer_id);
+          submitTrackingForm($btn, form);
+        } else {
+          const prefix = $('#ct_prefix').val() || null;
+          const last = $('#ct_last_name').val().trim() || null;
+
+          $.ajax({
+            url: '/customer-tracking/quick-store-customer',
+            type: 'POST',
+            data: { PrefixName: prefix, FirstName: firstName, LastName: last, Mobilephone1: phone },
+            success: function (r) {
+              if (!r.success) {
+                Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: r.message ?? 'ไม่สามารถบันทึกลูกค้าได้' });
+                return;
+              }
+              $('#CusID').val(r.id);
+              submitTrackingForm($btn, form);
+            },
+            error: function (xhr) {
+              Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message ?? 'ไม่สามารถบันทึกลูกค้าได้' });
+            }
+          });
+        }
+      })
+      .fail(function () {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถตรวจสอบข้อมูลได้ กรุณาลองใหม่' });
+      });
   });
 });
 
@@ -914,4 +767,93 @@ $(document).on('hide.bs.modal', '#modalEditDetail', function () {
     document.activeElement.blur();
     $('body').trigger('focus');
   }, 1);
+});
+
+// GRADE TAB
+$(document).ready(function () {
+  if (!$('.gs-select').length) return;
+
+  const BADGE_IDS = {
+    delivery_timeline_scoring: 'score_delivery',
+    test_drive_scoring:        'score_testdrive',
+    occupation_scoring:        'score_occupation',
+    revenue_scoring:           'score_revenue',
+    model_interest_scoring:    'score_model',
+    purchase_type_scoring:     'score_purchase',
+    engagement_scoring:        'score_engagement',
+  };
+
+  function gradeInfo(total) {
+    if (total >= 80) return { letter: 'A', color: '#10b981' };
+    if (total >= 60) return { letter: 'B', color: '#6c5ffc' };
+    if (total >= 40) return { letter: 'C', color: '#f59e0b' };
+    return { letter: 'D', color: '#ef4444' };
+  }
+
+  function updateGradeDisplay() {
+    let total = 0;
+    let hasAny = false;
+
+    $('.gs-select').each(function () {
+      const field = $(this).data('field');
+      const val = $(this).val();
+      const $badge = $('#' + BADGE_IDS[field] + ' .gs-score-val');
+
+      if (val) {
+        const score = parseInt($(this).find(':selected').data('score') ?? 0);
+        total += score;
+        hasAny = true;
+        $badge.text(score + ' คะแนน')
+          .removeClass('bg-label-secondary bg-label-primary bg-label-danger')
+          .addClass(score > 0 ? 'bg-label-primary' : 'bg-label-danger');
+      } else {
+        $badge.text('—')
+          .removeClass('bg-label-primary bg-label-danger')
+          .addClass('bg-label-secondary');
+      }
+    });
+
+    const $letter   = $('#gradeLetter');
+    const $total    = $('#gradeTotal');
+    const $progress = $('#gradeProgress');
+
+    if (!hasAny) {
+      $letter.text('—').css('color', '#9ca3af');
+      $total.text('—').css('color', '#374151');
+      $progress.css({ width: '0%', background: '#d1d5db' });
+    } else {
+      const g = gradeInfo(total);
+      $letter.text(g.letter).css('color', g.color);
+      $total.text(total + ' / 100').css('color', g.color);
+      $progress.css({ width: total + '%', background: g.color });
+    }
+  }
+
+  $(document).on('change', '.gs-select', updateGradeDisplay);
+  updateGradeDisplay();
+
+  $('#btnSaveGrade').on('click', function () {
+    const $btn = $(this);
+    const trackingId = $btn.data('tracking-id');
+    const data = {};
+    $('.gs-select').each(function () {
+      data[$(this).data('field')] = $(this).val() || null;
+    });
+
+    $btn.prop('disabled', true);
+    $.ajax({
+      url: `/customer-tracking/${trackingId}/grade`,
+      type: 'POST',
+      data: data,
+      success: function () {
+        Swal.fire({ icon: 'success', title: 'บันทึกเกรดสำเร็จ', timer: 1500, showConfirmButton: false });
+      },
+      error: function () {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถบันทึกได้' });
+      },
+      complete: function () {
+        $btn.prop('disabled', false);
+      }
+    });
+  });
 });

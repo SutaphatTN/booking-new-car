@@ -31,6 +31,13 @@ class CustomerTracking extends Model
         'UserInsert',
         'cancelled_at',
         'CancelledBy',
+        'delivery_timeline_scoring',
+        'test_drive_scoring',
+        'occupation_scoring',
+        'revenue_scoring',
+        'model_interest_scoring',
+        'purchase_type_scoring',
+        'engagement_scoring',
     ];
 
     public function customer()
