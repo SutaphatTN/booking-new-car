@@ -25,6 +25,7 @@
       <th>ประมาณการส่งมอบ</th>
       <th>วันส่งมอบจริง</th>
       <th>สถานะ</th>
+      <th>หมายเหตุ</th>
     </tr>
   </thead>
   <tbody>
@@ -54,10 +55,11 @@
         <td>{{ $s['DeliveryEstimateDate'] }}</td>
         <td>{{ $s['DeliveryDate'] }}</td>
         <td>{{ $s['status'] }}</td>
+        <td>{{ $s['Note'] }}</td>
       </tr>
     @empty
       <tr>
-        <td colspan="19" align="center">
+        <td colspan="20" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

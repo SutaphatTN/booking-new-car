@@ -172,6 +172,7 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
                 'DeliveryEstimateDate' => $r?->format_delivery_estimate_date ?? '-',
                 'DeliveryDate' => $r?->format_delivery_date ?? '-',
                 'status' => $r?->conStatus?->name ?? '-',
+                'Note' => $r->Note ?? '-',
             ];
         });
 
