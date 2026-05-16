@@ -141,7 +141,7 @@
                   </label>
                   <input id="edit_veh_license_name" name="license_name" type="text" class="form-control"
                     value="{{ $veh->vehicleLicense?->license_name ?? '' }}"
-                    oninput="this.value = this.value.replace(/[^a-zA-Zก-ฮ]/g, '')">
+                    oninput="this.value = this.value.replace(/[^a-zA-Z0-9ก-ฮ]/g, '')">
                 </div>
 
                 <div class="col-md-3">
