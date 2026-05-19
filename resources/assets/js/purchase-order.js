@@ -70,43 +70,28 @@ $(document).on('blur', '.money-input', function () {
 //view : sale column filter
 let saleFilterActive = null;
 
-$.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-  if (settings.nTable.id !== 'purchaseTable') return true;
-  if (saleFilterActive === null) return true;
-  if (saleFilterActive.length === 0) return false;
-  const sale = settings.aoData[dataIndex]?._aData?.sale ?? '';
-  return saleFilterActive.includes(sale);
-});
-
 function populateSaleFilterList() {
-  const rows = purchaseTable ? purchaseTable.rows().data().toArray() : [];
-  const seen = new Set();
-  rows.forEach(function (row) {
-    if (row.sale && row.sale !== '-') seen.add(row.sale);
-  });
-  const sorted = Array.from(seen).sort((a, b) => a.localeCompare(b, 'th'));
-
   const $list = $('#saleFilterList').empty();
-  const allSelected = saleFilterActive === null;
-
-  $list.append(
-    `<div class="col-filter-item col-filter-all">
-      <input type="checkbox" id="saleChkAll" ${allSelected ? 'checked' : ''}>
-      <label for="saleChkAll">(เลือกทั้งหมด)</label>
-    </div>`
-  );
-
-  sorted.forEach(function (name, i) {
-    const checked = allSelected || (saleFilterActive !== null && saleFilterActive.includes(name)) ? 'checked' : '';
+  const statusVal = $('#filterStatus').val();
+  $.get('/purchase-order/sale-options', { con_status: statusVal }, function (names) {
+    const allSelected = saleFilterActive === null;
     $list.append(
-      `<div class="col-filter-item">
-        <input type="checkbox" class="sale-chk-item" id="saleChk${i}" value="${name}" ${checked}>
-        <label for="saleChk${i}">${name}</label>
+      `<div class="col-filter-item col-filter-all">
+        <input type="checkbox" id="saleChkAll" ${allSelected ? 'checked' : ''}>
+        <label for="saleChkAll">(เลือกทั้งหมด)</label>
       </div>`
     );
+    names.forEach(function (name, i) {
+      const checked = allSelected || (saleFilterActive !== null && saleFilterActive.includes(name)) ? 'checked' : '';
+      $list.append(
+        `<div class="col-filter-item">
+          <input type="checkbox" class="sale-chk-item" id="saleChk${i}" value="${name}" ${checked}>
+          <label for="saleChk${i}">${name}</label>
+        </div>`
+      );
+    });
+    syncSelectAll();
   });
-
-  syncSelectAll();
 }
 
 function syncSelectAll() {
@@ -132,10 +117,15 @@ $(document).ready(function () {
   }
 
   purchaseTable = $('#purchaseTable').DataTable({
+    serverSide: true,
+    processing: true,
     ajax: {
       url: '/purchase-order/list',
       data: function (d) {
         d.con_status = $('#filterStatus').val();
+        if (saleFilterActive !== null) {
+          d.sale_filter = JSON.stringify(saleFilterActive);
+        }
       }
     },
     columns: [
@@ -254,7 +244,7 @@ $(document).ready(function () {
     const isAll = checked.length === $all.length;
     saleFilterActive = isAll ? null : checked;
     $('#saleFilterBtn').toggleClass('filtered', saleFilterActive !== null);
-    purchaseTable.draw();
+    purchaseTable.ajax.reload(null, false);
     $('#saleFilterDropdown').removeClass('show');
     $('#saleFilterBtn').removeClass('active');
   });
@@ -265,7 +255,7 @@ $(document).ready(function () {
     $('.sale-chk-item').prop('checked', true);
     $('#saleChkAll').prop({ indeterminate: false, checked: true });
     $('#saleFilterBtn').removeClass('filtered active');
-    purchaseTable.draw();
+    purchaseTable.ajax.reload(null, false);
     $('#saleFilterDropdown').removeClass('show');
   });
 });
