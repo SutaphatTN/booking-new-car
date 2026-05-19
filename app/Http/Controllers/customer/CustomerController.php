@@ -240,22 +240,29 @@ class CustomerController extends Controller
             $docDistricts = ($docAddress->province === $currentAddress?->province)
                 ? $currentDistricts
                 : TbThailand::select('District_pro')
-                    ->where('Province_pro', $docAddress->province)
-                    ->distinct()->orderBy('District_pro')->pluck('District_pro');
+                ->where('Province_pro', $docAddress->province)
+                ->distinct()->orderBy('District_pro')->pluck('District_pro');
 
             if ($docAddress->district) {
                 $docTambons = ($docAddress->province === $currentAddress?->province && $docAddress->district === $currentAddress?->district)
                     ? $currentTambons
                     : TbThailand::select('id', 'Tambon_pro', 'Postcode_pro')
-                        ->where('Province_pro', $docAddress->province)
-                        ->where('District_pro', $docAddress->district)
-                        ->orderBy('Tambon_pro')->get();
+                    ->where('Province_pro', $docAddress->province)
+                    ->where('District_pro', $docAddress->district)
+                    ->orderBy('Tambon_pro')->get();
             }
         }
 
         return view('customer.edit', compact(
-            'customers', 'perfixName', 'currentAddress', 'docAddress',
-            'provinces', 'currentDistricts', 'currentTambons', 'docDistricts', 'docTambons'
+            'customers',
+            'perfixName',
+            'currentAddress',
+            'docAddress',
+            'provinces',
+            'currentDistricts',
+            'currentTambons',
+            'docDistricts',
+            'docTambons'
         ));
     }
 
@@ -332,7 +339,11 @@ class CustomerController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
+            // return response()->json([
+            //                 'success' => false,
+            //                 'message' => $e->getMessage(),
+            //                 'trace' => $e->getTraceAsString(),
+            //             ], 500);
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
