@@ -45,7 +45,7 @@ Route::resource('register', RegisterController::class);
 Route::resource('forgot', ForgotController::class);
 
 Route::get('/keep-alive', function () {
-    session()->put('last_keep_alive', now());
+    request()->session()->put('last_keep_alive', now());
     return response()->json(['status' => 'ok'])
         ->header('Cache-Control', 'no-store');
 })->middleware('auth');
@@ -334,6 +334,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/api/car-order/pricelist-data', [CarOrderController::class, 'getPricelistData']);
     
     Route::get('purchase-order/list', [PurchaseOrderController::class, 'listPurchaseOrder']);
+    Route::get('purchase-order/sale-options', [PurchaseOrderController::class, 'saleOptions']);
     Route::get('/purchase-order/get-campaign', [PurchaseOrderController::class, 'getCampaign']);
     Route::get('purchase-order/summary/{id}', [PurchaseOrderController::class, 'summaryPurchase'])->name('purchase-order.summary');
     Route::get('/api/purchase-order/sub-model/{model_id}', [PurchaseOrderController::class, 'getSubModelPurchase']);
@@ -364,6 +365,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     // customer tracking
     Route::get('customer-tracking/list', [CustomerTrackingController::class, 'list']);
+    Route::get('customer-tracking/filter-options', [CustomerTrackingController::class, 'filterOptions']);
     Route::get('customer-tracking/check-duplicate', [CustomerTrackingController::class, 'checkDuplicate']);
     Route::get('customer-tracking/check-phone', [CustomerTrackingController::class, 'checkPhone']);
     Route::get('customer-tracking/report', [CustomerTrackingController::class, 'report'])->name('customer-tracking.report');

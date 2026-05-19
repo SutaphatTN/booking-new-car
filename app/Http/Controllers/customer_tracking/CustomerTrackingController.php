@@ -30,45 +30,135 @@ class CustomerTrackingController extends Controller
 
     public function list(Request $request)
     {
-        $user = Auth::user();
+        $draw           = (int) ($request->draw ?? 1);
+        $start          = (int) ($request->start ?? 0);
+        $length         = (int) ($request->length ?? 10);
+        $search         = trim($request->input('search.value', ''));
+        $decisionId     = $request->decision_id;
+        $saleFilter     = $request->sale_filter     ? json_decode($request->sale_filter, true)      : null;
+        $statusFilter   = $request->status_filter   ? json_decode($request->status_filter, true)    : null;
+        $lastDateFilter = $request->last_date_filter ? json_decode($request->last_date_filter, true) : null;
+        $nextDateFilter = $request->next_date_filter ? json_decode($request->next_date_filter, true) : null;
+        $user           = Auth::user();
+        $today          = now()->toDateString();
 
-        // customer_id ที่มีการจองแล้วใน brand เดียวกัน (ไม่ถูก soft-delete และยังไม่ถอนจอง ยังไม่ส่งมอบ)
-        $bookedCustomerIds = Salecar::whereNull('deleted_at')
-            ->whereNull('CancelDate')
-            ->whereNull('DeliveryDate')
-            ->where('brand', $user->brand)
-            ->pluck('CusID')
-            ->unique()
-            ->toArray();
+        // เฉพาะใบจองที่ยังคงสถานะ "active" เท่านั้นที่ซ่อน tracking
+        // ถอนจอง (con_status 5,7,8,9) ต้องให้ tracking กลับมาแสดง
+        $bookedSubquery = Salecar::select('CusID')
+            ->whereNull('deleted_at')
+            ->whereIn('con_status', [1, 2, 3, 4, 6])
+            ->where('brand', $user->brand);
 
-        $query = CustomerTracking::with(['customer.prefix', 'sale', 'source', 'model', 'subModel', 'latestDetail.decision', 'nextManagerDetail', 'latestManagerDetail', 'latestPastDetail', 'wuColor'])
-            ->whereNotIn('customer_id', $bookedCustomerIds)
+        $base = CustomerTracking::query()
+            ->whereNotIn('customer_id', $bookedSubquery)
             ->whereNull('cancelled_at');
 
         if ($user->role === 'sale') {
-            $query->where('sale_id', $user->id);
+            $base->where('sale_id', $user->id);
         }
 
-        $trackings = $query->get()->sortBy(function ($t) {
-            return $t->nextManagerDetail?->contact_date
-                ?? $t->latestManagerDetail?->contact_date
-                ?? $t->latestDetail?->contact_date
-                ?? '9999-12-31';
-        })->values();
+        // filterDecision dropdown — ค้นหา decision_id ของ "active detail" ของแต่ละ tracking
+        if ($decisionId) {
+            $base->whereRaw('(
+                SELECT decision_id FROM customer_tracking_details
+                WHERE tracking_id = customer_trackings.id AND deleted_at IS NULL
+                ORDER BY
+                    CASE WHEN entry_type = "manager" AND contact_date > ? THEN 0
+                         WHEN entry_type = "manager" THEN 1
+                         ELSE 2 END ASC,
+                    CASE WHEN entry_type = "manager" AND contact_date > ? THEN contact_date END ASC,
+                    created_at DESC
+                LIMIT 1
+            ) = ?', [$today, $today, $decisionId]);
+        }
 
-        $no = 1;
-        $data = $trackings->map(function ($t) use (&$no) {
+        // Sale column filter
+        if ($saleFilter && count($saleFilter) > 0) {
+            $saleIds = User::whereIn('name', $saleFilter)->pluck('id');
+            $base->whereIn('sale_id', $saleIds);
+        }
+
+        // Status column filter (by decision name → id)
+        if ($statusFilter && count($statusFilter) > 0) {
+            $decisionIds = TbDecision::whereIn('name', $statusFilter)->pluck('id');
+            $base->whereRaw('(
+                SELECT decision_id FROM customer_tracking_details
+                WHERE tracking_id = customer_trackings.id AND deleted_at IS NULL
+                ORDER BY
+                    CASE WHEN entry_type = "manager" AND contact_date > ? THEN 0
+                         WHEN entry_type = "manager" THEN 1
+                         ELSE 2 END ASC,
+                    CASE WHEN entry_type = "manager" AND contact_date > ? THEN contact_date END ASC,
+                    created_at DESC
+                LIMIT 1
+            ) IN (' . implode(',', array_fill(0, count($decisionIds), '?')) . ')',
+                array_merge([$today, $today], $decisionIds->toArray())
+            );
+        }
+
+        // Next date column filter (YYYY-MM-DD)
+        if ($nextDateFilter && count($nextDateFilter) > 0) {
+            $base->whereHas('details', fn($q) =>
+                $q->where('entry_type', 'manager')
+                  ->where('contact_date', '>', $today)
+                  ->whereIn('contact_date', $nextDateFilter)
+            );
+        }
+
+        // Last date column filter (YYYY-MM-DD)
+        if ($lastDateFilter && count($lastDateFilter) > 0) {
+            $placeholders = implode(',', array_fill(0, count($lastDateFilter), '?'));
+            $base->whereRaw("(
+                SELECT MAX(contact_date) FROM customer_tracking_details
+                WHERE tracking_id = customer_trackings.id
+                AND contact_date <= ? AND deleted_at IS NULL
+            ) IN ({$placeholders})", array_merge([$today], $lastDateFilter));
+        }
+
+        // Global search
+        if ($search) {
+            $base->where(function ($q) use ($search) {
+                $q->whereHas('customer', fn($q) =>
+                    $q->where('FirstName', 'like', "%{$search}%")
+                      ->orWhere('LastName', 'like', "%{$search}%")
+                )
+                ->orWhereHas('sale', fn($q) =>
+                    $q->where('name', 'like', "%{$search}%")
+                );
+            });
+        }
+
+        $recordsTotal    = (clone $base)->count();
+        $recordsFiltered = $recordsTotal; // ตัวเลขเดียวกันเพราะ filter ทำก่อน count
+
+        // Sort by next contact date (DB-level)
+        $base->orderByRaw('(
+            COALESCE(
+                (SELECT MIN(contact_date) FROM customer_tracking_details
+                 WHERE tracking_id = customer_trackings.id
+                 AND entry_type = "manager" AND contact_date > ? AND deleted_at IS NULL),
+                "9999-12-31"
+            )
+        ) ASC', [$today]);
+
+        $trackings = $base
+            ->with(['customer.prefix', 'sale', 'source', 'model', 'subModel',
+                    'latestDetail.decision', 'nextManagerDetail', 'latestManagerDetail',
+                    'latestPastDetail', 'wuColor'])
+            ->skip($start)
+            ->take($length)
+            ->get();
+
+        $rowNum = $start + 1;
+        $data = $trackings->map(function ($t) use (&$rowNum) {
             $customer = $t->customer;
             $fullName = $customer
                 ? (($customer->prefix->Name_TH ?? '') . ' ' . $customer->FirstName . ' ' . $customer->LastName)
                 : '-';
 
-            $color = $t->wuColor->name ?? '-';
-            $colorText = $t->color_text ?? '-';
-            
-            $model = $t->model ? $t->model->Name_TH : '';
+            $model        = $t->model ? $t->model->Name_TH : '';
             $subModelSale = $t->subModel ? $t->subModel->name : '';
-            $subDetail = $t->subModel ? $t->subModel->detail : '';
+            $subDetail    = $t->subModel ? $t->subModel->detail : '';
 
             $row = fn($icon, $class, $tip, $text) =>
                 "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
@@ -83,12 +173,9 @@ class CustomerTrackingController extends Controller
             }
 
             $latestDetail = $t->latestDetail;
-            $source = $t->source->name ?? '-';
-
             $nextDate     = $t->nextManagerDetail?->format_contact_date ?? '-';
-            $nextDateSort = $t->nextManagerDetail?->contact_date ?? '9999-12-31';
-
-            $lastDate = $t->latestPastDetail?->format_contact_date ?? '-';
+            $nextDateRaw  = $t->nextManagerDetail?->contact_date ?? '9999-12-31';
+            $lastDate     = $t->latestPastDetail?->format_contact_date ?? '-';
 
             if ($t->nextManagerDetail) {
                 $activeDetail = $t->nextManagerDetail;
@@ -100,25 +187,85 @@ class CustomerTrackingController extends Controller
 
             $decision = $activeDetail?->decision?->name ?? '-';
 
-            $dateLabel = $t->nextManagerDetail ? 'ติดต่อครั้งถัดไป' : 'ติดต่อล่าสุด';
-            $dateValue = $t->nextManagerDetail ? $nextDate : $lastDate;
-            $detail = "ที่มา : {$source}<br>{$dateLabel} : {$dateValue}<br>การตัดสินใจ : {$decision}";
-
             return [
-                'No'            => $no++,
-                'id'            => $t->id,
-                'FullName'      => trim($fullName),
-                'model'         => $car,
-                'sale'          => $t->sale->name ?? '-',
-                'last_date'     => $lastDate,
-                'next_date'     => $nextDate,
-                'next_date_sort'=> $nextDateSort,
-                'status'        => $decision,
-                'decision_id'   => $activeDetail?->decision_id ?? '',
+                'No'             => $rowNum++,
+                'id'             => $t->id,
+                'FullName'       => trim($fullName),
+                'model'          => $car,
+                'sale'           => $t->sale->name ?? '-',
+                'last_date'      => $lastDate,
+                'next_date'      => $nextDate,
+                'next_date_sort' => $nextDateRaw,
+                'status'         => $decision,
+                'decision_id'    => $activeDetail?->decision_id ?? '',
             ];
         });
 
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data->values(),
+        ]);
+    }
+
+    public function filterOptions(Request $request)
+    {
+        $user  = Auth::user();
+        $today = now()->toDateString();
+
+        $bookedSubquery = Salecar::select('CusID')
+            ->whereNull('deleted_at')
+            ->whereNull('CancelDate')
+            ->whereNull('DeliveryDate')
+            ->where('brand', $user->brand);
+
+        $trackingIds = CustomerTracking::whereNotIn('customer_id', $bookedSubquery)
+            ->whereNull('cancelled_at')
+            ->when($user->role === 'sale', fn($q) => $q->where('sale_id', $user->id))
+            ->pluck('id');
+
+        // Distinct sale names
+        $sales = User::whereIn('id',
+            CustomerTracking::whereIn('id', $trackingIds)->pluck('sale_id')->unique()
+        )->orderBy('name')->pluck('name');
+
+        // Distinct decision names (from details of active trackings)
+        $usedDecisionIds = CustomerTrackingDetail::whereIn('tracking_id', $trackingIds)
+            ->whereNotNull('decision_id')
+            ->pluck('decision_id')
+            ->unique();
+        $decisions = TbDecision::whereIn('id', $usedDecisionIds)->orderBy('name')->pluck('name');
+
+        // Distinct last dates (max past contact per tracking)
+        $lastDates = CustomerTrackingDetail::whereIn('tracking_id', $trackingIds)
+            ->whereDate('contact_date', '<=', $today)
+            ->whereNull('deleted_at')
+            ->selectRaw('MAX(contact_date) as last_date')
+            ->groupBy('tracking_id')
+            ->pluck('last_date')
+            ->unique()
+            ->sort()
+            ->values();
+
+        // Distinct next dates (min future manager contact per tracking)
+        $nextDates = CustomerTrackingDetail::whereIn('tracking_id', $trackingIds)
+            ->where('entry_type', 'manager')
+            ->whereDate('contact_date', '>', $today)
+            ->whereNull('deleted_at')
+            ->selectRaw('MIN(contact_date) as next_date')
+            ->groupBy('tracking_id')
+            ->pluck('next_date')
+            ->unique()
+            ->sort()
+            ->values();
+
+        return response()->json([
+            'sales'     => $sales->values(),
+            'decisions' => $decisions->values(),
+            'lastDates' => $lastDates,
+            'nextDates' => $nextDates,
+        ]);
     }
 
     public function create()

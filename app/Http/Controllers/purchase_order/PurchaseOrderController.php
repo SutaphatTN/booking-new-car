@@ -165,30 +165,65 @@ class PurchaseOrderController extends Controller
 
     public function listPurchaseOrder(Request $request)
     {
+        $draw         = (int) ($request->draw ?? 1);
+        $start        = (int) ($request->start ?? 0);
+        $length       = (int) ($request->length ?? 10);
+        $search       = trim($request->input('search.value', ''));
         $statusFilter = $request->con_status;
-        $user = Auth::user();
+        $saleFilter   = $request->sale_filter ? json_decode($request->sale_filter, true) : null;
+        $user         = Auth::user();
 
-        $query = Salecar::with('customer.prefix', 'conStatus', 'saleUser');
+        $base = Salecar::query();
 
         if ($user->role === 'sale') {
-            $query->where('SaleID', $user->id);
+            $base->where('SaleID', $user->id);
         }
 
         if ($statusFilter) {
-            $query->where('con_status', $statusFilter);
+            $base->where('con_status', $statusFilter);
         } else {
-            $query->whereIn('con_status', [1, 2, 3, 4, 6]);
+            $base->whereIn('con_status', [1, 2, 3, 4, 6]);
         }
 
-        $saleCar = $query->get();
+        if ($saleFilter && count($saleFilter) > 0) {
+            $saleIds = User::whereIn('name', $saleFilter)->pluck('id');
+            $base->whereIn('SaleID', $saleIds);
+        }
 
-        $data = $saleCar->map(function ($s, $index) {
-            $c = $s->customer;
-            $prefixText = $s->customer?->prefix?->Name_TH;
-            $model = $s->model ? $s->model->Name_TH : '';
+        $recordsTotal = (clone $base)->count();
+
+        if ($search) {
+            $base->where(function ($q) use ($search) {
+                $q->whereHas('customer', fn($q) =>
+                    $q->where('FirstName', 'like', "%{$search}%")
+                      ->orWhere('LastName', 'like', "%{$search}%")
+                )
+                ->orWhereHas('saleUser', fn($q) =>
+                    $q->where('name', 'like', "%{$search}%")
+                )
+                ->orWhereHas('carOrder', fn($q) =>
+                    $q->where('order_code', 'like', "%{$search}%")
+                );
+            });
+        }
+
+        $recordsFiltered = (clone $base)->count();
+
+        $saleCars = $base
+            ->with('customer.prefix', 'conStatus', 'saleUser', 'model', 'subModel', 'carOrder', 'remainingPayment')
+            ->orderBy('BookingDate', 'desc')
+            ->skip($start)
+            ->take($length)
+            ->get();
+
+        $rowNum = $start + 1;
+        $data = $saleCars->map(function ($s) use (&$rowNum) {
+            $c            = $s->customer;
+            $prefixText   = $s->customer?->prefix?->Name_TH;
+            $model        = $s->model ? $s->model->Name_TH : '';
             $subModelSale = $s->subModel ? $s->subModel->name : '';
-            $subDetail = $s->subModel ? $s->subModel->detail : '';
-            $statusSale = $s->conStatus ? $s->conStatus->name : '';
+            $subDetail    = $s->subModel ? $s->subModel->detail : '';
+            $statusSale   = $s->conStatus ? $s->conStatus->name : '';
 
             $row = fn($icon, $class, $tip, $text) =>
                 "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
@@ -214,36 +249,70 @@ class PurchaseOrderController extends Controller
                 $approver = 'รอดำเนินการ';
             }
 
-            //             if (!empty($s->GMApprovalSignature) && !empty($s->balanceCampaign)) {
-            //     $approver = 'GM อนุมัติแล้ว';
-            // } elseif (!empty($s->ApprovalSignature) && !empty($s->balanceCampaign)) {
-            //     $approver = 'ผู้จัดการอนุมัติแล้ว';
-            // } elseif (!empty($s->balanceCampaign)) {
-            //     $approver = 'รออนุมัติ';
-            // } else {
-            //     $approver = 'รอดำเนินการ';
-            // }
-
             $status = $row('bx-receipt',      'text-success', 'ใบจอง',        $statusSale)
                     . $row('bx-check-shield', 'text-warning', 'การตรวจสอบ', $approver);
 
+            $salecarId    = $s->id;
+            $editUrl      = route('purchase-order.edit', $salecarId);
+            $summaryUrl   = route('purchase-order.summary', $salecarId);
+            $hasRemaining = !empty($s->remainingPayment);
+
+            $summaryBtn = $hasRemaining
+                ? "<a href=\"{$summaryUrl}\" target=\"_blank\" class=\"btn btn-icon btn-primary text-white\" title=\"สรุปค่าใช้จ่าย\"><i class=\"bx bx-printer\"></i></a>"
+                : "<a href=\"javascript:void(0)\" class=\"btn btn-icon btn-primary text-white\" style=\"opacity:.45;pointer-events:none;cursor:not-allowed;\" title=\"ยังไม่มีข้อมูลค่างวด\"><i class=\"bx bx-printer\"></i></a>";
+
+            $action = "<div class=\"d-flex justify-content-center gap-1\">"
+                . "<a href=\"{$editUrl}\" class=\"btn btn-icon btn-warning text-white\" title=\"แก้ไข\"><i class=\"bx bx-edit\"></i></a>"
+                . $summaryBtn
+                . "<button class=\"btn btn-icon btn-danger text-white btnDeleteSale\" data-id=\"{$salecarId}\" title=\"ลบ\"><i class=\"bx bx-trash\"></i></button>"
+                . "</div>";
+
             return [
-                'No' => $index + 1,
-                'FullName' => implode(' ', array_filter([
+                'No'         => $rowNum++,
+                'FullName'   => implode(' ', array_filter([
                     $prefixText ?? null,
                     $c->FirstName ?? null,
                     $c->LastName ?? null,
                 ])),
-                'model' => $car,
-                'order' => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
-                'date' => $s->format_booking_date,
-                'sale' => $s->saleUser?->name,
+                'model'      => $car,
+                'order'      => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
+                'date'       => $s->format_booking_date,
+                'sale'       => $s->saleUser?->name,
                 'statusSale' => $status,
-                'Action' => view('purchase-order.button', compact('s'))->render()
+                'Action'     => $action,
             ];
         });
 
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data->values(),
+        ]);
+    }
+
+    public function saleOptions(Request $request)
+    {
+        $user         = Auth::user();
+        $statusFilter = $request->con_status;
+
+        $query = Salecar::join('users', 'salecars.SaleID', '=', 'users.id')
+            ->select('users.name')
+            ->distinct();
+
+        if ($user->role === 'sale') {
+            $query->where('salecars.SaleID', $user->id);
+        }
+
+        if ($statusFilter) {
+            $query->where('salecars.con_status', $statusFilter);
+        } else {
+            $query->whereIn('salecars.con_status', [1, 2, 3, 4, 6]);
+        }
+
+        return response()->json(
+            $query->orderBy('users.name')->pluck('users.name')->filter()->values()
+        );
     }
 
     function store(Request $request)
