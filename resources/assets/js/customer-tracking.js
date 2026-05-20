@@ -504,6 +504,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     $.get('/customer-tracking/check-phone', { phone })
       .done(function (res) {
+        if (res.has_booking) {
+          Swal.fire({
+            icon: 'error',
+            title: 'ไม่สามารถเพิ่มการติดตามได้',
+            html: `<p><b>${res.name}</b> มีข้อมูลการจองอยู่แล้ว ไม่สามารถเพิ่มการติดตามได้</p>`,
+            confirmButtonText: 'ตกลง',
+            confirmButtonColor: '#6c5ffc',
+          });
+          return;
+        }
+
         if (res.has_tracking) {
           Swal.fire({
             icon: 'warning',
