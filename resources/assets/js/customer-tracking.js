@@ -534,8 +534,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (res.found) {
-          $('#CusID').val(res.customer_id);
-          submitTrackingForm($btn, form);
+          Swal.fire({
+            icon: 'question',
+            title: 'พบข้อมูลในฐานข้อมูล',
+            html: `<p>เบอร์ <b>${phone}</b> มีข้อมูลในฐานข้อมูลแล้ว</p>
+                   <p>ชื่อ: <b>${res.name}</b></p>
+                   <p>ต้องการเพิ่มการติดตามให้ลูกค้าคนนี้ไหม?</p>`,
+            showCancelButton: true,
+            confirmButtonText: 'ใช่, เพิ่มการติดตาม',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#6c5ffc',
+            cancelButtonColor: '#6c757d',
+          }).then(result => {
+            if (!result.isConfirmed) return;
+            $('#CusID').val(res.customer_id);
+            submitTrackingForm($btn, form);
+          });
         } else {
           const prefix = $('#ct_prefix').val() || null;
           const last = $('#ct_last_name').val().trim() || null;
