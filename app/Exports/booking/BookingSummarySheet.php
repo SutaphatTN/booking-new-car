@@ -224,7 +224,7 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                     ->diffInDays(now()->startOfDay()) . ' วัน'
                     : '',
 
-                'po_date'      => $sale?->format_po_date ?? '',
+                'po_date'      => $sale?->remainingPayment?->format_po_date ?? '',
 
                 'allocation_status' => $allocationStatus,
                 'allocation_date' => $allocationDate,

@@ -54,7 +54,8 @@ class BookingReportQuery
       'customer.prefix',
       'saleUser',
       'conStatus',
-      'subModel'
+      'subModel',
+      'remainingPayment',
     ])
       ->whereNull('CarOrderID')
       ->where('model_id', $modelId)

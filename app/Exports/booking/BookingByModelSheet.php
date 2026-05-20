@@ -275,7 +275,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
           ->diffInDays(now()->startOfDay()) . ' วัน'
           : '',
 
-        'po_date'      => '-',
+        'po_date'      => $sale?->remainingPayment?->format_po_date ?? '-',
         'allocation_status' => $allocationStatus,
         'allocation_date' => $allocationDate,
         'note_accessory' => $order->note_accessory ?? '-',
@@ -354,7 +354,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'DeliveryEstimateDate' => $sale->format_delivery_estimate_date ?? '',
         'status'      => $sale?->conStatus?->name ?? '',
         'daysBind' => '',
-        'po_date'      => $sale?->format_po_date ?? '',
+        'po_date'      => $sale?->remainingPayment?->format_po_date ?? '',
         'allocation_status' => '',
         'allocation_date' => '',
         'note_accessory' => '-',
