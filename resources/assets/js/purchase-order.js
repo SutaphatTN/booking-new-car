@@ -265,7 +265,7 @@ function askCancelDate(id) {
   let today = new Date().toISOString().split('T')[0];
 
   Swal.fire({
-    title: 'ระบุวันที่ยกเลิก',
+    title: 'ระบุวันที่ถอนจอง',
     html: `<input type="date" id="swal-cancel-date" value="${today}" max="${today}"
              style="border:1px solid #d9d9d9; border-radius:6px; padding:8px 12px; font-size:1rem; outline:none; width:35%;">`,
     showCancelButton: true,
@@ -276,7 +276,7 @@ function askCancelDate(id) {
     preConfirm: () => {
       const cancelDate = document.getElementById('swal-cancel-date').value;
       if (!cancelDate) {
-        Swal.showValidationMessage('กรุณาระบุวันที่ยกเลิก');
+        Swal.showValidationMessage('กรุณาระบุวันที่ถอนจอง');
         return false;
       }
       return cancelDate;
