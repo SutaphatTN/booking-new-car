@@ -13,6 +13,7 @@ use App\Models\TbDecision;
 use App\Models\TbInteriorColor;
 use App\Models\TbPrefixname;
 use App\Models\TbSalecarType;
+use App\Models\Traits\UserAccessScope;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -216,8 +217,7 @@ class CustomerTrackingController extends Controller
 
         $bookedSubquery = Salecar::select('CusID')
             ->whereNull('deleted_at')
-            ->whereNull('CancelDate')
-            ->whereNull('DeliveryDate')
+            ->whereIn('con_status', [1, 2, 3, 4, 6])
             ->where('brand', $user->brand);
 
         $trackingIds = CustomerTracking::whereNotIn('customer_id', $bookedSubquery)
@@ -240,7 +240,6 @@ class CustomerTrackingController extends Controller
         // Distinct last dates (max past contact per tracking)
         $lastDates = CustomerTrackingDetail::whereIn('tracking_id', $trackingIds)
             ->whereDate('contact_date', '<=', $today)
-            ->whereNull('deleted_at')
             ->selectRaw('MAX(contact_date) as last_date')
             ->groupBy('tracking_id')
             ->pluck('last_date')
@@ -252,7 +251,6 @@ class CustomerTrackingController extends Controller
         $nextDates = CustomerTrackingDetail::whereIn('tracking_id', $trackingIds)
             ->where('entry_type', 'manager')
             ->whereDate('contact_date', '>', $today)
-            ->whereNull('deleted_at')
             ->selectRaw('MIN(contact_date) as next_date')
             ->groupBy('tracking_id')
             ->pluck('next_date')
@@ -294,15 +292,23 @@ class CustomerTrackingController extends Controller
 
     public function checkPhone(Request $request)
     {
-        $phone = preg_replace('/\D/', '', $request->phone);
+        $phone    = preg_replace('/\D/', '', $request->phone);
+        $brand    = Auth::user()->brand;
         $customer = Customer::where('Mobilephone1', $phone)->first();
 
         if (!$customer) {
-            return response()->json(['found' => false, 'has_tracking' => false]);
+            return response()->json(['found' => false, 'has_tracking' => false, 'has_booking' => false]);
         }
 
+        // เช็คการจอง active ใน brand เดียวกัน (con_status ไม่ใช่ 5,7,8,9 = จบแล้ว)
+        $hasBooking = Salecar::withoutGlobalScope(UserAccessScope::class)
+            ->where('CusID', $customer->id)
+            ->where('brand', $brand)
+            ->whereNotIn('con_status', [5, 7, 8, 9])
+            ->exists();
+
         $tracking = CustomerTracking::where('customer_id', $customer->id)
-            ->where('brand', Auth::user()->brand)
+            ->where('brand', $brand)
             ->whereNull('cancelled_at')
             ->first();
 
@@ -313,6 +319,7 @@ class CustomerTrackingController extends Controller
             'found'       => true,
             'customer_id' => $customer->id,
             'name'        => $name,
+            'has_booking' => $hasBooking,
             'has_tracking'=> $tracking !== null,
             'tracking_id' => $tracking?->id,
         ]);
@@ -324,6 +331,19 @@ class CustomerTrackingController extends Controller
             DB::beginTransaction();
 
             $authUser = Auth::user();
+
+            $hasBooking = Salecar::withoutGlobalScope(UserAccessScope::class)
+                ->where('CusID', $request->customer_id)
+                ->where('brand', $authUser->brand)
+                ->whereNotIn('con_status', [5, 7, 8, 9])
+                ->exists();
+
+            if ($hasBooking) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ลูกค้านี้มีข้อมูลการจองอยู่แล้ว ไม่สามารถเพิ่มการติดตามได้'
+                ], 422);
+            }
 
             $alreadyTracked = CustomerTracking::where('customer_id', $request->customer_id)
                 ->where('brand', $authUser->brand)
