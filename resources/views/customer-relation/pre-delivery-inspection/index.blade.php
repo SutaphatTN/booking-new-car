@@ -393,11 +393,21 @@
               <div class="po-section-icon sky"><i class="bx bx-user"></i></div>
               <h6 class="po-section-title">ข้อมูลลูกค้า</h6>
             </div>
-            <div class="po-section-body">
-              <div class="po-label">ชื่อ - นามสกุล</div>
-              <div class="info-val mb-2">${c.full_name}</div>
-              <div class="po-label">เบอร์โทรศัพท์</div>
-              <div class="info-val">${c.mobile}</div>
+            <div class="po-section-body p-0">
+              <div class="vp-info-row border-bottom">
+                <i class="bx bx-user vp-icon"></i>
+                <div>
+                  <div class="vp-field-label">ชื่อ - นามสกุล</div>
+                  <div class="vp-field-value">${c.full_name}</div>
+                </div>
+              </div>
+              <div class="vp-info-row">
+                <i class="bx bx-phone vp-icon"></i>
+                <div>
+                  <div class="vp-field-label">เบอร์โทรศัพท์</div>
+                  <div class="vp-field-value">${c.mobile}</div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="po-section">
@@ -405,15 +415,36 @@
               <div class="po-section-icon emerald"><i class="bx bx-car"></i></div>
               <h6 class="po-section-title">ข้อมูลรถ</h6>
             </div>
-            <div class="po-section-body">
-              <div class="row g-2">
-                <div class="col-6"><div class="po-label">รุ่นหลัก</div><div class="info-val">${car.model}</div></div>
-                <div class="col-6"><div class="po-label">รุ่นย่อย</div><div class="info-val">${car.sub_model}</div></div>
-                <div class="col-6"><div class="po-label">สี</div><div class="info-val">${car.color}</div></div>
-                <div class="col-6"><div class="po-label">ปี</div><div class="info-val">${car.year}</div></div>
-                <div class="col-12"><div class="po-label">VIN Number</div><div class="info-val">${car.vin}</div></div>
-                <div class="col-6"><div class="po-label">ฝ่ายขาย</div><div class="info-val">${car.sale_name}</div></div>
-                <div class="col-6"><div class="po-label">วันที่ส่งมอบ</div><div class="info-val">${car.delivery_date}</div></div>
+            <div class="po-section-body p-0">
+              <div class="row g-0">
+                <div class="col-12 border-bottom vp-field">
+                  <div class="vp-field-label"><i class="bx bx-car"></i>รุ่นหลัก</div>
+                  <div class="vp-field-value">${car.model}</div>
+                </div>
+                <div class="col-12 border-bottom vp-field">
+                  <div class="vp-field-label"><i class="bx bx-git-branch"></i>รุ่นย่อย</div>
+                  <div class="vp-field-value">${car.sub_model}</div>
+                </div>
+                <div class="col-6 border-end border-bottom vp-field">
+                  <div class="vp-field-label"><i class="bx bx-palette"></i>สี</div>
+                  <div class="vp-field-value">${car.color}</div>
+                </div>
+                <div class="col-6 border-bottom vp-field">
+                  <div class="vp-field-label"><i class="bx bx-calendar"></i>ปี</div>
+                  <div class="vp-field-value">${car.year}</div>
+                </div>
+                <div class="col-12 border-bottom vp-field">
+                  <div class="vp-field-label"><i class="bx bx-barcode"></i>VIN Number</div>
+                  <div class="vp-field-value">${car.vin}</div>
+                </div>
+                <div class="col-7 border-end vp-field">
+                  <div class="vp-field-label"><i class="bx bx-user-check"></i>ฝ่ายขาย</div>
+                  <div class="vp-field-value">${car.sale_name}</div>
+                </div>
+                <div class="col-5 vp-field">
+                  <div class="vp-field-label"><i class="bx bx-calendar-check"></i>วันที่ส่งมอบ</div>
+                  <div class="vp-field-value">${car.delivery_date}</div>
+                </div>
               </div>
             </div>
           </div>`;
@@ -437,17 +468,22 @@
               ${iconDiv}
               <h6 class="po-section-title">${title}</h6>
             </div>
-            <div class="po-section-body">
-              <div class="row g-2">
-                <div class="col-md-4 d-flex align-items-center gap-2"><div class="po-label">สถานะ : </div><div>${viewBadge(statusVal)}</div></div>
-                ${extras}
+            <div class="po-section-body p-0">
+              <div class="vp-status-strip">
+                <i class="bx bx-check-shield text-muted" style="font-size:.9rem;"></i>
+                <span class="vp-status-label">สถานะ</span>
+                ${viewBadge(statusVal)}
               </div>
+              ${extras}
             </div>
           </div>`;
         };
 
         const note = (label, val) => val ?
-          `<div class="col-12"><div class="po-label">${label}</div><div class="info-val">${val}</div></div>` :
+          `<div class="vp-note-field">
+            <div class="vp-field-label">${label}</div>
+            <div class="vp-note-value">${val}</div>
+          </div>` :
           '';
 
         let rightHtml = '';
@@ -456,7 +492,10 @@
           '<i class="bx bx-wrench"></i>', 'sky', '1. อุปกรณ์ตกแต่ง',
           ins.accessories_complete,
           (ins.accessories_complete === false && ins.accessories_incomplete_items ?
-            `<div class="col-md-8"><div class="po-label">ชิ้นงานที่ไม่เรียบร้อย</div><div class="info-val">${ins.accessories_incomplete_items}</div></div>` :
+            `<div class="vp-note-field">
+              <div class="vp-field-label"><i class="bx bx-list-ul"></i>ชิ้นงานที่ไม่เรียบร้อย</div>
+              <div class="vp-note-value">${ins.accessories_incomplete_items}</div>
+            </div>` :
             '') +
           note('หมายเหตุ', ins.accessories_note)
         );

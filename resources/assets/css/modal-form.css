@@ -444,3 +444,90 @@ table .fn-thead th {
   text-align: right;
   background: #f8fafc;
 }
+
+/* ==
+   View panel — field cells & icon-led rows (pre-delivery inspection view-more)
+   Prefix: vp-
+   == */
+
+/* Field cell wrapper (used inside grid columns) */
+.vp-field {
+  padding: 10px 16px;
+}
+
+/* Small uppercase label with optional icon */
+.vp-field-label {
+  font-size: .75rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 3px;
+}
+
+.vp-field-label i {
+  font-size: .82rem;
+  flex-shrink: 0;
+}
+
+/* Bold value text */
+.vp-field-value {
+  font-size: .88rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Icon-led info row (icon on left, label+value stacked on right) */
+.vp-info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 16px;
+}
+
+.vp-info-row .vp-icon {
+  font-size: .95rem;
+  color: #94a3b8;
+  flex-shrink: 0;
+  margin-top: .12rem;
+}
+
+/* Status strip — top band inside inspection section body */
+.vp-status-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #fff;
+  border-top: 2px solid #e2e8f0;
+  border-bottom: 1px solid #e9eef4;
+}
+
+.vp-status-label {
+  font-size: .78rem;
+  font-weight: 600;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+/* Note / detail field rows below the status strip */
+.vp-note-field {
+  padding: 9px 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Value box — read-only appearance */
+.vp-note-value {
+  font-size: .88rem;
+  font-weight: 500;
+  color: #1e293b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 7px 12px;
+  margin-top: 4px;
+  line-height: 1.6;
+}
