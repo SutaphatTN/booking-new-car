@@ -2164,7 +2164,7 @@
                           <div class="col-md-12">
                             <label for="Note" class="po-label"><i class="bx bx-notepad me-1"></i>
                               หมายเหตุ</label>
-                            <textarea id="Note" class="form-control" name="Note" rows="2">{{ $saleCar->Note }}</textarea>
+                            <textarea id="Note" class="form-control" name="Note" rows="3">{{ $saleCar->Note }}</textarea>
                           </div>
 
                         </div>

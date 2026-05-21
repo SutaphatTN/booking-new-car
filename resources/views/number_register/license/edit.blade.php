@@ -155,7 +155,7 @@
             <div class="mf-section-body">
               <div class="row g-3">
 
-                <div class="col-md-3">
+                <div class="col-md-4">
                   <label for="cust_refund_date" class="mf-label form-label">
                     <i class="bx bx-calendar ci-amber"></i> วันที่คืนเงินลูกค้า
                   </label>
@@ -163,7 +163,7 @@
                     value="{{ $lic->cust_refund_date ?? '' }}">
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-4">
                   <label for="refund_amount" class="mf-label form-label">
                     <i class="bx bx-coin ci-amber"></i> ยอดคืนเงิน
                   </label>
@@ -175,7 +175,7 @@
                   </div>
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-md-4">
                   <label for="type_refund" class="mf-label form-label">
                     <i class="bx bx-transfer ci-amber"></i> ประเภท
                   </label>
@@ -186,11 +186,11 @@
                   </select>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-12">
                   <label for="note" class="mf-label form-label">
                     <i class="bx bx-note ci-amber"></i> หมายเหตุ
                   </label>
-                  <textarea id="note" class="form-control" name="note" rows="1">{{ $lic->note }}</textarea>
+                  <textarea id="note" class="form-control" name="note" rows="2">{{ $lic->note }}</textarea>
                 </div>
 
               </div>
