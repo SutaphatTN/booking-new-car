@@ -152,7 +152,7 @@
           <div class="mf-section-body">
             <div class="row g-3">
 
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <label for="cust_refund_date" class="mf-label form-label">
                   <i class="bx bx-calendar ci-amber"></i> วันที่คืนเงินลูกค้า
                 </label>
@@ -161,7 +161,7 @@
                   style="background:#f8fafc;color:#64748b;" disabled>
               </div>
 
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <label for="refund_amount" class="mf-label form-label">
                   <i class="bx bx-coin ci-amber"></i> ยอดคืนเงิน
                 </label>
@@ -175,7 +175,7 @@
               @php
                 $statusType = ['cash' => 'เงินสด', 'transfer' => 'โอน'];
               @endphp
-              <div class="col-md-2">
+              <div class="col-md-4">
                 <label for="type_refund" class="mf-label form-label">
                   <i class="bx bx-transfer ci-amber"></i> ประเภท
                 </label>
@@ -184,11 +184,11 @@
                   style="background:#f8fafc;color:#64748b;" disabled>
               </div>
 
-              <div class="col-md-4">
+              <div class="col-md-12">
                 <label for="note" class="mf-label form-label">
                   <i class="bx bx-note ci-amber"></i> หมายเหตุ
                 </label>
-                <textarea id="note" class="form-control" rows="1" disabled>{{ $lic->note }}</textarea>
+                <textarea id="note" class="form-control" rows="2" disabled>{{ $lic->note }}</textarea>
               </div>
 
             </div>
