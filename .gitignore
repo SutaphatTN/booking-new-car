@@ -29,3 +29,6 @@ yarn-error.log
 
 storage/
 storage/fonts/
+
+.claude/settings.local.json
+app/Console/Commands/ImportCustomerTracking.php

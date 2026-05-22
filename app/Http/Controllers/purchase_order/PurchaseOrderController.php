@@ -961,6 +961,17 @@ class PurchaseOrderController extends Controller
                         'car_status' => 'Delivered'
                     ]);
                 }
+
+                // ปิด customer tracking เมื่อส่งมอบรถแล้ว loop เสร็จสมบูรณ์
+                if ($saleCar->CusID) {
+                    CustomerTracking::where('customer_id', $saleCar->CusID)
+                        ->where('brand', $saleCar->brand)
+                        ->whereNull('cancelled_at')
+                        ->update([
+                            'cancelled_at' => now(),
+                            'CancelledBy'  => Auth::id(),
+                        ]);
+                }
             }
 
             //ป้ายแดง

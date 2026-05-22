@@ -43,8 +43,8 @@ class CustomerTrackingController extends Controller
         $user           = Auth::user();
         $today          = now()->toDateString();
 
-        // เฉพาะใบจองที่ยังคงสถานะ "active" เท่านั้นที่ซ่อน tracking
-        // ถอนจอง (con_status 5,7,8,9) ต้องให้ tracking กลับมาแสดง
+        // ซ่อน tracking เฉพาะใบจอง active (con_status 1-4,6)
+        // ถอนจอง (7,8,9) → tracking กลับมาแสดง | ส่งมอบ (5) → tracking ถูกปิดด้วย cancelled_at แล้ว
         $bookedSubquery = Salecar::select('CusID')
             ->whereNull('deleted_at')
             ->whereIn('con_status', [1, 2, 3, 4, 6])
