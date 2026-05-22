@@ -38,6 +38,8 @@ class CustomerTracking extends Model
         'model_interest_scoring',
         'purchase_type_scoring',
         'engagement_scoring',
+        'test_drive_date',
+        'test_drive_note',
     ];
 
     public function customer()

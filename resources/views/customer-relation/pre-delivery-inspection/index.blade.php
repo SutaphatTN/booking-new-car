@@ -29,6 +29,10 @@
             orderable: false
           },
           {
+            data: 'delivery_date',
+            orderable: false
+          },
+          {
             data: 'status_badge'
           },
           {
@@ -578,6 +582,7 @@
                   <th>ชื่อ - นามสกุลลูกค้า</th>
                   <th>ฝ่ายขาย</th>
                   <th>รุ่นรถ</th>
+                  <th class="text-center">วันที่ส่งมอบ</th>
                   <th class="text-center">สถานะ</th>
                   <th class="tbl-th-action" style="width:180px;">Action</th>
                 </tr>

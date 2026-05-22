@@ -274,12 +274,26 @@ class PurchaseOrderController extends Controller
                     $c->FirstName ?? null,
                     $c->LastName ?? null,
                 ])),
-                'model'      => $car,
-                'order'      => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
-                'date'       => $s->format_booking_date,
-                'sale'       => $s->saleUser?->name,
-                'statusSale' => $status,
-                'Action'     => $action,
+                'model'  => $car,
+                'order'  => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
+                'dates'  => (function () use ($s, $row) {
+                    $booking  = $s->format_booking_date ?? '-';
+                    $contractRaw = $s->remainingPayment?->contract_date;
+                    $contract = '-';
+                    if ($contractRaw) {
+                        $days = (int) Carbon::parse($contractRaw)->diffInDays(now());
+                        $contract = Carbon::parse($contractRaw)->format('d-m-Y') . " ({$days} วัน)";
+                    }
+                    $po = $s->remainingPayment?->po_date
+                        ? Carbon::parse($s->remainingPayment->po_date)->format('d-m-Y')
+                        : '-';
+                    return $row('bx-calendar',   'text-primary', 'วันที่จอง',        $booking)
+                         . $row('bx-pen',        'text-success', 'วันที่เซ็นสัญญา', $contract)
+                         . $row('bx-file-blank', 'text-warning', 'วันที่ PO',        $po);
+                })(),
+                'sale'   => $s->saleUser?->name,
+                'statusSale'    => $status,
+                'Action'        => $action,
             ];
         });
 
@@ -374,6 +388,11 @@ class PurchaseOrderController extends Controller
                 $turnCarID = $turnCar->id;
             }
 
+            $trackingId = CustomerTracking::where('customer_id', $request->CusID)
+                ->where('brand', Auth::user()->brand)
+                ->whereNull('cancelled_at')
+                ->value('id');
+
             $salecar = Salecar::create([
                 'SaleID' => $request->SaleID,
                 'type' => $request->type,
@@ -401,6 +420,7 @@ class PurchaseOrderController extends Controller
                 'branch' => Auth::user()->branch ?? null,
                 'gwm_color' => in_array(Auth::user()->brand, [2, 3]) ? $request->gwm_color : null,
                 'interior_color' => Auth::user()->brand == 2 ? $request->interior_color : null,
+                'tracking_id' => $trackingId,
             ]);
 
             if ($request->hasFile('attachments')) {

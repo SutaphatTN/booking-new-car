@@ -37,15 +37,34 @@
           @endif
 
           {{-- ── Filter bar ── --}}
-          <div class="po-filter-bar d-flex align-items-center gap-2">
-            <i class="bx bx-filter-alt text-muted"></i>
-            <label for="filterDecision" class="mb-0 text-muted">สถานะ :</label>
-            <select id="filterDecision" class="form-select form-select-sm" style="width:200px;">
-              <option value="">— ทั้งหมด —</option>
-              @foreach ($decisions as $d)
-                <option value="{{ $d->id }}">{{ $d->name }}</option>
-              @endforeach
-            </select>
+          <div class="po-filter-bar d-flex align-items-center justify-content-between flex-wrap gap-2">
+
+            {{-- ฝั่งซ้าย: รายงาน Excel --}}
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <i class="bx bx-file-export text-muted"></i>
+              <label class="mb-0 text-muted">รายงาน :</label>
+              <input type="date" id="reportDateFrom" class="form-control form-control-sm" style="width:145px;"
+                value="{{ date('Y-m-d') }}">
+              <span class="text-muted small">ถึง</span>
+              <input type="date" id="reportDateTo" class="form-control form-control-sm" style="width:145px;"
+                value="{{ date('Y-m-d') }}">
+              <button type="button" class="btn btn-success btn-sm" id="btnExportByDate">
+                <i class="bx bx-download me-1"></i> Excel
+              </button>
+            </div>
+
+            {{-- ฝั่งขวา: กรองสถานะ --}}
+            <div class="d-flex align-items-center gap-2">
+              <i class="bx bx-filter-alt text-muted"></i>
+              <label for="filterDecision" class="mb-0 text-muted">สถานะ :</label>
+              <select id="filterDecision" class="form-select form-select-sm" style="width:200px;">
+                <option value="">— ทั้งหมด —</option>
+                @foreach ($decisions as $d)
+                  <option value="{{ $d->id }}">{{ $d->name }}</option>
+                @endforeach
+              </select>
+            </div>
+
           </div>
 
           {{-- ── Table ── --}}

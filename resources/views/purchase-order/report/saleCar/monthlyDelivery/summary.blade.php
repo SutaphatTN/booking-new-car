@@ -6,6 +6,7 @@
       <th>ฝ่ายขาย</th>
       <th>รุ่นรถหลัก</th>
       <th>รุ่นรถย่อย</th>
+      <th>เลขถัง</th>
       @if (!in_array(auth()->user()->brand, [2,3]))
         <th>Option</th>
       @endif
@@ -35,6 +36,7 @@
         <td>{{ $s['sale'] }}</td>
         <td>{{ $s['model'] }}</td>
         <td>{{ $s['subModel'] }}</td>
+        <td>{{ $s['engine'] }}</td>
         @if (!in_array(auth()->user()->brand, [2,3]))
           <td>{{ $s['option'] }}</td>
         @endif
@@ -57,7 +59,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="19" align="center">
+        <td colspan="20" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

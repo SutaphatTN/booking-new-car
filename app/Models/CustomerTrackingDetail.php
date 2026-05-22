@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 
 class CustomerTrackingDetail extends Model
 {
@@ -29,6 +30,11 @@ class CustomerTrackingDetail extends Model
     public function decision()
     {
         return $this->belongsTo(TbDecision::class, 'decision_id');
+    }
+
+    public function insertedBy()
+    {
+        return $this->belongsTo(User::class, 'UserInsert');
     }
 
     public function getContactDateAttribute($value)

@@ -51,13 +51,13 @@
           <i class="icon-base bx bx-user icon-sm d-sm-none"></i>
         </button>
       </li>
-      <li class="nav-item" role="presentation">
+      {{-- <li class="nav-item" role="presentation">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-grade" type="button" role="tab">
           <span class="d-none d-sm-inline-flex align-items-center"><i
               class="icon-base bx bx-star icon-sm me-1_5"></i>เกรด</span>
           <i class="icon-base bx bx-star icon-sm d-sm-none"></i>
         </button>
-      </li>
+      </li> --}}
       <li class="nav-item" role="presentation">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-history" type="button" role="tab">
           <span class="d-none d-sm-inline-flex align-items-center"><i
@@ -198,6 +198,36 @@
                       <div class="info-pill">{{ $tracking->wuColor->name ?? '-' }}</div>
                     </div>
                   @endif
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {{-- ===== Test Drive ===== --}}
+          <div class="col-md-12">
+            <div class="po-section-edit mb-0">
+              <div class="po-section-header">
+                <div class="po-section-icon rose"><i class="bx bx-trip"></i></div>
+                <h6 class="po-section-title">ทดลองขับ</h6>
+              </div>
+              <div class="po-section-body mb-2">
+                <div class="row g-4">
+                  <div class="col-md-3">
+                    <label class="po-label" for="td_date"><i class="bx bx-calendar me-1"></i>วันที่ทดลองขับ</label>
+                    <input type="date" id="td_date" class="form-control"
+                      value="{{ $tracking->test_drive_date ?? '' }}">
+                  </div>
+                  <div class="col-md-9">
+                    <label class="po-label" for="td_note"><i class="bx bx-comment me-1"></i>หมายเหตุ</label>
+                    <textarea id="td_note" class="form-control" rows="2"
+                      placeholder="หมายเหตุ...">{{ $tracking->test_drive_note ?? '' }}</textarea>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-end mt-3 mb-1">
+                  <button type="button" class="btn btn-primary btn-sm px-4" id="btnSaveTestDrive"
+                    data-tracking-id="{{ $tracking->id }}">
+                    <i class="bx bx-save me-1"></i> บันทึก
+                  </button>
                 </div>
               </div>
             </div>

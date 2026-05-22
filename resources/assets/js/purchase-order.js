@@ -133,7 +133,7 @@ $(document).ready(function () {
       { data: 'FullName', orderable: false },
       { data: 'model', orderable: false },
       { data: 'order' },
-      { data: 'date', orderable: false },
+      { data: 'dates', orderable: false },
       { data: 'sale', orderable: false },
       { data: 'statusSale', orderable: false },
       { data: 'Action', orderable: false, searchable: false }
