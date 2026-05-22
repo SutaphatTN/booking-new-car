@@ -27,9 +27,8 @@ class SsiController extends Controller
             'customer.prefix',
             'model',
             'subModel',
-            'preDeliveryInspection',
         ])
-            ->whereHas('preDeliveryInspection')
+            ->whereNotNull('DeliveryDate')
             ->get();
 
         $no = 1;
@@ -77,12 +76,7 @@ class SsiController extends Controller
             'model',
             'subModel',
             'carOrder',
-            'preDeliveryInspection',
         ])->findOrFail($salecarId);
-
-        if (!$salecar->preDeliveryInspection) {
-            abort(404, 'ไม่พบข้อมูล PDI สำหรับรายการนี้');
-        }
 
         $ssiRecord = SsiRecord::with([
             'contacts',

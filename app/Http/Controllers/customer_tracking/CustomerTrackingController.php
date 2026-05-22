@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\customer_tracking;
 
 use App\Exports\customerTracking\CustomerTrackingExport;
+use App\Exports\customerTracking\CustomerTrackingByDateExport;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerTracking;
 use App\Models\CustomerTrackingDetail;
@@ -215,15 +216,75 @@ class CustomerTrackingController extends Controller
         $user  = Auth::user();
         $today = now()->toDateString();
 
+        $decisionId     = $request->decision_id;
+        $saleFilter     = $request->sale_filter     ? json_decode($request->sale_filter, true)      : null;
+        $statusFilter   = $request->status_filter   ? json_decode($request->status_filter, true)    : null;
+        $lastDateFilter = $request->last_date_filter ? json_decode($request->last_date_filter, true) : null;
+        $nextDateFilter = $request->next_date_filter ? json_decode($request->next_date_filter, true) : null;
+
         $bookedSubquery = Salecar::select('CusID')
             ->whereNull('deleted_at')
             ->whereIn('con_status', [1, 2, 3, 4, 6])
             ->where('brand', $user->brand);
 
-        $trackingIds = CustomerTracking::whereNotIn('customer_id', $bookedSubquery)
+        $base = CustomerTracking::whereNotIn('customer_id', $bookedSubquery)
             ->whereNull('cancelled_at')
-            ->when($user->role === 'sale', fn($q) => $q->where('sale_id', $user->id))
-            ->pluck('id');
+            ->when($user->role === 'sale', fn($q) => $q->where('sale_id', $user->id));
+
+        if ($decisionId) {
+            $base->whereRaw('(
+                SELECT decision_id FROM customer_tracking_details
+                WHERE tracking_id = customer_trackings.id AND deleted_at IS NULL
+                ORDER BY
+                    CASE WHEN entry_type = "manager" AND contact_date > ? THEN 0
+                         WHEN entry_type = "manager" THEN 1
+                         ELSE 2 END ASC,
+                    CASE WHEN entry_type = "manager" AND contact_date > ? THEN contact_date END ASC,
+                    created_at DESC
+                LIMIT 1
+            ) = ?', [$today, $today, $decisionId]);
+        }
+
+        if ($saleFilter && count($saleFilter) > 0) {
+            $saleIds = User::whereIn('name', $saleFilter)->pluck('id');
+            $base->whereIn('sale_id', $saleIds);
+        }
+
+        if ($statusFilter && count($statusFilter) > 0) {
+            $decisionIds = TbDecision::whereIn('name', $statusFilter)->pluck('id');
+            $base->whereRaw('(
+                SELECT decision_id FROM customer_tracking_details
+                WHERE tracking_id = customer_trackings.id AND deleted_at IS NULL
+                ORDER BY
+                    CASE WHEN entry_type = "manager" AND contact_date > ? THEN 0
+                         WHEN entry_type = "manager" THEN 1
+                         ELSE 2 END ASC,
+                    CASE WHEN entry_type = "manager" AND contact_date > ? THEN contact_date END ASC,
+                    created_at DESC
+                LIMIT 1
+            ) IN (' . implode(',', array_fill(0, count($decisionIds), '?')) . ')',
+                array_merge([$today, $today], $decisionIds->toArray())
+            );
+        }
+
+        if ($nextDateFilter && count($nextDateFilter) > 0) {
+            $base->whereHas('details', fn($q) =>
+                $q->where('entry_type', 'manager')
+                  ->where('contact_date', '>', $today)
+                  ->whereIn('contact_date', $nextDateFilter)
+            );
+        }
+
+        if ($lastDateFilter && count($lastDateFilter) > 0) {
+            $placeholders = implode(',', array_fill(0, count($lastDateFilter), '?'));
+            $base->whereRaw("(
+                SELECT MAX(contact_date) FROM customer_tracking_details
+                WHERE tracking_id = customer_trackings.id
+                AND contact_date <= ? AND deleted_at IS NULL
+            ) IN ({$placeholders})", array_merge([$today], $lastDateFilter));
+        }
+
+        $trackingIds = $base->pluck('id');
 
         // Distinct sale names
         $sales = User::whereIn('id',
@@ -395,7 +456,7 @@ class CustomerTrackingController extends Controller
             if ($authUser->role !== 'sale' && $decisionId) {
                 $followUpDays = match ((int) $decisionId) {
                     1 => [3, 6],
-                    2 => [30, 60],
+                    2 => [15, 30],
                     default => [],
                 };
 
@@ -477,7 +538,7 @@ class CustomerTrackingController extends Controller
             if ($user->role !== 'sale' && $decisionId) {
                 $followUpDays = match ((int) $decisionId) {
                     1 => [3, 6],
-                    2 => [30, 60],
+                    2 => [15, 60],
                     default => [],
                 };
 
@@ -535,7 +596,7 @@ class CustomerTrackingController extends Controller
 
         $followUpDays = match ((int) $request->decision_id) {
             1 => [3, 6, 9],
-            2 => [30, 60, 90],
+            2 => [15, 30, 45],
             default => [0],
         };
 
@@ -577,6 +638,25 @@ class CustomerTrackingController extends Controller
     public function exportExcel()
     {
         return Excel::download(new CustomerTrackingExport(), 'รายงานการติดตามลูกค้า.xlsx');
+    }
+
+    public function exportExcelByDate(Request $request)
+    {
+        $dateFrom = $request->date_from ?? now()->toDateString();
+        $dateTo   = $request->date_to   ?? now()->toDateString();
+        $filename = 'รายงานการกรอกข้อมูล_' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx';
+
+        return Excel::download(new CustomerTrackingByDateExport($dateFrom, $dateTo), $filename);
+    }
+
+    public function saveTestDrive(Request $request, $id)
+    {
+        $tracking = CustomerTracking::findOrFail($id);
+        $tracking->update([
+            'test_drive_date' => $request->test_drive_date ?: null,
+            'test_drive_note' => $request->test_drive_note ?: null,
+        ]);
+        return response()->json(['success' => true]);
     }
 
     public function saveGrade(Request $request, $id)

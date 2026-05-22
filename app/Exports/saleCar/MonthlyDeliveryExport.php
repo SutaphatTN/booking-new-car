@@ -137,6 +137,7 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
                 'sale'                => $r->saleUser?->name ?? '-',
                 'model'               => $model,
                 'subModel'            => $subModel,
+                'engine'              => $r->carOrder?->engine_number,
                 'option'              => $r->option ?? '-',
                 'color'               => $color,
                 'interior_color'      => $interiorColor,

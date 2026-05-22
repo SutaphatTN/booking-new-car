@@ -5,20 +5,26 @@ $.ajaxSetup({
 // ── Tracking table column filter ──
 let ctTrackingTable;
 // active filters store raw YYYY-MM-DD for dates, name strings for sale/status
-let ctSaleFilterActive = null, ctAllSaleNames = [];
-let ctStatusFilterActive = null, ctAllStatusNames = [];
-let ctLastDateFilterActive = null, ctAllLastDates = []; // YYYY-MM-DD
-let ctNextDateFilterActive = null, ctAllNextDates = []; // YYYY-MM-DD
+let ctSaleFilterActive = null;
+let ctStatusFilterActive = null;
+let ctLastDateFilterActive = null; // YYYY-MM-DD
+let ctNextDateFilterActive = null; // YYYY-MM-DD
 
 const ctRawToDmy = d => { const p = d.split('-'); return `${p[2]}-${p[1]}-${p[0]}`; };
 
-function ctLoadFilterOptions() {
-  $.get('/customer-tracking/filter-options', function (res) {
-    ctAllSaleNames   = res.sales   || [];
-    ctAllStatusNames = res.decisions || [];
-    ctAllLastDates   = res.lastDates || []; // YYYY-MM-DD
-    ctAllNextDates   = res.nextDates || []; // YYYY-MM-DD
-  });
+function ctGetCurrentFilterParams(exclude) {
+  const params = {};
+  const decisionVal = $('#filterDecision').val();
+  if (decisionVal)                                                  params.decision_id      = decisionVal;
+  if (exclude !== 'sale'      && ctSaleFilterActive !== null)      params.sale_filter      = JSON.stringify(ctSaleFilterActive);
+  if (exclude !== 'status'    && ctStatusFilterActive !== null)    params.status_filter    = JSON.stringify(ctStatusFilterActive);
+  if (exclude !== 'last_date' && ctLastDateFilterActive !== null)  params.last_date_filter = JSON.stringify(ctLastDateFilterActive);
+  if (exclude !== 'next_date' && ctNextDateFilterActive !== null)  params.next_date_filter = JSON.stringify(ctNextDateFilterActive);
+  return params;
+}
+
+function ctLoadFilterOptions(params, callback) {
+  $.get('/customer-tracking/filter-options', params, callback);
 }
 
 function ctBuildList($list, allNames, activeFilter, chkClass, idPfx, labelFn) {
@@ -111,10 +117,6 @@ $(document).ready(function () {
     }
   });
 
-  ctTrackingTable.on('init.dt', function () {
-    ctLoadFilterOptions();
-  });
-
   $('#filterDecision').on('change', function () {
     ctTrackingTable.ajax.reload(null, false);
   });
@@ -165,9 +167,12 @@ $(document).ready(function () {
     e.stopPropagation();
     const $dd = $('#ctSaleFilterDropdown');
     if ($dd.hasClass('show')) { $dd.removeClass('show'); $(this).removeClass('active'); return; }
-    ctOpenDropdown($dd, this, () => {
-      ctBuildList($('#ctSaleFilterList'), ctAllSaleNames, ctSaleFilterActive, 'ct-sale-chk', 'ctSale');
-      $('#ctSaleFilterSearch').val('').trigger('input').focus();
+    const btn = this;
+    ctLoadFilterOptions(ctGetCurrentFilterParams('sale'), function (res) {
+      ctOpenDropdown($dd, btn, () => {
+        ctBuildList($('#ctSaleFilterList'), res.sales || [], ctSaleFilterActive, 'ct-sale-chk', 'ctSale');
+        $('#ctSaleFilterSearch').val('').trigger('input').focus();
+      });
     });
   });
 
@@ -175,9 +180,12 @@ $(document).ready(function () {
     e.stopPropagation();
     const $dd = $('#ctLastDateFilterDropdown');
     if ($dd.hasClass('show')) { $dd.removeClass('show'); $(this).removeClass('active'); return; }
-    ctOpenDropdown($dd, this, () => {
-      ctBuildList($('#ctLastDateFilterList'), ctAllLastDates, ctLastDateFilterActive, 'ct-last-date-chk', 'ctLastDate', ctRawToDmy);
-      $('#ctLastDateFilterSearch').val('').trigger('input').focus();
+    const btn = this;
+    ctLoadFilterOptions(ctGetCurrentFilterParams('last_date'), function (res) {
+      ctOpenDropdown($dd, btn, () => {
+        ctBuildList($('#ctLastDateFilterList'), res.lastDates || [], ctLastDateFilterActive, 'ct-last-date-chk', 'ctLastDate', ctRawToDmy);
+        $('#ctLastDateFilterSearch').val('').trigger('input').focus();
+      });
     });
   });
 
@@ -185,9 +193,12 @@ $(document).ready(function () {
     e.stopPropagation();
     const $dd = $('#ctNextDateFilterDropdown');
     if ($dd.hasClass('show')) { $dd.removeClass('show'); $(this).removeClass('active'); return; }
-    ctOpenDropdown($dd, this, () => {
-      ctBuildList($('#ctNextDateFilterList'), ctAllNextDates, ctNextDateFilterActive, 'ct-next-date-chk', 'ctNextDate', ctRawToDmy);
-      $('#ctNextDateFilterSearch').val('').trigger('input').focus();
+    const btn = this;
+    ctLoadFilterOptions(ctGetCurrentFilterParams('next_date'), function (res) {
+      ctOpenDropdown($dd, btn, () => {
+        ctBuildList($('#ctNextDateFilterList'), res.nextDates || [], ctNextDateFilterActive, 'ct-next-date-chk', 'ctNextDate', ctRawToDmy);
+        $('#ctNextDateFilterSearch').val('').trigger('input').focus();
+      });
     });
   });
 
@@ -195,9 +206,12 @@ $(document).ready(function () {
     e.stopPropagation();
     const $dd = $('#ctStatusFilterDropdown');
     if ($dd.hasClass('show')) { $dd.removeClass('show'); $(this).removeClass('active'); return; }
-    ctOpenDropdown($dd, this, () => {
-      ctBuildList($('#ctStatusFilterList'), ctAllStatusNames, ctStatusFilterActive, 'ct-status-chk', 'ctStatus');
-      $('#ctStatusFilterSearch').val('').trigger('input').focus();
+    const btn = this;
+    ctLoadFilterOptions(ctGetCurrentFilterParams('status'), function (res) {
+      ctOpenDropdown($dd, btn, () => {
+        ctBuildList($('#ctStatusFilterList'), res.decisions || [], ctStatusFilterActive, 'ct-status-chk', 'ctStatus');
+        $('#ctStatusFilterSearch').val('').trigger('input').focus();
+      });
     });
   });
 
@@ -320,6 +334,20 @@ $(document).ready(function () {
     $('#ctStatusFilterBtn').removeClass('filtered active');
     ctTrackingTable.ajax.reload(null, false);
     $('#ctStatusFilterDropdown').removeClass('show');
+  });
+
+  $('#btnExportByDate').on('click', function () {
+    const dateFrom = $('#reportDateFrom').val();
+    const dateTo   = $('#reportDateTo').val();
+    if (!dateFrom || !dateTo) {
+      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกวันที่', timer: 1500, showConfirmButton: false });
+      return;
+    }
+    if (dateFrom > dateTo) {
+      Swal.fire({ icon: 'warning', title: 'วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด', timer: 2000, showConfirmButton: false });
+      return;
+    }
+    window.location.href = `/customer-tracking/export-by-date?date_from=${dateFrom}&date_to=${dateTo}`;
   });
 });
 
@@ -831,6 +859,30 @@ $(document).ready(function () {
 
   $(document).on('change', '.gs-select', updateGradeDisplay);
   updateGradeDisplay();
+
+  $('#btnSaveTestDrive').on('click', function () {
+    const $btn = $(this);
+    const trackingId = $btn.data('tracking-id');
+
+    $btn.prop('disabled', true);
+    $.ajax({
+      url: `/customer-tracking/${trackingId}/test-drive`,
+      type: 'POST',
+      data: {
+        test_drive_date: $('#td_date').val() || null,
+        test_drive_note: $('#td_note').val() || null,
+      },
+      success: function () {
+        Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1500, showConfirmButton: false });
+      },
+      error: function () {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถบันทึกได้' });
+      },
+      complete: function () {
+        $btn.prop('disabled', false);
+      }
+    });
+  });
 
   $('#btnSaveGrade').on('click', function () {
     const $btn = $(this);

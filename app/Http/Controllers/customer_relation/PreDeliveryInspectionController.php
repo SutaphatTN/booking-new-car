@@ -50,12 +50,13 @@ class PreDeliveryInspectionController extends Controller
             $hasInspection = $s->preDeliveryInspection !== null;
 
             return [
-                'No'           => $no++,
-                'salecar_id'   => $s->id,
-                'FullName'     => $fullName,
-                'sale_name'    => $s->saleUser?->name ?? '-',
-                'model'        => $car,
-                'status_badge' => $hasInspection
+                'No'            => $no++,
+                'salecar_id'    => $s->id,
+                'FullName'      => $fullName,
+                'sale_name'     => $s->saleUser?->name ?? '-',
+                'model'         => $car,
+                'delivery_date' => $s->format_delivery_date ?? '-',
+                'status_badge'  => $hasInspection
                     ? '<span class="badge rounded-pill bg-success">มีข้อมูลแล้ว</span>'
                     : '<span class="badge rounded-pill bg-warning">ยังไม่มีข้อมูล</span>',
             ];

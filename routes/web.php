@@ -370,10 +370,12 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('customer-tracking/check-phone', [CustomerTrackingController::class, 'checkPhone']);
     Route::get('customer-tracking/report', [CustomerTrackingController::class, 'report'])->name('customer-tracking.report');
     Route::get('customer-tracking/export-excel', [CustomerTrackingController::class, 'exportExcel'])->name('customer-tracking.exportExcel');
+    Route::get('customer-tracking/export-by-date', [CustomerTrackingController::class, 'exportExcelByDate'])->name('customer-tracking.exportByDate');
     Route::post('customer-tracking/{id}/detail', [CustomerTrackingController::class, 'addDetail'])->name('customer-tracking.addDetail');
     Route::put('customer-tracking/detail/{detailId}', [CustomerTrackingController::class, 'updateDetail'])->name('customer-tracking.updateDetail');
     Route::post('customer-tracking/detail/{detailId}/continue', [CustomerTrackingController::class, 'continueTracking'])->name('customer-tracking.continueTracking');
     Route::post('customer-tracking/{id}/grade', [CustomerTrackingController::class, 'saveGrade'])->name('customer-tracking.saveGrade');
+    Route::post('customer-tracking/{id}/test-drive', [CustomerTrackingController::class, 'saveTestDrive'])->name('customer-tracking.saveTestDrive');
     Route::post('customer-tracking/{id}/cancel', [CustomerTrackingController::class, 'cancelTracking'])->name('customer-tracking.cancel');
     Route::delete('customer-tracking/{id}', [CustomerTrackingController::class, 'destroy'])->name('customer-tracking.destroy');
     Route::post('customer-tracking/quick-store-customer', [CustomerTrackingController::class, 'quickStoreCustomer'])->name('customer-tracking.quickStoreCustomer');

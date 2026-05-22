@@ -57,9 +57,13 @@
 
       @php
         $menuSlugs = is_array($menu->slug) ? $menu->slug : [$menu->slug];
-        $bpCsAllowed = ['invoice', 'accessory'];
+        $bpCsAllowed  = ['invoice', 'accessory'];
+        $croAllowed   = ['pre-delivery-inspection', 'ssi'];
       @endphp
       @if (in_array($userRole, ['bp', 'cs']) && empty(array_intersect($menuSlugs, $bpCsAllowed)))
+        @continue
+      @endif
+      @if ($userRole === 'cro' && empty(array_intersect($menuSlugs, $croAllowed)))
         @continue
       @endif
 

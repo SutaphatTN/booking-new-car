@@ -4,6 +4,7 @@
       <th>No</th>
       <th>วันที่สั่งรถในระบบ Motor</th>
       <th>วันที่สั่งรถในระบบ New Car</th>
+      <th>วันที่ Stock</th>
       <th>รุ่นรถหลัก</th>
       <th>รุ่นย่อย</th>
       <th>VIN Number</th>
@@ -26,6 +27,7 @@
       <td>{{ $loop->iteration }}</td>
       <td>{{ $row->format_system_date ?? '-' }}</td>
       <td>{{ $row->format_order_date ?? '-' }}</td>
+      <td>{{ $row->format_order_stock_date ?? '-' }}</td>
       <td>{{ $row->model->Name_TH ?? '-' }}</td>
       <td>{{ $row->subModel->name ?? '-' }}</td>
       <td>{{ $row->vin_number ?? '-' }}</td>
@@ -42,7 +44,7 @@
     </tr>
     @empty
     <tr>
-      <td colspan="15" align="center">ไม่มีข้อมูล</td>
+      <td colspan="16" align="center">ไม่มีข้อมูล</td>
     </tr>
     @endforelse
   </tbody>

@@ -239,7 +239,8 @@ class Salecar extends Model
 		'userZone',
 		'brand',
 		'UserInsert',
-		'branch'
+		'branch',
+		'tracking_id'
 	];
 
 	protected $dates = ['deleted_at'];

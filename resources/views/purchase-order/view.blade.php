@@ -49,7 +49,7 @@
                   <th>ชื่อ - นามสกุล</th>
                   <th>รุ่นรถ</th>
                   <th>รหัส Car Order</th>
-                  <th>วันที่จอง</th>
+                  <th>วันที่</th>
                   <th class="col-filter-th">
                     <div class="col-filter-wrap">
                       <span>ชื่อฝ่ายขาย</span>
