@@ -1,7 +1,7 @@
 <table>
   <thead>
     <tr>
-      <th colspan="10">รายงานการกรอกข้อมูลการติดตามลูกค้า วันที่ {{ \Carbon\Carbon::parse($dateFrom)->format('d/m/Y') }} ถึง {{ \Carbon\Carbon::parse($dateTo)->format('d/m/Y') }}</th>
+      <th colspan="10">รายงานการกรอกข้อมูลการติดตามลูกค้า วันที่ {{ $dateFromFormatted }} ถึง {{ $dateToFormatted }}</th>
     </tr>
     <tr>
       <th>No.</th>
@@ -10,6 +10,8 @@
       <th>ผู้ขาย</th>
       <th>ผู้กรอก</th>
       <th>ประเภท</th>
+      <th>วันที่ทดลองขับ</th>
+      <th>หมายเหตุทดลองขับ</th>
       <th>วันที่ติดต่อ</th>
       <th>สถานะการติดต่อ</th>
       <th>การตัดสินใจ</th>
@@ -25,6 +27,8 @@
         <td>{{ $r['sale'] }}</td>
         <td>{{ $r['inserted_by'] }}</td>
         <td>{{ $r['entry_type'] }}</td>
+        <td>{{ $r['test_date'] }}</td>
+        <td>{{ $r['test_note'] }}</td>
         <td>{{ $r['contact_date'] }}</td>
         <td>{{ $r['contact_status'] }}</td>
         <td>{{ $r['decision'] }}</td>
@@ -32,7 +36,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="10" align="center">ไม่มีข้อมูลในช่วงวันที่นี้</td>
+        <td colspan="12" align="center">ไม่มีข้อมูลในช่วงวันที่นี้</td>
       </tr>
     @endforelse
   </tbody>

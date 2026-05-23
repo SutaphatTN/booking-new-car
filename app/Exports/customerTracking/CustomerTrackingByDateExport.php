@@ -3,6 +3,7 @@
 namespace App\Exports\customerTracking;
 
 use App\Models\CustomerTrackingDetail;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromView;
@@ -101,13 +102,15 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
                 'contact_status' => $d->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้',
                 'decision'       => $d->decision?->name ?? '-',
                 'comment'        => $d->comment_sale ?? '-',
+                'test_date'      => $tracking->format_test_drive_date ?? '-',
+                'test_note'      => $tracking->test_drive_note ?? '-',
             ];
         });
 
         return view('customer-tracking.excel-by-date', [
-            'rows'      => $rows,
-            'dateFrom'  => $this->dateFrom,
-            'dateTo'    => $this->dateTo,
+            'rows'             => $rows,
+            'dateFromFormatted' => Carbon::parse($this->dateFrom)->format('d/m/Y'),
+            'dateToFormatted'   => Carbon::parse($this->dateTo)->format('d/m/Y'),
         ]);
     }
 }

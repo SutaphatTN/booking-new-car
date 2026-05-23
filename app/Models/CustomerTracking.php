@@ -6,6 +6,7 @@ use App\Models\Traits\UserAccessScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\TbInteriorColor;
+use Carbon\Carbon;
 
 class CustomerTracking extends Model
 {
@@ -113,4 +114,9 @@ class CustomerTracking extends Model
     {
         return $this->belongsTo(TbInteriorColor::class, 'interior_color_id');
     }
+
+    public function getFormatTestDriveDateAttribute()
+	{
+		return $this->test_drive_date ? Carbon::parse($this->test_drive_date)->format('d-m-Y') : null;
+	}
 }

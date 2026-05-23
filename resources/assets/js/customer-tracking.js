@@ -90,10 +90,13 @@ $(document).ready(function () {
         render: function (id) {
           return `
             <div class="d-flex justify-content-center gap-1">
-              <a href="/customer-tracking/${id}" class="btn btn-icon btn-info text-white">
+              <a href="/customer-tracking/${id}" class="btn btn-icon btn-info text-white" title="ดูรายละเอียด">
                 <i class="bx bx-show"></i>
               </a>
-              <button class="btn btn-icon btn-danger text-white btnDeleteTracking" data-id="${id}">
+              <button class="btn btn-icon btn-warning text-white btnEndTracking" data-id="${id}" title="จบการติดตาม">
+                <i class="bx bx-flag"></i>
+              </button>
+              <button class="btn btn-icon btn-danger text-white btnDeleteTracking" data-id="${id}" title="ลบ">
                 <i class="bx bx-trash"></i>
               </button>
             </div>`;
@@ -119,6 +122,35 @@ $(document).ready(function () {
 
   $('#filterDecision').on('change', function () {
     ctTrackingTable.ajax.reload(null, false);
+  });
+
+  // จบการติดตาม
+  $(document).on('click', '.btnEndTracking', function () {
+    const id = $(this).data('id');
+    Swal.fire({
+      title: 'จบการติดตาม?',
+      html: 'ต้องการจบการติดตามลูกค้ารายนี้ใช่หรือไม่?<br><small class="text-muted">รายการนี้จะไม่แสดงในหน้ารายการติดตามอีกต่อไป</small>',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#f59e0b',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'ยืนยัน จบการติดตาม',
+      cancelButtonText: 'ยกเลิก'
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      $.ajax({
+        url: `/customer-tracking/${id}/cancel`,
+        type: 'POST',
+        success: function () {
+          Swal.fire({ icon: 'success', title: 'จบการติดตามเรียบร้อยแล้ว', timer: 1500, showConfirmButton: true });
+          ctTrackingTable.ajax.reload();
+        },
+        error: function (xhr) {
+          const msg = xhr.responseJSON?.message ?? 'ไม่สามารถจบการติดตามได้';
+          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: msg });
+        }
+      });
+    });
   });
 
   // ลบ

@@ -122,6 +122,8 @@ class CustomerTrackingExport implements FromView, WithTitle, WithStyles, WithEve
                     : '-',
                 'decision'       => $latestDetail?->decision?->name ?? '-',
                 'comment'        => $latestDetail?->comment_sale ?? '-',
+                'test_date'      => $t->format_test_drive_date ?? '-',
+                'test_note'      => $t->test_drive_note ?? '-',
             ];
         });
 
