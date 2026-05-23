@@ -19,12 +19,41 @@
         $group.find('input[type=hidden]').val(val);
       });
 
-      // Restore saved scores on load
+      // Restore saved scores on load (brand 1/3)
       $('.score-group').each(function() {
         const saved = parseInt($(this).find('input[type=hidden]').val());
         if (saved >= 1 && saved <= 10) {
           $(this).find(`.score-btn[data-val="${saved}"]`).trigger('click');
         }
+      });
+
+      // ── GWM Score buttons (1-5, brand 2) ──
+      $(document).on('click', '.gwm-score-btn', function() {
+        const $group = $(this).closest('.gwm-score-group');
+        const val = parseInt($(this).data('val'));
+        $group.find('.gwm-score-btn').removeClass('selected score-low score-mid score-high');
+        $(this).addClass('selected');
+        if (val <= 2) $(this).addClass('score-low');
+        else if (val <= 3) $(this).addClass('score-mid');
+        else $(this).addClass('score-high');
+        $group.find('input.gwm-score-hidden').val(val);
+
+        const $reasons = $(this).closest('.gwm-question').find('.gwm-reasons');
+        if ($reasons.length) {
+          if (val <= 2) {
+            $reasons.slideDown(150);
+          } else {
+            $reasons.slideUp(150);
+            $reasons.find('input[type=checkbox]').prop('checked', false);
+            $reasons.find('.gwm-other-input').hide().val('');
+          }
+        }
+      });
+
+      // ── GWM "Other" checkbox toggle ──
+      $(document).on('change', '.gwm-other-cb', function() {
+        const $input = $(this).closest('.gwm-other-wrap').find('.gwm-other-input');
+        $(this).is(':checked') ? $input.slideDown(150) : $input.slideUp(150).val('');
       });
 
       // ── Amount formatting helpers ──
@@ -135,6 +164,13 @@
       @endif
 
       // ── Modal: Add contact ──
+      $(document).on('hide.bs.modal', '#modalAddContact', function () {
+        setTimeout(function () {
+          document.activeElement.blur();
+          $('body').trigger('focus');
+        }, 1);
+      });
+
       $('#btnAddContact').on('click', function() {
         resetContactModal();
         $('#modalAddContact').modal('show');
@@ -261,13 +297,31 @@
         const $btn = $(this);
         $btn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i> กำลังบันทึก...');
 
-        $.ajax({
-          url: `/ssi/${salecarId}/tab2`,
-          method: 'POST',
-          headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-          },
-          data: {
+        @if ($info['brand'] == 2)
+          const assessmentData = {
+            gwm_q1: $('#gwm_q1').val() || null,
+            gwm_q1_reasons: $('input[name="gwm_q1_reasons[]"]:checked').map(function() { return $(this).val(); }).get(),
+            gwm_q1_other: $('#gwm_q1_other').val(),
+            gwm_q2: $('#gwm_q2').val() || null,
+            gwm_q2_reasons: $('input[name="gwm_q2_reasons[]"]:checked').map(function() { return $(this).val(); }).get(),
+            gwm_q2_other: $('#gwm_q2_other').val(),
+            gwm_q3: $('#gwm_q3').val() || null,
+            gwm_q3_reasons: $('input[name="gwm_q3_reasons[]"]:checked').map(function() { return $(this).val(); }).get(),
+            gwm_q3_other: $('#gwm_q3_other').val(),
+            gwm_q4: $('#gwm_q4').val() || null,
+            gwm_q4_reasons: $('input[name="gwm_q4_reasons[]"]:checked').map(function() { return $(this).val(); }).get(),
+            gwm_q4_other: $('#gwm_q4_other').val(),
+            gwm_q5: $('#gwm_q5').val() || null,
+            gwm_q5_reasons: $('input[name="gwm_q5_reasons[]"]:checked').map(function() { return $(this).val(); }).get(),
+            gwm_q5_other: $('#gwm_q5_other').val(),
+            gwm_q6: $('#gwm_q6').val() || null,
+            gwm_q6_reasons: $('input[name="gwm_q6_reasons[]"]:checked').map(function() { return $(this).val(); }).get(),
+            gwm_q6_other: $('#gwm_q6_other').val(),
+            gwm_q7: $('#gwm_q7').val() || null,
+            gwm_q8: $('#gwm_q8').val() || null,
+          };
+        @else
+          const assessmentData = {
             dw_website: $('#score_dw_website').val() || null,
             q11_facilities: $('#score_q11_facilities').val() || null,
             q15_car_knowledge: $('#score_q15_car_knowledge').val() || null,
@@ -280,6 +334,17 @@
             sop24_update_progress: $('#score_sop24_update_progress').val() || null,
             sop25_accessories_complete: $('#score_sop25_accessories_complete').val() || null,
             sop30_satisfaction_followup: $('#score_sop30_satisfaction_followup').val() || null,
+          };
+        @endif
+
+        $.ajax({
+          url: `/ssi/${salecarId}/tab2`,
+          method: 'POST',
+          headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+          },
+          data: {
+            ...assessmentData,
             amount_admin: parseAmount($('#amount_admin').val()) || null,
             amount_customer: parseAmount($('#amount_customer').val()) || null,
             payment_channel: $('input[name="payment_channel"]:checked').val() || null,
@@ -388,28 +453,28 @@
               </div>
               <div class="po-section-body-edit">
                 <div class="row g-3">
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="po-label">รุ่นหลัก</div>
                     <div class="info-pill">{{ $info['model'] }}</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="po-label">รุ่นย่อย</div>
                     <div class="info-pill">{{ $info['sub_model'] ?: '-' }}</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="po-label">เลขถัง (VIN)</div>
                     <div class="info-pill">{{ $info['vin_number'] ?: '-' }}</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="po-label">วันที่ส่งมอบ</div>
                     <div class="info-pill"><i class="bx bx-calendar text-muted me-2"></i>{{ $info['delivery_date'] }}
                     </div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="po-label">สถานที่ส่งมอบ</div>
                     <div class="info-pill">{{ $info['delivery_location'] ?: '-' }}</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="po-label">จังหวัด</div>
                     <div class="info-pill">{{ $info['delivery_province'] ?: '-' }}</div>
                   </div>
@@ -522,32 +587,220 @@
         @endphp
 
         {{-- ── Card 1: ผลประเมิน SSI ── --}}
-        <div class="po-section-edit">
-          <div class="po-section-header">
-            <div class="po-section-icon amber"><i class="bx bx-star"></i></div>
-            <h6 class="po-section-title">ผลประเมิน SSI <small class="text-muted fw-normal ms-1">(คะแนน 1-10)</small>
-            </h6>
-          </div>
-          <div class="po-section-body-edit">
-            @foreach ($scoreItems as $item)
-              <div class="score-row">
-                <div class="score-row-label">
-                  <i class="bx {{ $item['icon'] }} po-section-icon {{ $item['color'] }} me-2"
-                    style="width:24px;height:24px;border-radius:6px;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex-shrink:0;"></i>
-                  {{ $item['label'] }}
+        @if ($info['brand'] != 2)
+          {{-- Brand 1 / 3 : คะแนน 1-10 --}}
+          <div class="po-section-edit">
+            <div class="po-section-header">
+              <div class="po-section-icon amber"><i class="bx bx-star"></i></div>
+              <h6 class="po-section-title">ผลประเมิน SSI <small class="text-muted fw-normal ms-1">(คะแนน 1-10)</small>
+              </h6>
+            </div>
+            <div class="po-section-body-edit">
+              @foreach ($scoreItems as $item)
+                <div class="score-row">
+                  <div class="score-row-label">
+                    <i class="bx {{ $item['icon'] }} po-section-icon {{ $item['color'] }} me-2"
+                      style="width:24px;height:24px;border-radius:6px;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex-shrink:0;"></i>
+                    {{ $item['label'] }}
+                  </div>
+                  <div class="score-group">
+                    @for ($n = 1; $n <= 10; $n++)
+                      <button type="button" class="score-btn"
+                        data-val="{{ $n }}">{{ $n }}</button>
+                    @endfor
+                    <input type="hidden" id="score_{{ $item['key'] }}"
+                      value="{{ $assessment ? $assessment->{$item['key']} ?? '' : '' }}">
+                  </div>
                 </div>
-                <div class="score-group">
-                  @for ($n = 1; $n <= 10; $n++)
-                    <button type="button" class="score-btn"
-                      data-val="{{ $n }}">{{ $n }}</button>
-                  @endfor
-                  <input type="hidden" id="score_{{ $item['key'] }}"
-                    value="{{ $assessment ? $assessment->{$item['key']} ?? '' : '' }}">
-                </div>
-              </div>
-            @endforeach
+              @endforeach
+            </div>
           </div>
-        </div>
+        @else
+          {{-- Brand 2 (GWM) : คะแนน 1-5 พร้อม checkbox เหตุผล --}}
+          @php
+            $gwmAss = $ssiRecord->assessment;
+            $gwmQuestions = [
+              [
+                'key'   => 'q1',
+                'icon'  => 'bx-user-check',
+                'color' => 'sky',
+                'label' => 'ท่านมีความพึงพอใจในระดับใดต่อการต้อนรับที่อบอุ่นและการดูแลอย่างใส่ใจของเจ้าหน้าที่ระหว่างการเข้ารับบริการ?',
+                'reasons' => [
+                  'r1' => 'ต้องรอรับบริการเป็นเวลานานหลังจากเข้ามาในโชว์รูม',
+                  'r2' => 'เจ้าหน้าที่ให้การบริการไม่เป็นมิตร',
+                  'r3' => 'การบริการของเจ้าหน้าที่ หรือพฤติกรรมแตกต่างกันก่อนและหลังการชำระเงิน',
+                ],
+              ],
+              [
+                'key'   => 'q2',
+                'icon'  => 'bx-briefcase-alt',
+                'color' => 'indigo',
+                'label' => 'ท่านมีความพึงพอใจในระดับใด ต่อความสามารถของที่ปรึกษาการขาย (iAM) ในด้านการให้ข้อมูลผลิตภัณฑ์อย่างเชี่ยวชาญ และการจัดการด้านเอกสารอย่างมืออาชีพ?',
+                'reasons' => [
+                  'r1' => 'เจ้าหน้าที่ฝ่ายขายไม่ได้แนะนำเกี่ยวกับแบรนด์ GWM',
+                  'r2' => 'เจ้าหน้าที่ฝ่ายขายนำเสนอข้อมูลเกี่ยวกับรถยนต์ได้ไม่เป็นมืออาชีพ',
+                  'r3' => 'เจ้าหน้าที่ฝ่ายขายตอบคำถามของท่านได้ไม่เป็นมืออาชีพหรือไม่ครบถ้วน',
+                ],
+              ],
+              [
+                'key'   => 'q3',
+                'icon'  => 'bx-key',
+                'color' => 'emerald',
+                'label' => 'จากประสบการณ์การทดลองขับมีส่วนช่วยให้ท่านตัดสินใจสั่งซื้อได้อย่างมั่นใจในระดับใด?',
+                'reasons' => [
+                  'r1' => 'การอธิบายขั้นตอนหรือข้อมูลระหว่างการทดลองขับมีความไม่เป็นมืออาชีพ',
+                  'r2' => 'ระยะเวลาในการทดลองขับไม่เพียงพอ',
+                  'r3' => 'เส้นทางที่ใช้ในการทดลองขับมีสั้นเกินไป หรือไม่เหมาะสม',
+                  'r4' => 'ความสะอาดของรถยนต์ที่ใช้ในการทดลองขับ',
+                ],
+              ],
+              [
+                'key'   => 'q4',
+                'icon'  => 'bx-car',
+                'color' => 'amber',
+                'label' => 'ในวันที่รับรถยนต์ใหม่ของท่าน ท่านพึงพอใจกับความสะอาดและความเรียบร้อยสมบูรณ์ของรถยนต์ใหม่มากน้อยเพียงใด?',
+                'reasons' => [
+                  'r1' => 'ไม่มีการจัดพิธีส่งมอบรถ ทำให้ขาดบรรยากาศหรือความเป็นพิธีการ',
+                  'r2' => 'ความสะอาดของรถยนต์ที่ส่งมอบ',
+                  'r3' => 'รถยนต์ใหม่ที่ส่งมอบมีร่องรอยความเสียหายหรือรอยขีดข่วน',
+                ],
+              ],
+              [
+                'key'   => 'q5',
+                'icon'  => 'bx-book-open',
+                'color' => 'pink',
+                'label' => 'iAM ที่ดูแลท่าน ได้อธิบายรายละเอียดคุณสมบัติและการใช้งานต่าง ๆ ของตัวรถในระหว่างขั้นตอนการส่งมอบได้ชัดเจนและครบถ้วนเพียงใด?',
+                'reasons' => [
+                  'r1' => 'การอธิบายรายละเอียดเกี่ยวกับค่าใช้จ่ายในการซื้อรถยนต์ไม่ชัดเจน',
+                  'r2' => 'ไม่มีการแนะนำหรือสาธิตฟังก์ชันหลักของรถยนต์อย่างครบถ้วน',
+                  'r3' => 'ไม่มีการอธิบายข้อมูลที่เกี่ยวข้องกับการบำรุงรักษาหลังการขาย',
+                ],
+              ],
+              [
+                'key'   => 'q6',
+                'icon'  => 'bx-building',
+                'color' => 'rose',
+                'label' => 'ท่านมีความพึงพอใจในระดับใดต่อบรรยากาศ ความสะอาด และสิ่งอำนวยความสะดวกต่าง ๆ ภายในโชว์รูม?',
+                'reasons' => [
+                  'r1' => 'พื้นที่ภายในโชว์รูมมีขนาดค่อนข้างจำกัด',
+                  'r2' => 'ความสะอาดภายในโชว์รูม',
+                  'r3' => 'อุปกรณ์หรือสิ่งอำนวยความสะดวกภายในโชว์รูมมีสภาพค่อนข้างเก่า',
+                ],
+              ],
+            ];
+            $gwmSimple = [
+              ['key' => 'q7', 'icon' => 'bx-star',  'color' => 'amber',  'label' => 'ในภาพรวม ท่านมีความพึงพอใจต่อประสบการณ์การซื้อรถทั้งหมดในครั้งนี้ในระดับใด'],
+              ['key' => 'q8', 'icon' => 'bx-like',  'color' => 'indigo', 'label' => 'ท่านยินดีที่จะแนะนำ (iAM) หรือศูนย์บริการ ให้เพื่อนหรือคนรู้จักมากน้อยเพียงใด'],
+            ];
+          @endphp
+
+          <div class="po-section-edit">
+            <div class="po-section-header">
+              <div class="po-section-icon amber"><i class="bx bx-star"></i></div>
+              <h6 class="po-section-title">ผลประเมิน SSI <small class="text-muted fw-normal ms-1">(คะแนน 1-5)</small></h6>
+            </div>
+            <div class="po-section-body-edit">
+
+              @foreach ($gwmQuestions as $q)
+                @php
+                  $savedScore   = (int) ($gwmAss?->{'gwm_'.$q['key']} ?? 0);
+                  $savedReasons = $gwmAss ? (json_decode($gwmAss->{'gwm_'.$q['key'].'_reasons'} ?? '[]', true) ?? []) : [];
+                  $showReasons  = $savedScore >= 1 && $savedScore <= 2;
+                @endphp
+                <div class="gwm-question">
+                  <div class="score-row">
+                    <div class="score-row-label">
+                      <i class="bx {{ $q['icon'] }} po-section-icon {{ $q['color'] }} me-2"
+                        style="width:24px;height:24px;border-radius:6px;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex-shrink:0;"></i>
+                      {{ $q['label'] }}
+                    </div>
+                    <div class="gwm-score-group score-group">
+                      @for ($n = 1; $n <= 5; $n++)
+                        @php
+                          $btnClass = 'score-btn gwm-score-btn';
+                          if ($savedScore == $n) {
+                            $btnClass .= ' selected';
+                            $btnClass .= $n <= 2 ? ' score-low' : ($n <= 3 ? ' score-mid' : ' score-high');
+                          }
+                        @endphp
+                        <button type="button" class="{{ $btnClass }}" data-val="{{ $n }}">{{ $n }}</button>
+                      @endfor
+                      <input type="hidden" id="gwm_{{ $q['key'] }}" class="gwm-score-hidden"
+                        value="{{ $savedScore ?: '' }}">
+                    </div>
+                  </div>
+
+                  <div class="gwm-reasons" style="{{ $showReasons ? '' : 'display:none;' }}">
+                    <div class="mt-2 p-3"
+                      style="margin-left:40px; background:#fffbeb; border-left:3px solid #f59e0b; border-radius:0 8px 8px 0;">
+                      <div class="d-flex align-items-center gap-1 mb-2"
+                        style="font-size:.82rem; font-weight:600; color:#92400e;">
+                        <i class="bx bx-error-circle text-warning" style="font-size:1rem;"></i>
+                        ความไม่พึงพอใจของท่าน เกิดจากสาเหตุต่อไปนี้
+                        <span class="fw-normal" style="color:#78716c;">(เลือกได้หลายข้อ)</span>
+                      </div>
+                      @foreach ($q['reasons'] as $rval => $rlabel)
+                        <div class="form-check mb-1">
+                          <input class="form-check-input" type="checkbox"
+                            name="gwm_{{ $q['key'] }}_reasons[]"
+                            value="{{ $rval }}"
+                            id="gwm_{{ $q['key'] }}_{{ $rval }}"
+                            {{ in_array($rval, $savedReasons) ? 'checked' : '' }}>
+                          <label class="form-check-label" for="gwm_{{ $q['key'] }}_{{ $rval }}"
+                            style="font-size:.875rem; color:#374151;">{{ $rlabel }}</label>
+                        </div>
+                      @endforeach
+                      <div class="gwm-other-wrap mt-2 pt-2" style="border-top:1px dashed #e5c87a;">
+                        <div class="form-check">
+                          <input class="form-check-input gwm-other-cb" type="checkbox"
+                            name="gwm_{{ $q['key'] }}_reasons[]"
+                            value="other"
+                            id="gwm_{{ $q['key'] }}_other_cb"
+                            {{ in_array('other', $savedReasons) ? 'checked' : '' }}>
+                          <label class="form-check-label fw-semibold" for="gwm_{{ $q['key'] }}_other_cb"
+                            style="font-size:.875rem; color:#374151;">เหตุผลอื่น ๆ โปรดระบุ:</label>
+                        </div>
+                        <textarea class="form-control form-control-sm mt-1 ms-4 gwm-other-input"
+                          id="gwm_{{ $q['key'] }}_other"
+                          rows="2"
+                          placeholder="โปรดระบุเหตุผล..."
+                          style="{{ in_array('other', $savedReasons) ? 'border-color:#f59e0b; resize:none;' : 'display:none; border-color:#f59e0b; resize:none;' }}">{{ $gwmAss?->{'gwm_'.$q['key'].'_other'} ?? '' }}</textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              @endforeach
+
+              @foreach ($gwmSimple as $q)
+                @php
+                  $savedScore = (int) ($gwmAss?->{'gwm_'.$q['key']} ?? 0);
+                @endphp
+                <div class="score-row">
+                  <div class="score-row-label">
+                    <i class="bx {{ $q['icon'] }} po-section-icon {{ $q['color'] }} me-2"
+                      style="width:24px;height:24px;border-radius:6px;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex-shrink:0;"></i>
+                    {{ $q['label'] }}
+                  </div>
+                  <div class="gwm-score-group score-group">
+                    @for ($n = 1; $n <= 5; $n++)
+                      @php
+                        $btnClass = 'score-btn gwm-score-btn';
+                        if ($savedScore == $n) {
+                          $btnClass .= ' selected';
+                          $btnClass .= $n <= 2 ? ' score-low' : ($n <= 3 ? ' score-mid' : ' score-high');
+                        }
+                      @endphp
+                      <button type="button" class="{{ $btnClass }}" data-val="{{ $n }}">{{ $n }}</button>
+                    @endfor
+                    <input type="hidden" id="gwm_{{ $q['key'] }}" class="gwm-score-hidden"
+                      value="{{ $savedScore ?: '' }}">
+                  </div>
+                </div>
+              @endforeach
+
+            </div>
+          </div>
+        @endif
 
         {{-- ── Card 2: ข้อมูลยอดชำระ ── --}}
         <div class="po-section-edit">
@@ -558,7 +811,7 @@
           <div class="po-section-body-edit">
             <div class="row g-3">
               <div class="col-md-3">
-                <label class="mf-label form-label"><i class="bx bx-money-withdraw ci-emerald"></i> ยอดชำระ
+                <label class="mf-label form-label" for="amount_admin"><i class="bx bx-money-withdraw ci-emerald"></i> ยอดชำระ
                   (แอดมิน)</label>
                 <div class="input-group">
                   <span class="input-group-text ig-emerald">฿</span>
@@ -567,7 +820,7 @@
                 </div>
               </div>
               <div class="col-md-3">
-                <label class="mf-label form-label"><i class="bx bx-user ci-sky"></i> ยอดชำระ (ลูกค้าแจ้ง)</label>
+                <label class="mf-label form-label" for="amount_customer"><i class="bx bx-user ci-sky"></i> ยอดชำระ (ลูกค้าแจ้ง)</label>
                 <div class="input-group">
                   <span class="input-group-text ig-sky">฿</span>
                   <input type="text" inputmode="decimal" id="amount_customer" class="form-control amount-fmt"
@@ -575,14 +828,14 @@
                 </div>
               </div>
               <div class="col-md-3">
-                <label class="mf-label form-label"><i class="bx bx-transfer ci-amber"></i> Diff</label>
+                <label class="mf-label form-label" for="diff_display"><i class="bx bx-transfer ci-amber"></i> Diff</label>
                 <div class="input-group">
                   <span class="input-group-text ig-amber">฿</span>
                   <input type="text" id="diff_display" class="form-control" readonly placeholder="—">
                 </div>
               </div>
               <div class="col-md-3">
-                <label class="mf-label form-label"><i class="bx bx-credit-card ci-indigo"></i> ช่องทางชำระ</label>
+                <label class="mf-label form-label" for="ch_transfer"><i class="bx bx-credit-card ci-indigo"></i> ช่องทางชำระ</label>
                 <div class="pay-type-group mt-1">
                   <input type="radio" name="payment_channel" id="ch_transfer" value="transfer"
                     {{ $payment?->payment_channel === 'transfer' ? 'checked' : '' }}>
@@ -593,7 +846,7 @@
                 </div>
               </div>
               <div class="col-md-6" id="row_transfer_correct" style="display:none;">
-                <label class="mf-label form-label"><i class="bx bx-check-shield ci-emerald"></i> การโอนชำระ</label>
+                <label class="mf-label form-label" for="tc_yes"><i class="bx bx-check-shield ci-emerald"></i> การโอนชำระ</label>
                 <div class="yn-group mt-1">
                   <input type="radio" name="transfer_correct" id="tc_yes" value="1"
                     {{ $payment?->transfer_correct === true ? 'checked' : '' }}>
@@ -604,7 +857,7 @@
                 </div>
               </div>
               <div class="col-12">
-                <label class="mf-label form-label"><i class="bx bx-comment-detail ci-slate"></i> หมายเหตุ</label>
+                <label class="mf-label form-label" for="payment_remark"><i class="bx bx-comment-detail ci-slate"></i> หมายเหตุ</label>
                 <textarea id="payment_remark" class="form-control" rows="2" placeholder="หมายเหตุเพิ่มเติม...">{{ $payment?->remark ?? '' }}</textarea>
               </div>
             </div>
@@ -620,15 +873,15 @@
           <div class="po-section-body-edit">
             <div class="row g-3">
               <div class="col-md-4">
-                <label class="mf-label form-label"><i class="bx bx-like ci-emerald"></i> คำชม</label>
+                <label class="mf-label form-label" for="compliment"><i class="bx bx-like ci-emerald"></i> คำชม</label>
                 <textarea id="compliment" class="form-control" rows="5" placeholder="ลูกค้าชื่นชม...">{{ $feedback?->compliment ?? '' }}</textarea>
               </div>
               <div class="col-md-4">
-                <label class="mf-label form-label"><i class="bx bx-bulb ci-amber"></i> ข้อเสนอแนะ</label>
+                <label class="mf-label form-label" for="suggestion"><i class="bx bx-bulb ci-amber"></i> ข้อเสนอแนะ</label>
                 <textarea id="suggestion" class="form-control" rows="5" placeholder="ข้อเสนอแนะจากลูกค้า...">{{ $feedback?->suggestion ?? '' }}</textarea>
               </div>
               <div class="col-md-4">
-                <label class="mf-label form-label"><i class="bx bx-error ci-rose"></i> ร้องเรียน</label>
+                <label class="mf-label form-label" for="complaint"><i class="bx bx-error ci-rose"></i> ร้องเรียน</label>
                 <textarea id="complaint" class="form-control" rows="5" placeholder="เรื่องร้องเรียน...">{{ $feedback?->complaint ?? '' }}</textarea>
               </div>
             </div>
@@ -644,28 +897,28 @@
           <div class="po-section-body-edit">
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="mf-label form-label"><i class="bx bx-comment ci-indigo"></i> หมายเหตุ <small
+                <label class="mf-label form-label" for="cro_comment"><i class="bx bx-comment ci-indigo"></i> หมายเหตุ <small
                     class="mf-label-note">(Comment CRO)</small></label>
                 <textarea id="cro_comment" class="form-control" rows="3" placeholder="หมายเหตุจาก CRO...">{{ $resolution?->cro_comment ?? '' }}</textarea>
               </div>
               <div class="col-md-6">
-                <label class="mf-label form-label"><i class="bx bx-check-double ci-emerald"></i> กรณีมีร้องเรียน
+                <label class="mf-label form-label" for="sm_resolution"><i class="bx bx-check-double ci-emerald"></i> กรณีมีร้องเรียน
                   แก้ไขอย่างไร <small class="mf-label-note">(SM)</small></label>
                 <textarea id="sm_resolution" class="form-control" rows="3" placeholder="วิธีการแก้ไขโดย SM...">{{ $resolution?->sm_resolution ?? '' }}</textarea>
               </div>
               <div class="col-md-4">
-                <label class="mf-label form-label"><i class="bx bx-calendar-check ci-emerald"></i>
+                <label class="mf-label form-label" for="resolution_date"><i class="bx bx-calendar-check ci-emerald"></i>
                   วันที่แก้ไขปัญหา</label>
                 <input type="date" id="resolution_date" class="form-control"
                   value="{{ $resolution?->resolution_date?->format('Y-m-d') ?? '' }}">
               </div>
               <div class="col-md-4">
-                <label class="mf-label form-label"><i class="bx bx-list-check ci-sky"></i> สรุปสถานะการแก้ไข</label>
+                <label class="mf-label form-label" for="resolution_status"><i class="bx bx-list-check ci-sky"></i> สรุปสถานะการแก้ไข</label>
                 <input type="text" id="resolution_status" class="form-control" placeholder="เช่น แก้ไขเรียบร้อย"
                   value="{{ $resolution?->resolution_status ?? '' }}">
               </div>
               <div class="col-md-4">
-                <label class="mf-label form-label">
+                <label class="mf-label form-label" for="correction_form_sent_date">
                   <i class="bx bx-send ci-amber"></i> วันที่ส่งใบแก้ไข
                   <span class="mf-label-note ms-1">(ไม่เกิน 3 วันหลัง CRO แจ้ง)</span>
                 </label>
@@ -720,7 +973,7 @@
                   <input type="date" id="contact_date" class="form-control mf-input-narrow">
                 </div>
                 <div class="col-12">
-                  <label class="mf-label form-label">
+                  <label class="mf-label form-label" for="cnt_yes">
                     <i class="bx bx-phone-call"></i> สถานะการติดต่อ <span class="text-danger">*</span>
                   </label>
                   <div class="yn-group mt-1">
@@ -731,7 +984,7 @@
                   </div>
                 </div>
                 <div class="col-12" id="row_interview" style="display:none;">
-                  <label class="mf-label form-label">
+                  <label class="mf-label form-label" for="ssi_int_yes">
                     <i class="bx bx-chat"></i> ผลการสัมภาษณ์
                   </label>
                   <div class="yn-group mt-1">

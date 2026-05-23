@@ -98,6 +98,7 @@ class SsiController extends Controller
 
         $info = [
             'salecar_id'        => $salecar->id,
+            'brand'             => $salecar->brand,
             'full_name'         => $c ? trim(($c->prefix->Name_TH ?? '') . ' ' . $c->FirstName . ' ' . $c->LastName) : '-',
             'phone'             => $c->formatted_mobile ?? '-',
             'model'             => $salecar->model?->Name_TH ?? '-',
@@ -173,23 +174,52 @@ class SsiController extends Controller
         );
 
         // Card 1: Assessment
-        SsiAssessment::updateOrCreate(
-            ['ssi_record_id' => $ssiRecord->id],
-            [
-                'dw_website'                => $request->dw_website,
-                'q11_facilities'            => $request->q11_facilities,
-                'q15_car_knowledge'         => $request->q15_car_knowledge,
-                'q17_service_responsibility' => $request->q17_service_responsibility,
-                'q18_sales_conditions'      => $request->q18_sales_conditions,
-                'o27_car_condition'         => $request->o27_car_condition,
-                'fu_followup'               => $request->fu_followup,
-                'recommend_showroom'        => $request->recommend_showroom,
-                'sop14_test_drive'          => $request->sop14_test_drive,
-                'sop24_update_progress'     => $request->sop24_update_progress,
-                'sop25_accessories_complete' => $request->sop25_accessories_complete,
-                'sop30_satisfaction_followup' => $request->sop30_satisfaction_followup,
-            ]
-        );
+        if ($ssiRecord->brand == 2) {
+            // GWM brand
+            SsiAssessment::updateOrCreate(
+                ['ssi_record_id' => $ssiRecord->id],
+                [
+                    'gwm_q1'         => $request->gwm_q1,
+                    'gwm_q1_reasons' => $request->gwm_q1_reasons ? json_encode($request->gwm_q1_reasons) : null,
+                    'gwm_q1_other'   => $request->gwm_q1_other,
+                    'gwm_q2'         => $request->gwm_q2,
+                    'gwm_q2_reasons' => $request->gwm_q2_reasons ? json_encode($request->gwm_q2_reasons) : null,
+                    'gwm_q2_other'   => $request->gwm_q2_other,
+                    'gwm_q3'         => $request->gwm_q3,
+                    'gwm_q3_reasons' => $request->gwm_q3_reasons ? json_encode($request->gwm_q3_reasons) : null,
+                    'gwm_q3_other'   => $request->gwm_q3_other,
+                    'gwm_q4'         => $request->gwm_q4,
+                    'gwm_q4_reasons' => $request->gwm_q4_reasons ? json_encode($request->gwm_q4_reasons) : null,
+                    'gwm_q4_other'   => $request->gwm_q4_other,
+                    'gwm_q5'         => $request->gwm_q5,
+                    'gwm_q5_reasons' => $request->gwm_q5_reasons ? json_encode($request->gwm_q5_reasons) : null,
+                    'gwm_q5_other'   => $request->gwm_q5_other,
+                    'gwm_q6'         => $request->gwm_q6,
+                    'gwm_q6_reasons' => $request->gwm_q6_reasons ? json_encode($request->gwm_q6_reasons) : null,
+                    'gwm_q6_other'   => $request->gwm_q6_other,
+                    'gwm_q7'         => $request->gwm_q7,
+                    'gwm_q8'         => $request->gwm_q8,
+                ]
+            );
+        } else {
+            SsiAssessment::updateOrCreate(
+                ['ssi_record_id' => $ssiRecord->id],
+                [
+                    'dw_website'                  => $request->dw_website,
+                    'q11_facilities'              => $request->q11_facilities,
+                    'q15_car_knowledge'           => $request->q15_car_knowledge,
+                    'q17_service_responsibility'  => $request->q17_service_responsibility,
+                    'q18_sales_conditions'        => $request->q18_sales_conditions,
+                    'o27_car_condition'           => $request->o27_car_condition,
+                    'fu_followup'                 => $request->fu_followup,
+                    'recommend_showroom'          => $request->recommend_showroom,
+                    'sop14_test_drive'            => $request->sop14_test_drive,
+                    'sop24_update_progress'       => $request->sop24_update_progress,
+                    'sop25_accessories_complete'  => $request->sop25_accessories_complete,
+                    'sop30_satisfaction_followup' => $request->sop30_satisfaction_followup,
+                ]
+            );
+        }
 
         // Card 2: Payment
         SsiPayment::updateOrCreate(

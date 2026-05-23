@@ -342,6 +342,14 @@
 
       $('#modalInspection').on('hidden.bs.modal', resetModal);
 
+      // Fix aria-hidden warning when modal closes with focused element
+      $(document).on('hide.bs.modal', '#modalInspection, #modalViewInspection', function () {
+        setTimeout(() => {
+          document.activeElement.blur();
+          $('body').trigger('focus');
+        }, 1);
+      });
+
       // ── View modal ──
       $('#preDeliveryTable').on('click', '.btn-view', function() {
         const salecarId = $(this).data('id');

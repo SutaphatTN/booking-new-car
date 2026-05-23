@@ -109,6 +109,7 @@ class CustomerController extends Controller
                 'FacebookName' => $request->FacebookName,
                 'Mobilephone1' => preg_replace('/\D/', '', $request->Mobilephone1),
                 'Mobilephone2' => preg_replace('/\D/', '', $request->Mobilephone2),
+                'career' => $request->career,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
                 'UserInsert' => Auth::id(),
@@ -289,6 +290,7 @@ class CustomerController extends Controller
                 'FacebookName' => $request->FacebookName,
                 'Mobilephone1' => preg_replace('/\D/', '', $request->Mobilephone1),
                 'Mobilephone2' => preg_replace('/\D/', '', $request->Mobilephone2),
+                'career' => $request->career,
             ];
 
             $customer->update($customerData);

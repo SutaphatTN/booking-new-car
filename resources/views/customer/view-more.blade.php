@@ -80,7 +80,7 @@
                 <div class="vm-val {{ $customers->formatted_mobile_up ? '' : 'is-empty' }}">
                   {{ $customers->formatted_mobile_up ?: '—' }}</div>
               </div>
-              <div class="col-md-2">
+              <div class="col-md-3">
                 <div class="vm-label"><i class="bx bxl-whatsapp"></i> LineID</div>
                 <div class="vm-val {{ $customers->LineID ? '' : 'is-empty' }}">
                   {{ $customers->LineID ?: '—' }}</div>
@@ -89,6 +89,11 @@
                 <div class="vm-label"><i class="bx bxl-facebook-circle"></i> Facebook</div>
                 <div class="vm-val {{ $customers->FacebookName ? '' : 'is-empty' }}">
                   {{ $customers->FacebookName ?: '—' }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="vm-label"><i class="bx bx-briefcase"></i> อาชีพ</div>
+                <div class="vm-val {{ $customers->career ? '' : 'is-empty' }}">
+                  {{ $customers->career ?: '—' }}</div>
               </div>
 
             </div>
@@ -107,47 +112,47 @@
               </div>
               <div class="vm-section-body">
                 <div class="row g-3">
-                  <div class="col-4">
+                  <div class="col-md-4">
                     <div class="vm-label"><i class="bx bx-home"></i> บ้านเลขที่</div>
                     <div class="vm-val {{ $currentAddress->house_number ?? '' ? '' : 'is-empty' }}">
                       {{ $currentAddress->house_number ?? '—' }}</div>
                   </div>
-                  <div class="col-4">
+                  <div class="col-md-4">
                     <div class="vm-label"><i class="bx bx-map"></i> หมู่ที่</div>
                     <div class="vm-val {{ $currentAddress->group ?? '' ? '' : 'is-empty' }}">
                       {{ $currentAddress->group ?? '—' }}</div>
                   </div>
-                  <div class="col-4">
+                  <div class="col-md-4">
                     <div class="vm-label"><i class="bx bx-navigation"></i> ซอย</div>
                     <div class="vm-val {{ $currentAddress->alley ?? '' ? '' : 'is-empty' }}">
                       {{ $currentAddress->alley ?? '—' }}</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="vm-label"><i class="bx bx-buildings"></i> หมู่บ้าน</div>
                     <div class="vm-val {{ $currentAddress->village ?? '' ? '' : 'is-empty' }}">
                       {{ $currentAddress->village ?? '—' }}</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="vm-label"><i class="bx bx-trip"></i> ถนน</div>
                     <div class="vm-val {{ $currentAddress->road ?? '' ? '' : 'is-empty' }}">
                       {{ $currentAddress->road ?? '—' }}</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="vm-label"><i class="bx bx-map-alt"></i> ตำบล/แขวง</div>
                     <div class="vm-val {{ $currentAddress->subdistrict ?? '' ? '' : 'is-empty' }}">
                       {{ $currentAddress->subdistrict ?? '—' }}</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="vm-label"><i class="bx bx-map-alt"></i> อำเภอ/เขต</div>
                     <div class="vm-val {{ $currentAddress->district ?? '' ? '' : 'is-empty' }}">
                       {{ $currentAddress->district ?? '—' }}</div>
                   </div>
-                  <div class="col-8">
+                  <div class="col-md-8">
                     <div class="vm-label"><i class="bx bx-map"></i> จังหวัด</div>
                     <div class="vm-val {{ $currentAddress->province ?? '' ? '' : 'is-empty' }}">
                       {{ $currentAddress->province ?? '—' }}</div>
                   </div>
-                  <div class="col-4">
+                  <div class="col-md-4">
                     <div class="vm-label"><i class="bx bx-envelope"></i> รหัสไปรษณีย์</div>
                     <div class="vm-val font-monospace {{ $currentAddress->postal_code ?? '' ? '' : 'is-empty' }}">
                       {{ $currentAddress->postal_code ?? '—' }}</div>
@@ -166,47 +171,47 @@
               </div>
               <div class="vm-section-body">
                 <div class="row g-3">
-                  <div class="col-4">
+                  <div class="col-md-4">
                     <div class="vm-label"><i class="bx bx-home"></i> บ้านเลขที่</div>
                     <div class="vm-val {{ $docAddress->house_number ?? '' ? '' : 'is-empty' }}">
                       {{ $docAddress->house_number ?? '—' }}</div>
                   </div>
-                  <div class="col-4">
+                  <div class="col-md-4">
                     <div class="vm-label"><i class="bx bx-map"></i> หมู่ที่</div>
                     <div class="vm-val {{ $docAddress->group ?? '' ? '' : 'is-empty' }}">
                       {{ $docAddress->group ?? '—' }}</div>
                   </div>
-                  <div class="col-4">
+                  <div class="col-md-4">
                     <div class="vm-label"><i class="bx bx-navigation"></i> ซอย</div>
                     <div class="vm-val {{ $docAddress->alley ?? '' ? '' : 'is-empty' }}">
                       {{ $docAddress->alley ?? '—' }}</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="vm-label"><i class="bx bx-buildings"></i> หมู่บ้าน</div>
                     <div class="vm-val {{ $docAddress->village ?? '' ? '' : 'is-empty' }}">
                       {{ $docAddress->village ?? '—' }}</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="vm-label"><i class="bx bx-trip"></i> ถนน</div>
                     <div class="vm-val {{ $docAddress->road ?? '' ? '' : 'is-empty' }}">
                       {{ $docAddress->road ?? '—' }}</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="vm-label"><i class="bx bx-map-alt"></i> ตำบล/แขวง</div>
                     <div class="vm-val {{ $docAddress->subdistrict ?? '' ? '' : 'is-empty' }}">
                       {{ $docAddress->subdistrict ?? '—' }}</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <div class="vm-label"><i class="bx bx-map-alt"></i> อำเภอ/เขต</div>
                     <div class="vm-val {{ $docAddress->district ?? '' ? '' : 'is-empty' }}">
                       {{ $docAddress->district ?? '—' }}</div>
                   </div>
-                  <div class="col-8">
+                  <div class="col-md-8">
                     <div class="vm-label"><i class="bx bx-map"></i> จังหวัด</div>
                     <div class="vm-val {{ $docAddress->province ?? '' ? '' : 'is-empty' }}">
                       {{ $docAddress->province ?? '—' }}</div>
                   </div>
-                  <div class="col-4">
+                  <div class="col-md-4">
                     <div class="vm-label"><i class="bx bx-envelope"></i> รหัสไปรษณีย์</div>
                     <div class="vm-val font-monospace {{ $docAddress->postal_code ?? '' ? '' : 'is-empty' }}">
                       {{ $docAddress->postal_code ?? '—' }}</div>
