@@ -8,6 +8,8 @@
       <th>สี</th>
       <th>ผู้ขาย</th>
       <th>แหล่งที่มา</th>
+      <th>วันที่ทดลองขับ</th>
+      <th>หมายเหตุทดลองขับ</th>
       <th>วันที่ติดต่อล่าสุด</th>
       <th>สถานะการติดต่อ</th>
       <th>การตัดสินใจ</th>
@@ -24,6 +26,8 @@
         <td>{{ $r['color'] }}</td>
         <td>{{ $r['sale'] }}</td>
         <td>{{ $r['source'] }}</td>
+        <td>{{ $r['test_date'] }}</td>
+        <td>{{ $r['test_note'] }}</td>
         <td>{{ $r['contact_date'] }}</td>
         <td>{{ $r['contact_status'] }}</td>
         <td>{{ $r['decision'] }}</td>
@@ -31,7 +35,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="11" align="center">ไม่มีข้อมูล</td>
+        <td colspan="13" align="center">ไม่มีข้อมูล</td>
       </tr>
     @endforelse
   </tbody>
