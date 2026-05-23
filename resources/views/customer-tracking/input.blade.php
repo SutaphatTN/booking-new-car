@@ -313,7 +313,7 @@
               {{-- Comment sale --}}
               <div class="col-12">
                 <label class="po-label" for="comment_sale"><i class='bx bx-comment-detail'></i> หมายเหตุ</label>
-                <textarea id="comment_sale" name="comment_sale" class="form-control" rows="2"
+                <textarea id="comment_sale" name="comment_sale" class="form-control" rows="3"
                   placeholder="รายละเอียดเพิ่มเติม...">{{ old('comment_sale') }}</textarea>
               </div>
 

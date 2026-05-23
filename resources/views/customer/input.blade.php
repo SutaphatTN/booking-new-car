@@ -177,6 +177,15 @@
                 @enderror
               </div>
 
+              <div class="col-md-4">
+                <label for="career" class="po-label"><i class='bx bx-briefcase'></i> อาชีพ</label>
+                <input id="career" type="text"
+                  class="form-control @error('career') is-invalid @enderror" name="career">
+                @error('career')
+                  <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                @enderror
+              </div>
+
             </div>
           </div>
         </div>

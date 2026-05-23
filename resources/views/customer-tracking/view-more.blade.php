@@ -594,11 +594,11 @@
           <input type="hidden" id="edit_detail_id" value="">
           <div class="row g-4">
             <div class="col-md-5">
-              <label class="mf-label form-label"><i class="bx bx-calendar"></i> วันที่ติดต่อ</label>
+              <div class="mf-label form-label"><i class="bx bx-calendar"></i> วันที่ติดต่อ</div>
               <div class="info-pill" id="edit_contact_date_display">—</div>
             </div>
             <div class="col-md-7">
-              <label class="mf-label form-label"><i class="bx bx-target-lock"></i> สถานะการตัดสินใจ</label>
+              <div class="mf-label form-label"><i class="bx bx-target-lock"></i> สถานะการตัดสินใจ</div>
               <div class="info-pill" id="edit_decision_display">—</div>
             </div>
             <div class="col-md-12">

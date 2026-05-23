@@ -70,6 +70,7 @@ class Customer extends Model
 		'religion',
 		'LineID',
 		'FacebookName',
+		'career',
 		'RelationST',
 		'FirstNameofRelation',
 		'LastNameofRelation',

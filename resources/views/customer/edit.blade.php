@@ -121,7 +121,7 @@
                     value="{{ $customers->formatted_mobile_up }}">
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-md-3">
                   <label for="LineID" class="vm-label"><i class="bx bxl-phone"></i> whatsapp</label>
                   <input id="LineID" type="text" class="form-control" name="LineID"
                     value="{{ $customers->LineID }}">
@@ -131,6 +131,12 @@
                   <label for="FacebookName" class="vm-label"><i class="bx bxl-facebook-circle"></i> Facebook</label>
                   <input id="FacebookName" type="text" class="form-control" name="FacebookName"
                     value="{{ $customers->FacebookName }}">
+                </div>
+
+                <div class="col-md-4">
+                  <label for="career" class="vm-label"><i class="bx bx-briefcase"></i> อาชีพ</label>
+                  <input id="career" type="text" class="form-control" name="career"
+                    value="{{ $customers->career }}">
                 </div>
 
               </div>
