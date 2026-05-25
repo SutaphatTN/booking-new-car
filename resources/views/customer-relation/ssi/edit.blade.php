@@ -803,6 +803,7 @@
         @endif
 
         {{-- ── Card 2: ข้อมูลยอดชำระ ── --}}
+        @if ($info['brand'] != 2)
         <div class="po-section-edit">
           <div class="po-section-header">
             <div class="po-section-icon emerald"><i class="bx bx-money"></i></div>
@@ -863,6 +864,8 @@
             </div>
           </div>
         </div>
+
+        @endif
 
         {{-- ── Card 3: คำชม / ข้อเสนอแนะ / ร้องเรียน ── --}}
         <div class="po-section-edit">
