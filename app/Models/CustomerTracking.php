@@ -18,6 +18,7 @@ class CustomerTracking extends Model
         'sale_id',
         'customer_id',
         'source_id',
+        'clip_add',
         'model_id',
         'sub_model_id',
         'year',

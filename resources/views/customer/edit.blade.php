@@ -42,17 +42,23 @@
                   </select>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label for="FirstName" class="vm-label"><i class="bx bx-user"></i> ชื่อ <span
                       class="text-danger">*</span></label>
                   <input id="FirstName" type="text" class="form-control" name="FirstName"
                     value="{{ $customers->FirstName }}" required>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label for="LastName" class="vm-label"><i class="bx bx-user-pin"></i> นามสกุล</label>
                   <input id="LastName" type="text" class="form-control" name="LastName"
                     value="{{ $customers->LastName }}">
+                </div>
+
+                <div class="col-md-2">
+                  <label for="OriginalName" class="vm-label"><i class="bx bxs-user-rectangle"></i> ชื่อตอนจอง</label>
+                  <input id="OriginalName" type="text" class="form-control" name="OriginalName"
+                    value="{{ $customers->OriginalName }}" required>
                 </div>
 
                 <div class="col-md-2">
@@ -122,7 +128,7 @@
                 </div>
 
                 <div class="col-md-3">
-                  <label for="LineID" class="vm-label"><i class="bx bxl-phone"></i> whatsapp</label>
+                  <label for="LineID" class="vm-label"><i class="bx bxl-whatsapp"></i> LineID</label>
                   <input id="LineID" type="text" class="form-control" name="LineID"
                     value="{{ $customers->LineID }}">
                 </div>
@@ -133,10 +139,16 @@
                     value="{{ $customers->FacebookName }}">
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label for="career" class="vm-label"><i class="bx bx-briefcase"></i> อาชีพ</label>
                   <input id="career" type="text" class="form-control" name="career"
                     value="{{ $customers->career }}">
+                </div>
+
+                <div class="col-md-3">
+                  <label for="salary" class="vm-label"><i class="bx bx-dollar"></i> เงินเดือน</label>
+                  <input id="salary" type="text" class="form-control" name="salary"
+                    value="{{ $customers->salary }}">
                 </div>
 
               </div>

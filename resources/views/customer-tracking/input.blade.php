@@ -266,6 +266,12 @@
                 @enderror
               </div>
 
+              <div class="col-md-12">
+                <label class="po-label" for="clip_add"><i class='bx bx-link'></i> คลิปที่ยิงแอด<span class="text-secondary">(กรณีลุกค้าจาก Online)</span></label>
+                <textarea id="clip_add" name="clip_add" class="form-control" rows="2"
+                  placeholder="ชื่อคลิปที่ใช้โฆษณา...">{{ old('clip_add') }}</textarea>
+              </div>
+
             </div>
           </div>
         </div>

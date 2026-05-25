@@ -84,7 +84,7 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
 
                 $sheet->getTabColor()->setRGB('a2d4ff');
 
-                $numberColumns = ['H', 'I', 'J'];
+                $numberColumns = ['H', 'J', 'L'];
                 foreach ($numberColumns as $col) {
                     $sheet->getStyle("{$col}2:{$col}{$highestRow}")
                         ->getNumberFormat()
@@ -153,6 +153,7 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
                 'DeliveryEstimateDate' => $r?->format_delivery_estimate_date ?? '-',
                 'DeliveryDate'        => $r?->format_delivery_date ?? '-',
                 'status'              => $r?->conStatus?->name ?? '-',
+                'type'                => $r->getRelation('type')?->name ?? '-',
             ];
         });
 
