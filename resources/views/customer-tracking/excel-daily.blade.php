@@ -1,11 +1,12 @@
 <table>
   <thead>
     <tr>
-      <th colspan="9">รายงานประจำวัน วันที่ {{ $dateFormatted }} ผู้บันทึก: {{ $userName }}</th>
+      <th colspan="10">รายงานประจำวัน วันที่ {{ $dateFormatted }} ผู้บันทึก: {{ $userName }}</th>
     </tr>
     <tr>
       <th>No.</th>
       <th>ชื่อ - นามสกุล</th>
+      <th>ผู้ขาย</th>
       <th>ข้อมูลรุ่นรถ</th>
       <th>วันที่ทดลองขับ</th>
       <th>หมายเหตุทดลองขับ</th>
@@ -20,6 +21,7 @@
       <tr>
         <td>{{ $r['no'] }}</td>
         <td>{{ $r['full_name'] }}</td>
+        <td>{{ $r['sale'] }}</td>
         <td>{{ $r['car_info'] }}</td>
         <td>{{ $r['test_date'] }}</td>
         <td>{{ $r['test_note'] }}</td>
@@ -30,7 +32,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="9" align="center">ไม่มีข้อมูลในวันที่นี้</td>
+        <td colspan="10" align="center">ไม่มีข้อมูลในวันที่นี้</td>
       </tr>
     @endforelse
   </tbody>
