@@ -44,7 +44,7 @@
             <h6 class="po-section-title">ข้อมูลลูกค้า</h6>
           </div>
           <div class="po-section-body">
-            <div class="row g-3">
+            <div class="row g-3 mb-3">
               <div class="col-md-4">
                 <label class="po-label" for="ct_prefix">คำนำหน้า</label>
                 <select id="ct_prefix" name="ct_prefix" class="form-select">
@@ -62,7 +62,7 @@
                 <label class="po-label" for="ct_last_name">นามสกุล</label>
                 <input id="ct_last_name" name="ct_last_name" type="text" class="form-control">
               </div>
-              <div class="col-md-5">
+              <div class="col-md-3">
                 <label class="po-label" for="ct_phone">เบอร์โทร</label>
                 <input id="ct_phone" name="ct_phone" type="text" class="form-control" maxlength="12" placeholder="xxx-xxxx-xxxx">
               </div>
