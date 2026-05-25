@@ -16,16 +16,13 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 
-class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
+class CustomerTrackingDailyExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
-    public function __construct(
-        protected string $dateFrom,
-        protected string $dateTo
-    ) {}
+    public function __construct(protected string $date) {}
 
     public function title(): string
     {
-        return 'รายงานการกรอกข้อมูล';
+        return 'รายงานประจำวัน';
     }
 
     public function styles(Worksheet $sheet)
@@ -33,12 +30,12 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
         return [
             1 => [
                 'font' => ['bold' => true],
-                'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'C8E6C9']],
+                'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'BDD7EE']],
                 'alignment' => ['horizontal' => 'center', 'vertical' => 'center'],
             ],
             2 => [
                 'font' => ['bold' => true],
-                'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'C8E6C9']],
+                'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'DDEEFF']],
                 'alignment' => ['horizontal' => 'center', 'vertical' => 'center'],
             ],
         ];
@@ -68,7 +65,7 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
 
                 $sheet->setAutoFilter("A2:{$highestCol}2");
                 $sheet->freezePane('A3');
-                $sheet->getTabColor()->setRGB('C8E6C9');
+                $sheet->getTabColor()->setRGB('BDD7EE');
             },
         ];
     }
@@ -79,14 +76,15 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
 
         $details = CustomerTrackingDetail::with([
             'tracking.customer.prefix',
-            'tracking.sale',
+            'tracking.model',
+            'tracking.subModel',
             'decision',
-            'insertedBy',
         ])
             ->whereHas('tracking', fn($q) => $q->where('brand', $user->brand))
-            ->whereDate('created_at', '>=', $this->dateFrom)
-            ->whereDate('created_at', '<=', $this->dateTo)
-            ->orderBy('created_at')
+            ->where('UserInsert', $user->id)
+            ->whereDate('contact_date', $this->date)
+            ->orderBy('contact_date')
+            ->orderBy('id')
             ->get();
 
         $no = 1;
@@ -97,26 +95,27 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
                 ? trim(($customer->prefix->Name_TH ?? '') . ' ' . $customer->FirstName . ' ' . $customer->LastName)
                 : '-';
 
+            $model    = $tracking?->model?->Name_TH ?? '-';
+            $subModel = $tracking?->subModel?->name ?? '-';
+            $carInfo  = $model . ($subModel !== '-' ? ' / ' . $subModel : '');
+
             return [
                 'no'             => $no++,
-                'created_at'     => $d->created_at?->format('d/m/Y H:i'),
                 'full_name'      => $fullName,
-                'sale'           => $tracking?->sale?->name ?? '-',
-                'inserted_by'    => $d->insertedBy?->name ?? '-',
-                'entry_type'     => $d->entry_type === 'sale' ? 'เซลล์' : 'ผู้จัดการ',
-                'contact_date'   => $d->contact_date ?? '-',
-                'contact_status' => $d->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้',
+                'car_info'       => $carInfo,
+                'test_date'      => $tracking?->format_test_drive_date ?? '-',
+                'test_note'      => $tracking?->test_drive_note ?? '-',
+                'contact_date'   => $d->contact_date ? Carbon::parse($d->contact_date)->format('d/m/Y') : '-',
                 'decision'       => $d->decision?->name ?? '-',
+                'contact_status' => $d->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้',
                 'comment'        => $d->comment_sale ?? '-',
-                'test_date'      => $tracking->format_test_drive_date ?? '-',
-                'test_note'      => $tracking->test_drive_note ?? '-',
             ];
         });
 
-        return view('customer-tracking.excel-by-date', [
-            'rows'             => $rows,
-            'dateFromFormatted' => Carbon::parse($this->dateFrom)->format('d/m/Y'),
-            'dateToFormatted'   => Carbon::parse($this->dateTo)->format('d/m/Y'),
+        return view('customer-tracking.excel-daily', [
+            'rows'          => $rows,
+            'dateFormatted' => Carbon::parse($this->date)->format('d/m/Y'),
+            'userName'      => $user->name,
         ]);
     }
 }

@@ -29,9 +29,14 @@
 
               @php $fullname = trim(($customers->prefix->Name_TH ?? '').' '.($customers->FirstName ?? '').' '.($customers->LastName ?? '')); @endphp
 
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <div class="vm-label"><i class="bx bx-user"></i> ชื่อ - นามสกุล</div>
                 <div class="vm-val {{ $fullname ? '' : 'is-empty' }}">{{ $fullname ?: '—' }}</div>
+              </div>
+              <div class="col-md-2">
+                <div class="vm-label"><i class="bx bxs-user-rectangle"></i> ชื่อตอนจอง</div>
+                <div class="vm-val {{ $customers->OriginalName ? '' : 'is-empty' }}">
+                  {{ $customers->OriginalName ?: '—' }}</div>
               </div>
               <div class="col-md-4">
                 <div class="vm-label"><i class="bx bx-id-card"></i> เลขบัตรประชาชน</div>
@@ -90,10 +95,15 @@
                 <div class="vm-val {{ $customers->FacebookName ? '' : 'is-empty' }}">
                   {{ $customers->FacebookName ?: '—' }}</div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <div class="vm-label"><i class="bx bx-briefcase"></i> อาชีพ</div>
                 <div class="vm-val {{ $customers->career ? '' : 'is-empty' }}">
                   {{ $customers->career ?: '—' }}</div>
+              </div>
+              <div class="col-md-3">
+                <div class="vm-label"><i class="bx bx-dollar"></i> เงินเดือน</div>
+                <div class="vm-val {{ $customers->salary ? '' : 'is-empty' }}">
+                  {{ $customers->salary ?: '—' }}</div>
               </div>
 
             </div>

@@ -98,7 +98,7 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
                 $numberColumns = [
                     'H',
                     'I',
-                    'J'
+                    'K'
                 ];
 
                 foreach ($numberColumns as $col) {
@@ -166,6 +166,7 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
                 'DeliveryEstimateDate' => $r?->format_delivery_estimate_date ?? '-',
                 'DeliveryDate' => $r?->format_delivery_date ?? '-',
                 'status' => $r?->conStatus?->name ?? '-',
+                'type' => $r->getRelation('type')?->name ?? '-',
             ];
         });
 

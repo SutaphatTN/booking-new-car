@@ -4,6 +4,7 @@ namespace App\Http\Controllers\customer_tracking;
 
 use App\Exports\customerTracking\CustomerTrackingExport;
 use App\Exports\customerTracking\CustomerTrackingByDateExport;
+use App\Exports\customerTracking\CustomerTrackingDailyExport;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerTracking;
 use App\Models\CustomerTrackingDetail;
@@ -38,6 +39,7 @@ class CustomerTrackingController extends Controller
         $search         = trim($request->input('search.value', ''));
         $decisionId     = $request->decision_id;
         $saleFilter     = $request->sale_filter     ? json_decode($request->sale_filter, true)      : null;
+        $sourceFilter   = $request->source_filter   ? json_decode($request->source_filter, true)    : null;
         $statusFilter   = $request->status_filter   ? json_decode($request->status_filter, true)    : null;
         $lastDateFilter = $request->last_date_filter ? json_decode($request->last_date_filter, true) : null;
         $nextDateFilter = $request->next_date_filter ? json_decode($request->next_date_filter, true) : null;
@@ -56,7 +58,11 @@ class CustomerTrackingController extends Controller
             ->whereNull('cancelled_at');
 
         if ($user->role === 'sale') {
-            $base->where('sale_id', $user->id);
+            $visibleSaleIds = [$user->id];
+            if ($user->id === 7) {
+                $visibleSaleIds = array_merge($visibleSaleIds, [9, 10, 11]);
+            }
+            $base->whereIn('sale_id', $visibleSaleIds);
         }
 
         // filterDecision dropdown — ค้นหา decision_id ของ "active detail" ของแต่ละ tracking
@@ -78,6 +84,12 @@ class CustomerTrackingController extends Controller
         if ($saleFilter && count($saleFilter) > 0) {
             $saleIds = User::whereIn('name', $saleFilter)->pluck('id');
             $base->whereIn('sale_id', $saleIds);
+        }
+
+        // Source column filter
+        if ($sourceFilter && count($sourceFilter) > 0) {
+            $sourceIds = TbSalecarType::whereIn('name', $sourceFilter)->pluck('id');
+            $base->whereIn('source_id', $sourceIds);
         }
 
         // Status column filter (by decision name → id)
@@ -119,11 +131,15 @@ class CustomerTrackingController extends Controller
 
         // Global search
         if ($search) {
-            $base->where(function ($q) use ($search) {
-                $q->whereHas('customer', fn($q) =>
+            $searchDigits = preg_replace('/\D/', '', $search);
+            $base->where(function ($q) use ($search, $searchDigits) {
+                $q->whereHas('customer', function ($q) use ($search, $searchDigits) {
                     $q->where('FirstName', 'like', "%{$search}%")
-                      ->orWhere('LastName', 'like', "%{$search}%")
-                )
+                      ->orWhere('LastName', 'like', "%{$search}%");
+                    if ($searchDigits !== '') {
+                        $q->orWhereRaw("REPLACE(Mobilephone1, '-', '') LIKE ?", ["%{$searchDigits}%"]);
+                    }
+                })
                 ->orWhereHas('sale', fn($q) =>
                     $q->where('name', 'like', "%{$search}%")
                 );
@@ -189,12 +205,23 @@ class CustomerTrackingController extends Controller
 
             $decision = $activeDetail?->decision?->name ?? '-';
 
+            $phone    = $customer?->formatted_mobile ?? null;
+            $lineId   = $customer?->LineID ?? null;
+            $facebook = $customer?->FacebookName ?? null;
+            $contactParts = [];
+            if ($phone)    $contactParts[] = "<div class=\"text-nowrap\"><i class=\"bx bx-phone text-danger me-1\"></i>: {$phone}</div>";
+            if ($lineId)   $contactParts[] = "<div class=\"text-nowrap\"><i class=\"bx bxl-whatsapp text-success me-1\"></i>: {$lineId}</div>";
+            if ($facebook) $contactParts[] = "<div class=\"text-nowrap\"><i class=\"bx bxl-facebook-circle text-primary me-1\"></i>: {$facebook}</div>";
+            $contactInfo = $contactParts ? implode('', $contactParts) : '<span class="text-muted">—</span>';
+
             return [
                 'No'             => $rowNum++,
                 'id'             => $t->id,
                 'FullName'       => trim($fullName),
+                'contact_info'   => $contactInfo,
                 'model'          => $car,
                 'sale'           => $t->sale->name ?? '-',
+                'source'         => $t->source->name ?? '-',
                 'last_date'      => $lastDate,
                 'next_date'      => $nextDate,
                 'next_date_sort' => $nextDateRaw,
@@ -218,6 +245,7 @@ class CustomerTrackingController extends Controller
 
         $decisionId     = $request->decision_id;
         $saleFilter     = $request->sale_filter     ? json_decode($request->sale_filter, true)      : null;
+        $sourceFilter   = $request->source_filter   ? json_decode($request->source_filter, true)    : null;
         $statusFilter   = $request->status_filter   ? json_decode($request->status_filter, true)    : null;
         $lastDateFilter = $request->last_date_filter ? json_decode($request->last_date_filter, true) : null;
         $nextDateFilter = $request->next_date_filter ? json_decode($request->next_date_filter, true) : null;
@@ -248,6 +276,11 @@ class CustomerTrackingController extends Controller
         if ($saleFilter && count($saleFilter) > 0) {
             $saleIds = User::whereIn('name', $saleFilter)->pluck('id');
             $base->whereIn('sale_id', $saleIds);
+        }
+
+        if ($sourceFilter && count($sourceFilter) > 0) {
+            $sourceIds = TbSalecarType::whereIn('name', $sourceFilter)->pluck('id');
+            $base->whereIn('source_id', $sourceIds);
         }
 
         if ($statusFilter && count($statusFilter) > 0) {
@@ -291,6 +324,11 @@ class CustomerTrackingController extends Controller
             CustomerTracking::whereIn('id', $trackingIds)->pluck('sale_id')->unique()
         )->orderBy('name')->pluck('name');
 
+        // Distinct source names
+        $sources = TbSalecarType::whereIn('id',
+            CustomerTracking::whereIn('id', $trackingIds)->whereNotNull('source_id')->pluck('source_id')->unique()
+        )->orderBy('name')->pluck('name');
+
         // Distinct decision names (from details of active trackings)
         $usedDecisionIds = CustomerTrackingDetail::whereIn('tracking_id', $trackingIds)
             ->whereNotNull('decision_id')
@@ -321,6 +359,7 @@ class CustomerTrackingController extends Controller
 
         return response()->json([
             'sales'     => $sales->values(),
+            'sources'   => $sources->values(),
             'decisions' => $decisions->values(),
             'lastDates' => $lastDates,
             'nextDates' => $nextDates,
@@ -440,6 +479,7 @@ class CustomerTrackingController extends Controller
                 'color_id'          => $brand === 1 ? null : ($request->color_id ?: null),
                 'interior_color_id' => $brand === 2 ? ($request->interior_color_id ?: null) : null,
                 'color_text'        => $brand === 1 ? ($request->color_text ?: null) : null,
+                'clip_add'          => $request->clip_add ?: null,
                 'userZone'          => $authUser->userZone,
                 'brand'             => $authUser->brand,
                 'branch'            => $authUser->branch,
@@ -657,6 +697,14 @@ class CustomerTrackingController extends Controller
         $filename = 'รายงานการกรอกข้อมูล_' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx';
 
         return Excel::download(new CustomerTrackingByDateExport($dateFrom, $dateTo), $filename);
+    }
+
+    public function exportDailyReport(Request $request)
+    {
+        $date     = $request->date ?? now()->toDateString();
+        $filename = 'รายงานประจำวัน_' . $date . '.xlsx';
+
+        return Excel::download(new CustomerTrackingDailyExport($date), $filename);
     }
 
     public function saveTestDrive(Request $request, $id)

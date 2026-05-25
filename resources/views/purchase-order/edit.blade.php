@@ -107,6 +107,12 @@
                       readonly>
                   </div>
 
+                  <div class="col-md-2">
+                    <label for="OriginalName" class="po-label"><i class="bx bxs-user-rectangle"></i> ชื่อตอนจอง</label>
+                    <input class="form-control" id="OriginalName" type="text" name="OriginalName"
+                      value="{{ $saleCar->customer->OriginalName ?? '-' }}" readonly>
+                  </div>
+
                   <div class="col-md-3">
                     <label for="IDNumber" class="po-label"><i class="bx bx-id-card"></i> เลขบัตรประชาชน</label>
                     <input class="form-control" type="text" name="IDNumber" id="IDNumber"

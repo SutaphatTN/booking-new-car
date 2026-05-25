@@ -19,6 +19,7 @@ class SaleBookingQuery
             'financeConfirm',
             'remainingPayment',
             'remainingPayment.financeInfo',
+            'type',
         ]);
     }
 }

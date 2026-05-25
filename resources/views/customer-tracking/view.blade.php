@@ -37,27 +37,52 @@
           @endif
 
           {{-- ── Filter bar ── --}}
-          <div class="po-filter-bar d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div class="po-filter-bar d-flex flex-column gap-2">
 
-            {{-- ฝั่งซ้าย: รายงาน Excel --}}
-            <div class="d-flex align-items-center gap-2 flex-wrap">
+            {{-- แถว 1: รายงานประจำวัน + กรองสถานะ (desktop เท่านั้น) --}}
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div class="d-flex align-items-center flex-wrap gap-2">
+                <i class="bx bx-file-export text-muted"></i>
+                <span class="text-muted small" style="min-width:105px;">รายงานการกรอกข้อมูลประจำวัน :</span>
+                <input type="date" id="reportDailyDate" class="form-control form-control-sm" style="width:140px;"
+                  value="{{ date('Y-m-d') }}">
+                <button type="button" class="btn btn-success btn-sm" id="btnExportDaily">
+                  <i class="bx bx-download me-1"></i>Excel
+                </button>
+              </div>
+
+              {{-- สถานะ: desktop เท่านั้น --}}
+              <div class="d-none d-md-flex align-items-center gap-2">
+                <i class="bx bx-filter-alt text-muted"></i>
+                <label for="filterDecision" class="mb-0 text-muted">สถานะ :</label>
+                <select id="filterDecision" class="form-select form-select-sm" style="width:200px;">
+                  <option value="">— ทั้งหมด —</option>
+                  @foreach ($decisions as $d)
+                    <option value="{{ $d->id }}">{{ $d->name }}</option>
+                  @endforeach
+                </select>
+              </div>
+            </div>
+
+            {{-- แถว 2: รายงานการติดตาม --}}
+            <div class="d-flex align-items-center flex-wrap gap-2">
               <i class="bx bx-file-export text-muted"></i>
-              <label class="mb-0 text-muted">รายงาน :</label>
-              <input type="date" id="reportDateFrom" class="form-control form-control-sm" style="width:145px;"
+              <span class="text-muted small" style="min-width:105px;">รายงานการเพิ่มการติดตามประจำวัน :</span>
+              <input type="date" id="reportDateFrom" class="form-control form-control-sm" style="width:140px;"
                 value="{{ date('Y-m-d') }}">
-              <span class="text-muted small">ถึง</span>
-              <input type="date" id="reportDateTo" class="form-control form-control-sm" style="width:145px;"
+              <span class="text-muted small">–</span>
+              <input type="date" id="reportDateTo" class="form-control form-control-sm" style="width:140px;"
                 value="{{ date('Y-m-d') }}">
               <button type="button" class="btn btn-success btn-sm" id="btnExportByDate">
-                <i class="bx bx-download me-1"></i> Excel
+                <i class="bx bx-download me-1"></i>Excel
               </button>
             </div>
 
-            {{-- ฝั่งขวา: กรองสถานะ --}}
-            <div class="d-flex align-items-center gap-2">
+            {{-- แถว 3: สถานะ (mobile เท่านั้น) --}}
+            <div class="d-flex d-md-none align-items-center gap-2">
               <i class="bx bx-filter-alt text-muted"></i>
-              <label for="filterDecision" class="mb-0 text-muted">สถานะ :</label>
-              <select id="filterDecision" class="form-select form-select-sm" style="width:200px;">
+              <label for="filterDecisionMobile" class="mb-0 text-muted">สถานะ :</label>
+              <select id="filterDecisionMobile" class="form-select form-select-sm" style="width:200px;">
                 <option value="">— ทั้งหมด —</option>
                 @foreach ($decisions as $d)
                   <option value="{{ $d->id }}">{{ $d->name }}</option>
@@ -69,16 +94,26 @@
 
           {{-- ── Table ── --}}
           <div class="table-responsive">
-            <table class="table table-bordered tbl-table tbl-styled" id="trackingTable">
+            <table class="table table-bordered tbl-table tbl-styled" id="trackingTable" style="min-width:1300px;">
               <thead>
                 <tr>
                   <th class="tbl-th-no">No.</th>
                   <th>ชื่อ - นามสกุล</th>
+                  <th>ข้อมูลติดต่อ</th>
                   <th>ข้อมูลรถ</th>
                   <th class="col-filter-th">
                     <div class="col-filter-wrap">
                       <span>ผู้ขาย</span>
                       <button class="col-filter-btn" id="ctSaleFilterBtn" type="button" title="กรองผู้ขาย">
+                        <i class="bx bx-filter-alt"></i>
+                        <span class="col-filter-dot"></span>
+                      </button>
+                    </div>
+                  </th>
+                  <th class="col-filter-th">
+                    <div class="col-filter-wrap">
+                      <span>แหล่งที่มา</span>
+                      <button class="col-filter-btn" id="ctSourceFilterBtn" type="button" title="กรองแหล่งที่มา">
                         <i class="bx bx-filter-alt"></i>
                         <span class="col-filter-dot"></span>
                       </button>
@@ -131,6 +166,18 @@
   <div class="col-filter-actions">
     <button class="btn btn-sm btn-light" id="ctSaleFilterClear">ล้าง</button>
     <button class="btn btn-sm btn-primary" id="ctSaleFilterApply">ตกลง</button>
+  </div>
+</div>
+
+{{-- ── แหล่งที่มา filter dropdown ── --}}
+<div class="col-filter-dropdown" id="ctSourceFilterDropdown">
+  <div class="col-filter-search">
+    <input type="text" id="ctSourceFilterSearch" placeholder="ค้นหา...">
+  </div>
+  <div class="col-filter-list" id="ctSourceFilterList"></div>
+  <div class="col-filter-actions">
+    <button class="btn btn-sm btn-light" id="ctSourceFilterClear">ล้าง</button>
+    <button class="btn btn-sm btn-primary" id="ctSourceFilterApply">ตกลง</button>
   </div>
 </div>
 

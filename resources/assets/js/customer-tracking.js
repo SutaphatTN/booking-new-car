@@ -4,8 +4,9 @@ $.ajaxSetup({
 
 // ── Tracking table column filter ──
 let ctTrackingTable;
-// active filters store raw YYYY-MM-DD for dates, name strings for sale/status
+// active filters store raw YYYY-MM-DD for dates, name strings for sale/source/status
 let ctSaleFilterActive = null;
+let ctSourceFilterActive = null;
 let ctStatusFilterActive = null;
 let ctLastDateFilterActive = null; // YYYY-MM-DD
 let ctNextDateFilterActive = null; // YYYY-MM-DD
@@ -17,6 +18,7 @@ function ctGetCurrentFilterParams(exclude) {
   const decisionVal = $('#filterDecision').val();
   if (decisionVal)                                                  params.decision_id      = decisionVal;
   if (exclude !== 'sale'      && ctSaleFilterActive !== null)      params.sale_filter      = JSON.stringify(ctSaleFilterActive);
+  if (exclude !== 'source'    && ctSourceFilterActive !== null)    params.source_filter    = JSON.stringify(ctSourceFilterActive);
   if (exclude !== 'status'    && ctStatusFilterActive !== null)    params.status_filter    = JSON.stringify(ctStatusFilterActive);
   if (exclude !== 'last_date' && ctLastDateFilterActive !== null)  params.last_date_filter = JSON.stringify(ctLastDateFilterActive);
   if (exclude !== 'next_date' && ctNextDateFilterActive !== null)  params.next_date_filter = JSON.stringify(ctNextDateFilterActive);
@@ -70,6 +72,7 @@ $(document).ready(function () {
       data: function (d) {
         d.decision_id = $('#filterDecision').val();
         if (ctSaleFilterActive !== null)     d.sale_filter      = JSON.stringify(ctSaleFilterActive);
+        if (ctSourceFilterActive !== null)   d.source_filter    = JSON.stringify(ctSourceFilterActive);
         if (ctStatusFilterActive !== null)   d.status_filter    = JSON.stringify(ctStatusFilterActive);
         if (ctLastDateFilterActive !== null) d.last_date_filter = JSON.stringify(ctLastDateFilterActive);
         if (ctNextDateFilterActive !== null) d.next_date_filter = JSON.stringify(ctNextDateFilterActive);
@@ -78,8 +81,10 @@ $(document).ready(function () {
     columns: [
       { data: 'No', orderable: false },
       { data: 'FullName', orderable: false },
+      { data: 'contact_info', orderable: false },
       { data: 'model', orderable: false },
       { data: 'sale', orderable: false },
+      { data: 'source', orderable: false },
       { data: 'last_date', orderable: false },
       { data: 'next_date', orderable: false },
       { data: 'status', orderable: false },
@@ -121,6 +126,12 @@ $(document).ready(function () {
   });
 
   $('#filterDecision').on('change', function () {
+    $('#filterDecisionMobile').val($(this).val());
+    ctTrackingTable.ajax.reload(null, false);
+  });
+
+  $('#filterDecisionMobile').on('change', function () {
+    $('#filterDecision').val($(this).val());
     ctTrackingTable.ajax.reload(null, false);
   });
 
@@ -183,8 +194,8 @@ $(document).ready(function () {
   });
 
   // ── Filter button toggles ──
-  const ctAllDropdowns = '#ctSaleFilterDropdown,#ctLastDateFilterDropdown,#ctNextDateFilterDropdown,#ctStatusFilterDropdown';
-  const ctAllBtns      = '#ctSaleFilterBtn,#ctLastDateFilterBtn,#ctNextDateFilterBtn,#ctStatusFilterBtn';
+  const ctAllDropdowns = '#ctSaleFilterDropdown,#ctSourceFilterDropdown,#ctLastDateFilterDropdown,#ctNextDateFilterDropdown,#ctStatusFilterDropdown';
+  const ctAllBtns      = '#ctSaleFilterBtn,#ctSourceFilterBtn,#ctLastDateFilterBtn,#ctNextDateFilterBtn,#ctStatusFilterBtn';
 
   function ctOpenDropdown($dd, btn, buildFn) {
     $(ctAllDropdowns).not($dd).removeClass('show');
@@ -204,6 +215,19 @@ $(document).ready(function () {
       ctOpenDropdown($dd, btn, () => {
         ctBuildList($('#ctSaleFilterList'), res.sales || [], ctSaleFilterActive, 'ct-sale-chk', 'ctSale');
         $('#ctSaleFilterSearch').val('').trigger('input').focus();
+      });
+    });
+  });
+
+  $('#ctSourceFilterBtn').on('click', function (e) {
+    e.stopPropagation();
+    const $dd = $('#ctSourceFilterDropdown');
+    if ($dd.hasClass('show')) { $dd.removeClass('show'); $(this).removeClass('active'); return; }
+    const btn = this;
+    ctLoadFilterOptions(ctGetCurrentFilterParams('source'), function (res) {
+      ctOpenDropdown($dd, btn, () => {
+        ctBuildList($('#ctSourceFilterList'), res.sources || [], ctSourceFilterActive, 'ct-source-chk', 'ctSource');
+        $('#ctSourceFilterSearch').val('').trigger('input').focus();
       });
     });
   });
@@ -256,12 +280,14 @@ $(document).ready(function () {
 
   // Select all
   $(document).on('change', '#ctSaleChkAll',     function () { $('.ct-sale-chk:visible').prop('checked', $(this).is(':checked')); });
+  $(document).on('change', '#ctSourceChkAll',   function () { $('.ct-source-chk:visible').prop('checked', $(this).is(':checked')); });
   $(document).on('change', '#ctLastDateChkAll', function () { $('.ct-last-date-chk:visible').prop('checked', $(this).is(':checked')); });
   $(document).on('change', '#ctNextDateChkAll', function () { $('.ct-next-date-chk:visible').prop('checked', $(this).is(':checked')); });
   $(document).on('change', '#ctStatusChkAll',   function () { $('.ct-status-chk:visible').prop('checked', $(this).is(':checked')); });
 
   // Individual → sync header
   $(document).on('change', '.ct-sale-chk',      function () { ctSyncAll('ctSaleChkAll',     'ct-sale-chk'); });
+  $(document).on('change', '.ct-source-chk',    function () { ctSyncAll('ctSourceChkAll',   'ct-source-chk'); });
   $(document).on('change', '.ct-last-date-chk', function () { ctSyncAll('ctLastDateChkAll', 'ct-last-date-chk'); });
   $(document).on('change', '.ct-next-date-chk', function () { ctSyncAll('ctNextDateChkAll', 'ct-next-date-chk'); });
   $(document).on('change', '.ct-status-chk',    function () { ctSyncAll('ctStatusChkAll',   'ct-status-chk'); });
@@ -273,6 +299,13 @@ $(document).ready(function () {
       $(this).toggle(!q || $(this).find('.ct-sale-chk').val().toLowerCase().includes(q));
     });
     ctSyncAll('ctSaleChkAll', 'ct-sale-chk');
+  });
+  $(document).on('input', '#ctSourceFilterSearch', function () {
+    const q = $(this).val().toLowerCase();
+    $('#ctSourceFilterList .col-filter-item:not(.col-filter-all)').each(function () {
+      $(this).toggle(!q || $(this).find('.ct-source-chk').val().toLowerCase().includes(q));
+    });
+    ctSyncAll('ctSourceChkAll', 'ct-source-chk');
   });
   $(document).on('input', '#ctLastDateFilterSearch', function () {
     const q = $(this).val().toLowerCase();
@@ -324,6 +357,15 @@ $(document).ready(function () {
     ctTrackingTable.ajax.reload(null, false);
     $('#ctSaleFilterDropdown').removeClass('show'); $('#ctSaleFilterBtn').removeClass('active');
   });
+  $(document).on('click', '#ctSourceFilterApply', function () {
+    const $items = $('.ct-source-chk');
+    const checked = [];
+    $items.filter(':checked').each(function () { checked.push($(this).val()); });
+    ctSourceFilterActive = checked.length === $items.length ? null : checked;
+    $('#ctSourceFilterBtn').toggleClass('filtered', ctSourceFilterActive !== null);
+    ctTrackingTable.ajax.reload(null, false);
+    $('#ctSourceFilterDropdown').removeClass('show'); $('#ctSourceFilterBtn').removeClass('active');
+  });
   $(document).on('click', '#ctStatusFilterApply', function () {
     const $items = $('.ct-status-chk');
     const checked = [];
@@ -359,6 +401,14 @@ $(document).ready(function () {
     ctTrackingTable.ajax.reload(null, false);
     $('#ctSaleFilterDropdown').removeClass('show');
   });
+  $(document).on('click', '#ctSourceFilterClear', function () {
+    ctSourceFilterActive = null;
+    $('.ct-source-chk').prop('checked', true);
+    $('#ctSourceChkAll').prop({ indeterminate: false, checked: true });
+    $('#ctSourceFilterBtn').removeClass('filtered active');
+    ctTrackingTable.ajax.reload(null, false);
+    $('#ctSourceFilterDropdown').removeClass('show');
+  });
   $(document).on('click', '#ctStatusFilterClear', function () {
     ctStatusFilterActive = null;
     $('.ct-status-chk').prop('checked', true);
@@ -366,6 +416,15 @@ $(document).ready(function () {
     $('#ctStatusFilterBtn').removeClass('filtered active');
     ctTrackingTable.ajax.reload(null, false);
     $('#ctStatusFilterDropdown').removeClass('show');
+  });
+
+  $('#btnExportDaily').on('click', function () {
+    const date = $('#reportDailyDate').val();
+    if (!date) {
+      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกวันที่', timer: 1500, showConfirmButton: false });
+      return;
+    }
+    window.location.href = `/customer-tracking/export-daily?date=${date}`;
   });
 
   $('#btnExportByDate').on('click', function () {

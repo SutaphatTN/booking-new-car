@@ -279,6 +279,7 @@ class CustomerController extends Controller
                 'PrefixName' => $request->PrefixName,
                 'FirstName' => $request->FirstName,
                 'LastName' => $request->LastName,
+                'OriginalName' => $request->OriginalName,
                 'IDNumber' => preg_replace('/\D/', '', $request->IDNumber),
                 'NewCardDate' => $request->NewCardDate,
                 'ExpireCard' => $request->ExpireCard,
@@ -290,6 +291,7 @@ class CustomerController extends Controller
                 'FacebookName' => $request->FacebookName,
                 'Mobilephone1' => preg_replace('/\D/', '', $request->Mobilephone1),
                 'Mobilephone2' => preg_replace('/\D/', '', $request->Mobilephone2),
+                'salary' => $request->salary,
                 'career' => $request->career,
             ];
 

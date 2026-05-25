@@ -92,6 +92,15 @@
                     <div class="po-label">เบอร์โทรศัพท์</div>
                     <div class="info-pill">{{ $c->formatted_mobile ?? ($c->Mobilephone1 ?? '-') }}</div>
                   </div>
+
+                  <div class="col-md-6">
+                    <div class="po-label">อาชีพ</div>
+                    <div class="info-pill">{{ $c->career ?? '-' }}</div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="po-label">เงินเดือน</div>
+                    <div class="info-pill">{{ $c->salary ?? '-' }}</div>
+                  </div>
                   {{-- <div class="col-md-6">
                     <div class="po-label">บัตรประชาชน</div>
                     <div class="info-pill">{{ $c->formatted_id_number ?? ($c->IDNumber ?? '-') }}</div>
@@ -120,6 +129,11 @@
                   <div class="col-md-6">
                     <div class="po-label">แหล่งที่มา</div>
                     <div class="info-pill">{{ $tracking->source->name ?? '-' }}</div>
+                  </div>
+                  <div class="col-md-12">
+                    <div class="po-label">คลิปที่ยิงแอด</div>
+                    <textarea class="form-control" rows="2" readonly
+                      style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:9px 14px;font-size:0.9rem;color:#334155;resize:none;">{{ $tracking->clip_add ?? '-' }}</textarea>
                   </div>
                 </div>
               </div>
