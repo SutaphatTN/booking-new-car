@@ -794,10 +794,18 @@ class CustomerTrackingController extends Controller
             }
         }
 
+        $prefixName   = $request->PrefixName ? TbPrefixname::find($request->PrefixName)?->Name_TH : null;
+        $originalName = trim(implode(' ', array_filter([
+            $prefixName,
+            $request->FirstName,
+            $request->LastName ?: null,
+        ]))) ?: null;
+
         $customer = Customer::create([
             'PrefixName'   => $request->PrefixName ?: null,
             'FirstName'    => $request->FirstName,
             'LastName'     => $request->LastName ?: null,
+            'OriginalName' => $originalName,
             'Mobilephone1' => $mobile,
             'IDNumber'     => $idNumber,
             'LineID'       => $request->LineID,

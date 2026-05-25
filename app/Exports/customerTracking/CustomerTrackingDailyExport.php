@@ -77,6 +77,7 @@ class CustomerTrackingDailyExport implements FromView, WithTitle, WithStyles, Wi
         $details = CustomerTrackingDetail::with([
             'tracking.customer.prefix',
             'tracking.model',
+            'tracking.sale',
             'tracking.subModel',
             'decision',
         ])
@@ -102,6 +103,7 @@ class CustomerTrackingDailyExport implements FromView, WithTitle, WithStyles, Wi
             return [
                 'no'             => $no++,
                 'full_name'      => $fullName,
+                'sale'           => $tracking?->sale?->name ?? '-',
                 'car_info'       => $carInfo,
                 'test_date'      => $tracking?->format_test_drive_date ?? '-',
                 'test_note'      => $tracking?->test_drive_note ?? '-',
