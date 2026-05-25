@@ -108,7 +108,7 @@
           @php
             $userRole = Auth::user()->role;
             $userBrand = Auth::user()->getOriginal('brand');
-            $canSwitchBrand = ($userBrand != 2 || $userRole == 'md') && in_array($userRole, ['admin', 'account', 'audit', 'manager', 'md', 'sale', 'registration', 'bp', 'cs', 'adminPage']);
+            $canSwitchBrand = ($userBrand != 2 || $userRole == 'md') && in_array($userRole, ['admin', 'account', 'audit', 'manager', 'md', 'sale', 'registration', 'bp', 'cs', 'adminPage', 'cro']);
           @endphp
           @if ($canSwitchBrand)
             <li>
