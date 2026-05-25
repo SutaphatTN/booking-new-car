@@ -11,6 +11,10 @@
         @continue
       @endif
 
+      @if ($submenu->slug == 'purchase-order.create')
+        @continue
+      @endif
+
       @if (in_array($userRole, ['bp', 'cs']) && !in_array($submenu->slug, ['accessory', 'accessory.partner', 'invoice.index', 'invoice.create', 'invoice.view-export-report']))
         @continue
       @endif

@@ -67,6 +67,13 @@
         @continue
       @endif
 
+      @php
+        $adminPageAllowed = ['customer-tracking', 'customer', 'purchase-order'];
+      @endphp
+      @if ($userRole === 'adminPage' && empty(array_intersect($menuSlugs, $adminPageAllowed)))
+        @continue
+      @endif
+
       @if (auth()->user()->brand == 2 && $menu->slug === 'sale.viewCommission')
         @continue
       @endif
