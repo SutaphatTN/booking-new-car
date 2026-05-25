@@ -446,7 +446,8 @@ class CustomerTrackingController extends Controller
                 'UserInsert'        => $authUser->id,
             ]);
 
-            $entryType  = $authUser->role === 'sale' ? 'sale' : 'manager';
+            $isSaleRole = in_array($authUser->role, ['sale', 'adminPage', 'audit']);
+            $entryType  = $isSaleRole ? 'sale' : 'manager';
             $decisionId = $request->decision_id ?: null;
             $baseDate   = Carbon::parse($request->contact_date);
 
@@ -461,7 +462,7 @@ class CustomerTrackingController extends Controller
             ]);
 
             // auto-generate follow-up entries สำหรับ role ที่ไม่ใช่ sale
-            if ($authUser->role !== 'sale' && $decisionId) {
+            if (!$isSaleRole && $decisionId) {
                 $followUpDays = match ((int) $decisionId) {
                     1 => [3, 6],
                     2 => [15, 30],
@@ -528,7 +529,8 @@ class CustomerTrackingController extends Controller
         ]);
 
         $user       = Auth::user();
-        $entryType  = $user->role === 'sale' ? 'sale' : 'manager';
+        $isSaleRole = in_array($user->role, ['sale', 'adminPage', 'audit']);
+        $entryType  = $isSaleRole ? 'sale' : 'manager';
         $decisionId = $request->decision_id ?: null;
 
         DB::beginTransaction();
@@ -543,7 +545,7 @@ class CustomerTrackingController extends Controller
                 'UserInsert'     => $user->id,
             ]);
 
-            if ($user->role !== 'sale' && $decisionId) {
+            if (!$isSaleRole && $decisionId) {
                 $followUpDays = match ((int) $decisionId) {
                     1 => [3, 6],
                     2 => [15, 60],
