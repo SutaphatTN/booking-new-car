@@ -544,97 +544,114 @@ document.addEventListener('DOMContentLoaded', function () {
   $(document).on('click', '.btnSaveTracking', function (e) {
     e.preventDefault();
 
-    const $btn = $(this);
-    const form = $btn.closest('form')[0];
+    const $btn     = $(this);
+    const form     = $btn.closest('form')[0];
 
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
     }
 
-    const phone = $('#ct_phone').val().trim();
+    const phone     = $('#ct_phone').val().trim();
+    const lineId    = $('#ct_line_id').val().trim();
+    const facebook  = $('#ct_facebook').val().trim();
     const firstName = $('#ct_first_name').val().trim();
+    const prefix    = $('#ct_prefix').val() || null;
+    const last      = $('#ct_last_name').val().trim() || null;
 
-    if (!phone || !firstName) {
-      Swal.fire({ icon: 'warning', title: 'กรุณากรอกข้อมูลให้ครบ', text: 'ชื่อ และเบอร์โทร จำเป็นต้องกรอก' });
-      return;
+    function createNewCustomer() {
+      $.ajax({
+        url: '/customer-tracking/quick-store-customer',
+        type: 'POST',
+        data: {
+          PrefixName:   prefix,
+          FirstName:    firstName,
+          LastName:     last,
+          Mobilephone1: phone || null,
+          LineID:       lineId || null,
+          FacebookName: facebook || null,
+        },
+        success: function (r) {
+          if (!r.success) {
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: r.message ?? 'ไม่สามารถบันทึกลูกค้าได้' });
+            return;
+          }
+          $('#CusID').val(r.id);
+          submitTrackingForm($btn, form);
+        },
+        error: function (xhr) {
+          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message ?? 'ไม่สามารถบันทึกลูกค้าได้' });
+        }
+      });
     }
 
+    // เช็คแบบ chain: ถ้าไม่ซ้ำค่อยไปเช็คตัวถัดไป จนสุดท้ายถึง onCreate
+    function handleCheckResult(res, labelHtml, onNotFound) {
+      if (res.has_booking) {
+        Swal.fire({
+          icon: 'error',
+          title: 'ไม่สามารถเพิ่มการติดตามได้',
+          html: `<p><b>${res.name}</b> มีข้อมูลการจองอยู่แล้ว ไม่สามารถเพิ่มการติดตามได้</p>`,
+          confirmButtonText: 'ตกลง',
+          confirmButtonColor: '#6c5ffc',
+        });
+        return;
+      }
+
+      if (res.has_tracking) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'ลูกค้ามีการติดตามอยู่แล้ว',
+          html: `<p><b>${res.name}</b> มีการติดตามในระบบอยู่แล้ว</p>`,
+          showCancelButton: true,
+          confirmButtonText: 'ไปยังหน้าการติดตาม',
+          cancelButtonText: 'ยกเลิก',
+          confirmButtonColor: '#6c5ffc',
+          cancelButtonColor: '#6c757d',
+        }).then(result => {
+          if (result.isConfirmed) window.location.href = '/customer-tracking/' + res.tracking_id;
+        });
+        return;
+      }
+
+      if (res.found) {
+        Swal.fire({
+          icon: 'question',
+          title: 'พบข้อมูลในฐานข้อมูล',
+          html: `<p>${labelHtml} มีข้อมูลในฐานข้อมูลแล้ว</p>
+                 <p>ชื่อ: <b>${res.name}</b></p>
+                 <p>ต้องการเพิ่มการติดตามให้ลูกค้าคนนี้ไหม?</p>`,
+          showCancelButton: true,
+          confirmButtonText: 'ใช่, เพิ่มการติดตาม',
+          cancelButtonText: 'ยกเลิก',
+          confirmButtonColor: '#6c5ffc',
+          cancelButtonColor: '#6c757d',
+        }).then(result => {
+          if (!result.isConfirmed) return;
+          $('#CusID').val(res.customer_id);
+          submitTrackingForm($btn, form);
+        });
+        return;
+      }
+
+      onNotFound();
+    }
+
+    function runChecks(checks, idx, onCreate) {
+      if (idx >= checks.length) { onCreate(); return; }
+      const { params, labelHtml } = checks[idx];
+      $.get('/customer-tracking/check-phone', params)
+        .done(res => handleCheckResult(res, labelHtml, () => runChecks(checks, idx + 1, onCreate)))
+        .fail(() => Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถตรวจสอบข้อมูลได้ กรุณาลองใหม่' }));
+    }
+
+    const checks = [];
+    if (phone)    checks.push({ params: { phone },                          labelHtml: `เบอร์ : <b>${phone}</b>` });
+    if (lineId)   checks.push({ params: { field: 'line_id',  value: lineId  }, labelHtml: `Line ID : <b>${lineId}</b>` });
+    if (facebook) checks.push({ params: { field: 'facebook', value: facebook }, labelHtml: `Facebook : <b>${facebook}</b>` });
+
     Swal.fire({ title: 'กำลังตรวจสอบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-    $.get('/customer-tracking/check-phone', { phone })
-      .done(function (res) {
-        if (res.has_booking) {
-          Swal.fire({
-            icon: 'error',
-            title: 'ไม่สามารถเพิ่มการติดตามได้',
-            html: `<p><b>${res.name}</b> มีข้อมูลการจองอยู่แล้ว ไม่สามารถเพิ่มการติดตามได้</p>`,
-            confirmButtonText: 'ตกลง',
-            confirmButtonColor: '#6c5ffc',
-          });
-          return;
-        }
-
-        if (res.has_tracking) {
-          Swal.fire({
-            icon: 'warning',
-            title: 'ลูกค้ามีการติดตามอยู่แล้ว',
-            html: `<p><b>${res.name}</b> มีการติดตามในระบบอยู่แล้ว</p>`,
-            showCancelButton: true,
-            confirmButtonText: 'ไปยังหน้าการติดตาม',
-            cancelButtonText: 'ยกเลิก',
-            confirmButtonColor: '#6c5ffc',
-            cancelButtonColor: '#6c757d',
-          }).then(result => {
-            if (result.isConfirmed) {
-              window.location.href = '/customer-tracking/' + res.tracking_id;
-            }
-          });
-          return;
-        }
-
-        if (res.found) {
-          Swal.fire({
-            icon: 'question',
-            title: 'พบข้อมูลในฐานข้อมูล',
-            html: `<p>เบอร์ <b>${phone}</b> มีข้อมูลในฐานข้อมูลแล้ว</p>
-                   <p>ชื่อ: <b>${res.name}</b></p>
-                   <p>ต้องการเพิ่มการติดตามให้ลูกค้าคนนี้ไหม?</p>`,
-            showCancelButton: true,
-            confirmButtonText: 'ใช่, เพิ่มการติดตาม',
-            cancelButtonText: 'ยกเลิก',
-            confirmButtonColor: '#6c5ffc',
-            cancelButtonColor: '#6c757d',
-          }).then(result => {
-            if (!result.isConfirmed) return;
-            $('#CusID').val(res.customer_id);
-            submitTrackingForm($btn, form);
-          });
-        } else {
-          const prefix = $('#ct_prefix').val() || null;
-          const last = $('#ct_last_name').val().trim() || null;
-
-          $.ajax({
-            url: '/customer-tracking/quick-store-customer',
-            type: 'POST',
-            data: { PrefixName: prefix, FirstName: firstName, LastName: last, Mobilephone1: phone },
-            success: function (r) {
-              if (!r.success) {
-                Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: r.message ?? 'ไม่สามารถบันทึกลูกค้าได้' });
-                return;
-              }
-              $('#CusID').val(r.id);
-              submitTrackingForm($btn, form);
-            },
-            error: function (xhr) {
-              Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message ?? 'ไม่สามารถบันทึกลูกค้าได้' });
-            }
-          });
-        }
-      })
-      .fail(function () {
-        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถตรวจสอบข้อมูลได้ กรุณาลองใหม่' });
-      });
+    runChecks(checks, 0, createNewCustomer);
   });
 });
 

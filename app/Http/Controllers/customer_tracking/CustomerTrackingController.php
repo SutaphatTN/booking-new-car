@@ -353,9 +353,17 @@ class CustomerTrackingController extends Controller
 
     public function checkPhone(Request $request)
     {
-        $phone    = preg_replace('/\D/', '', $request->phone);
         $brand    = Auth::user()->brand;
-        $customer = Customer::where('Mobilephone1', $phone)->first();
+        $field    = $request->field ?? 'phone';
+
+        if ($field === 'line_id') {
+            $customer = Customer::where('LineID', $request->value)->first();
+        } elseif ($field === 'facebook') {
+            $customer = Customer::where('FacebookName', $request->value)->first();
+        } else {
+            $phone    = preg_replace('/\D/', '', $request->phone);
+            $customer = Customer::where('Mobilephone1', $phone)->first();
+        }
 
         if (!$customer) {
             return response()->json(['found' => false, 'has_tracking' => false, 'has_booking' => false]);
@@ -698,7 +706,7 @@ class CustomerTrackingController extends Controller
             'PrefixName'   => 'nullable|integer|exists:tb_prefixname,id',
             'FirstName'    => 'required|string|max:100',
             'LastName'     => 'nullable|string|max:100',
-            'Mobilephone1' => 'required|string|max:20',
+            'Mobilephone1' => 'nullable|string|max:20',
             'IDNumber'     => 'nullable|string|max:17',
             'LineID'       => 'nullable|string|max:100',
             'FacebookName' => 'nullable|string|max:100',
@@ -706,7 +714,7 @@ class CustomerTrackingController extends Controller
 
         $authUser = Auth::user();
         $idNumber = $request->IDNumber ? preg_replace('/\D/', '', $request->IDNumber) : null;
-        $mobile = preg_replace('/\D/', '', $request->Mobilephone1);
+        $mobile   = $request->Mobilephone1 ? preg_replace('/\D/', '', $request->Mobilephone1) : null;
 
         if ($idNumber) {
             $idExists = Customer::where('IDNumber', $idNumber)->exists();
@@ -715,9 +723,11 @@ class CustomerTrackingController extends Controller
             }
         }
 
-        $phoneExists = Customer::where('Mobilephone1', $mobile)->exists();
-        if ($phoneExists) {
-            return response()->json(['success' => false, 'message' => 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว'], 422);
+        if ($mobile) {
+            $phoneExists = Customer::where('Mobilephone1', $mobile)->exists();
+            if ($phoneExists) {
+                return response()->json(['success' => false, 'message' => 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว'], 422);
+            }
         }
 
         if ($request->LineID) {

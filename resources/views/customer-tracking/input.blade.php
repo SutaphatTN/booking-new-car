@@ -63,8 +63,16 @@
                 <input id="ct_last_name" name="ct_last_name" type="text" class="form-control">
               </div>
               <div class="col-md-5">
-                <label class="po-label" for="ct_phone">เบอร์โทร <span class="text-danger">*</span></label>
-                <input id="ct_phone" name="ct_phone" type="text" class="form-control" maxlength="12" placeholder="xxx-xxxx-xxxx" required>
+                <label class="po-label" for="ct_phone">เบอร์โทร</label>
+                <input id="ct_phone" name="ct_phone" type="text" class="form-control" maxlength="12" placeholder="xxx-xxxx-xxxx">
+              </div>
+              <div class="col-md-4">
+                <label class="po-label" for="ct_line_id"><i class='bx bxl-whatsapp'></i> LineID</label>
+                <input id="ct_line_id" name="ct_line_id" type="text" class="form-control">
+              </div>
+              <div class="col-md-5">
+                <label class="po-label" for="ct_facebook"><i class='bx bxl-facebook-circle'></i> Facebook</label>
+                <input id="ct_facebook" name="ct_facebook" type="text" class="form-control">
               </div>
             </div>
             <input type="hidden" id="CusID" name="customer_id">
