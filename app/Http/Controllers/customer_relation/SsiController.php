@@ -23,12 +23,15 @@ class SsiController extends Controller
 
     public function list(Request $request)
     {
+        $completedSalecarIds = SsiRecord::whereNotNull('completed_at')->pluck('salecar_id');
+
         $salecars = Salecar::with([
             'customer.prefix',
             'model',
             'subModel',
         ])
             ->whereNotNull('DeliveryDate')
+            ->whereNotIn('id', $completedSalecarIds)
             ->get();
 
         $no = 1;
@@ -256,6 +259,14 @@ class SsiController extends Controller
         );
 
         return response()->json(['success' => true, 'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว']);
+    }
+
+    public function markComplete($salecarId)
+    {
+        $ssiRecord = SsiRecord::where('salecar_id', $salecarId)->firstOrFail();
+        $ssiRecord->update(['completed_at' => now()]);
+
+        return response()->json(['success' => true, 'message' => 'บันทึกเสร็จสิ้นเรียบร้อยแล้ว']);
     }
 
     private function formatContact(SsiContact $contact, int $no): array

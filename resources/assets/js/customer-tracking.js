@@ -11,17 +11,24 @@ let ctStatusFilterActive = null;
 let ctLastDateFilterActive = null; // YYYY-MM-DD
 let ctNextDateFilterActive = null; // YYYY-MM-DD
 
-const ctRawToDmy = d => { const p = d.split('-'); return `${p[2]}-${p[1]}-${p[0]}`; };
+const ctRawToDmy = d => {
+  const p = d.split('-');
+  return `${p[2]}-${p[1]}-${p[0]}`;
+};
 
 function ctGetCurrentFilterParams(exclude) {
   const params = {};
   const decisionVal = $('#filterDecision').val();
-  if (decisionVal)                                                  params.decision_id      = decisionVal;
-  if (exclude !== 'sale'      && ctSaleFilterActive !== null)      params.sale_filter      = JSON.stringify(ctSaleFilterActive);
-  if (exclude !== 'source'    && ctSourceFilterActive !== null)    params.source_filter    = JSON.stringify(ctSourceFilterActive);
-  if (exclude !== 'status'    && ctStatusFilterActive !== null)    params.status_filter    = JSON.stringify(ctStatusFilterActive);
-  if (exclude !== 'last_date' && ctLastDateFilterActive !== null)  params.last_date_filter = JSON.stringify(ctLastDateFilterActive);
-  if (exclude !== 'next_date' && ctNextDateFilterActive !== null)  params.next_date_filter = JSON.stringify(ctNextDateFilterActive);
+  if (decisionVal) params.decision_id = decisionVal;
+  if (exclude !== 'sale' && ctSaleFilterActive !== null) params.sale_filter = JSON.stringify(ctSaleFilterActive);
+  if (exclude !== 'source' && ctSourceFilterActive !== null)
+    params.source_filter = JSON.stringify(ctSourceFilterActive);
+  if (exclude !== 'status' && ctStatusFilterActive !== null)
+    params.status_filter = JSON.stringify(ctStatusFilterActive);
+  if (exclude !== 'last_date' && ctLastDateFilterActive !== null)
+    params.last_date_filter = JSON.stringify(ctLastDateFilterActive);
+  if (exclude !== 'next_date' && ctNextDateFilterActive !== null)
+    params.next_date_filter = JSON.stringify(ctNextDateFilterActive);
   return params;
 }
 
@@ -53,7 +60,8 @@ function ctBuildList($list, allNames, activeFilter, chkClass, idPfx, labelFn) {
 
 function ctSyncAll(allId, itemClass) {
   const $items = $('.' + itemClass + ':visible');
-  const total = $items.length, checked = $items.filter(':checked').length;
+  const total = $items.length,
+    checked = $items.filter(':checked').length;
   const $all = $('#' + allId);
   if (total === 0 || checked === 0) $all.prop({ indeterminate: false, checked: false });
   else if (checked === total) $all.prop({ indeterminate: false, checked: true });
@@ -71,9 +79,9 @@ $(document).ready(function () {
       url: '/customer-tracking/list',
       data: function (d) {
         d.decision_id = $('#filterDecision').val();
-        if (ctSaleFilterActive !== null)     d.sale_filter      = JSON.stringify(ctSaleFilterActive);
-        if (ctSourceFilterActive !== null)   d.source_filter    = JSON.stringify(ctSourceFilterActive);
-        if (ctStatusFilterActive !== null)   d.status_filter    = JSON.stringify(ctStatusFilterActive);
+        if (ctSaleFilterActive !== null) d.sale_filter = JSON.stringify(ctSaleFilterActive);
+        if (ctSourceFilterActive !== null) d.source_filter = JSON.stringify(ctSourceFilterActive);
+        if (ctStatusFilterActive !== null) d.status_filter = JSON.stringify(ctStatusFilterActive);
         if (ctLastDateFilterActive !== null) d.last_date_filter = JSON.stringify(ctLastDateFilterActive);
         if (ctNextDateFilterActive !== null) d.next_date_filter = JSON.stringify(ctNextDateFilterActive);
       }
@@ -182,7 +190,13 @@ $(document).ready(function () {
         url: `/customer-tracking/${id}`,
         type: 'DELETE',
         success: function () {
-          Swal.fire({ icon: 'success', title: 'สำเร็จ', text: 'ลบรายการเรียบร้อยแล้ว', timer: 1500, showConfirmButton: false });
+          Swal.fire({
+            icon: 'success',
+            title: 'สำเร็จ',
+            text: 'ลบรายการเรียบร้อยแล้ว',
+            timer: 1500,
+            showConfirmButton: true
+          });
           ctTrackingTable.ajax.reload();
         },
         error: function (xhr) {
@@ -194,14 +208,15 @@ $(document).ready(function () {
   });
 
   // ── Filter button toggles ──
-  const ctAllDropdowns = '#ctSaleFilterDropdown,#ctSourceFilterDropdown,#ctLastDateFilterDropdown,#ctNextDateFilterDropdown,#ctStatusFilterDropdown';
-  const ctAllBtns      = '#ctSaleFilterBtn,#ctSourceFilterBtn,#ctLastDateFilterBtn,#ctNextDateFilterBtn,#ctStatusFilterBtn';
+  const ctAllDropdowns =
+    '#ctSaleFilterDropdown,#ctSourceFilterDropdown,#ctLastDateFilterDropdown,#ctNextDateFilterDropdown,#ctStatusFilterDropdown';
+  const ctAllBtns = '#ctSaleFilterBtn,#ctSourceFilterBtn,#ctLastDateFilterBtn,#ctNextDateFilterBtn,#ctStatusFilterBtn';
 
   function ctOpenDropdown($dd, btn, buildFn) {
     $(ctAllDropdowns).not($dd).removeClass('show');
     $(ctAllBtns).not(btn).removeClass('active');
     const rect = btn.getBoundingClientRect();
-    $dd.css({ top: (rect.bottom + 4) + 'px', left: rect.left + 'px' }).addClass('show');
+    $dd.css({ top: rect.bottom + 4 + 'px', left: rect.left + 'px' }).addClass('show');
     $(btn).addClass('active');
     buildFn();
   }
@@ -209,7 +224,11 @@ $(document).ready(function () {
   $('#ctSaleFilterBtn').on('click', function (e) {
     e.stopPropagation();
     const $dd = $('#ctSaleFilterDropdown');
-    if ($dd.hasClass('show')) { $dd.removeClass('show'); $(this).removeClass('active'); return; }
+    if ($dd.hasClass('show')) {
+      $dd.removeClass('show');
+      $(this).removeClass('active');
+      return;
+    }
     const btn = this;
     ctLoadFilterOptions(ctGetCurrentFilterParams('sale'), function (res) {
       ctOpenDropdown($dd, btn, () => {
@@ -222,7 +241,11 @@ $(document).ready(function () {
   $('#ctSourceFilterBtn').on('click', function (e) {
     e.stopPropagation();
     const $dd = $('#ctSourceFilterDropdown');
-    if ($dd.hasClass('show')) { $dd.removeClass('show'); $(this).removeClass('active'); return; }
+    if ($dd.hasClass('show')) {
+      $dd.removeClass('show');
+      $(this).removeClass('active');
+      return;
+    }
     const btn = this;
     ctLoadFilterOptions(ctGetCurrentFilterParams('source'), function (res) {
       ctOpenDropdown($dd, btn, () => {
@@ -235,11 +258,22 @@ $(document).ready(function () {
   $('#ctLastDateFilterBtn').on('click', function (e) {
     e.stopPropagation();
     const $dd = $('#ctLastDateFilterDropdown');
-    if ($dd.hasClass('show')) { $dd.removeClass('show'); $(this).removeClass('active'); return; }
+    if ($dd.hasClass('show')) {
+      $dd.removeClass('show');
+      $(this).removeClass('active');
+      return;
+    }
     const btn = this;
     ctLoadFilterOptions(ctGetCurrentFilterParams('last_date'), function (res) {
       ctOpenDropdown($dd, btn, () => {
-        ctBuildList($('#ctLastDateFilterList'), res.lastDates || [], ctLastDateFilterActive, 'ct-last-date-chk', 'ctLastDate', ctRawToDmy);
+        ctBuildList(
+          $('#ctLastDateFilterList'),
+          res.lastDates || [],
+          ctLastDateFilterActive,
+          'ct-last-date-chk',
+          'ctLastDate',
+          ctRawToDmy
+        );
         $('#ctLastDateFilterSearch').val('').trigger('input').focus();
       });
     });
@@ -248,11 +282,22 @@ $(document).ready(function () {
   $('#ctNextDateFilterBtn').on('click', function (e) {
     e.stopPropagation();
     const $dd = $('#ctNextDateFilterDropdown');
-    if ($dd.hasClass('show')) { $dd.removeClass('show'); $(this).removeClass('active'); return; }
+    if ($dd.hasClass('show')) {
+      $dd.removeClass('show');
+      $(this).removeClass('active');
+      return;
+    }
     const btn = this;
     ctLoadFilterOptions(ctGetCurrentFilterParams('next_date'), function (res) {
       ctOpenDropdown($dd, btn, () => {
-        ctBuildList($('#ctNextDateFilterList'), res.nextDates || [], ctNextDateFilterActive, 'ct-next-date-chk', 'ctNextDate', ctRawToDmy);
+        ctBuildList(
+          $('#ctNextDateFilterList'),
+          res.nextDates || [],
+          ctNextDateFilterActive,
+          'ct-next-date-chk',
+          'ctNextDate',
+          ctRawToDmy
+        );
         $('#ctNextDateFilterSearch').val('').trigger('input').focus();
       });
     });
@@ -261,7 +306,11 @@ $(document).ready(function () {
   $('#ctStatusFilterBtn').on('click', function (e) {
     e.stopPropagation();
     const $dd = $('#ctStatusFilterDropdown');
-    if ($dd.hasClass('show')) { $dd.removeClass('show'); $(this).removeClass('active'); return; }
+    if ($dd.hasClass('show')) {
+      $dd.removeClass('show');
+      $(this).removeClass('active');
+      return;
+    }
     const btn = this;
     ctLoadFilterOptions(ctGetCurrentFilterParams('status'), function (res) {
       ctOpenDropdown($dd, btn, () => {
@@ -279,18 +328,38 @@ $(document).ready(function () {
   });
 
   // Select all
-  $(document).on('change', '#ctSaleChkAll',     function () { $('.ct-sale-chk:visible').prop('checked', $(this).is(':checked')); });
-  $(document).on('change', '#ctSourceChkAll',   function () { $('.ct-source-chk:visible').prop('checked', $(this).is(':checked')); });
-  $(document).on('change', '#ctLastDateChkAll', function () { $('.ct-last-date-chk:visible').prop('checked', $(this).is(':checked')); });
-  $(document).on('change', '#ctNextDateChkAll', function () { $('.ct-next-date-chk:visible').prop('checked', $(this).is(':checked')); });
-  $(document).on('change', '#ctStatusChkAll',   function () { $('.ct-status-chk:visible').prop('checked', $(this).is(':checked')); });
+  $(document).on('change', '#ctSaleChkAll', function () {
+    $('.ct-sale-chk:visible').prop('checked', $(this).is(':checked'));
+  });
+  $(document).on('change', '#ctSourceChkAll', function () {
+    $('.ct-source-chk:visible').prop('checked', $(this).is(':checked'));
+  });
+  $(document).on('change', '#ctLastDateChkAll', function () {
+    $('.ct-last-date-chk:visible').prop('checked', $(this).is(':checked'));
+  });
+  $(document).on('change', '#ctNextDateChkAll', function () {
+    $('.ct-next-date-chk:visible').prop('checked', $(this).is(':checked'));
+  });
+  $(document).on('change', '#ctStatusChkAll', function () {
+    $('.ct-status-chk:visible').prop('checked', $(this).is(':checked'));
+  });
 
   // Individual → sync header
-  $(document).on('change', '.ct-sale-chk',      function () { ctSyncAll('ctSaleChkAll',     'ct-sale-chk'); });
-  $(document).on('change', '.ct-source-chk',    function () { ctSyncAll('ctSourceChkAll',   'ct-source-chk'); });
-  $(document).on('change', '.ct-last-date-chk', function () { ctSyncAll('ctLastDateChkAll', 'ct-last-date-chk'); });
-  $(document).on('change', '.ct-next-date-chk', function () { ctSyncAll('ctNextDateChkAll', 'ct-next-date-chk'); });
-  $(document).on('change', '.ct-status-chk',    function () { ctSyncAll('ctStatusChkAll',   'ct-status-chk'); });
+  $(document).on('change', '.ct-sale-chk', function () {
+    ctSyncAll('ctSaleChkAll', 'ct-sale-chk');
+  });
+  $(document).on('change', '.ct-source-chk', function () {
+    ctSyncAll('ctSourceChkAll', 'ct-source-chk');
+  });
+  $(document).on('change', '.ct-last-date-chk', function () {
+    ctSyncAll('ctLastDateChkAll', 'ct-last-date-chk');
+  });
+  $(document).on('change', '.ct-next-date-chk', function () {
+    ctSyncAll('ctNextDateChkAll', 'ct-next-date-chk');
+  });
+  $(document).on('change', '.ct-status-chk', function () {
+    ctSyncAll('ctStatusChkAll', 'ct-status-chk');
+  });
 
   // Search within dropdown
   $(document).on('input', '#ctSaleFilterSearch', function () {
@@ -333,47 +402,62 @@ $(document).ready(function () {
   $(document).on('click', '#ctLastDateFilterApply', function () {
     const $items = $('.ct-last-date-chk');
     const checked = [];
-    $items.filter(':checked').each(function () { checked.push($(this).val()); });
+    $items.filter(':checked').each(function () {
+      checked.push($(this).val());
+    });
     ctLastDateFilterActive = checked.length === $items.length ? null : checked;
     $('#ctLastDateFilterBtn').toggleClass('filtered', ctLastDateFilterActive !== null);
     ctTrackingTable.ajax.reload(null, false);
-    $('#ctLastDateFilterDropdown').removeClass('show'); $('#ctLastDateFilterBtn').removeClass('active');
+    $('#ctLastDateFilterDropdown').removeClass('show');
+    $('#ctLastDateFilterBtn').removeClass('active');
   });
   $(document).on('click', '#ctNextDateFilterApply', function () {
     const $items = $('.ct-next-date-chk');
     const checked = [];
-    $items.filter(':checked').each(function () { checked.push($(this).val()); });
+    $items.filter(':checked').each(function () {
+      checked.push($(this).val());
+    });
     ctNextDateFilterActive = checked.length === $items.length ? null : checked;
     $('#ctNextDateFilterBtn').toggleClass('filtered', ctNextDateFilterActive !== null);
     ctTrackingTable.ajax.reload(null, false);
-    $('#ctNextDateFilterDropdown').removeClass('show'); $('#ctNextDateFilterBtn').removeClass('active');
+    $('#ctNextDateFilterDropdown').removeClass('show');
+    $('#ctNextDateFilterBtn').removeClass('active');
   });
   $(document).on('click', '#ctSaleFilterApply', function () {
     const $items = $('.ct-sale-chk');
     const checked = [];
-    $items.filter(':checked').each(function () { checked.push($(this).val()); });
+    $items.filter(':checked').each(function () {
+      checked.push($(this).val());
+    });
     ctSaleFilterActive = checked.length === $items.length ? null : checked;
     $('#ctSaleFilterBtn').toggleClass('filtered', ctSaleFilterActive !== null);
     ctTrackingTable.ajax.reload(null, false);
-    $('#ctSaleFilterDropdown').removeClass('show'); $('#ctSaleFilterBtn').removeClass('active');
+    $('#ctSaleFilterDropdown').removeClass('show');
+    $('#ctSaleFilterBtn').removeClass('active');
   });
   $(document).on('click', '#ctSourceFilterApply', function () {
     const $items = $('.ct-source-chk');
     const checked = [];
-    $items.filter(':checked').each(function () { checked.push($(this).val()); });
+    $items.filter(':checked').each(function () {
+      checked.push($(this).val());
+    });
     ctSourceFilterActive = checked.length === $items.length ? null : checked;
     $('#ctSourceFilterBtn').toggleClass('filtered', ctSourceFilterActive !== null);
     ctTrackingTable.ajax.reload(null, false);
-    $('#ctSourceFilterDropdown').removeClass('show'); $('#ctSourceFilterBtn').removeClass('active');
+    $('#ctSourceFilterDropdown').removeClass('show');
+    $('#ctSourceFilterBtn').removeClass('active');
   });
   $(document).on('click', '#ctStatusFilterApply', function () {
     const $items = $('.ct-status-chk');
     const checked = [];
-    $items.filter(':checked').each(function () { checked.push($(this).val()); });
+    $items.filter(':checked').each(function () {
+      checked.push($(this).val());
+    });
     ctStatusFilterActive = checked.length === $items.length ? null : checked;
     $('#ctStatusFilterBtn').toggleClass('filtered', ctStatusFilterActive !== null);
     ctTrackingTable.ajax.reload(null, false);
-    $('#ctStatusFilterDropdown').removeClass('show'); $('#ctStatusFilterBtn').removeClass('active');
+    $('#ctStatusFilterDropdown').removeClass('show');
+    $('#ctStatusFilterBtn').removeClass('active');
   });
 
   // Clear
@@ -421,7 +505,7 @@ $(document).ready(function () {
   $('#btnExportDaily').on('click', function () {
     const date = $('#reportDailyDate').val();
     if (!date) {
-      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกวันที่', timer: 1500, showConfirmButton: false });
+      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกวันที่', timer: 1500, showConfirmButton: true });
       return;
     }
     window.location.href = `/customer-tracking/export-daily?date=${date}`;
@@ -429,13 +513,18 @@ $(document).ready(function () {
 
   $('#btnExportByDate').on('click', function () {
     const dateFrom = $('#reportDateFrom').val();
-    const dateTo   = $('#reportDateTo').val();
+    const dateTo = $('#reportDateTo').val();
     if (!dateFrom || !dateTo) {
-      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกวันที่', timer: 1500, showConfirmButton: false });
+      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกวันที่', timer: 1500, showConfirmButton: true });
       return;
     }
     if (dateFrom > dateTo) {
-      Swal.fire({ icon: 'warning', title: 'วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด', timer: 2000, showConfirmButton: false });
+      Swal.fire({
+        icon: 'warning',
+        title: 'วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด',
+        timer: 2000,
+        showConfirmButton: true
+      });
       return;
     }
     window.location.href = `/customer-tracking/export-by-date?date_from=${dateFrom}&date_to=${dateTo}`;
@@ -572,7 +661,6 @@ $(document).ready(function () {
 
 // INPUT FORM — save tracking
 document.addEventListener('DOMContentLoaded', function () {
-
   function submitTrackingForm($btn, form) {
     const url = $(form).attr('action');
     const formData = new FormData(form);
@@ -585,14 +673,25 @@ document.addEventListener('DOMContentLoaded', function () {
       contentType: false,
       processData: false,
       beforeSend: function () {
-        Swal.fire({ title: 'กำลังบันทึกข้อมูล...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({
+          title: 'กำลังบันทึกข้อมูล...',
+          text: 'กรุณารอสักครู่',
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
       },
       success: function (res) {
         Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 2000, showConfirmButton: true });
-        setTimeout(() => { window.location.href = '/customer-tracking'; }, 1000);
+        setTimeout(() => {
+          window.location.href = '/customer-tracking';
+        }, 1000);
       },
       error: function (xhr) {
-        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message ?? 'ไม่สามารถบันทึกข้อมูลได้' });
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: xhr.responseJSON?.message ?? 'ไม่สามารถบันทึกข้อมูลได้'
+        });
       },
       complete: function () {
         $btn.prop('disabled', false);
@@ -603,32 +702,32 @@ document.addEventListener('DOMContentLoaded', function () {
   $(document).on('click', '.btnSaveTracking', function (e) {
     e.preventDefault();
 
-    const $btn     = $(this);
-    const form     = $btn.closest('form')[0];
+    const $btn = $(this);
+    const form = $btn.closest('form')[0];
 
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
     }
 
-    const phone     = $('#ct_phone').val().trim();
-    const lineId    = $('#ct_line_id').val().trim();
-    const facebook  = $('#ct_facebook').val().trim();
+    const phone = $('#ct_phone').val().trim();
+    const lineId = $('#ct_line_id').val().trim();
+    const facebook = $('#ct_facebook').val().trim();
     const firstName = $('#ct_first_name').val().trim();
-    const prefix    = $('#ct_prefix').val() || null;
-    const last      = $('#ct_last_name').val().trim() || null;
+    const prefix = $('#ct_prefix').val() || null;
+    const last = $('#ct_last_name').val().trim() || null;
 
     function createNewCustomer() {
       $.ajax({
         url: '/customer-tracking/quick-store-customer',
         type: 'POST',
         data: {
-          PrefixName:   prefix,
-          FirstName:    firstName,
-          LastName:     last,
+          PrefixName: prefix,
+          FirstName: firstName,
+          LastName: last,
           Mobilephone1: phone || null,
-          LineID:       lineId || null,
-          FacebookName: facebook || null,
+          LineID: lineId || null,
+          FacebookName: facebook || null
         },
         success: function (r) {
           if (!r.success) {
@@ -639,7 +738,11 @@ document.addEventListener('DOMContentLoaded', function () {
           submitTrackingForm($btn, form);
         },
         error: function (xhr) {
-          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message ?? 'ไม่สามารถบันทึกลูกค้าได้' });
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: xhr.responseJSON?.message ?? 'ไม่สามารถบันทึกลูกค้าได้'
+          });
         }
       });
     }
@@ -652,7 +755,7 @@ document.addEventListener('DOMContentLoaded', function () {
           title: 'ไม่สามารถเพิ่มการติดตามได้',
           html: `<p><b>${res.name}</b> มีข้อมูลการจองอยู่แล้ว ไม่สามารถเพิ่มการติดตามได้</p>`,
           confirmButtonText: 'ตกลง',
-          confirmButtonColor: '#6c5ffc',
+          confirmButtonColor: '#6c5ffc'
         });
         return;
       }
@@ -666,7 +769,7 @@ document.addEventListener('DOMContentLoaded', function () {
           confirmButtonText: 'ไปยังหน้าการติดตาม',
           cancelButtonText: 'ยกเลิก',
           confirmButtonColor: '#6c5ffc',
-          cancelButtonColor: '#6c757d',
+          cancelButtonColor: '#6c757d'
         }).then(result => {
           if (result.isConfirmed) window.location.href = '/customer-tracking/' + res.tracking_id;
         });
@@ -684,7 +787,7 @@ document.addEventListener('DOMContentLoaded', function () {
           confirmButtonText: 'ใช่, เพิ่มการติดตาม',
           cancelButtonText: 'ยกเลิก',
           confirmButtonColor: '#6c5ffc',
-          cancelButtonColor: '#6c757d',
+          cancelButtonColor: '#6c757d'
         }).then(result => {
           if (!result.isConfirmed) return;
           $('#CusID').val(res.customer_id);
@@ -697,17 +800,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function runChecks(checks, idx, onCreate) {
-      if (idx >= checks.length) { onCreate(); return; }
+      if (idx >= checks.length) {
+        onCreate();
+        return;
+      }
       const { params, labelHtml } = checks[idx];
       $.get('/customer-tracking/check-phone', params)
         .done(res => handleCheckResult(res, labelHtml, () => runChecks(checks, idx + 1, onCreate)))
-        .fail(() => Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถตรวจสอบข้อมูลได้ กรุณาลองใหม่' }));
+        .fail(() =>
+          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถตรวจสอบข้อมูลได้ กรุณาลองใหม่' })
+        );
     }
 
     const checks = [];
-    if (phone)    checks.push({ params: { phone },                          labelHtml: `เบอร์ : <b>${phone}</b>` });
-    if (lineId)   checks.push({ params: { field: 'line_id',  value: lineId  }, labelHtml: `Line ID : <b>${lineId}</b>` });
-    if (facebook) checks.push({ params: { field: 'facebook', value: facebook }, labelHtml: `Facebook : <b>${facebook}</b>` });
+    if (phone) checks.push({ params: { phone }, labelHtml: `เบอร์ : <b>${phone}</b>` });
+    if (lineId) checks.push({ params: { field: 'line_id', value: lineId }, labelHtml: `Line ID : <b>${lineId}</b>` });
+    if (facebook)
+      checks.push({ params: { field: 'facebook', value: facebook }, labelHtml: `Facebook : <b>${facebook}</b>` });
 
     Swal.fire({ title: 'กำลังตรวจสอบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     runChecks(checks, 0, createNewCustomer);
@@ -911,12 +1020,12 @@ $(document).ready(function () {
 
   const BADGE_IDS = {
     delivery_timeline_scoring: 'score_delivery',
-    test_drive_scoring:        'score_testdrive',
-    occupation_scoring:        'score_occupation',
-    revenue_scoring:           'score_revenue',
-    model_interest_scoring:    'score_model',
-    purchase_type_scoring:     'score_purchase',
-    engagement_scoring:        'score_engagement',
+    test_drive_scoring: 'score_testdrive',
+    occupation_scoring: 'score_occupation',
+    revenue_scoring: 'score_revenue',
+    model_interest_scoring: 'score_model',
+    purchase_type_scoring: 'score_purchase',
+    engagement_scoring: 'score_engagement'
   };
 
   function gradeInfo(total) {
@@ -939,18 +1048,17 @@ $(document).ready(function () {
         const score = parseInt($(this).find(':selected').data('score') ?? 0);
         total += score;
         hasAny = true;
-        $badge.text(score + ' คะแนน')
+        $badge
+          .text(score + ' คะแนน')
           .removeClass('bg-label-secondary bg-label-primary bg-label-danger')
           .addClass(score > 0 ? 'bg-label-primary' : 'bg-label-danger');
       } else {
-        $badge.text('—')
-          .removeClass('bg-label-primary bg-label-danger')
-          .addClass('bg-label-secondary');
+        $badge.text('—').removeClass('bg-label-primary bg-label-danger').addClass('bg-label-secondary');
       }
     });
 
-    const $letter   = $('#gradeLetter');
-    const $total    = $('#gradeTotal');
+    const $letter = $('#gradeLetter');
+    const $total = $('#gradeTotal');
     const $progress = $('#gradeProgress');
 
     if (!hasAny) {
@@ -978,10 +1086,10 @@ $(document).ready(function () {
       type: 'POST',
       data: {
         test_drive_date: $('#td_date').val() || null,
-        test_drive_note: $('#td_note').val() || null,
+        test_drive_note: $('#td_note').val() || null
       },
       success: function () {
-        Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1500, showConfirmButton: false });
+        Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1500, showConfirmButton: true });
       },
       error: function () {
         Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถบันทึกได้' });
@@ -1006,7 +1114,7 @@ $(document).ready(function () {
       type: 'POST',
       data: data,
       success: function () {
-        Swal.fire({ icon: 'success', title: 'บันทึกเกรดสำเร็จ', timer: 1500, showConfirmButton: false });
+        Swal.fire({ icon: 'success', title: 'บันทึกเกรดสำเร็จ', timer: 1500, showConfirmButton: true });
       },
       error: function () {
         Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถบันทึกได้' });

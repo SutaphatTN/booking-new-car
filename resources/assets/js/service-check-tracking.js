@@ -70,7 +70,7 @@ $(document).ready(function () {
             title: 'สำเร็จ',
             text: 'ลบรายการเรียบร้อยแล้ว',
             timer: 1500,
-            showConfirmButton: false
+            showConfirmButton: true
           });
           table.ajax.reload();
         },

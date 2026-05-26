@@ -19,6 +19,11 @@ class SsiRecord extends Model
         'brand',
         'branch',
         'UserInsert',
+        'completed_at',
+    ];
+
+    protected $casts = [
+        'completed_at' => 'datetime',
     ];
 
     public function salecar()

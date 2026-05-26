@@ -13,6 +13,7 @@
     $consultantPhone = $consultant?->formatted_phone ?? '';
     $customerPhone = $customer?->formatted_mobile ?? '';
     $chassisNo = $saleCar->carOrder?->engine_number ?? '';
+    $vinNo = $saleCar->carOrder?->vin_number ?? '';
   @endphp
 
   <style>
@@ -262,8 +263,8 @@
       <tr>
         <td class="label">รุ่นรถ / สีรถ</td>
         <td class="val">{{ $model }} / {{ $color }}</td>
-        <td class="label">หมายเลขตัวถัง</td>
-        <td class="val">{{ $chassisNo }}</td>
+        <td class="label">เลข Vin</td>
+        <td class="val">{{ $vinNo }}</td>
         <td class="label">เลขทะเบียนรถ (ป้ายแดง)</td>
         <td class="val"></td>
       </tr>

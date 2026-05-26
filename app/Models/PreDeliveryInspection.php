@@ -26,8 +26,10 @@ class PreDeliveryInspection extends Model
         'accessories_incomplete_items',
         'accessories_note',
         'exterior_clean',
+        'exterior_incomplete_items',
         'exterior_note',
         'interior_clean',
+        'interior_incomplete_items',
         'interior_note',
         'issues_resolved',
         'issues_detail',
@@ -58,5 +60,10 @@ class PreDeliveryInspection extends Model
     {
         return $this->hasMany(PreDeliveryInspectionFile::class, 'inspection_id')
             ->where('file_type', 'photo');
+    }
+
+    public function logs()
+    {
+        return $this->hasMany(PreDeliveryInspectionLog::class, 'inspection_id')->orderByDesc('created_at');
     }
 }
