@@ -6,6 +6,7 @@
       <th>ฝ่ายขาย</th>
       <th>รุ่นรถหลัก</th>
       <th>รุ่นรถย่อย</th>
+      <th>Vin-Number</th>
       <th>เลขถัง</th>
       @if (!in_array(auth()->user()->brand, [2,3]))
         <th>Option</th>
@@ -37,6 +38,7 @@
         <td>{{ $s['sale'] }}</td>
         <td>{{ $s['model'] }}</td>
         <td>{{ $s['subModel'] }}</td>
+        <td>{{ $s['vin'] }}</td>
         <td>{{ $s['engine'] }}</td>
         @if (!in_array(auth()->user()->brand, [2,3]))
           <td>{{ $s['option'] }}</td>
@@ -61,7 +63,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="21" align="center">
+        <td colspan="22" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

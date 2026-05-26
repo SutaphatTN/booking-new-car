@@ -5,6 +5,7 @@ namespace App\Http\Controllers\customer_relation;
 use App\Http\Controllers\Controller;
 use App\Models\PreDeliveryInspection;
 use App\Models\PreDeliveryInspectionFile;
+use App\Models\PreDeliveryInspectionLog;
 use App\Models\Salecar;
 use App\Services\OneDriveService;
 use GuzzleHttp\Client;
@@ -20,7 +21,7 @@ class PreDeliveryInspectionController extends Controller
 
     public function list(Request $request)
     {
-        $salecars = Salecar::with(['customer.prefix', 'saleUser', 'preDeliveryInspection'])
+        $salecars = Salecar::with(['customer.prefix', 'saleUser', 'preDeliveryInspection.docs', 'preDeliveryInspection.photos'])
             ->whereNotNull('AdminSignature')
             ->get();
 
@@ -47,7 +48,21 @@ class PreDeliveryInspectionController extends Controller
                      . ($subDetail ? $row('bx-info-circle', 'text-warning', 'รายละเอียด', $subDetail) : '');
             }
 
-            $hasInspection = $s->preDeliveryInspection !== null;
+            $ins = $s->preDeliveryInspection;
+            $hasInspection = $ins !== null;
+
+            // ข้อ 1-4 เรียบร้อยทั้งหมด และข้อ 5-6 มีไฟล์ → ซ่อนออกจากรายการ
+            if (
+                $ins
+                && $ins->accessories_complete == 1
+                && $ins->exterior_clean == 1
+                && $ins->interior_clean == 1
+                && $ins->issues_resolved == 1
+                && $ins->docs->isNotEmpty()
+                && $ins->photos->isNotEmpty()
+            ) {
+                return null;
+            }
 
             return [
                 'No'            => $no++,
@@ -62,7 +77,7 @@ class PreDeliveryInspectionController extends Controller
             ];
         });
 
-        return response()->json(['data' => $data]);
+        return response()->json(['data' => $data->filter()->values()]);
     }
 
     public function getInspection($salecarId)
@@ -80,8 +95,10 @@ class PreDeliveryInspectionController extends Controller
             'accessories_incomplete_items' => $inspection->accessories_incomplete_items,
             'accessories_note'             => $inspection->accessories_note,
             'exterior_clean'               => $inspection->exterior_clean,
+            'exterior_incomplete_items'    => $inspection->exterior_incomplete_items,
             'exterior_note'                => $inspection->exterior_note,
             'interior_clean'               => $inspection->interior_clean,
+            'interior_incomplete_items'    => $inspection->interior_incomplete_items,
             'interior_note'                => $inspection->interior_note,
             'issues_resolved'              => $inspection->issues_resolved,
             'issues_detail'                => $inspection->issues_detail,
@@ -97,16 +114,23 @@ class PreDeliveryInspectionController extends Controller
         $authUser = Auth::user();
 
         $inspection = PreDeliveryInspection::firstOrNew(['salecar_id' => $salecarId]);
+        $accVal = $request->input('accessories_complete');
+        $extVal = $request->input('exterior_clean');
+        $intVal = $request->input('interior_clean');
+        $issVal = $request->input('issues_resolved');
+
         $inspection->fill([
             'salecar_id'                   => $salecarId,
-            'accessories_complete'         => $request->input('accessories_complete'),
+            'accessories_complete'         => $accVal,
             'accessories_incomplete_items' => $request->input('accessories_incomplete_items'),
             'accessories_note'             => $request->input('accessories_note'),
-            'exterior_clean'               => $request->input('exterior_clean'),
+            'exterior_clean'               => $extVal,
+            'exterior_incomplete_items'    => $request->input('exterior_incomplete_items'),
             'exterior_note'                => $request->input('exterior_note'),
-            'interior_clean'               => $request->input('interior_clean'),
+            'interior_clean'               => $intVal,
+            'interior_incomplete_items'    => $request->input('interior_incomplete_items'),
             'interior_note'                => $request->input('interior_note'),
-            'issues_resolved'              => $request->input('issues_resolved'),
+            'issues_resolved'              => $issVal,
             'issues_detail'                => $request->input('issues_detail'),
             'issues_reason'                => $request->input('issues_reason'),
             'userZone'                     => $authUser->userZone,
@@ -114,6 +138,23 @@ class PreDeliveryInspectionController extends Controller
             'branch'                       => $authUser->branch,
             'UserInsert'                   => Auth::id(),
         ])->save();
+
+        // บันทึก log ถ้ามีข้อที่ไม่เรียบร้อย
+        if ($accVal === '0' || $extVal === '0' || $intVal === '0' || $issVal === '0') {
+            PreDeliveryInspectionLog::create([
+                'inspection_id'                => $inspection->id,
+                'salecar_id'                   => $salecarId,
+                'accessories_complete'         => $accVal !== null ? (int) $accVal : null,
+                'accessories_incomplete_items' => $accVal === '0' ? $request->input('accessories_incomplete_items') : null,
+                'exterior_clean'               => $extVal !== null ? (int) $extVal : null,
+                'exterior_incomplete_items'    => $extVal === '0' ? $request->input('exterior_incomplete_items') : null,
+                'interior_clean'               => $intVal !== null ? (int) $intVal : null,
+                'interior_incomplete_items'    => $intVal === '0' ? $request->input('interior_incomplete_items') : null,
+                'issues_resolved'              => $issVal !== null ? (int) $issVal : null,
+                'issues_detail'                => $issVal === '0' ? $request->input('issues_detail') : null,
+                'UserInsert'                   => Auth::id(),
+            ]);
+        }
 
         // ── จัดการไฟล์แนบ ──
         $keepDocs   = $request->input('keep_docs',   []);
@@ -225,7 +266,7 @@ class PreDeliveryInspectionController extends Controller
         ])->findOrFail($salecarId);
 
         $c          = $salecar->customer;
-        $inspection = PreDeliveryInspection::with(['docs', 'photos'])
+        $inspection = PreDeliveryInspection::with(['docs', 'photos', 'logs'])
             ->where('salecar_id', $salecarId)->first();
 
         return response()->json([
@@ -248,14 +289,27 @@ class PreDeliveryInspectionController extends Controller
                 'accessories_incomplete_items' => $inspection->accessories_incomplete_items,
                 'accessories_note'             => $inspection->accessories_note,
                 'exterior_clean'               => $inspection->exterior_clean,
+                'exterior_incomplete_items'    => $inspection->exterior_incomplete_items,
                 'exterior_note'                => $inspection->exterior_note,
                 'interior_clean'               => $inspection->interior_clean,
+                'interior_incomplete_items'    => $inspection->interior_incomplete_items,
                 'interior_note'                => $inspection->interior_note,
                 'issues_resolved'              => $inspection->issues_resolved,
                 'issues_detail'                => $inspection->issues_detail,
                 'issues_reason'                => $inspection->issues_reason,
                 'docs'   => $inspection->docs->map(fn($f) => ['url' => $f->file_url, 'name' => $f->file_name])->values(),
                 'photos' => $inspection->photos->map(fn($f) => ['url' => $f->file_url, 'name' => $f->file_name])->values(),
+                'logs'   => $inspection->logs->map(fn($l) => [
+                    'accessories_complete'         => $l->accessories_complete,
+                    'accessories_incomplete_items' => $l->accessories_incomplete_items,
+                    'exterior_clean'               => $l->exterior_clean,
+                    'exterior_incomplete_items'    => $l->exterior_incomplete_items,
+                    'interior_clean'               => $l->interior_clean,
+                    'interior_incomplete_items'    => $l->interior_incomplete_items,
+                    'issues_resolved'              => $l->issues_resolved,
+                    'issues_detail'                => $l->issues_detail,
+                    'created_at'                   => $l->created_at?->format('d/m/Y H:i'),
+                ])->values(),
             ] : null,
         ]);
     }

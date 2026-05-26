@@ -29,6 +29,7 @@ use App\Http\Controllers\gwm_incentive\GwmIncentiveController;
 use App\Http\Controllers\service_check_tracking\ServiceCheckTrackingController;
 use App\Http\Controllers\customer_relation\PreDeliveryInspectionController;
 use App\Http\Controllers\customer_relation\SsiController;
+use Illuminate\Support\Facades\Auth;
 
 Route::get('/', fn() => redirect()->route('login'));
 
@@ -45,10 +46,14 @@ Route::resource('register', RegisterController::class);
 Route::resource('forgot', ForgotController::class);
 
 Route::get('/keep-alive', function () {
+    if (!Auth::check()) {
+        return response()->json(['status' => 'expired'], 401)
+            ->header('Cache-Control', 'no-store');
+    }
     request()->session()->put('last_keep_alive', now());
     return response()->json(['status' => 'ok'])
         ->header('Cache-Control', 'no-store');
-})->middleware('auth');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/accessory/search', [PurchaseOrderController::class, 'searchAccessory'])->name('accessory.search');
@@ -403,6 +408,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('ssi/{salecarId}/contact', [SsiController::class, 'saveContact'])->name('ssi.contact.save');
     Route::delete('ssi/{salecarId}/contact/{contactId}', [SsiController::class, 'deleteContact'])->name('ssi.contact.delete');
     Route::post('ssi/{salecarId}/tab2', [SsiController::class, 'saveTab2'])->name('ssi.tab2.save');
+    Route::post('ssi/{salecarId}/complete', [SsiController::class, 'markComplete'])->name('ssi.complete');
 
     //all resource
     Route::resource('customer-tracking', CustomerTrackingController::class);

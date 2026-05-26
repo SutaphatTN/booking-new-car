@@ -103,13 +103,17 @@
           // Text fields
           $('#accessories_incomplete_items').val(data.accessories_incomplete_items || '');
           $('#accessories_note').val(data.accessories_note || '');
+          $('#exterior_incomplete_items').val(data.exterior_incomplete_items || '');
           $('#exterior_note').val(data.exterior_note || '');
+          $('#interior_incomplete_items').val(data.interior_incomplete_items || '');
           $('#interior_note').val(data.interior_note || '');
           $('#issues_detail').val(data.issues_detail || '');
           $('#issues_reason').val(data.issues_reason || '');
 
           // Conditional visibility
           toggleAccessoriesRow();
+          toggleExteriorRow();
+          toggleInteriorRow();
 
           // Existing docs
           const $docList = $('#existingDocs').empty();
@@ -137,7 +141,27 @@
         }
       }
 
+      function toggleExteriorRow() {
+        const val = $('input[name="exterior_clean"]:checked').val();
+        if (val === '0') {
+          $('#rowExteriorIncomplete').slideDown(150);
+        } else {
+          $('#rowExteriorIncomplete').slideUp(150);
+        }
+      }
+
+      function toggleInteriorRow() {
+        const val = $('input[name="interior_clean"]:checked').val();
+        if (val === '0') {
+          $('#rowInteriorIncomplete').slideDown(150);
+        } else {
+          $('#rowInteriorIncomplete').slideUp(150);
+        }
+      }
+
       $('input[name="accessories_complete"]').on('change', toggleAccessoriesRow);
+      $('input[name="exterior_clean"]').on('change', toggleExteriorRow);
+      $('input[name="interior_clean"]').on('change', toggleInteriorRow);
 
       // ── File card style by extension ──
       function fileCardStyle(name) {
@@ -265,10 +289,12 @@
 
         const extVal = $('input[name="exterior_clean"]:checked').val();
         if (extVal !== undefined) fd.append('exterior_clean', extVal);
+        fd.append('exterior_incomplete_items', $('#exterior_incomplete_items').val());
         fd.append('exterior_note', $('#exterior_note').val());
 
         const intVal = $('input[name="interior_clean"]:checked').val();
         if (intVal !== undefined) fd.append('interior_clean', intVal);
+        fd.append('interior_incomplete_items', $('#interior_incomplete_items').val());
         fd.append('interior_note', $('#interior_note').val());
 
         const issVal = $('input[name="issues_resolved"]:checked').val();
@@ -332,11 +358,11 @@
         $('input[name="exterior_clean"]').prop('checked', false);
         $('input[name="interior_clean"]').prop('checked', false);
         $('input[name="issues_resolved"]').prop('checked', false);
-        $('#accessories_incomplete_items, #accessories_note, #exterior_note, #interior_note, #issues_detail, #issues_reason')
+        $('#accessories_incomplete_items, #accessories_note, #exterior_incomplete_items, #exterior_note, #interior_incomplete_items, #interior_note, #issues_detail, #issues_reason')
           .val('');
         $('#existingDocs, #existingPhotos, #newPhotosPreview, #newDocsPreview').empty();
         $('#inspection_docs_input, #inspection_photos_input').val('');
-        $('#rowAccessoriesIncomplete').hide();
+        $('#rowAccessoriesIncomplete, #rowExteriorIncomplete, #rowInteriorIncomplete').hide();
         $('#modalInspectionId').val('');
       }
 
@@ -392,6 +418,38 @@
           </div>
           <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;">${f.name}</div>
         </a>`;
+      }
+
+      function buildLogEntry(log, no) {
+        const items = [];
+        if (log.accessories_complete === false) {
+          let txt = '<span class="badge bg-danger me-1">อุปกรณ์ตกแต่ง</span>';
+          if (log.accessories_incomplete_items) txt += `<span class="small text-secondary">${log.accessories_incomplete_items}</span>`;
+          items.push(txt);
+        }
+        if (log.exterior_clean === false) {
+          let txt = '<span class="badge bg-danger me-1">ความสะอาดภายนอก</span>';
+          if (log.exterior_incomplete_items) txt += `<span class="small text-secondary">${log.exterior_incomplete_items}</span>`;
+          items.push(txt);
+        }
+        if (log.interior_clean === false) {
+          let txt = '<span class="badge bg-danger me-1">ความสะอาดภายใน</span>';
+          if (log.interior_incomplete_items) txt += `<span class="small text-secondary">${log.interior_incomplete_items}</span>`;
+          items.push(txt);
+        }
+        if (log.issues_resolved === false) {
+          let txt = '<span class="badge bg-danger me-1">ปัญหาที่พบ/วิธีแก้ไข</span>';
+          if (log.issues_detail) txt += `<span class="small text-secondary">${log.issues_detail}</span>`;
+          items.push(txt);
+        }
+        return `
+          <div class="p-3${no > 1 ? ' border-top' : ''}">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="badge bg-secondary rounded-pill">#${no}</span>
+              <small class="text-muted"><i class="bx bx-time-five me-1"></i>${log.created_at}</small>
+            </div>
+            ${items.map(item => `<div class="mb-1">${item}</div>`).join('')}
+          </div>`;
       }
 
       function buildViewContent(data) {
@@ -515,12 +573,22 @@
         rightHtml += sec(
           '<i class="bx bx-sun"></i>', 'emerald', '2. ความสะอาดภายนอก',
           ins.exterior_clean,
+          (ins.exterior_clean === false && ins.exterior_incomplete_items ?
+            `<div class="vp-note-field">
+              <div class="vp-field-label"><i class="bx bx-list-ul"></i>รายละเอียดที่ไม่เรียบร้อย</div>
+              <div class="vp-note-value">${ins.exterior_incomplete_items}</div>
+            </div>` : '') +
           note('หมายเหตุ', ins.exterior_note)
         );
 
         rightHtml += sec(
           '<i class="bx bx-shield-quarter"></i>', 'amber', '3. ความสะอาดภายใน',
           ins.interior_clean,
+          (ins.interior_clean === false && ins.interior_incomplete_items ?
+            `<div class="vp-note-field">
+              <div class="vp-field-label"><i class="bx bx-list-ul"></i>รายละเอียดที่ไม่เรียบร้อย</div>
+              <div class="vp-note-value">${ins.interior_incomplete_items}</div>
+            </div>` : '') +
           note('หมายเหตุ', ins.interior_note)
         );
 
@@ -553,6 +621,19 @@
             </div>
             <div class="po-section-body d-flex flex-wrap">
               ${ins.photos.map(f => buildViewMediaItem(f, id)).join('')}
+            </div>
+          </div>`;
+        }
+
+        if (ins.logs && ins.logs.length) {
+          rightHtml += `
+          <div class="po-section mt-3">
+            <div class="po-section-header">
+              <div class="po-section-icon" style="background:#6b7280;"><i class="bx bx-history"></i></div>
+              <h6 class="po-section-title">ประวัติรายการที่ไม่เรียบร้อย</h6>
+            </div>
+            <div class="po-section-body p-0">
+              ${ins.logs.map((log, i) => buildLogEntry(log, i + 1)).join('')}
             </div>
           </div>`;
         }
@@ -684,6 +765,10 @@
                   </label>
                 </div>
               </div>
+              <div id="rowExteriorIncomplete" style="display:none;">
+                <label class="po-label" for="exterior_incomplete_items">ระบุรายละเอียดที่ไม่เรียบร้อย</label>
+                <textarea id="exterior_incomplete_items" class="form-control mb-2" rows="2" placeholder="ระบุรายการ..."></textarea>
+              </div>
               <label class="po-label" for="exterior_note">หมายเหตุ</label>
               <textarea id="exterior_note" class="form-control" rows="2" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
             </div>
@@ -710,6 +795,10 @@
                     <i class="bx bx-x-circle me-1"></i> ไม่เรียบร้อย
                   </label>
                 </div>
+              </div>
+              <div id="rowInteriorIncomplete" style="display:none;">
+                <label class="po-label" for="interior_incomplete_items">ระบุรายละเอียดที่ไม่เรียบร้อย</label>
+                <textarea id="interior_incomplete_items" class="form-control mb-2" rows="2" placeholder="ระบุรายการ..."></textarea>
               </div>
               <label class="po-label" for="interior_note">หมายเหตุ</label>
               <textarea id="interior_note" class="form-control" rows="2" placeholder="หมายเหตุเพิ่มเติม..."></textarea>

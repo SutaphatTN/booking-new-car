@@ -369,6 +369,28 @@ class CustomerController extends Controller
 
             $customer = Customer::findOrFail($id);
 
+            $hasTracking = CustomerTracking::where('customer_id', $customer->id)
+                ->whereNull('cancelled_at')
+                ->exists();
+
+            if ($hasTracking) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถลบลูกค้าได้ เนื่องจากยังมีข้อมูลการติดตามอยู่ในระบบ'
+                ], 422);
+            }
+
+            $hasBooking = Salecar::where('CusID', $customer->id)
+                ->whereNotIn('con_status', [5, 7, 8, 9])
+                ->exists();
+
+            if ($hasBooking) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถลบลูกค้าได้ เนื่องจากยังมีข้อมูลการจองอยู่ในระบบ'
+                ], 422);
+            }
+
             Address::where('customer_id', $customer->id)->delete();
             $customer->delete();
 

@@ -440,6 +440,14 @@ class CustomerTrackingController extends Controller
 
             $authUser = Auth::user();
 
+            // ถ้าลูกค้าถูก soft-delete ไว้ → restore กลับมาก่อน เพราะมีการติดตามใหม่
+            if ($request->customer_id) {
+                Customer::withTrashed()
+                    ->where('id', $request->customer_id)
+                    ->whereNotNull('deleted_at')
+                    ->restore();
+            }
+
             $hasBooking = Salecar::withoutGlobalScope(UserAccessScope::class)
                 ->where('CusID', $request->customer_id)
                 ->where('brand', $authUser->brand)

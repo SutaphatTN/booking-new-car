@@ -119,7 +119,7 @@ $(document).on('click', '.btnViewCancellation', function () {
 //     success: function (res) {
 //       if (res.success) {
 //         $('#cancellationViewModal').modal('hide');
-//         Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 2000, showConfirmButton: false });
+//         Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 2000, showConfirmButton: true });
 //         cancellationTable.ajax.reload(null, false);
 //       } else {
 //         Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: res.message });
@@ -144,22 +144,22 @@ function attachProxy(url, salecarId, name) {
 
 function fileCardStyle(name) {
   const ext = (name.split('.').pop() || '').toLowerCase();
-  if (ext === 'pdf')                        return { bg: '#ef4444', label: 'PDF' };
-  if (['xlsx','xls','csv'].includes(ext))   return { bg: '#16a34a', label: ext.toUpperCase() };
-  if (['doc','docx'].includes(ext))         return { bg: '#2563eb', label: ext.toUpperCase() };
-  if (['ppt','pptx'].includes(ext))         return { bg: '#ea580c', label: ext.toUpperCase() };
-  if (['zip','rar','7z'].includes(ext))     return { bg: '#7c3aed', label: ext.toUpperCase() };
+  if (ext === 'pdf') return { bg: '#ef4444', label: 'PDF' };
+  if (['xlsx', 'xls', 'csv'].includes(ext)) return { bg: '#16a34a', label: ext.toUpperCase() };
+  if (['doc', 'docx'].includes(ext)) return { bg: '#2563eb', label: ext.toUpperCase() };
+  if (['ppt', 'pptx'].includes(ext)) return { bg: '#ea580c', label: ext.toUpperCase() };
+  if (['zip', 'rar', '7z'].includes(ext)) return { bg: '#7c3aed', label: ext.toUpperCase() };
   return { bg: '#64748b', label: ext ? ext.toUpperCase() : 'FILE' };
 }
 
 function attachPreviewHtml(attachment, salecarId) {
-  const url   = typeof attachment === 'object' ? attachment.url  : attachment;
-  const name  = typeof attachment === 'object' ? attachment.name : null;
+  const url = typeof attachment === 'object' ? attachment.url : attachment;
+  const name = typeof attachment === 'object' ? attachment.name : null;
   const proxy = attachProxy(url, salecarId, name);
-  const uid   = Math.random().toString(36).slice(2, 8);
-  const ext   = name ? name.split('.').pop().toLowerCase() : null;
-  const imgExts = ['jpg','jpeg','png','gif','webp','bmp'];
-  const isFile  = ext && !imgExts.includes(ext);
+  const uid = Math.random().toString(36).slice(2, 8);
+  const ext = name ? name.split('.').pop().toLowerCase() : null;
+  const imgExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+  const isFile = ext && !imgExts.includes(ext);
 
   if (isFile) {
     const st = fileCardStyle(name);
@@ -201,13 +201,13 @@ function renderWithdrawAttachments(attachments, salecarId) {
   }
 
   visible.forEach(function (att) {
-    const url   = typeof att === 'object' ? att.url  : att;
-    const name  = typeof att === 'object' ? att.name : null;
+    const url = typeof att === 'object' ? att.url : att;
+    const name = typeof att === 'object' ? att.name : null;
     const proxy = attachProxy(url, salecarId, name);
-    const uid   = Math.random().toString(36).slice(2, 8);
-    const ext   = name ? name.split('.').pop().toLowerCase() : null;
-    const imgExts = ['jpg','jpeg','png','gif','webp','bmp'];
-    const isFile  = ext && !imgExts.includes(ext);
+    const uid = Math.random().toString(36).slice(2, 8);
+    const ext = name ? name.split('.').pop().toLowerCase() : null;
+    const imgExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+    const isFile = ext && !imgExts.includes(ext);
 
     let cardHtml;
     if (isFile) {
@@ -255,9 +255,10 @@ function renderFilePreviews(input, $preview) {
     const st = isImg ? null : fileCardStyle(file.name);
     const $item = $(
       `<div class="position-relative d-inline-block m-1" style="width:80px;vertical-align:top;">
-        ${isImg
-          ? `<img src="${objUrl}" class="rounded border" style="width:80px;height:80px;object-fit:cover;">`
-          : `<div class="d-flex flex-column align-items-center justify-content-center rounded text-white" style="width:80px;height:80px;background:${st.bg};">
+        ${
+          isImg
+            ? `<img src="${objUrl}" class="rounded border" style="width:80px;height:80px;object-fit:cover;">`
+            : `<div class="d-flex flex-column align-items-center justify-content-center rounded text-white" style="width:80px;height:80px;background:${st.bg};">
                <i class="bx bx-file" style="font-size:1.8rem;"></i>
                <span class="badge bg-white mt-1" style="font-size:.6rem;color:${st.bg};font-weight:700;">${st.label}</span>
              </div>
@@ -317,9 +318,14 @@ function deleteStagedFiles() {
     });
   });
 
-  $.when.apply($, deletes)
-    .done(function () { def.resolve(); })
-    .fail(function () { def.reject(); });
+  $.when
+    .apply($, deletes)
+    .done(function () {
+      def.resolve();
+    })
+    .fail(function () {
+      def.reject();
+    });
 
   return def.promise();
 }

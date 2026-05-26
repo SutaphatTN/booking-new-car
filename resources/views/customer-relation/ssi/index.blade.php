@@ -10,12 +10,25 @@
           url: '{{ route('ssi.list') }}',
           dataSrc: 'data',
         },
-        columns: [
-          { data: 'No' },
-          { data: 'FullName', orderable: false },
-          { data: 'Phone', orderable: false },
-          { data: 'model', orderable: false },
-          { data: 'DeliveryDate', orderable: false },
+        columns: [{
+            data: 'No'
+          },
+          {
+            data: 'FullName',
+            orderable: false
+          },
+          {
+            data: 'Phone',
+            orderable: false
+          },
+          {
+            data: 'model',
+            orderable: false
+          },
+          {
+            data: 'DeliveryDate',
+            orderable: false
+          },
           {
             data: null,
             orderable: false,
@@ -28,6 +41,11 @@
                      title="แก้ไข / บันทึก SSI">
                     <i class="bx bx-edit"></i>
                   </a>
+                  <button class="btn btn-icon btn-success text-white btn-ssi-complete"
+                     data-id="${row.salecar_id}"
+                     title="ตรวจสอบเสร็จแล้ว">
+                    <i class="bx bx-check-double"></i>
+                  </button>
                 </div>`;
             },
           },
@@ -38,10 +56,58 @@
           info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
           infoEmpty: 'ไม่มีข้อมูล',
           search: 'ค้นหา:',
-          paginate: { next: 'ถัดไป', previous: 'ก่อนหน้า' },
+          paginate: {
+            next: 'ถัดไป',
+            previous: 'ก่อนหน้า'
+          },
         },
         pageLength: 10,
-        order: [[0, 'asc']],
+        order: [
+          [0, 'asc']
+        ],
+      });
+
+      $('#ssiTable').on('click', '.btn-ssi-complete', function() {
+        const salecarId = $(this).data('id');
+
+        Swal.fire({
+          icon: 'question',
+          title: 'ยืนยันการตรวจสอบเสร็จสิ้น',
+          html: `<p>คุณกรอกข้อมูล SSI เรียบร้อยแล้วใช่ไหม?</p>
+                 <p class="text-danger small mb-0"><i class="bx bx-info-circle me-1"></i>หลังจากยืนยัน รายการนี้จะไม่แสดงในหน้านี้อีกต่อไป</p>`,
+          showCancelButton: true,
+          confirmButtonText: 'ใช่, เสร็จสิ้นแล้ว',
+          cancelButtonText: 'ยกเลิก',
+          confirmButtonColor: '#6c5ffc',
+          cancelButtonColor: '#d33',
+        }).then(result => {
+          if (!result.isConfirmed) return;
+
+          $.ajax({
+            url: `/ssi/${salecarId}/complete`,
+            method: 'POST',
+            headers: {
+              'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(res) {
+              Swal.fire({
+                icon: 'success',
+                title: 'เสร็จสิ้น',
+                text: res.message,
+                timer: 1500,
+                showConfirmButton: true
+              });
+              table.ajax.reload(null, false);
+            },
+            error: function(xhr) {
+              Swal.fire({
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาด',
+                text: xhr.responseJSON?.message ?? 'ไม่สามารถบันทึกได้'
+              });
+            }
+          });
+        });
       });
 
     });
