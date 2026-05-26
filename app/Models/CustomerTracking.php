@@ -42,6 +42,7 @@ class CustomerTracking extends Model
         'engagement_scoring',
         'test_drive_date',
         'test_drive_note',
+        'customer_date',
     ];
 
     public function customer()
