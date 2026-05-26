@@ -396,12 +396,12 @@ class CustomerTrackingController extends Controller
         $field    = $request->field ?? 'phone';
 
         if ($field === 'line_id') {
-            $customer = Customer::where('LineID', $request->value)->first();
+            $customer = Customer::withTrashed()->where('LineID', $request->value)->first();
         } elseif ($field === 'facebook') {
-            $customer = Customer::where('FacebookName', $request->value)->first();
+            $customer = Customer::withTrashed()->where('FacebookName', $request->value)->first();
         } else {
             $phone    = preg_replace('/\D/', '', $request->phone);
-            $customer = Customer::where('Mobilephone1', $phone)->first();
+            $customer = Customer::withTrashed()->where('Mobilephone1', $phone)->first();
         }
 
         if (!$customer) {
@@ -471,6 +471,7 @@ class CustomerTrackingController extends Controller
                 'sale_id'           => $request->sale_id,
                 'customer_id'       => $request->customer_id,
                 'source_id'         => $request->source_id,
+                'customer_date'     => $request->contact_date ?: null,
                 'model_id'          => $request->model_id ?: null,
                 'sub_model_id'      => $request->sub_model_id ?: null,
                 'year'              => $request->year ?: null,
@@ -774,21 +775,21 @@ class CustomerTrackingController extends Controller
         }
 
         if ($mobile) {
-            $phoneExists = Customer::where('Mobilephone1', $mobile)->exists();
+            $phoneExists = Customer::withTrashed()->where('Mobilephone1', $mobile)->exists();
             if ($phoneExists) {
                 return response()->json(['success' => false, 'message' => 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว'], 422);
             }
         }
 
         if ($request->LineID) {
-            $lineExists = Customer::where('LineID', $request->LineID)->exists();
+            $lineExists = Customer::withTrashed()->where('LineID', $request->LineID)->exists();
             if ($lineExists) {
                 return response()->json(['success' => false, 'message' => 'Line ID นี้มีอยู่ในระบบแล้ว'], 422);
             }
         }
 
         if ($request->FacebookName) {
-            $fbExists = Customer::where('FacebookName', $request->FacebookName)->exists();
+            $fbExists = Customer::withTrashed()->where('FacebookName', $request->FacebookName)->exists();
             if ($fbExists) {
                 return response()->json(['success' => false, 'message' => 'Facebook นี้มีอยู่ในระบบแล้ว'], 422);
             }
