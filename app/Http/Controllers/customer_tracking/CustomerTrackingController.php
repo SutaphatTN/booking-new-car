@@ -95,7 +95,8 @@ class CustomerTrackingController extends Controller
         // Status column filter (by decision name → id)
         if ($statusFilter && count($statusFilter) > 0) {
             $decisionIds = TbDecision::whereIn('name', $statusFilter)->pluck('id');
-            $base->whereRaw('(
+            $base->whereRaw(
+                '(
                 SELECT decision_id FROM customer_tracking_details
                 WHERE tracking_id = customer_trackings.id AND deleted_at IS NULL
                 ORDER BY
@@ -112,10 +113,12 @@ class CustomerTrackingController extends Controller
 
         // Next date column filter (YYYY-MM-DD)
         if ($nextDateFilter && count($nextDateFilter) > 0) {
-            $base->whereHas('details', fn($q) =>
+            $base->whereHas(
+                'details',
+                fn($q) =>
                 $q->where('entry_type', 'manager')
-                  ->where('contact_date', '>', $today)
-                  ->whereIn('contact_date', $nextDateFilter)
+                    ->where('contact_date', '>', $today)
+                    ->whereIn('contact_date', $nextDateFilter)
             );
         }
 
@@ -135,14 +138,16 @@ class CustomerTrackingController extends Controller
             $base->where(function ($q) use ($search, $searchDigits) {
                 $q->whereHas('customer', function ($q) use ($search, $searchDigits) {
                     $q->where('FirstName', 'like', "%{$search}%")
-                      ->orWhere('LastName', 'like', "%{$search}%");
+                        ->orWhere('LastName', 'like', "%{$search}%");
                     if ($searchDigits !== '') {
                         $q->orWhereRaw("REPLACE(Mobilephone1, '-', '') LIKE ?", ["%{$searchDigits}%"]);
                     }
                 })
-                ->orWhereHas('sale', fn($q) =>
-                    $q->where('name', 'like', "%{$search}%")
-                );
+                    ->orWhereHas(
+                        'sale',
+                        fn($q) =>
+                        $q->where('name', 'like', "%{$search}%")
+                    );
             });
         }
 
@@ -160,9 +165,18 @@ class CustomerTrackingController extends Controller
         ) ASC', [$today]);
 
         $trackings = $base
-            ->with(['customer.prefix', 'sale', 'source', 'model', 'subModel',
-                    'latestDetail.decision', 'nextManagerDetail', 'latestManagerDetail',
-                    'latestPastDetail', 'wuColor'])
+            ->with([
+                'customer.prefix',
+                'sale',
+                'source',
+                'model',
+                'subModel',
+                'latestDetail.decision',
+                'nextManagerDetail',
+                'latestManagerDetail',
+                'latestPastDetail',
+                'wuColor'
+            ])
             ->skip($start)
             ->take($length)
             ->get();
@@ -179,15 +193,15 @@ class CustomerTrackingController extends Controller
             $subDetail    = $t->subModel ? $t->subModel->detail : '';
 
             $row = fn($icon, $class, $tip, $text) =>
-                "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
+            "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
 
             if ($t->brand == 2 || $t->brand == 3) {
                 $car = $row('bxs-car',       'text-primary', 'รุ่นหลัก', $model)
-                     . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale);
+                    . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale);
             } else {
                 $car = $row('bxs-car',       'text-primary', 'รุ่นหลัก', $model)
-                     . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale)
-                     . ($subDetail ? $row('bx-info-circle', 'text-warning', 'รายละเอียด', $subDetail) : '');
+                    . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale)
+                    . ($subDetail ? $row('bx-info-circle', 'text-warning', 'รายละเอียด', $subDetail) : '');
             }
 
             $latestDetail = $t->latestDetail;
@@ -285,7 +299,8 @@ class CustomerTrackingController extends Controller
 
         if ($statusFilter && count($statusFilter) > 0) {
             $decisionIds = TbDecision::whereIn('name', $statusFilter)->pluck('id');
-            $base->whereRaw('(
+            $base->whereRaw(
+                '(
                 SELECT decision_id FROM customer_tracking_details
                 WHERE tracking_id = customer_trackings.id AND deleted_at IS NULL
                 ORDER BY
@@ -301,10 +316,12 @@ class CustomerTrackingController extends Controller
         }
 
         if ($nextDateFilter && count($nextDateFilter) > 0) {
-            $base->whereHas('details', fn($q) =>
+            $base->whereHas(
+                'details',
+                fn($q) =>
                 $q->where('entry_type', 'manager')
-                  ->where('contact_date', '>', $today)
-                  ->whereIn('contact_date', $nextDateFilter)
+                    ->where('contact_date', '>', $today)
+                    ->whereIn('contact_date', $nextDateFilter)
             );
         }
 
@@ -320,12 +337,14 @@ class CustomerTrackingController extends Controller
         $trackingIds = $base->pluck('id');
 
         // Distinct sale names
-        $sales = User::whereIn('id',
+        $sales = User::whereIn(
+            'id',
             CustomerTracking::whereIn('id', $trackingIds)->pluck('sale_id')->unique()
         )->orderBy('name')->pluck('name');
 
         // Distinct source names
-        $sources = TbSalecarType::whereIn('id',
+        $sources = TbSalecarType::whereIn(
+            'id',
             CustomerTracking::whereIn('id', $trackingIds)->whereNotNull('source_id')->pluck('source_id')->unique()
         )->orderBy('name')->pluck('name');
 
@@ -373,7 +392,12 @@ class CustomerTrackingController extends Controller
         $sources       = TbSalecarType::all();
         $decisions     = TbDecision::all();
         $brandForSale  = $authUser->brand == 3 ? 1 : $authUser->brand;
-        $saleUser      = User::where('role', 'sale')->where('brand', $brandForSale)->get();
+        $saleUser = User::where('role', 'sale')
+            ->where('brand', $brandForSale)
+            ->when($authUser->brand == 2, function ($q) use ($authUser) {
+                $q->where('branch', $authUser->branch);
+            })
+            ->get();
         $interiorColor = $authUser->brand == 2 ? TbInteriorColor::all() : collect();
         $prefixes      = TbPrefixname::all();
 
@@ -428,7 +452,7 @@ class CustomerTrackingController extends Controller
             'customer_id' => $customer->id,
             'name'        => $name,
             'has_booking' => $hasBooking,
-            'has_tracking'=> $tracking !== null,
+            'has_tracking' => $tracking !== null,
             'tracking_id' => $tracking?->id,
         ]);
     }
