@@ -957,6 +957,7 @@ class PurchaseOrderController extends Controller
 
             //เก็บข้อมูลการผูกรถ
             if ($oldCarOrderID != $newCarOrderID && $newCarOrderID) {
+                $saleCar->carOrderHistories()->delete();
                 CarOrderHistory::create([
                     'SaleID' => $saleCar->id,
                     'CarOrderID' => $newCarOrderID,
@@ -976,8 +977,9 @@ class PurchaseOrderController extends Controller
             //ส่งมอบรถ
             if ($request->con_status == 5) {
 
-                if ($newCarOrderID) {
-                    CarOrder::where('id', $newCarOrderID)->update([
+                $carOrderToDeliver = $newCarOrderID ?: $oldCarOrderID;
+                if ($carOrderToDeliver) {
+                    CarOrder::where('id', $carOrderToDeliver)->update([
                         'car_status' => 'Delivered'
                     ]);
                 }

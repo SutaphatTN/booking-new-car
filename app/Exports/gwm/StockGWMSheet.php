@@ -122,27 +122,18 @@ class StockGWMSheet implements FromView, WithTitle, WithStyles, WithEvents, Shou
         $color         = $first->gwmColor->name ?? '-';
         $interiorColor = $first->interiorColor->name ?? '-';
 
-        $stock = $rows->filter(function ($r) {
-          $deliveredBefore = $r->salecars
-            ->where(function ($q) {
-              $q->whereNull('DeliveryDate')
-                ->orWhere('DeliveryDate', '');
-            })
-            ->count();
-          return $deliveredBefore == 0;
+        $hasNoDelivery = fn($s) => (is_null($s->DeliveryDate) || $s->DeliveryDate === '') && !in_array($s->con_status, [7, 8, 9]);
+
+        $stock = $rows->filter(function ($r) use ($hasNoDelivery) {
+          return $r->salecars->filter($hasNoDelivery)->count() === 0;
         })->count();
 
         $historyIds = $rows->flatMap(function ($r) {
           return $r->historyCar->pluck('CarOrderID');
         });
 
-        $deliveryIds = $rows->flatMap(function ($r) {
-          return $r->salecars
-            ->where(function ($q) {
-              $q->whereNull('DeliveryDate')
-                ->orWhere('DeliveryDate', '');
-            })
-            ->pluck('CarOrderID');
+        $deliveryIds = $rows->flatMap(function ($r) use ($hasNoDelivery) {
+          return $r->salecars->filter($hasNoDelivery)->pluck('CarOrderID');
         });
 
         $withCustomer = $historyIds->merge($deliveryIds)->unique()->count();
