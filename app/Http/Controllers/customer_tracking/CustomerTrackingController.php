@@ -223,9 +223,9 @@ class CustomerTrackingController extends Controller
             $lineId   = $customer?->LineID ?? null;
             $facebook = $customer?->FacebookName ?? null;
             $contactParts = [];
-            if ($phone)    $contactParts[] = "<div class=\"text-nowrap\"><i class=\"bx bx-phone text-danger me-1\"></i>: {$phone}</div>";
-            if ($lineId)   $contactParts[] = "<div class=\"text-nowrap\"><i class=\"bx bxl-whatsapp text-success me-1\"></i>: {$lineId}</div>";
-            if ($facebook) $contactParts[] = "<div class=\"text-nowrap\"><i class=\"bx bxl-facebook-circle text-primary me-1\"></i>: {$facebook}</div>";
+            if ($phone)    $contactParts[] = "<div class=\"text-start\"><i class=\"bx bx-phone text-danger me-1\"></i>: {$phone}</div>";
+            if ($lineId)   $contactParts[] = "<div class=\"text-start\"><i class=\"bx bxl-whatsapp text-success me-1\"></i>: {$lineId}</div>";
+            if ($facebook) $contactParts[] = "<div class=\"text-start\"><i class=\"bx bxl-facebook-circle text-primary me-1\"></i>: {$facebook}</div>";
             $contactInfo = $contactParts ? implode('', $contactParts) : '<span class="text-muted">—</span>';
 
             return [
