@@ -8,8 +8,6 @@
   window.gwmCreatePreYear     = {{ $preYear }};
   window.gwmIncentiveStoreUrl = "{{ route('gwm-incentive.store') }}";
   window.gwmIncentiveCheckUrl = "{{ url('/api/gwm-incentive/check') }}";
-  window.gwmKpiGetUrl         = "{{ url('/api/gwm-incentive/kpi') }}";
-  window.gwmKpiStoreUrl       = "{{ route('gwm-incentive.kpi.store') }}";
 </script>
 @vite(['resources/assets/js/gwm-incentive.js'])
 @endsection
@@ -169,76 +167,6 @@
       </div>
     </div>
 
-  </div>
-</div>
-
-{{-- ==================== KPI Section ==================== --}}
-<div class="row mt-3">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-header py-2 d-flex align-items-center gap-2">
-        <i class="bx bx-award text-primary"></i>
-        <span class="fw-semibold">ตั้งค่า KPI รายเดือน</span>
-        <span class="text-muted small ms-2" id="kpiPeriodLabel"></span>
-      </div>
-      <div class="card-body">
-        <form id="gwmKpiForm">
-          @csrf
-          <input type="hidden" name="month" id="kpiMonth" value="{{ $preMonth }}">
-          <input type="hidden" name="year"  id="kpiYear"  value="{{ $preYear }}">
-
-          <div class="row g-3 align-items-end">
-            <div class="col-md-3">
-              <label class="form-label fw-semibold small">
-                <i class="bx bx-line-chart me-1"></i>Sale KPI
-              </label>
-              <div class="input-group">
-                <input type="number" step="0.01" min="0" max="100"
-                  class="form-control text-end" name="sale_kpi" id="kpi_sale_kpi" value="0">
-                <span class="input-group-text">%</span>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label fw-semibold small">
-                <i class="bx bx-smile me-1"></i>SSI
-              </label>
-              <div class="input-group">
-                <input type="number" step="0.01" min="0" max="100"
-                  class="form-control text-end" name="ssi" id="kpi_ssi" value="0">
-                <span class="input-group-text">%</span>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label fw-semibold small">
-                <i class="bx bx-wrench me-1"></i>After Sale KPI
-              </label>
-              <div class="input-group">
-                <input type="number" step="0.01" min="0" max="100"
-                  class="form-control text-end" name="after_sale_kpi" id="kpi_after_sale_kpi" value="0">
-                <span class="input-group-text">%</span>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label fw-semibold small">
-                <i class="bx bx-heart me-1"></i>CSI
-              </label>
-              <div class="input-group">
-                <input type="number" step="0.01" min="0" max="100"
-                  class="form-control text-end" name="csi" id="kpi_csi" value="0">
-                <span class="input-group-text">%</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-            <div id="kpiStatusMsg" class="text-muted small"></div>
-            <button type="button" id="btnSaveKpi" class="btn btn-success px-4">
-              <i class="bx bx-save me-1"></i>บันทึก KPI
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
   </div>
 </div>
 

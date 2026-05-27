@@ -46,7 +46,7 @@
       <div class="card-body pt-3">
 
         {{-- ── Filter bar ── --}}
-        <div class="po-filter-bar d-flex align-items-center gap-3">
+        <div class="po-filter-bar d-flex align-items-center gap-3 flex-wrap">
           <div class="d-flex align-items-center gap-2">
             <label class="form-label mb-0">เดือน/ปี</label>
             <select id="filterMonth" class="form-select form-select-sm" style="min-width:120px">
@@ -62,11 +62,9 @@
           <button id="btnFilterReport" class="btn btn-sm btn-primary">
             <i class="bx bx-search me-1"></i>แสดง
           </button>
-          <div class="ms-auto">
-            <button id="btnExportExcel" class="btn btn-sm btn-success">
-              <i class="bx bx-file me-1"></i>Export Excel
-            </button>
-          </div>
+          <button id="btnExportExcel" class="btn btn-sm btn-success ms-auto">
+            <i class="bx bx-file me-1"></i>Export Excel
+          </button>
         </div>
 
         {{-- ── KPI Summary ── --}}
@@ -222,4 +220,9 @@
   </div>
 </div>
 
+<style>
+  @media (max-width: 575.98px) {
+    .po-filter-bar { row-gap: .4rem; }
+  }
+</style>
 @endsection

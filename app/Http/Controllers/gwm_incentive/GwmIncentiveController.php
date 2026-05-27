@@ -20,12 +20,30 @@ class GwmIncentiveController extends Controller
         9 => 'ก.ย.', 10 => 'ต.ค.', 11 => 'พ.ย.', 12 => 'ธ.ค.',
     ];
 
-    public function index()
+    public function index(Request $request)
     {
         $months       = self::$months;
-        $currentMonth = now()->month;
-        $currentYear  = now()->year;
-        return view('gwm-incentive.view', compact('months', 'currentMonth', 'currentYear'));
+        $currentMonth = (int) ($request->month ?? now()->month);
+        $currentYear  = (int) ($request->year  ?? now()->year);
+
+        $subcarmodels = TbSubcarmodel::with('model')
+            ->where('active', 'active')
+            ->orderBy('model_id')
+            ->orderBy('name')
+            ->get();
+
+        $incentives = TbGwmIncentive::where('month', $currentMonth)
+            ->where('year', $currentYear)
+            ->get()
+            ->keyBy('subcarmodel_id');
+
+        $kpi = TbGwmKpi::where('month', $currentMonth)
+            ->where('year', $currentYear)
+            ->first();
+
+        return view('gwm-incentive.view', compact(
+            'months', 'currentMonth', 'currentYear', 'subcarmodels', 'incentives', 'kpi'
+        ));
     }
 
     public function list(Request $request)
@@ -190,6 +208,32 @@ class GwmIncentiveController extends Controller
             ]);
 
             return response()->json(['success' => true, 'message' => 'แก้ไขข้อมูลเรียบร้อยแล้ว']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
+        }
+    }
+
+    public function upsertRow(Request $request)
+    {
+        try {
+            $record = TbGwmIncentive::updateOrCreate(
+                [
+                    'subcarmodel_id' => $request->subcarmodel_id,
+                    'month'          => $request->month,
+                    'year'           => $request->year,
+                ],
+                [
+                    'fixed'          => $request->fixed          ?? 0,
+                    'lt70'           => $request->lt70           ?? 0,
+                    'gte70_lte85'    => $request->gte70_lte85    ?? 0,
+                    'gt85_lte100'    => $request->gt85_lte100    ?? 0,
+                    'gt100_lte120'   => $request->gt100_lte120   ?? 0,
+                    'gte120'         => $request->gte120         ?? 0,
+                    'max_val'        => $request->max_val        ?? 0,
+                    'monthly_target' => $request->monthly_target ?? 0,
+                ]
+            );
+            return response()->json(['success' => true, 'message' => 'บันทึกเรียบร้อยแล้ว', 'id' => $record->id]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
         }
