@@ -298,58 +298,77 @@ if ($('.gwm-create-page').length) {
         $target[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
-    loadKpi();
   });
 
-  // ==================== KPI ====================
+  // Auto-select only (no KPI load here)
+}
 
-  const kpiFields = ['sale_kpi', 'ssi', 'after_sale_kpi', 'csi'];
+// ============================================================
+//  VIEW PAGE (inline editable table + KPI)
+// ============================================================
+if ($('.gwm-view-page').length) {
 
-  function updateKpiPeriodLabel() {
-    const m = $('#createMonth option:selected').text();
-    const y = $('#createYear').val();
-    $('#kpiPeriodLabel').text('(' + m + ' ' + y + ')');
-  }
+  function saveRow($row) {
+    if ($row.data('saving')) return;
+    $row.data('saving', true);
 
-  function loadKpi() {
-    const p = getCreatePeriod();
-    updateKpiPeriodLabel();
-    $('#kpiMonth').val(p.month);
-    $('#kpiYear').val(p.year);
+    const data = {
+      _token:         $('meta[name="csrf-token"]').attr('content'),
+      subcarmodel_id: $row.data('sub-id'),
+      month:          $row.data('month'),
+      year:           $row.data('year'),
+    };
 
-    $.get(window.gwmKpiGetUrl, { month: p.month, year: p.year }, function (res) {
-      if (res.data) {
-        kpiFields.forEach(f => $('#kpi_' + f).val(res.data[f] ?? 0));
-        $('#kpiStatusMsg').html('<span class="text-warning"><i class="bx bx-info-circle me-1"></i>มีข้อมูล KPI เดือนนี้แล้ว — บันทึกจะ<strong>อัปเดต</strong>ข้อมูลเดิม</span>');
-      } else {
-        kpiFields.forEach(f => $('#kpi_' + f).val('0'));
-        $('#kpiStatusMsg').text('');
-      }
+    $row.find('.gwm-row-input').each(function () {
+      data[$(this).attr('name')] = $(this).val();
+    });
+
+    $row.removeClass('row-saved row-error');
+
+    $.ajax({
+      url:  window.gwmIncentiveUpsertUrl,
+      type: 'POST',
+      data: data,
+      success: function () {
+        $row.addClass('row-saved');
+        setTimeout(() => $row.removeClass('row-saved'), 1500);
+      },
+      error: function (xhr) {
+        $row.addClass('row-error');
+        setTimeout(() => $row.removeClass('row-error'), 1500);
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้' });
+      },
+      complete: function () { $row.data('saving', false); }
     });
   }
 
-  // reload KPI เมื่อเปลี่ยนเดือน/ปี (ต่อจาก incentive handler)
-  $(document).on('change', '#createMonth, #createYear', function () {
-    loadKpi();
+  // Auto-save เมื่อ focus ออกจาก row (debounce เพื่อรอกรณี tab ระหว่าง input ใน row เดียวกัน)
+  $(document).on('blur', '.gwm-row-input', function () {
+    const $row = $(this).closest('tr.gwm-row');
+    clearTimeout($row.data('blur-timer'));
+    $row.data('blur-timer', setTimeout(function () {
+      if ($row.find(':focus').length === 0) {
+        saveRow($row);
+      }
+    }, 150));
   });
 
   // Save KPI
   $(document).on('click', '#btnSaveKpi', function () {
-    const $btn = $(this);
+    const $btn    = $(this);
     const formData = new FormData($('#gwmKpiForm')[0]);
 
     Swal.fire({ title: 'กำลังบันทึก KPI...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     $btn.prop('disabled', true);
 
     $.ajax({
-      url: window.gwmKpiStoreUrl,
+      url:  window.gwmKpiStoreUrl,
       type: 'POST',
       data: formData,
       processData: false,
       contentType: false,
       success: function (res) {
-        Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 2000, showConfirmButton: true });
-        loadKpi();
+        Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 1500, showConfirmButton: false });
       },
       error: function (xhr) {
         Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message || 'ไม่สามารถบันทึก KPI ได้' });
