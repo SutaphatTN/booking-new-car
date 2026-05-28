@@ -36,17 +36,13 @@ class EstimatedExport implements WithMultipleSheets
         if ($branches->isEmpty()) {
 
             // sheet เปล่า
-            $sheets[] = new SaleCarEstimatedExport(
-                $this->fromDate,
-                null
-            );
+            $sheets[] = new SaleCarEstimatedExport($this->fromDate, null);
+            $sheets[] = new SaleCarEstimatedSummaryExport($this->fromDate, null);
         } else {
 
             foreach ($branches as $branchId) {
-                $sheets[] = new SaleCarEstimatedExport(
-                    $this->fromDate,
-                    $branchId
-                );
+                $sheets[] = new SaleCarEstimatedExport($this->fromDate, $branchId);
+                $sheets[] = new SaleCarEstimatedSummaryExport($this->fromDate, $branchId);
             }
         }
 
