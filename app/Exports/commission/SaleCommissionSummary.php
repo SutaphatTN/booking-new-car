@@ -23,7 +23,7 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
 
     public function __construct($user, $fromDate = null, $toDate = null)
     {
-        if ($user->role === 'sale') {
+        if (in_array($user->role, ['sale', 'lead_sale'])) {
             abort(403, 'Unauthorized');
         }
 

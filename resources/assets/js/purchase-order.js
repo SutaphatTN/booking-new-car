@@ -69,28 +69,34 @@ $(document).on('blur', '.money-input', function () {
 
 //view : sale column filter
 let saleFilterActive = null;
+let cachedSaleNames = [];
 
-function populateSaleFilterList() {
+function buildSaleFilterList() {
   const $list = $('#saleFilterList').empty();
-  const statusVal = $('#filterStatus').val();
-  $.get('/purchase-order/sale-options', { con_status: statusVal }, function (names) {
-    const allSelected = saleFilterActive === null;
+  const allSelected = saleFilterActive === null;
+  $list.append(
+    `<div class="col-filter-item col-filter-all">
+      <input type="checkbox" id="saleChkAll" ${allSelected ? 'checked' : ''}>
+      <label for="saleChkAll">(เลือกทั้งหมด)</label>
+    </div>`
+  );
+  cachedSaleNames.forEach(function (name, i) {
+    const checked = allSelected || (saleFilterActive !== null && saleFilterActive.includes(name)) ? 'checked' : '';
     $list.append(
-      `<div class="col-filter-item col-filter-all">
-        <input type="checkbox" id="saleChkAll" ${allSelected ? 'checked' : ''}>
-        <label for="saleChkAll">(เลือกทั้งหมด)</label>
+      `<div class="col-filter-item">
+        <input type="checkbox" class="sale-chk-item" id="saleChk${i}" value="${name}" ${checked}>
+        <label for="saleChk${i}">${name}</label>
       </div>`
     );
-    names.forEach(function (name, i) {
-      const checked = allSelected || (saleFilterActive !== null && saleFilterActive.includes(name)) ? 'checked' : '';
-      $list.append(
-        `<div class="col-filter-item">
-          <input type="checkbox" class="sale-chk-item" id="saleChk${i}" value="${name}" ${checked}>
-          <label for="saleChk${i}">${name}</label>
-        </div>`
-      );
-    });
-    syncSelectAll();
+  });
+  syncSelectAll();
+}
+
+function populateSaleFilterList() {
+  const statusVal = $('#filterStatus').val();
+  $.get('/purchase-order/sale-options', { con_status: statusVal }, function (names) {
+    cachedSaleNames = names;
+    buildSaleFilterList();
   });
 }
 
@@ -202,7 +208,7 @@ $(document).ready(function () {
     $dd.css({ top: (rect.bottom + 4) + 'px', left: rect.left + 'px' });
     $dd.addClass('show');
     $(this).addClass('active');
-    populateSaleFilterList();
+    buildSaleFilterList();
     $('#saleFilterSearch').val('').trigger('input').focus();
   });
 

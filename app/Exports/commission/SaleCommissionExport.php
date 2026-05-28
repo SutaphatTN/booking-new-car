@@ -21,7 +21,7 @@ class SaleCommissionExport implements WithMultipleSheets
   {
     $sheets = [];
 
-    if ($this->user->role !== 'sale') {
+    if (!in_array($this->user->role, ['sale', 'lead_sale'])) {
       $sheets[] = new SaleCommissionSummary(
         $this->user,
         $this->fromDate,

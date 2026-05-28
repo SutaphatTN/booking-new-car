@@ -32,8 +32,24 @@ function ctGetCurrentFilterParams(exclude) {
   return params;
 }
 
+const ctFilterCache = {};
+
 function ctLoadFilterOptions(params, callback) {
-  $.get('/customer-tracking/filter-options', params, callback);
+  const cacheKey = JSON.stringify(params);
+  const cached = ctFilterCache[cacheKey];
+
+  if (cached !== undefined) {
+    callback(cached);
+    $.get('/customer-tracking/filter-options', params, function (res) {
+      ctFilterCache[cacheKey] = res;
+    });
+    return;
+  }
+
+  $.get('/customer-tracking/filter-options', params, function (res) {
+    ctFilterCache[cacheKey] = res;
+    callback(res);
+  });
 }
 
 function ctBuildList($list, allNames, activeFilter, chkClass, idPfx, labelFn) {
@@ -131,6 +147,10 @@ $(document).ready(function () {
       zeroRecords: 'ไม่พบข้อมูล',
       processing: 'กำลังโหลด...'
     }
+  });
+
+  ctTrackingTable.on('init.dt', function () {
+    ctLoadFilterOptions({}, function () {});
   });
 
   $('#filterDecision').on('change', function () {

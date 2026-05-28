@@ -57,9 +57,9 @@ class CustomerTrackingController extends Controller
             ->whereNotIn('customer_id', $bookedSubquery)
             ->whereNull('cancelled_at');
 
-        if ($user->role === 'sale') {
+        if (in_array($user->role, ['sale', 'lead_sale'])) {
             $visibleSaleIds = [$user->id];
-            if ($user->id === 7) {
+            if ($user->role === 'lead_sale') {
                 $visibleSaleIds = array_merge($visibleSaleIds, [9, 10, 11]);
             }
             $base->whereIn('sale_id', $visibleSaleIds);
@@ -269,9 +269,20 @@ class CustomerTrackingController extends Controller
             ->whereIn('con_status', [1, 2, 3, 4, 6])
             ->where('brand', $user->brand);
 
+        $visibleSaleIds = [];
+        if (in_array($user->role, ['sale', 'lead_sale'])) {
+            $visibleSaleIds = [$user->id];
+            if ($user->role === 'lead_sale') {
+                $visibleSaleIds = array_merge($visibleSaleIds, [9, 10, 11]);
+            }
+        }
+
         $base = CustomerTracking::whereNotIn('customer_id', $bookedSubquery)
             ->whereNull('cancelled_at')
-            ->when($user->role === 'sale', fn($q) => $q->where('sale_id', $user->id));
+            ->when(
+                in_array($user->role, ['sale', 'lead_sale']),
+                fn($q) => $q->whereIn('sale_id', $visibleSaleIds)
+            );
 
         if ($decisionId) {
             $base->whereRaw('(
@@ -392,7 +403,7 @@ class CustomerTrackingController extends Controller
         $sources       = TbSalecarType::all();
         $decisions     = TbDecision::all();
         $brandForSale  = $authUser->brand == 3 ? 1 : $authUser->brand;
-        $saleUser = User::where('role', 'sale')
+        $saleUser = User::whereIn('role', ['sale', 'lead_sale'])
             ->where('brand', $brandForSale)
             ->when($authUser->brand == 2, function ($q) use ($authUser) {
                 $q->where('branch', $authUser->branch);
@@ -519,7 +530,7 @@ class CustomerTrackingController extends Controller
                 'UserInsert'        => $authUser->id,
             ]);
 
-            $isSaleRole = in_array($authUser->role, ['sale', 'adminPage', 'audit']);
+            $isSaleRole = in_array($authUser->role, ['sale', 'lead_sale', 'adminPage', 'audit']);
             $entryType  = $isSaleRole ? 'sale' : 'manager';
             $decisionId = $request->decision_id ?: null;
             $baseDate   = Carbon::parse($request->contact_date);

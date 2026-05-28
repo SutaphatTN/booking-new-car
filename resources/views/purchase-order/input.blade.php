@@ -132,7 +132,7 @@
             <div class="row g-3 pb-2">
 
               {{-- ผู้ขาย --}}
-              @if (auth()->user()->role == 'sale')
+              @if (in_array(auth()->user()->role, ['sale', 'lead_sale']))
                 <input type="hidden" name="SaleID" value="{{ Auth::user()->id }}">
                 <div class="col-md-6">
                   <div class="po-label"><i class='bx bx-user'></i> ชื่อ - นามสกุล ผู้ขาย</div>
