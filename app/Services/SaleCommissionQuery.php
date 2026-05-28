@@ -32,7 +32,7 @@ class SaleCommissionQuery
                 $fromDate,
                 $toDate
             ])
-            ->when($filterByUser && $user->role === 'sale', function ($q) use ($user) {
+            ->when($filterByUser && in_array($user->role, ['sale', 'lead_sale']), function ($q) use ($user) {
                 $q->where('SaleID', $user->id);
             });
     }

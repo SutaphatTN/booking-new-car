@@ -16,7 +16,7 @@ class NotSale
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && Auth::user()->role === 'sale') {
+        if (Auth::check() && in_array(Auth::user()->role, ['sale', 'lead_sale'])) {
             abort(403);
         }
 

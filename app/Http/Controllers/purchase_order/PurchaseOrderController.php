@@ -74,7 +74,7 @@ class PurchaseOrderController extends Controller
         $model = TbCarmodel::all();
         $type = TbSalecarType::all();
         $brandForSale = $authUser->brand == 3 ? 1 : $authUser->brand;
-        $saleUser = User::where('role', 'sale')
+        $saleUser = User::whereIn('role', ['sale', 'lead_sale'])
             ->where('brand', $brandForSale)
             ->get();
         $typeSale = TbSalePurchaseType::all();
@@ -175,8 +175,12 @@ class PurchaseOrderController extends Controller
 
         $base = Salecar::query();
 
-        if ($user->role === 'sale') {
-            $base->where('SaleID', $user->id);
+        if (in_array($user->role, ['sale', 'lead_sale'])) {
+            $visibleSaleIds = [$user->id];
+            if ($user->role === 'lead_sale') {
+                $visibleSaleIds = array_merge($visibleSaleIds, [9, 10, 11]);
+            }
+            $base->whereIn('SaleID', $visibleSaleIds);
         }
 
         if ($statusFilter) {
@@ -314,8 +318,12 @@ class PurchaseOrderController extends Controller
             ->select('users.name')
             ->distinct();
 
-        if ($user->role === 'sale') {
-            $query->where('salecars.SaleID', $user->id);
+        if (in_array($user->role, ['sale', 'lead_sale'])) {
+            $visibleSaleIds = [$user->id];
+            if ($user->role === 'lead_sale') {
+                $visibleSaleIds = array_merge($visibleSaleIds, [9, 10, 11]);
+            }
+            $query->whereIn('salecars.SaleID', $visibleSaleIds);
         }
 
         if ($statusFilter) {
@@ -1635,8 +1643,12 @@ class PurchaseOrderController extends Controller
         ])
             ->where('con_status', '5');
 
-        if ($user->role === 'sale') {
-            $query->where('SaleID', $user->id);
+        if (in_array($user->role, ['sale', 'lead_sale'])) {
+            $visibleSaleIds = [$user->id];
+            if ($user->role === 'lead_sale') {
+                $visibleSaleIds = array_merge($visibleSaleIds, [9, 10, 11]);
+            }
+            $query->whereIn('SaleID', $visibleSaleIds);
         }
 
         $saleCar = $query->get();
@@ -1723,8 +1735,12 @@ class PurchaseOrderController extends Controller
             ->whereMonth('DeliveryInCKDate', $month)
             ->whereYear('DeliveryInCKDate', $year);
 
-        if ($user->role === 'sale') {
-            $query->where('SaleID', $user->id);
+        if (in_array($user->role, ['sale', 'lead_sale'])) {
+            $visibleSaleIds = [$user->id];
+            if ($user->role === 'lead_sale') {
+                $visibleSaleIds = array_merge($visibleSaleIds, [9, 10, 11]);
+            }
+            $query->whereIn('SaleID', $visibleSaleIds);
         }
 
         $saleCar = $query
@@ -1732,7 +1748,7 @@ class PurchaseOrderController extends Controller
             ->orderByRaw('SUM(CommissionSale) DESC')
             ->get();
 
-        $showEmoji = $user->role !== 'sale' && $saleCar->count() > 1;
+        $showEmoji = !in_array($user->role, ['sale', 'lead_sale']) && $saleCar->count() > 1;
         $lastIndex = $saleCar->count() - 1;
 
         $data = $saleCar->map(function ($s, $index) use ($showEmoji, $lastIndex) {

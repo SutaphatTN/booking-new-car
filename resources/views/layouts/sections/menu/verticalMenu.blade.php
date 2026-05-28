@@ -45,7 +45,7 @@
       @endphp
 
       @if (
-          $userRole == 'sale' &&
+          in_array($userRole, ['sale', 'lead_sale']) &&
               (in_array($menu->slug, $hideForSale) ||
                   (is_array($menu->slug) && !empty(array_intersect($menu->slug, $hideForSale)))))
         @continue

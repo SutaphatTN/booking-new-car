@@ -25,8 +25,12 @@ class CancellationController extends Controller
             ->whereIn('con_status', [7, 9])
             ->whereNull('withdraw_date');
 
-        if ($user->role === 'sale') {
-            $query->where('SaleID', $user->id);
+        if (in_array($user->role, ['sale', 'lead_sale'])) {
+            $visibleSaleIds = [$user->id];
+            if ($user->role === 'lead_sale') {
+                $visibleSaleIds = array_merge($visibleSaleIds, [9, 10, 11]);
+            }
+            $query->whereIn('SaleID', $visibleSaleIds);
         }
 
         $query->orderByDesc('id');

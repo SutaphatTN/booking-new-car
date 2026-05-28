@@ -14,7 +14,7 @@ class BrandSwitcher
             $user = Auth::user();
             $role = $user->role;
             $allowed = ($user->brand != 2 || $role == 'md')
-                && in_array($role, ['admin', 'account', 'audit', 'manager', 'md', 'sale', 'registration', 'bp', 'cs', 'adminPage', 'cro']);
+                && in_array($role, ['admin', 'account', 'audit', 'manager', 'md', 'sale', 'lead_sale', 'registration', 'bp', 'cs', 'adminPage', 'cro']);
 
             if ($allowed && session()->has('brand_switch')) {
                 $user->brand = session('brand_switch');
