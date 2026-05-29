@@ -82,6 +82,8 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
           $sheet->getRowDimension($row)->setRowHeight(20);
         }
 
+        $sheet->setAutoFilter("A1:{$highestCol}{$highestRow}");
+
         // freeze header
         $sheet->freezePane('A2');
 

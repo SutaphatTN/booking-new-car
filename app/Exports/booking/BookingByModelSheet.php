@@ -105,7 +105,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
           $sheet->getRowDimension($row)->setRowHeight(20);
         }
 
-        $sheet->setAutoFilter("B1:{$highestCol}{$highestRow}");
+        $sheet->setAutoFilter("A1:{$highestCol}{$highestRow}");
 
         // freeze header
         $sheet->freezePane('A2');
