@@ -1,13 +1,14 @@
 <table>
   <thead>
     <tr>
-      <th colspan="12">รายงานการกรอกข้อมูลการติดตามลูกค้า วันที่ {{ $dateFromFormatted }} ถึง {{ $dateToFormatted }}</th>
+      <th colspan="13">รายงานการกรอกข้อมูลการติดตามลูกค้า วันที่ {{ $dateFromFormatted }} ถึง {{ $dateToFormatted }}</th>
     </tr>
     <tr>
       <th>No.</th>
       <th>วันที่กรอก</th>
       <th>ชื่อ - นามสกุล</th>
       <th>ผู้ขาย</th>
+      <th>แหล่งที่มา</th>
       <th>ผู้กรอก</th>
       <th>ประเภท</th>
       <th>วันที่ทดลองขับ</th>
@@ -25,6 +26,7 @@
         <td>{{ $r['created_at'] }}</td>
         <td>{{ $r['full_name'] }}</td>
         <td>{{ $r['sale'] }}</td>
+        <td>{{ $r['source'] }}</td>
         <td>{{ $r['inserted_by'] }}</td>
         <td>{{ $r['entry_type'] }}</td>
         <td>{{ $r['test_date'] }}</td>
@@ -36,7 +38,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="12" align="center">ไม่มีข้อมูลในช่วงวันที่นี้</td>
+        <td colspan="13" align="center">ไม่มีข้อมูลในช่วงวันที่นี้</td>
       </tr>
     @endforelse
   </tbody>

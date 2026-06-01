@@ -80,6 +80,7 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
         $details = CustomerTrackingDetail::with([
             'tracking.customer.prefix',
             'tracking.sale',
+            'tracking.source',
             'decision',
             'insertedBy',
         ])
@@ -102,6 +103,7 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
                 'created_at'     => $d->created_at?->format('d/m/Y H:i'),
                 'full_name'      => $fullName,
                 'sale'           => $tracking?->sale?->name ?? '-',
+                'source'         => $tracking?->source?->name ?? '-',
                 'inserted_by'    => $d->insertedBy?->name ?? '-',
                 'entry_type'     => $d->entry_type === 'sale' ? 'เซลล์' : 'ผู้จัดการ',
                 'contact_date'   => $d->contact_date ?? '-',

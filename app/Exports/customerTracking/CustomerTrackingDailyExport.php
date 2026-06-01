@@ -79,6 +79,7 @@ class CustomerTrackingDailyExport implements FromView, WithTitle, WithStyles, Wi
             'tracking.model',
             'tracking.sale',
             'tracking.subModel',
+            'tracking.source',
             'decision',
         ])
             ->whereHas('tracking', fn($q) => $q->where('brand', $user->brand))
@@ -104,6 +105,7 @@ class CustomerTrackingDailyExport implements FromView, WithTitle, WithStyles, Wi
                 'no'             => $no++,
                 'full_name'      => $fullName,
                 'sale'           => $tracking?->sale?->name ?? '-',
+                'source'         => $tracking?->source?->name ?? '-',
                 'car_info'       => $carInfo,
                 'test_date'      => $tracking?->format_test_drive_date ?? '-',
                 'test_note'      => $tracking?->test_drive_note ?? '-',
