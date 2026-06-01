@@ -29,7 +29,7 @@ class VehicleExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
 
     public function title(): string
     {
-        return 'ส่งเบิก/เคลียร์';
+        return 'ส่งเบิก-เคลียร์';
     }
 
     public function styles(Worksheet $sheet)

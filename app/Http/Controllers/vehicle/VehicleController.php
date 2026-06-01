@@ -343,7 +343,7 @@ class VehicleController extends Controller
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
         $toDate   = $request->to_date   ?? now()->format('Y-m-d');
 
-        return Excel::download(new VehicleExport($fromDate, $toDate), 'รายงานการส่งเบิก/เคลียร์.xlsx');
+        return Excel::download(new VehicleExport($fromDate, $toDate), 'รายงานการส่งเบิก-เคลียร์.xlsx');
     }
 
     public function exportLicensePlate()

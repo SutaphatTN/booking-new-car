@@ -31,6 +31,7 @@ class SsiController extends Controller
             'subModel',
         ])
             ->whereNotNull('DeliveryDate')
+            ->where('con_status', 5)
             ->whereNotIn('id', $completedSalecarIds)
             ->get();
 
