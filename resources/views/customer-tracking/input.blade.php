@@ -74,6 +74,11 @@
                 <label class="po-label" for="ct_facebook"><i class='bx bxl-facebook-circle'></i> Facebook</label>
                 <input id="ct_facebook" name="ct_facebook" type="text" class="form-control">
               </div>
+              <div class="col-md-12">
+                <small id="contactRequiredHint" class="text-muted">
+                  <i class="bx bx-info-circle me-1"></i>ต้องระบุ เบอร์โทร, LineID หรือ Facebook อย่างน้อย 1 ช่อง
+                </small>
+              </div>
             </div>
             <input type="hidden" id="CusID" name="customer_id">
           </div>

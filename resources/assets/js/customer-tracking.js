@@ -832,6 +832,22 @@ document.addEventListener('DOMContentLoaded', function () {
         );
     }
 
+    if (!phone && !lineId && !facebook) {
+      $('#ct_phone, #ct_line_id, #ct_facebook').addClass('is-invalid');
+      $('#contactRequiredHint').addClass('text-danger fw-semibold').removeClass('text-muted');
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณากรอกข้อมูลติดต่อ',
+        text: 'ต้องระบุ เบอร์โทร, LineID หรือ Facebook อย่างน้อย 1 ช่อง',
+        confirmButtonText: 'ตกลง',
+        confirmButtonColor: '#6c5ffc'
+      });
+      return;
+    }
+
+    $('#ct_phone, #ct_line_id, #ct_facebook').removeClass('is-invalid');
+    $('#contactRequiredHint').removeClass('text-danger fw-semibold').addClass('text-muted');
+
     const checks = [];
     if (phone) checks.push({ params: { phone }, labelHtml: `เบอร์ : <b>${phone}</b>` });
     if (lineId) checks.push({ params: { field: 'line_id', value: lineId }, labelHtml: `Line ID : <b>${lineId}</b>` });
