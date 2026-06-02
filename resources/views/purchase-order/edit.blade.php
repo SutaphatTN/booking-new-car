@@ -498,14 +498,17 @@
             </div>
 
             {{-- หลักฐานการจอง --}}
-            @if (!empty($saleCar->attachment_url))
-              <div class="po-section-edit">
-                <div class="po-section-header">
-                  <div class="po-section-icon pink"><i class="bx bx-paperclip"></i></div>
-                  <h6 class="po-section-title">หลักฐานการจอง</h6>
-                </div>
-                <div class="po-section-body-edit">
-                  <div class="d-flex flex-wrap">
+            <div class="po-section-edit">
+              <div class="po-section-header">
+                <div class="po-section-icon pink"><i class="bx bx-paperclip"></i></div>
+                <h6 class="po-section-title">หลักฐานการจอง</h6>
+              </div>
+              <div class="po-section-body-edit">
+
+                {{-- ไฟล์ที่แนบไว้แล้ว --}}
+                @if (!empty($saleCar->attachment_url))
+                  <div class="po-label mb-2"><i class="bx bx-images me-1"></i> ไฟล์ที่แนบแล้ว</div>
+                  <div class="d-flex flex-wrap gap-2 mb-3" id="existingAttachments">
                     @foreach ($saleCar->attachment_url as $item)
                       @php
                         $url      = is_array($item) ? ($item['url']  ?? '') : $item;
@@ -522,9 +525,11 @@
                             ? $proxyBase . '/' . rawurlencode($name) . '?url=' . urlencode($url)
                             : $proxyBase . '?url=' . urlencode($url);
                       @endphp
-                      <div class="d-inline-block m-1" style="width:80px;vertical-align:top;">
+                      <div class="att-item position-relative d-inline-block m-1"
+                           style="width:80px;vertical-align:top;"
+                           data-index="{{ $loop->index }}"
+                           data-delete-url="{{ route('purchase-order.delete-attachment', $saleCar->id) }}">
                         @if($isFile)
-                          {{-- รู้ชัดว่าเป็นไฟล์ → แสดง card สีทันที + ชื่อไฟล์ด้านล่าง --}}
                           <a href="{{ $proxyUrl }}" target="_blank" class="d-flex flex-column align-items-center justify-content-center rounded text-white text-decoration-none" style="width:80px;height:80px;background:{{ $bg }};">
                             <i class="bx bx-file" style="font-size:1.8rem;"></i>
                             <span class="badge bg-white mt-1" style="font-size:.6rem;color:{{ $bg }};font-weight:700;">{{ $label }}</span>
@@ -533,7 +538,6 @@
                             <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;" title="{{ $name }}">{{ $name }}</div>
                           @endif
                         @else
-                          {{-- รูปภาพ หรือไม่รู้ extension → ลอง load รูปก่อน onerror → card --}}
                           <a href="{{ $proxyUrl }}" target="_blank" id="imgw-att-{{ $loop->index }}" style="display:block;">
                             <img src="{{ $proxyUrl }}" class="rounded border" style="width:80px;height:80px;object-fit:cover;cursor:pointer;"
                                  onerror="document.getElementById('imgw-att-{{ $loop->index }}').style.display='none';document.getElementById('filew-att-{{ $loop->index }}').style.display='flex';">
@@ -544,12 +548,42 @@
                             <span class="badge bg-white mt-1" style="font-size:.6rem;color:{{ $bg }};font-weight:700;">{{ $label }}</span>
                           </a>
                         @endif
+                        @if (!$isHistory)
+                          <button type="button"
+                            class="btn btn-danger btn-att-delete position-absolute top-0 end-0"
+                            style="font-size:.8rem;line-height:1;padding:2px 5px;"
+                            title="ลบไฟล์นี้">
+                            <i class="bx bx-x"></i>
+                          </button>
+                        @endif
                       </div>
                     @endforeach
                   </div>
-                </div>
+                  @if (!$isHistory)
+                    <hr class="my-3">
+                  @endif
+                @endif
+
+                {{-- แนบหลักฐานเพิ่มเติม --}}
+                @if (!$isHistory)
+                  <div>
+                    <label for="attachments_edit" class="po-label mb-1">
+                      <i class="bx bx-upload me-1"></i> แนบหลักฐานเพิ่มเติม
+                    </label>
+                    <div class="upload-area" style="max-width:520px;">
+                      <input id="attachments_edit" type="file"
+                        class="form-control border-0 bg-transparent p-0"
+                        name="attachments[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
+                      <small class="text-muted mt-1 d-block">
+                        <i class="bx bx-info-circle me-1"></i>รองรับ PDF, JPG, PNG — แนบได้หลายไฟล์
+                      </small>
+                      <div id="preview_edit" class="mt-2 d-flex flex-wrap gap-2"></div>
+                    </div>
+                  </div>
+                @endif
+
               </div>
-            @endif
+            </div>
 
             {{-- Section 4 : ข้อมูล Car Order --}}
             @if ($userRole !== 'sale')
