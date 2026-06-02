@@ -3,6 +3,9 @@
     <tr>
       <th>No</th>
       <th>ชื่อ - นามสกุล ลูกค้า</th>
+      <th>เลขบัตรประชาชน</th>
+      <th>เบอร์โทร</th>
+      <th>ที่อยู่ตามบัตร</th>
       <th>ฝ่ายขาย</th>
       <th>รุ่นรถหลัก</th>
       <th>รุ่นรถย่อย</th>
@@ -33,6 +36,9 @@
       <tr>
         <td>{{ $loop->iteration }}</td>
         <td>{{ $s['customer'] }}</td>
+        <td>{{ $s['id_card'] }}</td>
+        <td>{{ $s['phone'] }}</td>
+        <td>{{ $s['address'] }}</td>
         <td>{{ $s['sale'] }}</td>
         <td>{{ $s['model'] }}</td>
         <td>{{ $s['subModel'] }}</td>
@@ -59,7 +65,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="20" align="center">
+        <td colspan="23" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

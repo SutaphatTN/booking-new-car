@@ -106,7 +106,10 @@
         "car-order",
         "accessory",
         "campaign",
-        "finance"
+        "finance",
+        "stock-film",
+        "film-price-list",
+        "film-settings"
       ],
       "submenu": [
         {
@@ -235,6 +238,23 @@
               "url": "finance/extra-com",
               "name": "Com Extra",
               "slug": "finance.extra-com"
+            }
+          ]
+        },
+        {
+          "name": "Stock Film",
+          "icon": "menu-icon icon-base bx bx-layer",
+          "slug": ["stock-film", "film-price-list"],
+          "submenu": [
+            {
+              "url": "stock-film",
+              "name": "ข้อมูลฟิล์ม",
+              "slug": "stock-film.index"
+            },
+            {
+              "url": "film-price-list",
+              "name": "ราคาฟิล์ม",
+              "slug": "film-price-list.index"
             }
           ]
         }

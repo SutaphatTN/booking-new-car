@@ -953,6 +953,26 @@ class PurchaseOrderController extends Controller
 
             $saleCar->update($data);
 
+            if ($request->hasFile('attachments')) {
+                $customer = Customer::find($saleCar->CusID);
+                $customerFolder = $customer->id . '-' . ($customer->FirstName ?? 'unknown');
+                $brandName = Auth::user()->brandInfo->name ?? 'Other';
+                $folder = "New Car/{$brandName}/หลักฐานการจอง/{$customerFolder}";
+
+                $oneDrive = new OneDriveService();
+                $existing = is_array($saleCar->attachment_url) ? $saleCar->attachment_url : [];
+
+                foreach ($request->file('attachments') as $index => $file) {
+                    $fileName = 'booking_' . $saleCar->id . '_edit_' . ($index + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    $existing[] = [
+                        'url'  => $oneDrive->upload($file->getRealPath(), $fileName, $folder),
+                        'name' => $file->getClientOriginalName(),
+                    ];
+                }
+
+                $saleCar->update(['attachment_url' => $existing]);
+            }
+
             //ยกเลิกการจอง
             if (in_array($request->con_status, [7, 8, 9])) {
                 if ($saleCar->CarOrderID) {
@@ -1891,5 +1911,22 @@ class PurchaseOrderController extends Controller
         } catch (\Exception $e) {
             abort(404);
         }
+    }
+
+    public function deleteAttachment(Request $request, $id)
+    {
+        $saleCar = Salecar::findOrFail($id);
+
+        $index = $request->input('index');
+        $urls  = is_array($saleCar->attachment_url) ? $saleCar->attachment_url : [];
+
+        if (!isset($urls[$index])) {
+            return response()->json(['success' => false, 'message' => 'ไม่พบไฟล์'], 404);
+        }
+
+        array_splice($urls, $index, 1);
+        $saleCar->update(['attachment_url' => $urls]);
+
+        return response()->json(['success' => true]);
     }
 }

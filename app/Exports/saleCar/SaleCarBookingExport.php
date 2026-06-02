@@ -10,13 +10,15 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 
-class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
+class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
     protected $fromDate;
     protected $toDate;
@@ -32,6 +34,13 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
     public function title(): string
     {
         return 'สรุปข้อมูลการจอง';
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'C' => NumberFormat::FORMAT_TEXT,
+        ];
     }
 
     public function styles(Worksheet $sheet)
@@ -147,7 +156,10 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
                 : null;
 
             return [
-                'customer' => $customerName,
+                'customer'   => $customerName,
+                'id_card'    => $r->customer?->IDNumber ?? '-',
+                'phone'      => $r->customer?->formatted_mobile ?? '-',
+                'address'    => $r->customer?->documentAddress?->short_address ?? '-',
                 'sale' => $r->saleUser?->name ?? '-',
                 'model' => $model,
                 'subModel' => $subModel,

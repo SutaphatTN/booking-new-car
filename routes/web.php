@@ -26,6 +26,9 @@ use App\Http\Controllers\invoice\InvoiceController;
 use App\Http\Controllers\pricelist_car\PricelistCarController;
 use App\Http\Controllers\customer_tracking\CustomerTrackingController;
 use App\Http\Controllers\gwm_incentive\GwmIncentiveController;
+use App\Http\Controllers\stock_film\FilmPriceListController;
+use App\Http\Controllers\stock_film\FilmSettingController;
+use App\Http\Controllers\stock_film\StockFilmController;
 use App\Http\Controllers\service_check_tracking\ServiceCheckTrackingController;
 use App\Http\Controllers\customer_relation\PreDeliveryInspectionController;
 use App\Http\Controllers\customer_relation\SsiController;
@@ -311,6 +314,36 @@ Route::middleware(['auth', 'notsale'])->group(function () {
         'destroy' => 'gwm-incentive.destroy',
     ]);
 
+    // stock-film
+    Route::get('stock-film/list', [StockFilmController::class, 'listStock']);
+    Route::get('stock-film/preview-stock-no', [StockFilmController::class, 'previewStockNo']);
+    Route::get('stock-film/{id}/view-more', [StockFilmController::class, 'viewMore'])->name('stock-film.viewMore');
+    Route::resource('stock-film', StockFilmController::class)->names([
+        'index'   => 'stock-film.index',
+        'create'  => 'stock-film.create',
+        'store'   => 'stock-film.store',
+        'edit'    => 'stock-film.edit',
+        'update'  => 'stock-film.update',
+        'destroy' => 'stock-film.destroy',
+    ]);
+
+    // film-settings
+    Route::get('film-settings', [FilmSettingController::class, 'index'])->name('film-settings.index');
+    Route::post('film-settings/global', [FilmSettingController::class, 'updateGlobal'])->name('film-settings.global');
+    Route::post('film-settings/costs', [FilmSettingController::class, 'updateCost'])->name('film-settings.costs');
+
+    // film-price-list
+    Route::get('film-price-list/list', [FilmPriceListController::class, 'list']);
+    Route::get('film-price-list/calculate', [FilmPriceListController::class, 'calculate']);
+    Route::resource('film-price-list', FilmPriceListController::class)->names([
+        'index'   => 'film-price-list.index',
+        'create'  => 'film-price-list.create',
+        'store'   => 'film-price-list.store',
+        'edit'    => 'film-price-list.edit',
+        'update'  => 'film-price-list.update',
+        'destroy' => 'film-price-list.destroy',
+    ]);
+
     // forecast
     Route::get('/forecast', [ForecastController::class, 'forecastForm'])
         ->name('car-order.form');
@@ -346,6 +379,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/api/purchase-order/sub-model/{model_id}', [PurchaseOrderController::class, 'getSubModelPurchase']);
     Route::get('purchase-order/{id}/preview', [PurchaseOrderController::class, 'preview'])->name('purchase-order.preview');
     Route::get('purchase-order/{id}/proxy/{filename?}', [PurchaseOrderController::class, 'proxyAttachment'])->where('filename', '[^/]+')->name('purchase-order.proxy');
+    Route::delete('purchase-order/{id}/attachment', [PurchaseOrderController::class, 'deleteAttachment'])->name('purchase-order.delete-attachment');
     Route::get('purchase-order/viewPO', [PurchaseOrderController::class, 'viewPO'])->name('purchase-order.viewPO');
     Route::get('purchase-order/list-po', [PurchaseOrderController::class, 'listPO']);
     Route::get('purchase-order/viewBooking', [PurchaseOrderController::class, 'viewBooking'])->name('purchase-order.viewBooking');

@@ -3541,8 +3541,50 @@ function renderFilePreviews(input, $preview) {
   ['attachments_check2', 'preview_check2'],
   ['attachments_bank',   'preview_bank'],
   ['attachments_bank2',  'preview_bank2'],
+  ['attachments_edit',   'preview_edit'],
 ].forEach(function ([inputId, previewId]) {
   $(document).on('change', '#' + inputId, function () {
     renderFilePreviews(this, $('#' + previewId));
+  });
+});
+
+// ลบไฟล์แนบที่มีอยู่แล้ว (edit page)
+$(document).on('click', '.btn-att-delete', function () {
+  const $item = $(this).closest('.att-item');
+  const index = $item.data('index');
+  const url   = $item.data('delete-url');
+
+  Swal.fire({
+    title: 'ลบไฟล์นี้?',
+    text: 'ไฟล์จะถูกลบออกจากหลักฐานการจอง',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'ใช่, ลบเลย!',
+    cancelButtonText: 'ยกเลิก',
+  }).then(function (result) {
+    if (!result.isConfirmed) return;
+
+    $.ajax({
+      url: url,
+      type: 'DELETE',
+      data: { _token: $('meta[name="csrf-token"]').attr('content'), index: index },
+      success: function () {
+        $item.remove();
+        // อัปเดต data-index ของรายการที่เหลือ
+        $('#existingAttachments .att-item').each(function (i) {
+          $(this).data('index', i);
+        });
+        if ($('#existingAttachments .att-item').length === 0) {
+          $('#existingAttachments').closest('.mb-3').remove();
+          $('#existingAttachments').prev('.po-label').remove();
+        }
+        Swal.fire({ icon: 'success', title: 'ลบไฟล์แล้ว', timer: 1200, showConfirmButton: false });
+      },
+      error: function () {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถลบไฟล์ได้' });
+      },
+    });
   });
 });

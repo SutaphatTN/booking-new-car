@@ -236,7 +236,7 @@
 
 .form-control-plaintext-mf {
   background: #f8fafc !important;
-  color: #64748b !important;
+  color: #64748b;
 }
 
 /* ── Auto-calc label note ── */
