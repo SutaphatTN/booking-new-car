@@ -453,23 +453,45 @@
                 @if (!$isHistory || $reservationType === 'transfer')
                   <div id="bankReservation" class="sub-section-edit">
                     <div class="row g-3">
+
+                      {{-- Brand 1: เลือกธนาคาร --}}
+                      @if (auth()->user()->brand == 1 && !$isHistory)
+                        @php
+                          $savedTransferBank = $reservationPayment->transfer_bank ?? '';
+                        @endphp
+                        <div class="col-12">
+                          <div class="po-label mb-1"><i class="bx bx-bank me-1"></i> เลือกธนาคารปลายทาง</div>
+                          <div class="pay-type-group">
+                            <input type="radio" name="reservation_bank_select" id="tbKasikornEdit" value="kasikorn"
+                              {{ str_contains($savedTransferBank, 'กสิกร') ? 'checked' : '' }}>
+                            <label for="tbKasikornEdit">กสิกร</label>
+                            <input type="radio" name="reservation_bank_select" id="tbSCBEdit" value="scb"
+                              {{ str_contains($savedTransferBank, 'ไทยพาณิชย์') ? 'checked' : '' }}>
+                            <label for="tbSCBEdit">ไทยพาณิชย์</label>
+                          </div>
+                        </div>
+                      @endif
+
                       <div class="col-md-3">
                         <label for="reservation_transfer_bank" class="po-label">ธนาคาร</label>
                         <input id="reservation_transfer_bank" type="text" class="form-control"
                           name="reservation_transfer_bank"
-                          value="{{ old('reservation_transfer_bank', $reservationPayment->transfer_bank ?? '') }}">
+                          value="{{ old('reservation_transfer_bank', $reservationPayment->transfer_bank ?? (auth()->user()->brand == 2 ? 'กสิกร' : (auth()->user()->brand == 3 ? 'กสิกร' : ''))) }}"
+                          @if (in_array(auth()->user()->brand, [2, 3])) @endif>
                       </div>
                       <div class="col-md-4">
                         <label for="reservation_transfer_branch" class="po-label">สาขา</label>
                         <input id="reservation_transfer_branch" type="text" class="form-control"
                           name="reservation_transfer_branch"
-                          value="{{ old('reservation_transfer_branch', $reservationPayment->transfer_branch ?? '') }}">
+                          value="{{ old('reservation_transfer_branch', $reservationPayment->transfer_branch ?? (in_array(auth()->user()->brand, [2, 3]) ? 'โลตัส กระบี่' : '')) }}"
+                          @if (in_array(auth()->user()->brand, [2, 3])) @endif>
                       </div>
                       <div class="col-md-3">
                         <label for="reservation_transfer_no" class="po-label">เลขที่</label>
                         <input id="reservation_transfer_no" type="text" class="form-control"
                           name="reservation_transfer_no"
-                          value="{{ old('reservation_transfer_no', $reservationPayment->transfer_no ?? '') }}">
+                          value="{{ old('reservation_transfer_no', $reservationPayment->transfer_no ?? (auth()->user()->brand == 2 ? '1118544192' : (auth()->user()->brand == 3 ? '1248607854' : ''))) }}"
+                          @if (in_array(auth()->user()->brand, [2, 3])) @endif>
                       </div>
                       @if (auth()->user()->brand == 2)
                         <div class="col-md-2">
@@ -1313,20 +1335,40 @@
                                 @if (!$isHistory || $remainingPayment === 'transfer')
                                   <div id="bankRemain" class="col-md-9">
                                     <div class="row g-3">
-                                      <div class="col-md-4"><label for="remaining_transfer_bank"
-                                          class="po-label">ธนาคาร</label><input id="remaining_transfer_bank"
-                                          type="text" class="form-control" name="remaining_transfer_bank"
-                                          value="{{ old('remaining_transfer_bank', $remainingPayment->transfer_bank ?? '') }}">
+                                      @if (auth()->user()->brand == 1 && !$isHistory)
+                                        @php $savedRemainingBank = $remainingPayment->transfer_bank ?? ''; @endphp
+                                        <div class="col-12">
+                                          <div class="po-label mb-1"><i class="bx bx-bank me-1"></i> เลือกธนาคารปลายทาง</div>
+                                          <div class="pay-type-group">
+                                            <input type="radio" name="remaining_bank_select" id="rbKasikorn" value="kasikorn"
+                                              {{ str_contains($savedRemainingBank, 'กสิกร') ? 'checked' : '' }}>
+                                            <label for="rbKasikorn">กสิกร</label>
+                                            <input type="radio" name="remaining_bank_select" id="rbSCB" value="scb"
+                                              {{ str_contains($savedRemainingBank, 'ไทยพาณิชย์') ? 'checked' : '' }}>
+                                            <label for="rbSCB">ไทยพาณิชย์</label>
+                                          </div>
+                                        </div>
+                                      @endif
+                                      <div class="col-md-4">
+                                        <label for="remaining_transfer_bank" class="po-label">ธนาคาร</label>
+                                        <input id="remaining_transfer_bank" type="text" class="form-control"
+                                          name="remaining_transfer_bank"
+                                          value="{{ old('remaining_transfer_bank', $remainingPayment->transfer_bank ?? (auth()->user()->brand == 2 ? 'กสิกร' : (auth()->user()->brand == 3 ? 'กสิกร' : ''))) }}"
+                                          @if (in_array(auth()->user()->brand, [2, 3])) @endif>
                                       </div>
-                                      <div class="col-md-4"><label for="remaining_transfer_branch"
-                                          class="po-label">สาขา</label><input id="remaining_transfer_branch"
-                                          type="text" class="form-control" name="remaining_transfer_branch"
-                                          value="{{ old('remaining_transfer_branch', $remainingPayment->transfer_branch ?? '') }}">
+                                      <div class="col-md-4">
+                                        <label for="remaining_transfer_branch" class="po-label">สาขา</label>
+                                        <input id="remaining_transfer_branch" type="text" class="form-control"
+                                          name="remaining_transfer_branch"
+                                          value="{{ old('remaining_transfer_branch', $remainingPayment->transfer_branch ?? (in_array(auth()->user()->brand, [2, 3]) ? 'โลตัส กระบี่' : '')) }}"
+                                          @if (in_array(auth()->user()->brand, [2, 3])) @endif>
                                       </div>
-                                      <div class="col-md-4"><label for="remaining_transfer_no"
-                                          class="po-label">เลขที่</label><input id="remaining_transfer_no"
-                                          type="text" class="form-control" name="remaining_transfer_no"
-                                          value="{{ old('remaining_transfer_no', $remainingPayment->check_no ?? '') }}">
+                                      <div class="col-md-4">
+                                        <label for="remaining_transfer_no" class="po-label">เลขที่</label>
+                                        <input id="remaining_transfer_no" type="text" class="form-control"
+                                          name="remaining_transfer_no"
+                                          value="{{ old('remaining_transfer_no', $remainingPayment->transfer_no ?? (auth()->user()->brand == 2 ? '1118544192' : (auth()->user()->brand == 3 ? '1248607854' : ''))) }}"
+                                          @if (in_array(auth()->user()->brand, [2, 3])) @endif>
                                       </div>
                                     </div>
                                   </div>
@@ -1602,23 +1644,40 @@
                                   @if (!$isHistory || $deliveryType === 'transfer')
                                     <div id="bankDelivery" class="sub-section-edit">
                                       <div class="row g-3">
+                                        @if (auth()->user()->brand == 1 && !$isHistory)
+                                          @php $savedDeliveryBank = $deliveryPayment->transfer_bank ?? ''; @endphp
+                                          <div class="col-12">
+                                            <div class="po-label mb-1"><i class="bx bx-bank me-1"></i> เลือกธนาคารปลายทาง</div>
+                                            <div class="pay-type-group">
+                                              <input type="radio" name="delivery_bank_select" id="dbKasikorn" value="kasikorn"
+                                                {{ str_contains($savedDeliveryBank, 'กสิกร') ? 'checked' : '' }}>
+                                              <label for="dbKasikorn">กสิกร</label>
+                                              <input type="radio" name="delivery_bank_select" id="dbSCB" value="scb"
+                                                {{ str_contains($savedDeliveryBank, 'ไทยพาณิชย์') ? 'checked' : '' }}>
+                                              <label for="dbSCB">ไทยพาณิชย์</label>
+                                            </div>
+                                          </div>
+                                        @endif
                                         <div class="col-md-3">
                                           <label for="delivery_transfer_bank" class="po-label">ธนาคาร</label>
                                           <input id="delivery_transfer_bank" type="text" class="form-control"
                                             name="delivery_transfer_bank"
-                                            value="{{ old('delivery_transfer_bank', $deliveryPayment->transfer_bank ?? '') }}">
+                                            value="{{ old('delivery_transfer_bank', $deliveryPayment->transfer_bank ?? (auth()->user()->brand == 2 ? 'กสิกร' : (auth()->user()->brand == 3 ? 'กสิกร' : ''))) }}"
+                                            @if (in_array(auth()->user()->brand, [2, 3])) @endif>
                                         </div>
                                         <div class="col-md-4">
                                           <label for="delivery_transfer_branch" class="po-label">สาขา</label>
                                           <input id="delivery_transfer_branch" type="text" class="form-control"
                                             name="delivery_transfer_branch"
-                                            value="{{ old('delivery_transfer_branch', $deliveryPayment->transfer_branch ?? '') }}">
+                                            value="{{ old('delivery_transfer_branch', $deliveryPayment->transfer_branch ?? (in_array(auth()->user()->brand, [2, 3]) ? 'โลตัส กระบี่' : '')) }}"
+                                            @if (in_array(auth()->user()->brand, [2, 3])) @endif>
                                         </div>
                                         <div class="col-md-3">
                                           <label for="delivery_transfer_no" class="po-label">เลขที่</label>
                                           <input id="delivery_transfer_no" type="text" class="form-control"
                                             name="delivery_transfer_no"
-                                            value="{{ old('delivery_transfer_no', $deliveryPayment->transfer_no ?? '') }}">
+                                            value="{{ old('delivery_transfer_no', $deliveryPayment->transfer_no ?? (auth()->user()->brand == 2 ? '1118544192' : (auth()->user()->brand == 3 ? '1248607854' : ''))) }}"
+                                            @if (in_array(auth()->user()->brand, [2, 3])) @endif>
                                         </div>
                                       </div>
                                     </div>
