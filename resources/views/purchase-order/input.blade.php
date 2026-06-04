@@ -529,20 +529,41 @@
               <div id="bankSection" class="col-12" style="display:none;">
                 <div class="sub-section">
                   <div class="row g-3">
+
+                    {{-- Brand 1: เลือกธนาคาร --}}
+                    @if (auth()->user()->brand == 1)
+                      <div class="col-12">
+                        <div class="po-label mb-1"><i class="bx bx-bank me-1"></i> เลือกธนาคารปลายทาง</div>
+                        <div class="pay-type-group" id="transferBankGroup">
+                          <input type="radio" name="reservation_bank_select" id="tbKasikorn" value="kasikorn">
+                          <label for="tbKasikorn">กสิกร</label>
+                          <input type="radio" name="reservation_bank_select" id="tbSCB" value="scb">
+                          <label for="tbSCB">ไทยพาณิชย์</label>
+                        </div>
+                      </div>
+                    @endif
+
                     <div class="col-md-4">
                       <label class="po-label" for="reservation_transfer_bank">ธนาคาร</label>
                       <input id="reservation_transfer_bank" type="text" class="form-control"
-                        name="reservation_transfer_bank" placeholder="ชื่อธนาคาร">
+                        name="reservation_transfer_bank" placeholder="ชื่อธนาคาร"
+                        @if (auth()->user()->brand == 2) value="กสิกร"
+                        @elseif (auth()->user()->brand == 3) value="กสิกร"
+                        @endif>
                     </div>
                     <div class="col-md-4">
                       <label class="po-label" for="reservation_transfer_branch">สาขา</label>
                       <input id="reservation_transfer_branch" type="text" class="form-control"
-                        name="reservation_transfer_branch" placeholder="สาขา">
+                        name="reservation_transfer_branch" placeholder="สาขา"
+                        @if (in_array(auth()->user()->brand, [2, 3])) value="โลตัส กระบี่" @endif>
                     </div>
                     <div class="col-md-4">
                       <label class="po-label" for="reservation_transfer_no">เลขที่การโอน</label>
                       <input id="reservation_transfer_no" type="text" class="form-control"
-                        name="reservation_transfer_no" placeholder="เลขที่">
+                        name="reservation_transfer_no" placeholder="เลขที่"
+                        @if (auth()->user()->brand == 2) value="1118544192"
+                        @elseif (auth()->user()->brand == 3) value="1248607854"
+                        @endif>
                     </div>
                     @if (auth()->user()->brand == 2)
                       <div class="col-md-6">

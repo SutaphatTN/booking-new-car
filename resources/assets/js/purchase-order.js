@@ -3492,6 +3492,22 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+// Brand 1 — auto-fill bank transfer details when bank radio is selected
+const TRANSFER_BANK_INFO = {
+  kasikorn: { bank: 'กสิกร',       branch: 'โลตัส กระบี่', no: '5892179370' },
+  scb:      { bank: 'ไทยพาณิชย์', branch: 'โลตัส กระบี่', no: '4048731821' },
+};
+
+// name pattern: "reservation_bank_select" / "remaining_bank_select" / "delivery_bank_select"
+$(document).on('change', 'input[name$="_bank_select"]', function () {
+  const info = TRANSFER_BANK_INFO[this.value];
+  if (!info) return;
+  const prefix = this.name.replace('_bank_select', ''); // e.g. "reservation"
+  $(`#${prefix}_transfer_bank`).val(info.bank);
+  $(`#${prefix}_transfer_branch`).val(info.branch);
+  $(`#${prefix}_transfer_no`).val(info.no);
+});
+
 // file attachment preview
 function fileCardStyle(name) {
   const ext = (name.split('.').pop() || '').toLowerCase();
