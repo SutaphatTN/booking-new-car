@@ -550,6 +550,8 @@ class CustomerTrackingController extends Controller
                 $followUpDays = match ((int) $decisionId) {
                     1 => [3, 6],
                     2 => [15, 30],
+                    3 => [120, 240],
+                    4 => [180, 360],
                     default => [],
                 };
 
@@ -632,7 +634,9 @@ class CustomerTrackingController extends Controller
             if (!$isSaleRole && $decisionId) {
                 $followUpDays = match ((int) $decisionId) {
                     1 => [3, 6],
-                    2 => [15, 60],
+                    2 => [15, 30],
+                    3 => [120, 240],
+                    4 => [180, 360],
                     default => [],
                 };
 
@@ -686,11 +690,13 @@ class CustomerTrackingController extends Controller
         $detail = CustomerTrackingDetail::findOrFail($detailId);
         $user   = Auth::user();
 
-        $isAutoDecision = in_array((int) $request->decision_id, [1, 2]);
+        $isAutoDecision = in_array((int) $request->decision_id, [1, 2, 3, 4]);
 
         $followUpDays = match ((int) $request->decision_id) {
             1 => [3, 6, 9],
             2 => [15, 30, 45],
+            3 => [120, 240, 360],
+            4 => [180, 360, 540],
             default => [0],
         };
 
