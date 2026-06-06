@@ -5,6 +5,7 @@ namespace App\Http\Controllers\customer_tracking;
 use App\Exports\customerTracking\CustomerTrackingExport;
 use App\Exports\customerTracking\CustomerTrackingByDateExport;
 use App\Exports\customerTracking\CustomerTrackingDailyExport;
+use App\Exports\customerTracking\CustomerTrackingOverdueExport;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerTracking;
 use App\Models\CustomerTrackingDetail;
@@ -755,6 +756,14 @@ class CustomerTrackingController extends Controller
         $filename = 'รายงานประจำวัน_' . $date . '.xlsx';
 
         return Excel::download(new CustomerTrackingDailyExport($date), $filename);
+    }
+
+    public function exportOverdueReport(Request $request)
+    {
+        $month    = $request->month ?? now()->format('Y-m');
+        $filename = 'รายงานเลยกำหนดติดตามลูกค้า_' . $month . '.xlsx';
+
+        return Excel::download(new CustomerTrackingOverdueExport($month), $filename);
     }
 
     public function saveTestDrive(Request $request, $id)

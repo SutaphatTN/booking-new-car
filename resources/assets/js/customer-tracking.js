@@ -549,6 +549,15 @@ $(document).ready(function () {
     }
     window.location.href = `/customer-tracking/export-by-date?date_from=${dateFrom}&date_to=${dateTo}`;
   });
+
+  $('#btnExportOverdue').on('click', function () {
+    const month = $('#reportOverdueMonth').val();
+    if (!month) {
+      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกเดือน', timer: 1500, showConfirmButton: true });
+      return;
+    }
+    window.location.href = `/customer-tracking/export-overdue?month=${month}`;
+  });
 });
 
 // INPUT FORM — phone formatting + car cascades
