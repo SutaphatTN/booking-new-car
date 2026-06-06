@@ -13,8 +13,8 @@
         const val = parseInt($(this).data('val'));
         $group.find('.score-btn').removeClass('selected score-low score-mid score-high');
         $(this).addClass('selected');
-        if (val <= 4) $(this).addClass('score-low');
-        else if (val <= 7) $(this).addClass('score-mid');
+        if (val <= 2) $(this).addClass('score-low');
+        else if (val <= 3) $(this).addClass('score-mid');
         else $(this).addClass('score-high');
         $group.find('input[type=hidden]').val(val);
       });
@@ -22,7 +22,7 @@
       // Restore saved scores on load (brand 1/3)
       $('.score-group').each(function() {
         const saved = parseInt($(this).find('input[type=hidden]').val());
-        if (saved >= 1 && saved <= 10) {
+        if (saved >= 1 && saved <= 5) {
           $(this).find(`.score-btn[data-val="${saved}"]`).trigger('click');
         }
       });
@@ -330,10 +330,10 @@
             o27_car_condition: $('#score_o27_car_condition').val() || null,
             fu_followup: $('#score_fu_followup').val() || null,
             recommend_showroom: $('#score_recommend_showroom').val() || null,
-            sop14_test_drive: $('#score_sop14_test_drive').val() || null,
-            sop24_update_progress: $('#score_sop24_update_progress').val() || null,
-            sop25_accessories_complete: $('#score_sop25_accessories_complete').val() || null,
-            sop30_satisfaction_followup: $('#score_sop30_satisfaction_followup').val() || null,
+            sop14_test_drive: $('input[name="sop14_test_drive"]:checked').val() ?? null,
+            sop24_update_progress: $('input[name="sop24_update_progress"]:checked').val() ?? null,
+            sop25_accessories_complete: $('input[name="sop25_accessories_complete"]:checked').val() ?? null,
+            sop30_satisfaction_followup: $('input[name="sop30_satisfaction_followup"]:checked').val() ?? null,
           };
         @endif
 
@@ -564,25 +564,12 @@
                   'icon' => 'bx bx-like',
                   'color' => 'indigo',
               ],
-              ['key' => 'sop14_test_drive', 'label' => 'SOP 14 เสนอทดลองขับ', 'icon' => 'bx bx-key', 'color' => 'pink'],
-              [
-                  'key' => 'sop24_update_progress',
-                  'label' => 'SOP 24 แจ้งความคืบหน้า',
-                  'icon' => 'bx bx-bell',
-                  'color' => 'pink',
-              ],
-              [
-                  'key' => 'sop25_accessories_complete',
-                  'label' => 'SOP 25 อุปกรณ์ตกแต่งครบ',
-                  'icon' => 'bx bx-wrench',
-                  'color' => 'rose',
-              ],
-              [
-                  'key' => 'sop30_satisfaction_followup',
-                  'label' => 'SOP 30 ที่ปรึกษาการขายได้ติดต่อสอบถามความพึงพอใจหลังจากส่งมอบรถ',
-                  'icon' => 'bx bx-phone-call',
-                  'color' => 'rose',
-              ],
+          ];
+          $sopItems = [
+              ['key' => 'sop14_test_drive',           'label' => 'SOP 14 เสนอทดลองขับ',            'icon' => 'bx bx-key',        'color' => 'pink'],
+              ['key' => 'sop24_update_progress',      'label' => 'SOP 24 แจ้งความคืบหน้า',          'icon' => 'bx bx-bell',       'color' => 'pink'],
+              ['key' => 'sop25_accessories_complete',  'label' => 'SOP 25 อุปกรณ์ตกแต่งครบ',         'icon' => 'bx bx-wrench',     'color' => 'rose'],
+              ['key' => 'sop30_satisfaction_followup', 'label' => 'SOP 30 ที่ปรึกษาการขายได้ติดต่อสอบถามความพึงพอใจหลังจากส่งมอบรถ', 'icon' => 'bx bx-phone-call', 'color' => 'rose'],
           ];
         @endphp
 
@@ -592,7 +579,7 @@
           <div class="po-section-edit">
             <div class="po-section-header">
               <div class="po-section-icon amber"><i class="bx bx-star"></i></div>
-              <h6 class="po-section-title">ผลประเมิน SSI <small class="text-muted fw-normal ms-1">(คะแนน 1-10)</small>
+              <h6 class="po-section-title">ผลประเมิน SSI <small class="text-muted fw-normal ms-1">(คะแนน 1-5)</small>
               </h6>
             </div>
             <div class="po-section-body-edit">
@@ -604,12 +591,33 @@
                     {{ $item['label'] }}
                   </div>
                   <div class="score-group">
-                    @for ($n = 1; $n <= 10; $n++)
+                    @for ($n = 1; $n <= 5; $n++)
                       <button type="button" class="score-btn"
                         data-val="{{ $n }}">{{ $n }}</button>
                     @endfor
                     <input type="hidden" id="score_{{ $item['key'] }}"
                       value="{{ $assessment ? $assessment->{$item['key']} ?? '' : '' }}">
+                  </div>
+                </div>
+              @endforeach
+
+              <hr class="my-3">
+
+              @foreach ($sopItems as $sop)
+                @php $sopVal = $assessment ? $assessment->{$sop['key']} : null; @endphp
+                <div class="score-row">
+                  <div class="score-row-label">
+                    <i class="bx {{ $sop['icon'] }} po-section-icon {{ $sop['color'] }} me-2"
+                      style="width:24px;height:24px;border-radius:6px;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex-shrink:0;"></i>
+                    {{ $sop['label'] }}
+                  </div>
+                  <div class="yn-group">
+                    <input type="radio" name="{{ $sop['key'] }}" id="{{ $sop['key'] }}_yes" value="1"
+                      {{ $sopVal === 1 ? 'checked' : '' }}>
+                    <label for="{{ $sop['key'] }}_yes"><i class="bx bx-check me-1"></i>ใช่</label>
+                    <input type="radio" name="{{ $sop['key'] }}" id="{{ $sop['key'] }}_no" value="0" class="yn-danger"
+                      {{ $sopVal === 0 ? 'checked' : '' }}>
+                    <label for="{{ $sop['key'] }}_no"><i class="bx bx-x me-1"></i>ไม่ใช่</label>
                   </div>
                 </div>
               @endforeach

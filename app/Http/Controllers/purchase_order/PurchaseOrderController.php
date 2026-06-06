@@ -1657,10 +1657,7 @@ class PurchaseOrderController extends Controller
     {
         $user = Auth::user();
 
-        $query = Salecar::with([
-            'customer.prefix',
-            'carOrder'
-        ])
+        $query = Salecar::with(['customer.prefix', 'carOrder'])
             ->where('con_status', '5');
 
         if (in_array($user->role, ['sale', 'lead_sale'])) {
@@ -1671,25 +1668,50 @@ class PurchaseOrderController extends Controller
             $query->whereIn('SaleID', $visibleSaleIds);
         }
 
-        $saleCar = $query->get();
+        $totalRecords = (clone $query)->count();
 
-        $data = $saleCar->map(function ($s, $index) {
+        $searchValue = $request->input('search.value');
+        if ($searchValue) {
+            $query->where(function ($q) use ($searchValue) {
+                $q->whereHas('customer', function ($cq) use ($searchValue) {
+                    $cq->where('FirstName', 'like', "%{$searchValue}%")
+                        ->orWhere('LastName', 'like', "%{$searchValue}%");
+                })->orWhereHas('carOrder', function ($cq) use ($searchValue) {
+                    $cq->where('order_code', 'like', "%{$searchValue}%");
+                });
+            });
+        }
+
+        $filteredRecords = (clone $query)->count();
+
+        $start  = (int) $request->input('start', 0);
+        $length = (int) $request->input('length', 10);
+
+        $saleCar = $query->orderBy('DeliveryDate', 'desc')
+            ->skip($start)
+            ->take($length)
+            ->get();
+
+        $data = $saleCar->map(function ($s, $index) use ($start) {
             $c = $s->customer;
-            $prefixText = $s->customer?->prefix?->Name_TH;
-
             return [
-                'No' => $index + 1,
+                'No'       => $start + $index + 1,
                 'FullName' => implode(' ', array_filter([
-                    $prefixText ?? null,
+                    $s->customer?->prefix?->Name_TH,
                     $c->FirstName ?? null,
-                    $c->LastName ?? null,
+                    $c->LastName  ?? null,
                 ])),
-                'code' => $s->carOrder->order_code ?? '-',
-                'Action' => view('purchase-order.history.button', compact('s'))->render()
+                'code'   => $s->carOrder->order_code ?? '-',
+                'Action' => view('purchase-order.history.button', compact('s'))->render(),
             ];
         });
 
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'draw'            => (int) $request->input('draw', 1),
+            'recordsTotal'    => $totalRecords,
+            'recordsFiltered' => $filteredRecords,
+            'data'            => $data,
+        ]);
     }
 
     public function viewMoreHistory($id)

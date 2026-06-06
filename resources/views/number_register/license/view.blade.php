@@ -27,12 +27,12 @@
         <div class="card-body pt-3">
 
           {{-- ── Action bar ── --}}
-          <div class="po-filter-bar d-flex align-items-center gap-2">
+          <div class="po-filter-bar d-flex align-items-center gap-2 justify-content-end">
             <div class="dropdown">
               <button class="btn btn-warning btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                 <i class="bx bx-file me-1"></i> รายงาน
               </button>
-              <ul class="dropdown-menu">
+              <ul class="dropdown-menu dropdown-menu-end">
                 <li>
                   <a class="dropdown-item" data-type="stock" href="{{ route('license.stock-export') }}">
                     Stock

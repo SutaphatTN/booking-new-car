@@ -4,6 +4,7 @@ namespace App\Exports\customerTracking;
 
 use App\Models\CustomerTracking;
 use App\Models\CustomerTrackingDetail;
+use App\Models\Salecar;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -79,9 +80,16 @@ class CustomerTrackingOverdueExport implements FromView, WithTitle, WithStyles, 
         $year       = $monthDate->year;
         $month      = $monthDate->month;
 
+        $bookedCustomerIds = Salecar::whereNull('deleted_at')
+            ->whereIn('con_status', [1, 2, 3, 4, 6])
+            ->where('brand', $user->brand)
+            ->pluck('CusID');
+
         $trackingIds = CustomerTracking::where('brand', $user->brand)
             ->whereYear('created_at', $year)
             ->whereMonth('created_at', $month)
+            ->whereNull('cancelled_at')
+            ->whereNotIn('customer_id', $bookedCustomerIds)
             ->whereDoesntHave('details', function ($q) {
                 $q->where('entry_type', 'manager')
                   ->whereNotNull('comment_sale')

@@ -641,6 +641,13 @@
         return `<div class="row g-3"><div class="col-md-4">${leftHtml}</div><div class="col-md-8">${rightHtml}</div></div>`;
       }
 
+      // ── Export Excel ──
+      $('#btnExportPdi').on('click', function () {
+        const date = $('#pdiExportDate').val();
+        if (!date) { alert('กรุณาเลือกวันที่'); return; }
+        window.location.href = '{{ route('pre-delivery-inspection.export') }}?date=' + date;
+      });
+
     });
   </script>
 @endsection
@@ -663,6 +670,16 @@
         </div>
 
         <div class="card-body pt-3">
+
+          {{-- ── Action bar ── --}}
+          <div class="po-filter-bar d-flex align-items-center gap-2 justify-content-end">
+            <input type="date" id="pdiExportDate" class="form-control form-control-sm"
+              value="{{ now()->format('Y-m-d') }}" style="width:155px;">
+            <button type="button" id="btnExportPdi" class="btn btn-warning btn-sm">
+              <i class="bx bx-file me-1"></i> รายงาน
+            </button>
+          </div>
+
           <div class="table-responsive">
             <table class="table table-bordered tbl-table tbl-styled" id="preDeliveryTable">
               <thead>
