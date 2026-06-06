@@ -64,10 +64,10 @@
               </div>
             </div>
 
-            {{-- แถว 2: รายงานการติดตาม --}}
+            {{-- แถว 2: รายงานเพิ่มลูกค้าประจำวัน --}}
             <div class="d-flex align-items-center flex-wrap gap-2">
               <i class="bx bx-file-export text-muted"></i>
-              <span class="text-muted small" style="min-width:105px;">รายงานการเพิ่มการติดตามประจำวัน :</span>
+              <span class="text-muted small" style="min-width:105px;">รายงานเพิ่มลูกค้าประจำวัน :</span>
               <input type="date" id="reportDateFrom" class="form-control form-control-sm" style="width:140px;"
                 value="{{ date('Y-m-d') }}">
               <span class="text-muted small">–</span>

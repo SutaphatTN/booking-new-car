@@ -2,6 +2,7 @@
 
 namespace App\Exports\customerTracking;
 
+use App\Models\CustomerTracking;
 use App\Models\CustomerTrackingDetail;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
@@ -77,6 +78,16 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
     {
         $user = Auth::user();
 
+        $trackingIds = CustomerTracking::where('brand', $user->brand)
+            ->whereDate('created_at', '>=', $this->dateFrom)
+            ->whereDate('created_at', '<=', $this->dateTo)
+            ->pluck('id');
+
+        $firstDetailIds = CustomerTrackingDetail::whereIn('tracking_id', $trackingIds)
+            ->selectRaw('MIN(id) as id')
+            ->groupBy('tracking_id')
+            ->pluck('id');
+
         $details = CustomerTrackingDetail::with([
             'tracking.customer.prefix',
             'tracking.sale',
@@ -84,10 +95,8 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
             'decision',
             'insertedBy',
         ])
-            ->whereHas('tracking', fn($q) => $q->where('brand', $user->brand))
-            ->whereDate('created_at', '>=', $this->dateFrom)
-            ->whereDate('created_at', '<=', $this->dateTo)
-            ->orderBy('created_at')
+            ->whereIn('id', $firstDetailIds)
+            ->orderBy('id')
             ->get();
 
         $no = 1;
