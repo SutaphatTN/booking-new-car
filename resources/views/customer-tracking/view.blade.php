@@ -65,7 +65,7 @@
             </div>
 
             {{-- แถว 2: รายงานเพิ่มลูกค้าประจำวัน --}}
-            <div class="d-flex align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
               <i class="bx bx-file-export text-muted"></i>
               <span class="text-muted small" style="min-width:105px;">รายงานเพิ่มลูกค้าประจำวัน :</span>
               <input type="date" id="reportDateFrom" class="form-control form-control-sm" style="width:140px;"
@@ -78,7 +78,18 @@
               </button>
             </div>
 
-            {{-- แถว 3: สถานะ (mobile เท่านั้น) --}}
+            {{-- แถว 3: รายงานเลยกำหนดติดตามลูกค้า --}}
+            <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
+              <i class="bx bx-file-export text-muted"></i>
+              <span class="text-muted small">รายงานเลยกำหนดติดตาม (ผจก.) :</span>
+              <input type="month" id="reportOverdueMonth" class="form-control form-control-sm" style="width:150px;"
+                value="{{ date('Y-m') }}">
+              <button type="button" class="btn btn-success btn-sm" id="btnExportOverdue">
+                <i class="bx bx-download me-1"></i>Excel
+              </button>
+            </div>
+
+            {{-- แถว 4: สถานะ (mobile เท่านั้น) --}}
             <div class="d-flex d-md-none align-items-center gap-2">
               <i class="bx bx-filter-alt text-muted"></i>
               <label for="filterDecisionMobile" class="mb-0 text-muted">สถานะ :</label>
