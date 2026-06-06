@@ -430,6 +430,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     // pre-delivery inspection (ลูกค้าสัมพันธ์ - ตรวจรถก่อนส่งมอบ)
     Route::get('pre-delivery-inspection/list', [PreDeliveryInspectionController::class, 'list'])->name('pre-delivery-inspection.list');
+    Route::get('pre-delivery-inspection/export', [PreDeliveryInspectionController::class, 'exportExcel'])->name('pre-delivery-inspection.export');
     Route::get('pre-delivery-inspection/{salecarId}/data', [PreDeliveryInspectionController::class, 'getInspection'])->name('pre-delivery-inspection.data');
     Route::post('pre-delivery-inspection/{salecarId}/save', [PreDeliveryInspectionController::class, 'save'])->name('pre-delivery-inspection.save');
     Route::delete('pre-delivery-inspection/{id}/file', [PreDeliveryInspectionController::class, 'deleteFile'])->name('pre-delivery-inspection.deleteFile');
@@ -440,6 +441,7 @@ Route::group(['middleware' => 'auth'], function () {
     // SSI หลังส่งมอบ
     Route::get('ssi', [SsiController::class, 'index'])->name('ssi.index');
     Route::get('ssi/list', [SsiController::class, 'list'])->name('ssi.list');
+    Route::get('ssi/export', [SsiController::class, 'exportExcel'])->name('ssi.export');
     Route::get('ssi/{salecarId}/edit', [SsiController::class, 'edit'])->name('ssi.edit');
     Route::post('ssi/{salecarId}/contact', [SsiController::class, 'saveContact'])->name('ssi.contact.save');
     Route::delete('ssi/{salecarId}/contact/{contactId}', [SsiController::class, 'deleteContact'])->name('ssi.contact.delete');

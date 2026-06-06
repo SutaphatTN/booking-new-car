@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\customer_relation;
 
 use App\Http\Controllers\Controller;
+use App\Exports\ssi\SsiReportExport;
 use App\Models\SsiRecord;
 use App\Models\SsiContact;
 use App\Models\SsiAssessment;
@@ -10,9 +11,11 @@ use App\Models\SsiPayment;
 use App\Models\SsiFeedback;
 use App\Models\SsiResolution;
 use App\Models\Salecar;
+use App\Models\TbProvinces;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SsiController extends Controller
 {
@@ -33,6 +36,7 @@ class SsiController extends Controller
             ->whereNotNull('DeliveryDate')
             ->where('con_status', 5)
             ->whereNotIn('id', $completedSalecarIds)
+            ->orderByDesc('DeliveryDate')
             ->get();
 
         $no = 1;
@@ -111,7 +115,7 @@ class SsiController extends Controller
                 ? Carbon::parse($salecar->DeliveryDate)->format('d/m/Y')
                 : '-',
             'delivery_location' => $salecar->delivery_location ?? '-',
-            'delivery_province' => $salecar->delivery_province ?? '-',
+            'delivery_province' => TbProvinces::find($salecar->delivery_province)?->name ?? '-',
             'vin_number'        => $salecar->carOrder?->vin_number ?? '-',
         ];
 
@@ -260,6 +264,14 @@ class SsiController extends Controller
         );
 
         return response()->json(['success' => true, 'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว']);
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $date     = $request->input('date', now()->format('Y-m-d'));
+        $filename = 'SSI-หลังส่งมอบ-' . $date . '.xlsx';
+
+        return Excel::download(new SsiReportExport($date), $filename);
     }
 
     public function markComplete($salecarId)

@@ -151,7 +151,7 @@
               </div>
             </li>
           @endif
-          @if (in_array(Auth::user()->brand, [1, 2]))
+          @if (Auth::user()->brand == 2)
             @php
               $userBranch = Auth::user()->getOriginal('branch');
               $branchIds = Auth::user()->brand == 2 ? [1, 3] : [1, 2];

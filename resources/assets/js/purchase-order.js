@@ -124,7 +124,7 @@ $(document).ready(function () {
 
   purchaseTable = $('#purchaseTable').DataTable({
     serverSide: true,
-    processing: true,
+    processing: false,
     ajax: {
       url: '/purchase-order/list',
       data: function (d) {
@@ -162,6 +162,13 @@ $(document).ready(function () {
         previous: 'ก่อนหน้า'
       }
     }
+  });
+
+  purchaseTable.on('preXhr.dt', function () {
+    $('#poLoadingOverlay').css('display', 'flex');
+  });
+  purchaseTable.on('xhr.dt', function () {
+    $('#poLoadingOverlay').css('display', 'none');
   });
 
   purchaseTable.on('order.dt', function () {
@@ -3243,17 +3250,19 @@ $(document).ready(function () {
   }
 
   historyFinalTable = $('.historyFinalTable').DataTable({
+    serverSide: true,
+    processing: false,
     ajax: '/purchase-order/list-history',
     columns: [
-      { data: 'No' },
+      { data: 'No',     orderable: false },
       { data: 'FullName', orderable: false },
-      { data: 'code', orderable: false },
+      { data: 'code',   orderable: false },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
     lengthChange: true,
     searching: true,
-    ordering: true,
+    ordering: false,
     info: true,
     pageLength: 10,
     autoWidth: false,
@@ -3263,11 +3272,15 @@ $(document).ready(function () {
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
-      paginate: {
-        next: 'ถัดไป',
-        previous: 'ก่อนหน้า'
-      }
+      paginate: { next: 'ถัดไป', previous: 'ก่อนหน้า' }
     }
+  });
+
+  historyFinalTable.on('preXhr.dt', function () {
+    $('#historyLoadingOverlay').css('display', 'flex');
+  });
+  historyFinalTable.on('xhr.dt', function () {
+    $('#historyLoadingOverlay').css('display', 'none');
   });
 });
 

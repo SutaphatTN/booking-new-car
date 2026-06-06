@@ -67,6 +67,15 @@
         ],
       });
 
+      $('#btnExportSsi').on('click', function() {
+        const date = $('#exportDate').val();
+        if (!date) {
+          Swal.fire({ icon: 'warning', title: 'กรุณาเลือกวันที่', timer: 1500, showConfirmButton: false });
+          return;
+        }
+        window.location.href = '{{ route('ssi.export') }}?date=' + date;
+      });
+
       $('#ssiTable').on('click', '.btn-ssi-complete', function() {
         const salecarId = $(this).data('id');
 
@@ -132,6 +141,16 @@
         </div>
 
         <div class="card-body pt-3">
+
+          {{-- ── Action bar ── --}}
+          <div class="po-filter-bar d-flex align-items-center gap-2 justify-content-end">
+            <input type="date" id="exportDate" class="form-control form-control-sm"
+              value="{{ now()->format('Y-m-d') }}" style="width:155px;">
+            <button type="button" id="btnExportSsi" class="btn btn-warning btn-sm">
+              <i class="bx bx-file me-1"></i> รายงาน
+            </button>
+          </div>
+
           <div class="table-responsive">
             <table class="table table-bordered tbl-table tbl-styled" id="ssiTable">
               <thead>

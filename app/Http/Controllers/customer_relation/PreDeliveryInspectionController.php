@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\customer_relation;
 
+use App\Exports\preDeliveryInspection\PdiReportExport;
 use App\Http\Controllers\Controller;
 use App\Models\PreDeliveryInspection;
 use App\Models\PreDeliveryInspectionFile;
@@ -11,6 +12,7 @@ use App\Services\OneDriveService;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PreDeliveryInspectionController extends Controller
 {
@@ -19,10 +21,19 @@ class PreDeliveryInspectionController extends Controller
         return view('customer-relation.pre-delivery-inspection.index');
     }
 
+    public function exportExcel(Request $request)
+    {
+        $date     = $request->input('date', now()->format('Y-m-d'));
+        $filename = 'PDI-ตรวจรถก่อนส่งมอบ-' . $date . '.xlsx';
+
+        return Excel::download(new PdiReportExport($date), $filename);
+    }
+
     public function list(Request $request)
     {
         $salecars = Salecar::with(['customer.prefix', 'saleUser', 'preDeliveryInspection.docs', 'preDeliveryInspection.photos'])
             ->whereNotNull('AdminSignature')
+            ->orderByDesc('DeliveryDate')
             ->get();
 
         $no = 1;

@@ -90,7 +90,7 @@ $(document).ready(function () {
 
   ctTrackingTable = $('#trackingTable').DataTable({
     serverSide: true,
-    processing: true,
+    processing: false,
     ajax: {
       url: '/customer-tracking/list',
       data: function (d) {
@@ -145,12 +145,19 @@ $(document).ready(function () {
       paginate: { previous: 'ก่อนหน้า', next: 'ถัดไป' },
       emptyTable: 'ไม่มีข้อมูล',
       zeroRecords: 'ไม่พบข้อมูล',
-      processing: 'กำลังโหลด...'
+      processing: ''
     }
   });
 
   ctTrackingTable.on('init.dt', function () {
     ctLoadFilterOptions({}, function () {});
+  });
+
+  ctTrackingTable.on('preXhr.dt', function () {
+    $('#ctLoadingOverlay').css('display', 'flex');
+  });
+  ctTrackingTable.on('xhr.dt', function () {
+    $('#ctLoadingOverlay').css('display', 'none');
   });
 
   $('#filterDecision').on('change', function () {

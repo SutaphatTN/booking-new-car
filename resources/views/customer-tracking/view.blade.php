@@ -65,6 +65,7 @@
             </div>
 
             {{-- แถว 2: รายงานเพิ่มลูกค้าประจำวัน --}}
+            @if (Auth::user()->role !== 'sale')
             <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
               <i class="bx bx-file-export text-muted"></i>
               <span class="text-muted small" style="min-width:105px;">รายงานเพิ่มลูกค้าประจำวัน :</span>
@@ -77,8 +78,10 @@
                 <i class="bx bx-download me-1"></i>Excel
               </button>
             </div>
+            @endif
 
             {{-- แถว 3: รายงานเลยกำหนดติดตามลูกค้า --}}
+            @if (Auth::user()->role !== 'sale')
             <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
               <i class="bx bx-file-export text-muted"></i>
               <span class="text-muted small">รายงานเลยกำหนดติดตาม (ผจก.) :</span>
@@ -88,6 +91,7 @@
                 <i class="bx bx-download me-1"></i>Excel
               </button>
             </div>
+            @endif
 
             {{-- แถว 4: สถานะ (mobile เท่านั้น) --}}
             <div class="d-flex d-md-none align-items-center gap-2">
@@ -225,6 +229,13 @@
   <div class="col-filter-actions">
     <button class="btn btn-sm btn-light" id="ctStatusFilterClear">ล้าง</button>
     <button class="btn btn-sm btn-primary" id="ctStatusFilterApply">ตกลง</button>
+  </div>
+</div>
+
+<div id="ctLoadingOverlay" style="display:flex;">
+  <div class="ct-loading-box">
+    <div class="spinner-border text-primary" role="status" style="width:1.4rem;height:1.4rem;"></div>
+    <span>กำลังโหลด...</span>
   </div>
 </div>
 

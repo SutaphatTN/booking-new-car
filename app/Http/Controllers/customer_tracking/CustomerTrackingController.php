@@ -743,6 +743,10 @@ class CustomerTrackingController extends Controller
 
     public function exportExcelByDate(Request $request)
     {
+        if (Auth::user()->role === 'sale') {
+            abort(403);
+        }
+
         $dateFrom = $request->date_from ?? now()->toDateString();
         $dateTo   = $request->date_to   ?? now()->toDateString();
         $filename = 'รายงานการกรอกข้อมูล_' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx';
@@ -760,6 +764,10 @@ class CustomerTrackingController extends Controller
 
     public function exportOverdueReport(Request $request)
     {
+        if (Auth::user()->role === 'sale') {
+            abort(403);
+        }
+
         $month    = $request->month ?? now()->format('Y-m');
         $filename = 'รายงานเลยกำหนดติดตามลูกค้า_' . $month . '.xlsx';
 
