@@ -2271,6 +2271,38 @@
                     </div>
                   </div>
 
+                  {{-- ── Card ทดลองขับ (แสดงเฉพาะเมื่อมี tracking) ── --}}
+                  @if ($tracking)
+                  <div class="col-12">
+                    <div class="po-section-edit">
+                      <div class="po-section-header">
+                        <div class="po-section-icon rose"><i class="bx bx-trip"></i></div>
+                        <h6 class="po-section-title">ทดลองขับ</h6>
+                      </div>
+                      <div class="po-section-body-edit">
+                        <div class="row g-3">
+                          <div class="col-md-3">
+                            <label class="po-label" for="po_td_date"><i class="bx bx-calendar me-1"></i>วันที่ทดลองขับ</label>
+                            <input type="date" id="po_td_date" class="form-control"
+                              value="{{ $tracking->test_drive_date ?? '' }}">
+                          </div>
+                          <div class="col-md-9">
+                            <label class="po-label" for="po_td_note"><i class="bx bx-comment me-1"></i>หมายเหตุ</label>
+                            <textarea id="po_td_note" class="form-control" rows="2"
+                              placeholder="หมายเหตุ...">{{ $tracking->test_drive_note ?? '' }}</textarea>
+                          </div>
+                        </div>
+                        <div class="d-flex justify-content-end mt-3 mb-1">
+                          <button type="button" class="btn btn-primary btn-sm px-4" id="btnSaveTestDrivePO"
+                            data-tracking-id="{{ $tracking->id }}">
+                            <i class="bx bx-save me-1"></i> บันทึก
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  @endif
+
                   {{-- ── Card 2 : การเช็คและอนุมัติ ── --}}
                   <div class="col-12">
                     <div class="po-section-edit">

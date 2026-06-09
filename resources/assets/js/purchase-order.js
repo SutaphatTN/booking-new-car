@@ -3617,3 +3617,26 @@ $(document).on('click', '.btn-att-delete', function () {
     });
   });
 });
+
+$('#btnSaveTestDrivePO').on('click', function () {
+  const $btn = $(this);
+  const trackingId = $btn.data('tracking-id');
+  $btn.prop('disabled', true);
+  $.ajax({
+    url: `/customer-tracking/${trackingId}/test-drive`,
+    type: 'POST',
+    data: {
+      test_drive_date: $('#po_td_date').val() || null,
+      test_drive_note: $('#po_td_note').val() || null,
+    },
+    success: function () {
+      Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1500, showConfirmButton: true });
+    },
+    error: function () {
+      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถบันทึกข้อมูลได้' });
+    },
+    complete: function () {
+      $btn.prop('disabled', false);
+    },
+  });
+});
