@@ -7,6 +7,7 @@ use App\Exports\customerTracking\CustomerTrackingByDateExport;
 use App\Exports\customerTracking\CustomerTrackingDailyExport;
 use App\Exports\customerTracking\CustomerTrackingOverdueExport;
 use App\Http\Controllers\Controller;
+use App\Traits\ConvertsThaiDate;
 use App\Models\CustomerTracking;
 use App\Models\CustomerTrackingDetail;
 use App\Models\Salecar;
@@ -26,6 +27,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CustomerTrackingController extends Controller
 {
+    use ConvertsThaiDate;
+
     public function index()
     {
         $decisions = TbDecision::all();
@@ -515,7 +518,7 @@ class CustomerTrackingController extends Controller
                 'sale_id'           => $request->sale_id,
                 'customer_id'       => $request->customer_id,
                 'source_id'         => $request->source_id,
-                'customer_date'     => $request->contact_date ?: null,
+                'customer_date'     => $this->toGregorian($request->contact_date ?: null),
                 'model_id'          => $request->model_id ?: null,
                 'sub_model_id'      => $request->sub_model_id ?: null,
                 'year'              => $request->year ?: null,
@@ -538,7 +541,7 @@ class CustomerTrackingController extends Controller
 
             CustomerTrackingDetail::create([
                 'tracking_id'    => $tracking->id,
-                'contact_date'   => $request->contact_date,
+                'contact_date'   => $this->toGregorian($request->contact_date),
                 'comment_sale'   => $request->comment_sale,
                 'decision_id'    => $decisionId,
                 'contact_status' => $request->contact_status,
@@ -624,7 +627,7 @@ class CustomerTrackingController extends Controller
         try {
             CustomerTrackingDetail::create([
                 'tracking_id'    => $id,
-                'contact_date'   => $request->contact_date,
+                'contact_date'   => $this->toGregorian($request->contact_date),
                 'contact_status' => $request->contact_status,
                 'decision_id'    => $decisionId,
                 'comment_sale'   => $request->comment_sale,
@@ -778,7 +781,7 @@ class CustomerTrackingController extends Controller
     {
         $tracking = CustomerTracking::findOrFail($id);
         $tracking->update([
-            'test_drive_date' => $request->test_drive_date ?: null,
+            'test_drive_date' => $this->toGregorian($request->test_drive_date ?: null),
             'test_drive_note' => $request->test_drive_note ?: null,
         ]);
         return response()->json(['success' => true]);

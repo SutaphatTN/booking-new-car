@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\purchase_order;
 
+use App\Traits\ConvertsThaiDate;
 use App\Exports\booking\BookingExport;
 use App\Exports\commission\SaleCommissionExport;
 use App\Exports\gp\GPExport;
@@ -48,6 +49,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class PurchaseOrderController extends Controller
 {
+    use ConvertsThaiDate;
+
     public function index()
     {
         $saleCar = Salecar::all();
@@ -419,7 +422,7 @@ class PurchaseOrderController extends Controller
                 'type_color' => $request->type_color ?? null,
                 'payment_mode' => $request->payment_mode,
                 'CusID' => $request->CusID,
-                'BookingDate' => $request->BookingDate,
+                'BookingDate' => $this->toGregorian($request->BookingDate),
                 'TurnCarID' => $turnCarID,
                 'con_status' => 1,
                 'userZone' => Auth::user()->userZone ?? null,
@@ -459,7 +462,7 @@ class PurchaseOrderController extends Controller
                     'cost' => $request->filled('CashDeposit')
                         ? str_replace(',', '', $request->CashDeposit)
                         : null,
-                    'date' => $request->reservation_date,
+                    'date' => $this->toGregorian($request->reservation_date),
                     'userZone' => $request->userZone  ?? null,
                     'brand' => Auth::user()->brand ?? null,
                     'branch' => Auth::user()->branch ?? null,
@@ -472,7 +475,7 @@ class PurchaseOrderController extends Controller
                         $data['transfer_bank'] = $request->reservation_transfer_bank ?? null;
                         $data['transfer_branch'] = $request->reservation_transfer_branch ?? null;
                         $data['transfer_no'] = $request->reservation_transfer_no ?? null;
-                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
+                        $data['danu_date'] = $isBrand2 ? $this->toGregorian($request->danu_date) : null;
 
                         $data['check_bank'] = null;
                         $data['check_branch'] = null;
@@ -485,7 +488,7 @@ class PurchaseOrderController extends Controller
                         $data['check_bank'] = $request->reservation_check_bank ?? null;
                         $data['check_branch'] = $request->reservation_check_branch ?? null;
                         $data['check_no'] = $request->reservation_check_no ?? null;
-                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
+                        $data['danu_date'] = $isBrand2 ? $this->toGregorian($request->danu_date) : null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -509,7 +512,7 @@ class PurchaseOrderController extends Controller
 
                     case 'cash':
                     default:
-                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
+                        $data['danu_date'] = $isBrand2 ? $this->toGregorian($request->danu_date) : null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -804,11 +807,11 @@ class PurchaseOrderController extends Controller
                     ? str_replace(',', '', $request->CashDeposit)
                     : null,
                 'TurnCarID' => $turnCarID,
-                'BookingDate' => $request->BookingDate,
-                'KeyInDate' => $request->KeyInDate,
-                'DeliveryDate' => $request->DeliveryDate,
-                'DeliveryInDMSDate' => $request->DeliveryInDMSDate,
-                'DeliveryInCKDate' => $request->DeliveryInCKDate,
+                'BookingDate' => $this->toGregorian($request->BookingDate),
+                'KeyInDate' => $this->toGregorian($request->KeyInDate),
+                'DeliveryDate' => $this->toGregorian($request->DeliveryDate),
+                'DeliveryInDMSDate' => $this->toGregorian($request->DeliveryInDMSDate),
+                'DeliveryInCKDate' => $this->toGregorian($request->DeliveryInCKDate),
                 'RegistrationProvince' => $request->RegistrationProvince,
                 'RedPlateReceived' => $request->RedPlateReceived,
                 'RedPlateAmount' => $request->RedPlateAmount,
@@ -903,7 +906,7 @@ class PurchaseOrderController extends Controller
                     ? str_replace(',', '', $request->CommissionSpecial)
                     : null,
                 'ApprovalSignature' => $request->ApprovalSignature,
-                'ApprovalSignatureDate' => $request->ApprovalSignatureDate,
+                'ApprovalSignatureDate' => $this->toGregorian($request->ApprovalSignatureDate),
                 'FinanceAmount' => $request->FinanceAmount,
                 'InterestRate' => $request->InterestRate,
                 'InterestCampaignID' => $request->InterestCampaignID,
@@ -912,14 +915,14 @@ class PurchaseOrderController extends Controller
                 'INC_ALP' => $request->INC_ALP,
                 'ALPAmount' => $request->ALPAmount,
                 'SMSignature' => $request->SMSignature,
-                'SMCheckedDate' => $request->SMCheckedDate,
+                'SMCheckedDate' => $this->toGregorian($request->SMCheckedDate),
                 'AdminSignature' => $request->AdminSignature,
-                'AdminCheckedDate' => $request->AdminCheckedDate,
+                'AdminCheckedDate' => $this->toGregorian($request->AdminCheckedDate),
                 'CheckerID' => $request->CheckerID,
-                'CheckerCheckedDate' => $request->CheckerCheckedDate,
+                'CheckerCheckedDate' => $this->toGregorian($request->CheckerCheckedDate),
                 'GMApprovalSignature' => $request->GMApprovalSignature,
-                'GMApprovalSignatureDate' => $request->GMApprovalSignatureDate,
-                'DeliveryEstimateDate' => $request->DeliveryEstimateDate,
+                'GMApprovalSignatureDate' => $this->toGregorian($request->GMApprovalSignatureDate),
+                'DeliveryEstimateDate' => $this->toGregorian($request->DeliveryEstimateDate),
                 'Note' => $request->Note,
                 'red_license' => $request->red_license,
                 'ReferrerID' => $request->ReferrerID,
@@ -989,7 +992,7 @@ class PurchaseOrderController extends Controller
                 CarOrderHistory::create([
                     'SaleID' => $saleCar->id,
                     'CarOrderID' => $newCarOrderID,
-                    'BookingDate' => $request->BookingDate,
+                    'BookingDate' => $this->toGregorian($request->BookingDate),
                     'changed_at' => now(),
                     'userZone' => Auth::user()->userZone ?? null,
                     'brand' => Auth::user()->brand ?? null,
@@ -1100,7 +1103,7 @@ class PurchaseOrderController extends Controller
                     'cost' => $request->filled('CashDeposit')
                         ? str_replace(',', '', $request->CashDeposit)
                         : null,
-                    'date' => $request->reservation_date,
+                    'date' => $this->toGregorian($request->reservation_date),
                     'userZone' => $request->userZone  ?? null,
                     'brand' => Auth::user()->brand ?? null,
                     'branch' => Auth::user()->branch ?? null,
@@ -1113,7 +1116,7 @@ class PurchaseOrderController extends Controller
                         $data['transfer_bank'] = $request->reservation_transfer_bank;
                         $data['transfer_branch'] = $request->reservation_transfer_branch;
                         $data['transfer_no'] = $request->reservation_transfer_no;
-                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
+                        $data['danu_date'] = $isBrand2 ? $this->toGregorian($request->danu_date) : null;
 
                         $data['check_bank'] = null;
                         $data['check_branch'] = null;
@@ -1126,7 +1129,7 @@ class PurchaseOrderController extends Controller
                         $data['check_bank'] = $request->reservation_check_bank;
                         $data['check_branch'] = $request->reservation_check_branch;
                         $data['check_no'] = $request->reservation_check_no;
-                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
+                        $data['danu_date'] = $isBrand2 ? $this->toGregorian($request->danu_date) : null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -1150,7 +1153,7 @@ class PurchaseOrderController extends Controller
 
                     case 'cash':
                     default:
-                        $data['danu_date'] = $isBrand2 ? ($request->danu_date ?? null) : null;
+                        $data['danu_date'] = $isBrand2 ? $this->toGregorian($request->danu_date) : null;
 
                         $data['transfer_bank'] = null;
                         $data['transfer_branch'] = null;
@@ -1185,7 +1188,7 @@ class PurchaseOrderController extends Controller
                     'category' => 'remaining',
                     'type' => $remainingType,
                     'cost' => $cost,
-                    'date' => $request->remaining_date,
+                    'date' => $this->toGregorian($request->remaining_date),
                     'userZone' => $request->userZone ?? null,
                     'brand' => Auth::user()->brand ?? null,
                     'branch' => Auth::user()->branch ?? null,
@@ -1244,8 +1247,8 @@ class PurchaseOrderController extends Controller
                         $data['type_com'] = $request->remaining_type_com ?? null;
                         $data['total_com'] = $request->remaining_total_com ? str_replace(',', '', $request->remaining_total_com) : null;
                         $data['po_number'] = $request->remaining_po_number ?? null;
-                        $data['po_date'] = $request->remaining_po_date ?? null;
-                        $data['contract_date'] = $request->remaining_contract_date ?? null;
+                        $data['po_date'] = $this->toGregorian($request->remaining_po_date ?? null);
+                        $data['contract_date'] = $this->toGregorian($request->remaining_contract_date ?? null);
                         break;
 
                     case 'cash':
@@ -1267,7 +1270,7 @@ class PurchaseOrderController extends Controller
                     'cost' => $request->filled('delivery_cost')
                         ? str_replace(',', '', $request->delivery_cost)
                         : null,
-                    'date' => $request->delivery_date,
+                    'date' => $this->toGregorian($request->delivery_date),
                     'userZone' => $request->userZone  ?? null,
                     'brand' => Auth::user()->brand ?? null,
                     'branch' => Auth::user()->branch ?? null,
@@ -1344,7 +1347,7 @@ class PurchaseOrderController extends Controller
 
                 $types   = $request->payment_type;
                 $costs = $request->payment_cost;
-                $dates   = $request->payment_date;
+                $dates   = array_map(fn($d) => $this->toGregorian($d), $request->payment_date ?? []);
 
                 foreach ($types as $index => $type) {
 
@@ -1484,7 +1487,7 @@ class PurchaseOrderController extends Controller
                 $saleCar->carOrderHistories()->delete();
             }
 
-            $saleCar->CancelGCIPDate = $request->cancel_gcip_date;
+            $saleCar->CancelGCIPDate = $this->toGregorian($request->cancel_gcip_date);
             $saleCar->con_status = 9;
             $saleCar->save();
 

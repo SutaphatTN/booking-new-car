@@ -4,6 +4,7 @@ namespace App\Http\Controllers\car_order;
 
 use App\Exports\carOrder\CarOrderStockExport;
 use App\Http\Controllers\Controller;
+use App\Traits\ConvertsThaiDate;
 use App\Mail\ApproveCarOrderMail;
 use App\Models\CarOrder;
 use App\Models\CarOrderHistory;
@@ -26,6 +27,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CarOrderController extends Controller
 {
+    use ConvertsThaiDate;
+
     // view all
     public function index()
     {
@@ -513,7 +516,7 @@ class CarOrderController extends Controller
                 'purchase_source' => $request->purchase_source,
                 'order_code' => $order_code,
                 'type' => $request->type,
-                'order_date' => $request->order_date,
+                'order_date' => $this->toGregorian($request->order_date),
                 'color' => $request->color ?? null,
                 'type_color' => $request->type_color ?? null,
                 'year' => $request->year,
@@ -572,7 +575,7 @@ class CarOrderController extends Controller
                     CarOrderHistory::create([
                         'SaleID'      => $saleCar->id,
                         'CarOrderID'  => $newCarOrderID,
-                        'BookingDate' => $request->order_date,
+                        'BookingDate' => $this->toGregorian($request->order_date),
                         'changed_at' => now(),
                         'userZone' => Auth::user()->userZone ?? null,
                         'brand' => Auth::user()->brand ?? null,
@@ -651,7 +654,7 @@ class CarOrderController extends Controller
                 'purchase_source' => $request->purchase_source,
                 'order_code'     => $order_code,
                 'type'           => $request->type,
-                'order_date'     => $request->order_date,
+                'order_date'     => $this->toGregorian($request->order_date),
                 'color'          => $request->color ?? null,
                 'type_color'     => $request->type_color ?? null,
                 'year'           => $request->year,
@@ -1210,7 +1213,7 @@ class CarOrderController extends Controller
             $order = CarOrder::findOrFail($id);
 
             $order->update([
-                'system_date' => $request->system_date,
+                'system_date' => $this->toGregorian($request->system_date),
                 'order_status' => 2,
                 'status' => CarOrder::STATUS_FINISHED
             ]);
@@ -1373,12 +1376,12 @@ class CarOrderController extends Controller
             $waiting = CarOrderWaiting::findOrFail($id);
 
             CarOrder::where('waiting_id', $id)->update([
-                'system_date'  => $request->system_date,
+                'system_date'  => $this->toGregorian($request->system_date),
                 'order_status' => 2,
                 'status'       => CarOrder::STATUS_FINISHED,
             ]);
 
-            $waiting->update(['system_date' => $request->system_date]);
+            $waiting->update(['system_date' => $this->toGregorian($request->system_date)]);
 
             return response()->json([
                 'success' => true,

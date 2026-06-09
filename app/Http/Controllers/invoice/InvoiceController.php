@@ -11,12 +11,15 @@ use App\Models\TbBrand;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use App\Traits\ConvertsThaiDate;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 
 class InvoiceController extends Controller
 {
+    use ConvertsThaiDate;
+
     public function index()
     {
         return view('invoice.view');
@@ -154,7 +157,7 @@ class InvoiceController extends Controller
         }
 
         $date = $request->input('receipt_date')
-            ? Carbon::parse($request->input('receipt_date'))->startOfDay()
+            ? Carbon::parse($this->toGregorian($request->input('receipt_date')))->startOfDay()
             : now();
 
         $invoice = InvoiceCustomer::findOrFail($id);

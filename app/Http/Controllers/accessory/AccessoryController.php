@@ -11,11 +11,13 @@ use App\Models\TbCarmodel;
 use App\Models\TbSubcarmodel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use App\Traits\ConvertsThaiDate;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class AccessoryController extends Controller
 {
+    use ConvertsThaiDate;
     public function index()
     {
         $acc = AccessoryPrice::all();
@@ -145,8 +147,8 @@ class AccessoryController extends Controller
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
                 'branch' => Auth::user()->branch ?? null,
-                'startDate' => $request->startDate,
-                'endDate' => $request->endDate,
+                'startDate' => $this->toGregorian($request->startDate),
+                'endDate' => $this->toGregorian($request->endDate),
                 'active' => $active,
             ];
 

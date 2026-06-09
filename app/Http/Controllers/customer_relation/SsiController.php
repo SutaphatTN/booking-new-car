@@ -14,11 +14,14 @@ use App\Models\Salecar;
 use App\Models\TbProvinces;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\ConvertsThaiDate;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 
 class SsiController extends Controller
 {
+    use ConvertsThaiDate;
+
     public function index()
     {
         return view('customer-relation.ssi.index');
@@ -143,7 +146,7 @@ class SsiController extends Controller
 
         $contact = SsiContact::create([
             'ssi_record_id'     => $ssiRecord->id,
-            'contact_date'      => $request->contact_date,
+            'contact_date'      => $this->toGregorian($request->contact_date),
             'contacted'         => $request->contacted,
             'interview_success' => $request->boolean('contacted') ? $request->interview_success : null,
             'remark'            => $request->remark,
@@ -257,9 +260,9 @@ class SsiController extends Controller
             [
                 'cro_comment'               => $request->cro_comment,
                 'sm_resolution'             => $request->sm_resolution,
-                'resolution_date'           => $request->resolution_date ?: null,
+                'resolution_date'           => $this->toGregorian($request->resolution_date ?: null),
                 'resolution_status'         => $request->resolution_status,
-                'correction_form_sent_date' => $request->correction_form_sent_date ?: null,
+                'correction_form_sent_date' => $this->toGregorian($request->correction_form_sent_date ?: null),
             ]
         );
 

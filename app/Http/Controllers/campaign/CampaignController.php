@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\campaign;
 
 use App\Http\Controllers\Controller;
+use App\Traits\ConvertsThaiDate;
 use App\Models\Campaign;
 use App\Models\CampaignName;
 use App\Models\TbCampaignType;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 
 class CampaignController extends Controller
 {
+    use ConvertsThaiDate;
     public function index()
     {
         $cam = Campaign::all();
@@ -127,8 +129,8 @@ class CampaignController extends Controller
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
                 'branch' => Auth::user()->branch ?? null,
-                'startDate' => $request->startDate,
-                'endDate' => $request->endDate,
+                'startDate' => $this->toGregorian($request->startDate),
+                'endDate' => $this->toGregorian($request->endDate),
                 'startYear' => $request->startYear,
                 'endYear' => $request->endYear,
                 'active' => $active,

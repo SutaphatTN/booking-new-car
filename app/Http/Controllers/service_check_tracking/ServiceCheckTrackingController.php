@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\service_check_tracking;
 
 use App\Http\Controllers\Controller;
+use App\Traits\ConvertsThaiDate;
 use App\Models\ServiceCheckTracking;
 use App\Models\ServiceCheckTrackingDetail;
 use App\Models\Salecar;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Auth;
 
 class ServiceCheckTrackingController extends Controller
 {
+    use ConvertsThaiDate;
+
     public function index()
     {
         return view('service-check-tracking.list');
@@ -161,7 +164,7 @@ class ServiceCheckTrackingController extends Controller
 
         ServiceCheckTrackingDetail::create([
             'tracking_id' => $id,
-            'check_date'  => $request->check_date,
+            'check_date'  => $this->toGregorian($request->check_date),
             'mileage'     => $request->mileage,
             'note'        => $request->note,
             'UserInsert'  => Auth::id(),
