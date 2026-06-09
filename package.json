@@ -93,6 +93,7 @@
     "@popperjs/core": "^2.11.8",
     "apexcharts": "~4.2.0",
     "bootstrap": "~5.3.3",
+    "flatpickr": "^4.6.13",
     "highlight.js": "~11.10.0",
     "jquery": "~3.7.1",
     "laravel-vite-plugin": "1.1.0",

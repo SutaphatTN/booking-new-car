@@ -4,6 +4,7 @@ namespace App\Http\Controllers\finance;
 
 use App\Exports\fn\FirmExport;
 use App\Http\Controllers\Controller;
+use App\Traits\ConvertsThaiDate;
 use App\Models\Finance;
 use App\Models\FinancesConfirm;
 use App\Models\FinancesExtraCom;
@@ -16,6 +17,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class FinanceController extends Controller
 {
+    use ConvertsThaiDate;
     public function index()
     {
         $fin = Finance::all();
@@ -440,7 +442,7 @@ class FinanceController extends Controller
                 'diff' => $request->filled('diff')
                     ? str_replace(',', '', $request->diff)
                     : null,
-                'firm_date' => $request->firm_date,
+                'firm_date' => $this->toGregorian($request->firm_date),
                 'date' => $request->date,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,

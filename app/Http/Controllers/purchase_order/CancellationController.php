@@ -4,6 +4,7 @@ namespace App\Http\Controllers\purchase_order;
 
 use App\Http\Controllers\Controller;
 use App\Models\Salecar;
+use App\Traits\ConvertsThaiDate;
 use App\Services\OneDriveService;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Auth;
 
 class CancellationController extends Controller
 {
+    use ConvertsThaiDate;
+
     public function index()
     {
         return view('purchase-order.cancellation.view');
@@ -176,7 +179,7 @@ class CancellationController extends Controller
     {
         try {
             $saleCar = Salecar::withTrashed()->findOrFail($id);
-            $saleCar->RefundDate = $request->refund_date;
+            $saleCar->RefundDate = $this->toGregorian($request->refund_date);
             $saleCar->save();
 
             return response()->json(['success' => true, 'message' => 'บันทึกวันที่คืนเงินเรียบร้อยแล้ว']);
@@ -189,9 +192,9 @@ class CancellationController extends Controller
     {
         try {
             $saleCar = Salecar::withTrashed()->findOrFail($id);
-            $saleCar->CancelGCIPDate = $request->cancel_gcip_date;
-            $saleCar->RefundDate = $request->refund_date;
-            $saleCar->RefundMotorDate = $request->refund_motor_date;
+            $saleCar->CancelGCIPDate = $this->toGregorian($request->cancel_gcip_date);
+            $saleCar->RefundDate = $this->toGregorian($request->refund_date);
+            $saleCar->RefundMotorDate = $this->toGregorian($request->refund_motor_date);
             $saleCar->save();
 
             return response()->json(['success' => true, 'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว']);

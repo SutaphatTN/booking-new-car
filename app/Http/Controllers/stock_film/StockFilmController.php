@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\stock_film;
 
 use App\Http\Controllers\Controller;
+use App\Traits\ConvertsThaiDate;
 use App\Models\FilmBrand;
 use App\Models\FilmStock;
 use Illuminate\Http\Request;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 class StockFilmController extends Controller
 {
+    use ConvertsThaiDate;
     private function userBrandGroup(): string
     {
         return FilmStock::brandGroupFromUserBrand(Auth::user()->brand ?? null);
@@ -111,7 +113,7 @@ class StockFilmController extends Controller
                 'userInsert'      => $user->id ?? null,
                 'film_brand_id'   => $filmBrand->id,
                 'shade'           => $request->shade,
-                'withdrawal_date' => $request->withdrawal_date,
+                'withdrawal_date' => $this->toGregorian($request->withdrawal_date),
                 'initial_qty'     => $request->initial_qty,
                 'used_qty'        => 0,
             ]);
@@ -143,7 +145,7 @@ class StockFilmController extends Controller
             $stock->update([
                 'part_no'           => $request->part_no ?: null,
                 'initial_qty'       => $request->initial_qty,
-                'inspection_date'   => $request->inspection_date ?: null,
+                'inspection_date'   => $this->toGregorian($request->inspection_date ?: null),
                 'inspection_qty'    => $request->filled('inspection_qty') ? $request->inspection_qty : null,
                 'inspection_result' => $request->inspection_result ?: null,
             ]);

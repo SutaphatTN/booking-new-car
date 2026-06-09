@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\customer;
 
+use App\Traits\ConvertsThaiDate;
 use App\Http\Controllers\Controller;
 use App\Models\Address;
 use App\Models\Customer;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\DB;
 
 class CustomerController extends Controller
 {
+    use ConvertsThaiDate;
+
     public function index()
     {
         $customers = Customer::all();
@@ -99,9 +102,9 @@ class CustomerController extends Controller
                 'FirstName' => $request->FirstName,
                 'LastName' => $request->LastName,
                 'IDNumber' => preg_replace('/\D/', '', $request->IDNumber),
-                'NewCardDate' => $request->NewCardDate,
-                'ExpireCard' => $request->ExpireCard,
-                'Birthday' => $request->Birthday,
+                'NewCardDate' => $this->toGregorian($request->NewCardDate),
+                'ExpireCard' => $this->toGregorian($request->ExpireCard),
+                'Birthday' => $this->toGregorian($request->Birthday),
                 'Gender' => $request->Gender,
                 'Nationality' => $request->Nationality,
                 'religion' => $request->religion,
@@ -281,9 +284,9 @@ class CustomerController extends Controller
                 'LastName' => $request->LastName,
                 'OriginalName' => $request->OriginalName,
                 'IDNumber' => preg_replace('/\D/', '', $request->IDNumber),
-                'NewCardDate' => $request->NewCardDate,
-                'ExpireCard' => $request->ExpireCard,
-                'Birthday' => $request->Birthday,
+                'NewCardDate' => $this->toGregorian($request->NewCardDate),
+                'ExpireCard' => $this->toGregorian($request->ExpireCard),
+                'Birthday' => $this->toGregorian($request->Birthday),
                 'Gender' => $request->Gender,
                 'Nationality' => $request->Nationality,
                 'religion' => $request->religion,
@@ -480,4 +483,5 @@ class CustomerController extends Controller
 
         return response()->json($customers);
     }
+
 }
