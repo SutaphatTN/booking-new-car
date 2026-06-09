@@ -13,7 +13,7 @@ class BranchSwitcher
         if (Auth::check()) {
             $user = Auth::user();
 
-            if (in_array($user->brand, [1, 2]) && session()->has('branch_switch')) {
+            if ($user->brand == 2 && session()->has('branch_switch')) {
                 $user->branch = session('branch_switch');
             }
         }
