@@ -13,14 +13,16 @@ $(document).ready(function () {
   }
 
   campaignTable = $('.campaignTable').DataTable({
+    serverSide: true,
+    processing: false,
     ajax: '/campaign/list',
     columns: [
-      { data: 'No' },
-      { data: 'model_id' },
-      { data: 'name' },
-      { data: 'year' },
-      { data: 'campaign_type' },
-      { data: 'cashSupport_final' },
+      { data: 'No', orderable: false },
+      { data: 'model_id', orderable: false },
+      { data: 'name', orderable: false },
+      { data: 'year', orderable: false },
+      { data: 'campaign_type', orderable: false },
+      { data: 'cashSupport_final', orderable: false },
       { data: 'active', orderable: false, searchable: false },
       { data: 'Action', orderable: false, searchable: false }
     ],
@@ -37,11 +39,19 @@ $(document).ready(function () {
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
+      processing: '',
       paginate: {
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
     }
+  });
+
+  campaignTable.on('preXhr.dt', function () {
+    $('#campaignLoadingOverlay').css('display', 'flex');
+  });
+  campaignTable.on('xhr.dt', function () {
+    $('#campaignLoadingOverlay').css('display', 'none');
   });
 });
 

@@ -21,11 +21,40 @@ class CampaignController extends Controller
         return view('campaign.view', compact('cam'));
     }
 
-    public function listCampaign()
+    public function listCampaign(Request $request)
     {
-        $cam = Campaign::with('model', 'type', 'appellation')->get();
+        $draw   = (int) ($request->draw ?? 1);
+        $start  = (int) ($request->start ?? 0);
+        $length = (int) ($request->length ?? 10);
+        $search = trim($request->input('search.value', ''));
 
-        $data = $cam->map(function ($c, $index) {
+        $base = Campaign::query();
+
+        $recordsTotal = (clone $base)->count();
+
+        if ($search) {
+            $base->where(function ($q) use ($search) {
+                $q->whereHas('appellation', fn($q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('model', fn($q) => $q->where('Name_TH', 'like', "%{$search}%"))
+                    ->orWhereHas('subModel', fn($q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('type', fn($q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhere('startYear', 'like', "%{$search}%")
+                    ->orWhere('endYear', 'like', "%{$search}%");
+            });
+        }
+
+        $recordsFiltered = (clone $base)->count();
+
+        $cam = $base
+            ->with('model', 'subModel', 'type', 'appellation')
+            ->orderBy('id')
+            ->skip($start)
+            ->take($length)
+            ->get();
+
+        $rowNum = $start + 1;
+        $data = $cam->map(function ($c) use (&$rowNum) {
+            $index = $rowNum++ - 1;
             $name = $c->appellation ? $c->appellation->name : '';
             $modelC = $c->model ? $c->model->Name_TH : '';
             $subModel = $c->subModel?->name ?? '-';
@@ -67,7 +96,12 @@ class CampaignController extends Controller
             ];
         });
 
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data->values(),
+        ]);
     }
 
     public function viewMore($id)
