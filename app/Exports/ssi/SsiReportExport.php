@@ -2,6 +2,7 @@
 
 namespace App\Exports\ssi;
 
+use App\Models\SsiContact;
 use App\Models\SsiRecord;
 use App\Models\TbProvinces;
 use Carbon\Carbon;
@@ -75,6 +76,10 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
 
     public function view(): View
     {
+        $ssiRecordIds = SsiContact::whereDate('contact_date', $this->date)
+            ->pluck('ssi_record_id')
+            ->unique();
+
         $records = SsiRecord::with([
             'salecar.customer.prefix',
             'salecar.saleUser',
@@ -84,8 +89,8 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
             'contacts',
             'assessment',
         ])
-            ->whereDate('created_at', $this->date)
-            ->orderBy('created_at')
+            ->whereIn('id', $ssiRecordIds)
+            ->orderBy('id')
             ->get();
 
         $provinces = TbProvinces::all()->keyBy('id');
