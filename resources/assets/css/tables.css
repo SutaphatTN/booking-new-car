@@ -2,6 +2,8 @@
 
 #ctLoadingOverlay,
 #poLoadingOverlay,
+#campaignLoadingOverlay,
+#accessoryLoadingOverlay,
 #historyLoadingOverlay {
   display: none;
   position: fixed;

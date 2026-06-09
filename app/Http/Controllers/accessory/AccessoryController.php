@@ -24,11 +24,38 @@ class AccessoryController extends Controller
         return view('accessory.view', compact('acc'));
     }
 
-    public function listAccessory()
+    public function listAccessory(Request $request)
     {
-        $acc = AccessoryPrice::with('partner')->get();
+        $draw   = (int) ($request->draw ?? 1);
+        $start  = (int) ($request->start ?? 0);
+        $length = (int) ($request->length ?? 10);
+        $search = trim($request->input('search.value', ''));
 
-        $data = $acc->map(function ($a, $index) {
+        $base = AccessoryPrice::query();
+
+        $recordsTotal = (clone $base)->count();
+
+        if ($search) {
+            $base->where(function ($q) use ($search) {
+                $q->whereHas('partner', fn($q) => $q->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('model', fn($q) => $q->where('Name_TH', 'like', "%{$search}%"))
+                    ->orWhere('accessory_id', 'like', "%{$search}%")
+                    ->orWhere('detail', 'like', "%{$search}%");
+            });
+        }
+
+        $recordsFiltered = (clone $base)->count();
+
+        $acc = $base
+            ->with('partner', 'model')
+            ->orderBy('id')
+            ->skip($start)
+            ->take($length)
+            ->get();
+
+        $rowNum = $start + 1;
+        $data = $acc->map(function ($a) use (&$rowNum) {
+            $index = $rowNum++ - 1;
             $partnerA = $a->partner ? $a->partner->name : '';
             $modelC = $a->model ? $a->model->Name_TH : '';
 
@@ -80,7 +107,12 @@ class AccessoryController extends Controller
             ];
         });
 
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data->values(),
+        ]);
     }
 
     public function statusAcc(Request $request)

@@ -14,13 +14,15 @@ $(document).ready(function () {
   }
 
   accessoryTable = $('.accessoryTable').DataTable({
+    serverSide: true,
+    processing: false,
     ajax: '/accessory/list',
     columns: [
-      { data: 'No' },
-      { data: 'accessoryPartner_id' },
-      { data: 'name' },
-      { data: 'model' },
-      { data: 'cost' },
+      { data: 'No', orderable: false },
+      { data: 'accessoryPartner_id', orderable: false },
+      { data: 'name', orderable: false },
+      { data: 'model', orderable: false },
+      { data: 'cost', orderable: false },
       { data: 'active', orderable: false, searchable: false },
       { data: 'Action', orderable: false, searchable: false }
     ],
@@ -37,11 +39,19 @@ $(document).ready(function () {
       info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
       infoEmpty: 'ไม่มีข้อมูล',
       search: 'ค้นหา:',
+      processing: '',
       paginate: {
         next: 'ถัดไป',
         previous: 'ก่อนหน้า'
       }
     }
+  });
+
+  accessoryTable.on('preXhr.dt', function () {
+    $('#accessoryLoadingOverlay').css('display', 'flex');
+  });
+  accessoryTable.on('xhr.dt', function () {
+    $('#accessoryLoadingOverlay').css('display', 'none');
   });
 });
 
