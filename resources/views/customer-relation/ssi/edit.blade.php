@@ -1,6 +1,12 @@
 @extends('layouts/contentNavbarLayout')
 @section('title', 'SSI หลังส่งมอบ')
 
+@section('page-style')
+<style>
+  #row-q11-facilities.q11-hidden { display: none !important; }
+</style>
+@endsection
+
 @section('page-script')
   <script>
     $(document).ready(function() {
@@ -171,6 +177,51 @@
         }, 1);
       });
 
+      // ── บันทึกสถานที่ส่งมอบ ──
+      $('#btnSaveDelivery').on('click', function () {
+        const location = $('#deliveryLocation').val();
+        const province = $('#deliveryProvince').val();
+        const salecarId = {{ $info['salecar_id'] }};
+
+        $.ajax({
+          url: `/ssi/${salecarId}/delivery`,
+          method: 'POST',
+          headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+          data: { delivery_location: location, delivery_province: province },
+          success: function () {
+            Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1200, showConfirmButton: false });
+            // sync ตัวแปร deliveryLocation และ toggle Q11
+            toggleQ11Row(location);
+          },
+          error: function () {
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด' });
+          }
+        });
+      });
+
+      // ── Toggle Q11 เมื่อเปลี่ยน location ──
+      function toggleQ11Row(location) {
+        const $q11 = $('#row-q11-facilities');
+        const $btns = $q11.find('.score-btn');
+        if (location === 'Offsite') {
+          $q11.addClass('q11-hidden');
+          $('#score_q11_facilities').val('');
+          $btns.prop('disabled', true).removeClass('selected score-low score-mid score-high');
+        } else if (location) {
+          $q11.removeClass('q11-hidden').css('opacity', '');
+          $btns.prop('disabled', false);
+          $('#badge-q11-unknown').hide();
+        } else {
+          $q11.removeClass('q11-hidden').css('opacity', '0.5');
+          $btns.prop('disabled', true);
+          $('#badge-q11-unknown').show();
+        }
+      }
+
+      $('#deliveryLocation').on('change', function () {
+        toggleQ11Row($(this).val());
+      });
+
       $('#btnAddContact').on('click', function() {
         resetContactModal();
         $('#modalAddContact').modal('show');
@@ -321,7 +372,7 @@
             gwm_q8: $('#gwm_q8').val() || null,
           };
         @else
-          const deliveryLocation = @json($info['delivery_location']);
+          const deliveryLocation = $('#deliveryLocation').val() || @json($info['delivery_location']);
           const assessmentData = {
             dw_website: $('#score_dw_website').val() || null,
             q11_facilities: deliveryLocation === 'Offsite' ? null : ($('#score_q11_facilities').val() || null),
@@ -471,18 +522,37 @@
                     <div class="info-pill"><i class="bx bx-calendar text-muted me-2"></i>{{ $info['delivery_date'] }}
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {{-- ── Card: สถานที่ส่งมอบ ── --}}
+              <div class="po-section-header" style="border-top: 1px solid #f1f5f9;">
+                <div class="po-section-icon amber"><i class="bx bx-map-pin"></i></div>
+                <h6 class="po-section-title">สถานที่ส่งมอบ</h6>
+              </div>
+              <div class="po-section-body-edit">
+                <div class="row g-3">
                   <div class="col-md-6">
                     <div class="po-label">สถานที่ส่งมอบ</div>
-                    <div class="info-pill">
-                      {{ $info['delivery_location'] ?: '-' }}
-                      @if (!$info['delivery_location'])
-                        <span class="badge bg-warning text-dark ms-1" style="font-size:.72rem;">ยังไม่ระบุ</span>
-                      @endif
-                    </div>
+                    <select id="deliveryLocation" class="form-select form-select-sm">
+                      <option value="">-- ไม่ระบุ --</option>
+                      <option value="Showroom" {{ $info['delivery_location'] === 'Showroom' ? 'selected' : '' }}>Showroom</option>
+                      <option value="Offsite"  {{ $info['delivery_location'] === 'Offsite'  ? 'selected' : '' }}>Offsite</option>
+                    </select>
                   </div>
                   <div class="col-md-6">
                     <div class="po-label">จังหวัด</div>
-                    <div class="info-pill">{{ $info['delivery_province'] ?: '-' }}</div>
+                    <select id="deliveryProvince" class="form-select form-select-sm">
+                      <option value="">-- ไม่ระบุ --</option>
+                      @foreach ($provinces as $pv)
+                        <option value="{{ $pv->id }}" {{ $info['delivery_province_id'] == $pv->id ? 'selected' : '' }}>{{ $pv->name }}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                  <div class="col-12 d-flex justify-content-end">
+                    <button type="button" id="btnSaveDelivery" class="btn btn-primary btn-sm">
+                      <i class="bx bx-save me-1"></i> บันทึก
+                    </button>
                   </div>
                 </div>
               </div>
@@ -515,6 +585,7 @@
           </div>
 
         </div>
+
       </div>{{-- /tab-contact --}}
 
       {{-- TAB 2 : ผลการประเมิน SSI --}}
@@ -596,26 +667,24 @@
                   $isUnknown  = $isQ11 && !$info['delivery_location'];
                   $hideRow    = $isQ11 && $isOffsite;
                 @endphp
-                @if (!$hideRow)
-                  <div class="score-row{{ $isUnknown ? ' opacity-50' : '' }}">
+                  <div class="score-row{{ $hideRow ? ' q11-hidden' : '' }}" {!! $isQ11 ? 'id="row-q11-facilities"' : '' !!} @if ($isUnknown) style="opacity:.5" @endif>
                     <div class="score-row-label">
                       <i class="bx {{ $item['icon'] }} po-section-icon {{ $item['color'] }} me-2"
                         style="width:24px;height:24px;border-radius:6px;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex-shrink:0;"></i>
                       {{ $item['label'] }}
                       @if ($isUnknown)
-                        <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem;" title="ยังไม่ระบุสถานที่ส่งมอบ">ยังไม่ระบุสถานที่</span>
+                        <span id="badge-q11-unknown" class="badge bg-warning text-white ms-1" style="font-size:.7rem;" title="ยังไม่ระบุสถานที่ส่งมอบ">ยังไม่ระบุสถานที่</span>
                       @endif
                     </div>
                     <div class="score-group">
                       @for ($n = 1; $n <= 5; $n++)
                         <button type="button" class="score-btn"
-                          data-val="{{ $n }}">{{ $n }}</button>
+                          data-val="{{ $n }}"{{ ($isUnknown || $hideRow) ? ' disabled' : '' }}>{{ $n }}</button>
                       @endfor
                       <input type="hidden" id="score_{{ $item['key'] }}"
                         value="{{ $assessment ? $assessment->{$item['key']} ?? '' : '' }}">
                     </div>
                   </div>
-                @endif
               @endforeach
 
               <hr class="my-3">
@@ -994,13 +1063,13 @@
             </div>
             <div class="mf-section-body">
               <div class="row g-3">
-                <div class="col-12">
+                <div class="col-md-5">
                   <label class="mf-label form-label" for="contact_date">
                     <i class="bx bx-calendar"></i> วันที่ติดต่อ <span class="text-danger">*</span>
                   </label>
                   <input type="date" id="contact_date" class="form-control mf-input-narrow">
                 </div>
-                <div class="col-12">
+                <div class="col-md-12">
                   <label class="mf-label form-label" for="cnt_yes">
                     <i class="bx bx-phone-call"></i> สถานะการติดต่อ <span class="text-danger">*</span>
                   </label>
@@ -1011,7 +1080,7 @@
                     <label for="addContactNo"><i class="bx bx-x me-1"></i>ติดต่อไม่ได้</label>
                   </div>
                 </div>
-                <div class="col-12" id="row_interview" style="display:none;">
+                <div class="col-md-12" id="row_interview" style="display:none;">
                   <label class="mf-label form-label" for="ssi_int_yes">
                     <i class="bx bx-chat"></i> ผลการสัมภาษณ์
                   </label>

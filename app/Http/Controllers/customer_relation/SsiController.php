@@ -117,12 +117,25 @@ class SsiController extends Controller
             'delivery_date'     => $salecar->DeliveryDate
                 ? Carbon::parse($salecar->DeliveryDate)->format('d/m/Y')
                 : '-',
-            'delivery_location' => $salecar->delivery_location ?: null,
-            'delivery_province' => TbProvinces::find($salecar->delivery_province)?->name ?? '-',
-            'vin_number'        => $salecar->carOrder?->vin_number ?? '-',
+            'delivery_location'    => $salecar->delivery_location ?: null,
+            'delivery_province_id' => $salecar->delivery_province,
+            'delivery_province'    => TbProvinces::find($salecar->delivery_province)?->name ?? '-',
+            'vin_number'           => $salecar->carOrder?->vin_number ?? '-',
         ];
 
-        return view('customer-relation.ssi.edit', compact('ssiRecord', 'info'));
+        $provinces = TbProvinces::orderBy('id')->get();
+
+        return view('customer-relation.ssi.edit', compact('ssiRecord', 'info', 'provinces'));
+    }
+
+    public function saveDeliveryInfo(Request $request, $salecarId)
+    {
+        $salecar = Salecar::findOrFail($salecarId);
+        $salecar->delivery_location = $request->input('delivery_location') ?: null;
+        $salecar->delivery_province = $request->input('delivery_province') ?: null;
+        $salecar->save();
+
+        return response()->json(['success' => true]);
     }
 
     public function saveContact(Request $request, $salecarId)

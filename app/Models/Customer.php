@@ -6,6 +6,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\TracksUserActions;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -45,6 +46,7 @@ use Illuminate\Support\Facades\Auth;
 class Customer extends Model
 {
 	use SoftDeletes;
+	use TracksUserActions;
 
 	protected $table = 'customers';
 
@@ -83,6 +85,8 @@ class Customer extends Model
 		'userZone',
 		'brand',
 		'UserInsert',
+		'UserUpdate',
+		'UserDelete',
 		'branch',
 	];
 
@@ -103,6 +107,21 @@ class Customer extends Model
 	public function salecarsRef()
 	{
 		return $this->hasMany(Salecar::class, 'ReferrerID', 'id');
+	}
+
+	public function userInsert()
+	{
+		return $this->belongsTo(User::class, 'UserInsert', 'id');
+	}
+
+	public function userUpdate()
+	{
+		return $this->belongsTo(User::class, 'UserUpdate', 'id');
+	}
+
+	public function userDelete()
+	{
+		return $this->belongsTo(User::class, 'UserDelete', 'id');
 	}
 
 	public function getFormattedIdNumberAttribute()

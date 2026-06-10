@@ -541,7 +541,7 @@
           <div class="row g-4">
             <div class="col-md-5">
               <label class="mf-label form-label" for="add_contact_date">
-                <i class="bx bx-calendar"></i> วันที่ติดต่อ
+                <i class="bx bx-calendar ci-amber"></i> วันที่ติดต่อ
               </label>
               <input type="date" id="add_contact_date" class="form-control" value="{{ date('Y-m-d') }}" required>
             </div>

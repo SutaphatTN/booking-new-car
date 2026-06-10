@@ -459,6 +459,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('ssi/list', [SsiController::class, 'list'])->name('ssi.list');
     Route::get('ssi/export', [SsiController::class, 'exportExcel'])->name('ssi.export');
     Route::get('ssi/{salecarId}/edit', [SsiController::class, 'edit'])->name('ssi.edit');
+    Route::post('ssi/{salecarId}/delivery', [SsiController::class, 'saveDeliveryInfo'])->name('ssi.delivery.save');
     Route::post('ssi/{salecarId}/contact', [SsiController::class, 'saveContact'])->name('ssi.contact.save');
     Route::delete('ssi/{salecarId}/contact/{contactId}', [SsiController::class, 'deleteContact'])->name('ssi.contact.delete');
     Route::post('ssi/{salecarId}/tab2', [SsiController::class, 'saveTab2'])->name('ssi.tab2.save');

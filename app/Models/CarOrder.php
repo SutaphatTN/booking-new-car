@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\TracksUserActions;
 use App\Models\Traits\UserAccessScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,6 +12,7 @@ class CarOrder extends Model
 {
     use SoftDeletes;
     use UserAccessScope;
+    use TracksUserActions;
 
     protected $table = 'car_order';
 
@@ -62,6 +64,8 @@ class CarOrder extends Model
         'userZone',
         'brand',
         'UserInsert',
+        'UserUpdate',
+        'UserDelete',
         'branch',
         'waiting_id',
     ];
@@ -92,6 +96,21 @@ class CarOrder extends Model
     public function approvers()
     {
         return $this->belongsTo(User::class, 'approver', 'id');
+    }
+
+    public function userInsert()
+    {
+        return $this->belongsTo(User::class, 'UserInsert', 'id');
+    }
+
+    public function userUpdate()
+    {
+        return $this->belongsTo(User::class, 'UserUpdate', 'id');
+    }
+
+    public function userDelete()
+    {
+        return $this->belongsTo(User::class, 'UserDelete', 'id');
     }
 
     public function salecars()

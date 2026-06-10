@@ -6,6 +6,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\TracksUserActions;
 use App\Models\Traits\UserAccessScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -78,6 +79,7 @@ class Salecar extends Model
 {
 	use SoftDeletes;
 	use UserAccessScope;
+	use TracksUserActions;
 
 	protected $table = 'salecars';
 
@@ -239,6 +241,8 @@ class Salecar extends Model
 		'userZone',
 		'brand',
 		'UserInsert',
+		'UserUpdate',
+		'UserDelete',
 		'branch',
 		'tracking_id'
 	];
@@ -335,6 +339,21 @@ class Salecar extends Model
 	public function saleUser()
 	{
 		return $this->belongsTo(User::class, 'SaleID', 'id');
+	}
+
+	public function userInsert()
+	{
+		return $this->belongsTo(User::class, 'UserInsert', 'id');
+	}
+
+	public function userUpdate()
+	{
+		return $this->belongsTo(User::class, 'UserUpdate', 'id');
+	}
+
+	public function userDelete()
+	{
+		return $this->belongsTo(User::class, 'UserDelete', 'id');
 	}
 
 	public function financeConfirm()
