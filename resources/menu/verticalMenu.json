@@ -104,6 +104,7 @@
         "finance",
         "stock-film",
         "film-price-list",
+        "film-usage",
         "film-settings"
       ],
       "submenu": [
@@ -239,7 +240,7 @@
         {
           "name": "Stock Film",
           "icon": "menu-icon icon-base bx bx-layer",
-          "slug": ["stock-film", "film-price-list"],
+          "slug": ["stock-film", "film-price-list", "film-usage"],
           "submenu": [
             {
               "url": "stock-film",
@@ -250,6 +251,11 @@
               "url": "film-price-list",
               "name": "ราคาฟิล์ม",
               "slug": "film-price-list.index"
+            },
+            {
+              "url": "film-usage",
+              "name": "บันทึกการใช้ฟิล์ม",
+              "slug": "film-usage.index"
             }
           ]
         }

@@ -1,5 +1,5 @@
 <div class="modal fade inputFilmPrice" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-lg" role="document">
+  <div class="modal-dialog modal-xl" role="document">
     <div class="modal-content border-0 shadow mf-content mf-content--input">
 
       <div class="modal-header mf-header mf-header--input px-4">
@@ -16,25 +16,32 @@
       </div>
 
       <div class="modal-body mf-body">
-        <form action="{{ route('film-price-list.store') }}" method="POST" id="formInputFilmPrice">
+        <form id="formInputFilmPrice">
           @csrf
 
-          {{-- Section : รุ่นรถ & ฟิล์ม --}}
+          {{-- Section 1 : รุ่นรถ & ตร.ฟุต --}}
           <div class="mf-section mb-3">
             <div class="mf-section-hd">
               <div class="mf-section-icon indigo">
                 <i class="bx bx-car"></i>
               </div>
-              <span class="mf-section-title">ข้อมูลรถ & ฟิล์ม</span>
+              <span class="mf-section-title">ข้อมูลรถ</span>
+              <div class="ms-auto form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" role="switch"
+                  id="fp_has_sunroof" name="has_sunroof" value="1">
+                <label class="form-check-label mf-label" for="fp_has_sunroof">
+                  <i class="bx bx-sun ci-amber me-1"></i>มีซันรูฟ
+                </label>
+              </div>
             </div>
             <div class="mf-section-body">
               <div class="row g-3">
 
-                <div class="col-md-6">
+                <div class="col-md-4">
                   <label for="fp_model_id" class="mf-label form-label">
                     <i class="bx bx-car"></i> รุ่นรถหลัก <span class="text-danger">*</span>
                   </label>
-                  <select id="fp_model_id" name="model_id" class="form-select" required>
+                  <select id="fp_model_id" name="model_id" class="form-select">
                     <option value="">— เลือกรุ่นรถ —</option>
                     @foreach ($models as $m)
                       <option value="{{ $m->id }}">{{ $m->Name_TH }}</option>
@@ -42,131 +49,58 @@
                   </select>
                 </div>
 
-                <div class="col-md-6">
-                  <label for="fp_film_brand_id" class="mf-label form-label">
-                    <i class="bx bx-layer"></i> ยี่ห้อฟิล์ม <span class="text-danger">*</span>
+                <div class="col-md-4">
+                  <label for="fp_sqft" class="mf-label form-label">
+                    <i class="bx bx-ruler ci-sky"></i> จำนวน ตร.ฟุต (รอบคัน+บานหน้า) <span class="text-danger">*</span>
                   </label>
-                  <select id="fp_film_brand_id" name="film_brand_id" class="form-select" required>
-                    <option value="">— เลือกยี่ห้อ —</option>
-                    @foreach ($filmBrands as $fb)
-                      <option value="{{ $fb->id }}">{{ $fb->name }}</option>
-                    @endforeach
-                  </select>
+                  <input id="fp_sqft" type="number" name="sqft" class="form-control text-end"
+                    min="0" step="0.01" placeholder="0.00">
+                </div>
+
+                <div id="fp_sunroof_fields" class="col-md-4 d-none">
+                  <label for="fp_sqft_sunroof" class="mf-label form-label">
+                    <i class="bx bx-ruler ci-amber"></i> จำนวน ตร.ฟุต ซันรูฟ
+                  </label>
+                  <input id="fp_sqft_sunroof" type="number" name="sqft_sunroof" class="form-control text-end"
+                    min="0" step="0.01" placeholder="0.00">
                 </div>
 
               </div>
             </div>
           </div>
 
-          {{-- Section : ตำแหน่ง & ความเข้ม --}}
+          {{-- Section 2 : ราคาตามยี่ห้อฟิล์ม --}}
           <div class="mf-section mb-3">
             <div class="mf-section-hd">
               <div class="mf-section-icon sky">
-                <i class="bx bx-sun"></i>
+                <i class="bx bx-layer"></i>
               </div>
-              <span class="mf-section-title">ตำแหน่ง & ความเข้ม</span>
+              <span class="mf-section-title">ราคาตามยี่ห้อฟิล์ม</span>
+              <button type="button" class="btn btn-sm btn-outline-primary ms-auto btnAddBrandRow">
+                <i class="bx bx-plus me-1"></i> เพิ่มยี่ห้อ
+              </button>
             </div>
-            <div class="mf-section-body">
-              <div class="row g-3">
-
-                <div class="col-md-4">
-                  <label for="fp_position" class="mf-label form-label">
-                    <i class="bx bx-map-pin"></i> ตำแหน่ง <span class="text-danger">*</span>
-                  </label>
-                  <select id="fp_position" name="position" class="form-select" required>
-                    <option value="">— เลือกตำแหน่ง —</option>
-                    <option value="รอบคัน">รอบคัน</option>
-                    <option value="sunroof">Sunroof</option>
-                  </select>
-                </div>
-
-                {{-- รอบคัน shades --}}
-                <div id="fp_body_shades" class="col-md-8 d-none">
-                  <div class="row g-3">
-                    <div class="col-6">
-                      <label for="fp_front_shade" class="mf-label form-label">
-                        <i class="bx bx-sun"></i> ความเข้มบานหน้า
-                        <small class="text-muted">(ไม่บังคับ)</small>
-                      </label>
-                      <select id="fp_front_shade" name="front_shade" class="form-select">
-                        <option value="">— ไม่ระบุ —</option>
-                        <option value="40">40</option>
-                        <option value="60">60</option>
-                        <option value="80">80</option>
-                      </select>
-                    </div>
-                    <div class="col-6">
-                      <label for="fp_body_shade" class="mf-label form-label">
-                        <i class="bx bx-sun"></i> ความเข้มรอบคัน <span class="text-danger">*</span>
-                      </label>
-                      <select id="fp_body_shade" name="body_shade" class="form-select">
-                        <option value="">— เลือก —</option>
-                        <option value="40">40</option>
-                        <option value="60">60</option>
-                        <option value="80">80</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {{-- Sunroof shade --}}
-                <div id="fp_sunroof_shades" class="col-md-4 d-none">
-                  <label for="fp_sunroof_shade" class="mf-label form-label">
-                    <i class="bx bx-sun"></i> ความเข้ม Sunroof <span class="text-danger">*</span>
-                  </label>
-                  <select id="fp_sunroof_shade" name="sunroof_shade" class="form-select">
-                    <option value="">— เลือก —</option>
-                    <option value="40">40</option>
-                    <option value="60">60</option>
-                    <option value="80">80</option>
-                  </select>
-                </div>
-
-              </div>
-            </div>
-          </div>
-
-          {{-- Section : ราคา --}}
-          <div class="mf-section">
-            <div class="mf-section-hd">
-              <div class="mf-section-icon amber">
-                <i class="bx bx-money"></i>
-              </div>
-              <span class="mf-section-title">ข้อมูลราคา</span>
-            </div>
-            <div class="mf-section-body">
-              <div class="row g-3">
-
-                <div class="col-md-4">
-                  <label for="fp_sqft" class="mf-label form-label">
-                    <i class="bx bx-ruler ci-amber"></i> จำนวน ตร.ฟุต <span class="text-danger">*</span>
-                  </label>
-                  <input id="fp_sqft" type="text" name="sqft" class="form-control text-end"
-                    min="0" step="0.01" placeholder="0.00" required>
-                </div>
-
-                <div class="col-md-4">
-                  <label for="fp_price" class="mf-label form-label">
-                    <i class="bx bx-receipt ci-amber"></i> ราคาขายรวมภาษี
-                  </label>
-                  <div class="input-group">
-                    <span class="input-group-text ig-amber">฿</span>
-                    <input id="fp_price" type="text" name="price" class="form-control text-end money-input"
-                      autocomplete="off" placeholder="0.00">
-                  </div>
-                </div>
-
-                <div class="col-md-4">
-                  <label for="fp_commission" class="mf-label form-label">
-                    <i class="bx bx-badge-check ci-amber"></i> ค่าคอม (SCom)
-                  </label>
-                  <div class="input-group">
-                    <span class="input-group-text ig-amber">฿</span>
-                    <input id="fp_commission" type="text" name="commission" class="form-control text-end money-input"
-                      autocomplete="off" placeholder="0.00">
-                  </div>
-                </div>
-
+            <div class="mf-section-body p-0">
+              <div class="table-responsive">
+                <table class="table table-bordered mb-0" id="fpBrandTable">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="min-width:180px">ยี่ห้อฟิล์ม</th>
+                      <th class="text-end" style="min-width:160px">ราคาขายรวมภาษี (฿)</th>
+                      <th class="text-end" style="min-width:140px">ค่าคอม SCom (฿)</th>
+                      <th class="col-sunroof d-none text-end" style="min-width:150px">ราคาซันรูฟ (฿)</th>
+                      <th class="col-sunroof d-none text-end" style="min-width:140px">ค่าคอมซันรูฟ (฿)</th>
+                      <th style="width:50px"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="fpBrandRows">
+                    <tr id="fpNoBrandMsg">
+                      <td colspan="6" class="text-center text-muted py-3">
+                        <i class="bx bx-info-circle me-1"></i> กดปุ่ม "เพิ่มยี่ห้อ" เพื่อเพิ่มข้อมูล
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -185,3 +119,7 @@
     </div>
   </div>
 </div>
+
+<script>
+  window.fpFilmBrands = @json($filmBrands->map(fn($fb) => ['id' => $fb->id, 'name' => $fb->name]));
+</script>

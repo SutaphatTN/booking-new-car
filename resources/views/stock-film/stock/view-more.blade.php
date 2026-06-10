@@ -40,19 +40,19 @@
                   value="{{ $stock->part_no ?? '-' }}" disabled>
               </div>
 
-              <div class="col-md-6">
+              {{-- <div class="col-md-6">
                 <label for="vm_brand_group" class="mf-label form-label">กลุ่มแบรนด์</label>
                 <input id="vm_brand_group" type="text" class="form-control form-control-plaintext-mf"
                   value="{{ \App\Models\FilmStock::BRAND_GROUPS[$stock->brand_group] ?? $stock->brand_group }}" disabled>
-              </div>
+              </div> --}}
 
-              <div class="col-md-6">
+              <div class="col-md-7">
                 <label for="vm_film_brand" class="mf-label form-label">ยี่ห้อฟิล์ม</label>
                 <input id="vm_film_brand" type="text" class="form-control form-control-plaintext-mf"
                   value="{{ $stock->filmBrand?->name ?? '-' }}" disabled>
               </div>
 
-              <div class="col-md-4">
+              <div class="col-md-5">
                 <label for="vm_shade" class="mf-label form-label">ความเข้ม</label>
                 <input id="vm_shade" type="text" class="form-control form-control-plaintext-mf text-center"
                   value="{{ $stock->shade }}" disabled>
@@ -66,9 +66,14 @@
 
               <div class="col-md-4">
                 <label for="vm_status" class="mf-label form-label">สถานะ</label>
+                @php
+                  $remaining = $stock->remaining_qty;
+                  $statusText  = $remaining <= 0 ? 'หมด' : ($remaining < 100 ? 'เหลือน้อย' : 'ใช้งาน');
+                  $statusClass = $remaining <= 0 ? 'text-secondary' : ($remaining < 100 ? 'text-warning' : 'text-success');
+                @endphp
                 <input id="vm_status" type="text"
-                  class="form-control form-control-plaintext-mf text-center fw-bold {{ $stock->remaining_qty > 0 ? 'text-success' : 'text-secondary' }}"
-                  value="{{ $stock->remaining_qty > 0 ? 'ใช้งาน' : 'หมดแล้ว' }}" disabled>
+                  class="form-control form-control-plaintext-mf text-center fw-bold {{ $statusClass }}"
+                  value="{{ $statusText }}" disabled>
               </div>
 
             </div>

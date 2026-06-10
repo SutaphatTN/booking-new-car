@@ -35,9 +35,11 @@ class StockFilmController extends Controller
             $remaining = $s->remaining_qty;
             $diff      = $s->inspection_diff;
 
-            $statusBadge = $remaining > 0
-                ? '<span class="badge bg-success">ใช้งาน</span>'
-                : '<span class="badge bg-secondary">หมดแล้ว</span>';
+            $statusBadge = $remaining <= 0
+                ? '<span class="badge bg-secondary">หมด</span>'
+                : ($remaining < 100
+                    ? '<span class="badge bg-warning text-dark">เหลือน้อย</span>'
+                    : '<span class="badge bg-success">ใช้งาน</span>');
 
             $inspectionResult = match ($s->inspection_result) {
                 'pass'  => '<span class="badge bg-success">ถูกต้อง</span>',

@@ -15,12 +15,7 @@ $(document).ready(function () {
     columns: [
       { data: 'No' },
       { data: 'model' },
-      { data: 'film_brand' },
-      { data: 'position', className: 'text-center' },
-      { data: 'shade' },
       { data: 'sqft', className: 'text-end' },
-      { data: 'price', className: 'text-end' },
-      { data: 'commission', className: 'text-end' },
       { data: 'Action', orderable: false, searchable: false },
     ],
     paging: true,
@@ -28,7 +23,7 @@ $(document).ready(function () {
     searching: true,
     ordering: false,
     info: true,
-    pageLength: 25,
+    pageLength: 10,
     autoWidth: false,
     language: {
       lengthMenu: 'แสดง _MENU_ แถว',
@@ -41,31 +36,162 @@ $(document).ready(function () {
   });
 });
 
-// ── Position toggle (input modal) ─────────────────────────
-$(document).on('change', '#fp_position', function () {
-  togglePositionFields($(this).val(), '#fp_body_shades', '#fp_sunroof_shades', '#fp_body_shade', '#fp_sunroof_shade');
-});
+// ── Brand rows (input modal) ───────────────────────────────
+function fpBrandRowHtml(idx) {
+  const brands  = window.fpFilmBrands || [];
+  const opts    = brands.map(fb => `<option value="${fb.id}">${fb.name}</option>`).join('');
+  const sunHide = $('#fp_has_sunroof').is(':checked') ? '' : 'd-none';
 
-$(document).on('change', '#ep_position', function () {
-  togglePositionFields($(this).val(), '#ep_body_shades', '#ep_sunroof_shades', '#ep_body_shade', '#ep_sunroof_shade');
-});
-
-function togglePositionFields(pos, bodyDiv, sunroofDiv, bodySelect, sunroofSelect) {
-  if (pos === 'รอบคัน') {
-    $(bodyDiv).removeClass('d-none');
-    $(sunroofDiv).addClass('d-none');
-    $(bodySelect).attr('required', true);
-    $(sunroofSelect).removeAttr('required').val('');
-  } else if (pos === 'sunroof') {
-    $(bodyDiv).addClass('d-none');
-    $(sunroofDiv).removeClass('d-none');
-    $(sunroofSelect).attr('required', true);
-    $(bodySelect).removeAttr('required').val('');
-  } else {
-    $(bodyDiv).addClass('d-none');
-    $(sunroofDiv).addClass('d-none');
-  }
+  return `
+    <tr data-idx="${idx}">
+      <td>
+        <select name="brands[${idx}][film_brand_id]" class="form-select form-select-sm fpBrandSel">
+          <option value="">— เลือกยี่ห้อ —</option>
+          ${opts}
+        </select>
+      </td>
+      <td>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text ig-sky">฿</span>
+          <input type="text" name="brands[${idx}][price]"
+            class="form-control text-end money-input" placeholder="0.00" autocomplete="off">
+        </div>
+      </td>
+      <td>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text ig-sky">฿</span>
+          <input type="text" name="brands[${idx}][commission]"
+            class="form-control text-end money-input" placeholder="0.00" autocomplete="off">
+        </div>
+      </td>
+      <td class="col-sunroof ${sunHide}">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text ig-amber">฿</span>
+          <input type="text" name="brands[${idx}][price_sunroof]"
+            class="form-control text-end money-input" placeholder="0.00" autocomplete="off">
+        </div>
+      </td>
+      <td class="col-sunroof ${sunHide}">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text ig-amber">฿</span>
+          <input type="text" name="brands[${idx}][commission_sunroof]"
+            class="form-control text-end money-input" placeholder="0.00" autocomplete="off">
+        </div>
+      </td>
+      <td class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger btnRemoveFpBrand">
+          <i class="bx bx-trash"></i>
+        </button>
+      </td>
+    </tr>`;
 }
+
+$(document).on('click', '.btnAddBrandRow', function () {
+  $('#fpNoBrandMsg').remove();
+  $('#fpBrandRows').append(fpBrandRowHtml(Date.now()));
+});
+
+$(document).on('click', '.btnRemoveFpBrand', function () {
+  $(this).closest('tr').remove();
+  if ($('#fpBrandRows tr').length === 0) {
+    $('#fpBrandRows').html(`
+      <tr id="fpNoBrandMsg">
+        <td colspan="6" class="text-center text-muted py-3">
+          <i class="bx bx-info-circle me-1"></i> กดปุ่ม "เพิ่มยี่ห้อ" เพื่อเพิ่มข้อมูล
+        </td>
+      </tr>`);
+  }
+});
+
+// ── Sunroof toggle (input modal) ───────────────────────────
+$(document).on('change', '#fp_has_sunroof', function () {
+  const on = $(this).is(':checked');
+  $('#fp_sunroof_fields').toggleClass('d-none', !on);
+  $('#fpBrandTable .col-sunroof').toggleClass('d-none', !on);
+  if (!on) {
+    $('#fp_sqft_sunroof').val('');
+    $('#fpBrandRows input[name*="[price_sunroof]"], #fpBrandRows input[name*="[commission_sunroof]"]').val('');
+  }
+});
+
+// ── Brand rows (edit modal) ────────────────────────────────
+function epBrandRowHtml(idx) {
+  const brands  = window.fpFilmBrands || [];
+  const opts    = brands.map(fb => `<option value="${fb.id}">${fb.name}</option>`).join('');
+  const sunHide = $('#ep_has_sunroof').is(':checked') ? '' : 'd-none';
+
+  return `
+    <tr data-idx="${idx}">
+      <td>
+        <select name="brands[${idx}][film_brand_id]" class="form-select form-select-sm epBrandSel">
+          <option value="">— เลือกยี่ห้อ —</option>
+          ${opts}
+        </select>
+      </td>
+      <td>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text ig-sky">฿</span>
+          <input type="text" name="brands[${idx}][price]"
+            class="form-control text-end money-input" placeholder="0.00" autocomplete="off">
+        </div>
+      </td>
+      <td>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text ig-sky">฿</span>
+          <input type="text" name="brands[${idx}][commission]"
+            class="form-control text-end money-input" placeholder="0.00" autocomplete="off">
+        </div>
+      </td>
+      <td class="col-sunroof ${sunHide}">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text ig-amber">฿</span>
+          <input type="text" name="brands[${idx}][price_sunroof]"
+            class="form-control text-end money-input" placeholder="0.00" autocomplete="off">
+        </div>
+      </td>
+      <td class="col-sunroof ${sunHide}">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text ig-amber">฿</span>
+          <input type="text" name="brands[${idx}][commission_sunroof]"
+            class="form-control text-end money-input" placeholder="0.00" autocomplete="off">
+        </div>
+      </td>
+      <td class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger btnRemoveEpBrand">
+          <i class="bx bx-trash"></i>
+        </button>
+      </td>
+    </tr>`;
+}
+
+$(document).on('click', '.btnAddEpBrandRow', function () {
+  $('#epNoBrandMsg').remove();
+  const idx = (window.epNextIdx !== undefined ? window.epNextIdx++ : Date.now());
+  $('#epBrandRows').append(epBrandRowHtml(idx));
+});
+
+$(document).on('click', '.btnRemoveEpBrand', function () {
+  $(this).closest('tr').remove();
+  if ($('#epBrandRows tr').length === 0) {
+    $('#epBrandRows').html(`
+      <tr id="epNoBrandMsg">
+        <td colspan="6" class="text-center text-muted py-3">
+          <i class="bx bx-info-circle me-1"></i> กดปุ่ม "เพิ่มยี่ห้อ" เพื่อเพิ่มข้อมูล
+        </td>
+      </tr>`);
+  }
+});
+
+// ── Sunroof toggle (edit modal) ────────────────────────────
+$(document).on('change', '#ep_has_sunroof', function () {
+  const on = $(this).is(':checked');
+  $('#ep_sunroof_fields').toggleClass('d-none', !on);
+  $('#epBrandTable .col-sunroof').toggleClass('d-none', !on);
+  if (!on) {
+    $('#ep_sqft_sunroof').val('');
+    $('#epBrandRows input[name*="[price_sunroof]"], #epBrandRows input[name*="[commission_sunroof]"]').val('');
+  }
+});
 
 // ── Auto Calculate ─────────────────────────────────────────
 function calcFilmPrice(filmBrandId, sqft, priceField, commissionField) {
@@ -92,10 +218,6 @@ function calcFilmPrice(filmBrandId, sqft, priceField, commissionField) {
     Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'กรุณาติดต่อแอดมิน' });
   });
 }
-
-$(document).on('click', '.btnCalcFilmPrice', function () {
-  calcFilmPrice($('#fp_film_brand_id').val(), $('#fp_sqft').val(), '#fp_price', '#fp_commission');
-});
 
 $(document).on('click', '.btnCalcFilmPriceEdit', function () {
   calcFilmPrice($('#ep_film_brand_id').val(), $('#ep_sqft').val(), '#ep_price', '#ep_commission');
@@ -131,20 +253,51 @@ $(document).on('click', '.btnInputFilmPrice', function () {
   });
 });
 
-// ── Store ──────────────────────────────────────────────────
+// ── Store (multi-brand) ────────────────────────────────────
 $(document).on('click', '.btnStoreFilmPrice', function () {
-  const form = document.getElementById('formInputFilmPrice');
-  if (!form.checkValidity()) { form.reportValidity(); return; }
+  const modelId = $('#fp_model_id').val();
+  const sqft    = $('#fp_sqft').val();
+
+  if (!modelId) { Swal.fire({ icon: 'warning', text: 'กรุณาเลือกรุ่นรถ' }); return; }
+  if (!sqft || parseFloat(sqft) <= 0) { Swal.fire({ icon: 'warning', text: 'กรุณาระบุจำนวน ตร.ฟุต' }); return; }
+
+  const brands = [];
+  let allValid = true;
+
+  $('#fpBrandRows tr[data-idx]').each(function () {
+    const idx     = $(this).data('idx');
+    const brandId = $(this).find('.fpBrandSel').val();
+    if (!brandId) { allValid = false; return false; }
+    brands.push({
+      film_brand_id:      brandId,
+      price:              $(this).find(`input[name="brands[${idx}][price]"]`).val(),
+      commission:         $(this).find(`input[name="brands[${idx}][commission]"]`).val(),
+      price_sunroof:      $(this).find(`input[name="brands[${idx}][price_sunroof]"]`).val(),
+      commission_sunroof: $(this).find(`input[name="brands[${idx}][commission_sunroof]"]`).val(),
+    });
+  });
+
+  if (!allValid) { Swal.fire({ icon: 'warning', text: 'กรุณาเลือกยี่ห้อฟิล์มให้ครบทุกแถว' }); return; }
+  if (!brands.length) { Swal.fire({ icon: 'warning', text: 'กรุณาเพิ่มยี่ห้อฟิล์มอย่างน้อย 1 รายการ' }); return; }
+
+  const hasSunroof = $('#fp_has_sunroof').is(':checked');
+
+  const payload = {
+    model_id:    modelId,
+    sqft:        sqft,
+    has_sunroof: hasSunroof ? 1 : 0,
+    sqft_sunroof: hasSunroof ? $('#fp_sqft_sunroof').val() : null,
+    brands,
+  };
 
   const $btn = $(this);
   $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>กำลังบันทึก...');
 
   $.ajax({
-    url: $(form).attr('action'),
+    url: '/film-price-list',
     type: 'POST',
-    data: new FormData(form),
-    contentType: false,
-    processData: false,
+    data: JSON.stringify(payload),
+    contentType: 'application/json',
     success: function (res) {
       if (res.success) {
         Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 1500, showConfirmButton: false });
@@ -163,33 +316,66 @@ $(document).on('click', '.btnStoreFilmPrice', function () {
   });
 });
 
-// ── Open Edit Modal ────────────────────────────────────────
+// ── Open Edit Modal (by model) ─────────────────────────────
 $(document).on('click', '.btnEditFilmPrice', function () {
-  const id = $(this).data('id');
-  $.get('/film-price-list/' + id + '/edit', function (html) {
+  const modelId = $(this).data('model-id');
+  $.get('/film-price-list/' + modelId + '/edit-model', function (html) {
     $('.editFilmPriceModal').html(html);
-    $('.editFilmPrice').modal('show');
+    $('.editFilmPriceModel').modal('show');
   });
 });
 
-// ── Update ─────────────────────────────────────────────────
-$(document).on('click', '.btnUpdateFilmPrice', function () {
-  const form = document.getElementById('formEditFilmPrice');
-  if (!form.checkValidity()) { form.reportValidity(); return; }
+$(document).on('hide.bs.modal', '.editFilmPriceModel', function () {
+  setTimeout(() => { document.activeElement.blur(); $('body').trigger('focus'); }, 1);
+});
+
+// ── Update (by model) ──────────────────────────────────────
+$(document).on('click', '.btnUpdateFilmPriceModel', function () {
+  const modelId = $('#ep_model_id').val();
+  const sqft    = $('#ep_sqft').val();
+
+  if (!sqft || parseFloat(sqft) <= 0) { Swal.fire({ icon: 'warning', text: 'กรุณาระบุจำนวน ตร.ฟุต' }); return; }
+
+  const brands = [];
+  let allValid = true;
+
+  $('#epBrandRows tr[data-idx]').each(function () {
+    const idx     = $(this).data('idx');
+    const brandId = $(this).find('.epBrandSel').val();
+    if (!brandId) { allValid = false; return false; }
+    brands.push({
+      film_brand_id:      brandId,
+      price:              $(this).find(`input[name="brands[${idx}][price]"]`).val(),
+      commission:         $(this).find(`input[name="brands[${idx}][commission]"]`).val(),
+      price_sunroof:      $(this).find(`input[name="brands[${idx}][price_sunroof]"]`).val(),
+      commission_sunroof: $(this).find(`input[name="brands[${idx}][commission_sunroof]"]`).val(),
+    });
+  });
+
+  if (!allValid) { Swal.fire({ icon: 'warning', text: 'กรุณาเลือกยี่ห้อฟิล์มให้ครบทุกแถว' }); return; }
+  if (!brands.length) { Swal.fire({ icon: 'warning', text: 'กรุณาเพิ่มยี่ห้อฟิล์มอย่างน้อย 1 รายการ' }); return; }
+
+  const hasSunroof = $('#ep_has_sunroof').is(':checked');
+
+  const payload = {
+    sqft,
+    has_sunroof:  hasSunroof ? 1 : 0,
+    sqft_sunroof: hasSunroof ? $('#ep_sqft_sunroof').val() : null,
+    brands,
+  };
 
   const $btn = $(this);
   $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>กำลังบันทึก...');
 
   $.ajax({
-    url: $(form).attr('action'),
+    url: '/film-price-list/' + modelId + '/update-model',
     type: 'POST',
-    data: new FormData(form),
-    contentType: false,
-    processData: false,
+    data: JSON.stringify(payload),
+    contentType: 'application/json',
     success: function (res) {
       if (res.success) {
         Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 1500, showConfirmButton: false });
-        $('.editFilmPrice').modal('hide');
+        $('.editFilmPriceModel').modal('hide');
         filmPriceTable.ajax.reload();
       } else {
         Swal.fire({ icon: 'warning', title: 'แจ้งเตือน', text: res.message });
