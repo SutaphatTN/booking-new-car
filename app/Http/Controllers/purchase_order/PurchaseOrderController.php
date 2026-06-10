@@ -434,6 +434,14 @@ class PurchaseOrderController extends Controller
                 'tracking_id' => $trackingId,
             ]);
 
+            // เก็บว่าใครกดสร้างการจองจาก tracking นี้
+            if ($trackingId) {
+                CustomerTracking::whereKey($trackingId)->update([
+                    'BookedBy'  => Auth::id(),
+                    'booked_at' => now(),
+                ]);
+            }
+
             if ($request->hasFile('attachments')) {
                 $customer = Customer::find($request->CusID);
                 $customerFolder = $customer->id . '-' . ($customer->FirstName ?? 'unknown');

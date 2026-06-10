@@ -151,10 +151,10 @@
           <div class="po-filter-bar d-flex align-items-center gap-2 justify-content-end">
             <span class="text-muted small">วันส่งมอบ</span>
             <input type="date" id="ssiDateFrom" class="form-control form-control-sm"
-              value="{{ now()->format('Y-m-d') }}" style="width:155px;">
+              value="{{ now()->format('Y-m-d') }}" style="width:155px;" data-no-icon>
             <span class="text-muted small">ถึง</span>
             <input type="date" id="ssiDateTo" class="form-control form-control-sm"
-              value="{{ now()->format('Y-m-d') }}" style="width:155px;">
+              value="{{ now()->format('Y-m-d') }}" style="width:155px;" data-no-icon>
             <button type="button" id="btnExportSsi" class="btn btn-warning btn-sm">
               <i class="bx bx-file me-1"></i> รายงาน
             </button>

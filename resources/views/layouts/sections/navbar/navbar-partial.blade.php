@@ -119,7 +119,7 @@
                 <small class="text-muted d-block mb-2">
                   <i class="bx bx-transfer-alt me-1"></i>สลับ Brand
                   @if (session('brand_switch'))
-                    <span class="badge bg-warning text-dark ms-1">Active</span>
+                    <span class="badge bg-warning text-white ms-1">Active</span>
                   @endif
                 </small>
                 @foreach (TbBrand::all() as $tbBrand)

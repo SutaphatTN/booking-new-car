@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\TracksUserActions;
 use App\Models\Traits\UserAccessScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,9 +11,14 @@ use Carbon\Carbon;
 
 class CustomerTracking extends Model
 {
-    use SoftDeletes, UserAccessScope;
+    use SoftDeletes, UserAccessScope, TracksUserActions;
 
     protected $table = 'customer_trackings';
+
+    protected $casts = [
+        'booked_at'    => 'datetime',
+        'cancelled_at' => 'datetime',
+    ];
 
     protected $fillable = [
         'sale_id',
@@ -31,6 +37,10 @@ class CustomerTracking extends Model
         'brand',
         'branch',
         'UserInsert',
+        'UserUpdate',
+        'UserDelete',
+        'BookedBy',
+        'booked_at',
         'cancelled_at',
         'CancelledBy',
         'delivery_timeline_scoring',
@@ -53,6 +63,31 @@ class CustomerTracking extends Model
     public function sale()
     {
         return $this->belongsTo(User::class, 'sale_id');
+    }
+
+    public function userInsert()
+    {
+        return $this->belongsTo(User::class, 'UserInsert');
+    }
+
+    public function userUpdate()
+    {
+        return $this->belongsTo(User::class, 'UserUpdate');
+    }
+
+    public function userDelete()
+    {
+        return $this->belongsTo(User::class, 'UserDelete');
+    }
+
+    public function bookedBy()
+    {
+        return $this->belongsTo(User::class, 'BookedBy');
+    }
+
+    public function cancelledBy()
+    {
+        return $this->belongsTo(User::class, 'CancelledBy');
     }
 
     public function source()
