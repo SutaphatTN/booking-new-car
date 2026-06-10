@@ -16,11 +16,17 @@
           <div class="row g-3">
             <div class="col-6">
               <label for="car_stock_from_date" class="mf-label form-label"><i class="bx bx-calendar"></i> ตั้งแต่วันที่</label>
-              <input type="date" id="car_stock_from_date" name="from_date" class="form-control">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bx bx-calendar-event ci-sky"></i></span>
+                <input type="date" id="car_stock_from_date" name="from_date" class="form-control">
+              </div>
             </div>
             <div class="col-6">
               <label for="car_stock_to_date" class="mf-label form-label"><i class="bx bx-calendar"></i> ถึงวันที่</label>
-              <input type="date" id="car_stock_to_date" name="to_date" class="form-control">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bx bx-calendar-event ci-sky"></i></span>
+                <input type="date" id="car_stock_to_date" name="to_date" class="form-control">
+              </div>
             </div>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4">

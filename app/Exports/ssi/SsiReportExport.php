@@ -2,7 +2,6 @@
 
 namespace App\Exports\ssi;
 
-use App\Models\SsiContact;
 use App\Models\SsiRecord;
 use App\Models\TbProvinces;
 use Carbon\Carbon;
@@ -20,7 +19,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
-    public function __construct(private string $date) {}
+    public function __construct(private string $dateFrom, private string $dateTo) {}
 
     public function title(): string
     {
@@ -76,22 +75,23 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
 
     public function view(): View
     {
-        $ssiRecordIds = SsiContact::whereDate('contact_date', $this->date)
-            ->pluck('ssi_record_id')
-            ->unique();
-
         $records = SsiRecord::with([
             'salecar.customer.prefix',
             'salecar.saleUser',
             'salecar.model',
             'salecar.subModel',
             'salecar.carOrder',
+            'salecar.preDeliveryInspection',
             'contacts',
             'assessment',
         ])
-            ->whereIn('id', $ssiRecordIds)
-            ->orderBy('id')
-            ->get();
+            ->whereHas('salecar', fn($q) => $q
+                ->whereDate('DeliveryDate', '>=', $this->dateFrom)
+                ->whereDate('DeliveryDate', '<=', $this->dateTo)
+            )
+            ->get()
+            ->sortBy(fn($r) => $r->salecar?->DeliveryDate)
+            ->values();
 
         $provinces = TbProvinces::all()->keyBy('id');
 
@@ -137,17 +137,32 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
             $ass = $rec?->assessment;
             if ($ass) {
                 if ($s->brand == 2) {
-                    $fields = ['gwm_q1', 'gwm_q2', 'gwm_q3', 'gwm_q4', 'gwm_q5', 'gwm_q6', 'gwm_q7', 'gwm_q8'];
+                    $fields   = ['gwm_q1', 'gwm_q2', 'gwm_q3', 'gwm_q4', 'gwm_q5', 'gwm_q6', 'gwm_q7', 'gwm_q8'];
+                    $maxScore = 40;
                 } else {
+                    $isOffsite = ($s->delivery_location === 'Offsite');
                     $fields = [
-                        'dw_website', 'q11_facilities', 'q15_car_knowledge',
+                        'dw_website', 'q15_car_knowledge',
                         'q17_service_responsibility', 'q18_sales_conditions', 'o27_car_condition',
                         'fu_followup', 'recommend_showroom',
                     ];
+                    if (!$isOffsite) {
+                        array_splice($fields, 1, 0, ['q11_facilities']);
+                    }
+                    $maxScore = $isOffsite ? 35 : 40;
                 }
                 $answered = collect($fields)->filter(fn($f) => !is_null($ass->{$f}) && $ass->{$f} > 0);
                 $sum = $answered->sum(fn($f) => (int) $ass->{$f});
-                $ssiScore = $answered->isNotEmpty() ? round(($sum / 40) * 100, 2) : 0;
+                $ssiScore = $answered->isNotEmpty() ? round(($sum / $maxScore) * 100, 2) : 0;
+            }
+
+            $pdi = $s->preDeliveryInspection;
+            if (!$pdi) {
+                $pdiStatus = 'ไม่ตรวจรถก่อนส่งมอบ';
+            } elseif ($pdi->accessories_complete && $pdi->exterior_clean && $pdi->interior_clean && $pdi->issues_resolved) {
+                $pdiStatus = 'เรียบร้อย';
+            } else {
+                $pdiStatus = 'ไม่เรียบร้อย';
             }
 
             return [
@@ -164,13 +179,18 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
                 'latest_contact_date' => $latestContactDate,
                 'contact_history'   => $contactHistory,
                 'contact_status'    => $contactStatus,
+                'pdi_status'        => $pdiStatus,
                 'ssi_score'         => $ssiScore,
             ];
         })->filter()->values();
 
+        $dateLabel = Carbon::parse($this->dateFrom)->locale('th')->isoFormat('D MMMM YYYY')
+            . ' - '
+            . Carbon::parse($this->dateTo)->locale('th')->isoFormat('D MMMM YYYY');
+
         return view('customer-relation.ssi.excel', [
             'rows' => $rows,
-            'date' => Carbon::parse($this->date)->locale('th')->isoFormat('D MMMM YYYY'),
+            'date' => $dateLabel,
         ]);
     }
 }

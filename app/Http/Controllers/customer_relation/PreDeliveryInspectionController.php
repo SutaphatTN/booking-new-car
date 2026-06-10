@@ -23,10 +23,11 @@ class PreDeliveryInspectionController extends Controller
 
     public function exportExcel(Request $request)
     {
-        $date     = $request->input('date', now()->format('Y-m-d'));
-        $filename = 'PDI-ตรวจรถก่อนส่งมอบ-' . $date . '.xlsx';
+        $dateFrom = $request->input('date_from', now()->format('Y-m-d'));
+        $dateTo   = $request->input('date_to',   now()->format('Y-m-d'));
+        $filename = 'PDI-ตรวจรถก่อนส่งมอบ-' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx';
 
-        return Excel::download(new PdiReportExport($date), $filename);
+        return Excel::download(new PdiReportExport($dateFrom, $dateTo), $filename);
     }
 
     public function list(Request $request)

@@ -16,6 +16,7 @@
       <th>ราคาทุน</th>
       <th>ราคาขาย</th>
       <th>ประเภทการจัดซื้อ</th>
+      <th>แหล่งที่มา</th>
       <th>สถานะออเดอร์</th>
       <th>สถานะรถ</th>
       
@@ -39,12 +40,13 @@
       <td>{{ $row->car_DNP ?? '-' }}</td>
       <td>{{ $row->car_MSRP ?? '-' }}</td>
       <td>{{ $row->purchaseType->name ?? '-' }}</td>
+      <td>{{ $row->purchase_source ?? '-' }}</td>
       <td>{{ $row->orderStatus->name ?? '-' }}</td>
       <td>{{ $row->car_status ?? '-' }}</td>
     </tr>
     @empty
     <tr>
-      <td colspan="16" align="center">ไม่มีข้อมูล</td>
+      <td colspan="18" align="center">ไม่มีข้อมูล</td>
     </tr>
     @endforelse
   </tbody>
