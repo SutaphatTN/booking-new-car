@@ -37,12 +37,7 @@
               <tr>
                 <th class="tbl-th-no">No.</th>
                 <th>รุ่นรถ</th>
-                <th>ยี่ห้อฟิล์ม</th>
-                <th>ตำแหน่ง</th>
-                <th>ความเข้ม</th>
                 <th class="text-end">ตร.ฟุต</th>
-                <th class="text-end">ราคาขายรวมภาษี</th>
-                <th class="text-end">ค่าคอม (SCom)</th>
                 <th class="tbl-th-action">Action</th>
               </tr>
             </thead>

@@ -9,7 +9,8 @@
           </div>
           <div>
             <h6 class="mb-0 fw-bold text-white mf-hd-title">เพิ่มสต็อกฟิล์ม</h6>
-            <small class="text-white mf-hd-sub">Add Film Stock — กลุ่ม {{ $brandGroup === 'G' ? 'GWM' : 'Mitsubishi / Wuling' }}</small>
+            <small class="text-white mf-hd-sub">Add Film Stock</small>
+            {{-- <small class="text-white mf-hd-sub">Add Film Stock — กลุ่ม {{ $brandGroup === 'G' ? 'GWM' : 'Mitsubishi / Wuling' }}</small> --}}
           </div>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -30,7 +31,7 @@
             <div class="mf-section-body">
               <div class="row g-3">
 
-                <div class="col-md-12">
+                <div class="col-md-7">
                   <label for="inp_film_brand_id" class="mf-label form-label">
                     <i class="bx bx-layer"></i> ยี่ห้อฟิล์ม <span class="text-danger">*</span>
                   </label>
@@ -42,12 +43,12 @@
                   </select>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-5">
                   <label for="inp_shade" class="mf-label form-label">
                     <i class="bx bx-sun"></i> ความเข้ม <span class="text-danger">*</span>
                   </label>
                   <select id="inp_shade" name="shade" class="form-select" required>
-                    <option value="">— เลือกความเข้ม —</option>
+                    <option value="">— เลือก —</option>
                     <option value="40">40</option>
                     <option value="60">60</option>
                     <option value="80">80</option>
@@ -77,7 +78,7 @@
                     placeholder="ระบุ Part No. (ถ้ามี)">
                 </div>
 
-                <div class="col-md-12">
+                <div class="col-md-6">
                   <label for="preview_stock_no" class="mf-label form-label">
                     <i class="bx bx-barcode-reader"></i> Stock No. (อัตโนมัติ)
                   </label>

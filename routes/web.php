@@ -28,6 +28,7 @@ use App\Http\Controllers\customer_tracking\CustomerTrackingController;
 use App\Http\Controllers\gwm_incentive\GwmIncentiveController;
 use App\Http\Controllers\stock_film\FilmPriceListController;
 use App\Http\Controllers\stock_film\FilmSettingController;
+use App\Http\Controllers\stock_film\FilmUsageController;
 use App\Http\Controllers\stock_film\StockFilmController;
 use App\Http\Controllers\service_check_tracking\ServiceCheckTrackingController;
 use App\Http\Controllers\customer_relation\PreDeliveryInspectionController;
@@ -335,6 +336,8 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     // film-price-list
     Route::get('film-price-list/list', [FilmPriceListController::class, 'list']);
     Route::get('film-price-list/calculate', [FilmPriceListController::class, 'calculate']);
+    Route::get('film-price-list/{modelId}/edit-model', [FilmPriceListController::class, 'editModel'])->name('film-price-list.edit-model');
+    Route::post('film-price-list/{modelId}/update-model', [FilmPriceListController::class, 'updateModel'])->name('film-price-list.update-model');
     Route::resource('film-price-list', FilmPriceListController::class)->names([
         'index'   => 'film-price-list.index',
         'create'  => 'film-price-list.create',
@@ -342,6 +345,19 @@ Route::middleware(['auth', 'notsale'])->group(function () {
         'edit'    => 'film-price-list.edit',
         'update'  => 'film-price-list.update',
         'destroy' => 'film-price-list.destroy',
+    ]);
+
+    // film-usage
+    Route::get('film-usage/list', [FilmUsageController::class, 'list']);
+    Route::get('film-usage/vin-search', [FilmUsageController::class, 'vinSearch'])->name('film-usage.vinSearch');
+    Route::get('film-usage/vin-suggest', [FilmUsageController::class, 'vinSuggest']);
+    Route::get('film-usage/price-list-lookup', [FilmUsageController::class, 'priceListLookup']);
+    Route::get('film-usage/stock-search', [FilmUsageController::class, 'stockSearch']);
+    Route::resource('film-usage', FilmUsageController::class)->only(['index', 'create', 'store', 'destroy'])->names([
+        'index'   => 'film-usage.index',
+        'create'  => 'film-usage.create',
+        'store'   => 'film-usage.store',
+        'destroy' => 'film-usage.destroy',
     ]);
 
     // forecast

@@ -42,9 +42,9 @@
                 {{-- <th>กลุ่มแบรนด์</th> --}}
                 <th>ยี่ห้อฟิล์ม</th>
                 <th>ความเข้ม</th>
-                <th>วันที่เบิก</th>
+                {{-- <th>วันที่เบิก</th>
                 <th class="text-end">จำนวนเริ่มต้น<br><small class="text-muted">(ตร.ฟุต)</small></th>
-                <th class="text-end">ใช้ไปแล้ว<br><small class="text-muted">(ตร.ฟุต)</small></th>
+                <th class="text-end">ใช้ไปแล้ว<br><small class="text-muted">(ตร.ฟุต)</small></th> --}}
                 <th class="text-end">คงเหลือ<br><small class="text-muted">(ตร.ฟุต)</small></th>
                 <th class="text-center">สถานะ</th>
                 {{-- <th>วันที่ตรวจสอบ</th> --}}

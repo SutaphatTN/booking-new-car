@@ -6,22 +6,22 @@ use App\Models\Traits\BrandScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class FilmPriceList extends Model
+class FilmUsage extends Model
 {
     use SoftDeletes, BrandScope;
 
-    protected $table = 'tb_film_price_list';
+    protected $table = 'tb_film_usage';
 
     protected $fillable = [
+        'type',
+        'order_date',
+        'vin',
+        'car_order_id',
+        'salecar_id',
+        'customer_name',
+        'sale_person',
         'model_id',
         'film_brand_id',
-        'sqft',
-        'price',
-        'commission',
-        'has_sunroof',
-        'sqft_sunroof',
-        'price_sunroof',
-        'commission_sunroof',
         'brand',
         'branch',
         'userZone',
@@ -29,14 +29,13 @@ class FilmPriceList extends Model
     ];
 
     protected $casts = [
-        'sqft'               => 'decimal:2',
-        'price'              => 'decimal:2',
-        'commission'         => 'decimal:2',
-        'has_sunroof'        => 'boolean',
-        'sqft_sunroof'       => 'decimal:2',
-        'price_sunroof'      => 'decimal:2',
-        'commission_sunroof' => 'decimal:2',
+        'order_date' => 'date',
     ];
+
+    public function items()
+    {
+        return $this->hasMany(FilmUsageItem::class, 'film_usage_id');
+    }
 
     public function model()
     {
