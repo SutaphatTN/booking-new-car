@@ -117,7 +117,7 @@ class SsiController extends Controller
             'delivery_date'     => $salecar->DeliveryDate
                 ? Carbon::parse($salecar->DeliveryDate)->format('d/m/Y')
                 : '-',
-            'delivery_location' => $salecar->delivery_location ?? '-',
+            'delivery_location' => $salecar->delivery_location ?: null,
             'delivery_province' => TbProvinces::find($salecar->delivery_province)?->name ?? '-',
             'vin_number'        => $salecar->carOrder?->vin_number ?? '-',
         ];
@@ -271,10 +271,11 @@ class SsiController extends Controller
 
     public function exportExcel(Request $request)
     {
-        $date     = $request->input('date', now()->format('Y-m-d'));
-        $filename = 'SSI-หลังส่งมอบ-' . $date . '.xlsx';
+        $dateFrom = $request->input('date_from', now()->format('Y-m-d'));
+        $dateTo   = $request->input('date_to',   now()->format('Y-m-d'));
+        $filename = 'SSI-หลังส่งมอบ-' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx';
 
-        return Excel::download(new SsiReportExport($date), $filename);
+        return Excel::download(new SsiReportExport($dateFrom, $dateTo), $filename);
     }
 
     public function markComplete($salecarId)

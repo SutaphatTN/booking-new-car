@@ -321,9 +321,10 @@
             gwm_q8: $('#gwm_q8').val() || null,
           };
         @else
+          const deliveryLocation = @json($info['delivery_location']);
           const assessmentData = {
             dw_website: $('#score_dw_website').val() || null,
-            q11_facilities: $('#score_q11_facilities').val() || null,
+            q11_facilities: deliveryLocation === 'Offsite' ? null : ($('#score_q11_facilities').val() || null),
             q15_car_knowledge: $('#score_q15_car_knowledge').val() || null,
             q17_service_responsibility: $('#score_q17_service_responsibility').val() || null,
             q18_sales_conditions: $('#score_q18_sales_conditions').val() || null,
@@ -472,7 +473,12 @@
                   </div>
                   <div class="col-md-6">
                     <div class="po-label">สถานที่ส่งมอบ</div>
-                    <div class="info-pill">{{ $info['delivery_location'] ?: '-' }}</div>
+                    <div class="info-pill">
+                      {{ $info['delivery_location'] ?: '-' }}
+                      @if (!$info['delivery_location'])
+                        <span class="badge bg-warning text-dark ms-1" style="font-size:.72rem;">ยังไม่ระบุ</span>
+                      @endif
+                    </div>
                   </div>
                   <div class="col-md-6">
                     <div class="po-label">จังหวัด</div>
@@ -584,21 +590,32 @@
             </div>
             <div class="po-section-body-edit">
               @foreach ($scoreItems as $item)
-                <div class="score-row">
-                  <div class="score-row-label">
-                    <i class="bx {{ $item['icon'] }} po-section-icon {{ $item['color'] }} me-2"
-                      style="width:24px;height:24px;border-radius:6px;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex-shrink:0;"></i>
-                    {{ $item['label'] }}
+                @php
+                  $isQ11      = $item['key'] === 'q11_facilities';
+                  $isOffsite  = $info['delivery_location'] === 'Offsite';
+                  $isUnknown  = $isQ11 && !$info['delivery_location'];
+                  $hideRow    = $isQ11 && $isOffsite;
+                @endphp
+                @if (!$hideRow)
+                  <div class="score-row{{ $isUnknown ? ' opacity-50' : '' }}">
+                    <div class="score-row-label">
+                      <i class="bx {{ $item['icon'] }} po-section-icon {{ $item['color'] }} me-2"
+                        style="width:24px;height:24px;border-radius:6px;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex-shrink:0;"></i>
+                      {{ $item['label'] }}
+                      @if ($isUnknown)
+                        <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem;" title="ยังไม่ระบุสถานที่ส่งมอบ">ยังไม่ระบุสถานที่</span>
+                      @endif
+                    </div>
+                    <div class="score-group">
+                      @for ($n = 1; $n <= 5; $n++)
+                        <button type="button" class="score-btn"
+                          data-val="{{ $n }}">{{ $n }}</button>
+                      @endfor
+                      <input type="hidden" id="score_{{ $item['key'] }}"
+                        value="{{ $assessment ? $assessment->{$item['key']} ?? '' : '' }}">
+                    </div>
                   </div>
-                  <div class="score-group">
-                    @for ($n = 1; $n <= 5; $n++)
-                      <button type="button" class="score-btn"
-                        data-val="{{ $n }}">{{ $n }}</button>
-                    @endfor
-                    <input type="hidden" id="score_{{ $item['key'] }}"
-                      value="{{ $assessment ? $assessment->{$item['key']} ?? '' : '' }}">
-                  </div>
-                </div>
+                @endif
               @endforeach
 
               <hr class="my-3">

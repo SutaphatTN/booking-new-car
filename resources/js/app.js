@@ -13,8 +13,13 @@ function initDatePicker(el) {
   el.setAttribute('readonly', 'readonly');
   flatpickr(el, {
     dateFormat: 'Y-m-d',
+    altInput: true,
+    altFormat: 'd/m/Y',
     allowInput: false,
     defaultDate: val || null,
+    onReady: function (_, __, fp) {
+      if (el.style.width) fp.altInput.style.width = el.style.width;
+    },
   });
 }
 

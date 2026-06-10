@@ -68,12 +68,17 @@
       });
 
       $('#btnExportSsi').on('click', function() {
-        const date = $('#exportDate').val();
-        if (!date) {
+        const dateFrom = $('#ssiDateFrom').val();
+        const dateTo   = $('#ssiDateTo').val();
+        if (!dateFrom || !dateTo) {
           Swal.fire({ icon: 'warning', title: 'กรุณาเลือกวันที่', timer: 1500, showConfirmButton: false });
           return;
         }
-        window.location.href = '{{ route('ssi.export') }}?date=' + date;
+        if (dateFrom > dateTo) {
+          Swal.fire({ icon: 'warning', title: 'วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด', timer: 1800, showConfirmButton: false });
+          return;
+        }
+        window.location.href = '{{ route('ssi.export') }}?date_from=' + dateFrom + '&date_to=' + dateTo;
       });
 
       $('#ssiTable').on('click', '.btn-ssi-complete', function() {
@@ -144,7 +149,11 @@
 
           {{-- ── Action bar ── --}}
           <div class="po-filter-bar d-flex align-items-center gap-2 justify-content-end">
-            <input type="date" id="exportDate" class="form-control form-control-sm"
+            <span class="text-muted small">วันส่งมอบ</span>
+            <input type="date" id="ssiDateFrom" class="form-control form-control-sm"
+              value="{{ now()->format('Y-m-d') }}" style="width:155px;">
+            <span class="text-muted small">ถึง</span>
+            <input type="date" id="ssiDateTo" class="form-control form-control-sm"
               value="{{ now()->format('Y-m-d') }}" style="width:155px;">
             <button type="button" id="btnExportSsi" class="btn btn-warning btn-sm">
               <i class="bx bx-file me-1"></i> รายงาน

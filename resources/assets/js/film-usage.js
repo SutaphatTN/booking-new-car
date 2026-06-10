@@ -423,7 +423,7 @@ if ($('#formFilmUsage').length) {
 
   // ── Auto-fill from price list ─────────────────────────────
   function autoFillFromPriceList(sunroofOnly) {
-    const modelId     = $('#fu_model_id').val();
+    const modelId     = fuNewCustomer ? $('#fu_model_id_new').val() : $('#fu_model_id').val();
     const filmBrandId = $('#fu_film_brand_id').val();
     if (!modelId || !filmBrandId) return;
 

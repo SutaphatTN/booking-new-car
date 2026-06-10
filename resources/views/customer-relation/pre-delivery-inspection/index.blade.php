@@ -643,9 +643,11 @@
 
       // ── Export Excel ──
       $('#btnExportPdi').on('click', function () {
-        const date = $('#pdiExportDate').val();
-        if (!date) { alert('กรุณาเลือกวันที่'); return; }
-        window.location.href = '{{ route('pre-delivery-inspection.export') }}?date=' + date;
+        const dateFrom = $('#pdiDateFrom').val();
+        const dateTo   = $('#pdiDateTo').val();
+        if (!dateFrom || !dateTo) { alert('กรุณาเลือกวันที่'); return; }
+        if (dateFrom > dateTo) { alert('วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด'); return; }
+        window.location.href = '{{ route('pre-delivery-inspection.export') }}?date_from=' + dateFrom + '&date_to=' + dateTo;
       });
 
     });
@@ -673,7 +675,11 @@
 
           {{-- ── Action bar ── --}}
           <div class="po-filter-bar d-flex align-items-center gap-2 justify-content-end">
-            <input type="date" id="pdiExportDate" class="form-control form-control-sm"
+            <span class="text-muted small">วันส่งมอบ</span>
+            <input type="date" id="pdiDateFrom" class="form-control form-control-sm"
+              value="{{ now()->format('Y-m-d') }}" style="width:155px;">
+            <span class="text-muted small">ถึง</span>
+            <input type="date" id="pdiDateTo" class="form-control form-control-sm"
               value="{{ now()->format('Y-m-d') }}" style="width:155px;">
             <button type="button" id="btnExportPdi" class="btn btn-warning btn-sm">
               <i class="bx bx-file me-1"></i> รายงาน

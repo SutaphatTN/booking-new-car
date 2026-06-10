@@ -155,7 +155,9 @@ class FilmUsageController extends Controller
             return response()->json(['found' => false, 'message' => 'กรุณาระบุเลข VIN']);
         }
 
-        $carOrder = CarOrder::where('vin_number', $vin)->first();
+        $carOrder = CarOrder::where('vin_number', $vin)
+            ->where('car_status', '!=', 'Available')
+            ->first();
         if (!$carOrder) {
             return response()->json(['found' => false, 'message' => 'ไม่พบข้อมูลเลข VIN นี้ในระบบ']);
         }
@@ -194,6 +196,7 @@ class FilmUsageController extends Controller
         }
 
         $carOrders = CarOrder::where('vin_number', 'LIKE', "%{$q}%")
+            ->where('car_status', '!=', 'Available')
             ->limit(8)
             ->get(['id', 'vin_number']);
 
