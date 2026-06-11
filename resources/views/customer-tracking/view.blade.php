@@ -44,8 +44,7 @@
               <div class="d-flex align-items-center flex-wrap gap-2">
                 <i class="bx bx-file-export text-muted"></i>
                 <span class="text-muted small" style="min-width:105px;">รายงานการกรอกข้อมูลประจำวัน :</span>
-                <input type="date" id="reportDailyDate" class="form-control form-control-sm" style="width:140px;"
-                  value="{{ date('Y-m-d') }}">
+                <input type="date" id="reportDailyDate" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="width:155px;" data-no-icon>
                 <button type="button" class="btn btn-success btn-sm" id="btnExportDaily">
                   <i class="bx bx-download me-1"></i>Excel
                 </button>
@@ -69,11 +68,9 @@
             <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
               <i class="bx bx-file-export text-muted"></i>
               <span class="text-muted small" style="min-width:105px;">รายงานเพิ่มลูกค้าประจำวัน :</span>
-              <input type="date" id="reportDateFrom" class="form-control form-control-sm" style="width:140px;"
-                value="{{ date('Y-m-d') }}">
+              <input type="date" id="reportDateFrom" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="width:155px;" data-no-icon>
               <span class="text-muted small">–</span>
-              <input type="date" id="reportDateTo" class="form-control form-control-sm" style="width:140px;"
-                value="{{ date('Y-m-d') }}">
+              <input type="date" id="reportDateTo" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="width:155px;" data-no-icon>
               <button type="button" class="btn btn-success btn-sm" id="btnExportByDate">
                 <i class="bx bx-download me-1"></i>Excel
               </button>
@@ -85,8 +82,7 @@
             <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
               <i class="bx bx-file-export text-muted"></i>
               <span class="text-muted small">รายงานเลยกำหนดติดตาม (ผจก.) :</span>
-              <input type="month" id="reportOverdueMonth" class="form-control form-control-sm" style="width:150px;"
-                value="{{ date('Y-m') }}">
+              <input type="month" id="reportOverdueMonth" class="form-control form-control-sm" value="{{ date('Y-m') }}" style="width:155px;" data-no-icon>
               <button type="button" class="btn btn-success btn-sm" id="btnExportOverdue">
                 <i class="bx bx-download me-1"></i>Excel
               </button>
