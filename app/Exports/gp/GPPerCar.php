@@ -258,7 +258,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         : 0;
 
       return [
-        'deliverDate' => $r->format_deliver_date ?? '-',
+        'deliveryDate' => $r->format_delivery_date ?? '-',
         'firmDate' => $r->financeConfirm?->format_firm_date ?? '-',
         'FNDate' => $r->financeConfirm?->format_date ?? '-',
         'customer' => $customerName,

@@ -80,7 +80,7 @@
       @endphp
       <tr>
         <td>{{ $loop->iteration }}</td>
-        <td>{{ $p['deliverDate'] }}</td>
+        <td>{{ $p['deliveryDate'] }}</td>
         <td>{{ $p['firmDate'] }}</td>
         <td>{{ $p['FNDate'] }}</td>
         <td>{{ $p['customer'] }}</td>
