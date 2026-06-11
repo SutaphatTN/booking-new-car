@@ -729,10 +729,11 @@ function calculateTotal() {
   let comExtra = parseNumber($('#com_extra').val() || 0);
   let comKickback = parseFloat(document.getElementById('kickback').value || 0);
   let comSubsidy = parseNumber($('#com_subsidy').val() || 0);
+  let specialMoney = parseNumber($('#special_money').val() || 0);
   let actually_received = parseNumber($('#actually_received').val() || 0);
 
   // console.log('comFin', comFin);
-  let total = excellent - advance + comFin + comExtra + comKickback + comSubsidy;
+  let total = excellent - advance + comFin + comExtra + comKickback + comSubsidy - specialMoney;
   let diff = total - actually_received;
 
   $('#total').val(formatMoney(total));
@@ -748,6 +749,7 @@ function calculateAllDiff() {
   totalDiff += calculateDiffRow('com_kickback', 'com_kickback_accept', 'com_kickback_diff');
   totalDiff += calculateDiffRow('com_subsidy', 'com_subsidy_accept', 'com_subsidy_diff');
   totalDiff += calculateDiffRow('advance_installment', 'advance_installment_accept', 'advance_installment_diff');
+  totalDiff += calculateDiffRow('special_money', 'special_money_accept', 'special_money_diff');
 
   $('#diff').val(formatMoney(totalDiff));
 }
@@ -764,14 +766,14 @@ function calculateDiffRow(estimateId, acceptId, diffId) {
 }
 
 function bindTotalEvents() {
-  $('#excellent, #advance_installment, #com_fin, #com_extra, #com_kickback, #com_subsidy, #actually_received')
+  $('#excellent, #advance_installment, #com_fin, #com_extra, #com_kickback, #com_subsidy, #special_money, #actually_received')
     .off('input')
     .on('input', function () {
       calculateTotal();
     });
 
   $(
-    '#excellent_accept, #com_fin_accept, #com_extra_accept, #com_kickback_accept, #com_subsidy_accept, #advance_installment_accept'
+    '#excellent_accept, #com_fin_accept, #com_extra_accept, #com_kickback_accept, #com_subsidy_accept, #advance_installment_accept, #special_money_accept'
   )
     .off('input')
     .on('input', function () {

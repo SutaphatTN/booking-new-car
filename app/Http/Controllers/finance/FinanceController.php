@@ -433,6 +433,15 @@ class FinanceController extends Controller
                 'advance_installment_diff' => $request->filled('advance_installment_diff')
                     ? str_replace(',', '', $request->advance_installment_diff)
                     : null,
+                'special_money' => $request->filled('special_money')
+                    ? str_replace(',', '', $request->special_money)
+                    : null,
+                'special_money_accept' => $request->filled('special_money_accept')
+                    ? str_replace(',', '', $request->special_money_accept)
+                    : null,
+                'special_money_diff' => $request->filled('special_money_diff')
+                    ? str_replace(',', '', $request->special_money_diff)
+                    : null,
                 'total' => $request->filled('total')
                     ? str_replace(',', '', $request->total)
                     : null,

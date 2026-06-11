@@ -96,7 +96,7 @@
                     <i class="bx bx-transfer-alt me-1"></i>เปลี่ยนผู้ซื้อแล้ว
                   </span>
                 @endif
-                @if (auth()->user()->role !== 'sale')
+                @if (auth()->user()->role !== 'sale' && !$isHistory)
                   <button type="button" class="btn btn-outline-warning btn-sm ms-auto" id="btnChangeBuyer"
                     data-salecar-id="{{ $saleCar->id }}">
                     <i class="bx bx-transfer-alt me-1"></i> เปลี่ยนผู้ซื้อ
