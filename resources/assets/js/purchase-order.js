@@ -3618,6 +3618,98 @@ $(document).on('click', '.btn-att-delete', function () {
   });
 });
 
+// ── เปลี่ยนผู้ซื้อ ──
+$('#btnChangeBuyer').on('click', function () {
+  $('#cbNewCustomerId').val('');
+  $('#cbSearchInput').val('');
+  $('#cbSearchResults').hide().empty();
+  $('#cbSelectedWrap').hide();
+  $('#cbSelectedName').text('');
+  $('#cbTrackingSelect').html('<option value="">— ไม่ระบุ —</option>');
+  $('#cbBtnConfirm').prop('disabled', true);
+  $('#modalChangeBuyer').modal('show');
+});
+
+let cbSearchTimer;
+$('#cbSearchInput').on('input', function () {
+  const q = $(this).val().trim();
+  clearTimeout(cbSearchTimer);
+  if (q.length < 2) { $('#cbSearchResults').hide().empty(); return; }
+  cbSearchTimer = setTimeout(function () {
+    $.get('/customers/search', { keyword: q, check_tracking: true }, function (data) {
+      const $list = $('#cbSearchResults').empty();
+      const filtered = data.filter(function (c) { return c.has_active_tracking; });
+      if (!filtered.length) {
+        $list.html('<div class="list-group-item text-muted small">ไม่พบลูกค้าที่มีการติดตามในระบบ</div>').show();
+        return;
+      }
+      filtered.forEach(function (c) {
+        const name = (c.PrefixNameTH || '') + ' ' + (c.FirstName || '') + ' ' + (c.LastName || '');
+        const phone = c.Mobilephone1 || '';
+        $('<button type="button" class="list-group-item list-group-item-action">')
+          .html('<span class="fw-semibold">' + name.trim() + '</span>' +
+                (phone ? '<small class="text-muted ms-2">' + phone + '</small>' : ''))
+          .on('click', function () {
+            $('#cbNewCustomerId').val(c.id);
+            $('#cbSelectedName').text(name.trim());
+            $('#cbSearchInput').val(name.trim());
+            $('#cbSearchResults').hide();
+            $('#cbSelectedWrap').show();
+            $('#cbBtnConfirm').prop('disabled', true);
+            $('#cbTrackingError').hide();
+            // โหลด trackings ของลูกค้านี้
+            $.get('/api/purchase-order/customer-trackings', { customer_id: c.id }, function (trackings) {
+              const $sel = $('#cbTrackingSelect').html('<option value="">— เลือกการติดตาม —</option>');
+              trackings.forEach(function (t) {
+                $sel.append('<option value="' + t.id + '">' + t.label + '</option>');
+              });
+            });
+          })
+          .appendTo($list);
+      });
+      $list.show();
+    });
+  }, 300);
+});
+
+$(document).on('click', function (e) {
+  if (!$(e.target).closest('#cbSearchInput, #cbSearchResults').length) {
+    $('#cbSearchResults').hide();
+  }
+});
+
+$('#cbTrackingSelect').on('change', function () {
+  const hasTracking = !!$(this).val();
+  $('#cbBtnConfirm').prop('disabled', !hasTracking);
+  if (hasTracking) $('#cbTrackingError').hide();
+});
+
+$('#cbBtnConfirm').on('click', function () {
+  const $btn = $(this);
+  const salecarId = $('#cbSalecarId').val();
+  const newCustomerId = $('#cbNewCustomerId').val();
+  const newTrackingId = $('#cbTrackingSelect').val();
+  if (!newCustomerId) return;
+  if (!newTrackingId) {
+    $('#cbTrackingError').show();
+    return;
+  }
+  $btn.prop('disabled', true);
+  $.ajax({
+    url: '/purchase-order/' + salecarId + '/change-buyer',
+    type: 'POST',
+    data: { new_customer_id: newCustomerId, new_tracking_id: newTrackingId || null },
+    success: function () {
+      Swal.fire({ icon: 'success', title: 'เปลี่ยนผู้ซื้อสำเร็จ', timer: 1500, showConfirmButton: false })
+        .then(function () { location.reload(); });
+    },
+    error: function () {
+      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถเปลี่ยนผู้ซื้อได้' });
+      $btn.prop('disabled', false);
+    },
+  });
+});
+
 $('#btnSaveTestDrivePO').on('click', function () {
   const $btn = $(this);
   const trackingId = $btn.data('tracking-id');

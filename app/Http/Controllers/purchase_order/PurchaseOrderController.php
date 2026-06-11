@@ -603,7 +603,7 @@ class PurchaseOrderController extends Controller
 
     public function edit($id)
     {
-        $saleCar = Salecar::with(['customer.prefix', 'customer.currentAddress', 'customer.documentAddress', 'customerReferrer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'conStatus', 'provinces', 'remainingPayment.financeInfo', 'campaigns.campaign.type', 'campaigns.campaign.appellation',])->findOrFail($id);
+        $saleCar = Salecar::with(['customer.prefix', 'customer.currentAddress', 'customer.documentAddress', 'customerReferrer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'conStatus', 'provinces', 'remainingPayment.financeInfo', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'originalCustomer.prefix', 'originalTracking',])->findOrFail($id);
         $model = TbCarmodel::all();
         $finances = Finance::all();
         $subModels = TbSubcarmodel::where('model_id', $saleCar->model_id)->get();
@@ -1666,6 +1666,42 @@ class PurchaseOrderController extends Controller
     {
         $saleCar = Salecar::all();
         return view('purchase-order.history.view', compact('saleCar'));
+    }
+
+    public function changeBuyer(Request $request, $id)
+    {
+        $salecar = Salecar::findOrFail($id);
+
+        if (!$salecar->original_customer_id) {
+            $salecar->original_customer_id = $salecar->CusID;
+            $salecar->original_tracking_id = $salecar->tracking_id;
+        }
+
+        $request->validate([
+            'new_customer_id' => 'required|integer',
+            'new_tracking_id' => 'required|integer',
+        ]);
+
+        $salecar->CusID = $request->new_customer_id;
+        $salecar->tracking_id = $request->new_tracking_id;
+        $salecar->save();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function getCustomerTrackings(Request $request)
+    {
+        $customerId = $request->customer_id;
+        $trackings = CustomerTracking::where('customer_id', $customerId)
+            ->whereNull('cancelled_at')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn($t) => [
+                'id'    => $t->id,
+                'label' => 'Tracking #' . $t->id . ($t->customer_date ? ' (' . $t->customer_date . ')' : ''),
+            ]);
+
+        return response()->json($trackings);
     }
 
     public function listHistory(Request $request)

@@ -396,6 +396,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/{id}/preview', [PurchaseOrderController::class, 'preview'])->name('purchase-order.preview');
     Route::get('purchase-order/{id}/proxy/{filename?}', [PurchaseOrderController::class, 'proxyAttachment'])->where('filename', '[^/]+')->name('purchase-order.proxy');
     Route::delete('purchase-order/{id}/attachment', [PurchaseOrderController::class, 'deleteAttachment'])->name('purchase-order.delete-attachment');
+    Route::post('purchase-order/{id}/change-buyer', [PurchaseOrderController::class, 'changeBuyer'])->name('purchase-order.change-buyer');
+    Route::get('/api/purchase-order/customer-trackings', [PurchaseOrderController::class, 'getCustomerTrackings']);
     Route::get('purchase-order/viewPO', [PurchaseOrderController::class, 'viewPO'])->name('purchase-order.viewPO');
     Route::get('purchase-order/list-po', [PurchaseOrderController::class, 'listPO']);
     Route::get('purchase-order/viewBooking', [PurchaseOrderController::class, 'viewBooking'])->name('purchase-order.viewBooking');
