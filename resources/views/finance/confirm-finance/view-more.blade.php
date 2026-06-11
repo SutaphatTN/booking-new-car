@@ -36,7 +36,7 @@
               <div class="mf-section-body">
                 <div class="row g-3">
 
-                  <div class="col-12">
+                  <div class="col-md-12">
                     <label for="customer_fullname" class="mf-label form-label">
                       <i class="bx bx-user ci-sky"></i> ชื่อ - นามสกุล
                     </label>
@@ -45,7 +45,7 @@
                       style="background:#f8fafc;color:#64748b;" disabled>
                   </div>
 
-                  <div class="col-12">
+                  <div class="col-md-12">
                     <label for="model_id" class="mf-label form-label">
                       <i class="bx bx-car ci-sky"></i> รุ่นรถหลัก
                     </label>
@@ -53,33 +53,49 @@
                       style="background:#f8fafc;color:#64748b;" disabled>
                   </div>
 
-                  <div class="col-12">
+                  <div class="col-md-12">
                     <label for="subModel_id" class="mf-label form-label">
-                      <i class="bx bx-barcode ci-sky"></i> รุ่นรถย่อย
+                      <i class="bx bx-git-branch ci-sky"></i> รุ่นรถย่อย
                     </label>
                     <input id="subModel_id" type="text" class="form-control"
                       value="{{ !empty($sale->subModel) ? ($sale->subModel->detail ? $sale->subModel->detail . ' - ' . $sale->subModel->name : $sale->subModel->name) : '' }}"
                       style="background:#f8fafc;color:#64748b;" disabled>
                   </div>
 
-                  <div class="col-md-6">
-                    <label for="option" class="mf-label form-label">
-                      <i class="bx bx-list-check ci-sky"></i> Option
-                    </label>
-                    <input id="option" type="text" class="form-control" value="{{ $sale->option ?? '-' }}"
-                      style="background:#f8fafc;color:#64748b;" disabled>
-                  </div>
+                  @if (auth()->user()->brand == 1)
+                    <div class="col-md-3">
+                      <label for="option" class="mf-label form-label">
+                        <i class="bx bx-list-check ci-sky"></i> Option
+                      </label>
+                      <input id="option" type="text" class="form-control" value="{{ $sale->option ?? '-' }}"
+                        style="background:#f8fafc;color:#64748b;" disabled>
+                    </div>
 
-                  <div class="col-md-6">
-                    <label for="Year" class="mf-label form-label">
-                      <i class="bx bx-calendar ci-sky"></i> ปี
-                    </label>
-                    <input id="Year" type="text" class="form-control" value="{{ $sale->Year ?? '-' }}"
-                      style="background:#f8fafc;color:#64748b;" disabled>
-                  </div>
+                    <div class="col-md-3">
+                      <label for="Year" class="mf-label form-label">
+                        <i class="bx bx-calendar ci-sky"></i> ปี
+                      </label>
+                      <input id="Year" type="text" class="form-control" value="{{ $sale->Year ?? '-' }}"
+                        style="background:#f8fafc;color:#64748b;" disabled>
+                    </div>
 
-                  @if (auth()->user()->brand == 2)
-                    <div class="col-7">
+                    <div class="col-md-6">
+                      <label for="Color" class="mf-label form-label">
+                        <i class="bx bx-palette ci-sky"></i> สี
+                      </label>
+                      <input id="Color" type="text" class="form-control" value="{{ $sale->Color ?? '-' }}"
+                        style="background:#f8fafc;color:#64748b;" disabled>
+                    </div>
+                  @elseif (auth()->user()->brand == 2)
+                    <div class="col-md-3">
+                      <label for="Year" class="mf-label form-label">
+                        <i class="bx bx-calendar ci-sky"></i> ปี
+                      </label>
+                      <input id="Year" type="text" class="form-control" value="{{ $sale->Year ?? '-' }}"
+                        style="background:#f8fafc;color:#64748b;" disabled>
+                    </div>
+
+                    <div class="col-md-4">
                       <label for="gwm_color" class="mf-label form-label">
                         <i class="bx bx-palette ci-sky"></i> สี / สีภายใน
                       </label>
@@ -87,8 +103,24 @@
                         value="{{ $sale->gwmColor->name ?? '-' }} / {{ $sale->interiorColor->name ?? '-' }}"
                         style="background:#f8fafc;color:#64748b;" disabled>
                     </div>
+
+                    <div class="col-md-5">
+                      <label for="Color" class="mf-label form-label">
+                        <i class="bx bx-palette ci-sky"></i> สี
+                      </label>
+                      <input id="Color" type="text" class="form-control" value="{{ $sale->Color ?? '-' }}"
+                        style="background:#f8fafc;color:#64748b;" disabled>
+                    </div>
                   @else
-                    <div class="col-7">
+                    <div class="col-md-6">
+                      <label for="Year" class="mf-label form-label">
+                        <i class="bx bx-calendar ci-sky"></i> ปี
+                      </label>
+                      <input id="Year" type="text" class="form-control" value="{{ $sale->Year ?? '-' }}"
+                        style="background:#f8fafc;color:#64748b;" disabled>
+                    </div>
+
+                    <div class="col-md-6">
                       <label for="Color" class="mf-label form-label">
                         <i class="bx bx-palette ci-sky"></i> สี
                       </label>
@@ -97,15 +129,44 @@
                     </div>
                   @endif
 
-                  <div class="col-5">
-                    <label for="view_alp" class="mf-label form-label">
-                      <i class="bx bx-shield-quarter ci-sky"></i> ประกัน ALP
+                  <div class="col-md-6">
+                    <label for="vin_number" class="mf-label form-label">
+                      <i class="bx bx-barcode ci-sky"></i> Vin-Number
+                    </label>
+                    <input id="vin_number" type="text" class="form-control"
+                      value="{{ $sale->carOrder->vin_number ?? '-' }}" style="background:#f8fafc;color:#64748b;"
+                      disabled>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label for="engine_number" class="mf-label form-label">
+                      <i class="bx bx-cog ci-sky"></i> Engine-Number
+                    </label>
+                    <input id="engine_number" type="text" class="form-control"
+                      value="{{ $sale->carOrder->engine_number ?? '-' }}" style="background:#f8fafc;color:#64748b;"
+                      disabled>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label for="CarSalePriceFinal" class="mf-label form-label">
+                      <i class="bx bx-wallet ci-sky"></i> ราคาขายสุทธิ
                     </label>
                     <div class="input-group">
                       <span class="input-group-text ig-sky">฿</span>
-                      <input id="view_alp" type="text" class="form-control text-end money-input"
-                        value="{{ $sale->remainingPayment->total_alp !== null ? number_format($sale->remainingPayment->total_alp, 2) : '-' }}"
+                      <input id="CarSalePriceFinal" type="text" class="form-control text-end money-input"
+                        value="{{ $sale->CarSalePriceFinal ?? '-' }}" style="background:#f8fafc;color:#64748b;"
                         disabled>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label for="DownPayment" class="mf-label form-label">
+                      <i class="bx bx-money ci-sky"></i> เงินดาวน์
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text ig-sky">฿</span>
+                      <input id="DownPayment" type="text" class="form-control text-end money-input"
+                        value="{{ $sale->DownPayment ?? '-' }}" style="background:#f8fafc;color:#64748b;" disabled>
                     </div>
                   </div>
 
@@ -126,7 +187,7 @@
               <div class="mf-section-body">
                 <div class="row g-3">
 
-                  <div class="col-12">
+                  <div class="col-md-12">
                     <label for="edit_FinanceCompany" class="mf-label form-label">
                       <i class="bx bx-building ci-indigo"></i> ไฟแนนซ์
                     </label>
@@ -162,7 +223,7 @@
                       style="background:#f8fafc;color:#64748b;" disabled>
                   </div>
 
-                  <div class="col-6">
+                  <div class="col-md-6">
                     <label for="view_period" class="mf-label form-label">
                       <i class="bx bx-time ci-indigo"></i> จำนวนเดือนที่ผ่อน
                     </label>
@@ -171,6 +232,30 @@
                       value="{{ $sale->remainingPayment->period ?? '-' }}" style="background:#f8fafc;color:#64748b;"
                       disabled>
                   </div>
+
+                  <div class="col-md-6">
+                      <label for="view_including_alp" class="mf-label form-label">
+                        <i class="bx bx-shield-quarter ci-indigo"></i> ค่างวด (รวม ALP)
+                      </label>
+                      <div class="input-group">
+                        <span class="input-group-text ig-indigo">฿</span>
+                        <input id="view_including_alp" type="text" class="form-control text-end money-input"
+                          value="{{ $sale->remainingPayment->including_alp ?? '-' }}"
+                          style="background:#f8fafc;color:#64748b;" disabled>
+                      </div>
+                    </div>
+
+                    <div class="col-md-6">
+                      <label for="view_alp" class="mf-label form-label">
+                        <i class="bx bx-shield-quarter ci-indigo"></i> ประกัน ALP
+                      </label>
+                      <div class="input-group">
+                        <span class="input-group-text ig-indigo">฿</span>
+                        <input id="view_alp" type="text" class="form-control text-end money-input"
+                          value="{{ $sale->remainingPayment->total_alp ?? '-' }}"
+                          style="background:#f8fafc;color:#64748b;" disabled>
+                      </div>
+                    </div>
 
                   <div class="col-md-6">
                     <label for="date" class="mf-label form-label">
@@ -323,6 +408,24 @@
                         class="form-control form-control-sm text-end form-control-plaintext-mf"
                         name="advance_installment_diff"
                         value="{{ optional($fnCon)->advance_installment_diff !== null ? number_format(optional($fnCon)->advance_installment_diff, 2) : '' }}"
+                        disabled></td>
+                  </tr>
+                  <tr class="border-bottom">
+                    <td class="text-center text-muted">7</td>
+                    <td class="fw-semibold">เงินพิเศษ</td>
+                    <td><input id="special_money" type="text"
+                        class="form-control form-control-sm text-end form-control-plaintext-mf" name="special_money"
+                        value="{{ optional($fnCon)->special_money !== null ? number_format(optional($fnCon)->special_money, 2) : '' }}"
+                        disabled></td>
+                    <td><input id="special_money_accept" type="text"
+                        class="form-control form-control-sm text-end form-control-plaintext-mf"
+                        name="special_money_accept"
+                        value="{{ optional($fnCon)->special_money_accept !== null ? number_format(optional($fnCon)->special_money_accept, 2) : '' }}"
+                        disabled></td>
+                    <td><input id="special_money_diff" type="text"
+                        class="form-control form-control-sm text-end form-control-plaintext-mf"
+                        name="special_money_diff"
+                        value="{{ optional($fnCon)->special_money_diff !== null ? number_format(optional($fnCon)->special_money_diff, 2) : '' }}"
                         disabled></td>
                   </tr>
                   <tr style="background:#fffbeb;border-top:2px solid #d97706;">
