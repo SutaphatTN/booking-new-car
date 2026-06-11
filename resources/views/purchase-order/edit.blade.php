@@ -91,6 +91,17 @@
               <div class="po-section-header">
                 <div class="po-section-icon sky"><i class="bx bx-user"></i></div>
                 <h6 class="po-section-title">ข้อมูลลูกค้า</h6>
+                @if ($saleCar->original_customer_id)
+                  <span class="badge bg-label-warning ms-2" style="font-size:.75rem;">
+                    <i class="bx bx-transfer-alt me-1"></i>เปลี่ยนผู้ซื้อแล้ว
+                  </span>
+                @endif
+                @if (auth()->user()->role !== 'sale')
+                  <button type="button" class="btn btn-outline-warning btn-sm ms-auto" id="btnChangeBuyer"
+                    data-salecar-id="{{ $saleCar->id }}">
+                    <i class="bx bx-transfer-alt me-1"></i> เปลี่ยนผู้ซื้อ
+                  </button>
+                @endif
               </div>
               <div class="po-section-body-edit">
                 <div class="row g-3">
@@ -171,6 +182,45 @@
                 </div>
               </div>
             </div>
+
+            {{-- ผู้ซื้อเดิม (แสดงเมื่อมีการเปลี่ยนผู้ซื้อ) --}}
+            @if ($saleCar->originalCustomer)
+              @php
+                $oc = $saleCar->originalCustomer;
+                $ocName = trim(($oc->prefix->Name_TH ?? '') . ' ' . ($oc->FirstName ?? '') . ' ' . ($oc->LastName ?? ''));
+              @endphp
+              <div class="po-section-edit" style="border:1px solid #fde68a;background:#fffbeb;">
+                <div class="po-section-header" style="background:#fef3c7;">
+                  <div class="po-section-icon amber"><i class="bx bx-user-x"></i></div>
+                  <h6 class="po-section-title" style="color:#92400e;">ผู้ซื้อเดิม (อ้างอิง)</h6>
+                </div>
+                <div class="po-section-body-edit">
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <div class="po-label">ชื่อ - นามสกุล</div>
+                      <div class="info-pill fw-semibold">{{ $ocName ?: '-' }}</div>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="po-label">เลขบัตรประชาชน</div>
+                      <div class="info-pill">{{ $oc->formatted_id_number ?? ($oc->IDNumber ?? '-') }}</div>
+                    </div>
+                    <div class="col-md-2">
+                      <div class="po-label">เบอร์โทรศัพท์</div>
+                      <div class="info-pill">{{ $oc->formatted_mobile ?? ($oc->Mobilephone1 ?? '-') }}</div>
+                    </div>
+                    @if ($saleCar->originalTracking)
+                      <div class="col-md-3">
+                        <div class="po-label">การติดตาม</div>
+                        <a href="{{ route('customer-tracking.show', $saleCar->original_tracking_id) }}"
+                          class="info-pill text-decoration-none" target="_blank">
+                          <i class="bx bx-link-external me-1"></i>Tracking #{{ $saleCar->original_tracking_id }}
+                        </a>
+                      </div>
+                    @endif
+                  </div>
+                </div>
+              </div>
+            @endif
 
             {{-- Section 2 : ข้อมูลรถ --}}
             <div class="po-section-edit">
@@ -2531,5 +2581,69 @@
       }
     </style>
   @endif
+
+  {{-- Modal เปลี่ยนผู้ซื้อ --}}
+  <div class="modal fade" id="modalChangeBuyer" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+      <div class="modal-content border-0 shadow mf-content mf-content--edit">
+        <div class="modal-header mf-header mf-header--edit px-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="mf-hd-icon"><i class="bx bx-transfer-alt fs-5 text-white"></i></div>
+            <div>
+              <h6 class="mb-0 fw-bold text-white">เปลี่ยนผู้ซื้อ</h6>
+              <small class="text-white opacity-75">ผู้ซื้อเดิมจะถูกเก็บไว้เป็นอ้างอิง</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body mf-body">
+
+          {{-- ผู้ซื้อปัจจุบัน --}}
+          <div class="mb-3 p-3 rounded" style="background:#f0f9ff;border:1px solid #bae6fd;">
+            <div class="mf-label form-label mb-1"><i class="bx bx-user ci-sky"></i> ผู้ซื้อปัจจุบัน</div>
+            <div class="fw-semibold" id="cbCurrentBuyer">
+              {{ trim(($saleCar->customer->prefix->Name_TH ?? '') . ' ' . ($saleCar->customer->FirstName ?? '') . ' ' . ($saleCar->customer->LastName ?? '')) }}
+            </div>
+          </div>
+
+          {{-- ค้นหาผู้ซื้อใหม่ --}}
+          <div class="mb-3">
+            <label class="mf-label form-label"><i class="bx bx-search ci-emerald"></i> ค้นหาผู้ซื้อใหม่</label>
+            <input type="text" id="cbSearchInput" class="form-control" placeholder="ชื่อ, เบอร์, บัตรประชาชน...">
+            <div id="cbSearchResults" class="list-group mt-1" style="display:none;max-height:200px;overflow-y:auto;"></div>
+          </div>
+
+          {{-- ผู้ซื้อที่เลือก --}}
+          <div id="cbSelectedWrap" style="display:none;">
+            <div class="mb-3 p-3 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+              <div class="mf-label form-label mb-1"><i class="bx bx-user-check ci-emerald"></i> ผู้ซื้อใหม่ที่เลือก</div>
+              <div class="fw-semibold" id="cbSelectedName"></div>
+            </div>
+            <div class="mb-3" id="cbTrackingWrap">
+              <label class="mf-label form-label"><i class="bx bx-notepad ci-indigo"></i> การติดตาม <span class="text-danger">*</span></label>
+              <select id="cbTrackingSelect" class="form-select">
+                <option value="">— เลือกการติดตาม —</option>
+              </select>
+              <div id="cbTrackingError" class="text-danger small mt-1" style="display:none;">
+                กรุณาเลือกการติดตามของผู้ซื้อใหม่
+              </div>
+            </div>
+          </div>
+
+          <input type="hidden" id="cbNewCustomerId">
+          <input type="hidden" id="cbSalecarId" value="{{ $saleCar->id }}">
+
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="button" class="btn btn-danger px-4" data-bs-dismiss="modal">
+              <i class="bx bx-x me-1"></i>ยกเลิก
+            </button>
+            <button type="button" class="btn btn-warning px-4" id="cbBtnConfirm" disabled>
+              <i class="bx bx-transfer-alt me-1"></i>ยืนยันเปลี่ยนผู้ซื้อ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 @endsection

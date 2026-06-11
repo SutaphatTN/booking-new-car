@@ -8,6 +8,7 @@ namespace App\Models;
 
 use App\Models\Traits\TracksUserActions;
 use App\Models\Traits\UserAccessScope;
+use App\Models\CustomerTracking;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -138,6 +139,7 @@ class Salecar extends Model
 
 	protected $fillable = [
 		'CusID',
+		'original_customer_id',
 		'CarOrderID',
 		'KeyInDate',
 		'SaleID',
@@ -244,7 +246,8 @@ class Salecar extends Model
 		'UserUpdate',
 		'UserDelete',
 		'branch',
-		'tracking_id'
+		'tracking_id',
+		'original_tracking_id',
 	];
 
 	protected $dates = ['deleted_at'];
@@ -257,6 +260,16 @@ class Salecar extends Model
 	public function customer()
 	{
 		return $this->belongsTo(Customer::class, 'CusID', 'id');
+	}
+
+	public function originalCustomer()
+	{
+		return $this->belongsTo(Customer::class, 'original_customer_id', 'id')->withTrashed();
+	}
+
+	public function originalTracking()
+	{
+		return $this->belongsTo(CustomerTracking::class, 'original_tracking_id', 'id');
 	}
 
 	public function customerReferrer()
