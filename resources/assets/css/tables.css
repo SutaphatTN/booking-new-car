@@ -26,6 +26,32 @@
   color: #333;
 }
 
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-inner-spin-button,
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-inner-spin-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+
+.date-icon-wrap {
+  position: relative;
+  width: 155px;
+}
+.date-icon-wrap i {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #f97316;
+  pointer-events: none;
+  font-size: 1rem;
+  z-index: 1;
+}
+.date-icon-wrap .form-control {
+  padding-left: 30px;
+}
+
 th {
   font-size: 1rem !important;
   font-weight: 500 !important;

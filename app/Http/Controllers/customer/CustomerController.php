@@ -53,13 +53,15 @@ class CustomerController extends Controller
 
             $idNumber = preg_replace('/\D/', '', $request->IDNumber);
 
-            $exists = Customer::where('IDNumber', $idNumber)->exists();
+            if ($idNumber) {
+                $exists = Customer::where('IDNumber', $idNumber)->exists();
 
-            if ($exists) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'เลขบัตรประชาชนนี้มีอยู่ในระบบแล้ว'
-                ], 422);
+                if ($exists) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'เลขบัตรประชาชนนี้มีอยู่ในระบบแล้ว'
+                    ], 422);
+                }
             }
 
             $mobilephone1 = preg_replace('/\D/', '', $request->Mobilephone1);
