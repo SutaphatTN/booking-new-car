@@ -33,7 +33,8 @@ class Campaign extends Model
 		'endDate',
 		'startYear',
 		'endYear',
-		'active'
+		'active',
+		'archived'
 	];
 
 	protected $dates = ['deleted_at'];
