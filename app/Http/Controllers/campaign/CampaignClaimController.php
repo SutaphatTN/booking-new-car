@@ -34,7 +34,9 @@ class CampaignClaimController extends Controller
         $statusFilter = $request->input('status_filter', '');
 
         $base = Salecampaign::query()
-            ->whereIn('CampaignType', self::ONTOP_TYPE_IDS);
+            ->whereIn('CampaignType', self::ONTOP_TYPE_IDS)
+            // เฉพาะรถที่ส่งมอบแล้ว (con_status = 5)
+            ->whereHas('saleCar', fn($q) => $q->where('con_status', 5));
 
         // ฟิลเตอร์สถานะ (สรุปผลการตรวจสอบ)
         // ค่าว่าง = แสดงเฉพาะรายการที่ยังไม่มีสถานะ, มีค่า = กรองตามสถานะนั้น

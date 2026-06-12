@@ -93,7 +93,8 @@ class CampaignClaimExport implements FromView, WithTitle, WithStyles, WithEvents
         $rows = Salecampaign::query()
             ->whereIn('CampaignType', self::ONTOP_TYPE_IDS)
             ->whereHas('saleCar', function ($q) {
-                $q->whereDate('DeliveryDate', '>=', $this->fromDate)
+                $q->where('con_status', 5) // เฉพาะรถที่ส่งมอบแล้ว
+                    ->whereDate('DeliveryDate', '>=', $this->fromDate)
                     ->whereDate('DeliveryDate', '<=', $this->toDate);
             })
             ->with([
