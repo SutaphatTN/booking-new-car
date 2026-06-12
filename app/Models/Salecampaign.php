@@ -59,4 +59,19 @@ class Salecampaign extends Model
 	{
 		return $this->belongsTo(Campaign::class, 'CampaignID', 'id');
 	}
+
+	public function saleCar()
+	{
+		return $this->belongsTo(Salecar::class, 'SaleID', 'id');
+	}
+
+	public function campaignType()
+	{
+		return $this->belongsTo(TbCampaignType::class, 'CampaignType', 'id');
+	}
+
+	public function claim()
+	{
+		return $this->hasOne(CampaignClaim::class, 'salecampaign_id', 'id');
+	}
 }

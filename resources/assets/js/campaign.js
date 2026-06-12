@@ -399,6 +399,60 @@ $(document).on('click', '.btnDeleteCam', function () {
   });
 });
 
+//archive cam (ปิดการใช้งาน)
+$(document).on('click', '.btnArchiveCam', function () {
+  let id = $(this).data('id');
+
+  Swal.fire({
+    title: 'ปิดการใช้งานแคมเปญ?',
+    text: 'แคมเปญนี้จะถูกซ่อนจากตาราง แต่ข้อมูลยังถูกจัดเก็บไว้',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'ใช่, ปิดการใช้งาน',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (result.isConfirmed) {
+      $.ajax({
+        url: '/campaign/' + id + '/archive',
+        type: 'POST',
+
+        success: function (res) {
+          if (res.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'สำเร็จ',
+              text: res.message,
+              timer: 2000,
+              showConfirmButton: true
+            });
+
+            campaignTable.ajax.reload(null, false);
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'เกิดข้อผิดพลาด',
+              text: res.message || 'ไม่สามารถปิดการใช้งานได้'
+            });
+          }
+        },
+        error: function (xhr) {
+          let errMsg = 'ไม่สามารถปิดการใช้งานได้';
+          if (xhr.responseJSON && xhr.responseJSON.message) {
+            errMsg = xhr.responseJSON.message;
+          }
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: errMsg
+          });
+        }
+      });
+    }
+  });
+});
+
 // campaign Appellation
 //view : table campaign appellation
 let campaignAppellationTable;

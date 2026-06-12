@@ -217,6 +217,11 @@
               "url": "campaign",
               "name": "ข้อมูลแคมเปญ",
               "slug": "campaign.index"
+            },
+            {
+              "url": "campaign/claim",
+              "name": "รายการใช้แคมเปญ",
+              "slug": "campaign.claim"
             }
           ]
         },

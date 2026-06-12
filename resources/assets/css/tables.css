@@ -3,6 +3,7 @@
 #ctLoadingOverlay,
 #poLoadingOverlay,
 #campaignLoadingOverlay,
+#campaignClaimLoadingOverlay,
 #accessoryLoadingOverlay,
 #historyLoadingOverlay {
   display: none;

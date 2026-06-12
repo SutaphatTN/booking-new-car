@@ -4,6 +4,9 @@
 <button class="btn btn-icon btn-warning btnEditCam" data-id="{{ $c->id }}" title="แก้ไข">
     <i class="bx bx-edit"></i>
 </button>
+<button class="btn btn-icon btn-secondary btnArchiveCam" data-id="{{ $c->id }}" title="ปิดการใช้งาน">
+    <i class="bx bx-archive-in"></i>
+</button>
 <button class="btn btn-icon btn-danger btnDeleteCam" data-id="{{ $c->id }}" title="ลบ">
     <i class="bx bx-trash"></i>
 </button>

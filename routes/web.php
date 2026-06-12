@@ -7,6 +7,7 @@ use App\Http\Controllers\auth\RegisterController;
 use App\Http\Controllers\auth\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\campaign\CampaignController;
+use App\Http\Controllers\campaign\CampaignClaimController;
 use App\Http\Controllers\car_order\CarOrderController;
 use App\Http\Controllers\color\ColorController;
 use App\Http\Controllers\customer\CustomerController;
@@ -130,7 +131,14 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('campaign/list', [CampaignController::class, 'listCampaign']);
     Route::get('campaign/{id}/view-more', [CampaignController::class, 'viewMore'])->name('campaign.viewMore');
     Route::post('/campaign/status-cam', [CampaignController::class, 'statusCam'])->name('campaign.status-cam');
+    Route::post('/campaign/{id}/archive', [CampaignController::class, 'archiveCam'])->name('campaign.archive');
     Route::get('/api/campaign/sub-model/{model_id}', [CampaignController::class, 'getSubModelCam']);
+    //campaign claim (รายการใช้แคมเปญ On-Top)
+    Route::get('campaign/claim', [CampaignClaimController::class, 'index'])->name('campaign.claim');
+    Route::get('campaign/claim/list', [CampaignClaimController::class, 'listClaim']);
+    Route::get('campaign/claim/report', [CampaignClaimController::class, 'exportReport'])->name('campaign.claim.report');
+    Route::get('campaign/claim/{id}/edit', [CampaignClaimController::class, 'editClaim'])->name('campaign.claim.edit');
+    Route::post('campaign/claim/{id}/update', [CampaignClaimController::class, 'updateClaim'])->name('campaign.claim.update');
     //name campaign
     Route::get('campaign/appellation', [CampaignController::class, 'viewAppellation'])->name('campaign.appellation');
     Route::get('campaign/appellation/list', [CampaignController::class, 'listAppellation']);

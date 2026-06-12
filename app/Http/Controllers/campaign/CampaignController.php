@@ -28,7 +28,7 @@ class CampaignController extends Controller
         $length = (int) ($request->length ?? 10);
         $search = trim($request->input('search.value', ''));
 
-        $base = Campaign::query();
+        $base = Campaign::query()->where('archived', 0);
 
         $recordsTotal = (clone $base)->count();
 
@@ -130,6 +130,25 @@ class CampaignController extends Controller
         $cam->save();
 
         return response()->json(['success' => true, 'message' => 'อัปเดตสถานะเรียบร้อยแล้ว']);
+    }
+
+    public function archiveCam($id)
+    {
+        try {
+            $cam = Campaign::findOrFail($id);
+            $cam->archived = 1;
+            $cam->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ปิดการใช้งานแคมเปญเรียบร้อยแล้ว'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            ], 500);
+        }
     }
 
     public function create()
