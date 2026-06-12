@@ -35,6 +35,8 @@
       <th>RI</th>
       <th>ลูกค้าจ่ายเพิ่ม</th>
       <th>แคมเปญ</th>
+      <th>ประเภทแคมเปญ</th>
+      <th>แคมเปญ Om-Top</th>
       <th>แคมเปญ On-Top</th>
       <th>แคมเปญ Other</th>
       <th>แคมเปญ CK</th>
@@ -113,6 +115,8 @@
         <td>{{ $p['ri'] }}</td>
         <td>{{ $p['acc_extra'] }}</td>
         <td>{{ $p['campaign'] }}</td>
+        <td>{{ $p['campaign_detail_1'] }}</td>
+        <td>{{ $p['campaign_detail_2'] }}</td>
         <td>{{ $p['campaign_top'] }}</td>
         <td>{{ $p['campaign_other'] }}</td>
         <td>{{ $p['campaign_ck'] }}</td>
@@ -158,7 +162,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="53" align="center">ไม่มีข้อมูล</td>
+        <td colspan="55" align="center">ไม่มีข้อมูล</td>
       </tr>
     @endforelse
 

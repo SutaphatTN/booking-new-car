@@ -22,7 +22,8 @@ class GPQuery
             'remainingPayment.financeInfo',
             'salePurType',
             'saleUser.branchInfo',
-            'campaigns.campaign.type'
+            'campaigns.campaign.type',
+            'campaigns.campaign.appellation'
         ])
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
