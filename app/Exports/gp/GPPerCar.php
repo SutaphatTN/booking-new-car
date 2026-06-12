@@ -100,16 +100,14 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
           'AA',
           'AB',
           'AC',
-          'AD',
-          'AE',
           'AF',
           'AG',
           'AH',
           'AI',
           'AJ',
           'AK',
-          'AP',
-          'AQ',
+          'AL',
+          'AM',
           'AR',
           'AS',
           'AT',
@@ -120,6 +118,8 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
           'AY',
           'AZ',
           'BA',
+          'BB',
+          'BC',
         ];
 
         foreach ($numberColumns as $col) {
@@ -198,6 +198,21 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       $campaign_top = $r->campaigns->filter(fn($c) => $c->campaign?->type?->type == 2)->sum('CashSupportFinal');
       $campaign_other = $r->campaigns->filter(fn($c) => $c->campaign?->type?->type == 3)->sum('CashSupportFinal');
       $campaign_ck = $r->campaigns->filter(fn($c) => $c->campaign?->type?->type == 4)->sum('CashSupportFinal');
+
+      $group1Ids = array_merge(range(1, 8), range(14, 22));
+      $group2Ids = array_merge(range(10, 12), range(23, 25));
+
+      $campaign_detail_1 = $r->campaigns
+        ->filter(fn($c) => in_array($c->campaign?->campaign_type, $group1Ids))
+        ->map(fn($c) => ($c->campaign?->appellation?->name ?? '') . ' (' . ($c->campaign?->type?->name ?? '') . ')')
+        ->filter()
+        ->implode(' / ');
+
+      $campaign_detail_2 = $r->campaigns
+        ->filter(fn($c) => in_array($c->campaign?->campaign_type, $group2Ids))
+        ->map(fn($c) => ($c->campaign?->appellation?->name ?? '') . ' (' . ($c->campaign?->type?->name ?? '') . ')')
+        ->filter()
+        ->implode(' / ');
 
       //com ต่างๆ
       $com_fin = $r->financeConfirm?->com_fin ?? 0;
@@ -290,6 +305,8 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         'campaign_top' => $campaign_top ?? 0,
         'campaign_other' => $campaign_other ?? 0,
         'campaign_ck' => $campaign_ck ?? 0,
+        'campaign_detail_1' => $campaign_detail_1 ?? '-',
+        'campaign_detail_2' => $campaign_detail_2 ?? '-',
         'total_rev' => $total_rev ?? 0,
         'total_discount' => $total_discount ?? 0,
         'com_sale' => $com_sale ?? 0,

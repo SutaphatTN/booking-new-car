@@ -82,7 +82,7 @@
             <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
               <i class="bx bx-file-export text-muted"></i>
               <span class="text-muted small">รายงานเลยกำหนดติดตาม (ผจก.) :</span>
-              <input type="month" id="reportOverdueMonth" class="form-control form-control-sm" value="{{ date('Y-m') }}" style="width:155px;" data-no-icon>
+              <input type="month" id="reportOverdueMonth" class="form-control form-control-sm" value="{{ date('Y-m') }}" style="width:155px;">
               <button type="button" class="btn btn-success btn-sm" id="btnExportOverdue">
                 <i class="bx bx-download me-1"></i>Excel
               </button>

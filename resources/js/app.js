@@ -18,7 +18,7 @@ function getDateIconColor(el) {
   const sectionIcon = el.closest('.po-section-edit, .po-section, .mf-section, .approval-card')
     ?.querySelector('.po-section-icon, .mf-section-icon, .approval-icon');
   if (sectionIcon) {
-    const m = sectionIcon.className.match(/\b(rose|sky|emerald|indigo|amber|purple|orange)\b/);
+    const m = sectionIcon.className.match(/\b(rose|sky|emerald|indigo|amber|purple|orange|pink)\b/);
     if (m) return m[1];
   }
   return 'sky';

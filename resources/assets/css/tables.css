@@ -26,10 +26,12 @@
   color: #333;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="date"]::-webkit-inner-spin-button,
-input[type="month"]::-webkit-calendar-picker-indicator,
-input[type="month"]::-webkit-inner-spin-button {
+/* ซ่อนไอคอนปฏิทินเฉพาะ input ที่ทำเครื่องหมาย data-no-icon ไว้ (เช่น ตัวกรองในหน้า list)
+   input อื่น ๆ ทั้งหมดจะคงไอคอน native ไว้ เพื่อให้คลิกเปิดตัวเลือกวันที่/เดือนได้ */
+input[data-no-icon][type="date"]::-webkit-calendar-picker-indicator,
+input[data-no-icon][type="date"]::-webkit-inner-spin-button,
+input[data-no-icon][type="month"]::-webkit-calendar-picker-indicator,
+input[data-no-icon][type="month"]::-webkit-inner-spin-button {
   display: none !important;
   -webkit-appearance: none !important;
 }
