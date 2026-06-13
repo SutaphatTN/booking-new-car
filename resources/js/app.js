@@ -14,7 +14,15 @@ function getDateIconColor(el) {
     const m = labelEl.innerHTML.match(/ci-(\w+)/);
     if (m) return m[1];
   }
-  // 2. ดูจาก section header icon ที่ใกล้ที่สุด
+  // 2. ดูจากไอคอนของการ์ดที่อยู่ใกล้ที่สุด (date-card หรือ po-sub-card)
+  const cardIcon = el
+    .closest('.date-card, .po-sub-card')
+    ?.querySelector('.date-card-icon, .sub-icon');
+  if (cardIcon) {
+    const m = cardIcon.className.match(/\b(rose|sky|emerald|indigo|amber|purple|orange|pink)\b/);
+    if (m) return m[1];
+  }
+  // 3. ดูจาก section header icon ที่ใกล้ที่สุด
   const sectionIcon = el.closest('.po-section-edit, .po-section, .mf-section, .approval-card')
     ?.querySelector('.po-section-icon, .mf-section-icon, .approval-icon');
   if (sectionIcon) {

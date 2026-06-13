@@ -1448,7 +1448,7 @@
                                 <div class="col-md-4">
                                   <div class="po-sub-card mb-0 h-100">
                                     <div class="po-sub-card-header">
-                                      <div class="sub-icon" style="background:#fef3c7;color:#d97706;"><i
+                                      <div class="sub-icon amber"><i
                                           class="bx bx-tag"></i></div>
                                       ราคาและการปรับราคา
                                     </div>
@@ -1497,7 +1497,7 @@
                                 <div class="col-md-4">
                                   <div class="po-sub-card mb-0 h-100">
                                     <div class="po-sub-card-header">
-                                      <div class="sub-icon" style="background:#d1fae5;color:#059669;"><i
+                                      <div class="sub-icon emerald"><i
                                           class="bx bx-down-arrow-circle"></i></div>
                                       เงินดาวน์
                                     </div>
@@ -1550,7 +1550,7 @@
                                 <div class="col-md-4">
                                   <div class="po-sub-card mb-0 h-100">
                                     <div class="po-sub-card-header">
-                                      <div class="sub-icon" style="background:#e0f2fe;color:#0284c7;"><i
+                                      <div class="sub-icon sky"><i
                                           class="bx bx-calendar-event"></i></div>
                                       วันออกรถ
                                     </div>
@@ -1605,7 +1605,7 @@
                               {{-- Card: วันที่และประเภทการจ่ายเงินค่าออกรถ --}}
                               <div class="po-sub-card mt-3">
                                 <div class="po-sub-card-header">
-                                  <div class="sub-icon" style="background:#e0f2fe;color:#0284c7;"><i
+                                  <div class="sub-icon sky"><i
                                       class="bx bx-calendar-check"></i></div>
                                   วันที่และประเภทการจ่ายเงินค่าออกรถ
                                 </div>
@@ -1760,7 +1760,7 @@
                                 <div class="col-md-6">
                                   <div class="po-sub-card mb-0 h-100">
                                     <div class="po-sub-card-header">
-                                      <div class="sub-icon" style="background:#ede9fe;color:#6366f1;"><i
+                                      <div class="sub-icon indigo"><i
                                           class="bx bx-buildings"></i></div>
                                       ข้อมูลไฟแนนซ์
                                     </div>
@@ -1846,7 +1846,7 @@
                                 <div class="col-md-6">
                                   <div class="po-sub-card mb-0 h-100">
                                     <div class="po-sub-card-header">
-                                      <div class="sub-icon" style="background:#fef3c7;color:#d97706;"><i
+                                      <div class="sub-icon amber"><i
                                           class="bx bx-calculator"></i></div>
                                       ค่างวด / ALP / PO
                                     </div>
@@ -2082,7 +2082,7 @@
 
                               <div class="col-md-4">
                                 <div class="date-card">
-                                  <div class="date-card-icon" style="background:#e0f2fe;color:#0284c7;">
+                                  <div class="date-card-icon sky">
                                     <i class="bx bx-file-blank"></i>
                                   </div>
                                   <div class="date-card-body">
@@ -2095,7 +2095,7 @@
 
                               <div class="col-md-4">
                                 <div class="date-card">
-                                  <div class="date-card-icon" style="background:#d1fae5;color:#059669;">
+                                  <div class="date-card-icon emerald">
                                     <i class="bx bx-car"></i>
                                   </div>
                                   <div class="date-card-body">
@@ -2111,7 +2111,7 @@
                               @if ($userRole == 'admin' || $userRole == 'audit' || $userRole == 'manager' || $userRole == 'md')
                                 <div class="col-md-4">
                                   <div class="date-card">
-                                    <div class="date-card-icon" style="background:#fee2e2;color:#dc2626;">
+                                    <div class="date-card-icon rose">
                                       <i class="bx bx-purchase-tag"></i>
                                     </div>
                                     <div class="date-card-body">

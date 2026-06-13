@@ -1082,6 +1082,30 @@
   font-size: 0.85rem;
   flex-shrink: 0;
 }
+.po-sub-card-header .sub-icon.indigo {
+  background: #ede9fe;
+  color: #6366f1;
+}
+.po-sub-card-header .sub-icon.sky {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+.po-sub-card-header .sub-icon.emerald {
+  background: #d1fae5;
+  color: #059669;
+}
+.po-sub-card-header .sub-icon.amber {
+  background: #fef3c7;
+  color: #d97706;
+}
+.po-sub-card-header .sub-icon.rose {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.po-sub-card-header .sub-icon.pink {
+  background: #f8e0ec;
+  color: #ec4899;
+}
 
 .po-sub-card-body {
   padding: 14px 16px;
@@ -1163,6 +1187,30 @@
   flex-shrink: 0;
   font-size: 1.1rem;
   margin-top: 2px;
+}
+.date-card-icon.indigo {
+  background: #ede9fe;
+  color: #6366f1;
+}
+.date-card-icon.sky {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+.date-card-icon.emerald {
+  background: #d1fae5;
+  color: #059669;
+}
+.date-card-icon.amber {
+  background: #fef3c7;
+  color: #d97706;
+}
+.date-card-icon.rose {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.date-card-icon.pink {
+  background: #f8e0ec;
+  color: #ec4899;
 }
 
 .date-card-body {
