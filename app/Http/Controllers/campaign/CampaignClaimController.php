@@ -56,7 +56,8 @@ class CampaignClaimController extends Controller
                             ->orWhere('LastName', 'like', "%{$search}%");
                     })
                     ->orWhereHas('saleCar.saleUser', fn($q) => $q->where('name', 'like', "%{$search}%"))
-                    ->orWhereHas('saleCar.model', fn($q) => $q->where('Name_TH', 'like', "%{$search}%"));
+                    // ->orWhereHas('saleCar.model', fn($q) => $q->where('Name_TH', 'like', "%{$search}%"));
+                    ->orWhereHas('saleCar.carOrder', fn($q) => $q->where('vin_number', 'like', "%{$search}%"));
             });
         }
 
@@ -68,6 +69,7 @@ class CampaignClaimController extends Controller
                 'saleCar.customer',
                 'saleCar.saleUser',
                 'saleCar.model',
+                'saleCar.carOrder',
                 'claim.status',
             ])
             ->orderByDesc('id')
@@ -85,6 +87,7 @@ class CampaignClaimController extends Controller
 
             $saleName = $sc->saleCar?->saleUser?->name ?? '-';
             $model = $sc->saleCar?->model?->Name_TH ?? '-';
+            $vinNumber = $sc->saleCar?->carOrder?->vin_number ?? '-';
             $typeName = $sc->campaignType?->name ?? '-';
 
             $used = (float) ($sc->CashSupportFinal ?? 0);
@@ -101,7 +104,8 @@ class CampaignClaimController extends Controller
                 'No' => $no,
                 'customer' => $customer,
                 'saleName' => $saleName,
-                'model' => $model,
+                // 'model' => $model,
+                'vin_number' => $vinNumber,
                 'campaignType' => $typeName,
                 'delivery_date' => $sc->saleCar?->format_delivery_date ?? '-',
                 'used' => number_format($used, 2),
