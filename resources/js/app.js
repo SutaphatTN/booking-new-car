@@ -29,6 +29,7 @@ function initDatePicker(el) {
   const val = el.value;
   const color = getDateIconColor(el);
   const isSmall = el.classList.contains('form-control-sm');
+  const isRequired = el.hasAttribute('required');
   el.setAttribute('type', 'text');
   el.setAttribute('readonly', 'readonly');
   flatpickr(el, {
@@ -38,8 +39,14 @@ function initDatePicker(el) {
     altInputClass: isSmall ? 'form-control form-control-sm' : 'form-control',
     allowInput: false,
     defaultDate: val || null,
+    onChange: function (_, __, fp) {
+      // flatpickr fields can't use native `required` (readonly), so we validate
+      // them manually and toggle `is-invalid`; clear it once a date is picked.
+      if (fp.altInput) fp.altInput.classList.remove('is-invalid');
+    },
     onReady: function (_, __, fp) {
       const alt = fp.altInput;
+      if (isRequired) alt.setAttribute('required', 'required');
       if ('noIcon' in el.dataset) {
         if (el.style.width) alt.style.width = el.style.width;
         return;
@@ -65,6 +72,38 @@ function initDatePicker(el) {
 function initAllDatePickers(root) {
   (root || document).querySelectorAll('input[type="date"]').forEach(initDatePicker);
 }
+
+// flatpickr converts date inputs to hidden/readonly fields, which makes the
+// browser skip their `required` during constraint validation. Patch the form
+// validation methods so required date pickers are enforced everywhere the app
+// already calls form.checkValidity()/reportValidity().
+const _checkValidity = HTMLFormElement.prototype.checkValidity;
+const _reportValidity = HTMLFormElement.prototype.reportValidity;
+
+function firstEmptyRequiredDate(form) {
+  return Array.from(form.querySelectorAll('input[required]')).find(
+    el => el._flatpickr && !el.value
+  );
+}
+
+HTMLFormElement.prototype.checkValidity = function () {
+  return _checkValidity.call(this) && !firstEmptyRequiredDate(this);
+};
+
+HTMLFormElement.prototype.reportValidity = function () {
+  // Let the browser report any native invalid fields first.
+  if (!_reportValidity.call(this)) return false;
+  const empty = firstEmptyRequiredDate(this);
+  if (empty) {
+    const fp = empty._flatpickr;
+    const alt = fp.altInput || empty;
+    alt.classList.add('is-invalid');
+    alt.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    fp.open();
+    return false;
+  }
+  return true;
+};
 
 document.addEventListener('DOMContentLoaded', function () {
   initAllDatePickers();
