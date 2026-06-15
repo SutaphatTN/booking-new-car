@@ -6,13 +6,12 @@ $.ajaxSetup({
 //  LIST PAGE
 // ============================================================
 if ($('.gwmIncentiveTable').length) {
-
   let gwmIncentiveTable;
 
   function getFilterParams() {
     return {
       month: $('#filterMonth').val() || window.gwmIncentiveCurrentMonth,
-      year:  $('#filterYear').val()  || window.gwmIncentiveCurrentYear,
+      year: $('#filterYear').val() || window.gwmIncentiveCurrentYear
     };
   }
 
@@ -27,7 +26,7 @@ if ($('.gwmIncentiveTable').length) {
         data: function (d) {
           const f = getFilterParams();
           d.month = f.month;
-          d.year  = f.year;
+          d.year = f.year;
         }
       },
       columns: [
@@ -76,18 +75,21 @@ if ($('.gwmIncentiveTable').length) {
   $(document).on('click', '.btnAddGwmIncentive', function () {
     const subId = $(this).data('sub-id');
     const month = $(this).data('month');
-    const year  = $(this).data('year');
+    const year = $(this).data('year');
     window.location.href = '/gwm-incentive/create?sub_id=' + subId + '&month=' + month + '&year=' + year;
   });
 
   // blur focus
   $(document).on('hide.bs.modal', '.editGwmIncentive', function () {
-    setTimeout(() => { document.activeElement.blur(); $('body').trigger('focus'); }, 1);
+    setTimeout(() => {
+      document.activeElement.blur();
+      $('body').trigger('focus');
+    }, 1);
   });
 
   // EDIT modal
   $(document).on('click', '.btnEditGwmIncentive', function () {
-    const id   = $(this).data('id');
+    const id = $(this).data('id');
     const $btn = $(this);
 
     $.get('/gwm-incentive/' + id + '/edit', function (html) {
@@ -95,33 +97,45 @@ if ($('.gwmIncentiveTable').length) {
       const $modal = $('.editGwmIncentive');
       $modal.modal('show');
 
-      $modal.find('.btnUpdateGwmIncentive').off('click').on('click', function (e) {
-        e.preventDefault();
-        const form = $modal.find('form')[0];
-        if (!form.checkValidity()) { form.reportValidity(); return; }
+      $modal
+        .find('.btnUpdateGwmIncentive')
+        .off('click')
+        .on('click', function (e) {
+          e.preventDefault();
+          const form = $modal.find('form')[0];
+          if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+          }
 
-        $.ajax({
-          url: form.action,
-          type: 'POST',
-          data: new FormData(form),
-          processData: false,
-          contentType: false,
-          beforeSend: function () {
-            $modal.modal('hide');
-            Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            $btn.prop('disabled', true);
-          },
-          success: function (res) {
-            Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: res.message, timer: 2000, showConfirmButton: true });
-            gwmIncentiveTable.ajax.reload(null, false);
-          },
-          error: function (xhr) {
-            $modal.modal('hide');
-            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด!', text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้' });
-          },
-          complete: function () { $btn.prop('disabled', false); }
+          $.ajax({
+            url: form.action,
+            type: 'POST',
+            data: new FormData(form),
+            processData: false,
+            contentType: false,
+            beforeSend: function () {
+              $modal.modal('hide');
+              Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+              $btn.prop('disabled', true);
+            },
+            success: function (res) {
+              Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: res.message, timer: 2000, showConfirmButton: true });
+              gwmIncentiveTable.ajax.reload(null, false);
+            },
+            error: function (xhr) {
+              $modal.modal('hide');
+              Swal.fire({
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาด!',
+                text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้'
+              });
+            },
+            complete: function () {
+              $btn.prop('disabled', false);
+            }
+          });
         });
-      });
     });
   });
 
@@ -129,9 +143,14 @@ if ($('.gwmIncentiveTable').length) {
   $(document).on('click', '.btnDeleteGwmIncentive', function () {
     const id = $(this).data('id');
     Swal.fire({
-      title: 'คุณแน่ใจหรือไม่?', text: 'ต้องการลบข้อมูลนี้ใช่หรือไม่?', icon: 'warning',
-      showCancelButton: true, confirmButtonColor: '#6c5ffc', cancelButtonColor: '#d33',
-      confirmButtonText: 'ใช่, ลบเลย!', cancelButtonText: 'ยกเลิก'
+      title: 'คุณแน่ใจหรือไม่?',
+      text: 'ต้องการลบข้อมูลนี้ใช่หรือไม่?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#6c5ffc',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'ใช่, ลบเลย!',
+      cancelButtonText: 'ยกเลิก'
     }).then(result => {
       if (!result.isConfirmed) return;
       $.ajax({
@@ -144,7 +163,11 @@ if ($('.gwmIncentiveTable').length) {
           }
         },
         error: function (xhr) {
-          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message || 'ไม่สามารถลบข้อมูลได้' });
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: xhr.responseJSON?.message || 'ไม่สามารถลบข้อมูลได้'
+          });
         }
       });
     });
@@ -155,14 +178,22 @@ if ($('.gwmIncentiveTable').length) {
 //  CREATE PAGE
 // ============================================================
 if ($('.gwm-create-page').length) {
-
   let selectedSubId = window.gwmCreatePreSubId || null;
-  const fieldNames  = ['fixed', 'lt70', 'gte70_lte85', 'gt85_lte100', 'gt100_lte120', 'gte120', 'max_val', 'monthly_target'];
+  const fieldNames = [
+    'fixed',
+    'lt70',
+    'gte70_lte85',
+    'gt85_lte100',
+    'gt100_lte120',
+    'gte120',
+    'max_val',
+    'monthly_target'
+  ];
 
   function getCreatePeriod() {
     return {
       month: $('#createMonth').val(),
-      year:  $('#createYear').val(),
+      year: $('#createYear').val()
     };
   }
 
@@ -177,7 +208,9 @@ if ($('.gwm-create-page').length) {
       if (res.data) {
         // มีข้อมูลอยู่แล้ว → pre-fill และแจ้ง
         fieldNames.forEach(f => $('#field_' + f).val(res.data[f] ?? 0));
-        $('#formStatusMsg').html('<span class="text-warning"><i class="bx bx-info-circle me-1"></i>มีข้อมูลเดือนนี้แล้ว — บันทึกจะ<strong>อัปเดต</strong>ข้อมูลเดิม</span>');
+        $('#formStatusMsg').html(
+          '<span class="text-warning"><i class="bx bx-info-circle me-1"></i>มีข้อมูลเดือนนี้แล้ว — บันทึกจะ<strong>อัปเดต</strong>ข้อมูลเดิม</span>'
+        );
         // เก็บ id ไว้เพื่อ update
         $('#gwmCreateForm').data('existing-id', res.data.id);
       } else {
@@ -251,12 +284,12 @@ if ($('.gwm-create-page').length) {
     const existingId = $('#gwmCreateForm').data('existing-id');
     const $btn = $(this);
 
-    let url  = window.gwmIncentiveStoreUrl;
+    let url = window.gwmIncentiveStoreUrl;
     let method = 'POST';
 
     // ถ้ามีข้อมูลเดิม → update แทน
     if (existingId) {
-      url    = '/gwm-incentive/' + existingId;
+      url = '/gwm-incentive/' + existingId;
       method = 'POST'; // Laravel ใช้ _method=PUT
       if (!$('#gwmCreateForm').find('input[name="_method"]').length) {
         $('#gwmCreateForm').append('<input type="hidden" name="_method" value="PUT">');
@@ -283,9 +316,15 @@ if ($('.gwm-create-page').length) {
         loadExisting(selectedSubId);
       },
       error: function (xhr) {
-        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้' });
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้'
+        });
       },
-      complete: function () { $btn.prop('disabled', false); }
+      complete: function () {
+        $btn.prop('disabled', false);
+      }
     });
   });
 
@@ -307,16 +346,15 @@ if ($('.gwm-create-page').length) {
 //  VIEW PAGE (inline editable table + KPI)
 // ============================================================
 if ($('.gwm-view-page').length) {
-
   function saveRow($row) {
     if ($row.data('saving')) return;
     $row.data('saving', true);
 
     const data = {
-      _token:         $('meta[name="csrf-token"]').attr('content'),
+      _token: $('meta[name="csrf-token"]').attr('content'),
       subcarmodel_id: $row.data('sub-id'),
-      month:          $row.data('month'),
-      year:           $row.data('year'),
+      month: $row.data('month'),
+      year: $row.data('year')
     };
 
     $row.find('.gwm-row-input').each(function () {
@@ -326,7 +364,7 @@ if ($('.gwm-view-page').length) {
     $row.removeClass('row-saved row-error');
 
     $.ajax({
-      url:  window.gwmIncentiveUpsertUrl,
+      url: window.gwmIncentiveUpsertUrl,
       type: 'POST',
       data: data,
       success: function () {
@@ -336,9 +374,15 @@ if ($('.gwm-view-page').length) {
       error: function (xhr) {
         $row.addClass('row-error');
         setTimeout(() => $row.removeClass('row-error'), 1500);
-        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้' });
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้'
+        });
       },
-      complete: function () { $row.data('saving', false); }
+      complete: function () {
+        $row.data('saving', false);
+      }
     });
   }
 
@@ -346,34 +390,43 @@ if ($('.gwm-view-page').length) {
   $(document).on('blur', '.gwm-row-input', function () {
     const $row = $(this).closest('tr.gwm-row');
     clearTimeout($row.data('blur-timer'));
-    $row.data('blur-timer', setTimeout(function () {
-      if ($row.find(':focus').length === 0) {
-        saveRow($row);
-      }
-    }, 150));
+    $row.data(
+      'blur-timer',
+      setTimeout(function () {
+        if ($row.find(':focus').length === 0) {
+          saveRow($row);
+        }
+      }, 150)
+    );
   });
 
   // Save KPI
   $(document).on('click', '#btnSaveKpi', function () {
-    const $btn    = $(this);
+    const $btn = $(this);
     const formData = new FormData($('#gwmKpiForm')[0]);
 
     Swal.fire({ title: 'กำลังบันทึก KPI...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     $btn.prop('disabled', true);
 
     $.ajax({
-      url:  window.gwmKpiStoreUrl,
+      url: window.gwmKpiStoreUrl,
       type: 'POST',
       data: formData,
       processData: false,
       contentType: false,
       success: function (res) {
-        Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 1500, showConfirmButton: false });
+        Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 1500, showConfirmButton: true });
       },
       error: function (xhr) {
-        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message || 'ไม่สามารถบันทึก KPI ได้' });
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: xhr.responseJSON?.message || 'ไม่สามารถบันทึก KPI ได้'
+        });
       },
-      complete: function () { $btn.prop('disabled', false); }
+      complete: function () {
+        $btn.prop('disabled', false);
+      }
     });
   });
 }

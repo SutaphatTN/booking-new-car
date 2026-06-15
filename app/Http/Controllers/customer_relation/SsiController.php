@@ -294,7 +294,10 @@ class SsiController extends Controller
     public function markComplete($salecarId)
     {
         $ssiRecord = SsiRecord::where('salecar_id', $salecarId)->firstOrFail();
-        $ssiRecord->update(['completed_at' => now()]);
+        $ssiRecord->update([
+            'completed_at' => now(),
+            'completed_by' => Auth::id(),
+        ]);
 
         return response()->json(['success' => true, 'message' => 'บันทึกเสร็จสิ้นเรียบร้อยแล้ว']);
     }

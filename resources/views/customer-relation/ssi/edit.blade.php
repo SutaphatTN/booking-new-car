@@ -189,7 +189,7 @@
           headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
           data: { delivery_location: location, delivery_province: province },
           success: function () {
-            Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1200, showConfirmButton: false });
+            Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1200, showConfirmButton: true });
             // sync ตัวแปร deliveryLocation และ toggle Q11
             toggleQ11Row(location);
           },

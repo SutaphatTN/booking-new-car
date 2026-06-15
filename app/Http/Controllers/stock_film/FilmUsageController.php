@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\stock_film;
 
 use App\Http\Controllers\Controller;
+use App\Models\CarBrand;
 use App\Models\CarOrder;
 use App\Models\FilmBrand;
+use App\Models\InsuranceCompany;
 use App\Models\FilmPriceList;
 use App\Models\FilmStock;
 use App\Models\FilmUsage;
@@ -35,6 +37,13 @@ class FilmUsageController extends Controller
             $totalSqft  = $r->items->sum('sqft_used');
             $totalPrice = $r->items->sum('price');
 
+            // BP ใช้ ยี่ห้อ+รุ่น+ปี (กรอกเอง), ทั่วไปใช้รุ่นรถจากระบบ
+            if ($r->type === 'bp') {
+                $modelText = trim(implode(' ', array_filter([$r->car_brand, $r->car_model, $r->car_year]))) ?: '-';
+            } else {
+                $modelText = $r->model?->Name_TH ?? '-';
+            }
+
             return [
                 'No'          => $index + 1,
                 'type'        => $typeBadge,
@@ -42,7 +51,7 @@ class FilmUsageController extends Controller
                 'vin'         => $r->vin ?? '-',
                 'customer'    => $r->customer_name ?? '-',
                 'sale_person' => $r->sale_person ?? '-',
-                'model'       => $r->model?->Name_TH ?? '-',
+                'model'       => $modelText,
                 'film_brand'  => $r->filmBrand?->name ?? '-',
                 'total_sqft'  => $totalSqft > 0 ? number_format($totalSqft, 2) : '-',
                 'total_price' => $totalPrice > 0 ? number_format($totalPrice, 2) : '-',
@@ -56,14 +65,23 @@ class FilmUsageController extends Controller
     public function create()
     {
         $user         = Auth::user();
+        // brand 3 ใช้รายชื่อเซลล์ร่วมกับ brand 1
         $brandForSale = $user->brand == 3 ? 1 : $user->brand;
         $models       = TbCarmodel::orderBy('Name_TH')->get();
         $filmBrands   = FilmBrand::orderBy('id')->get();
+        $carBrands    = CarBrand::where('is_active', 1)->orderBy('sort_order')->orderBy('name')->get();
+        $insurances   = InsuranceCompany::where('is_active', 1)->orderBy('sort_order')->orderBy('name')->get();
         $saleUsers    = User::whereIn('role', ['sale', 'lead_sale'])
             ->where('brand', $brandForSale)
             ->orderBy('name')
             ->get(['id', 'name']);
-        return view('stock-film.usage.create', compact('models', 'filmBrands', 'saleUsers'));
+        return view('stock-film.usage.create', compact('models', 'filmBrands', 'carBrands', 'insurances', 'saleUsers'));
+    }
+
+    public function viewMore(int $id)
+    {
+        $usage = FilmUsage::with(['model', 'filmBrand', 'items.filmStock'])->findOrFail($id);
+        return view('stock-film.usage.view-more', compact('usage'));
     }
 
     public function store(Request $request)
@@ -82,6 +100,11 @@ class FilmUsageController extends Controller
                 'customer_name'=> $request->customer_name,
                 'sale_person'  => $request->sale_person,
                 'model_id'     => $request->model_id ?: null,
+                'car_brand'        => $request->car_brand ?: null,
+                'car_model'        => $request->car_model ?: null,
+                'car_year'         => $request->car_year ?: null,
+                'customer_source'  => $request->customer_source ?: null,
+                'insurance_company'=> $request->customer_source === 'insurance' ? ($request->insurance_company ?: null) : null,
                 'film_brand_id'=> $request->film_brand_id ?: null,
                 'brand'        => $user->brand ?? null,
                 'branch'       => $user->branch ?? null,
@@ -251,6 +274,18 @@ class FilmUsageController extends Controller
             'sqft'               => $pl->sqft,
             'price'              => $pl->price,
             'commission'         => $pl->commission,
+            'sqft_windshield'    => $pl->sqft_windshield,
+            'sqft_rear'          => $pl->sqft_rear,
+            'sqft_door_front'    => $pl->sqft_door_front,
+            'sqft_door_rear1'    => $pl->sqft_door_rear1,
+            'sqft_quarter'       => $pl->sqft_quarter,
+            'sqft_around'        => $pl->sqft_around,
+            'has_door_rear2'     => $pl->has_door_rear2,
+            'sqft_door_rear2'    => $pl->sqft_door_rear2,
+            'has_3window'        => $pl->has_3window,
+            'sqft_3window'       => $pl->sqft_3window,
+            'price_3window'      => $pl->price_3window,
+            'commission_3window' => $pl->commission_3window,
             'has_sunroof'        => $pl->has_sunroof,
             'sqft_sunroof'       => $pl->sqft_sunroof,
             'price_sunroof'      => $pl->price_sunroof,

@@ -25,6 +25,7 @@ class StockFilmController extends Controller
     public function listStock()
     {
         $stocks = FilmStock::with('filmBrand')
+            ->whereNull('audit_completed_at') // ตรวจสอบเสร็จสิ้นแล้ว = ซ่อนจากลิสต์
             ->orderBy('withdrawal_date', 'desc')
             ->orderBy('brand_group')
             ->orderBy('film_brand_id')
@@ -144,12 +145,18 @@ class StockFilmController extends Controller
         try {
             $stock = FilmStock::findOrFail($id);
 
+            // เก็บ id ผู้ตรวจสอบเมื่อมีการบันทึกผลตรวจนับ
+            $hasInspection = $request->filled('inspection_date')
+                || $request->filled('inspection_qty')
+                || $request->filled('inspection_result');
+
             $stock->update([
                 'part_no'           => $request->part_no ?: null,
                 'initial_qty'       => $request->initial_qty,
                 'inspection_date'   => $this->toGregorian($request->inspection_date ?: null),
                 'inspection_qty'    => $request->filled('inspection_qty') ? $request->inspection_qty : null,
                 'inspection_result' => $request->inspection_result ?: null,
+                'inspection_by'     => $hasInspection ? Auth::id() : null,
             ]);
 
             return response()->json(['success' => true, 'message' => 'แก้ไขข้อมูลเรียบร้อยแล้ว']);
@@ -163,6 +170,27 @@ class StockFilmController extends Controller
         try {
             FilmStock::findOrFail($id)->delete();
             return response()->json(['success' => true, 'message' => 'ลบข้อมูลเรียบร้อยแล้ว']);
+        } catch (\Exception) {
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
+        }
+    }
+
+    // ── ตรวจสอบเสร็จสิ้น (เฉพาะ admin / audit) → ซ่อนออกจากลิสต์ ──
+    public function auditComplete(int $id)
+    {
+        $user = Auth::user();
+        if (!in_array($user->role, ['admin', 'audit'])) {
+            return response()->json(['success' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
+        }
+
+        try {
+            $stock = FilmStock::findOrFail($id);
+            $stock->update([
+                'audit_completed_at' => now(),
+                'audit_completed_by' => $user->id,
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'ทำเครื่องหมายตรวจสอบเสร็จสิ้นแล้ว']);
         } catch (\Exception) {
             return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
         }

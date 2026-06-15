@@ -45,11 +45,29 @@ class FilmPriceListController extends Controller
         $model       = TbCarmodel::findOrFail($modelId);
         $records     = FilmPriceList::where('model_id', $modelId)->with('filmBrand')->get();
         $filmBrands  = FilmBrand::orderBy('id')->get();
-        $hasSunroof  = $records->where('has_sunroof', true)->isNotEmpty();
-        $sqft        = $records->first()?->sqft;
-        $sqftSunroof = $records->first()?->sqft_sunroof;
+        $first = $records->first();
 
-        return view('stock-film.price-list.edit-model', compact('model', 'records', 'filmBrands', 'hasSunroof', 'sqft', 'sqftSunroof'));
+        $hasSunroof    = $records->where('has_sunroof', true)->isNotEmpty();
+        $hasDoorRear2  = $records->where('has_door_rear2', true)->isNotEmpty();
+        $has3window    = $records->where('has_3window', true)->isNotEmpty();
+
+        $sqft            = $first?->sqft;
+        $sqftWindshield  = $first?->sqft_windshield;
+        $sqftRear        = $first?->sqft_rear;
+        $sqftDoorFront   = $first?->sqft_door_front;
+        $sqftDoorRear1   = $first?->sqft_door_rear1;
+        $sqftQuarter     = $first?->sqft_quarter;
+        $sqftAround      = $first?->sqft_around;
+        $sqftDoorRear2   = $first?->sqft_door_rear2;
+        $sqftSunroof     = $first?->sqft_sunroof;
+        $sqft3window     = $first?->sqft_3window;
+
+        return view('stock-film.price-list.edit-model', compact(
+            'model', 'records', 'filmBrands',
+            'hasSunroof', 'hasDoorRear2', 'has3window',
+            'sqft', 'sqftWindshield', 'sqftRear', 'sqftDoorFront', 'sqftDoorRear1', 'sqftQuarter', 'sqftAround',
+            'sqftDoorRear2', 'sqftSunroof', 'sqft3window'
+        ));
     }
 
     public function updateModel(Request $request, int $modelId)
@@ -70,6 +88,9 @@ class FilmPriceListController extends Controller
                 ->delete();
 
             $count = 0;
+            $hasDoorRear2 = $request->boolean('has_door_rear2');
+            $has3window   = $request->boolean('has_3window');
+
             foreach ($brands as $b) {
                 if (empty($b['film_brand_id'])) continue;
 
@@ -77,12 +98,24 @@ class FilmPriceListController extends Controller
                     ['model_id' => $modelId, 'film_brand_id' => $b['film_brand_id'], 'brand' => $user->brand ?? null],
                     [
                         'sqft'               => $request->sqft,
-                        'price'              => !empty($b['price']) ? str_replace(',', '', $b['price']) : null,
-                        'commission'         => !empty($b['commission']) ? str_replace(',', '', $b['commission']) : null,
+                        'sqft_windshield'    => $request->sqft_windshield ?: null,
+                        'sqft_rear'          => $request->sqft_rear ?: null,
+                        'sqft_door_front'    => $request->sqft_door_front ?: null,
+                        'sqft_door_rear1'    => $request->sqft_door_rear1 ?: null,
+                        'sqft_quarter'       => $request->sqft_quarter ?: null,
+                        'sqft_around'        => $request->sqft_around ?: null,
+                        'has_door_rear2'     => $hasDoorRear2,
+                        'sqft_door_rear2'    => $hasDoorRear2 ? $request->sqft_door_rear2 : null,
                         'has_sunroof'        => $hasSunroof,
                         'sqft_sunroof'       => $hasSunroof ? $request->sqft_sunroof : null,
+                        'has_3window'        => $has3window,
+                        'sqft_3window'       => $has3window ? $request->sqft_3window : null,
+                        'price'              => !empty($b['price']) ? str_replace(',', '', $b['price']) : null,
+                        'commission'         => !empty($b['commission']) ? str_replace(',', '', $b['commission']) : null,
                         'price_sunroof'      => $hasSunroof && !empty($b['price_sunroof']) ? str_replace(',', '', $b['price_sunroof']) : null,
                         'commission_sunroof' => $hasSunroof && !empty($b['commission_sunroof']) ? str_replace(',', '', $b['commission_sunroof']) : null,
+                        'price_3window'      => $has3window && !empty($b['price_3window']) ? str_replace(',', '', $b['price_3window']) : null,
+                        'commission_3window' => $has3window && !empty($b['commission_3window']) ? str_replace(',', '', $b['commission_3window']) : null,
                         'branch'             => $user->branch ?? null,
                         'userZone'           => $user->userZone ?? null,
                         'userInsert'         => $user->id ?? null,
@@ -115,6 +148,9 @@ class FilmPriceListController extends Controller
                 return response()->json(['success' => false, 'message' => 'กรุณาเพิ่มยี่ห้อฟิล์มอย่างน้อย 1 รายการ']);
             }
 
+            $hasDoorRear2 = $request->boolean('has_door_rear2');
+            $has3window   = $request->boolean('has_3window');
+
             $count = 0;
             foreach ($brands as $b) {
                 if (empty($b['film_brand_id'])) continue;
@@ -127,12 +163,24 @@ class FilmPriceListController extends Controller
                     ],
                     [
                         'sqft'               => $request->sqft,
-                        'price'              => !empty($b['price']) ? str_replace(',', '', $b['price']) : null,
-                        'commission'         => !empty($b['commission']) ? str_replace(',', '', $b['commission']) : null,
+                        'sqft_windshield'    => $request->sqft_windshield ?: null,
+                        'sqft_rear'          => $request->sqft_rear ?: null,
+                        'sqft_door_front'    => $request->sqft_door_front ?: null,
+                        'sqft_door_rear1'    => $request->sqft_door_rear1 ?: null,
+                        'sqft_quarter'       => $request->sqft_quarter ?: null,
+                        'sqft_around'        => $request->sqft_around ?: null,
+                        'has_door_rear2'     => $hasDoorRear2,
+                        'sqft_door_rear2'    => $hasDoorRear2 ? $request->sqft_door_rear2 : null,
                         'has_sunroof'        => $hasSunroof,
                         'sqft_sunroof'       => $hasSunroof ? $request->sqft_sunroof : null,
+                        'has_3window'        => $has3window,
+                        'sqft_3window'       => $has3window ? $request->sqft_3window : null,
+                        'price'              => !empty($b['price']) ? str_replace(',', '', $b['price']) : null,
+                        'commission'         => !empty($b['commission']) ? str_replace(',', '', $b['commission']) : null,
                         'price_sunroof'      => $hasSunroof && !empty($b['price_sunroof']) ? str_replace(',', '', $b['price_sunroof']) : null,
                         'commission_sunroof' => $hasSunroof && !empty($b['commission_sunroof']) ? str_replace(',', '', $b['commission_sunroof']) : null,
+                        'price_3window'      => $has3window && !empty($b['price_3window']) ? str_replace(',', '', $b['price_3window']) : null,
+                        'commission_3window' => $has3window && !empty($b['commission_3window']) ? str_replace(',', '', $b['commission_3window']) : null,
                         'branch'             => $user->branch ?? null,
                         'userZone'           => $user->userZone ?? null,
                         'userInsert'         => $user->id ?? null,

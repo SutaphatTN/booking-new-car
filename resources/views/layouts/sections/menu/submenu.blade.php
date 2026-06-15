@@ -15,7 +15,27 @@
         @continue
       @endif
 
-      @if (in_array($userRole, ['bp', 'cs']) && !in_array($submenu->slug, ['accessory', 'accessory.partner', 'invoice.index', 'invoice.create', 'invoice.view-export-report']))
+      @php
+        $bpCsAllowed = ['accessory', 'accessory.partner', 'invoice.index', 'invoice.create', 'invoice.view-export-report'];
+        $stockFilmSlugs = ['stock-film', 'film-price-list', 'film-usage'];
+        $stockFilmLeaf = ['stock-film.index', 'film-price-list.index', 'film-usage.index'];
+
+        $isAllowedForBpCs = !is_array($submenu->slug) && in_array($submenu->slug, $bpCsAllowed);
+
+        // ให้ role = bp เห็นเมนู Stock Film (ทั้งหัวข้อหลักและเมนูย่อย) ในการตั้งค่าด้วย
+        $isStockFilm = is_array($submenu->slug)
+            ? !empty(array_intersect($submenu->slug, $stockFilmSlugs))
+            : in_array($submenu->slug, $stockFilmLeaf);
+        $isAllowedForBp = $userRole === 'bp' && $isStockFilm;
+
+        // role sp เห็นเฉพาะเมนู Stock Film และ ประดับยนต์ (ทุกเมนูย่อย)
+        $accessorySlugs = ['accessory', 'accessory.partner', 'accessory.index', 'accessory.view-export-accessory'];
+        $isAccessory = !is_array($submenu->slug) && in_array($submenu->slug, $accessorySlugs);
+      @endphp
+      @if (in_array($userRole, ['bp', 'cs']) && !$isAllowedForBpCs && !$isAllowedForBp)
+        @continue
+      @endif
+      @if ($userRole === 'sp' && !$isStockFilm && !$isAccessory)
         @continue
       @endif
 

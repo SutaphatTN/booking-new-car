@@ -33,18 +33,17 @@ $(document).on('blur', '.money-input-dec', function () {
 
 // ── Live calc final cost & per sqft ───────────────────────
 function recalcRow(id) {
-  const roll     = stripCommas($('#cost_roll_' + id).val());
+  const roll = stripCommas($('#cost_roll_' + id).val());
   const discount = stripCommas($('#cost_discount_display_' + id).val()); // positive
   const rollSize = stripCommas($('#gs_roll_size').val());
-  const final    = roll - discount; // roll minus discount
+  const final = roll - discount; // roll minus discount
 
   // update hidden field (negative discount)
   $('#cost_discount_' + id).val(discount > 0 ? -discount : 0);
 
   $('#final_cost_' + id).text(final.toLocaleString('th-TH', { minimumFractionDigits: 2 }));
-  $('#per_sqft_' + id).text(rollSize > 0
-    ? (final / rollSize).toLocaleString('th-TH', { minimumFractionDigits: 2 })
-    : '-'
+  $('#per_sqft_' + id).text(
+    rollSize > 0 ? (final / rollSize).toLocaleString('th-TH', { minimumFractionDigits: 2 }) : '-'
   );
 }
 
@@ -53,36 +52,43 @@ $(document).on('input blur', '.cost-roll, .cost-discount-display', function () {
 });
 
 $(document).on('input blur', '#gs_roll_size', function () {
-  $('.cost-roll').each(function () { recalcRow($(this).data('id')); });
+  $('.cost-roll').each(function () {
+    recalcRow($(this).data('id'));
+  });
 });
 
 // ── Save Global Settings ───────────────────────────────────
 $(document).on('click', '.btnSaveGlobal', function () {
   const form = document.getElementById('formGlobal');
-  if (!form.checkValidity()) { form.reportValidity(); return; }
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
 
   const $btn = $(this);
   $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>กำลังบันทึก...');
 
   const data = {
-    _token:         $('meta[name="csrf-token"]').attr('content'),
-    roll_size:      stripCommas($('#gs_roll_size').val()),
-    waste_pct:      $('#gs_waste_pct').val(),
-    gp_pct:         $('#gs_gp_pct').val(),
-    commission_pct: $('#gs_commission_pct').val(),
+    _token: $('meta[name="csrf-token"]').attr('content'),
+    roll_size: stripCommas($('#gs_roll_size').val()),
+    waste_pct: $('#gs_waste_pct').val(),
+    gp_pct: $('#gs_gp_pct').val(),
+    commission_pct: $('#gs_commission_pct').val()
   };
 
   $.post('/film-settings/global', data, function (res) {
     if (res.success) {
-      Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 1500, showConfirmButton: false });
+      Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 1500, showConfirmButton: true });
     } else {
       Swal.fire({ icon: 'warning', title: 'แจ้งเตือน', text: res.message });
     }
-  }).fail(function () {
-    Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'กรุณาติดต่อแอดมิน' });
-  }).always(function () {
-    $btn.prop('disabled', false).html('<i class="bx bx-save me-1"></i> บันทึก Global Settings');
-  });
+  })
+    .fail(function () {
+      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'กรุณาติดต่อแอดมิน' });
+    })
+    .always(function () {
+      $btn.prop('disabled', false).html('<i class="bx bx-save me-1"></i> บันทึก Global Settings');
+    });
 });
 
 // ── Save Film Costs ────────────────────────────────────────
@@ -99,7 +105,7 @@ $(document).on('click', '.btnSaveCosts', function () {
   $('.cost-roll').each(function () {
     const id = $(this).data('id');
     data['costs[' + id + '][roll_price]'] = stripCommas($(this).val());
-    data['costs[' + id + '][discount]']   = stripCommas($('#cost_discount_' + id).val());
+    data['costs[' + id + '][discount]'] = stripCommas($('#cost_discount_' + id).val());
   });
 
   const $btn = $(this);
@@ -107,13 +113,15 @@ $(document).on('click', '.btnSaveCosts', function () {
 
   $.post('/film-settings/costs', data, function (res) {
     if (res.success) {
-      Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 1500, showConfirmButton: false });
+      Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 1500, showConfirmButton: true });
     } else {
       Swal.fire({ icon: 'warning', title: 'แจ้งเตือน', text: res.message });
     }
-  }).fail(function () {
-    Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'กรุณาติดต่อแอดมิน' });
-  }).always(function () {
-    $btn.prop('disabled', false).html('<i class="bx bx-save me-1"></i> บันทึกต้นทุนฟิล์ม');
-  });
+  })
+    .fail(function () {
+      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'กรุณาติดต่อแอดมิน' });
+    })
+    .always(function () {
+      $btn.prop('disabled', false).html('<i class="bx bx-save me-1"></i> บันทึกต้นทุนฟิล์ม');
+    });
 });
