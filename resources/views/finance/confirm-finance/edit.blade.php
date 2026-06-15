@@ -288,6 +288,13 @@
                         value="{{ old('firm_date', $fnCon->firm_date) }}">
                     </div>
 
+                    <div class="col-md-12">
+                      <label for="remark" class="mf-label form-label">
+                        <i class="bx bx-note ci-indigo"></i> หมายเหตุ
+                      </label>
+                      <textarea id="remark" class="form-control" name="remark" rows="2">{{ old('remark', $fnCon->remark) }}</textarea>
+                    </div>
+
                   </div>
                 </div>
               </div>

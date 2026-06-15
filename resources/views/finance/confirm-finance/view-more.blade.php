@@ -273,6 +273,14 @@
                       value="{{ $fnCon->firm_date ?? '-' }}" style="background:#f8fafc;color:#64748b;" disabled>
                   </div>
 
+                  <div class="col-md-12">
+                    <label for="remark" class="mf-label form-label">
+                      <i class="bx bx-note ci-indigo"></i> หมายเหตุ
+                    </label>
+                    <textarea id="remark" class="form-control" name="remark" rows="2"
+                      style="background:#f8fafc;color:#64748b;" disabled>{{ $fnCon->remark ?? '' }}</textarea>
+                  </div>
+
                 </div>
               </div>
             </div>

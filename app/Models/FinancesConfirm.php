@@ -44,6 +44,7 @@ class FinancesConfirm extends Model
         'diff',
         'firm_date',
         'date',
+        'remark',
         'userZone',
 		'brand',
         'branch',

@@ -453,6 +453,7 @@ class FinanceController extends Controller
                     : null,
                 'firm_date' => $this->toGregorian($request->firm_date),
                 'date' => $request->date,
+                'remark' => $request->remark,
                 'userZone' => Auth::user()->userZone ?? null,
                 'brand' => Auth::user()->brand ?? null,
                 'branch' => Auth::user()->branch ?? null,
