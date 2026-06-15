@@ -153,7 +153,7 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
                 }
                 $answered = collect($fields)->filter(fn($f) => !is_null($ass->{$f}) && $ass->{$f} > 0);
                 $sum = $answered->sum(fn($f) => (int) $ass->{$f});
-                $ssiScore = $answered->isNotEmpty() ? round(($sum / $maxScore) * 100, 2) : 0;
+                $ssiScore = $answered->isNotEmpty() ? min(round(($sum / $maxScore) * 100, 2), 100) : 0;
             }
 
             $pdi = $s->preDeliveryInspection;
