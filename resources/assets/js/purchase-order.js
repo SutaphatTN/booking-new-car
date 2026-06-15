@@ -212,7 +212,7 @@ $(document).ready(function () {
     }
 
     const rect = this.getBoundingClientRect();
-    $dd.css({ top: (rect.bottom + 4) + 'px', left: rect.left + 'px' });
+    $dd.css({ top: rect.bottom + 4 + 'px', left: rect.left + 'px' });
     $dd.addClass('show');
     $(this).addClass('active');
     buildSaleFilterList();
@@ -447,8 +447,12 @@ $(document).ready(function () {
     return p.join('-');
   }
 
-  $('#qcpo_phone').on('input', function () { this.value = formatPhonePO(this.value); });
-  $('#qcpo_id_number').on('input', function () { this.value = formatIDCardPO(this.value); });
+  $('#qcpo_phone').on('input', function () {
+    this.value = formatPhonePO(this.value);
+  });
+  $('#qcpo_id_number').on('input', function () {
+    this.value = formatIDCardPO(this.value);
+  });
 
   $(document).on('click', '#btnOpenAddCustomerPO', function () {
     $('#qcpo_prefix').val('');
@@ -463,14 +467,18 @@ $(document).ready(function () {
   });
 
   $(document).on('click', '#btnSaveQuickCustomerPO', function () {
-    const prefix   = $('#qcpo_prefix').val();
-    const first    = $('#qcpo_first_name').val().trim();
-    const last     = $('#qcpo_last_name').val().trim();
-    const phone    = $('#qcpo_phone').val().trim();
+    const prefix = $('#qcpo_prefix').val();
+    const first = $('#qcpo_first_name').val().trim();
+    const last = $('#qcpo_last_name').val().trim();
+    const phone = $('#qcpo_phone').val().trim();
     const idNumber = $('#qcpo_id_number').val().trim();
 
     if (!prefix || !first || !last || !phone) {
-      Swal.fire({ icon: 'warning', title: 'กรุณากรอกข้อมูลให้ครบ', text: 'คำนำหน้า ชื่อ นามสกุล และเบอร์โทร จำเป็นต้องกรอก' });
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณากรอกข้อมูลให้ครบ',
+        text: 'คำนำหน้า ชื่อ นามสกุล และเบอร์โทร จำเป็นต้องกรอก'
+      });
       return;
     }
 
@@ -3254,9 +3262,9 @@ $(document).ready(function () {
     processing: false,
     ajax: '/purchase-order/list-history',
     columns: [
-      { data: 'No',     orderable: false },
+      { data: 'No', orderable: false },
       { data: 'FullName', orderable: false },
-      { data: 'code',   orderable: false },
+      { data: 'code', orderable: false },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
@@ -3507,8 +3515,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Brand 1 — auto-fill bank transfer details when bank radio is selected
 const TRANSFER_BANK_INFO = {
-  kasikorn: { bank: 'กสิกร',       branch: 'โลตัส กระบี่', no: '5892179370' },
-  scb:      { bank: 'ไทยพาณิชย์', branch: 'โลตัส กระบี่', no: '4048731821' },
+  kasikorn: { bank: 'กสิกร', branch: 'โลตัส กระบี่', no: '5892179370' },
+  scb: { bank: 'ไทยพาณิชย์', branch: 'โลตัส กระบี่', no: '4048731821' }
 };
 
 // name pattern: "reservation_bank_select" / "remaining_bank_select" / "delivery_bank_select"
@@ -3524,11 +3532,11 @@ $(document).on('change', 'input[name$="_bank_select"]', function () {
 // file attachment preview
 function fileCardStyle(name) {
   const ext = (name.split('.').pop() || '').toLowerCase();
-  if (ext === 'pdf')                        return { bg: '#ef4444', label: 'PDF' };
-  if (['xlsx','xls','csv'].includes(ext))   return { bg: '#16a34a', label: ext.toUpperCase() };
-  if (['doc','docx'].includes(ext))         return { bg: '#2563eb', label: ext.toUpperCase() };
-  if (['ppt','pptx'].includes(ext))         return { bg: '#ea580c', label: ext.toUpperCase() };
-  if (['zip','rar','7z'].includes(ext))     return { bg: '#7c3aed', label: ext.toUpperCase() };
+  if (ext === 'pdf') return { bg: '#ef4444', label: 'PDF' };
+  if (['xlsx', 'xls', 'csv'].includes(ext)) return { bg: '#16a34a', label: ext.toUpperCase() };
+  if (['doc', 'docx'].includes(ext)) return { bg: '#2563eb', label: ext.toUpperCase() };
+  if (['ppt', 'pptx'].includes(ext)) return { bg: '#ea580c', label: ext.toUpperCase() };
+  if (['zip', 'rar', '7z'].includes(ext)) return { bg: '#7c3aed', label: ext.toUpperCase() };
   return { bg: '#64748b', label: ext ? ext.toUpperCase() : 'FILE' };
 }
 
@@ -3540,9 +3548,10 @@ function renderFilePreviews(input, $preview) {
     const st = isImg ? null : fileCardStyle(file.name);
     const $item = $(
       `<div class="position-relative d-inline-block m-1" style="width:80px;vertical-align:top;">
-        ${isImg
-          ? `<img src="${objUrl}" class="rounded border" style="width:80px;height:80px;object-fit:cover;">`
-          : `<div class="d-flex flex-column align-items-center justify-content-center rounded text-white" style="width:80px;height:80px;background:${st.bg};">
+        ${
+          isImg
+            ? `<img src="${objUrl}" class="rounded border" style="width:80px;height:80px;object-fit:cover;">`
+            : `<div class="d-flex flex-column align-items-center justify-content-center rounded text-white" style="width:80px;height:80px;background:${st.bg};">
                <i class="bx bx-file" style="font-size:1.8rem;"></i>
                <span class="badge bg-white mt-1" style="font-size:.6rem;color:${st.bg};font-weight:700;">${st.label}</span>
              </div>
@@ -3564,13 +3573,13 @@ function renderFilePreviews(input, $preview) {
 }
 
 [
-  ['attachments_cash',   'preview_cash'],
+  ['attachments_cash', 'preview_cash'],
   ['attachments_credit', 'preview_credit'],
-  ['attachments_check',  'preview_check'],
+  ['attachments_check', 'preview_check'],
   ['attachments_check2', 'preview_check2'],
-  ['attachments_bank',   'preview_bank'],
-  ['attachments_bank2',  'preview_bank2'],
-  ['attachments_edit',   'preview_edit'],
+  ['attachments_bank', 'preview_bank'],
+  ['attachments_bank2', 'preview_bank2'],
+  ['attachments_edit', 'preview_edit']
 ].forEach(function ([inputId, previewId]) {
   $(document).on('change', '#' + inputId, function () {
     renderFilePreviews(this, $('#' + previewId));
@@ -3581,7 +3590,7 @@ function renderFilePreviews(input, $preview) {
 $(document).on('click', '.btn-att-delete', function () {
   const $item = $(this).closest('.att-item');
   const index = $item.data('index');
-  const url   = $item.data('delete-url');
+  const url = $item.data('delete-url');
 
   Swal.fire({
     title: 'ลบไฟล์นี้?',
@@ -3591,7 +3600,7 @@ $(document).on('click', '.btn-att-delete', function () {
     confirmButtonColor: '#6c5ffc',
     cancelButtonColor: '#d33',
     confirmButtonText: 'ใช่, ลบเลย!',
-    cancelButtonText: 'ยกเลิก',
+    cancelButtonText: 'ยกเลิก'
   }).then(function (result) {
     if (!result.isConfirmed) return;
 
@@ -3609,11 +3618,11 @@ $(document).on('click', '.btn-att-delete', function () {
           $('#existingAttachments').closest('.mb-3').remove();
           $('#existingAttachments').prev('.po-label').remove();
         }
-        Swal.fire({ icon: 'success', title: 'ลบไฟล์แล้ว', timer: 1200, showConfirmButton: false });
+        Swal.fire({ icon: 'success', title: 'ลบไฟล์แล้ว', timer: 1200, showConfirmButton: true });
       },
       error: function () {
         Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถลบไฟล์ได้' });
-      },
+      }
     });
   });
 });
@@ -3634,11 +3643,16 @@ let cbSearchTimer;
 $('#cbSearchInput').on('input', function () {
   const q = $(this).val().trim();
   clearTimeout(cbSearchTimer);
-  if (q.length < 2) { $('#cbSearchResults').hide().empty(); return; }
+  if (q.length < 2) {
+    $('#cbSearchResults').hide().empty();
+    return;
+  }
   cbSearchTimer = setTimeout(function () {
     $.get('/customers/search', { keyword: q, check_tracking: true }, function (data) {
       const $list = $('#cbSearchResults').empty();
-      const filtered = data.filter(function (c) { return c.has_active_tracking; });
+      const filtered = data.filter(function (c) {
+        return c.has_active_tracking;
+      });
       if (!filtered.length) {
         $list.html('<div class="list-group-item text-muted small">ไม่พบลูกค้าที่มีการติดตามในระบบ</div>').show();
         return;
@@ -3647,8 +3661,12 @@ $('#cbSearchInput').on('input', function () {
         const name = (c.PrefixNameTH || '') + ' ' + (c.FirstName || '') + ' ' + (c.LastName || '');
         const phone = c.Mobilephone1 || '';
         $('<button type="button" class="list-group-item list-group-item-action">')
-          .html('<span class="fw-semibold">' + name.trim() + '</span>' +
-                (phone ? '<small class="text-muted ms-2">' + phone + '</small>' : ''))
+          .html(
+            '<span class="fw-semibold">' +
+              name.trim() +
+              '</span>' +
+              (phone ? '<small class="text-muted ms-2">' + phone + '</small>' : '')
+          )
           .on('click', function () {
             $('#cbNewCustomerId').val(c.id);
             $('#cbSelectedName').text(name.trim());
@@ -3700,13 +3718,16 @@ $('#cbBtnConfirm').on('click', function () {
     type: 'POST',
     data: { new_customer_id: newCustomerId, new_tracking_id: newTrackingId || null },
     success: function () {
-      Swal.fire({ icon: 'success', title: 'เปลี่ยนผู้ซื้อสำเร็จ', timer: 1500, showConfirmButton: false })
-        .then(function () { location.reload(); });
+      Swal.fire({ icon: 'success', title: 'เปลี่ยนผู้ซื้อสำเร็จ', timer: 1500, showConfirmButton: true }).then(
+        function () {
+          location.reload();
+        }
+      );
     },
     error: function () {
       Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถเปลี่ยนผู้ซื้อได้' });
       $btn.prop('disabled', false);
-    },
+    }
   });
 });
 
@@ -3719,7 +3740,7 @@ $('#btnSaveTestDrivePO').on('click', function () {
     type: 'POST',
     data: {
       test_drive_date: $('#po_td_date').val() || null,
-      test_drive_note: $('#po_td_note').val() || null,
+      test_drive_note: $('#po_td_note').val() || null
     },
     success: function () {
       Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1500, showConfirmButton: true });
@@ -3729,6 +3750,6 @@ $('#btnSaveTestDrivePO').on('click', function () {
     },
     complete: function () {
       $btn.prop('disabled', false);
-    },
+    }
   });
 });

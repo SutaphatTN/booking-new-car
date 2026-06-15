@@ -6,6 +6,8 @@
 @endsection
 
 @section('content')
+<div class="viewMoreFilmUsageModal"></div>
+
 <div class="row">
   <div class="col-12">
     <div class="card tbl-card">

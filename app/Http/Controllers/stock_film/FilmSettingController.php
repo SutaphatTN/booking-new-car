@@ -20,6 +20,15 @@ class FilmSettingController extends Controller
         return view('stock-film.settings.view', compact('global', 'filmBrands', 'costSettings'));
     }
 
+    public function modal()
+    {
+        $global       = FilmGlobalSetting::current();
+        $filmBrands   = FilmBrand::orderBy('id')->get();
+        $costSettings = FilmCostSetting::with('filmBrand')->get()->keyBy('film_brand_id');
+
+        return view('stock-film.settings.modal', compact('global', 'filmBrands', 'costSettings'));
+    }
+
     public function updateGlobal(Request $request)
     {
         try {

@@ -20,6 +20,7 @@ class SsiRecord extends Model
         'branch',
         'UserInsert',
         'completed_at',
+        'completed_by',
     ];
 
     protected $casts = [
@@ -29,6 +30,11 @@ class SsiRecord extends Model
     public function salecar()
     {
         return $this->belongsTo(Salecar::class, 'salecar_id', 'id');
+    }
+
+    public function completedBy()
+    {
+        return $this->belongsTo(User::class, 'completed_by');
     }
 
     public function contacts()

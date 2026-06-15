@@ -67,6 +67,14 @@
         @continue
       @endif
 
+      {{-- role sp เห็นเฉพาะเมนูการตั้งค่า (Stock Film + ประดับยนต์) --}}
+      @php
+        $spAllowed = ['accessory', 'stock-film', 'film-price-list', 'film-usage'];
+      @endphp
+      @if ($userRole === 'sp' && empty(array_intersect($menuSlugs, $spAllowed)))
+        @continue
+      @endif
+
       @php
         $adminPageAllowed = ['customer-tracking', 'customer', 'purchase-order'];
       @endphp

@@ -28,15 +28,24 @@ class FilmStock extends Model
         'inspection_date',
         'inspection_qty',
         'inspection_result',
+        'inspection_by',
+        'audit_completed_at',
+        'audit_completed_by',
     ];
 
     protected $casts = [
-        'withdrawal_date' => 'date',
-        'inspection_date' => 'date',
-        'initial_qty'     => 'decimal:2',
-        'used_qty'        => 'decimal:2',
-        'inspection_qty'  => 'decimal:2',
+        'withdrawal_date'    => 'date',
+        'inspection_date'    => 'date',
+        'initial_qty'        => 'decimal:2',
+        'used_qty'           => 'decimal:2',
+        'inspection_qty'     => 'decimal:2',
+        'audit_completed_at' => 'datetime',
     ];
+
+    public function inspector()
+    {
+        return $this->belongsTo(User::class, 'inspection_by');
+    }
 
     const BRAND_GROUPS = [
         'M' => 'Mitsubishi / Wuling',

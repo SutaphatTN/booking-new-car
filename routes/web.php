@@ -325,6 +325,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
 
     // stock-film
     Route::get('stock-film/list', [StockFilmController::class, 'listStock']);
+    Route::post('stock-film/{id}/audit-complete', [StockFilmController::class, 'auditComplete'])->name('stock-film.auditComplete');
     Route::get('stock-film/preview-stock-no', [StockFilmController::class, 'previewStockNo']);
     Route::get('stock-film/{id}/view-more', [StockFilmController::class, 'viewMore'])->name('stock-film.viewMore');
     Route::resource('stock-film', StockFilmController::class)->names([
@@ -338,6 +339,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
 
     // film-settings
     Route::get('film-settings', [FilmSettingController::class, 'index'])->name('film-settings.index');
+    Route::get('film-settings/modal', [FilmSettingController::class, 'modal'])->name('film-settings.modal');
     Route::post('film-settings/global', [FilmSettingController::class, 'updateGlobal'])->name('film-settings.global');
     Route::post('film-settings/costs', [FilmSettingController::class, 'updateCost'])->name('film-settings.costs');
 
@@ -361,6 +363,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('film-usage/vin-suggest', [FilmUsageController::class, 'vinSuggest']);
     Route::get('film-usage/price-list-lookup', [FilmUsageController::class, 'priceListLookup']);
     Route::get('film-usage/stock-search', [FilmUsageController::class, 'stockSearch']);
+    Route::get('film-usage/{id}/view-more', [FilmUsageController::class, 'viewMore'])->name('film-usage.viewMore');
     Route::resource('film-usage', FilmUsageController::class)->only(['index', 'create', 'store', 'destroy'])->names([
         'index'   => 'film-usage.index',
         'create'  => 'film-usage.create',

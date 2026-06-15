@@ -22,24 +22,35 @@
           {{-- Section 1 : รุ่นรถ & ตร.ฟุต --}}
           <div class="mf-section mb-3">
             <div class="mf-section-hd">
-              <div class="mf-section-icon indigo">
-                <i class="bx bx-car"></i>
-              </div>
+              <div class="mf-section-icon indigo"><i class="bx bx-car"></i></div>
               <span class="mf-section-title">ข้อมูลรถ</span>
-              <div class="ms-auto form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" role="switch"
-                  id="fp_has_sunroof" name="has_sunroof" value="1">
-                <label class="form-check-label mf-label" for="fp_has_sunroof">
-                  <i class="bx bx-sun ci-amber me-1"></i>มีซันรูฟ
-                </label>
+              <div class="ms-auto d-flex align-items-center gap-3">
+                <div class="form-check form-switch mb-0">
+                  <input class="form-check-input" type="checkbox" role="switch"
+                    id="fp_has_door_rear2" name="has_door_rear2" value="1">
+                  <label class="form-check-label mf-label" for="fp_has_door_rear2">ประตูหลัง 2</label>
+                </div>
+                <div class="form-check form-switch mb-0">
+                  <input class="form-check-input" type="checkbox" role="switch"
+                    id="fp_has_sunroof" name="has_sunroof" value="1">
+                  <label class="form-check-label mf-label" for="fp_has_sunroof">
+                    <i class="bx bx-sun ci-amber me-1"></i>ซันรูฟ
+                  </label>
+                </div>
+                <div class="form-check form-switch mb-0">
+                  <input class="form-check-input" type="checkbox" role="switch"
+                    id="fp_has_3window" name="has_3window" value="1">
+                  <label class="form-check-label mf-label" for="fp_has_3window">แพ็กเกจ 3 บาน</label>
+                </div>
               </div>
             </div>
             <div class="mf-section-body">
               <div class="row g-3">
 
+                {{-- รุ่นรถ --}}
                 <div class="col-md-4">
                   <label for="fp_model_id" class="mf-label form-label">
-                    <i class="bx bx-car"></i> รุ่นรถหลัก <span class="text-danger">*</span>
+                    <i class="bx bx-car ci-indigo"></i> รุ่นรถหลัก <span class="text-danger">*</span>
                   </label>
                   <select id="fp_model_id" name="model_id" class="form-select">
                     <option value="">— เลือกรุ่นรถ —</option>
@@ -49,19 +60,72 @@
                   </select>
                 </div>
 
-                <div class="col-md-4">
+                {{-- ตร.ฟุต รวม --}}
+                <div class="col-md-3">
                   <label for="fp_sqft" class="mf-label form-label">
-                    <i class="bx bx-ruler ci-sky"></i> จำนวน ตร.ฟุต (รอบคัน+บานหน้า) <span class="text-danger">*</span>
+                    <i class="bx bx-ruler ci-indigo"></i> ตร.ฟุต ทั้งหมด <span class="text-danger">*</span>
                   </label>
                   <input id="fp_sqft" type="number" name="sqft" class="form-control text-end"
                     min="0" step="0.01" placeholder="0.00">
                 </div>
 
-                <div id="fp_sunroof_fields" class="col-md-4 d-none">
-                  <label for="fp_sqft_sunroof" class="mf-label form-label">
-                    <i class="bx bx-ruler ci-amber"></i> จำนวน ตร.ฟุต ซันรูฟ
+                {{-- ตร.ฟุตแต่ละตำแหน่ง --}}
+                <div class="col-12">
+                  <label class="mf-label form-label mb-2">
+                    <i class="bx bx-grid-alt ci-indigo"></i> ตร.ฟุตแต่ละตำแหน่ง
                   </label>
-                  <input id="fp_sqft_sunroof" type="number" name="sqft_sunroof" class="form-control text-end"
+                  <div class="row g-2">
+                    <div class="col">
+                      <label class="form-label small text-muted mb-1">รอบคัน</label>
+                      <input type="number" name="sqft_around" class="form-control form-control-sm text-end"
+                        min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="col">
+                      <label class="form-label small text-muted mb-1">บานหน้า</label>
+                      <input type="number" name="sqft_windshield" class="form-control form-control-sm text-end"
+                        min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="col">
+                      <label class="form-label small text-muted mb-1">บานหลัง</label>
+                      <input type="number" name="sqft_rear" class="form-control form-control-sm text-end"
+                        min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="col">
+                      <label class="form-label small text-muted mb-1">ประตูคู่หน้า</label>
+                      <input type="number" name="sqft_door_front" class="form-control form-control-sm text-end"
+                        min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="col">
+                      <label class="form-label small text-muted mb-1">ประตูคู่หลัง 1</label>
+                      <input type="number" name="sqft_door_rear1" class="form-control form-control-sm text-end"
+                        min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="col">
+                      <label class="form-label small text-muted mb-1">หูช้าง</label>
+                      <input type="number" name="sqft_quarter" class="form-control form-control-sm text-end"
+                        min="0" step="0.01" placeholder="0.00">
+                    </div>
+                  </div>
+                </div>
+
+                {{-- ตร.ฟุต ตามตัวเลือกเปิด --}}
+                <div id="fp_door_rear2_fields" class="col-md-3 d-none">
+                  <label class="form-label small text-muted mb-1">ตร.ฟุต ประตูคู่หลัง 2</label>
+                  <input type="number" name="sqft_door_rear2" class="form-control form-control-sm text-end"
+                    min="0" step="0.01" placeholder="0.00">
+                </div>
+
+                <div id="fp_sunroof_fields" class="col-md-3 d-none">
+                  <label for="fp_sqft_sunroof" class="form-label small text-muted mb-1">
+                    <i class="bx bx-sun ci-amber me-1"></i>ตร.ฟุต ซันรูฟ
+                  </label>
+                  <input id="fp_sqft_sunroof" type="number" name="sqft_sunroof" class="form-control form-control-sm text-end"
+                    min="0" step="0.01" placeholder="0.00">
+                </div>
+
+                <div id="fp_3window_fields" class="col-md-3 d-none">
+                  <label class="form-label small text-muted mb-1">ตร.ฟุต แพ็กเกจ 3 บาน</label>
+                  <input type="number" name="sqft_3window" class="form-control form-control-sm text-end"
                     min="0" step="0.01" placeholder="0.00">
                 </div>
 
@@ -85,11 +149,13 @@
                 <table class="table table-bordered mb-0" id="fpBrandTable">
                   <thead class="table-light">
                     <tr>
-                      <th style="min-width:180px">ยี่ห้อฟิล์ม</th>
-                      <th class="text-end" style="min-width:160px">ราคาขายรวมภาษี (฿)</th>
-                      <th class="text-end" style="min-width:140px">ค่าคอม SCom (฿)</th>
-                      <th class="col-sunroof d-none text-end" style="min-width:150px">ราคาซันรูฟ (฿)</th>
-                      <th class="col-sunroof d-none text-end" style="min-width:140px">ค่าคอมซันรูฟ (฿)</th>
+                      <th style="min-width:160px">ยี่ห้อฟิล์ม</th>
+                      <th class="text-end" style="min-width:150px">ราคารวมภาษี (฿)</th>
+                      <th class="text-end" style="min-width:130px">ค่าคอม SCom (฿)</th>
+                      <th class="col-sunroof d-none text-end" style="min-width:140px">ราคาซันรูฟ (฿)</th>
+                      <th class="col-sunroof d-none text-end" style="min-width:130px">ค่าคอมซันรูฟ (฿)</th>
+                      <th class="col-3window d-none text-end" style="min-width:140px">ราคา 3 บาน (฿)</th>
+                      <th class="col-3window d-none text-end" style="min-width:130px">ค่าคอม 3 บาน (฿)</th>
                       <th style="width:50px"></th>
                     </tr>
                   </thead>

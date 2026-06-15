@@ -168,8 +168,13 @@ class CustomerController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ], 500);
+            // return response()->json([
+            //     'success' => false,
+            //     'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
+            // ], 500);
         }
     }
 
@@ -485,5 +490,4 @@ class CustomerController extends Controller
 
         return response()->json($customers);
     }
-
 }

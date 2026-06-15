@@ -7,6 +7,11 @@
 <button class="btn btn-icon btn-danger btnDeleteFilm" data-id="{{ $s->id }}" title="ลบ">
     <i class="bx bx-trash"></i>
 </button>
+@if (in_array(auth()->user()->role, ['admin', 'audit']))
+<button class="btn btn-icon btn-success btnAuditComplete" data-id="{{ $s->id }}" title="ตรวจสอบเสร็จสิ้น">
+    <i class="bx bx-check-double"></i>
+</button>
+@endif
 
 <style>
   .btn-icon i { color: white; }

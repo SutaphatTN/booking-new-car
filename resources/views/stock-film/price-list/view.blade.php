@@ -2,12 +2,13 @@
 @section('title', 'PriceList Film')
 
 @section('page-script')
-@vite(['resources/assets/js/film-price-list.js'])
+@vite(['resources/assets/js/film-settings.js', 'resources/assets/js/film-price-list.js'])
 @endsection
 
 @section('content')
 <div class="inputFilmPriceModal"></div>
 <div class="editFilmPriceModal"></div>
+<div class="filmSettingsModal"></div>
 
 <div class="row">
   <div class="col-12">
@@ -25,7 +26,10 @@
 
       <div class="card-body pt-3">
 
-        <div class="po-filter-bar d-flex align-items-center justify-content-end">
+        <div class="po-filter-bar d-flex align-items-center justify-content-end gap-2">
+          {{-- <button class="btn btn-outline-secondary btn-sm btnFilmSettings">
+            <i class="bx bx-cog me-1"></i> ตั้งค่า
+          </button> --}}
           <button class="btn btn-secondary btn-sm btnInputFilmPrice">
             <i class="bx bx-plus me-1"></i> เพิ่มข้อมูล
           </button>
