@@ -43,3 +43,10 @@ _inspect_plates4.php
 _inspect_plates5.php
 _merge_plates.php
 _verify_dups.php
+_prod_check.php
+_verify_conflict.php
+
+_backup_tables.php
+_bak_license_plate_history_20260616_142736.json
+_bak_salecars_20260616_142736.json
+_bak_tb_license_plate_20260616_142736.json

@@ -56,7 +56,7 @@
                   <th>รายละเอียด</th>
                   <th>ยอดเงิน</th>
                   <th>วันที่</th>
-                  <th class="tbl-th-action" style="width:80px;">Action</th>
+                  <th class="tbl-th-action" style="width:170px;">Action</th>
                 </tr>
               </thead>
             </table>
@@ -96,6 +96,13 @@
         </div>
 
       </div>
+    </div>
+  </div>
+
+  <div id="invoiceLoadingOverlay" style="display:flex;">
+    <div class="ct-loading-box">
+      <div class="spinner-border text-primary" role="status" style="width:1.4rem;height:1.4rem;"></div>
+      <span>กำลังโหลด...</span>
     </div>
   </div>
 

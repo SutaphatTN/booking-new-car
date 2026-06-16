@@ -178,12 +178,18 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         ? ($r->discount ?? 0)
         : ($r->PaymentDiscount ?? 0);
 
-      // ราคาขายรวมบวกหัว
+      // ราคาขายรวมบวกหัว (ไม่รวม VAT)
       $makePrice = $r->MarkupPrice ?? 0;
-      $totalSaleMake =  $totalSalePrice + $makePrice;
+      // $totalSaleMake =  $totalSalePrice + $makePrice;
+      $totalSaleMake =  $totalSalePrice * (100/107);
+
+      // ราคาทุน (ไม่รวม VAT)
+      $totalCostFund =  $totalCostPrice * (100/107);
 
       // GP
-      $totalGP = $totalSalePrice - $totalCostPrice;
+      // $totalGP = $totalSalePrice - $totalCostPrice;
+      $totalGP = ($totalSaleMake - $makePrice) - $totalCostFund;
+
       // per GP
       $totalPerGP = ($totalSalePrice > 0)
         ? round(($totalGP / $totalSalePrice) * 100, 2)

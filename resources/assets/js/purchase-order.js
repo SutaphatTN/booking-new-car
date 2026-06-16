@@ -3433,6 +3433,62 @@ $(document).on('click', '.btnViewHistory', function () {
   });
 });
 
+//history : ดึงกลับ / เปลี่ยนสถานะ (admin เท่านั้น)
+$(document).on('click', '.btnChangeStatus', function () {
+  const id = $(this).data('id');
+  const current = String($(this).data('status'));
+  const statuses = {
+    1: 'ยังไม่ทำสัญญา',
+    2: 'รอผลสัญญา',
+    3: 'ผ่านสัญญา',
+    4: 'ระหว่างแต่งรถ',
+    5: 'ส่งมอบ',
+    6: 'ซื้อสด',
+    7: 'ไม่พร้อมออกรถ',
+    8: 'ยึดเงินจอง',
+    9: 'ถอนจอง'
+  };
+
+  Swal.fire({
+    title: 'ดึงกลับ / เปลี่ยนสถานะ',
+    input: 'select',
+    inputOptions: statuses,
+    inputValue: current,
+    showCancelButton: true,
+    confirmButtonText: 'บันทึก',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    inputValidator: v => (!v ? 'กรุณาเลือกสถานะ' : undefined)
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    if (String(result.value) === current) return;
+
+    $.ajax({
+      url: `/purchase-order/${id}/change-status`,
+      type: 'POST',
+      data: { con_status: result.value },
+      success: function (res) {
+        Swal.fire({
+          icon: 'success',
+          title: 'สำเร็จ',
+          text: res.message ?? 'เปลี่ยนสถานะเรียบร้อยแล้ว',
+          timer: 1800,
+          showConfirmButton: true
+        });
+        historyFinalTable.ajax.reload(null, false);
+      },
+      error: function (xhr) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: xhr.responseJSON?.message ?? 'ไม่สามารถเปลี่ยนสถานะได้'
+        });
+      }
+    });
+  });
+});
+
 //history ส่งมอบ แสดง campaign
 function updateViewMoreCampaign() {
   const el = document.getElementById('viewMoreCampaignText');

@@ -418,6 +418,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/list-history', [PurchaseOrderController::class, 'listHistory']);
     Route::get('purchase-order/view-more-history/{id}', [PurchaseOrderController::class, 'viewMoreHistory']);
     Route::post('/purchase-order/{id}/cancel-car-order', [PurchaseOrderController::class, 'cancelCarOrder']);
+    Route::post('purchase-order/{id}/change-status', [PurchaseOrderController::class, 'changeStatus'])->name('purchase-order.change-status');
     Route::get('/purchase-order/search', [PurchaseOrderController::class, 'search'])->name('purchase-order.search');
     //commission sale
     Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('purchase-order.viewCommission');
