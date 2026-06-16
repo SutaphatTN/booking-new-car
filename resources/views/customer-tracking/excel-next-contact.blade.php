@@ -1,0 +1,37 @@
+<table>
+  <thead>
+    <tr>
+      <th colspan="8">รายงานวันที่ต้องติดต่อครั้งถัดไป (ผู้จัดการ) ประจำเดือน {{ $dateFormatted }}</th>
+    </tr>
+    <tr>
+      <th>No.</th>
+      {{-- <th>วันที่เพิ่ม</th> --}}
+      <th>ชื่อ - นามสกุล</th>
+      <th>ผู้ขาย</th>
+      <th>แหล่งที่มา</th>
+      <th>วันที่ต้องติดต่อครั้งถัดไป</th>
+      <th>สถานะการตัดสินใจ</th>
+      <th>สถานะการติดต่อ</th>
+      <th>หมายเหตุ</th>
+    </tr>
+  </thead>
+  <tbody>
+    @forelse ($rows as $r)
+      <tr>
+        <td>{{ $r['no'] }}</td>
+        {{-- <td>{{ $r['created_at'] }}</td> --}}
+        <td>{{ $r['full_name'] }}</td>
+        <td>{{ $r['sale'] }}</td>
+        <td>{{ $r['source'] }}</td>
+        <td>{{ $r['next_contact_date'] }}</td>
+        <td>{{ $r['decision'] }}</td>
+        <td>{{ $r['contact_status'] }}</td>
+        <td>{{ $r['comment'] }}</td>
+      </tr>
+    @empty
+      <tr>
+        <td colspan="8" align="center">ไม่มีข้อมูล</td>
+      </tr>
+    @endforelse
+  </tbody>
+</table>

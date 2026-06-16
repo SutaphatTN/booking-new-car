@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
 
 class CustomerTrackingDetail extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'customer_tracking_details';
 
     protected $fillable = [

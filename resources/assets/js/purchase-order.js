@@ -389,7 +389,8 @@ $(document).ready(function () {
     nameInput: '#customerName',
     phoneInput: '#customerPhone',
     idInput: '#customerID',
-    hiddenId: '#CusID'
+    hiddenId: '#CusID',
+    gate: true
   });
 
   setupCustomerSearch({
@@ -532,7 +533,7 @@ $(document).ready(function () {
   });
 });
 
-function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hiddenId }) {
+function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hiddenId, gate = false }) {
   const $search = $(searchInput);
   const $modal = $('#modalSearchCustomer');
   const $tableBody = $('#tableSelectCustomer tbody');
@@ -587,36 +588,121 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
     });
   }
 
+  function applyCustomer(data) {
+    $(nameInput).val(data.name);
+    $(phoneInput).val(data.mobile);
+    $(idInput).val(data.idnumber);
+    $(hiddenId).val(data.id);
+
+    // Update display divs
+    const setDisplay = (id, val) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = val || '—';
+      el.classList.toggle('empty', !val);
+    };
+    if (nameInput === '#customerName') {
+      setDisplay('customerName-display', data.name);
+      setDisplay('customerID-display', data.idnumber);
+      setDisplay('customerPhone-display', data.mobile);
+    }
+    if (nameInput === '#customerNameRef') {
+      setDisplay('customerNameRef-display', data.name);
+      setDisplay('customerIDRef-display', data.idnumber);
+      setDisplay('customerPhoneRef-display', data.mobile);
+    }
+
+    $modal.modal('hide');
+    $search.val('');
+  }
+
   $(document).on('click', '.btnSelectCustomer', function () {
     const data = $(this).data();
 
-    if (data.target === searchInput) {
-      $(nameInput).val(data.name);
-      $(phoneInput).val(data.mobile);
-      $(idInput).val(data.idnumber);
-      $(hiddenId).val(data.id);
+    if (data.target !== searchInput) return;
 
-      // Update display divs
-      const setDisplay = (id, val) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.textContent = val || '—';
-        el.classList.toggle('empty', !val);
-      };
-      if (nameInput === '#customerName') {
-        setDisplay('customerName-display', data.name);
-        setDisplay('customerID-display', data.idnumber);
-        setDisplay('customerPhone-display', data.mobile);
-      }
-      if (nameInput === '#customerNameRef') {
-        setDisplay('customerNameRef-display', data.name);
-        setDisplay('customerIDRef-display', data.idnumber);
-        setDisplay('customerPhoneRef-display', data.mobile);
-      }
-
-      $modal.modal('hide');
-      $search.val('');
+    // ไม่ต้องเช็คเงื่อนไขการติดตาม → กรอกข้อมูลได้เลย
+    if (!gate) {
+      applyCustomer(data);
+      return;
     }
+
+    // เช็คสถานะการติดตามก่อนอนุญาตให้เพิ่มการจอง — แสดง spinner บนปุ่มระหว่างรอ
+    const $selBtn = $(this);
+    const selBtnHtml = $selBtn.html();
+    $selBtn.prop('disabled', true)
+      .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+
+    $.ajax({
+      url: '/api/purchase-order/check-customer-tracking',
+      type: 'GET',
+      data: { customer_id: data.id },
+      complete: function () {
+        $selBtn.prop('disabled', false).html(selBtnHtml);
+      },
+      success: function (res) {
+        // ลูกค้าใหม่ ยังไม่มีการติดตาม → ต้องเพิ่มการติดตามก่อน
+        if (res.status === 'no_tracking') {
+          $modal.modal('hide');
+          Swal.fire({
+            icon: 'info',
+            title: 'ยังไม่มีข้อมูลการติดตาม',
+            html: 'ลูกค้ารายนี้เป็นลูกค้าใหม่ที่ยังไม่มีข้อมูลการติดตาม<br>กรุณาเพิ่มข้อมูลการติดตามลูกค้าก่อนทำการจอง',
+            showCancelButton: true,
+            confirmButtonColor: '#6c5ffc',
+            confirmButtonText: 'ไปเพิ่มการติดตาม',
+            cancelButtonText: 'ปิด',
+          }).then((result) => {
+            if (result.isConfirmed) window.location.href = '/customer-tracking/create';
+          });
+          return;
+        }
+
+        // ยังอยู่ในลิสต์ติดตาม → ให้ไปจองผ่านหน้าการติดตาม
+        if (res.status === 'open_tracking') {
+          $modal.modal('hide');
+          Swal.fire({
+            icon: 'warning',
+            title: 'มีรายการในหน้าการติดตาม',
+            html: 'ลูกค้ารายนี้มีรายการอยู่ในหน้าการติดตาม<br>กรุณาทำรายการจองผ่านหน้าการติดตาม',
+            showCancelButton: true,
+            confirmButtonColor: '#6c5ffc',
+            confirmButtonText: 'ไปที่การติดตาม',
+            cancelButtonText: 'ปิด',
+          }).then((result) => {
+            if (result.isConfirmed) window.location.href = '/customer-tracking/' + res.tracking_id;
+          });
+          return;
+        }
+
+        // มีใบจอง active อยู่แล้ว → เพิ่มซ้ำได้แต่ต้องยืนยัน
+        if (res.status === 'has_active_booking') {
+          Swal.fire({
+            icon: 'question',
+            title: 'ลูกค้ารายนี้มีการจองอยู่แล้ว',
+            text: 'ต้องการเพิ่มรายการจองใหม่อีกใช่หรือไม่?',
+            showCancelButton: true,
+            confirmButtonColor: '#6c5ffc',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'เพิ่มรายการจอง',
+            cancelButtonText: 'ยกเลิก',
+          }).then((result) => {
+            if (result.isConfirmed) applyCustomer(data);
+          });
+          return;
+        }
+
+        // status === 'ok' → เคยมีการติดตามแต่ปิดแล้ว จองใหม่ได้เลย
+        applyCustomer(data);
+      },
+      error: function () {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: 'ไม่สามารถตรวจสอบข้อมูลการติดตามของลูกค้าได้ กรุณาลองใหม่อีกครั้ง',
+        });
+      }
+    });
   });
 }
 
@@ -679,11 +765,12 @@ $(document).on('change', '#model_id', function () {
     });
   }
 
+  setSelectLoading($subModelSelect);
   $.ajax({
     url: '/api/purchase-order/sub-model/' + modelId,
     type: 'GET',
     success: function (data) {
-      // console.log('data:', data);
+      $subModelSelect.prop('disabled', false).empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>');
       if (data.length > 0) {
         data.forEach(function (sub) {
           let text = sub.detail ? `${sub.detail} - ${sub.name}` : sub.name;
@@ -691,10 +778,11 @@ $(document).on('change', '#model_id', function () {
           $subModelSelect.append(`<option value="${sub.id}">${text}</option>`);
         });
       } else {
-        $subModelSelect.append('<option value="">-- ไม่มีรุ่นย่อย --</option>');
+        $subModelSelect.empty().append('<option value="">-- ไม่มีรุ่นย่อย --</option>');
       }
     },
     error: function () {
+      $subModelSelect.prop('disabled', false).empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>');
       alert('เกิดข้อผิดพลาดในการโหลดข้อมูลรุ่นย่อย');
     }
   });
@@ -719,6 +807,25 @@ function clearPricelistFields() {
   $('#price_sub').val('');
 }
 
+// แสดงสถานะกำลังโหลดบน dropdown (disable + ข้อความ "กำลังโหลด...")
+function setSelectLoading($sel) {
+  if (!$sel || !$sel.length) return;
+  $sel.prop('disabled', true).empty().append('<option value="">กำลังโหลด...</option>');
+}
+
+// แสดง/ซ่อนสถานะกำลังโหลดราคาบนช่องราคา
+function setPriceLoading(on) {
+  const $p = $('#price_sub');
+  if (!$p.length) return;
+  if (on) {
+    $p.val('');
+    if (!$p.data('ph')) $p.data('ph', $p.attr('placeholder') || '');
+    $p.attr('placeholder', 'กำลังโหลดราคา...');
+  } else {
+    $p.attr('placeholder', $p.data('ph') || '');
+  }
+}
+
 function loadPricelistData() {
   const subModelId = $('#subModel_id').val();
   const year = $('#pricelist_year').val();
@@ -726,7 +833,9 @@ function loadPricelistData() {
 
   if (!subModelId || !year) return;
 
+  setPriceLoading(true);
   $.get('/api/car-order/pricelist-data', { sub_model_id: subModelId, year: year, color: color }, function (data) {
+    setPriceLoading(false);
     if (data) {
       $('#option').val(data.option ?? '');
       $('#car_DNP').val(data.dnp ? Number(data.dnp).toLocaleString() : '');
@@ -744,6 +853,8 @@ function loadPricelistData() {
     // trigger recalculation after price_sub is set
     if (typeof calculateCarPrice === 'function') calculateCarPrice();
     if (typeof calculateBalance === 'function') calculateBalance();
+  }).fail(function () {
+    setPriceLoading(false);
   });
 }
 
@@ -756,40 +867,52 @@ $(document).on('change', '#subModel_id', function () {
   // brand 2: get color
   const $gwmColor = $('#gwm_color');
   if ($gwmColor.length) {
-    $gwmColor.prop('disabled', true).empty().append('<option value="">-- เลือกสี --</option>');
+    setSelectLoading($gwmColor);
     $.ajax({
       url: '/api/car-order/color',
       data: { sub_model_id: subModelId },
       success: function (data) {
+        $gwmColor.prop('disabled', false).empty().append('<option value="">-- เลือกสี --</option>');
         if (data.length) {
           data.forEach(color => {
             $gwmColor.append(`<option value="${color.id}">${color.name}</option>`);
           });
-          $gwmColor.prop('disabled', false);
         } else {
-          $gwmColor.append('<option value="">-- รุ่นนี้ไม่มีตัวเลือกสี --</option>');
+          $gwmColor.empty().append('<option value="">-- รุ่นนี้ไม่มีตัวเลือกสี --</option>');
         }
+      },
+      error: function () {
+        $gwmColor.prop('disabled', false).empty().append('<option value="">-- เลือกสี --</option>');
       }
     });
   }
 
+  // โหลดตัวเลือกราคา → brand 1 เติมที่ช่องสี, brand 2/3 เติมที่ช่องปี
+  const $plColor  = $('#pricelist_color');
+  const $plYear   = $('#pricelist_year');
+  const $plTarget = $plColor.length ? $plColor : $plYear;
+  setSelectLoading($plTarget);
+
   $.get('/api/car-order/pricelist-options', { sub_model_id: subModelId }, function (res) {
-    if (!res.data || !res.data.length) return;
+    if (!res.data || !res.data.length) {
+      $plTarget.prop('disabled', true).empty().append('<option value="">-- ไม่มีข้อมูลราคา --</option>');
+      return;
+    }
 
     if (res.type === 'color_year') {
       // brand 1: แสดง color ก่อน ปีจะโหลดหลังเลือกสี
       const colors = [...new Set(res.data.map(r => r.color))];
-      const $colorSel = $('#pricelist_color');
-      $colorSel.empty().append('<option value="">-- เลือก --</option>');
-      colors.forEach(c => $colorSel.append(`<option value="${c}">${c}</option>`));
-      $colorSel.prop('disabled', false).data('pricelistRows', res.data);
+      $plColor.empty().append('<option value="">-- เลือก --</option>');
+      colors.forEach(c => $plColor.append(`<option value="${c}">${c}</option>`));
+      $plColor.prop('disabled', false).data('pricelistRows', res.data);
     } else {
       // brand 2,3: แสดง year เลย
-      const $yearSel = $('#pricelist_year');
-      $yearSel.empty().append('<option value="">-- เลือกปี --</option>');
-      res.data.forEach(r => $yearSel.append(`<option value="${r.year}">${r.year}</option>`));
-      $yearSel.prop('disabled', false);
+      $plYear.empty().append('<option value="">-- เลือกปี --</option>');
+      res.data.forEach(r => $plYear.append(`<option value="${r.year}">${r.year}</option>`));
+      $plYear.prop('disabled', false);
     }
+  }).fail(function () {
+    $plTarget.prop('disabled', true).empty().append('<option value="">-- เลือก --</option>');
   });
 });
 

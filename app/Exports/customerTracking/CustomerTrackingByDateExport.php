@@ -116,7 +116,7 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
                 'inserted_by'    => $d->insertedBy?->name ?? '-',
                 'entry_type'     => $d->entry_type === 'sale' ? 'เซลล์' : 'ผู้จัดการ',
                 'contact_date'   => $d->contact_date ?? '-',
-                'contact_status' => $d->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้',
+                'contact_status' => is_null($d->contact_status) ? '-' : ($d->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้'),
                 'decision'       => $d->decision?->name ?? '-',
                 'comment'        => $d->comment_sale ?? '-',
                 'test_date'      => $tracking->format_test_drive_date ?? '-',

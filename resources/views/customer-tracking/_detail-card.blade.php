@@ -10,11 +10,17 @@
       <span class="tracking-detail-date">
         <i class="bx bx-calendar me-1 text-muted"></i>{{ $detail->format_contact_date }}
       </span>
-      <span class="badge rounded {{ $detail->contact_status ? 'bg-success' : 'bg-danger' }} px-3"
-        style="font-size:.78rem;">
-        <i class="bx {{ $detail->contact_status ? 'bx-check' : 'bx-x' }} me-1"></i>
-        {{ $detail->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้' }}
-      </span>
+      @if (is_null($detail->contact_status))
+        <span class="badge rounded bg-secondary px-3" style="font-size:.78rem;">
+          <i class="bx bx-time me-1"></i>ยังไม่ติดต่อ
+        </span>
+      @else
+        <span class="badge rounded {{ $detail->contact_status ? 'bg-success' : 'bg-danger' }} px-3"
+          style="font-size:.78rem;">
+          <i class="bx {{ $detail->contact_status ? 'bx-check' : 'bx-x' }} me-1"></i>
+          {{ $detail->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้' }}
+        </span>
+      @endif
     </div>
     @if ($showEdit)
       <button type="button" class="btn btn-icon btn-sm btn-warning btnEditDetail flex-shrink-0"

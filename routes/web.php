@@ -409,6 +409,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('purchase-order/{id}/attachment', [PurchaseOrderController::class, 'deleteAttachment'])->name('purchase-order.delete-attachment');
     Route::post('purchase-order/{id}/change-buyer', [PurchaseOrderController::class, 'changeBuyer'])->name('purchase-order.change-buyer');
     Route::get('/api/purchase-order/customer-trackings', [PurchaseOrderController::class, 'getCustomerTrackings']);
+    Route::get('/api/purchase-order/check-customer-tracking', [PurchaseOrderController::class, 'checkCustomerTracking']);
     Route::get('purchase-order/viewPO', [PurchaseOrderController::class, 'viewPO'])->name('purchase-order.viewPO');
     Route::get('purchase-order/list-po', [PurchaseOrderController::class, 'listPO']);
     Route::get('purchase-order/viewBooking', [PurchaseOrderController::class, 'viewBooking'])->name('purchase-order.viewBooking');

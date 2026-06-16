@@ -1,7 +1,7 @@
 <table>
   <thead>
     <tr>
-      <th colspan="11">รายงานเลยกำหนดติดตามลูกค้า (ผู้จัดการ) ณ วันที่ {{ $dateFormatted }}</th>
+      <th colspan="10">รายงานเลยกำหนดติดตามลูกค้า (ผู้จัดการ) ณ วันที่ {{ $dateFormatted }}</th>
     </tr>
     <tr>
       <th>No.</th>
@@ -11,7 +11,7 @@
       <th>ผู้ขาย</th>
       <th>แหล่งที่มา</th>
       <th>ผู้กรอก</th>
-      <th>ประเภท</th>
+      {{-- <th>ประเภท</th> --}}
       <th>วันที่ติดต่อ</th>
       <th>สถานะการตัดสินใจ</th>
       <th>หมายเหตุ</th>
@@ -27,14 +27,14 @@
         <td>{{ $r['sale'] }}</td>
         <td>{{ $r['source'] }}</td>
         <td>{{ $r['inserted_by'] }}</td>
-        <td>{{ $r['entry_type'] }}</td>
+        {{-- <td>{{ $r['entry_type'] }}</td> --}}
         <td>{{ $r['contact_date'] }}</td>
         <td>{{ $r['decision'] }}</td>
         <td>{{ $r['comment'] }}</td>
       </tr>
     @empty
       <tr>
-        <td colspan="11" align="center">ไม่มีข้อมูล</td>
+        <td colspan="10" align="center">ไม่มีข้อมูล</td>
       </tr>
     @endforelse
   </tbody>
