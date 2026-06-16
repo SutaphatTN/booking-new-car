@@ -117,7 +117,7 @@ class CustomerTrackingExport implements FromView, WithTitle, WithStyles, WithEve
                 'sale'           => $t->sale->name ?? '-',
                 'source'         => $t->source->name ?? '-',
                 'contact_date'   => $latestDetail?->contact_date ?? '-',
-                'contact_status' => $latestDetail
+                'contact_status' => ($latestDetail && !is_null($latestDetail->contact_status))
                     ? ($latestDetail->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้')
                     : '-',
                 'decision'       => $latestDetail?->decision?->name ?? '-',

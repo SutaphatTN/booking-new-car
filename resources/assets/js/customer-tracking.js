@@ -901,7 +901,8 @@ $(document).ready(function () {
   });
 
   $('#btnSaveDetail').on('click', function () {
-    const trackingId = $(this).data('tracking-id');
+    const $btn = $(this);
+    const trackingId = $btn.data('tracking-id');
     const contactDate = $('#add_contact_date').val();
     const contactStatus = $('input[name="add_contact_status"]:checked').val();
     const decisionId = $('#add_decision_id').val();
@@ -912,6 +913,12 @@ $(document).ready(function () {
       alert('กรุณาระบุวันที่ติดต่อ');
       return;
     }
+
+    // กันกดซ้ำ → ปิดปุ่มตั้งแต่ครั้งแรก (success จะ reload หน้าอยู่แล้ว)
+    if ($btn.prop('disabled')) return;
+    const btnHtml = $btn.html();
+    $btn.prop('disabled', true)
+      .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังบันทึก...');
 
     $.ajax({
       url: `/customer-tracking/${trackingId}/detail`,
@@ -927,6 +934,7 @@ $(document).ready(function () {
         location.reload();
       },
       error: function () {
+        $btn.prop('disabled', false).html(btnHtml);
         alert('เกิดข้อผิดพลาด ไม่สามารถบันทึกได้');
       }
     });
@@ -983,9 +991,12 @@ $(document).ready(function () {
     $('#edit_comment_sale').val(d.comment);
     $('#edit_continue_decision_id').val('');
 
+    // ค่าว่าง (checkpoint ที่ยังไม่ติดต่อ) → ไม่ติ๊กอะไรเลย ให้ผู้ใช้เลือกเอง
+    $('#editContactYes').prop('checked', false);
+    $('#editContactNo').prop('checked', false);
     if (parseInt(d.contactStatus) === 1) {
       $('#editContactYes').prop('checked', true);
-    } else {
+    } else if (parseInt(d.contactStatus) === 0) {
       $('#editContactNo').prop('checked', true);
     }
 

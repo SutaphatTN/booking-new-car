@@ -37,6 +37,7 @@ use App\Models\TbPricelistCar;
 use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
 use App\Models\User;
+use App\Models\Traits\UserAccessScope;
 use App\Services\OneDriveService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use GuzzleHttp\Client;
@@ -1702,6 +1703,62 @@ class PurchaseOrderController extends Controller
             ]);
 
         return response()->json($trackings);
+    }
+
+    /**
+     * เช็คสถานะการติดตามของลูกค้า ก่อนอนุญาตให้เพิ่มการจองจากหน้านี้ (scope: brand เดียวกับผู้ใช้)
+     *  - has_active_booking : มีใบจอง active (con_status 1-4,6) → เพิ่มซ้ำได้แต่ต้องยืนยันก่อน
+     *  - open_tracking      : ยังอยู่ในลิสต์ติดตาม (cancelled_at IS NULL) → ให้ไปจองผ่านหน้าการติดตาม
+     *  - ok                 : เคยมีการติดตามแต่ปิดแล้ว (ส่งมอบ/ยกเลิก/ถอนจอง) → จองใหม่ได้เลย
+     *  - no_tracking        : ไม่เคยมีการติดตาม (ลูกค้าใหม่) → ต้องเพิ่มการติดตามก่อน
+     */
+    public function checkCustomerTracking(Request $request)
+    {
+        $customerId = $request->customer_id;
+        $brand      = Auth::user()->brand;
+
+        if (!$customerId) {
+            return response()->json(['status' => 'no_tracking']);
+        }
+
+        // 1) มีใบจองที่ยังดำเนินการอยู่ (con_status ไม่ใช่ 5,7,8,9 = ยังไม่จบ)
+        $hasActiveBooking = Salecar::withoutGlobalScope(UserAccessScope::class)
+            ->where('CusID', $customerId)
+            ->where('brand', $brand)
+            ->whereNotIn('con_status', [5, 7, 8, 9])
+            ->exists();
+
+        if ($hasActiveBooking) {
+            return response()->json(['status' => 'has_active_booking']);
+        }
+
+        // 2) ยังอยู่ในลิสต์ติดตาม (ยังไม่ปิด) → ต้องจองผ่านหน้าการติดตาม
+        $openTracking = CustomerTracking::withoutGlobalScope(UserAccessScope::class)
+            ->where('customer_id', $customerId)
+            ->where('brand', $brand)
+            ->whereNull('cancelled_at')
+            ->orderByDesc('created_at')
+            ->first();
+
+        if ($openTracking) {
+            return response()->json([
+                'status'      => 'open_tracking',
+                'tracking_id' => $openTracking->id,
+            ]);
+        }
+
+        // 3) เคยมีการติดตามแต่ปิดแล้ว → จองใหม่ได้เลย
+        $hasAnyTracking = CustomerTracking::withoutGlobalScope(UserAccessScope::class)
+            ->where('customer_id', $customerId)
+            ->where('brand', $brand)
+            ->exists();
+
+        if ($hasAnyTracking) {
+            return response()->json(['status' => 'ok']);
+        }
+
+        // 4) ไม่เคยมีการติดตาม → ลูกค้าใหม่ ต้องเพิ่มการติดตามก่อน
+        return response()->json(['status' => 'no_tracking']);
     }
 
     public function listHistory(Request $request)

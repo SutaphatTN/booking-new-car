@@ -111,7 +111,7 @@ class CustomerTrackingDailyExport implements FromView, WithTitle, WithStyles, Wi
                 'test_note'      => $tracking?->test_drive_note ?? '-',
                 'contact_date'   => $d->contact_date ? Carbon::parse($d->contact_date)->format('d/m/Y') : '-',
                 'decision'       => $d->decision?->name ?? '-',
-                'contact_status' => $d->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้',
+                'contact_status' => is_null($d->contact_status) ? '-' : ($d->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้'),
                 'comment'        => $d->comment_sale ?? '-',
             ];
         });

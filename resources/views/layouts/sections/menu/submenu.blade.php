@@ -11,10 +11,6 @@
         @continue
       @endif
 
-      @if ($submenu->slug == 'purchase-order.create')
-        @continue
-      @endif
-
       @php
         $bpCsAllowed = ['accessory', 'accessory.partner', 'invoice.index', 'invoice.create', 'invoice.view-export-report'];
         $stockFilmSlugs = ['stock-film', 'film-price-list', 'film-usage'];

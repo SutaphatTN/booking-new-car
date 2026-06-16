@@ -6,6 +6,7 @@ use App\Exports\customerTracking\CustomerTrackingExport;
 use App\Exports\customerTracking\CustomerTrackingByDateExport;
 use App\Exports\customerTracking\CustomerTrackingDailyExport;
 use App\Exports\customerTracking\CustomerTrackingOverdueExport;
+use App\Exports\customerTracking\CustomerTrackingOverdueReport;
 use App\Http\Controllers\Controller;
 use App\Traits\ConvertsThaiDate;
 use App\Models\CustomerTracking;
@@ -564,7 +565,7 @@ class CustomerTrackingController extends Controller
                     CustomerTrackingDetail::create([
                         'tracking_id'    => $tracking->id,
                         'contact_date'   => $baseDate->copy()->addDays($days)->format('Y-m-d'),
-                        'contact_status' => 1,
+                        'contact_status' => null, // checkpoint อัตโนมัติ → เว้นว่างไว้จนกว่าจะติดต่อจริง
                         'decision_id'    => $decisionId,
                         'comment_sale'   => null,
                         'entry_type'     => 'manager',
@@ -651,7 +652,7 @@ class CustomerTrackingController extends Controller
                     CustomerTrackingDetail::create([
                         'tracking_id'    => $id,
                         'contact_date'   => $baseDate->copy()->addDays($days)->format('Y-m-d'),
-                        'contact_status' => 1,
+                        'contact_status' => null, // checkpoint อัตโนมัติ → เว้นว่างไว้จนกว่าจะติดต่อจริง
                         'decision_id'    => $decisionId,
                         'comment_sale'   => null,
                         'entry_type'     => 'manager',
@@ -717,7 +718,7 @@ class CustomerTrackingController extends Controller
                 CustomerTrackingDetail::create([
                     'tracking_id'    => $detail->tracking_id,
                     'contact_date'   => $baseDate->copy()->addDays($days)->format('Y-m-d'),
-                    'contact_status' => 1,
+                    'contact_status' => null, // checkpoint อัตโนมัติ → เว้นว่างไว้จนกว่าจะติดต่อจริง
                     'decision_id'    => $request->decision_id,
                     'comment_sale'   => null,
                     'entry_type'     => 'manager',
@@ -774,7 +775,7 @@ class CustomerTrackingController extends Controller
         $month    = $request->month ?? now()->format('Y-m');
         $filename = 'รายงานเลยกำหนดติดตามลูกค้า_' . $month . '.xlsx';
 
-        return Excel::download(new CustomerTrackingOverdueExport($month), $filename);
+        return Excel::download(new CustomerTrackingOverdueReport($month), $filename);
     }
 
     public function saveTestDrive(Request $request, $id)
