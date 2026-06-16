@@ -14,6 +14,9 @@ class LicensePlateHistory extends Model
 
 	protected $table = 'license_plate_history';
 
+	// ประวัติป้ายแดงแชร์ตามกลุ่ม brand เช่นเดียวกับตัวป้าย (ดู config/brand.php)
+	public $sharedByBrandGroup = true;
+
 	protected $fillable = [
 		'saleID',
 		'licenseID',

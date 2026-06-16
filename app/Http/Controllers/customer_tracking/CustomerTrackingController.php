@@ -18,7 +18,6 @@ use App\Models\TbDecision;
 use App\Models\TbInteriorColor;
 use App\Models\TbPrefixname;
 use App\Models\TbSalecarType;
-use App\Models\Traits\UserAccessScope;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -449,7 +448,7 @@ class CustomerTrackingController extends Controller
         }
 
         // เช็คการจอง active ใน brand เดียวกัน (con_status ไม่ใช่ 5,7,8,9 = จบแล้ว)
-        $hasBooking = Salecar::withoutGlobalScope(UserAccessScope::class)
+        $hasBooking = Salecar::withoutGlobalScope('userAccess')
             ->where('CusID', $customer->id)
             ->where('brand', $brand)
             ->whereNotIn('con_status', [5, 7, 8, 9])
@@ -488,7 +487,7 @@ class CustomerTrackingController extends Controller
                     ->restore();
             }
 
-            $hasBooking = Salecar::withoutGlobalScope(UserAccessScope::class)
+            $hasBooking = Salecar::withoutGlobalScope('userAccess')
                 ->where('CusID', $request->customer_id)
                 ->where('brand', $authUser->brand)
                 ->whereNotIn('con_status', [5, 7, 8, 9])

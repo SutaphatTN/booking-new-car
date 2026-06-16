@@ -11,6 +11,9 @@ class TbLicensePlate extends Model
 	
 	protected $table = 'tb_license_plate';
 
+	// ป้ายแดงใช้กองเดียวกันระหว่าง brand ในกลุ่มเดียวกัน (ดู config/brand.php)
+	public $sharedByBrandGroup = true;
+
 	protected $fillable = [
 		'number',
 		'is_used',

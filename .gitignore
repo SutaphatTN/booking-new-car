@@ -34,3 +34,12 @@ storage/fonts/
 app/Console/Commands/ImportCustomerTracking.php
 app/Console/Commands/Import
 database/backfill_decision_followup.php
+
+_check_scope.php
+_inspect_plates.php
+_inspect_plates2.php
+_inspect_plates3.php
+_inspect_plates4.php
+_inspect_plates5.php
+_merge_plates.php
+_verify_dups.php

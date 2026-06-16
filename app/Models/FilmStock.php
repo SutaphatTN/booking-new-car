@@ -12,6 +12,9 @@ class FilmStock extends Model
 
     protected $table = 'tb_film_stocks';
 
+    // stock film แชร์กองเดียวกันระหว่าง brand ในกลุ่มเดียวกัน (ดู config/brand.php)
+    public $sharedByBrandGroup = true;
+
     protected $fillable = [
         'stock_no',
         'part_no',

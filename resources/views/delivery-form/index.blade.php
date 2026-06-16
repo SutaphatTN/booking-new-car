@@ -8,14 +8,14 @@
       <h4 class="card-header">ค้นหาลูกค้าเพื่อพิมพ์ฟอร์มส่งมอบรถ</h4>
       <div class="card-body">
 
-        <p class="text-muted mb-3">พิมพ์ชื่อลูกค้า / เลข Vin / เลขถัง เพื่อค้นหา</p>
+        <p class="text-muted mb-3">พิมพ์ชื่อลูกค้า / เลข Vin / เลขเครื่อง เพื่อค้นหา</p>
 
         <div class="position-relative">
           <input
             type="text"
             id="searchInput"
             class="form-control form-control-lg"
-            placeholder="ชื่อลูกค้า / เลข Vin / เลขถัง"
+            placeholder="ชื่อลูกค้า / เลข Vin / เลขเครื่อง"
             autocomplete="off"
           >
           <div id="searchSpinner" class="position-absolute top-50 end-0 translate-middle-y pe-3 d-none">

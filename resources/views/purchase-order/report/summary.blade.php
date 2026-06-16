@@ -328,7 +328,7 @@
                 </div>
               @endif
               <div class="f">
-                <div class="fl">Vin / เลขถัง</div>
+                <div class="fl">Vin / เลขเครื่อง</div>
                 <div class="fv">{{ $saleCar->carOrder?->vin_number ?? '-' }} /
                   {{ $saleCar->carOrder?->engine_number ?? '-' }}</div>
               </div>
