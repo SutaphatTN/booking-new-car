@@ -37,7 +37,6 @@ use App\Models\TbPricelistCar;
 use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
 use App\Models\User;
-use App\Models\Traits\UserAccessScope;
 use App\Services\OneDriveService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use GuzzleHttp\Client;
@@ -609,8 +608,10 @@ class PurchaseOrderController extends Controller
         $finances = Finance::all();
         $subModels = TbSubcarmodel::where('model_id', $saleCar->model_id)->get();
         $conStatus = TbConStatus::all();
-        $licensePlateRed = TbLicensePlate::where('is_used', 0)
-            ->orWhere('id', $saleCar->red_license)
+        $licensePlateRed = TbLicensePlate::where(function ($q) use ($saleCar) {
+                $q->where('is_used', 0)
+                    ->orWhere('id', $saleCar->red_license);
+            })
             ->get();
         $provinces = TbProvinces::all();
         $type = TbSalecarType::all();
@@ -1722,7 +1723,7 @@ class PurchaseOrderController extends Controller
         }
 
         // 1) มีใบจองที่ยังดำเนินการอยู่ (con_status ไม่ใช่ 5,7,8,9 = ยังไม่จบ)
-        $hasActiveBooking = Salecar::withoutGlobalScope(UserAccessScope::class)
+        $hasActiveBooking = Salecar::withoutGlobalScope('userAccess')
             ->where('CusID', $customerId)
             ->where('brand', $brand)
             ->whereNotIn('con_status', [5, 7, 8, 9])
@@ -1733,7 +1734,7 @@ class PurchaseOrderController extends Controller
         }
 
         // 2) ยังอยู่ในลิสต์ติดตาม (ยังไม่ปิด) → ต้องจองผ่านหน้าการติดตาม
-        $openTracking = CustomerTracking::withoutGlobalScope(UserAccessScope::class)
+        $openTracking = CustomerTracking::withoutGlobalScope('userAccess')
             ->where('customer_id', $customerId)
             ->where('brand', $brand)
             ->whereNull('cancelled_at')
@@ -1748,7 +1749,7 @@ class PurchaseOrderController extends Controller
         }
 
         // 3) เคยมีการติดตามแต่ปิดแล้ว → จองใหม่ได้เลย
-        $hasAnyTracking = CustomerTracking::withoutGlobalScope(UserAccessScope::class)
+        $hasAnyTracking = CustomerTracking::withoutGlobalScope('userAccess')
             ->where('customer_id', $customerId)
             ->where('brand', $brand)
             ->exists();

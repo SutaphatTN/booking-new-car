@@ -129,7 +129,7 @@
 
                 <div class="col-md-4">
                   <label for="engine_number" class="mf-label form-label">
-                    <i class="bx bx-cog ci-indigo"></i> หมายเลขเครื่องยนต์
+                    <i class="bx bx-cog ci-indigo"></i> เลขเครื่อง
                   </label>
                   <input id="engine_number" type="text"
                     class="form-control @error('engine_number') is-invalid @enderror" name="engine_number"

@@ -18,7 +18,7 @@
         <th>Option</th>
       @endif
       <th>Vin-Number</th>
-      <th>เลขถัง</th>
+      <th>เลขเครื่อง</th>
       <th>ไฟแนนซ์</th>
       <th>ประเภทการขาย</th>
       <th>สาขา</th>

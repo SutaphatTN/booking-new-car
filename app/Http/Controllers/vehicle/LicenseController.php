@@ -21,17 +21,26 @@ class LicenseController extends Controller
 
   public function listLicense()
   {
+    // โหลดข้อมูลการขายข้ามแบรนด์ในกลุ่มได้ (ข้าม UserAccessScope) เพื่อโชว์ลูกค้า/ฝ่ายขาย/วันที่
+    // แต่สิทธิ์ "จัดการ" (ปุ่ม Action) ยังจำกัดเฉพาะแบรนด์เจ้าของด้านล่าง
     $plates = TbLicensePlate::with([
-      'currentHistory.saleCarLic.customer.prefix',
-      'currentHistory.saleCarLic.saleUser'
+      'currentHistory.saleCarLic' => function ($q) {
+        $q->withoutGlobalScope('userAccess')->with(['customer.prefix', 'saleUser']);
+      },
     ])->get();
 
-    $data = $plates->map(function ($p, $index) {
+    $userBrand = Auth::user()->brand;
+
+    $data = $plates->map(function ($p, $index) use ($userBrand) {
       $history = $p->currentHistory;
+
       $prefix = $history?->saleCarLic?->customer?->prefix?->Name_TH ?? '';
       $first  = $history?->saleCarLic?->customer?->FirstName ?? '';
       $last   = $history?->saleCarLic?->customer?->LastName ?? '';
       $nameSale = $history?->saleCarLic?->saleUser?->name ?? '';
+
+      // ป้ายถูกผูกโดยการขายของ "อีกแบรนด์ในกลุ่ม" → โชว์ข้อมูลได้ แต่ห้ามจัดการ (Action = badge)
+      $isOtherBrand = $history && $p->is_used && $userBrand && $history->brand != $userBrand;
 
       return [
         'No' => $index + 1,
@@ -45,12 +54,14 @@ class LicenseController extends Controller
         'date' => $p->is_used
           ? ($history?->saleCarLic?->format_delivery_date ?? '-')
           : '-',
-        'Action' => ($history && $p->is_used)
-          ? view('number_register.license.button', [
-            'plate' => $p,
-            'history' => $history
-          ])->render()
-          : '-'
+        'Action' => $isOtherBrand
+          ? '<span class="badge bg-secondary">ใช้งานโดย ' . e(config("brand.names.{$history->brand}", 'แบรนด์อื่น')) . '</span>'
+          : (($history && $p->is_used)
+            ? view('number_register.license.button', [
+              'plate' => $p,
+              'history' => $history
+            ])->render()
+            : '-'),
       ];
     });
 

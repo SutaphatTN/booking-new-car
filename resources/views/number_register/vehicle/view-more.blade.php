@@ -47,7 +47,7 @@
 
               <div class="col-md-3">
                 <label for="engine_number" class="mf-label form-label">
-                  <i class="bx bx-hash ci-indigo"></i> เลขถัง
+                  <i class="bx bx-hash ci-indigo"></i> เลขเครื่อง
                 </label>
                 <input id="engine_number" type="text" class="form-control" value="{{ $veh->carOrder?->engine_number ?? '-' }}" disabled>
               </div>

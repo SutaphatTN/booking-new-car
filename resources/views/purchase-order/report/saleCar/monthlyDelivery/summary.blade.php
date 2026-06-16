@@ -7,7 +7,7 @@
       <th>รุ่นรถหลัก</th>
       <th>รุ่นรถย่อย</th>
       <th>Vin-Number</th>
-      <th>เลขถัง</th>
+      <th>เลขเครื่อง</th>
       @if (!in_array(auth()->user()->brand, [2,3]))
         <th>Option</th>
       @endif

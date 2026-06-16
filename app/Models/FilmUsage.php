@@ -12,6 +12,9 @@ class FilmUsage extends Model
 
     protected $table = 'tb_film_usage';
 
+    // การเบิกใช้ film แชร์กับ stock กองเดียวกันตามกลุ่ม brand (ดู config/brand.php)
+    public $sharedByBrandGroup = true;
+
     protected $fillable = [
         'type',
         'order_date',
