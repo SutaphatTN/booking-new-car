@@ -5,7 +5,8 @@
 #campaignLoadingOverlay,
 #campaignClaimLoadingOverlay,
 #accessoryLoadingOverlay,
-#historyLoadingOverlay {
+#historyLoadingOverlay,
+#invoiceLoadingOverlay {
   display: none;
   position: fixed;
   inset: 0;

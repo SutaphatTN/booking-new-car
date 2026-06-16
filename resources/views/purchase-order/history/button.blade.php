@@ -19,6 +19,13 @@ $hasRemaining = !empty($s->remainingPayment);
   <i class="bx bx-printer"></i>
 </a>
 
+@if (auth()->user()->role === 'admin')
+  <button class="btn btn-icon btn-warning btnChangeStatus" data-id="{{ $s->id }}"
+    data-status="{{ $s->con_status }}" title="ดึงกลับ / เปลี่ยนสถานะ">
+    <i class="bx bx-transfer"></i>
+  </button>
+@endif
+
 <style>
   .btn-icon i {
     color: white;

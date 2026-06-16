@@ -1199,9 +1199,10 @@
                     <div class="col-md-3">
                       <div class="summary-stat-card highlight">
                         <div class="summary-stat-label"><i class="bx bx-car me-1"></i> ราคารถ</div>
+                        {{-- ราคารถ: แก้ได้เฉพาะ role = admin (คนอื่น read only) --}}
                         <input id="price_sub" name="price_sub" class="form-control text-end money-input mt-1"
-                          value="{{ $saleCar->price_sub ?? '' }}" required readonly
-                          {{ $carLocked ? 'readonly' : '' }}>
+                          value="{{ $saleCar->price_sub ?? '' }}" required
+                          {{ $userRole === 'admin' && !$isHistory ? '' : 'readonly' }}>
                       </div>
                     </div>
                   </div>

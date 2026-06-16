@@ -805,9 +805,10 @@ class PurchaseOrderController extends Controller
                 'type_sale' => $request->type_sale,
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
-                'price_sub' => $request->filled('price_sub')
-                    ? str_replace(',', '', $request->price_sub)
-                    : null,
+                // ราคารถ: แก้ได้เฉพาะ admin — role อื่นบังคับใช้ค่าเดิมเสมอ (กันแก้ผ่าน devtools)
+                'price_sub' => Auth::user()->role === 'admin'
+                    ? ($request->filled('price_sub') ? str_replace(',', '', $request->price_sub) : null)
+                    : $saleCar->price_sub,
                 'Color' => $request->Color ?? null,
                 'Year' => $request->Year,
                 'CarOrderID' => $request->CarOrderID,
@@ -1834,6 +1835,29 @@ class PurchaseOrderController extends Controller
             ->join(' + ');
 
         return view('purchase-order.history.view-more-history', compact('saleCar', 'campaignText'));
+    }
+
+    /**
+     * ดึงคำสั่งซื้อที่ส่งมอบแล้วกลับมา / เปลี่ยนสถานะ — เฉพาะ role = admin
+     * เปลี่ยนแค่ con_status เท่านั้น ไม่ยุ่งกับ CarOrder / tracking
+     */
+    public function changeStatus(Request $request, $id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403);
+        }
+
+        $request->validate([
+            'con_status' => 'required|integer|exists:tb_constatus,id',
+        ]);
+
+        $saleCar = Salecar::findOrFail($id);
+        $saleCar->update(['con_status' => $request->con_status]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'เปลี่ยนสถานะเรียบร้อยแล้ว',
+        ]);
     }
 
     public function exportBooking(Request $request)

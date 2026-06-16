@@ -12,53 +12,58 @@ $(document).ready(function () {
 
   let currentFilter = 'pending';
 
-  function initTable(filter) {
-    if ($.fn.DataTable.isDataTable('.invoiceTable')) {
-      $('.invoiceTable').DataTable().destroy();
-    }
-
-    invoiceTable = $('.invoiceTable').DataTable({
-      ajax: { url: '/invoice/list', data: { filter: filter } },
-      columns: [
-        { data: 'No', orderable: false },
-        { data: 'customer_name', orderable: false },
-        { data: 'partner_name', orderable: false },
-        { data: 'detail', orderable: false },
-        { data: 'total_price', orderable: false, searchable: false, className: 'text-end' },
-        { data: 'date', orderable: false },
-        { data: 'Action', orderable: false, searchable: false }
-      ],
-      paging: true,
-      lengthChange: true,
-      searching: true,
-      ordering: false,
-      info: true,
-      pageLength: 10,
-      autoWidth: false,
-      language: {
-        lengthMenu: 'แสดง _MENU_ แถว',
-        zeroRecords: 'ไม่พบข้อมูล',
-        info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
-        infoEmpty: 'ไม่มีข้อมูล',
-        search: 'ค้นหา:',
-        paginate: {
-          first: '',
-          last: '',
-          next: 'ถัดไป',
-          previous: 'ก่อนหน้า'
-        }
+  invoiceTable = $('.invoiceTable').DataTable({
+    serverSide: true,
+    processing: false,
+    ajax: {
+      url: '/invoice/list',
+      data: function (d) {
+        d.filter = currentFilter;
       }
-    });
-  }
-
-  // filter
-  $(document).on('change', '#invoiceStatusFilter', function () {
-    currentFilter = $(this).val();
-    initTable(currentFilter);
+    },
+    columns: [
+      { data: 'No', orderable: false },
+      { data: 'customer_name', orderable: false },
+      { data: 'partner_name', orderable: false },
+      { data: 'detail', orderable: false },
+      { data: 'total_price', orderable: false, searchable: false, className: 'text-end' },
+      { data: 'date', orderable: false },
+      { data: 'Action', orderable: false, searchable: false }
+    ],
+    paging: true,
+    lengthChange: true,
+    searching: true,
+    ordering: false,
+    info: true,
+    pageLength: 10,
+    autoWidth: false,
+    language: {
+      lengthMenu: 'แสดง _MENU_ แถว',
+      zeroRecords: 'ไม่พบข้อมูล',
+      info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
+      infoEmpty: 'ไม่มีข้อมูล',
+      search: 'ค้นหา:',
+      paginate: {
+        first: '',
+        last: '',
+        next: 'ถัดไป',
+        previous: 'ก่อนหน้า'
+      }
+    }
   });
 
-  // default filter
-  initTable(currentFilter);
+  invoiceTable.on('preXhr.dt', function () {
+    $('#invoiceLoadingOverlay').css('display', 'flex');
+  });
+  invoiceTable.on('xhr.dt', function () {
+    $('#invoiceLoadingOverlay').css('display', 'none');
+  });
+
+  // filter — เปลี่ยนสถานะแล้วโหลดใหม่ (กลับไปหน้าแรก)
+  $(document).on('change', '#invoiceStatusFilter', function () {
+    currentFilter = $(this).val();
+    invoiceTable.ajax.reload();
+  });
 });
 
 // save
@@ -99,6 +104,9 @@ $(document).ready(function () {
   const btnAdd = document.getElementById('btnAddRow');
   if (btnAdd) {
     const partnerOptions = document.querySelector('#accessoryBody select')?.innerHTML ?? '';
+
+    // เริ่ม index ต่อจากแถวที่มีอยู่ (หน้า edit มีได้หลายแถว) กัน key ชนกัน
+    rowIndex = document.querySelectorAll('#accessoryBody .accessory-row').length;
 
     btnAdd.addEventListener('click', function () {
       const tbody = document.getElementById('accessoryBody');
@@ -172,6 +180,44 @@ $('#btnSubmitConfirmReceipt').on('click', function () {
     .fail(function () {
       Swal.fire('เกิดข้อผิดพลาด', 'กรุณาลองใหม่', 'error');
     });
+});
+
+// ลบ invoice (soft delete ทั้ง invoice_customer + invoice_accessory) — admin เท่านั้น
+$(document).on('click', '.btn-delete-invoice', function () {
+  const id = $(this).data('id');
+
+  Swal.fire({
+    title: 'ยืนยันการลบ?',
+    text: 'ใบสั่งซื้อนี้และรายการอุปกรณ์ทั้งหมดจะถูกลบ',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'ใช่, ลบเลย!',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+
+    $.ajax({
+      url: '/invoice/' + id,
+      method: 'POST',
+      data: { _method: 'DELETE', _token: $('meta[name="csrf-token"]').attr('content') },
+      success: function (res) {
+        Swal.fire({
+          title: 'ลบแล้ว!',
+          text: res.message ?? 'ลบข้อมูลเรียบร้อยแล้ว',
+          icon: 'success',
+          confirmButtonColor: '#6c5ffc',
+          confirmButtonText: 'ตกลง'
+        }).then(() => {
+          invoiceTable.ajax.reload(null, false);
+        });
+      },
+      error: function (xhr) {
+        Swal.fire('เกิดข้อผิดพลาด', xhr.responseJSON?.message ?? 'ไม่สามารถลบได้', 'error');
+      }
+    });
+  });
 });
 
 // อนุมัติ
