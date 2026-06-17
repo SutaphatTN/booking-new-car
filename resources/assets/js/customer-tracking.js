@@ -1026,6 +1026,7 @@ $(document).ready(function () {
   });
 
   $('#btnSaveEditDetail').on('click', function () {
+    const $btn = $(this);
     const detailId = $('#edit_detail_id').val();
     const contactStatus = $('input[name="edit_contact_status"]:checked').val();
     const commentSale = $('#edit_comment_sale').val();
@@ -1036,6 +1037,12 @@ $(document).ready(function () {
       Swal.fire({ icon: 'warning', title: 'กรุณาระบุวันที่ติดตาม', confirmButtonText: 'ตกลง' });
       return;
     }
+
+    // กันกดซ้ำ → ปิดปุ่มตั้งแต่ครั้งแรก (success จะ reload หน้าอยู่แล้ว)
+    if ($btn.prop('disabled')) return;
+    const btnHtml = $btn.html();
+    $btn.prop('disabled', true)
+      .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังบันทึก...');
 
     $.ajax({
       url: `/customer-tracking/detail/${detailId}`,
@@ -1051,6 +1058,7 @@ $(document).ready(function () {
               location.reload();
             },
             error: function () {
+              $btn.prop('disabled', false).html(btnHtml);
               Swal.fire({
                 icon: 'error',
                 title: 'เกิดข้อผิดพลาด',
@@ -1063,6 +1071,7 @@ $(document).ready(function () {
         }
       },
       error: function () {
+        $btn.prop('disabled', false).html(btnHtml);
         alert('เกิดข้อผิดพลาด ไม่สามารถบันทึกได้');
       }
     });
