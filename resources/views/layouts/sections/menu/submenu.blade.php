@@ -27,11 +27,15 @@
         // role sp เห็นเฉพาะเมนู Stock Film และ ประดับยนต์ (ทุกเมนูย่อย)
         $accessorySlugs = ['accessory', 'accessory.partner', 'accessory.index', 'accessory.view-export-accessory'];
         $isAccessory = !is_array($submenu->slug) && in_array($submenu->slug, $accessorySlugs);
+
+        // role sp เห็นทุกเมนูย่อยในใบสั่งซื้อ
+        $spInvoiceSlugs = ['invoice.index', 'invoice.create', 'invoice.view-export-report'];
+        $isSpInvoice = !is_array($submenu->slug) && in_array($submenu->slug, $spInvoiceSlugs);
       @endphp
       @if (in_array($userRole, ['bp', 'cs']) && !$isAllowedForBpCs && !$isAllowedForBp)
         @continue
       @endif
-      @if ($userRole === 'sp' && !$isStockFilm && !$isAccessory)
+      @if ($userRole === 'sp' && !$isStockFilm && !$isAccessory && !$isSpInvoice)
         @continue
       @endif
 
