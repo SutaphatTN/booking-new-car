@@ -91,7 +91,22 @@ class CustomerTrackingNextContactSheet implements FromView, WithTitle, WithStyle
             ->whereNotIn('customer_id', $bookedCustomerIds)
             ->pluck('id');
 
-        // ดึง "ทุกนัด" (manager) ที่ตกในเดือนที่เลือก → 1 แถวต่อ 1 นัด (ลูกค้า 1 คนอาจมีหลายนัดในเดือน)
+        // [เก่า] ดึง "ทุกนัด" (manager) ที่ตกในเดือนที่เลือก → 1 แถวต่อ 1 นัด (ลูกค้า 1 คนอาจมีหลายนัดในเดือน)
+        // เก็บไว้เผื่อใช้
+        // $details = CustomerTrackingDetail::with([
+        //     'tracking.customer.prefix',
+        //     'tracking.sale',
+        //     'tracking.source',
+        //     'decision',
+        // ])
+        //     ->whereIn('tracking_id', $validTrackingIds)
+        //     ->where('entry_type', 'manager')
+        //     ->whereBetween('contact_date', [$start, $end])
+        //     ->orderBy('contact_date')
+        //     ->orderBy('tracking_id')
+        //     ->get();
+
+        // [ใหม่] ดึงทุกนัด (manager) ในเดือนที่ยังไม่ได้กรอก (สถานะการติดต่อ หรือ หมายเหตุ ว่างช่องใดช่องหนึ่ง)
         $details = CustomerTrackingDetail::with([
             'tracking.customer.prefix',
             'tracking.sale',
@@ -101,6 +116,11 @@ class CustomerTrackingNextContactSheet implements FromView, WithTitle, WithStyle
             ->whereIn('tracking_id', $validTrackingIds)
             ->where('entry_type', 'manager')
             ->whereBetween('contact_date', [$start, $end])
+            ->where(function ($q) {
+                $q->whereNull('contact_status')
+                    ->orWhereNull('comment_sale')
+                    ->orWhere('comment_sale', '');
+            })
             ->orderBy('contact_date')
             ->orderBy('tracking_id')
             ->get();
