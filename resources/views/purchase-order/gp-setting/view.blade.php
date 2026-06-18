@@ -89,8 +89,8 @@
                     <td class="text-center">
                       <button type="button" class="btn btn-icon btn-warning text-white btn-edit-gp"
                         data-bs-toggle="modal" data-bs-target="#gpEditModal"
-                        title="{{ $isAdmin ? 'แก้ไข' : 'ดู' }}">
-                        <i class="bx {{ $isAdmin ? 'bx-edit' : 'bx-show' }}"></i>
+                        title="แก้ไข">
+                        <i class="bx bx-edit"></i>
                       </button>
                     </td>
                   </tr>
@@ -163,11 +163,11 @@
                 </div>
                 <div class="col-md-3">
                   <label for="m_RI" class="mf-label form-label"><i class="bx bx-trending-up ci-sky"></i> RI</label>
-                  <input type="text" inputmode="decimal" class="form-control text-end gp-num" id="m_RI" {{ $isAdmin ? '' : 'readonly' }}>
+                  <input type="text" inputmode="decimal" class="form-control text-end gp-num" id="m_RI">
                 </div>
                 <div class="col-md-3">
                   <label for="m_WS" class="mf-label form-label"><i class="bx bx-store ci-sky"></i> WS</label>
-                  <input type="text" inputmode="decimal" class="form-control text-end gp-num" id="m_WS" {{ $isAdmin ? '' : 'readonly' }}>
+                  <input type="text" inputmode="decimal" class="form-control text-end gp-num" id="m_WS">
                 </div>
               </div>
             </div>
@@ -233,11 +233,9 @@
             <button type="button" class="btn btn-danger px-4" data-bs-dismiss="modal">
               <i class="bx bx-x me-1"></i>ปิด
             </button>
-            @if ($isAdmin)
               <button type="button" class="btn btn-primary px-5" id="btnSaveGp">
                 <i class="bx bx-save me-1"></i>บันทึก
               </button>
-            @endif
           </div>
 
         </div>
@@ -352,8 +350,6 @@
         const comVal = (d.com === '' || d.com === null || d.com === undefined) ? 3500 : d.com;
         $('#m_gp_com').val(fmtNum(comVal));
       });
-
-      if (!isAdmin) return; // audit: readonly ไม่มีปุ่มบันทึก
 
       $('#btnSaveGp').on('click', function () {
         const $btn = $(this);
