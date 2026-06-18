@@ -1992,8 +1992,9 @@ class PurchaseOrderController extends Controller
 
     public function updateGpSetting(Request $request, $id)
     {
-        // แก้ไขได้เฉพาะ admin (audit เปิดดูได้แบบ readonly เท่านั้น)
-        abort_unless(Auth::user()->role === 'admin', 403);
+        $role = Auth::user()->role;
+        // admin และ audit แก้ไขได้ (audit แก้ได้ทุกอย่าง ยกเว้นราคาทุน/ราคาขาย ซึ่ง readonly)
+        abort_unless(in_array($role, ['admin', 'audit']), 403);
 
         $validated = $request->validate([
             'gp_cost_price_override' => 'nullable|numeric|min:0',
@@ -2013,10 +2014,13 @@ class PurchaseOrderController extends Controller
 
         // RI / WS / ราคาทุน(DNP) / ราคาขาย(MSRP) เก็บที่ car_order
         if ($salecar->carOrder) {
-            $salecar->carOrder->car_DNP  = $validated['car_DNP'] ?? null;
-            $salecar->carOrder->car_MSRP = $validated['car_MSRP'] ?? null;
-            $salecar->carOrder->RI       = $validated['RI'] ?? null;
-            $salecar->carOrder->WS       = $validated['WS'] ?? null;
+            $salecar->carOrder->RI = $validated['RI'] ?? null;
+            $salecar->carOrder->WS = $validated['WS'] ?? null;
+            // ราคาทุน(DNP)/ราคาขาย(MSRP) แก้ได้เฉพาะ admin (audit เป็น readonly)
+            if ($role === 'admin') {
+                $salecar->carOrder->car_DNP  = $validated['car_DNP'] ?? null;
+                $salecar->carOrder->car_MSRP = $validated['car_MSRP'] ?? null;
+            }
             $salecar->carOrder->save();
         }
 
