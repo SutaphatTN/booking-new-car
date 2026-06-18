@@ -96,19 +96,23 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
           'V',
           'W',
           'X',
+          'Y',
           'Z',
           'AA',
           'AB',
           'AC',
+          'AD',
+          'AE',
           'AF',
-          'AG',
-          'AH',
+          // 'AG',
+          // 'AH',
           'AI',
           'AJ',
           'AK',
           'AL',
           'AM',
-          'AR',
+          'AN',
+          // 'AR',
           'AS',
           'AT',
           'AU',
@@ -120,6 +124,8 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
           'BA',
           'BB',
           'BC',
+          'BD',
+          'BE',
         ];
 
         foreach ($numberColumns as $col) {
@@ -180,19 +186,28 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
 
       // ราคาขายรวมบวกหัว (ไม่รวม VAT)
       $makePrice = $r->MarkupPrice ?? 0;
-      // $totalSaleMake =  $totalSalePrice + $makePrice;
-      $totalSaleMake =  $totalSalePrice * (100/107);
+      $carSaleDis = $totalSalePrice - $carDiscount; // ราคาขายลบส่วนลด
+      $carSaleMake = $carSaleDis + $makePrice;
+      //Net price ราคาขาย ลบ ส่วนลด บวก บวกหัว คือ carSaleMake
+      $totalSaleMake =  $carSaleMake / 1.07;
 
       // ราคาทุน (ไม่รวม VAT)
-      $totalCostFund =  $totalCostPrice * (100/107);
+      // ถ้ามีราคาทุนกรอกเอง (gp_cost_price_override) ใช้ค่านั้น + ค่าอุปกรณ์ตกแต่ง ถ้าไม่มี ใช้สูตรเดิม
+      $totalCostFund =  $r->gp_cost_price_override !== null
+        ? ($r->gp_cost_price_override + ($r->gp_accessory_cost ?? 0))
+        : ($totalCostPrice / 1.07);
+
+      //บวกหัก
+      $makeVat = $makePrice / 1.07;
 
       // GP
       // $totalGP = $totalSalePrice - $totalCostPrice;
       $totalGP = ($totalSaleMake - $makePrice) - $totalCostFund;
 
       // per GP
-      $totalPerGP = ($totalSalePrice > 0)
-        ? round(($totalGP / $totalSalePrice) * 100, 2)
+      $saleDisMake = $totalSaleMake - $makePrice;
+      $totalPerGP = ($saleDisMake > 0)
+        ? round(($totalGP / $saleDisMake) * 100, 2)
         : 0;
 
       //WS , RI
@@ -220,6 +235,14 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         ->filter()
         ->implode(' / ');
 
+      // com company
+      $downPayment = $r->DownPayment ?? 0;
+      $totalAlp = $r->remainingPayment?->total_alp ?? 0;
+      $interest = $r->remainingPayment?->interest ?? 0;
+      $year = $r->remainingPayment?->financeInfo?->max_year ?? 0;
+      $typeCom = $r->remainingPayment?->type_com ?? 0;
+      $com_company = ($carSaleMake - $downPayment + $totalAlp) * (($interest/100) * $year * ($typeCom/100)) / 1.07;
+
       //com ต่างๆ
       $com_fin = $r->financeConfirm?->com_fin ?? 0;
       $com_extra = $r->financeConfirm?->com_extra ?? 0;
@@ -228,7 +251,8 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       $acc_extra = $r->TotalAccessoryExtra ?? 0;
 
       // Total Revenue
-      $total_rev = $totalSaleMake + $ws + $ri + $acc_extra + $campaign + $campaign_top + $campaign_other + $campaign_ck + $com_fin + $com_extra + $com_kick +  $com_subsidy;
+      // $total_rev = $totalSaleMake + $ws + $ri + $acc_extra + $campaign + $campaign_top + $campaign_other + $campaign_ck + $com_fin + $com_extra + $com_kick +  $com_subsidy;
+      $total_rev = $totalSaleMake + $ws + $ri + $acc_extra + $campaign_top + $com_company + $com_extra + $com_kick +  $com_subsidy;
 
       $down_payDis = $r->DownPaymentDiscount ?? 0;
       $com_sale = $r->CommissionSale ?? 0;
@@ -237,7 +261,10 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       $total_discount = $down_payDis + $carDiscount;
 
       //ต้นทุนรวม
-      $total_cost = ($totalCostPrice + $down_payDis + $com_sale) - $total_discount;
+      // คอมขาย: ใช้ที่กรอกเอง (gp_commission_sale) ถ้ายังไม่กรอก fallback เป็น 4500
+      $comSale = $r->gp_commission_sale ?? 3500;
+      // $total_cost = ($totalCostFund + $down_payDis + $com_sale) - $total_discount;
+      $total_cost = ($totalCostFund + $down_payDis + $comSale) - $total_discount;
       //P/L
       $total_pl = $total_rev - $total_cost;
 
@@ -299,9 +326,12 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         'cost_price' => $totalCostPrice,
         'car_discount' => $carDiscount,
         'down_payDis' => $down_payDis,
-        'down_payment' => $r->DownPayment ?? 0,
+        'down_payment' => $downPayment,
+        'net_price' => $carSaleMake,
         'makeUp' => $makePrice,
         'sale_make' => $totalSaleMake,
+        'makeVat' => $makeVat,
+        'totalCostFund' => $totalCostFund,
         'gp' => $totalGP,
         'per_gp' => $totalPerGP,
         'ws' => $ws,
@@ -309,23 +339,25 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         'acc_extra' => $acc_extra,
         'campaign' => $campaign ?? 0,
         'campaign_top' => $campaign_top ?? 0,
-        'campaign_other' => $campaign_other ?? 0,
-        'campaign_ck' => $campaign_ck ?? 0,
+        // 'campaign_other' => $campaign_other ?? 0,
+        // 'campaign_ck' => $campaign_ck ?? 0,
         'campaign_detail_1' => $campaign_detail_1 ?? '-',
         'campaign_detail_2' => $campaign_detail_2 ?? '-',
         'total_rev' => $total_rev ?? 0,
         'total_discount' => $total_discount ?? 0,
-        'com_sale' => $com_sale ?? 0,
+        'com_sale' => $comSale,
+        // 'com_sale' => $com_sale ?? 0,
         'total_cost' => $total_cost ?? 0,
         'total_pl' => $total_pl ?? 0,
-        're_interest' => $r->remainingPayment?->interest ?? '-',
-        're_type_com' => $r->remainingPayment?->type_com ?? '-',
+        're_interest' => $interest,
+        're_type_com' => $typeCom,
         're_period' => $r->remainingPayment?->period ?? '-',
-        're_year' => $r->remainingPayment?->financeInfo?->max_year ?? '-',
+        're_year' => $year,
         're_alp' => $r->remainingPayment?->alp ?? '-',
         'balance_fi' => $r->balanceFinance ?? 0,
-        're_total_alp' => $r->remainingPayment?->total_alp ?? '-',
+        're_total_alp' => $totalAlp,
         'advance_installment' => $r->financeConfirm?->advance_installment ?? 0,
+        'com_company' => $com_company,
         'com_fin' => $com_fin,
         'com_fin_accept' => $r->financeConfirm?->com_fin_accept ?? 0,
         'com_extra' => $com_extra,

@@ -27,8 +27,11 @@
       <th>ส่วนลดราคารถ</th>
       <th>ส่วนลดเงินดาวน์</th>
       <th>ยอดเงินดาวน์</th>
+      <th>Net Price</th>
       <th>ยอดบวกหัว</th>
-      <th>ราคาขายรวมบวกหัว</th>
+      <th>ราคาขายรวมบวกหัว (ไม่รวมVAT)</th>
+      <th>บวกหัก (Exc Vat)</th>
+      <th>ราคาทุน (ไม่รวมVAT)</th>
       <th>GP</th>
       <th>%GP</th>
       <th>WS</th>
@@ -36,10 +39,10 @@
       <th>ลูกค้าจ่ายเพิ่ม</th>
       <th>แคมเปญ</th>
       <th>ประเภทแคมเปญ</th>
-      <th>แคมเปญ Om-Top</th>
+      <th>ประเภทแคมเปญ On-Top</th>
       <th>แคมเปญ On-Top</th>
-      <th>แคมเปญ Other</th>
-      <th>แคมเปญ CK</th>
+      {{-- <th>แคมเปญ Other</th>
+      <th>แคมเปญ CK</th> --}}
       <th>Total Revenue</th>
       <th>รวมส่วนลด</th>
       <th>คอมขาย</th>
@@ -53,6 +56,7 @@
       <th>ยอดจัด</th>
       <th>เบี้ยประกัน</th>
       <th>ค่างวด (งวดแรก)</th>
+      <th>ค่าคอมบริษัท</th>
       <th>Com Finance</th>
       <th>Com Finance รับจริง</th>
       <th>Com Extra</th>
@@ -108,8 +112,11 @@
         <td>{{ $p['car_discount'] }}</td>
         <td>{{ $p['down_payDis'] }}</td>
         <td>{{ $p['down_payment'] }}</td>
+        <td>{{ $p['net_price'] }}</td>
         <td>{{ $p['makeUp'] }}</td>
         <td>{{ $p['sale_make'] }}</td>
+        <td>{{ $p['makeVat'] }}</td>
+        <td>{{ $p['totalCostFund'] }}</td>
         <td>{{ $p['gp'] }}</td>
         <td>{{ $p['per_gp'] }}</td>
         <td>{{ $p['ws'] }}</td>
@@ -119,8 +126,8 @@
         <td>{{ $p['campaign_detail_1'] }}</td>
         <td>{{ $p['campaign_detail_2'] }}</td>
         <td>{{ $p['campaign_top'] }}</td>
-        <td>{{ $p['campaign_other'] }}</td>
-        <td>{{ $p['campaign_ck'] }}</td>
+        {{-- <td>{{ $p['campaign_other'] }}</td>
+        <td>{{ $p['campaign_ck'] }}</td> --}}
         <td>{{ $p['total_rev'] }}</td>
         <td>{{ $p['total_discount'] }}</td>
         <td>{{ $p['com_sale'] }}</td>
@@ -134,6 +141,7 @@
         <td>{{ $p['balance_fi'] }}</td>
         <td>{{ $p['re_total_alp'] }}</td>
         <td>{{ $p['advance_installment'] }}</td>
+        <td>{{ $p['com_company'] }}</td>
         <td>{{ $p['com_fin'] }}</td>
         <td>{{ $p['com_fin_accept'] }}</td>
         <td>{{ $p['com_extra'] }}</td>
@@ -164,7 +172,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="56" align="center">ไม่มีข้อมูล</td>
+        <td colspan="58" align="center">ไม่มีข้อมูล</td>
       </tr>
     @endforelse
 

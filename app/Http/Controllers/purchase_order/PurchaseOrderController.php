@@ -37,6 +37,7 @@ use App\Models\TbPricelistCar;
 use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
 use App\Models\User;
+use App\Services\GPQuery;
 use App\Services\OneDriveService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use GuzzleHttp\Client;
@@ -1970,6 +1971,56 @@ class PurchaseOrderController extends Controller
     public function viewExportGP()
     {
         return view('purchase-order.report.gp.view');
+    }
+
+    /**
+     * หน้า "ตั้งค่า GP" — กรอกราคาทุน / ค่าอุปกรณ์ตกแต่ง / คอมขาย รายคัน (ใช้ในรายงาน GP รายคัน)
+     * เห็นได้เฉพาะ role admin, audit ดึงรายการตามเดือนจาก DeliveryInCKDate (default เดือนปัจจุบัน)
+     */
+    public function gpSetting(Request $request)
+    {
+        abort_unless(in_array(Auth::user()->role, ['admin', 'audit']), 403);
+
+        $month = $request->input('month') ?: now()->format('Y-m');
+
+        $rows = GPQuery::base($month)
+            ->orderBy('DeliveryInCKDate')
+            ->get();
+
+        return view('purchase-order.gp-setting.view', compact('rows', 'month'));
+    }
+
+    public function updateGpSetting(Request $request, $id)
+    {
+        // แก้ไขได้เฉพาะ admin (audit เปิดดูได้แบบ readonly เท่านั้น)
+        abort_unless(Auth::user()->role === 'admin', 403);
+
+        $validated = $request->validate([
+            'gp_cost_price_override' => 'nullable|numeric|min:0',
+            'gp_accessory_cost'      => 'nullable|numeric|min:0',
+            'gp_commission_sale'     => 'nullable|numeric|min:0',
+            'car_DNP'                => 'nullable|numeric|min:0',
+            'car_MSRP'               => 'nullable|numeric|min:0',
+            'RI'                     => 'nullable|numeric',
+            'WS'                     => 'nullable|numeric',
+        ]);
+
+        $salecar = Salecar::findOrFail($id);
+        $salecar->gp_cost_price_override = $validated['gp_cost_price_override'] ?? null;
+        $salecar->gp_accessory_cost      = $validated['gp_accessory_cost'] ?? null;
+        $salecar->gp_commission_sale     = $validated['gp_commission_sale'] ?? null;
+        $salecar->save();
+
+        // RI / WS / ราคาทุน(DNP) / ราคาขาย(MSRP) เก็บที่ car_order
+        if ($salecar->carOrder) {
+            $salecar->carOrder->car_DNP  = $validated['car_DNP'] ?? null;
+            $salecar->carOrder->car_MSRP = $validated['car_MSRP'] ?? null;
+            $salecar->carOrder->RI       = $validated['RI'] ?? null;
+            $salecar->carOrder->WS       = $validated['WS'] ?? null;
+            $salecar->carOrder->save();
+        }
+
+        return response()->json(['success' => true, 'message' => 'บันทึกเรียบร้อยแล้ว']);
     }
 
     public function exportGP(Request $request)

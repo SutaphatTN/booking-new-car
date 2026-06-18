@@ -416,6 +416,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/list-booking', [PurchaseOrderController::class, 'listBooking']);
     Route::get('purchase-order/history', [PurchaseOrderController::class, 'history'])->name('purchase-order.history');
     Route::get('purchase-order/list-history', [PurchaseOrderController::class, 'listHistory']);
+
+    // ตั้งค่า GP (ราคาทุน / ค่าอุปกรณ์ตกแต่ง / คอมขาย รายคัน) — เฉพาะ admin, audit
+    Route::get('purchase-order/gp-setting', [PurchaseOrderController::class, 'gpSetting'])->name('purchase-order.gp-setting');
+    Route::put('purchase-order/gp-setting/{id}', [PurchaseOrderController::class, 'updateGpSetting'])->name('purchase-order.gp-setting.update');
     Route::get('purchase-order/view-more-history/{id}', [PurchaseOrderController::class, 'viewMoreHistory']);
     Route::post('/purchase-order/{id}/cancel-car-order', [PurchaseOrderController::class, 'cancelCarOrder']);
     Route::post('purchase-order/{id}/change-status', [PurchaseOrderController::class, 'changeStatus'])->name('purchase-order.change-status');
