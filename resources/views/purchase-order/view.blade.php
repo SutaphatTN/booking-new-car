@@ -26,7 +26,7 @@
         <div class="card-body pt-3">
 
           {{-- ── Filter bar ── --}}
-          <div class="po-filter-bar d-flex align-items-center gap-2 flex-wrap">
+          <div class="po-filter-bar d-flex align-items-center gap-2 flex-wrap justify-content-end">
             <i class="bx bx-filter-alt text-muted"></i>
             <span class="fw-semibold text-muted tbl-filter-text">กรองข้อมูล :</span>
             <div class="d-flex align-items-center gap-2">

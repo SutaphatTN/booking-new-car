@@ -39,6 +39,11 @@
         @continue
       @endif
 
+      {{-- เมนู "ตั้งค่า GP" เห็นเฉพาะ role admin และ audit --}}
+      @if ($submenu->slug == 'purchase-order.gp-setting' && !in_array($userRole, ['admin', 'audit']))
+        @continue
+      @endif
+
       @if ($submenu->slug == 'report.gwm-stock-export' && $userBrand != 2)
         @continue
       @endif
