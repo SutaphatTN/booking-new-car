@@ -53,6 +53,14 @@ $(document).ready(function () {
     $('[data-bs-toggle="tooltip"]').tooltip();
   });
 
+  // คุม loader overlay เอง
+  carOrderTable.on('preXhr.dt', function () {
+    $('#carOrderLoadingOverlay').css('display', 'flex');
+  });
+  carOrderTable.on('xhr.dt', function () {
+    $('#carOrderLoadingOverlay').css('display', 'none');
+  });
+
   $('[data-bs-toggle="tooltip"]').tooltip();
 });
 

@@ -252,7 +252,7 @@ class FinanceController extends Controller
             'customer.prefix',
             'model',
             'subModel',
-            'remainingPayment',
+            'remainingPayment.financeInfo',
             'financeConfirm'
         ])
             ->where('payment_mode', 'finance')
@@ -272,13 +272,40 @@ class FinanceController extends Controller
                 $q->whereNotNull('date');
             });
         }
+
+        // จำนวนทั้งหมดก่อนค้นหา
+        $recordsTotal = (clone $query)->count();
+
+        // ค้นหา (ชื่อ-นามสกุลลูกค้า / ชื่อไฟแนนซ์)
+        $search = $request->input('search.value');
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('customer', function ($qq) use ($search) {
+                    $qq->where('FirstName', 'like', "%{$search}%")
+                        ->orWhere('LastName', 'like', "%{$search}%");
+                })
+                    ->orWhereHas('remainingPayment.financeInfo', function ($qq) use ($search) {
+                        $qq->where('FinanceCompany', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // จำนวนหลังค้นหา
+        $recordsFiltered = (clone $query)->count();
+
+        // แบ่งหน้า (server-side)
+        $start  = (int) $request->input('start', 0);
+        $length = (int) $request->input('length', 10);
+
         $query->orderByDesc('id');
+
+        if ($length != -1) {
+            $query->skip($start)->take($length);
+        }
+
         $saleCar = $query->get();
 
-        // ->where('payment_mode', 'finance')
-        // $query = Salecar::with('customer.prefix', 'conStatus')->whereNotIn('con_status', [5, 9]);
-
-        $data = $saleCar->map(function ($s, $index) {
+        $data = $saleCar->map(function ($s, $index) use ($start) {
             $c = $s->customer;
             $model = $s->model?->Name_TH ?? '-';
             $subModel = $s->subModel?->name ?? '-';
@@ -302,7 +329,7 @@ class FinanceController extends Controller
             $financeF = $s->remainingPayment?->financeInfo?->FinanceCompany ?? '-';
 
             return [
-                'No' => $index + 1,
+                'No' => $start + $index + 1,
                 'FullName' => implode(' ', array_filter([
                     $prefixText ?? null,
                     $c->FirstName ?? null,
@@ -316,7 +343,12 @@ class FinanceController extends Controller
             ];
         });
 
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'draw' => (int) $request->input('draw'),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
+        ]);
     }
 
     public function viewMoreFN($id)

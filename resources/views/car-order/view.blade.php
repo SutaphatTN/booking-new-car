@@ -65,4 +65,11 @@
     </div>
   </div>
 </div>
+
+<div id="carOrderLoadingOverlay" style="display:flex;">
+  <div class="ct-loading-box">
+    <div class="spinner-border text-primary" role="status" style="width:1.4rem;height:1.4rem;"></div>
+    <span>กำลังโหลด...</span>
+  </div>
+</div>
 @endsection

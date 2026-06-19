@@ -30,7 +30,7 @@
               <span class="fw-semibold text-muted tbl-filter-text">กรองข้อมูล :</span>
               <label for="month" class="mb-0 text-muted">เดือน (ตามวันที่ส่งมอบ CK)</label>
               <input type="month" id="month" name="month" class="form-control form-control-sm"
-                style="max-width:190px;" value="{{ $month }}" onchange="this.form.submit()">
+                style="max-width:190px;" value="{{ $month }}">
             </div>
           </form>
 
@@ -242,10 +242,28 @@
       </div>
     </div>
   </div>
+
+  <div id="gpLoadingOverlay">
+    <div class="ct-loading-box">
+      <div class="spinner-border text-primary" role="status" style="width:1.4rem;height:1.4rem;"></div>
+      <span>กำลังโหลด...</span>
+    </div>
+  </div>
 @endsection
 
 @section('page-script')
   <script>
+    // โชว์ loader ตอนเปลี่ยนเดือน (form submit โหลดหน้าใหม่)
+    $(document).on('change', '#month', function () {
+      $('#gpLoadingOverlay').css('display', 'flex');
+      this.form.submit();
+    });
+
+    // กันค้าง: ถ้ากดย้อนกลับแล้วหน้าโดนกู้จาก bfcache ให้ซ่อน overlay
+    window.addEventListener('pageshow', function () {
+      $('#gpLoadingOverlay').css('display', 'none');
+    });
+
     $(function () {
       const updateUrl = "{{ url('purchase-order/gp-setting') }}";
       const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
