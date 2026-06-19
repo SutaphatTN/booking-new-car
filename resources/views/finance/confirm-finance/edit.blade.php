@@ -98,8 +98,8 @@
                         <label for="Color" class="mf-label form-label">
                           <i class="bx bx-palette ci-sky"></i> สี
                         </label>
-                        <input id="Color" type="text" class="form-control" value="{{ $sale->Color ?? '-' }}"
-                          style="background:#f8fafc;color:#64748b;" readonly>
+                        <input id="Color" type="text" class="form-control"
+                          value="{{ $sale->display_color }}" style="background:#f8fafc;color:#64748b;" readonly>
                       </div>
                     @elseif (auth()->user()->brand == 2)
                       <div class="col-md-3">
@@ -110,21 +110,21 @@
                           style="background:#f8fafc;color:#64748b;" readonly>
                       </div>
 
-                      <div class="col-md-4">
-                        <label for="gwm_color" class="mf-label form-label">
-                          <i class="bx bx-palette ci-sky"></i> สี / สีภายใน
-                        </label>
-                        <input id="gwm_color" type="text" class="form-control"
-                          value="{{ $sale->gwmColor->name ?? '-' }} / {{ $sale->interiorColor->name ?? '-' }}"
-                          style="background:#f8fafc;color:#64748b;" readonly>
-                      </div>
-
                       <div class="col-md-5">
                         <label for="Color" class="mf-label form-label">
                           <i class="bx bx-palette ci-sky"></i> สี
                         </label>
-                        <input id="Color" type="text" class="form-control" value="{{ $sale->Color ?? '-' }}"
-                          style="background:#f8fafc;color:#64748b;" readonly>
+                        <input id="Color" type="text" class="form-control"
+                          value="{{ $sale->display_color }}" style="background:#f8fafc;color:#64748b;" readonly>
+                      </div>
+
+                      <div class="col-md-4">
+                        <label for="gwm_color" class="mf-label form-label">
+                          <i class="bx bx-palette ci-sky"></i> สีภายใน
+                        </label>
+                        <input id="gwm_color" type="text" class="form-control"
+                          value="{{ $sale->interiorColor->name ?? '-' }}" style="background:#f8fafc;color:#64748b;"
+                          readonly>
                       </div>
                     @else
                       <div class="col-md-6">
@@ -139,8 +139,8 @@
                         <label for="Color" class="mf-label form-label">
                           <i class="bx bx-palette ci-sky"></i> สี
                         </label>
-                        <input id="Color" type="text" class="form-control" value="{{ $sale->Color ?? '-' }}"
-                          style="background:#f8fafc;color:#64748b;" readonly>
+                        <input id="Color" type="text" class="form-control"
+                          value="{{ $sale->display_color }}" style="background:#f8fafc;color:#64748b;" readonly>
                       </div>
                     @endif
 
@@ -400,8 +400,8 @@
                       <td class="fw-semibold">ค่างวดล่วงหน้า</td>
                       <td><input id="advance_installment" type="text"
                           class="form-control form-control-sm text-end money-decimal" name="advance_installment"
-                          value="{{ number_format($fnCon->advance_installment ?? 0, 2) }}"
-                          title="กรอกจากหน้าการจอง" readonly></td>
+                          value="{{ number_format($fnCon->advance_installment ?? 0, 2) }}" title="กรอกจากหน้าการจอง"
+                          readonly></td>
                       <td><input id="advance_installment_accept" type="text"
                           class="form-control form-control-sm text-end money-decimal"
                           name="advance_installment_accept"
