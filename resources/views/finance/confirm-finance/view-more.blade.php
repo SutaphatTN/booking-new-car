@@ -83,7 +83,7 @@
                       <label for="Color" class="mf-label form-label">
                         <i class="bx bx-palette ci-sky"></i> สี
                       </label>
-                      <input id="Color" type="text" class="form-control" value="{{ $sale->Color ?? '-' }}"
+                      <input id="Color" type="text" class="form-control" value="{{ $sale->display_color }}"
                         style="background:#f8fafc;color:#64748b;" disabled>
                     </div>
                   @elseif (auth()->user()->brand == 2)
@@ -95,21 +95,20 @@
                         style="background:#f8fafc;color:#64748b;" disabled>
                     </div>
 
-                    <div class="col-md-4">
-                      <label for="gwm_color" class="mf-label form-label">
-                        <i class="bx bx-palette ci-sky"></i> สี / สีภายใน
-                      </label>
-                      <input id="gwm_color" type="text" class="form-control"
-                        value="{{ $sale->gwmColor->name ?? '-' }} / {{ $sale->interiorColor->name ?? '-' }}"
-                        style="background:#f8fafc;color:#64748b;" disabled>
-                    </div>
-
                     <div class="col-md-5">
                       <label for="Color" class="mf-label form-label">
                         <i class="bx bx-palette ci-sky"></i> สี
                       </label>
-                      <input id="Color" type="text" class="form-control" value="{{ $sale->Color ?? '-' }}"
+                      <input id="Color" type="text" class="form-control" value="{{ $sale->display_color }}"
                         style="background:#f8fafc;color:#64748b;" disabled>
+                    </div>
+                    <div class="col-md-4">
+                      <label for="gwm_color" class="mf-label form-label">
+                        <i class="bx bx-palette ci-sky"></i> สีภายใน
+                      </label>
+                      <input id="gwm_color" type="text" class="form-control"
+                        value="{{ $sale->interiorColor->name ?? '-' }}" style="background:#f8fafc;color:#64748b;"
+                        disabled>
                     </div>
                   @else
                     <div class="col-md-6">
@@ -124,7 +123,7 @@
                       <label for="Color" class="mf-label form-label">
                         <i class="bx bx-palette ci-sky"></i> สี
                       </label>
-                      <input id="Color" type="text" class="form-control" value="{{ $sale->Color ?? '-' }}"
+                      <input id="Color" type="text" class="form-control" value="{{ $sale->display_color }}"
                         style="background:#f8fafc;color:#64748b;" disabled>
                     </div>
                   @endif
@@ -234,28 +233,28 @@
                   </div>
 
                   <div class="col-md-6">
-                      <label for="view_including_alp" class="mf-label form-label">
-                        <i class="bx bx-shield-quarter ci-indigo"></i> ค่างวด (รวม ALP)
-                      </label>
-                      <div class="input-group">
-                        <span class="input-group-text ig-indigo">฿</span>
-                        <input id="view_including_alp" type="text" class="form-control text-end money-input"
-                          value="{{ $sale->remainingPayment->including_alp ?? '-' }}"
-                          style="background:#f8fafc;color:#64748b;" disabled>
-                      </div>
+                    <label for="view_including_alp" class="mf-label form-label">
+                      <i class="bx bx-shield-quarter ci-indigo"></i> ค่างวด (รวม ALP)
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text ig-indigo">฿</span>
+                      <input id="view_including_alp" type="text" class="form-control text-end money-input"
+                        value="{{ $sale->remainingPayment->including_alp ?? '-' }}"
+                        style="background:#f8fafc;color:#64748b;" disabled>
                     </div>
+                  </div>
 
-                    <div class="col-md-6">
-                      <label for="view_alp" class="mf-label form-label">
-                        <i class="bx bx-shield-quarter ci-indigo"></i> ประกัน ALP
-                      </label>
-                      <div class="input-group">
-                        <span class="input-group-text ig-indigo">฿</span>
-                        <input id="view_alp" type="text" class="form-control text-end money-input"
-                          value="{{ $sale->remainingPayment->total_alp ?? '-' }}"
-                          style="background:#f8fafc;color:#64748b;" disabled>
-                      </div>
+                  <div class="col-md-6">
+                    <label for="view_alp" class="mf-label form-label">
+                      <i class="bx bx-shield-quarter ci-indigo"></i> ประกัน ALP
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text ig-indigo">฿</span>
+                      <input id="view_alp" type="text" class="form-control text-end money-input"
+                        value="{{ $sale->remainingPayment->total_alp ?? '-' }}"
+                        style="background:#f8fafc;color:#64748b;" disabled>
                     </div>
+                  </div>
 
                   <div class="col-md-6">
                     <label for="date" class="mf-label form-label">
