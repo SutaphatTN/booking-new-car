@@ -28,6 +28,7 @@ class GPQuery
         ])
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
+            ->where('con_status', 5) // เฉพาะที่ส่งมอบแล้ว
             ->whereMonth('DeliveryInCKDate', $date->month)
             ->whereYear('DeliveryInCKDate', $date->year);
     }
