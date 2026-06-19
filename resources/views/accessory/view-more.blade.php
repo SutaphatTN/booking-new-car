@@ -134,6 +134,22 @@
                 </div>
               </div>
 
+              {{-- ประดับยนต์มาตรฐาน --}}
+              <div class="col-12">
+                <div class="d-flex align-items-center gap-3 p-3 mb-0 rounded w-100"
+                  style="background:#fff8ec;border:1px solid #ffe2b8;">
+                  <span class="form-switch m-0 p-0" style="min-height:auto;">
+                    <input class="form-check-input m-0" type="checkbox" role="switch"
+                      {{ $acc->is_standard ? 'checked' : '' }} disabled
+                      style="width:2.75em;height:1.5em;">
+                  </span>
+                  <span>
+                    <span class="fw-bold"><i class="bx bx-check-shield ci-amber"></i> ประดับยนต์มาตรฐานของรุ่นนี้</span>
+                    <span class="text-muted small d-block">{{ $acc->is_standard ? 'ใช่ — ใช้ราคาทุนอะไหล่ คิด GP' : 'ไม่ใช่ — ใช้ราคาที่แสดงในการจอง' }}</span>
+                  </span>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

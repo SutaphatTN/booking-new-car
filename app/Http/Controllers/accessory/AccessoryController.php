@@ -160,6 +160,7 @@ class AccessoryController extends Controller
                 'accessory_id' => $request->accessory_id,
                 'detail' => $request->detail,
                 'accessoryType_id' => $request->accessoryType_id,
+                'is_standard' => $request->boolean('is_standard'),
                 'accessoryPartner_id' => $request->accessoryPartner_id,
                 'cost_spare' => $request->filled('cost_spare')
                     ? str_replace(',', '', $request->cost_spare)

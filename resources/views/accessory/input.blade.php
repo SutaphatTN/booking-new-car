@@ -184,6 +184,25 @@
                   </div>
                 </div>
 
+                {{-- ประดับยนต์มาตรฐาน --}}
+                <div class="col-12">
+                  <input type="hidden" name="is_standard" value="0">
+                  <label for="inp_acc_is_standard"
+                    class="d-flex align-items-center gap-3 p-3 mb-0 rounded w-100"
+                    style="background:#fff8ec;border:1px solid #ffe2b8;cursor:pointer;">
+                    <span class="form-switch m-0 p-0" style="min-height:auto;">
+                      <input class="form-check-input m-0" type="checkbox" role="switch"
+                        id="inp_acc_is_standard" name="is_standard" value="1"
+                        {{ old('is_standard') ? 'checked' : '' }}
+                        style="width:2.75em;height:1.5em;cursor:pointer;">
+                    </span>
+                    <span>
+                      <span class="fw-bold"><i class="bx bx-check-shield ci-amber"></i> ประดับยนต์มาตรฐานของรุ่นนี้</span>
+                      <span class="text-muted small d-block">ถ้าเปิด จะใช้ "ราคาทุนอะไหล่" เป็นราคาคิด GP — ถ้าปิด ใช้ราคาที่แสดงในการจอง</span>
+                    </span>
+                  </label>
+                </div>
+
               </div>
             </div>
           </div>

@@ -47,6 +47,14 @@ $(document).ready(function () {
       }
     }
   });
+
+  // คุม loader overlay เอง
+  vehicleTable.on('preXhr.dt', function () {
+    $('#vehicleLoadingOverlay').css('display', 'flex');
+  });
+  vehicleTable.on('xhr.dt', function () {
+    $('#vehicleLoadingOverlay').css('display', 'none');
+  });
 });
 
 $('#withdrawalStatusFilter').on('change', function () {

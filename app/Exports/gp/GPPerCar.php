@@ -105,16 +105,19 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
           'AE',
           'AF',
           // 'AG',
-          // 'AH',
-          'AI',
+          'AH',
+          // 'AI',
           'AJ',
           'AK',
           'AL',
           'AM',
           'AN',
+          'AO',
+          'AP',
+          'AQ',
           // 'AR',
-          'AS',
-          'AT',
+          // 'AS',
+          // 'AT',
           'AU',
           'AV',
           'AW',
@@ -126,6 +129,9 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
           'BC',
           'BD',
           'BE',
+          'BF',
+          'BG',
+          'BH',
         ];
 
         foreach ($numberColumns as $col) {
@@ -248,23 +254,43 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       $com_extra = $r->financeConfirm?->com_extra ?? 0;
       $com_kick = $r->kickback ?? 0;
       $com_subsidy = $r->financeConfirm?->com_subsidy ?? 0;
-      $acc_extra = $r->TotalAccessoryExtra ?? 0;
+      $com_bo = $r->financeConfirm?->special_money ?? 0;
+      // ค่าใช้จ่ายอื่นๆ หรือจ่ายเพิ่ม
+      $acc_extra = $r->payment_mode === 'finance'
+        ? ($r->other_cost_fi ?? 0)
+        : ($r->other_cost ?? 0);
+      // $acc_extra = $r->TotalAccessoryExtra ?? 0;
 
       // Total Revenue
       // $total_rev = $totalSaleMake + $ws + $ri + $acc_extra + $campaign + $campaign_top + $campaign_other + $campaign_ck + $com_fin + $com_extra + $com_kick +  $com_subsidy;
-      $total_rev = $totalSaleMake + $ws + $ri + $acc_extra + $campaign_top + $com_company + $com_extra + $com_kick +  $com_subsidy;
+      $total_rev = $totalSaleMake + $ws + $ri + $acc_extra + $campaign_top + $com_company + $com_extra + $com_kick +  $com_subsidy + $com_bo;
 
       $down_payDis = $r->DownPaymentDiscount ?? 0;
+      $accGiftVat = $r->AccessoryGiftVat ?? 0;
+      $downDisAccVat = $down_payDis + $accGiftVat;
       $com_sale = $r->CommissionSale ?? 0;
+      $totalTotalAccessoryGift = $r->TotalAccessoryGift ?? 0;
+      $ReferrerAmount = $r->ReferrerAmount ?? 0;
+
+      // ยอดของแถมมาตรฐาน — คิดจากราคาทุนอะไหล่ (cost_spare) ของประดับยนต์ที่ is_standard และเป็นของแถม (gift)
+      $standardGiftAcc = $r->accessories
+        ->filter(fn($a) => $a->is_standard && $a->pivot->type === 'gift')
+        ->sum(fn($a) => (float) ($a->cost_spare ?? 0));
+
+      // ส่วนลดแคมเปญ — ยอดหัก cashSupport_deduct จาก campaign ที่ใช้ (เฉพาะ campaign_type กลุ่ม 1-8, 14-22)
+      $campaign_deduct = $r->campaigns
+        ->filter(fn($c) => in_array($c->campaign?->campaign_type, $group1Ids))
+        ->sum(fn($c) => (float) ($c->campaign?->cashSupport_deduct ?? 0));
 
       //รวมส่วนลด
-      $total_discount = $down_payDis + $carDiscount;
+      $total_discount = $downDisAccVat + $carDiscount + $totalTotalAccessoryGift + $standardGiftAcc + $campaign_deduct + $ReferrerAmount;
+      $total_discount_re = $total_discount - $down_payDis - $carDiscount;
 
       //ต้นทุนรวม
       // คอมขาย: ใช้ที่กรอกเอง (gp_commission_sale) ถ้ายังไม่กรอก fallback เป็น 4500
       $comSale = $r->gp_commission_sale ?? 3500;
       // $total_cost = ($totalCostFund + $down_payDis + $com_sale) - $total_discount;
-      $total_cost = ($totalCostFund + $down_payDis + $comSale) - $total_discount;
+      $total_cost = $totalCostFund + $down_payDis + $comSale + $total_discount_re;
       //P/L
       $total_pl = $total_rev - $total_cost;
 
@@ -294,7 +320,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       $totalDiscount = $r->discount ?? 0;
       $totalPaymentDiscount = $r->PaymentDiscount ?? 0;
       $totalDownPaymentDiscount = $r->DownPaymentDiscount ?? 0;
-      $totalTotalAccessoryGift = $r->TotalAccessoryGift ?? 0;
+      // $totalTotalAccessoryGift = $r->TotalAccessoryGift ?? 0;
       $totalCommissionSale = $r->CommissionSale ?? 0;
 
       $sellingExpense = $totalDiscount + $totalPaymentDiscount + $totalDownPaymentDiscount + $totalTotalAccessoryGift + $totalCommissionSale;
@@ -342,9 +368,11 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         // 'campaign_other' => $campaign_other ?? 0,
         // 'campaign_ck' => $campaign_ck ?? 0,
         'campaign_detail_1' => $campaign_detail_1 ?? '-',
+        'campaign_deduct' => $campaign_deduct,
         'campaign_detail_2' => $campaign_detail_2 ?? '-',
         'total_rev' => $total_rev ?? 0,
         'total_discount' => $total_discount ?? 0,
+        'total_discount_re' => $total_discount_re ?? 0,
         'com_sale' => $comSale,
         // 'com_sale' => $com_sale ?? 0,
         'total_cost' => $total_cost ?? 0,
@@ -363,6 +391,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         'com_extra' => $com_extra,
         'com_kick' => $com_kick,
         'com_subsidy' =>  $com_subsidy,
+        'com_bo' =>  $com_bo,
         'fn_total' => $r->financeConfirm?->total ?? 0,
         'actually_received' => $r->financeConfirm?->actually_received ?? 0,
         'fn_diff' => $r->financeConfirm?->diff ?? 0,

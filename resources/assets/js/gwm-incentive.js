@@ -58,6 +58,14 @@ if ($('.gwmIncentiveTable').length) {
         paginate: { next: 'ถัดไป', previous: 'ก่อนหน้า' }
       }
     });
+
+    // คุม loader overlay เอง
+    gwmIncentiveTable.on('preXhr.dt', function () {
+      $('#gwmLoadingOverlay').css('display', 'flex');
+    });
+    gwmIncentiveTable.on('xhr.dt', function () {
+      $('#gwmLoadingOverlay').css('display', 'none');
+    });
   });
 
   // Filter

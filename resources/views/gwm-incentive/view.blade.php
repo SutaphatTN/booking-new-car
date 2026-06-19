@@ -213,4 +213,11 @@
     .po-filter-bar { row-gap: .4rem; }
   }
 </style>
+
+<div id="gwmLoadingOverlay" style="display:flex;">
+  <div class="ct-loading-box">
+    <div class="spinner-border text-primary" role="status" style="width:1.4rem;height:1.4rem;"></div>
+    <span>กำลังโหลด...</span>
+  </div>
+</div>
 @endsection

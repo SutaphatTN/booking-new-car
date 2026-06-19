@@ -6,7 +6,12 @@
 #campaignClaimLoadingOverlay,
 #accessoryLoadingOverlay,
 #historyLoadingOverlay,
-#invoiceLoadingOverlay {
+#invoiceLoadingOverlay,
+#fnLoadingOverlay,
+#carOrderLoadingOverlay,
+#gwmLoadingOverlay,
+#vehicleLoadingOverlay,
+#gpLoadingOverlay {
   display: none;
   position: fixed;
   inset: 0;

@@ -557,6 +557,8 @@ $(document).ready(function () {
   }
 
   confirmFNTable = $('.confirmFNTable').DataTable({
+    serverSide: true,
+    processing: false,
     ajax: {
       url: '/purchase-order/list-fn',
       data: function (d) {
@@ -564,18 +566,18 @@ $(document).ready(function () {
       }
     },
     columns: [
-      { data: 'No' },
+      { data: 'No', searchable: false },
       { data: 'FullName', orderable: false },
       { data: 'finance_name', orderable: false },
-      { data: 'delivery_date', orderable: false },
-      { data: 'firm_date', orderable: false },
-      { data: 'date', orderable: false },
+      { data: 'delivery_date', orderable: false, searchable: false },
+      { data: 'firm_date', orderable: false, searchable: false },
+      { data: 'date', orderable: false, searchable: false },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
     lengthChange: true,
     searching: true,
-    ordering: true,
+    ordering: false,
     info: true,
     pageLength: 10,
     autoWidth: false,
@@ -590,6 +592,14 @@ $(document).ready(function () {
         previous: 'ก่อนหน้า'
       }
     }
+  });
+
+  // คุม loader overlay เอง
+  confirmFNTable.on('preXhr.dt', function () {
+    $('#fnLoadingOverlay').css('display', 'flex');
+  });
+  confirmFNTable.on('xhr.dt', function () {
+    $('#fnLoadingOverlay').css('display', 'none');
   });
 });
 

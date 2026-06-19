@@ -39,12 +39,14 @@
       <th>ลูกค้าจ่ายเพิ่ม</th>
       <th>แคมเปญ</th>
       <th>ประเภทแคมเปญ</th>
+      <th>ยอดหักแคมเปญ</th>
       <th>ประเภทแคมเปญ On-Top</th>
       <th>แคมเปญ On-Top</th>
       {{-- <th>แคมเปญ Other</th>
       <th>แคมเปญ CK</th> --}}
       <th>Total Revenue</th>
-      <th>รวมส่วนลด</th>
+      <th>ส่วนลดของแถมทั้งหมด</th>
+      <th>หลังหักส่วนลดของแถม</th>
       <th>คอมขาย</th>
       <th>ต้นทุนรวม</th>
       <th>P/L</th>
@@ -62,6 +64,7 @@
       <th>Com Extra</th>
       <th>Com Kickback</th>
       <th>Com Subsidy</th>
+      <th>Com พิเศษ</th>
       <th>ยอดรวมจาก FN</th>
       <th>ยอดรับเข้าบัญชี</th>
       <th>DIFF</th>
@@ -124,12 +127,14 @@
         <td>{{ $p['acc_extra'] }}</td>
         <td>{{ $p['campaign'] }}</td>
         <td>{{ $p['campaign_detail_1'] }}</td>
+        <td>{{ $p['campaign_deduct'] }}</td>
         <td>{{ $p['campaign_detail_2'] }}</td>
         <td>{{ $p['campaign_top'] }}</td>
         {{-- <td>{{ $p['campaign_other'] }}</td>
         <td>{{ $p['campaign_ck'] }}</td> --}}
         <td>{{ $p['total_rev'] }}</td>
         <td>{{ $p['total_discount'] }}</td>
+        <td>{{ $p['total_discount_re'] }}</td>
         <td>{{ $p['com_sale'] }}</td>
         <td>{{ $p['total_cost'] }}</td>
         <td>{{ $p['total_pl'] }}</td>
@@ -147,6 +152,7 @@
         <td>{{ $p['com_extra'] }}</td>
         <td>{{ $p['com_kick'] }}</td>
         <td>{{ $p['com_subsidy'] }}</td>
+        <td>{{ $p['com_bo'] }}</td>
         <td>{{ $p['fn_total'] }}</td>
         <td>{{ $p['actually_received'] }}</td>
         <td>{{ $p['fn_diff'] }}</td>
@@ -172,7 +178,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="58" align="center">ไม่มีข้อมูล</td>
+        <td colspan="61" align="center">ไม่มีข้อมูล</td>
       </tr>
     @endforelse
 
