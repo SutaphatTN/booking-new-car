@@ -132,7 +132,7 @@
                   </span>
                 </div>
                 <div class="mf-info-row">
-                  <span class="mf-info-label">ลูกค้าจ่ายเพิ่ม</span>
+                  <span class="mf-info-label">ลูกค้าซื้อเพิ่ม</span>
                   <span class="mf-info-val">
                     {{ $saleCar->total_extra_used !== null ? number_format($saleCar->total_extra_used, 2) : '-' }} บาท
                   </span>
@@ -185,13 +185,19 @@
                     </span>
                   </div>
                   <div class="mf-info-row">
-                    <span class="mf-info-label">ค่าใช้จ่ายอื่นๆ</span>
+                    <span class="mf-info-label">ค่างวดล่วงหน้า</span>
+                    <span class="mf-info-val">
+                      {{ ($saleCar->financeConfirm?->advance_installment ?? null) !== null ? number_format($saleCar->financeConfirm->advance_installment, 2) : '-' }} บาท
+                    </span>
+                  </div>
+                  <div class="mf-info-row">
+                    <span class="mf-info-label">ลูกค้าจ่ายเพิ่ม</span>
                     <span class="mf-info-val">
                       {{ $saleCar->other_cost_fi !== null ? number_format($saleCar->other_cost_fi, 2) : '-' }} บาท
                     </span>
                   </div>
                   <div class="mf-info-row">
-                    <span class="mf-info-label">หมายเหตุ ค่าใช้จ่ายอื่นๆ</span>
+                    <span class="mf-info-label">หมายเหตุ ลูกค้าจ่ายเพิ่ม</span>
                     <span class="mf-info-val">{{ $saleCar->reason_other_cost_fi ?? '-' }}</span>
                   </div>
                   <div class="mf-info-row">
@@ -265,13 +271,13 @@
                     </span>
                   </div>
                   <div class="mf-info-row">
-                    <span class="mf-info-label">ค่าใช้จ่ายอื่นๆ</span>
+                    <span class="mf-info-label">ลูกค้าจ่ายเพิ่ม</span>
                     <span class="mf-info-val">
                       {{ $saleCar->other_cost !== null ? number_format($saleCar->other_cost, 2) : '-' }} บาท
                     </span>
                   </div>
                   <div class="mf-info-row">
-                    <span class="mf-info-label">หมายเหตุ ค่าใช้จ่ายอื่นๆ</span>
+                    <span class="mf-info-label">หมายเหตุ ลูกค้าจ่ายเพิ่ม</span>
                     <span class="mf-info-val">{{ $saleCar->reason_other_cost ?? '-' }}</span>
                   </div>
                   <div class="mf-info-row">

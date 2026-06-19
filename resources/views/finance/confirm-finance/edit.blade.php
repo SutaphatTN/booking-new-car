@@ -400,7 +400,8 @@
                       <td class="fw-semibold">ค่างวดล่วงหน้า</td>
                       <td><input id="advance_installment" type="text"
                           class="form-control form-control-sm text-end money-decimal" name="advance_installment"
-                          value="{{ number_format($fnCon->advance_installment ?? 0, 2) }}"></td>
+                          value="{{ number_format($fnCon->advance_installment ?? 0, 2) }}"
+                          title="กรอกจากหน้าการจอง" readonly></td>
                       <td><input id="advance_installment_accept" type="text"
                           class="form-control form-control-sm text-end money-decimal"
                           name="advance_installment_accept"

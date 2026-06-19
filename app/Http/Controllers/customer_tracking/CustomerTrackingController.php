@@ -141,8 +141,7 @@ class CustomerTrackingController extends Controller
             $searchDigits = preg_replace('/\D/', '', $search);
             $base->where(function ($q) use ($search, $searchDigits) {
                 $q->whereHas('customer', function ($q) use ($search, $searchDigits) {
-                    $q->where('FirstName', 'like', "%{$search}%")
-                        ->orWhere('LastName', 'like', "%{$search}%");
+                    $q->searchFullName($search);
                     if ($searchDigits !== '') {
                         $q->orWhereRaw("REPLACE(Mobilephone1, '-', '') LIKE ?", ["%{$searchDigits}%"]);
                     }

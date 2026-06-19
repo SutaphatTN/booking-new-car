@@ -188,8 +188,7 @@ class CustomerController extends Controller
 
         $customers = Customer::with('prefix')
             ->where(function ($q) use ($keyword) {
-                $q->where('FirstName', 'like', "%{$keyword}%")
-                    ->orWhere('LastName', 'like', "%{$keyword}%")
+                $q->searchFullName($keyword)
                     ->orWhere('Mobilephone1', 'like', "%{$keyword}%");
             })
             ->get();

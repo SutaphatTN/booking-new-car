@@ -399,7 +399,7 @@
                 </div>
               </div>
               <div class="f">
-                <div class="fl">ลูกค้าจ่ายเพิ่ม</div>
+                <div class="fl">ลูกค้าซื้อเพิ่ม</div>
                 <div class="fv">
                   {{ is_numeric($saleCar->TotalAccessoryExtra ?? null) ? number_format($saleCar->TotalAccessoryExtra, 2) . ' บาท' : '-' }}
                 </div>
@@ -415,13 +415,19 @@
                   </div>
                 </div>
                 <div class="f">
-                  <div class="fl">ค่าใช้จ่ายอื่นๆ</div>
+                  <div class="fl">ค่างวดล่วงหน้า</div>
+                  <div class="fv">
+                    {{ is_numeric($saleCar->financeConfirm?->advance_installment ?? null) ? number_format($saleCar->financeConfirm->advance_installment, 2) . ' บาท' : '-' }}
+                  </div>
+                </div>
+                <div class="f">
+                  <div class="fl">ลูกค้าจ่ายเพิ่ม</div>
                   <div class="fv">
                     {{ is_numeric($saleCar->other_cost_fi ?? null) ? number_format($saleCar->other_cost_fi, 2) . ' บาท' : '-' }}
                   </div>
                 </div>
                 <div class="f">
-                  <div class="fl">หมายเหตุ ค่าใช้จ่ายอื่นๆ</div>
+                  <div class="fl">หมายเหตุ ลูกค้าจ่ายเพิ่ม</div>
                   <div class="fv">{{ $saleCar->reason_other_cost_fi ?? '-' }}</div>
                 </div>
                 <div class="f">
@@ -479,13 +485,13 @@
                   </div>
                 </div>
                 <div class="f">
-                  <div class="fl">ค่าใช้จ่ายอื่นๆ</div>
+                  <div class="fl">ลูกค้าจ่ายเพิ่ม</div>
                   <div class="fv">
                     {{ is_numeric($saleCar->other_cost ?? null) ? number_format($saleCar->other_cost, 2) . ' บาท' : '-' }}
                   </div>
                 </div>
                 <div class="f">
-                  <div class="fl">หมายเหตุ ค่าใช้จ่ายอื่นๆ</div>
+                  <div class="fl">หมายเหตุ ลูกค้าจ่ายเพิ่ม</div>
                   <div class="fv">{{ $saleCar->reason_other_cost ?? '-' }}</div>
                 </div>
                 <div class="f">

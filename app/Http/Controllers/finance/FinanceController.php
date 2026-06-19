@@ -281,8 +281,7 @@ class FinanceController extends Controller
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->whereHas('customer', function ($qq) use ($search) {
-                    $qq->where('FirstName', 'like', "%{$search}%")
-                        ->orWhere('LastName', 'like', "%{$search}%");
+                    $qq->searchFullName($search);
                 })
                     ->orWhereHas('remainingPayment.financeInfo', function ($qq) use ($search) {
                         $qq->where('FinanceCompany', 'like', "%{$search}%");
@@ -361,7 +360,8 @@ class FinanceController extends Controller
             'carOrder'
         ])->findOrFail($id);
 
-        $fnCon = FinancesConfirm::where('SaleID', $id)->first();
+        // ค้นแบบไม่ผูก global scope เพราะ finances_confirm เป็น 1:1 ต่อ SaleID (กัน record ซ้ำ/หาไม่เจอ ข้ามสาขา)
+        $fnCon = FinancesConfirm::withoutGlobalScopes()->where('SaleID', $id)->first();
 
         return view('finance.confirm-finance.view-more', compact('sale', 'fnCon'));
     }
@@ -376,7 +376,7 @@ class FinanceController extends Controller
             'carOrder'
         ])->findOrFail($id);
 
-        $fnCon = FinancesConfirm::where('SaleID', $id)->first();
+        $fnCon = FinancesConfirm::withoutGlobalScopes()->where('SaleID', $id)->first();
         $remaining = $sale->remainingPayment;
 
         if (!$fnCon) {
@@ -401,7 +401,8 @@ class FinanceController extends Controller
             $sale = Salecar::findOrFail($id);
 
             // ดึง record ถ้ามี ถ้าไม่มีก็สร้าง object ใหม่ แต่ยังไม่ save
-            $fnCon = FinancesConfirm::firstOrNew(['SaleID' => $id]);
+            // ไม่ผูก global scope เพื่อให้เจอ record เดียวกับที่ upsert จากหน้าจอง (กัน record ซ้ำต่อ SaleID)
+            $fnCon = FinancesConfirm::withoutGlobalScopes()->firstOrNew(['SaleID' => $id]);
 
             $data = [
                 'SaleID' => $sale->id,

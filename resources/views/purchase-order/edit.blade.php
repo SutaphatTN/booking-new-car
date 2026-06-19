@@ -1188,7 +1188,7 @@
                     </div>
                     <div class="col-md-2">
                       <div class="summary-stat-card">
-                        <div class="summary-stat-label"><i class="bx bx-plus-circle me-1"></i> ลูกค้าจ่ายเพิ่ม</div>
+                        <div class="summary-stat-label"><i class="bx bx-plus-circle me-1"></i> ลูกค้าซื้อเพิ่ม</div>
                         <div class="money-wrap">
                           <input class="form-control text-end money-input mt-1" type="text" id="summaryExtraTotal"
                             disabled />
@@ -1312,7 +1312,7 @@
                                   </select>
                                 </div>
                                 <div class="col-md-3">
-                                  <label for="other_cost" class="po-label">ค่าใช้จ่ายอื่นๆ</label>
+                                  <label for="other_cost" class="po-label">ลูกค้าจ่ายเพิ่ม</label>
                                   <div class="money-wrap">
                                     <input class="form-control text-end money-input" type="text" id="other_cost"
                                       name="other_cost" value="{{ $saleCar->other_cost }}" />
@@ -1320,7 +1320,7 @@
                                   </div>
                                 </div>
                                 <div class="col-md-9">
-                                  <label for="reason_other_cost" class="po-label">หมายเหตุ ค่าใช้จ่ายอื่นๆ</label>
+                                  <label for="reason_other_cost" class="po-label">หมายเหตุ ลูกค้าจ่ายเพิ่ม</label>
                                   <textarea id="reason_other_cost" class="form-control" name="reason_other_cost" rows="1">{{ $saleCar->reason_other_cost }}</textarea>
                                 </div>
                               </div>
@@ -1481,6 +1481,15 @@
                                           </div>
                                         </div>
                                         <div class="col-12">
+                                          <label for="advance_installment" class="po-label">ค่างวดล่วงหน้า</label>
+                                          <div class="money-wrap">
+                                            <input class="form-control text-end money-input" type="text"
+                                              name="advance_installment" id="advance_installment"
+                                              value="{{ $saleCar->financeConfirm->advance_installment ?? '' }}" />
+                                            <span class="money-suffix">฿</span>
+                                          </div>
+                                        </div>
+                                        <div class="col-12">
                                           <label for="CarSalePriceFinal" class="po-label">ราคาขายสุทธิ</label>
                                           <div class="money-wrap">
                                             <input class="form-control text-end money-input fw-bold" type="text"
@@ -1529,7 +1538,7 @@
                                           </div>
                                         </div>
                                         <div class="col-12">
-                                          <label for="other_cost_fi" class="po-label">ค่าใช้จ่ายอื่นๆ</label>
+                                          <label for="other_cost_fi" class="po-label">ลูกค้าจ่ายเพิ่ม</label>
                                           <div class="money-wrap">
                                             <input class="form-control text-end money-input" type="text"
                                               id="other_cost_fi" name="other_cost_fi"
@@ -1539,7 +1548,7 @@
                                         </div>
                                         <div class="col-12">
                                           <label for="reason_other_cost_fi"
-                                            class="po-label">หมายเหตุค่าใช้จ่ายอื่นๆ</label>
+                                            class="po-label">หมายเหตุลูกค้าจ่ายเพิ่ม</label>
                                           <textarea id="reason_other_cost_fi" class="form-control" name="reason_other_cost_fi" rows="2">{{ $saleCar->reason_other_cost_fi }}</textarea>
                                         </div>
                                       </div>

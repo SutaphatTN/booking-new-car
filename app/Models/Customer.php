@@ -99,6 +99,31 @@ class Customer extends Model
 		return $this->belongsTo(TbPrefixname::class, 'PrefixName', 'id');
 	}
 
+	/**
+	 * ค้นหาด้วยชื่อ: รองรับพิมพ์ "คำนำหน้า ชื่อ สกุล", "ชื่อ สกุล" หรือเฉพาะชื่อ/สกุล
+	 * แตกคำค้นเป็นคำย่อยด้วยช่องว่าง แล้วแต่ละคำต้องตรงกับ คำนำหน้า/ชื่อ/ชื่อกลาง/สกุล อย่างใดอย่างหนึ่ง (AND ระหว่างคำ)
+	 */
+	public function scopeSearchFullName($query, ?string $term)
+	{
+		$term = trim((string) $term);
+		if ($term === '') {
+			return $query;
+		}
+
+		$tokens = preg_split('/\s+/', $term, -1, PREG_SPLIT_NO_EMPTY);
+
+		return $query->where(function ($outer) use ($tokens) {
+			foreach ($tokens as $token) {
+				$outer->where(function ($q) use ($token) {
+					$q->where('FirstName', 'like', "%{$token}%")
+						->orWhere('LastName', 'like', "%{$token}%")
+						->orWhere('MiddleName', 'like', "%{$token}%")
+						->orWhereHas('prefix', fn($p) => $p->where('Name_TH', 'like', "%{$token}%"));
+				});
+			}
+		});
+	}
+
 	public function salecars()
 	{
 		return $this->hasMany(Salecar::class, 'CusID', 'id');
