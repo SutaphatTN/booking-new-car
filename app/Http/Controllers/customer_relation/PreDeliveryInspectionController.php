@@ -32,7 +32,15 @@ class PreDeliveryInspectionController extends Controller
 
     public function list(Request $request)
     {
-        $salecars = Salecar::with(['customer.prefix', 'saleUser', 'preDeliveryInspection.docs', 'preDeliveryInspection.photos'])
+        $salecars = Salecar::with([
+            'customer.prefix',
+            'saleUser',
+            'model',
+            'subModel',
+            'conStatus',
+            'preDeliveryInspection.docs',
+            'preDeliveryInspection.photos',
+        ])
             ->whereNotNull('AdminSignature')
             ->orderByDesc('DeliveryDate')
             ->get();

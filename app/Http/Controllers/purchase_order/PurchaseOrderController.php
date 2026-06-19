@@ -20,6 +20,7 @@ use App\Models\CarOrder;
 use App\Models\CarOrderHistory;
 use App\Models\Customer;
 use App\Models\Finance;
+use App\Models\FinancesConfirm;
 use App\Models\LicensePlateHistory;
 use App\Models\PaymentType;
 use App\Models\Salecampaign;
@@ -202,10 +203,7 @@ class PurchaseOrderController extends Controller
 
         if ($search) {
             $base->where(function ($q) use ($search) {
-                $q->whereHas('customer', fn($q) =>
-                    $q->where('FirstName', 'like', "%{$search}%")
-                      ->orWhere('LastName', 'like', "%{$search}%")
-                )
+                $q->whereHas('customer', fn($q) => $q->searchFullName($search))
                 ->orWhereHas('saleUser', fn($q) =>
                     $q->where('name', 'like', "%{$search}%")
                 )
@@ -971,6 +969,20 @@ class PurchaseOrderController extends Controller
             $oldPlate = $saleCar->red_license;
 
             $saleCar->update($data);
+
+            // ค่างวดล่วงหน้า — เก็บลง finances_confirm.advance_installment (ค่าเดียวกัน)
+            $advanceInstallment = $request->filled('advance_installment')
+                ? str_replace(',', '', $request->advance_installment)
+                : null;
+            $financeConfirm = FinancesConfirm::withoutGlobalScopes()
+                ->firstOrNew(['SaleID' => $saleCar->id]);
+            if (!$financeConfirm->exists) {
+                $financeConfirm->brand    = $saleCar->brand;
+                $financeConfirm->branch   = $saleCar->branch;
+                $financeConfirm->userZone = $saleCar->userZone;
+            }
+            $financeConfirm->advance_installment = $advanceInstallment;
+            $financeConfirm->save();
 
             if ($request->hasFile('attachments')) {
                 $customer = Customer::find($saleCar->CusID);
@@ -1785,8 +1797,7 @@ class PurchaseOrderController extends Controller
         if ($searchValue) {
             $query->where(function ($q) use ($searchValue) {
                 $q->whereHas('customer', function ($cq) use ($searchValue) {
-                    $cq->where('FirstName', 'like', "%{$searchValue}%")
-                        ->orWhere('LastName', 'like', "%{$searchValue}%");
+                    $cq->searchFullName($searchValue);
                 })->orWhereHas('carOrder', function ($cq) use ($searchValue) {
                     $cq->where('order_code', 'like', "%{$searchValue}%");
                 });

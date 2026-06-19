@@ -131,6 +131,7 @@ class CustomerTrackingOverdueExport implements FromView, WithTitle, WithStyles, 
                 'created_at'  => $createdAt?->format('d/m/Y H:i') ?? '-',
                 'days'        => $days,
                 'full_name'   => $fullName,
+                'phone'       => $customer?->formatted_mobile ?: '-',
                 'sale'        => $tracking?->sale?->name ?? '-',
                 'source'      => $tracking?->source?->name ?? '-',
                 'inserted_by' => $d->insertedBy?->name ?? '-',
@@ -138,6 +139,7 @@ class CustomerTrackingOverdueExport implements FromView, WithTitle, WithStyles, 
                 'contact_date'=> $d->contact_date ?? '-',
                 'decision'    => $d->decision?->name ?? '-',
                 'comment'     => $d->comment_sale ?? '-',
+                'link'        => $tracking ? url('/customer-tracking/' . $tracking->id) : null,
             ];
         })
         ->filter(fn($r) => $r['days'] >= 1)

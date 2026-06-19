@@ -135,12 +135,14 @@ class CustomerTrackingNextContactSheet implements FromView, WithTitle, WithStyle
             return [
                 'created_at'        => $tracking?->created_at ? Carbon::parse($tracking->created_at)->format('d/m/Y H:i') : '-',
                 'full_name'         => $fullName,
+                'phone'             => $customer?->formatted_mobile ?: '-',
                 'sale'              => $tracking?->sale?->name ?? '-',
                 'source'            => $tracking?->source?->name ?? '-',
                 'next_contact_date' => $d->contact_date ? Carbon::parse($d->contact_date)->format('d/m/Y') : '-',
                 'decision'          => $d->decision?->name ?? '-',
                 'contact_status'    => is_null($d->contact_status) ? '-' : ($d->contact_status ? 'ติดต่อได้' : 'ติดต่อไม่ได้'),
                 'comment'           => $d->comment_sale ?? '-',
+                'link'              => $tracking ? url('/customer-tracking/' . $tracking->id) : null,
             ];
         })
         ->values()

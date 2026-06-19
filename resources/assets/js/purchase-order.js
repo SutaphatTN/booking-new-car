@@ -2175,8 +2175,9 @@ function calculateTotalPaymentAtDelivery() {
   const cashDeposit = safeNumber('#CashDeposit');
   const otherCostFi = safeNumber('#other_cost_fi');
   const vatExtra = safeNumber('#AccessoryExtraVat');
+  const advanceInstallment = safeNumber('#advance_installment');
 
-  const total = downPayment + ExtraTotal + otherCostFi + vatExtra - (downDiscount + turnCost + cashDeposit);
+  const total = downPayment + ExtraTotal + otherCostFi + vatExtra + advanceInstallment - (downDiscount + turnCost + cashDeposit);
 
   $('#TotalPaymentatDeliveryCar').val(
     total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -2406,7 +2407,7 @@ $(document).on(
 $(document).ready(function () {
   $('#carOrderSubModel, #cost_turn, #com_turn, #CashDeposit, #price_sub').on('input change', updateSummary);
   $(
-    '#DownPayment, #DownPaymentDiscount, #cost_turn, #total_gift_used, #total_extra_used, #CashDeposit, #other_cost_fi, #AccessoryExtraVat'
+    '#DownPayment, #DownPaymentDiscount, #cost_turn, #total_gift_used, #total_extra_used, #CashDeposit, #other_cost_fi, #AccessoryExtraVat, #advance_installment'
   ).on('input change', calculateTotalPaymentAtDelivery);
   $('#CarSalePriceFinal, #DownPayment').on('input change', calculateRemaining);
   $('#remaining_interest, #remaining_period').on('input change', calculateInstallment);
@@ -2756,6 +2757,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const downPaymentDiscount = document.getElementById('DownPaymentDiscount')?.value || '-';
     const otherCostFi = document.getElementById('other_cost_fi')?.value || '-';
     const reasonOtherCostFi = document.getElementById('reason_other_cost_fi')?.value || '-';
+    const advanceInstallment = document.getElementById('advance_installment')?.value || '-';
     const vatExtra = document.getElementById('AccessoryExtraVat')?.value || '-';
     const discount = document.getElementById('discount')?.value || '-';
 
@@ -2851,8 +2853,9 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="mf-info-row"><span class="mf-info-label">เปอร์เซ็นต์เงินดาวน์</span><span class="mf-info-val">${downPaymentPercentage} %</span></div>
           <div class="mf-info-row"><span class="mf-info-label">ส่วนลดเงินดาวน์</span><span class="mf-info-val">${downPaymentDiscount} บาท</span></div>
           <div class="mf-info-row"><span class="mf-info-label">ส่วนลดราคารถ</span><span class="mf-info-val">${discount} บาท</span></div>
-          <div class="mf-info-row"><span class="mf-info-label">ค่าใช้จ่ายอื่นๆ</span><span class="mf-info-val">${otherCostFi} บาท</span></div>
-          <div class="mf-info-row"><span class="mf-info-label">หมายเหตุ ค่าใช้จ่ายอื่นๆ</span><span class="mf-info-val">${reasonOtherCostFi}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ค่างวดล่วงหน้า</span><span class="mf-info-val">${advanceInstallment} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ลูกค้าจ่ายเพิ่ม</span><span class="mf-info-val">${otherCostFi} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">หมายเหตุ ลูกค้าจ่ายเพิ่ม</span><span class="mf-info-val">${reasonOtherCostFi}</span></div>
           <div class="mf-info-row"><span class="mf-info-label">Vat ซื้อเพิ่ม</span><span class="mf-info-val">${vatExtra} บาท</span></div>
           <p class="mf-sub-heading mt-2">วันออกรถ</p>
           <div class="mf-info-row"><span class="mf-info-label">สรุปค่าใช้จ่ายวันออกรถ</span><span class="mf-info-val">${TotalPaymentatDeliveryCar} บาท</span></div>
@@ -2887,8 +2890,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
       discountHtml = `
           <div class="mf-info-row"><span class="mf-info-label">ส่วนลด</span><span class="mf-info-val">${paymentDiscount} บาท</span></div>
-          <div class="mf-info-row"><span class="mf-info-label">ค่าใช้จ่ายอื่นๆ</span><span class="mf-info-val">${otherCost} บาท</span></div>
-          <div class="mf-info-row"><span class="mf-info-label">หมายเหตุ ค่าใช้จ่ายอื่นๆ</span><span class="mf-info-val">${reasonOtherCost}</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ลูกค้าจ่ายเพิ่ม</span><span class="mf-info-val">${otherCost} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">หมายเหตุ ลูกค้าจ่ายเพิ่ม</span><span class="mf-info-val">${reasonOtherCost}</span></div>
           <div class="mf-info-row"><span class="mf-info-label">คงเหลือ</span><span class="mf-info-val">${balanceDisplay} บาท</span></div>
       `;
 
@@ -3143,7 +3146,7 @@ document.addEventListener('DOMContentLoaded', function () {
               <div class="mf-info-row"><span class="mf-info-label">ราคา</span><span class="mf-info-val">${price} บาท</span></div>
               <div class="mf-info-row"><span class="mf-info-label">เงินจอง</span><span class="mf-info-val">${cashDeposit} บาท</span></div>
               <div class="mf-info-row"><span class="mf-info-label">รถเทิร์น</span><span class="mf-info-val">${turn} บาท</span></div>
-              <div class="mf-info-row"><span class="mf-info-label">ลูกค้าจ่ายเพิ่ม</span><span class="mf-info-val">${summaryExtraTotal} บาท</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">ลูกค้าซื้อเพิ่ม</span><span class="mf-info-val">${summaryExtraTotal} บาท</span></div>
               ${discountHtml}
             </div>
           </div>
