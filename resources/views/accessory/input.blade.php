@@ -203,6 +203,25 @@
                   </label>
                 </div>
 
+                {{-- รายการเกี่ยวกับทะเบียน --}}
+                <div class="col-12">
+                  <input type="hidden" name="is_registration" value="0">
+                  <label for="inp_acc_is_registration"
+                    class="d-flex align-items-center gap-3 p-3 mb-0 rounded w-100"
+                    style="background:#eef4ff;border:1px solid #c7dbff;cursor:pointer;">
+                    <span class="form-switch m-0 p-0" style="min-height:auto;">
+                      <input class="form-check-input m-0" type="checkbox" role="switch"
+                        id="inp_acc_is_registration" name="is_registration" value="1"
+                        {{ old('is_registration') ? 'checked' : '' }}
+                        style="width:2.75em;height:1.5em;cursor:pointer;">
+                    </span>
+                    <span>
+                      <span class="fw-bold"><i class="bx bx-id-card ci-indigo"></i> รายการเกี่ยวกับทะเบียน</span>
+                      <span class="text-muted small d-block">ถ้าเปิด รายการนี้จะถูกนับเป็นรายการเกี่ยวกับทะเบียนของการจอง</span>
+                    </span>
+                  </label>
+                </div>
+
               </div>
             </div>
           </div>
