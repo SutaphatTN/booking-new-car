@@ -152,7 +152,8 @@ class VehicleController extends Controller
             'vehicleLicense',
             'vehicleLicense.provincesV',
             'licensePlateRed',
-            'financeConfirm'
+            'financeConfirm',
+            'accessories'
         ])->findOrFail($id);
 
         return view('number_register.vehicle.view-more', compact('veh'));
@@ -166,7 +167,8 @@ class VehicleController extends Controller
             'vehicleLicense',
             'vehicleLicense.provincesV',
             'licensePlateRed',
-            'financeConfirm'
+            'financeConfirm',
+            'accessories'
         ])->findOrFail($id);
 
         $provincesV = TbProvinces::all();

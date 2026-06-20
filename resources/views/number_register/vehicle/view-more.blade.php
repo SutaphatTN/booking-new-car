@@ -155,6 +155,56 @@
           </div>
         </div>
 
+        {{-- Section 4 : รายการเกี่ยวกับทะเบียน (accessory ที่ is_registration) --}}
+        @php
+          $regAccs = $veh->accessories?->where('is_registration', true) ?? collect();
+          $regTypeLabel = ['gift' => 'แถม', 'extra' => 'ซื้อเพิ่ม'];
+        @endphp
+        <div class="mf-section">
+          <div class="mf-section-hd">
+            <div class="mf-section-icon indigo">
+              <i class="bx bx-id-card"></i>
+            </div>
+            <span class="mf-section-title">รายการเกี่ยวกับทะเบียน</span>
+          </div>
+          <div class="mf-section-body">
+            @if ($regAccs->count() > 0)
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr style="font-size:.8rem;color:#64748b;">
+                      <th class="text-center" style="width:48px;">#</th>
+                      <th>รหัส</th>
+                      <th>รายการ</th>
+                      <th>ประเภท</th>
+                      <th class="text-end">ราคา</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @foreach ($regAccs as $a)
+                      <tr style="font-size:.85rem;color:#374151;">
+                        <td class="text-center text-muted">{{ $loop->index + 1 }}</td>
+                        <td>{{ $a->accessory_id }}</td>
+                        <td>{{ $a->detail }}</td>
+                        <td>{{ $regTypeLabel[$a->pivot->type] ?? $a->pivot->type }}</td>
+                        <td class="text-end">{{ number_format($a->pivot->price, 2) }} ฿</td>
+                      </tr>
+                    @endforeach
+                  </tbody>
+                  <tfoot>
+                    <tr style="font-size:.85rem;font-weight:600;background:#eef4ff;">
+                      <td colspan="4" class="text-end">รวม</td>
+                      <td class="text-end">{{ number_format($regAccs->sum(fn($a) => (float) $a->pivot->price), 2) }} ฿</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            @else
+              <div class="text-muted small text-center py-2">— ไม่มีรายการเกี่ยวกับทะเบียนในการจองนี้ —</div>
+            @endif
+          </div>
+        </div>
+
         {{-- Actions --}}
         {{-- <div class="d-flex justify-content-end pt-1">
           <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">

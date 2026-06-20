@@ -150,6 +150,22 @@
                 </div>
               </div>
 
+              {{-- รายการเกี่ยวกับทะเบียน --}}
+              <div class="col-12">
+                <div class="d-flex align-items-center gap-3 p-3 mb-0 rounded w-100"
+                  style="background:#eef4ff;border:1px solid #c7dbff;">
+                  <span class="form-switch m-0 p-0" style="min-height:auto;">
+                    <input class="form-check-input m-0" type="checkbox" role="switch"
+                      {{ $acc->is_registration ? 'checked' : '' }} disabled
+                      style="width:2.75em;height:1.5em;">
+                  </span>
+                  <span>
+                    <span class="fw-bold"><i class="bx bx-id-card ci-indigo"></i> รายการเกี่ยวกับทะเบียน</span>
+                    <span class="text-muted small d-block">{{ $acc->is_registration ? 'ใช่ — เป็นรายการเกี่ยวกับทะเบียน' : 'ไม่ใช่' }}</span>
+                  </span>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
