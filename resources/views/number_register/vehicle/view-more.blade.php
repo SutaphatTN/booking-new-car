@@ -34,7 +34,7 @@
                   <i class="bx bx-user ci-indigo"></i> ลูกค้า
                 </label>
                 <input id="FullName" type="text" class="form-control"
-                  value="{{ $veh->customer?->prefix?->Name_TH ?? '' }} {{ $veh->customer?->FirstName ?? '' }} {{ $lic->saleCarLic?->customer?->LastName ?? '' }}"
+                  value="{{ $veh->customer?->prefix?->Name_TH ?? '' }} {{ $veh->customer?->FirstName ?? '' }} {{ $veh->customer?->LastName ?? '' }}"
                   disabled>
               </div>
 
