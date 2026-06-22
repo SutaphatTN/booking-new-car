@@ -33,6 +33,16 @@ class VehicleController extends Controller
             ->whereNotNull('CarOrderID')
             // ->whereNotNull('DeliveryDate')
             ->where('con_status', 5);
+
+        // ซ่อนรถที่ส่งมอบก่อนวัน go-live ของเมนูนี้ (ตั้งค่าใน config/vehicle.php → .env)
+        // รถที่ยังไม่มีวันส่งมอบ (DeliveryDate = NULL) ยังคงแสดงอยู่
+        $registrationStartDate = config('vehicle.registration_start_date');
+        if (!empty($registrationStartDate)) {
+            $query->where(function ($q) use ($registrationStartDate) {
+                $q->whereNull('DeliveryDate')
+                    ->orWhereDate('DeliveryDate', '>=', $registrationStartDate);
+            });
+        }
             // ->where(function ($q) {
             //     $q->where('payment_mode', 'non-finance')
             //         ->orWhere(function ($q2) {
@@ -62,9 +72,7 @@ class VehicleController extends Controller
         if ($status === 'cleared') {
             $query->whereHas('vehicleLicense', function ($q) {
                 $q->whereNotNull('withdrawal_date')
-                    ->whereNotNull('backup_clear_date')
-                    ->whereNull('license_name')
-                    ->whereNull('license_number');
+                    ->whereNotNull('backup_clear_date');
             });
         }
 
