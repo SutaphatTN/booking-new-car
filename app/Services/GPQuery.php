@@ -26,10 +26,10 @@ class GPQuery
             'campaigns.campaign.appellation',
             'accessories'
         ])
-            ->whereNotNull('DeliveryInCKDate')
+            ->whereNotNull('DeliveryInDMSDate')
             ->whereNotNull('CarOrderID')
             ->where('con_status', 5) // เฉพาะที่ส่งมอบแล้ว
-            ->whereMonth('DeliveryInCKDate', $date->month)
-            ->whereYear('DeliveryInCKDate', $date->year);
+            ->whereMonth('DeliveryInDMSDate', $date->month)
+            ->whereYear('DeliveryInDMSDate', $date->year);
     }
 }
