@@ -39,8 +39,8 @@
         @continue
       @endif
 
-      {{-- เมนู "ตั้งค่า GP" เห็นเฉพาะ role admin และ audit --}}
-      @if ($submenu->slug == 'purchase-order.gp-setting' && !in_array($userRole, ['admin', 'audit']))
+      {{-- เมนู "ตั้งค่า GP" เห็นเฉพาะ role admin, audit และ account --}}
+      @if ($submenu->slug == 'purchase-order.gp-setting' && !in_array($userRole, ['admin', 'audit', 'account']))
         @continue
       @endif
 

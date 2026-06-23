@@ -1990,7 +1990,7 @@ class PurchaseOrderController extends Controller
      */
     public function gpSetting(Request $request)
     {
-        abort_unless(in_array(Auth::user()->role, ['admin', 'audit']), 403);
+        abort_unless(in_array(Auth::user()->role, ['admin', 'audit', 'account']), 403);
 
         $month = $request->input('month') ?: now()->format('Y-m');
 
@@ -2004,8 +2004,8 @@ class PurchaseOrderController extends Controller
     public function updateGpSetting(Request $request, $id)
     {
         $role = Auth::user()->role;
-        // admin และ audit แก้ไขได้ (audit แก้ได้ทุกอย่าง ยกเว้นราคาทุน/ราคาขาย ซึ่ง readonly)
-        abort_unless(in_array($role, ['admin', 'audit']), 403);
+        // admin, audit และ account แก้ไขได้ (audit/account แก้ได้ทุกอย่าง ยกเว้นราคาทุน/ราคาขาย ซึ่ง readonly)
+        abort_unless(in_array($role, ['admin', 'audit', 'account']), 403);
 
         $validated = $request->validate([
             'gp_cost_price_override' => 'nullable|numeric|min:0',
