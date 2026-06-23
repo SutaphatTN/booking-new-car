@@ -643,12 +643,22 @@ $(document).on('click', '.btnEditFNConfirm', function () {
     $('.editFinConfirmModal').html(html);
     const $modal = $('.editFinConfirm');
 
+    // กันกรณีเปิดหน้าค้างไว้นานจน session หมดอายุ แล้วเซิร์ฟเวอร์ส่งหน้า login/หน้าว่างกลับมาแทน partial จริง
+    // ถ้า field ที่จำเป็นต่อการคำนวณไม่ครบ ให้แจ้งเตือนแทนการคำนวณกับ DOM ที่ไม่มีอยู่ (ซึ่งทำให้ยอดรวมไม่คำนวณ)
+    if (!$modal.length || !document.getElementById('net_price')) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ไม่สามารถโหลดข้อมูลได้',
+        text: 'เซสชันอาจหมดอายุ กรุณารีเฟรชหน้าเว็บแล้วลองใหม่อีกครั้ง'
+      });
+      return;
+    }
+
     formatAllMoneyInputs();
     calculateComFin();
     bindTotalEvents();
     calculateTotal();
     calculateAllDiff();
-    calculateDiffRow();
 
     $modal.modal('show');
 
@@ -705,19 +715,31 @@ $(document).on('click', '.btnEditFNConfirm', function () {
           }
         });
       });
+  }).fail(function () {
+    Swal.fire({
+      icon: 'error',
+      title: 'เกิดข้อผิดพลาด',
+      text: 'ไม่สามารถโหลดฟอร์มแก้ไขได้ กรุณาลองใหม่อีกครั้ง'
+    });
   });
 });
 
+// อ่านค่าจาก hidden/input อย่างปลอดภัย กัน element หายแล้ว throw จนหยุดการคำนวณยอดรวม
+function getNumById(id) {
+  const el = document.getElementById(id);
+  return parseFloat((el ? el.value : 0) || 0) || 0;
+}
+
 function calculateComFin() {
-  let netPrice = parseFloat(document.getElementById('net_price').value || 0);
-  let excellent = parseFloat(document.getElementById('excellent').value || 0);
-  let down = parseFloat(document.getElementById('down').value || 0);
-  let alp = parseFloat(document.getElementById('total_alp').value || 0);
-  let interest = parseFloat(document.getElementById('interest').value || 0) / 100;
-  let type_com = parseFloat(document.getElementById('type_com').value || 0) / 100;
-  let periodMonth = parseFloat(document.getElementById('period').value || 0);
-  let maxYear = parseFloat(document.getElementById('max_year').value || 0);
-  let tax = parseFloat(document.getElementById('tax').value || 0) / 100;
+  let netPrice = getNumById('net_price');
+  let excellent = getNumById('excellent');
+  let down = getNumById('down');
+  let alp = getNumById('total_alp');
+  let interest = getNumById('interest') / 100;
+  let type_com = getNumById('type_com') / 100;
+  let periodMonth = getNumById('period');
+  let maxYear = getNumById('max_year');
+  let tax = getNumById('tax') / 100;
 
   let realYear = periodMonth / 12;
 
@@ -737,7 +759,7 @@ function calculateTotal() {
   let advance = parseNumber($('#advance_installment').val() || 0);
   let comFin = parseNumber($('#com_fin').val() || 0);
   let comExtra = parseNumber($('#com_extra').val() || 0);
-  let comKickback = parseFloat(document.getElementById('kickback').value || 0);
+  let comKickback = getNumById('kickback');
   let comSubsidy = parseNumber($('#com_subsidy').val() || 0);
   let specialMoney = parseNumber($('#special_money').val() || 0);
   let actually_received = parseNumber($('#actually_received').val() || 0);
@@ -751,17 +773,18 @@ function calculateTotal() {
 }
 
 function calculateAllDiff() {
-  let totalDiff = 0;
+  // คำนวณ diff ของแต่ละแถว (ประมาณการ - รับจริง)
+  calculateDiffRow('excellent', 'excellent_accept', 'excellent_diff');
+  calculateDiffRow('com_fin', 'com_fin_accept', 'com_fin_diff');
+  calculateDiffRow('com_extra', 'com_extra_accept', 'com_extra_diff');
+  calculateDiffRow('com_kickback', 'com_kickback_accept', 'com_kickback_diff');
+  calculateDiffRow('com_subsidy', 'com_subsidy_accept', 'com_subsidy_diff');
+  calculateDiffRow('advance_installment', 'advance_installment_accept', 'advance_installment_diff');
+  calculateDiffRow('special_money', 'special_money_accept', 'special_money_diff');
 
-  totalDiff += calculateDiffRow('excellent', 'excellent_accept', 'excellent_diff');
-  totalDiff += calculateDiffRow('com_fin', 'com_fin_accept', 'com_fin_diff');
-  totalDiff += calculateDiffRow('com_extra', 'com_extra_accept', 'com_extra_diff');
-  totalDiff += calculateDiffRow('com_kickback', 'com_kickback_accept', 'com_kickback_diff');
-  totalDiff += calculateDiffRow('com_subsidy', 'com_subsidy_accept', 'com_subsidy_diff');
-  totalDiff += calculateDiffRow('advance_installment', 'advance_installment_accept', 'advance_installment_diff');
-  totalDiff += calculateDiffRow('special_money', 'special_money_accept', 'special_money_diff');
-
-  $('#diff').val(formatMoney(totalDiff));
+  // ยอด diff รวมด้านล่าง = ยอดรวมทั้งหมด - รับจริง ให้สอดคล้องกับแถว "รวมเงินทั้งหมด" (สูตรเดียวกับ calculateTotal)
+  // ไม่ใช้ผลรวม diff รายแถว เพราะ total คิดเครื่องหมาย (- ค่างวดล่วงหน้า, - เงินพิเศษ) และ "รับจริง" กรอกเอง
+  calculateTotal();
 }
 
 function calculateDiffRow(estimateId, acceptId, diffId) {
@@ -776,14 +799,11 @@ function calculateDiffRow(estimateId, acceptId, diffId) {
 }
 
 function bindTotalEvents() {
-  $('#excellent, #advance_installment, #com_fin, #com_extra, #com_kickback, #com_subsidy, #special_money, #actually_received')
-    .off('input')
-    .on('input', function () {
-      calculateTotal();
-    });
-
+  // ทุกช่อง (ทั้งฝั่งประมาณการและรับจริง) เรียก calculateAllDiff จุดเดียว
+  // ซึ่งจะคำนวณ diff รายแถว + ยอดรวม + diff รวมด้านล่างให้สอดคล้องกันเสมอ
   $(
-    '#excellent_accept, #com_fin_accept, #com_extra_accept, #com_kickback_accept, #com_subsidy_accept, #advance_installment_accept, #special_money_accept'
+    '#excellent, #advance_installment, #com_fin, #com_extra, #com_kickback, #com_subsidy, #special_money, #actually_received, ' +
+      '#excellent_accept, #com_fin_accept, #com_extra_accept, #com_kickback_accept, #com_subsidy_accept, #advance_installment_accept, #special_money_accept'
   )
     .off('input')
     .on('input', function () {

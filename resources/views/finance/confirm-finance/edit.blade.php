@@ -29,10 +29,10 @@
           <input type="hidden" id="net_price" name="net_price" value="{{ $fnCon->net_price }}">
           <input type="hidden" id="down" value="{{ $fnCon->down }}">
           <input type="hidden" id="excellent" value="{{ $fnCon->excellent }}">
-          <input type="hidden" id="total_alp" value="{{ $sale->remainingPayment->total_alp }}">
-          <input type="hidden" id="interest" value="{{ $sale->remainingPayment->interest }}">
-          <input type="hidden" id="type_com" value="{{ $sale->remainingPayment->type_com }}">
-          <input type="hidden" id="period" value="{{ $sale->remainingPayment->period }}">
+          <input type="hidden" id="total_alp" value="{{ $sale->remainingPayment?->total_alp }}">
+          <input type="hidden" id="interest" value="{{ $sale->remainingPayment?->interest }}">
+          <input type="hidden" id="type_com" value="{{ $sale->remainingPayment?->type_com }}">
+          <input type="hidden" id="period" value="{{ $sale->remainingPayment?->period }}">
           <input type="hidden" id="tax" value="{{ $sale->remainingPayment?->financeInfo?->tax }}">
           <input type="hidden" id="kickback" value="{{ $sale->kickback }}">
           <input type="hidden" id="max_year" value="{{ $maxYear }}">
@@ -244,7 +244,7 @@
                       </label>
                       @php $years = $sale->remainingPayment?->period ? $sale->remainingPayment->period / 12 : null; @endphp
                       <input id="edit_period" type="text" class="form-control"
-                        value="{{ $sale->remainingPayment->period ?? '-' }}"
+                        value="{{ $sale->remainingPayment?->period ?? '-' }}"
                         style="background:#f8fafc;color:#64748b;" readonly>
                     </div>
 
@@ -255,7 +255,7 @@
                       <div class="input-group">
                         <span class="input-group-text ig-indigo">฿</span>
                         <input id="edit_including_alp" type="text" class="form-control text-end money-input"
-                          value="{{ $sale->remainingPayment->including_alp ?? '-' }}"
+                          value="{{ $sale->remainingPayment?->including_alp ?? '-' }}"
                           style="background:#f8fafc;color:#64748b;" readonly>
                       </div>
                     </div>
@@ -267,7 +267,7 @@
                       <div class="input-group">
                         <span class="input-group-text ig-indigo">฿</span>
                         <input id="edit_alp" type="text" class="form-control text-end money-input"
-                          value="{{ $sale->remainingPayment->total_alp ?? '-' }}"
+                          value="{{ $sale->remainingPayment?->total_alp ?? '-' }}"
                           style="background:#f8fafc;color:#64748b;" readonly>
                       </div>
                     </div>
