@@ -47,7 +47,6 @@
                 <th>ราคาขาย (MSRP)</th>
                 <th>DM</th>
                 <th>RI</th>
-                <th>WS</th>
                 <th class="tbl-th-action" style="width:100px;">Action</th>
               </tr>
             </thead>

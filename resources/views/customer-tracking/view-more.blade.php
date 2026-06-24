@@ -76,7 +76,7 @@
       <div class="tab-pane fade show active" id="tab-info" role="tabpanel">
 
         <div class="row g-4">
-          <div class="col-md-6">
+          <div class="col-md-12">
             <div class="po-section-edit mb-0">
               <div class="po-section-header">
                 <div class="po-section-icon sky"><i class="bx bx-user"></i></div>
@@ -84,20 +84,20 @@
               </div>
               <div class="po-section-body mb-2">
                 <div class="row g-4">
-                  <div class="col-md-8">
+                  <div class="col-md-4">
                     <div class="po-label">ชื่อ - นามสกุล</div>
                     <div class="info-pill fw-semibold">{{ $fullName }}</div>
                   </div>
-                  <div class="col-md-4">
+                  <div class="col-md-2">
                     <div class="po-label">เบอร์โทรศัพท์</div>
                     <div class="info-pill">{{ $c->formatted_mobile ?? ($c->Mobilephone1 ?? '-') }}</div>
                   </div>
 
-                  <div class="col-md-6">
+                  <div class="col-md-3">
                     <div class="po-label">อาชีพ</div>
                     <div class="info-pill">{{ $c->career ?? '-' }}</div>
                   </div>
-                  <div class="col-md-6">
+                  <div class="col-md-3">
                     <div class="po-label">เงินเดือน</div>
                     <div class="info-pill">{{ $c->salary ?? '-' }}</div>
                   </div>
@@ -114,22 +114,37 @@
             </div>
           </div>
 
-          <div class="col-md-6">
+          <div class="col-md-12">
             <div class="po-section-edit mb-0">
               <div class="po-section-header">
                 <div class="po-section-icon indigo"><i class="bx bx-user-pin"></i></div>
                 <h6 class="po-section-title">ข้อมูลผู้ขาย</h6>
               </div>
+              @php
+                $sourceMainKey = $tracking->source->main_source ?? null;
+                $sourceMainLabel = $sourceMainKey ? config("source.main.$sourceMainKey", $sourceMainKey) : '-';
+                $isPlaceMain = $sourceMainKey === config('source.place_main');
+              @endphp
               <div class="po-section-body mb-2">
                 <div class="row g-4">
-                  <div class="col-md-6">
+                  <div class="col-md-4">
                     <div class="po-label">ผู้ขาย</div>
                     <div class="info-pill fw-semibold">{{ $tracking->sale->name ?? '-' }}</div>
                   </div>
-                  <div class="col-md-6">
-                    <div class="po-label">แหล่งที่มา</div>
+                  <div class="col-md-2">
+                    <div class="po-label">แหล่งที่มาหลัก</div>
+                    <div class="info-pill">{{ $sourceMainLabel }}</div>
+                  </div>
+                  <div class="col-md-2">
+                    <div class="po-label">แหล่งที่มาย่อย</div>
                     <div class="info-pill">{{ $tracking->source->name ?? '-' }}</div>
                   </div>
+                  @if ($isPlaceMain)
+                    <div class="col-md-4">
+                      <div class="po-label">สถานที่</div>
+                      <div class="info-pill">{{ $tracking->place->name ?? '' }}</div>
+                    </div>
+                  @endif
                   <div class="col-md-12">
                     <div class="po-label">คลิปที่ยิงแอด</div>
                     <textarea class="form-control" rows="2" readonly
@@ -547,7 +562,7 @@
             </div>
             <div class="col-md-7">
               <label class="mf-label form-label" for="add_decision_id">
-                <i class="bx bx-target-lock"></i> สถานะการตัดสินใจ
+                <i class="bx bx-target-lock"></i> สถานะการตัดสินใจ <span class="text-danger">*</span>
               </label>
               <select id="add_decision_id" class="form-select">
                 <option value="">— เลือก —</option>

@@ -255,18 +255,45 @@
                 </div>
               @endif
 
-              {{-- แหล่งที่มา --}}
+              {{-- แหล่งที่มาหลัก (อยู่ติดกับผู้ขาย) --}}
               <div class="col-md-5">
-                <label class="po-label" for="source_id"><i class='bx bx-map-pin'></i> แหล่งที่มา</label>
-                <select id="source_id" name="source_id" class="form-select @error('source_id') is-invalid @enderror"
-                  required>
+                <label class="po-label" for="source_main"><i class='bx bx-layer'></i> แหล่งที่มาหลัก <span class="text-danger">*</span></label>
+                <select id="source_main" name="source_main"
+                  class="form-select @error('source_main') is-invalid @enderror" required>
+                  <option value="">— เลือก —</option>
+                  @foreach ($sourceMains as $key => $label)
+                    <option value="{{ $key }}" {{ old('source_main') == $key ? 'selected' : '' }}>{{ $label }}</option>
+                  @endforeach
+                </select>
+                @error('source_main')
+                  <div class="invalid-feedback d-block">{{ $message }}</div>
+                @enderror
+              </div>
+
+              {{-- แหล่งที่มาย่อย → สถานที่ --}}
+              <div class="col-md-4">
+                <label class="po-label" for="source_id"><i class='bx bx-map-pin'></i> แหล่งที่มาย่อย <span class="text-danger">*</span></label>
+                <select id="source_id" name="source_id"
+                  class="form-select @error('source_id') is-invalid @enderror" required disabled>
                   <option value="">— เลือก —</option>
                   @foreach ($sources as $s)
-                    <option value="{{ $s->id }}" {{ old('source_id') == $s->id ? 'selected' : '' }}>
-                      {{ $s->name }}</option>
+                    <option value="{{ $s->id }}" data-main="{{ $s->main_source }}"
+                      {{ old('source_id') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
                   @endforeach
                 </select>
                 @error('source_id')
+                  <div class="invalid-feedback d-block">{{ $message }}</div>
+                @enderror
+              </div>
+
+              <div class="col-md-8" id="place_wrap" style="display:none;"
+                data-place-main="{{ $placeMain }}" data-old-place="{{ old('place_id') }}">
+                <label class="po-label" for="place_id"><i class='bx bx-store'></i> สถานที่ <span class="text-danger">*</span></label>
+                <select id="place_id" name="place_id"
+                  class="form-select @error('place_id') is-invalid @enderror">
+                  <option value="">— เลือก —</option>
+                </select>
+                @error('place_id')
                   <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
               </div>
@@ -303,7 +330,7 @@
 
               {{-- สถานะการตัดสินใจ --}}
               <div class="col-md-7">
-                <label class="po-label" for="decision_id"><i class='bx bx-target-lock'></i> สถานะการตัดสินใจ</label>
+                <label class="po-label" for="decision_id"><i class='bx bx-target-lock'></i> สถานะการตัดสินใจ <span class="text-danger">*</span></label>
                 <select id="decision_id" name="decision_id" class="form-select" required>
                   <option value="">— เลือก —</option>
                   @foreach ($decisions as $d)

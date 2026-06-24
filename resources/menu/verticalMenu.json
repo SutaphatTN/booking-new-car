@@ -97,6 +97,23 @@
       ]
     },
     {
+      "name": "แหล่งที่มา",
+      "icon": "menu-icon icon-base bx bx-map-pin",
+      "slug": "source",
+      "submenu": [
+        {
+          "url": "source/sub",
+          "name": "แหล่งที่มาย่อย",
+          "slug": "source.sub.index"
+        },
+        {
+          "url": "source/place",
+          "name": "สถานที่",
+          "slug": "source.place.index"
+        }
+      ]
+    },
+    {
       "name": "การตั้งค่า",
       "icon": "menu-icon icon-base bx bx-cog",
       "slug": [
@@ -104,9 +121,9 @@
         "model-car",
         "gwm-incentive",
         "car-order",
-        "accessory",
         "campaign",
         "finance",
+        "accessory",
         "stock-film",
         "film-price-list",
         "film-usage",
@@ -119,7 +136,8 @@
           "slug": [
             "model",
             "model-car",
-            "gwm-incentive"
+            "gwm-incentive",
+            "car-order.import-ws"
           ],
           "submenu": [
             {
@@ -151,6 +169,11 @@
               "url": "gwm-incentive/report",
               "name": "รายงาน GWM Incentive",
               "slug": "gwm-incentive.report"
+            },
+            {
+              "url": "car-order/import-ws",
+              "name": "นำเข้า WS",
+              "slug": "car-order.import-ws"
             }
           ]
         },

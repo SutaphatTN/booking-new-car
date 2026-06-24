@@ -606,7 +606,6 @@ $(document).ready(function () {
       { data: 'msrp' },
       { data: 'dm', visible: !hide },
       { data: 'ri', visible: !hide },
-      { data: 'ws', visible: !hide },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
@@ -666,6 +665,35 @@ $(document).on('change', '#pl_model_id', function () {
     });
     $subSelect.prop('disabled', false);
   });
+});
+
+// คำนวณค่า WS อัตโนมัติจากราคาทุน (DNP) ถอด VAT — ดอกลอย 9%/ปี ตามจำนวนวันของเดือนปัจจุบัน (เติมเป็นค่าตั้งต้น แก้ไขเองได้)
+function calcPricelistWs(dnpSelector, wsSelector) {
+  const dnp = parseFloat(($(dnpSelector).val() || '').replace(/,/g, '')) || 0;
+  const $ws = $(wsSelector);
+
+  if (!dnp) {
+    $ws.val('');
+    return;
+  }
+
+  const dnpExVat = dnp - (dnp * 7) / 107;
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const ws = ((dnpExVat * 0.09) / 365) * daysInMonth;
+  // ปัดเป็นเลขเต็มหลักร้อย เช่น 1548 → 1500, 1559 → 1600
+  const wsRounded = Math.round(ws / 100) * 100;
+
+  $ws.val(wsRounded.toLocaleString());
+}
+
+// เติมค่า WS ให้อัตโนมัติเมื่อกรอก/แก้ราคาทุน (DNP) ทั้งหน้าเพิ่มและหน้าแก้ไข
+$(document).on('input', '#pl_dnp', function () {
+  calcPricelistWs('#pl_dnp', '#pl_ws');
+});
+
+$(document).on('input', '#edit_pl_dnp', function () {
+  calcPricelistWs('#edit_pl_dnp', '#edit_pl_ws');
 });
 
 //input : save pricelist-car

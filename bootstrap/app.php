@@ -19,6 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ]);
     $middleware->appendToGroup('web', BrandSwitcher::class);
     $middleware->appendToGroup('web', BranchSwitcher::class);
+
+    // ลิงก์อนุมัติสถานที่ในเมล (MD ไม่ได้ login จึงไม่มี CSRF token)
+    $middleware->validateCsrfTokens(except: [
+      'source/approval/*',
+    ]);
   })
   ->withExceptions(function (Exceptions $exceptions) {
     //

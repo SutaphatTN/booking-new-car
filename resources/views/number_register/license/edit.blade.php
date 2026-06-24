@@ -68,6 +68,15 @@
                     style="background:#f8fafc;color:#64748b;" disabled>
                 </div>
 
+                <div class="col-md-5">
+                  <label for="province_name" class="mf-label form-label">
+                    <i class="bx bx-map ci-sky"></i> จังหวัดป้ายทะเบียน
+                  </label>
+                  <input id="province_name" type="text" class="form-control"
+                    value="{{ $lic->saleCarLic?->vehicleLicense?->provincesV?->name ?? '-' }}"
+                    style="background:#f8fafc;color:#64748b;" disabled>
+                </div>
+
               </div>
             </div>
           </div>
@@ -194,6 +203,48 @@
                 </div>
 
               </div>
+            </div>
+          </div>
+
+          {{-- Section 5 : ข้อมูลมัดจำป้าย (accessory ที่เลือกจากหน้าการจอง ตาม id ที่กำหนด) --}}
+          @php
+            $depositIds = config('vehicle.plate_deposit_accessory_ids', []);
+            $deposits = $lic->saleCarLic?->accessories?->whereIn('id', $depositIds) ?? collect();
+          @endphp
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon emerald">
+                <i class="bx bx-id-card"></i>
+              </div>
+              <span class="mf-section-title">ข้อมูลมัดจำป้าย</span>
+            </div>
+            <div class="mf-section-body">
+              @if ($deposits->count() > 0)
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr style="font-size:.8rem;color:#64748b;">
+                        <th class="text-center" style="width:48px;">#</th>
+                        <th>รหัส</th>
+                        <th>รายการ</th>
+                        <th class="text-end">ยอดที่ใช้</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @foreach ($deposits as $a)
+                        <tr style="font-size:.85rem;color:#374151;">
+                          <td class="text-center text-muted">{{ $loop->index + 1 }}</td>
+                          <td>{{ $a->id }}</td>
+                          <td>{{ $a->detail }}</td>
+                          <td class="text-end">{{ number_format((float) $a->pivot->price, 2) }} ฿</td>
+                        </tr>
+                      @endforeach
+                    </tbody>
+                  </table>
+                </div>
+              @else
+                <div class="text-muted small text-center py-2">— ลูกค้าไม่รับป้าย —</div>
+              @endif
             </div>
           </div>
 

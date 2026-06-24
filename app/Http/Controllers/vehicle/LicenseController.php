@@ -73,7 +73,9 @@ class LicenseController extends Controller
     $lic = LicensePlateHistory::with([
       'licenseLic',
       'saleCarLic.customer.prefix',
-      'saleCarLic.saleUser'
+      'saleCarLic.saleUser',
+      'saleCarLic.vehicleLicense.provincesV',
+      'saleCarLic.accessories'
     ])->find($id);
 
     return view('number_register.license.view-more', compact('lic'));
@@ -85,7 +87,8 @@ class LicenseController extends Controller
       'licenseLic',
       'saleCarLic.customer.prefix',
       'saleCarLic.saleUser',
-      'saleCarLic.vehicleLicense'
+      'saleCarLic.vehicleLicense.provincesV',
+      'saleCarLic.accessories'
     ])->findOrFail($id);
 
     return view('number_register.license.edit', compact('lic'));
