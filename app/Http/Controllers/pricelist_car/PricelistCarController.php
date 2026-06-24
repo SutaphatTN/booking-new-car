@@ -83,11 +83,13 @@ class PricelistCarController extends Controller
             $user  = Auth::user();
             $brand = $user->brand ?? null;
 
+            $dnp = $request->filled('dnp') ? (float) str_replace(',', '', $request->dnp) : null;
+
             $data = [
                 'model_id'    => $request->model_id,
                 'subModel_id' => $request->subModel_id,
                 'year'        => $request->year,
-                'dnp'         => $request->filled('dnp') ? str_replace(',', '', $request->dnp) : null,
+                'dnp'         => $dnp,
                 'msrp'        => $request->filled('msrp') ? str_replace(',', '', $request->msrp) : null,
                 'brand'       => $brand,
                 'userZone'    => $user->userZone ?? null,
@@ -100,7 +102,8 @@ class PricelistCarController extends Controller
                 $data['color']  = $request->color;
                 $data['dm']     = $request->filled('dm') ? str_replace(',', '', $request->dm) : null;
                 $data['ri']     = $request->filled('ri') ? str_replace(',', '', $request->ri) : null;
-                $data['ws']     = $request->filled('ws') ? str_replace(',', '', $request->ws) : null;
+                // WS: ใช้ค่าที่กรอก (JS คำนวณเติมให้อัตโนมัติ แต่แก้ไขได้) ถ้าเว้นว่างค่อยคำนวณจากราคาทุน (DNP)
+                $data['ws']     = $request->filled('ws') ? (float) str_replace(',', '', $request->ws) : $this->calcWs($dnp);
             }
 
             TbPricelistCar::create($data);
@@ -136,11 +139,13 @@ class PricelistCarController extends Controller
             $price = TbPricelistCar::findOrFail($id);
             $brand = Auth::user()->brand ?? null;
 
+            $dnp = $request->filled('dnp') ? (float) str_replace(',', '', $request->dnp) : null;
+
             $data = [
                 'model_id'    => $request->model_id,
                 'subModel_id' => $request->subModel_id,
                 'year'        => $request->year,
-                'dnp'         => $request->filled('dnp') ? str_replace(',', '', $request->dnp) : null,
+                'dnp'         => $dnp,
                 'msrp'        => $request->filled('msrp') ? str_replace(',', '', $request->msrp) : null,
             ];
 
@@ -149,7 +154,8 @@ class PricelistCarController extends Controller
                 $data['color']  = $request->color;
                 $data['dm']     = $request->filled('dm') ? str_replace(',', '', $request->dm) : null;
                 $data['ri']     = $request->filled('ri') ? str_replace(',', '', $request->ri) : null;
-                $data['ws']     = $request->filled('ws') ? str_replace(',', '', $request->ws) : null;
+                // WS: ใช้ค่าที่กรอก (JS คำนวณเติมให้อัตโนมัติ แต่แก้ไขได้) ถ้าเว้นว่างค่อยคำนวณจากราคาทุน (DNP)
+                $data['ws']     = $request->filled('ws') ? (float) str_replace(',', '', $request->ws) : $this->calcWs($dnp);
             }
 
             $price->update($data);
@@ -164,6 +170,25 @@ class PricelistCarController extends Controller
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน',
             ], 500);
         }
+    }
+
+    /**
+     * คำนวณค่า WS (ดอกลอยสต๊อกต่อเดือน) จากราคาทุน (DNP)
+     * - ราคาทุนถอด VAT = dnp - (dnp * 7/107)
+     * - WS = (ราคาทุนถอด VAT * 9%) / 365 * จำนวนวันของเดือนปัจจุบัน
+     * - ปัดเป็นเลขเต็มหลักร้อย เช่น 1548 → 1500, 1559 → 1600
+     */
+    private function calcWs($dnp): ?float
+    {
+        if (!$dnp) {
+            return null;
+        }
+
+        $dnpExVat    = $dnp - ($dnp * 7 / 107);
+        $daysInMonth = now()->daysInMonth;
+        $ws          = ($dnpExVat * 0.09) / 365 * $daysInMonth;
+
+        return round($ws / 100) * 100;
     }
 
     public function destroy($id)

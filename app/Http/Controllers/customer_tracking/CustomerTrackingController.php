@@ -18,11 +18,14 @@ use App\Models\TbDecision;
 use App\Models\TbInteriorColor;
 use App\Models\TbPrefixname;
 use App\Models\TbSalecarType;
+use App\Models\SourcePlace;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CustomerTrackingController extends Controller
@@ -403,7 +406,9 @@ class CustomerTrackingController extends Controller
     {
         $authUser      = Auth::user();
         $model         = TbCarmodel::where('brand', $authUser->brand)->get();
-        $sources       = TbSalecarType::all();
+        // ซ่อนแหล่งที่มาหลักที่ใช้เฉพาะตอนจอง (เช่น "ลูกค้าเก่า") ออกจากหน้าเพิ่มการติดตาม
+        $hiddenMains   = config('source.tracking_hidden_main', []);
+        $sources       = TbSalecarType::whereNotIn('main_source', $hiddenMains)->get();
         $decisions     = TbDecision::all();
         $brandForSale  = $authUser->brand == 3 ? 1 : $authUser->brand;
         $saleUser = User::whereIn('role', ['sale', 'lead_sale'])
@@ -414,8 +419,10 @@ class CustomerTrackingController extends Controller
             ->get();
         $interiorColor = $authUser->brand == 2 ? TbInteriorColor::all() : collect();
         $prefixes      = TbPrefixname::all();
+        $sourceMains   = collect(config('source.main', []))->except($hiddenMains)->all();
+        $placeMain     = config('source.place_main', 'offline');
 
-        return view('customer-tracking.input', compact('model', 'sources', 'decisions', 'saleUser', 'interiorColor', 'prefixes'));
+        return view('customer-tracking.input', compact('model', 'sources', 'decisions', 'saleUser', 'interiorColor', 'prefixes', 'sourceMains', 'placeMain'));
     }
 
     public function checkDuplicate(Request $request)
@@ -474,6 +481,41 @@ class CustomerTrackingController extends Controller
     public function store(Request $request)
     {
         try {
+            // แหล่งที่มา: ตรวจ source_id + place_id (place จำเป็นเสมอเมื่อ main=offline,
+            // รับเฉพาะสถานที่ที่อนุมัติแล้ว — กันกรณีเลือก offline แต่สถานที่ยังรออนุมัติ)
+            $source    = TbSalecarType::find($request->source_id);
+            $placeMain = config('source.place_main', 'offline');
+            $isOffline = $source && $source->main_source === $placeMain;
+
+            $validator = Validator::make($request->all(), [
+                'source_main' => ['required', Rule::in(array_keys(config('source.main', [])))],
+                'source_id'   => 'required|exists:tb_salecar_type,id',
+                'place_id'    => [
+                    $isOffline ? 'required' : 'nullable',
+                    Rule::exists('tb_source_place', 'id')
+                        ->where('salecar_type_id', $request->source_id)
+                        ->where('status', SourcePlace::STATUS_APPROVED)
+                        ->whereNull('deleted_at'),
+                ],
+                'decision_id' => 'required|exists:tb_decision,id',
+            ], [
+                'source_main.required' => 'กรุณาเลือกแหล่งที่มาหลัก',
+                'source_main.in'       => 'แหล่งที่มาหลักไม่ถูกต้อง',
+                'source_id.required'   => 'กรุณาเลือกแหล่งที่มาย่อย',
+                'source_id.exists'     => 'แหล่งที่มาย่อยไม่ถูกต้อง',
+                'place_id.required'    => 'กรุณาเลือกสถานที่',
+                'place_id.exists'      => 'สถานที่ไม่ถูกต้อง',
+                'decision_id.required' => 'กรุณาเลือกสถานะการตัดสินใจ',
+                'decision_id.exists'   => 'สถานะการตัดสินใจไม่ถูกต้อง',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+            }
+
+            // เก็บ place_id เฉพาะเมื่อ main=offline เท่านั้น (กันค่าหลงมาจากกรณีอื่น)
+            $placeId = ($source && $source->main_source === $placeMain) ? ($request->place_id ?: null) : null;
+
             DB::beginTransaction();
 
             $authUser = Auth::user();
@@ -517,6 +559,7 @@ class CustomerTrackingController extends Controller
                 'sale_id'           => $request->sale_id,
                 'customer_id'       => $request->customer_id,
                 'source_id'         => $request->source_id,
+                'place_id'          => $placeId,
                 'customer_date'     => $this->toGregorian($request->contact_date ?: null),
                 'model_id'          => $request->model_id ?: null,
                 'sub_model_id'      => $request->sub_model_id ?: null,
@@ -615,6 +658,10 @@ class CustomerTrackingController extends Controller
         $request->validate([
             'contact_date'   => 'required|date',
             'contact_status' => 'required|in:1,0',
+            'decision_id'    => 'required|exists:tb_decision,id',
+        ], [
+            'decision_id.required' => 'กรุณาเลือกสถานะการตัดสินใจ',
+            'decision_id.exists'   => 'สถานะการตัดสินใจไม่ถูกต้อง',
         ]);
 
         $user       = Auth::user();

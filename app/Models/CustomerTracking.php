@@ -24,6 +24,7 @@ class CustomerTracking extends Model
         'sale_id',
         'customer_id',
         'source_id',
+        'place_id',
         'clip_add',
         'model_id',
         'sub_model_id',
@@ -93,6 +94,11 @@ class CustomerTracking extends Model
     public function source()
     {
         return $this->belongsTo(TbSalecarType::class, 'source_id');
+    }
+
+    public function place()
+    {
+        return $this->belongsTo(SourcePlace::class, 'place_id');
     }
 
     public function model()

@@ -584,6 +584,92 @@ $(document).ready(function () {
     this.value = formatPhone(this.value);
   });
 
+  // --- Source Cascades (แหล่งที่มาหลัก → ย่อย → สถานที่) ---
+  (function initSourceCascade() {
+    const $main = $('#source_main');
+    if (!$main.length) return;
+
+    const $sub = $('#source_id');
+    const $placeWrap = $('#place_wrap');
+    const $place = $('#place_id');
+    const placeMain = $placeWrap.data('place-main');
+    const oldPlace = String($placeWrap.data('old-place') ?? '');
+
+    // แสดงเฉพาะ sub-source ที่อยู่ในกลุ่มหลักที่เลือก และล้างค่าที่ไม่เข้ากลุ่ม
+    function filterSub() {
+      const main = $main.val();
+      $sub.find('option').each(function () {
+        const $o = $(this);
+        if (!$o.val()) return; // placeholder
+        const match = $o.data('main') === main;
+        $o.prop('hidden', !match).prop('disabled', !match);
+      });
+      const $sel = $sub.find('option:selected');
+      if (!main || ($sel.val() && $sel.data('main') !== main)) {
+        $sub.val('');
+      }
+    }
+
+    // โหลดสถานที่ตาม sub-source (เฉพาะแหล่งที่มาหลักที่มีสถานที่ = offline)
+    function loadPlaces(preselect) {
+      const main = $main.val();
+      const sourceId = $sub.val();
+      const isOffline = main === placeMain;
+
+      // ไม่ใช่ offline → ซ่อนและไม่บังคับ
+      if (!isOffline) {
+        $placeWrap.hide();
+        $place.prop('required', false).empty().append('<option value="">— เลือก —</option>').val('');
+        return;
+      }
+
+      // offline → ต้องเลือกสถานที่เสมอ (กันกรณีสถานที่รออนุมัติแล้ว user กดบันทึกผ่าน)
+      $placeWrap.show();
+      $place.prop('required', true);
+
+      if (!sourceId) {
+        $place.empty().append('<option value="">— เลือก —</option>');
+        return;
+      }
+
+      $.get('/api/source/places/' + sourceId, function (data) {
+        $place.empty();
+        if (!data || !data.length) {
+          $place.append('<option value="">— ไม่มีข้อมูลสถานที่ —</option>');
+          return;
+        }
+        $place.append('<option value="">— เลือก —</option>');
+        data.forEach(function (p) {
+          $place.append($('<option>', { value: p.id, text: p.label }));
+        });
+        if (preselect) $place.val(preselect);
+      });
+    }
+
+    // เปิด/ปิดการเลือกแหล่งที่มาย่อยตามว่าเลือกแหล่งที่มาหลักหรือยัง
+    function syncSubEnabled() {
+      $sub.prop('disabled', !$main.val());
+    }
+
+    $main.on('change', function () {
+      $sub.val('');
+      syncSubEnabled();
+      filterSub();
+      loadPlaces(null);
+    });
+
+    $sub.on('change', function () {
+      loadPlaces(null);
+    });
+
+    // bootstrap จากค่าที่เลือกไว้ (กรณี validation fail / old())
+    syncSubEnabled();
+    if ($main.val()) {
+      filterSub();
+      loadPlaces(oldPlace || null);
+    }
+  })();
+
   // --- Car Cascades ---
   $('#model_id').on('change', function () {
     const modelId = $(this).val();
@@ -914,6 +1000,11 @@ $(document).ready(function () {
       return;
     }
 
+    if (!decisionId) {
+      alert('กรุณาเลือกสถานะการตัดสินใจ');
+      return;
+    }
+
     // กันกดซ้ำ → ปิดปุ่มตั้งแต่ครั้งแรก (success จะ reload หน้าอยู่แล้ว)
     if ($btn.prop('disabled')) return;
     const btnHtml = $btn.html();
@@ -933,9 +1024,9 @@ $(document).ready(function () {
       success: function () {
         location.reload();
       },
-      error: function () {
+      error: function (xhr) {
         $btn.prop('disabled', false).html(btnHtml);
-        alert('เกิดข้อผิดพลาด ไม่สามารถบันทึกได้');
+        alert(xhr.responseJSON?.message || 'เกิดข้อผิดพลาด ไม่สามารถบันทึกได้');
       }
     });
   });

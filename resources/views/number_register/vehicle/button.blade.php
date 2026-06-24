@@ -2,7 +2,7 @@
     $disabled = empty($s->vehicleLicense?->withdrawal_date);
 @endphp
 
-<button class="btn btn-icon btn-info btnViewVehicle" data-id="{{ $s->id }}" title="ดูข้อมูล" {{ $disabled ? 'disabled' : '' }}>
+<button class="btn btn-icon btn-info btnViewVehicle" data-id="{{ $s->id }}" title="ดูข้อมูล">
     <i class="bx bx-show"></i>
 </button>
 <button class="btn btn-icon btn-warning btnEditVehicle" data-id="{{ $s->id }}" title="แก้ไข" {{ $disabled ? 'disabled' : '' }}>

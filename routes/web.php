@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\campaign\CampaignController;
 use App\Http\Controllers\campaign\CampaignClaimController;
 use App\Http\Controllers\car_order\CarOrderController;
+use App\Http\Controllers\car_order\WsImportController;
 use App\Http\Controllers\color\ColorController;
 use App\Http\Controllers\customer\CustomerController;
 use App\Http\Controllers\finance\FinanceController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\delivery_form\DeliveryFormController;
 use App\Http\Controllers\invoice\InvoiceController;
 use App\Http\Controllers\pricelist_car\PricelistCarController;
 use App\Http\Controllers\customer_tracking\CustomerTrackingController;
+use App\Http\Controllers\source\SourceController;
 use App\Http\Controllers\gwm_incentive\GwmIncentiveController;
 use App\Http\Controllers\stock_film\FilmPriceListController;
 use App\Http\Controllers\stock_film\FilmSettingController;
@@ -49,6 +51,11 @@ Route::post('/logout', [LoginController::class, 'logout'])
 
 Route::resource('register', RegisterController::class);
 Route::resource('forgot', ForgotController::class);
+
+// อนุมัติสถานที่ผ่านลิงก์ในเมล (ไม่ต้อง login — ใช้ token เป็นความลับ)
+Route::get('source/approval/{token}', [SourceController::class, 'showApproval'])->name('source.approval');
+Route::post('source/approval/{token}/approve', [SourceController::class, 'approve'])->name('source.approval.approve');
+Route::post('source/approval/{token}/reject', [SourceController::class, 'reject'])->name('source.approval.reject');
 
 Route::get('/keep-alive', function () {
     if (!Auth::check()) {
@@ -127,6 +134,31 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('accessory/view-export-accessory', [AccessoryController::class, 'viewExportAccessory'])->name('accessory.view-export-accessory');
     Route::get('/accessory/accessory-partner-export', [AccessoryController::class, 'exportAccessoryPartner'])->name('accessory.accessory-partner-export');
 
+    //source (แหล่งที่มา) — แยกหน้า แหล่งที่มาย่อย + สถานที่
+    Route::get('source', [SourceController::class, 'index'])->name('source.index');
+    // sub-source (แหล่งที่มาย่อย) — เพิ่ม/แก้ (ไม่มีลบ เพราะใช้ร่วมกับ Purchase Order)
+    Route::get('source/sub', [SourceController::class, 'subIndex'])->name('source.sub.index');
+    Route::get('source/place', [SourceController::class, 'placeIndex'])->name('source.place.index');
+    Route::get('source/place/report', [SourceController::class, 'reportMonthly'])->name('source.place.report');
+    Route::get('source/sub/list', [SourceController::class, 'listSub']);
+    Route::get('source/sub/create', [SourceController::class, 'createSub']);
+    Route::post('source/sub/store', [SourceController::class, 'storeSub'])->name('source.sub.store');
+    Route::get('source/sub/edit/{id}', [SourceController::class, 'editSub'])->name('source.sub.edit');
+    Route::put('source/sub/update/{id}', [SourceController::class, 'updateSub'])->name('source.sub.update');
+    // place (สถานที่) — CRUD เต็ม
+    Route::get('source/place/list', [SourceController::class, 'listPlace']);
+    Route::get('source/place/create', [SourceController::class, 'createPlace']);
+    Route::post('source/place/store', [SourceController::class, 'storePlace'])->name('source.place.store');
+    Route::get('source/place/edit/{id}', [SourceController::class, 'editPlace'])->name('source.place.edit');
+    Route::put('source/place/update/{id}', [SourceController::class, 'updatePlace'])->name('source.place.update');
+    Route::delete('source/place/destroy/{id}', [SourceController::class, 'destroyPlace'])->name('source.place.destroy');
+    // เคลียร์ค่าใช้จ่ายของสถานที่ + อนุมัติการจ่าย (บัญชี)
+    Route::get('source/place/{id}/clear', [SourceController::class, 'clearForm']);
+    Route::post('source/place/{id}/clear', [SourceController::class, 'storeClear'])->name('source.place.clear.store');
+    Route::post('source/place/{id}/clear/approve-pay', [SourceController::class, 'approveClearPay'])->name('source.place.clear.approve');
+    // ขออนุมัติสถานที่ (batch) — ส่งเมลหา MD
+    Route::post('source/request', [SourceController::class, 'storeRequest'])->name('source.request.store');
+
     //campaign
     Route::get('campaign/list', [CampaignController::class, 'listCampaign']);
     Route::get('campaign/{id}/view-more', [CampaignController::class, 'viewMore'])->name('campaign.viewMore');
@@ -175,6 +207,11 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('sub-model-car/list', [SubModelCarController::class, 'listSubCar']);
     Route::get('sub-model-car/{id}/view-more', [SubModelCarController::class, 'viewMore'])->name('sub-model-car.viewMore');
     Route::post('/sub-model-car/status-sub-car', [SubModelCarController::class, 'statusSubCar'])->name('sub-model-car.status-sub-car');
+
+    //car-order : import WS (การตั้งค่า -> ข้อมูลรถ -> นำเข้า WS)
+    Route::get('car-order/import-ws', [WsImportController::class, 'index'])->name('car-order.import-ws');
+    Route::get('car-order/import-ws/template', [WsImportController::class, 'template'])->name('car-order.import-ws.template');
+    Route::post('car-order/import-ws', [WsImportController::class, 'import'])->name('car-order.import-ws.store');
 
     //car-order
     Route::get('car-order/list', [CarOrderController::class, 'listCarOrder']);
@@ -439,6 +476,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/cancellation/{id}/proxy/{filename?}', [CancellationController::class, 'proxyFile'])->where('filename', '[^/]+');
 
     // customer tracking
+    // API cascade — สถานที่ตาม sub-source (ต้องให้ sale เรียกได้ตอนเพิ่มการติดตาม)
+    Route::get('/api/source/places/{source_id}', [SourceController::class, 'apiPlaces']);
     Route::get('customer-tracking/list', [CustomerTrackingController::class, 'list']);
     Route::get('customer-tracking/filter-options', [CustomerTrackingController::class, 'filterOptions']);
     Route::get('customer-tracking/check-duplicate', [CustomerTrackingController::class, 'checkDuplicate']);

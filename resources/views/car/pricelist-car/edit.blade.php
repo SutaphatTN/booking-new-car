@@ -151,6 +151,7 @@
                     </div>
                   </div>
 
+                  {{-- WS ปิดการใช้งานแล้ว — ระบบคำนวณให้อัตโนมัติจากราคาทุน (DNP) ที่ฝั่งเซิร์ฟเวอร์
                   <div class="col-md-4">
                     <label for="edit_pl_ws" class="mf-label form-label">
                       <i class="bx bx-transfer ci-amber"></i> WS
@@ -161,7 +162,9 @@
                         value="{{ $price->ws !== null ? number_format($price->ws, 2) : '' }}" autocomplete="off"
                         placeholder="0.00">
                     </div>
+                    <small class="text-muted">คำนวณอัตโนมัติจากราคาทุน (DNP) — แก้ไขได้</small>
                   </div>
+                  --}}
                 @endif
 
               </div>

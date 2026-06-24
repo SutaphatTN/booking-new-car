@@ -10,5 +10,11 @@ class TbSalecarType extends Model
 
     protected $fillable = [
         'name',
+        'main_source',
     ];
+
+    public function places()
+    {
+        return $this->hasMany(SourcePlace::class, 'salecar_type_id');
+    }
 }

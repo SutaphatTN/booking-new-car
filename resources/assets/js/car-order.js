@@ -1640,6 +1640,21 @@ $(document).on('click', '.btnApproveCarOrder', function () {
 //   });
 // });
 
+// คำนวณค่า WS จากราคาทุน (DNP) ถอด VAT — ดอกลอย 9%/ปี ตามจำนวนวันของเดือนปัจจุบัน ปัดเป็นหลักร้อย
+// เช่น 1548 → 1500, 1559 → 1600 (ไม่ได้ดึงค่า ws จากตารางราคารถแล้ว)
+function calcOrderWs(dnp) {
+  const val = parseFloat((String(dnp ?? '')).replace(/,/g, '')) || 0;
+  if (!val) return '';
+
+  const dnpExVat = val - (val * 7) / 107;
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const ws = ((dnpExVat * 0.09) / 365) * daysInMonth;
+  const wsRounded = Math.round(ws / 100) * 100;
+
+  return wsRounded.toLocaleString();
+}
+
 // price list car : โหลด type_color และ year จาก TbPricelistCar
 function clearPricelistFields() {
   $('#pricelist_color').prop('disabled', true).empty().append('<option value="">-- เลือก --</option>');
@@ -1664,7 +1679,7 @@ function loadPricelistData() {
       $('#car_DNP').val(data.dnp ? Number(data.dnp).toLocaleString() : '');
       $('#car_MSRP').val(data.msrp ? Number(data.msrp).toLocaleString() : '');
       $('#RI').val(data.ri ? Number(data.ri).toLocaleString() : '');
-      $('#WS').val(data.ws ? Number(data.ws).toLocaleString() : '');
+      $('#WS').val(calcOrderWs(data.dnp));
     } else {
       $('#option').val('');
       $('#car_DNP').val('');
