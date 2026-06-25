@@ -36,11 +36,11 @@
                 <div class="po-label">ประมาณค่าใช้จ่าย</div>
                 <div class="info-pill text-end">{{ $place->cost !== null ? number_format($place->cost, 2) : '-' }} ฿</div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-2">
                 <div class="po-label">เป้า PP</div>
                 <div class="info-pill text-end">{{ $place->target !== null ? number_format($place->target, 0) : '-' }}</div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <div class="po-label">ประเภทค่าใช้จ่าย</div>
                 <div class="info-pill">{{ $place->expense_type ?? '-' }}</div>
               </div>

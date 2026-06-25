@@ -1,4 +1,9 @@
 {{-- ฟิลด์ร่วมของฟอร์มสถานที่ (input/edit) — รับ $place (null ตอนเพิ่ม) และ $offlineSources --}}
+@php
+  $pfx = empty($place) ? 'placeAdd' : 'placeEdit';
+  // สีไอคอนวันที่ให้ตามธีม modal (เพิ่ม=indigo / แก้ไข=amber) — getDateIconColor อ่าน ci-* จาก label ก่อน
+  $dateCi = empty($place) ? 'indigo' : 'amber';
+@endphp
 @if (!empty($place) && $place->status === \App\Models\SourcePlace::STATUS_REJECTED && optional($place->request)->reject_reason)
   <div class="alert alert-warning d-flex align-items-start gap-2 mb-3">
     <i class="bx bx-edit-alt fs-5"></i>
@@ -11,7 +16,7 @@
 
 <div class="mf-section">
   <div class="mf-section-hd">
-    <div class="mf-section-icon indigo">
+    <div class="mf-section-icon {{ $dateCi }}">
       <i class="bx bx-store"></i>
     </div>
     <span class="mf-section-title">ข้อมูลสถานที่</span>
@@ -20,10 +25,10 @@
     <div class="row g-3">
 
       <div class="col-md-6">
-        <label class="mf-label form-label">
+        <label for="{{ $pfx }}_salecar_type_id" class="mf-label form-label">
           <i class="bx bx-sitemap"></i> แหล่งที่มาย่อย (Offline) <span class="text-danger">*</span>
         </label>
-        <select name="salecar_type_id" class="form-select" required>
+        <select id="{{ $pfx }}_salecar_type_id" name="salecar_type_id" class="form-select" required>
           <option value="">— เลือก —</option>
           @foreach ($offlineSources as $os)
             <option value="{{ $os->id }}" {{ ($place->salecar_type_id ?? '') == $os->id ? 'selected' : '' }}>
@@ -33,22 +38,22 @@
       </div>
 
       <div class="col-md-6">
-        <label class="mf-label form-label"><i class="bx bx-id-card"></i> LAS Number</label>
-        <input type="text" class="form-control" name="las_number" autocomplete="off"
+        <label for="{{ $pfx }}_las_number" class="mf-label form-label"><i class="bx bx-id-card"></i> LAS Number</label>
+        <input id="{{ $pfx }}_las_number" type="text" class="form-control" name="las_number" autocomplete="off"
           value="{{ $place->las_number ?? '' }}" placeholder="เช่น RS-26-05-00385">
       </div>
 
       <div class="col-md-12">
-        <label class="mf-label form-label">
+        <label for="{{ $pfx }}_location" class="mf-label form-label">
           <i class="bx bx-map"></i> ระบุสถานที่ <span class="text-danger">*</span>
         </label>
-        <input type="text" class="form-control" name="location" autocomplete="off" required
+        <input id="{{ $pfx }}_location" type="text" class="form-control" name="location" autocomplete="off" required
           value="{{ $place->location ?? '' }}" placeholder="เช่น AL (2 June) KOL อบต.ทุ่งสูง">
       </div>
 
-      <div class="col-md-4">
-        <label class="mf-label form-label"><i class="bx bx-receipt"></i> ประเภทค่าใช้จ่าย</label>
-        <select name="expense_type" class="form-select">
+      <div class="col-md-6">
+        <label for="{{ $pfx }}_expense_type" class="mf-label form-label"><i class="bx bx-receipt"></i> ประเภทค่าใช้จ่าย</label>
+        <select id="{{ $pfx }}_expense_type" name="expense_type" class="form-select">
           <option value="">— เลือก —</option>
           @foreach (config('source.expense_types', []) as $et)
             <option value="{{ $et }}" {{ ($place->expense_type ?? '') === $et ? 'selected' : '' }}>
@@ -58,29 +63,29 @@
       </div>
 
       <div class="col-md-4">
-        <label class="mf-label form-label"><i class="bx bx-money"></i> ประมาณค่าใช้จ่าย</label>
+        <label for="{{ $pfx }}_cost" class="mf-label form-label"><i class="bx bx-money"></i> ประมาณค่าใช้จ่าย</label>
         <div class="input-group">
           <span class="input-group-text">฿</span>
-          <input type="text" class="form-control text-end money-input" name="cost" autocomplete="off"
+          <input id="{{ $pfx }}_cost" type="text" class="form-control text-end money-input" name="cost" autocomplete="off"
             value="{{ isset($place->cost) ? number_format($place->cost, 2) : '' }}" placeholder="0.00">
         </div>
       </div>
 
-      <div class="col-md-4">
-        <label class="mf-label form-label"><i class="bx bx-target-lock"></i> เป้า PP <small class="text-muted">(จำนวนลูกค้า)</small></label>
-        <input type="number" min="0" step="1" class="form-control text-end" name="target" autocomplete="off"
+      <div class="col-md-2">
+        <label for="{{ $pfx }}_target" class="mf-label form-label"><i class="bx bx-target-lock"></i> เป้า PP</label>
+        <input id="{{ $pfx }}_target" type="number" min="0" step="1" class="form-control text-end" name="target" autocomplete="off"
           value="{{ isset($place->target) ? (int) $place->target : '' }}" placeholder="0">
       </div>
 
-      <div class="col-md-6">
-        <label class="mf-label form-label"><i class="bx bx-calendar"></i> วันเริ่มงาน</label>
-        <input type="date" class="form-control" name="start_date"
+      <div class="col-md-4">
+        <label for="{{ $pfx }}_start_date" class="mf-label form-label"><i class="bx bx-calendar ci-{{ $dateCi }}"></i> วันเริ่มงาน</label>
+        <input id="{{ $pfx }}_start_date" type="date" class="form-control" name="start_date"
           value="{{ optional($place?->start_date)->format('Y-m-d') }}">
       </div>
 
-      <div class="col-md-6">
-        <label class="mf-label form-label"><i class="bx bx-calendar-check"></i> วันจบงาน</label>
-        <input type="date" class="form-control" name="end_date"
+      <div class="col-md-4">
+        <label for="{{ $pfx }}_end_date" class="mf-label form-label"><i class="bx bx-calendar-check ci-{{ $dateCi }}"></i> วันจบงาน</label>
+        <input id="{{ $pfx }}_end_date" type="date" class="form-control" name="end_date"
           value="{{ optional($place?->end_date)->format('Y-m-d') }}">
       </div>
 

@@ -146,8 +146,8 @@
                     </div>
                   @endif
                   <div class="col-md-12">
-                    <div class="po-label">คลิปที่ยิงแอด</div>
-                    <textarea class="form-control" rows="2" readonly
+                    <label class="po-label" for="vmClipAdd">คลิปที่ยิงแอด</label>
+                    <textarea id="vmClipAdd" name="clip_add_view" class="form-control" rows="2" readonly
                       style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:9px 14px;font-size:0.9rem;color:#334155;resize:none;">{{ $tracking->clip_add ?? '-' }}</textarea>
                   </div>
                 </div>

@@ -168,6 +168,14 @@ $(document).on('click', '.btnEditPlace', function () {
   });
 });
 
+// blur focus กัน aria-hidden warning ตอนปิด modal (ครอบทั้ง add/edit ของ sub และ place)
+$(document).on('hide.bs.modal', '.inputSub, .editSub, .inputPlace, .editPlace', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 /* ===================== ขออนุมัติ (batch) ===================== */
 
 // select all (เฉพาะ checkbox ที่มีในหน้า — สถานะ draft/rejected)

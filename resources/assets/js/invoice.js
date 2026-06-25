@@ -157,6 +157,14 @@ $(document).on('click', '.btn-confirm-receipt', function () {
   $('#confirmReceiptModal').modal('show');
 });
 
+// blur focus กัน aria-hidden warning ตอนปิด modal
+$(document).on('hide.bs.modal', '#confirmReceiptModal', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 $('#btnSubmitConfirmReceipt').on('click', function () {
   const date = $('#receiptConfirmedDate').val();
   if (!date) {

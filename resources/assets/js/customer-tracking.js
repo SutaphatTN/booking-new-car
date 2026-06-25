@@ -1177,6 +1177,14 @@ $(document).on('hide.bs.modal', '#modalEditDetail', function () {
   }, 1);
 });
 
+// blur focus modalAddDetail (กัน aria-hidden warning ตอนปิด)
+$(document).on('hide.bs.modal', '#modalAddDetail', function () {
+  setTimeout(() => {
+    document.activeElement.blur();
+    $('body').trigger('focus');
+  }, 1);
+});
+
 // GRADE TAB
 $(document).ready(function () {
   if (!$('.gs-select').length) return;

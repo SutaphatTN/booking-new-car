@@ -25,7 +25,12 @@
 
   <div class="row">
     <div class="col-md-12">
-      <h6 class="text-body-secondary">ข้อมูลการจอง</h6>
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h6 class="text-body-secondary mb-0">ข้อมูลการจอง</h6>
+        <a href="{{ route('purchase-order.index') }}" class="btn btn-outline-danger btn-sm">
+          <i class="bx bx-arrow-back me-1"></i> ย้อนกลับ
+        </a>
+      </div>
       @if (!$isHistory)
         <form id="purchaseForm" action="{{ route('purchase-order.update', $saleCar->id) }}" method="POST"
           enctype="multipart/form-data">
@@ -2618,7 +2623,7 @@
 
           {{-- ค้นหาผู้ซื้อใหม่ --}}
           <div class="mb-3">
-            <label class="mf-label form-label"><i class="bx bx-search ci-emerald"></i> ค้นหาผู้ซื้อใหม่</label>
+            <label for="cbSearchInput" class="mf-label form-label"><i class="bx bx-search ci-emerald"></i> ค้นหาผู้ซื้อใหม่</label>
             <input type="text" id="cbSearchInput" class="form-control" placeholder="ชื่อ, เบอร์, บัตรประชาชน...">
             <div id="cbSearchResults" class="list-group mt-1" style="display:none;max-height:200px;overflow-y:auto;"></div>
           </div>
@@ -2630,7 +2635,7 @@
               <div class="fw-semibold" id="cbSelectedName"></div>
             </div>
             <div class="mb-3" id="cbTrackingWrap">
-              <label class="mf-label form-label"><i class="bx bx-notepad ci-indigo"></i> การติดตาม <span class="text-danger">*</span></label>
+              <label for="cbTrackingSelect" class="mf-label form-label"><i class="bx bx-notepad ci-indigo"></i> การติดตาม <span class="text-danger">*</span></label>
               <select id="cbTrackingSelect" class="form-select">
                 <option value="">— เลือกการติดตาม —</option>
               </select>

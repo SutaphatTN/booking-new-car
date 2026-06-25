@@ -86,7 +86,7 @@
         </div>
 
         <div class="modal-body mf-body">
-          <label class="form-label">วันที่จ่ายเงิน <span class="text-danger">*</span></label>
+          <label for="receiptConfirmedDate" class="form-label"><i class="bx bx-calendar ci-indigo"></i> วันที่จ่ายเงิน <span class="text-danger">*</span></label>
           <input type="date" id="receiptConfirmedDate" class="form-control">
 
           <div class="d-flex justify-content-end gap-2 mt-4">
