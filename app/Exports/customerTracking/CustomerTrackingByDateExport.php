@@ -92,6 +92,10 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
             'tracking.customer.prefix',
             'tracking.sale',
             'tracking.source',
+            'tracking.model',
+            'tracking.subModel',
+            'tracking.wuColor',
+            'tracking.interiorColor',
             'decision',
             'insertedBy',
         ])
@@ -107,12 +111,24 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
                 ? trim(($customer->prefix->Name_TH ?? '') . ' ' . $customer->FirstName . ' ' . $customer->LastName)
                 : '-';
 
+            // ข้อมูลรถ — บาง brand ใช้ field ต่างกัน (สี/สีภายใน/option)
+            $brand = $tracking?->brand;
+            $color = $brand == 1
+                ? ($tracking?->color_text ?? '-')          // Mitsubishi: สีเป็น text อิสระ
+                : ($tracking?->wuColor?->name ?? '-');     // GWM / Wuling: เลือกจากรายการสี
+
             return [
                 'no'             => $no++,
                 'created_at'     => $d->created_at?->format('d/m/Y H:i'),
                 'full_name'      => $fullName,
                 'sale'           => $tracking?->sale?->name ?? '-',
                 'source'         => $tracking?->source?->name ?? '-',
+                'model'          => $tracking?->model?->Name_TH ?? '-',
+                'sub_model'      => $tracking?->subModel?->name ?? '-',
+                'color'          => $color,
+                'year'           => $tracking?->year ?? '-',
+                'interior_color' => $tracking?->interiorColor?->name ?? '-', // ใช้เฉพาะ brand 2 (ดู $showInterior)
+                'option'         => $tracking?->option ?? '-',               // ใช้เฉพาะ brand 1 (ดู $showOption)
                 'inserted_by'    => $d->insertedBy?->name ?? '-',
                 'entry_type'     => $d->entry_type === 'sale' ? 'เซลล์' : 'ผู้จัดการ',
                 'contact_date'   => $d->contact_date ?? '-',
@@ -128,6 +144,9 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
             'rows'             => $rows,
             'dateFromFormatted' => Carbon::parse($this->dateFrom)->format('d/m/Y'),
             'dateToFormatted'   => Carbon::parse($this->dateTo)->format('d/m/Y'),
+            // คุมการแสดงคอลัมน์ตาม brand: สีภายใน = GWM(2), Option = Mitsubishi(1), Wuling(3) ไม่มีทั้งคู่
+            'showInterior'     => $user->brand == 2,
+            'showOption'       => $user->brand == 1,
         ]);
     }
 }

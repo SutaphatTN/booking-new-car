@@ -261,6 +261,7 @@ class PurchaseOrderController extends Controller
             $salecarId    = $s->id;
             $editUrl      = route('purchase-order.edit', $salecarId);
             $summaryUrl   = route('purchase-order.summary', $salecarId);
+            $bookingUrl   = route('purchase-order.booking-pdf', $salecarId);
             $hasRemaining = !empty($s->remainingPayment);
 
             $summaryBtn = $hasRemaining
@@ -269,6 +270,7 @@ class PurchaseOrderController extends Controller
 
             $action = "<div class=\"d-flex justify-content-center gap-1\">"
                 . "<a href=\"{$editUrl}\" class=\"btn btn-icon btn-warning text-white\" title=\"แก้ไข\"><i class=\"bx bx-edit\"></i></a>"
+                . "<a href=\"{$bookingUrl}\" target=\"_blank\" class=\"btn btn-icon btn-success text-white\" title=\"ใบจอง\"><i class=\"bx bx-receipt\"></i></a>"
                 . $summaryBtn
                 . "<button class=\"btn btn-icon btn-danger text-white btnDeleteSale\" data-id=\"{$salecarId}\" title=\"ลบ\"><i class=\"bx bx-trash\"></i></button>"
                 . "</div>";
@@ -1541,6 +1543,36 @@ class PurchaseOrderController extends Controller
             ->setPaper('A4', 'portrait');
 
         $filename = 'purchase-order_' . $saleCar->id . '_' . now()->format('Ymd_His') . '.pdf';
+
+        return $pdf->stream($filename);
+    }
+
+    public function bookingPdf($id)
+    {
+        // ใบจองสำหรับลูกค้า — ใช้ข้อมูลตอนทำการจอง
+        $saleCar = Salecar::with([
+            'customer.prefix',
+            'customer.currentAddress',
+            'customer.documentAddress',
+            'model',
+            'subModel',
+            'carOrder',
+            'reservationPayment',
+            'saleUser',
+            'interiorColor',
+        ])->findOrFail($id);
+
+        // หัวบริษัท + โลโก้ตาม brand (default + override รายแบรนด์)
+        $company = array_merge(
+            config('company.default', []),
+            config('company.brands.' . $saleCar->brand, [])
+        );
+
+        $pdf = Pdf::loadView('purchase-order.report.booking', compact('saleCar', 'company'))
+            ->setPaper('A4', 'portrait')
+            ->setOption(['isRemoteEnabled' => true, 'isHtml5ParserEnabled' => true]);
+
+        $filename = 'booking_' . $saleCar->id . '_' . now()->format('Ymd_His') . '.pdf';
 
         return $pdf->stream($filename);
     }
