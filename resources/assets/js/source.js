@@ -401,3 +401,34 @@ $(document).on('click', '.btnDeletePlace', function () {
     });
   });
 });
+
+$(document).on('click', '.btnDeleteSub', function () {
+  const id = $(this).data('id');
+  Swal.fire({
+    title: 'คุณแน่ใจหรือไม่?',
+    text: 'คุณต้องการลบแหล่งที่มาย่อยนี้ใช่หรือไม่?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'ใช่, ลบเลย!',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    $.ajax({
+      url: '/source/sub/destroy/' + id,
+      type: 'DELETE',
+      success: function (res) {
+        Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 2000, showConfirmButton: true });
+        subSourceTable.ajax.reload(null, false);
+      },
+      error: function (xhr) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: xhr.responseJSON?.message || 'ไม่สามารถลบข้อมูลได้'
+        });
+      }
+    });
+  });
+});

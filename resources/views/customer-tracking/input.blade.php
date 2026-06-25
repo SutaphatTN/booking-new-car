@@ -262,7 +262,8 @@
                   class="form-select @error('source_main') is-invalid @enderror" required>
                   <option value="">— เลือก —</option>
                   @foreach ($sourceMains as $key => $label)
-                    <option value="{{ $key }}" {{ old('source_main') == $key ? 'selected' : '' }}>{{ $label }}</option>
+                    {{-- เฉพาะหน้านี้: แสดง "อื่นๆ" (other) เป็น "ตัดขาย" --}}
+                    <option value="{{ $key }}" {{ old('source_main') == $key ? 'selected' : '' }}>{{ $key === 'other' ? 'ตัดขาย' : $label }}</option>
                   @endforeach
                 </select>
                 @error('source_main')

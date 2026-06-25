@@ -93,7 +93,8 @@ class CustomerTracking extends Model
 
     public function source()
     {
-        return $this->belongsTo(TbSalecarType::class, 'source_id');
+        // withTrashed: แหล่งที่มาที่ถูกลบไปแล้ว ประวัติการติดตามเดิมยังต้องแสดงชื่อได้
+        return $this->belongsTo(TbSalecarType::class, 'source_id')->withTrashed();
     }
 
     public function place()

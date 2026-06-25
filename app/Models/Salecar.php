@@ -327,7 +327,8 @@ class Salecar extends Model
 
 	public function type()
 	{
-		return $this->belongsTo(TbSalecarType::class, 'type', 'id');
+		// withTrashed: แหล่งที่มาที่ถูกลบไปแล้ว ข้อมูล PO เดิมยังต้องแสดงชื่อได้
+		return $this->belongsTo(TbSalecarType::class, 'type', 'id')->withTrashed();
 	}
 
 	public function salePurType()

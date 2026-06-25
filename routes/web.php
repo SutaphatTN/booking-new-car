@@ -145,6 +145,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::post('source/sub/store', [SourceController::class, 'storeSub'])->name('source.sub.store');
     Route::get('source/sub/edit/{id}', [SourceController::class, 'editSub'])->name('source.sub.edit');
     Route::put('source/sub/update/{id}', [SourceController::class, 'updateSub'])->name('source.sub.update');
+    Route::delete('source/sub/destroy/{id}', [SourceController::class, 'destroySub'])->name('source.sub.destroy');
     // place (สถานที่) — CRUD เต็ม
     Route::get('source/place/list', [SourceController::class, 'listPlace']);
     Route::get('source/place/create', [SourceController::class, 'createPlace']);

@@ -772,6 +772,20 @@ function calculateTotal() {
   $('#diff').val(formatMoney(diff));
 }
 
+function calculateActuallyReceived() {
+  // รวมเงินทั้งหมด (รับจริง) = ผลรวมคอลัมน์ "รับจริง" ใช้สูตร/เครื่องหมายเดียวกับฝั่งประมาณการ (#total)
+  let excellent = parseNumber($('#excellent_accept').val() || 0);
+  let advance = parseNumber($('#advance_installment_accept').val() || 0);
+  let comFin = parseNumber($('#com_fin_accept').val() || 0);
+  let comExtra = parseNumber($('#com_extra_accept').val() || 0);
+  let comKickback = parseNumber($('#com_kickback_accept').val() || 0);
+  let comSubsidy = parseNumber($('#com_subsidy_accept').val() || 0);
+  let specialMoney = parseNumber($('#special_money_accept').val() || 0);
+
+  let received = excellent - advance + comFin + comExtra + comKickback + comSubsidy - specialMoney;
+  $('#actually_received').val(formatMoney(received));
+}
+
 function calculateAllDiff() {
   // คำนวณ diff ของแต่ละแถว (ประมาณการ - รับจริง)
   calculateDiffRow('excellent', 'excellent_accept', 'excellent_diff');
@@ -781,6 +795,9 @@ function calculateAllDiff() {
   calculateDiffRow('com_subsidy', 'com_subsidy_accept', 'com_subsidy_diff');
   calculateDiffRow('advance_installment', 'advance_installment_accept', 'advance_installment_diff');
   calculateDiffRow('special_money', 'special_money_accept', 'special_money_diff');
+
+  // รวมเงินทั้งหมด (รับจริง) คำนวณอัตโนมัติจากคอลัมน์ "รับจริง"
+  calculateActuallyReceived();
 
   // ยอด diff รวมด้านล่าง = ยอดรวมทั้งหมด - รับจริง ให้สอดคล้องกับแถว "รวมเงินทั้งหมด" (สูตรเดียวกับ calculateTotal)
   // ไม่ใช้ผลรวม diff รายแถว เพราะ total คิดเครื่องหมาย (- ค่างวดล่วงหน้า, - เงินพิเศษ) และ "รับจริง" กรอกเอง
@@ -802,7 +819,7 @@ function bindTotalEvents() {
   // ทุกช่อง (ทั้งฝั่งประมาณการและรับจริง) เรียก calculateAllDiff จุดเดียว
   // ซึ่งจะคำนวณ diff รายแถว + ยอดรวม + diff รวมด้านล่างให้สอดคล้องกันเสมอ
   $(
-    '#excellent, #advance_installment, #com_fin, #com_extra, #com_kickback, #com_subsidy, #special_money, #actually_received, ' +
+    '#excellent, #advance_installment, #com_fin, #com_extra, #com_kickback, #com_subsidy, #special_money, ' +
       '#excellent_accept, #com_fin_accept, #com_extra_accept, #com_kickback_accept, #com_subsidy_accept, #advance_installment_accept, #special_money_accept'
   )
     .off('input')

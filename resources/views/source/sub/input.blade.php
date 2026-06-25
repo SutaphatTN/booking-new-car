@@ -43,7 +43,8 @@
                   </label>
                   <select id="inp_sub_main" name="main_source" class="form-select" required>
                     <option value="">— เลือก —</option>
-                    @foreach ($mains as $key => $label)
+                    {{-- แสดงเฉพาะ Offline / Online / Walk-in --}}
+                    @foreach (\Illuminate\Support\Arr::only($mains, ['offline', 'online', 'walkin']) as $key => $label)
                       <option value="{{ $key }}">{{ $label }}</option>
                     @endforeach
                   </select>

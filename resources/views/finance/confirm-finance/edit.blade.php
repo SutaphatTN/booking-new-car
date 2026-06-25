@@ -431,9 +431,9 @@
                           style="background:#fef9ec;border-color:#fde68a;" name="total"
                           value="{{ old('total', $fnCon->total ?? '') }}" readonly></td>
                       <td><input id="actually_received" type="text"
-                          class="form-control form-control-sm text-end fw-semibold money-decimal"
+                          class="form-control form-control-sm text-end fw-semibold money-input"
                           style="background:#fef9ec;border-color:#fde68a;" name="actually_received"
-                          value="{{ number_format($fnCon->actually_received ?? 0, 2) }}"></td>
+                          value="{{ number_format($fnCon->actually_received ?? 0, 2) }}" readonly></td>
                       <td><input id="diff" type="text"
                           class="form-control form-control-sm text-end fw-semibold money-input"
                           style="background:#fef9ec;border-color:#fde68a;" name="diff"

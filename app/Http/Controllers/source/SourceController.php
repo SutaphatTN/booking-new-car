@@ -113,6 +113,22 @@ class SourceController extends Controller
         }
     }
 
+    public function destroySub($id)
+    {
+        // เฉพาะ admin เท่านั้น (กันเรียก endpoint ตรง ๆ แม้ปุ่มจะซ่อนแล้ว)
+        abort_unless(Auth::user()->role === 'admin', 403);
+
+        try {
+            // soft delete — เก็บแถวไว้เพื่อให้ PO/การติดตามเดิมที่อ้างอิงยังแสดงชื่อได้
+            // (relation ใช้ withTrashed) แต่จะหายจากลิสต์และ dropdown เลือกใหม่
+            TbSalecarType::findOrFail($id)->delete();
+
+            return response()->json(['success' => true, 'message' => 'ลบข้อมูลเรียบร้อยแล้ว']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
+        }
+    }
+
     /* ===================== สถานที่ (place) ===================== */
 
     public function listPlace()
@@ -533,9 +549,9 @@ class SourceController extends Controller
     {
         $places = SourcePlace::where('salecar_type_id', $sourceId)
             ->where('status', SourcePlace::STATUS_APPROVED)
-            // แสดงถึงวันจบงาน — พ้นวันจบงานแล้วไม่ให้เลือก (ยังไม่ระบุวันจบ = แสดงไว้)
+            // แสดงถึงวันจบงาน +1 วัน (เผื่อเซลล์กรอกข้อมูลย้อนหลัง) — ยังไม่ระบุวันจบ = แสดงไว้
             ->where(function ($q) {
-                $q->whereNull('end_date')->orWhereDate('end_date', '>=', now()->toDateString());
+                $q->whereNull('end_date')->orWhereDate('end_date', '>=', now()->subDay()->toDateString());
             })
             ->orderBy('location')
             ->get()

@@ -41,6 +41,10 @@
             'car-order.form',
             'vehicle',
             'invoice',
+            'stock-film',
+            'film-price-list',
+            'film-usage',
+            'film-settings',
         ];
       @endphp
 
@@ -58,9 +62,14 @@
       @php
         $menuSlugs = is_array($menu->slug) ? $menu->slug : [$menu->slug];
         $bpCsAllowed  = ['invoice', 'accessory'];
+        // bp เห็นเมนู Stock Film ด้วย (cs ไม่เห็น) — รักษาพฤติกรรมเดิมหลังย้ายเมนูมา top-level
+        $bpAllowed    = ['invoice', 'accessory', 'stock-film', 'film-price-list', 'film-usage', 'film-settings'];
         $croAllowed   = ['pre-delivery-inspection', 'ssi'];
       @endphp
-      @if (in_array($userRole, ['bp', 'cs']) && empty(array_intersect($menuSlugs, $bpCsAllowed)))
+      @if ($userRole === 'cs' && empty(array_intersect($menuSlugs, $bpCsAllowed)))
+        @continue
+      @endif
+      @if ($userRole === 'bp' && empty(array_intersect($menuSlugs, $bpAllowed)))
         @continue
       @endif
       @if ($userRole === 'cro' && empty(array_intersect($menuSlugs, $croAllowed)))
