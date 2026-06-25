@@ -44,7 +44,8 @@ class SourcePlace extends Model
 
     public function source()
     {
-        return $this->belongsTo(TbSalecarType::class, 'salecar_type_id');
+        // withTrashed: แหล่งที่มาที่ถูกลบไปแล้ว สถานที่/รายงานเดิมยังต้องแสดงชื่อได้
+        return $this->belongsTo(TbSalecarType::class, 'salecar_type_id')->withTrashed();
     }
 
     public function request()

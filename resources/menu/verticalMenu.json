@@ -114,6 +114,28 @@
       ]
     },
     {
+      "name": "Film",
+      "icon": "menu-icon icon-base bx bx-layer",
+      "slug": ["stock-film", "film-price-list", "film-usage", "film-settings"],
+      "submenu": [
+        {
+          "url": "stock-film",
+          "name": "ข้อมูลฟิล์ม",
+          "slug": "stock-film.index"
+        },
+        {
+          "url": "film-price-list",
+          "name": "ราคาฟิล์ม",
+          "slug": "film-price-list.index"
+        },
+        {
+          "url": "film-usage",
+          "name": "บันทึกการใช้ฟิล์ม",
+          "slug": "film-usage.index"
+        }
+      ]
+    },
+    {
       "name": "การตั้งค่า",
       "icon": "menu-icon icon-base bx bx-cog",
       "slug": [
@@ -123,11 +145,7 @@
         "car-order",
         "campaign",
         "finance",
-        "accessory",
-        "stock-film",
-        "film-price-list",
-        "film-usage",
-        "film-settings"
+        "accessory"
       ],
       "submenu": [
         {
@@ -267,28 +285,6 @@
               "url": "finance/extra-com",
               "name": "Com Extra",
               "slug": "finance.extra-com"
-            }
-          ]
-        },
-        {
-          "name": "Stock Film",
-          "icon": "menu-icon icon-base bx bx-layer",
-          "slug": ["stock-film", "film-price-list", "film-usage"],
-          "submenu": [
-            {
-              "url": "stock-film",
-              "name": "ข้อมูลฟิล์ม",
-              "slug": "stock-film.index"
-            },
-            {
-              "url": "film-price-list",
-              "name": "ราคาฟิล์ม",
-              "slug": "film-price-list.index"
-            },
-            {
-              "url": "film-usage",
-              "name": "บันทึกการใช้ฟิล์ม",
-              "slug": "film-usage.index"
             }
           ]
         }

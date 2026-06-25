@@ -121,6 +121,7 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
                 'no'             => $no++,
                 'created_at'     => $d->created_at?->format('d/m/Y H:i'),
                 'full_name'      => $fullName,
+                'phone'          => $customer?->formatted_mobile ?? '-',
                 'sale'           => $tracking?->sale?->name ?? '-',
                 'source'         => $tracking?->source?->name ?? '-',
                 'model'          => $tracking?->model?->Name_TH ?? '-',

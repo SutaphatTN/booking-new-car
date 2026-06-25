@@ -42,9 +42,16 @@
                   <label for="edit_sub_main" class="mf-label form-label">
                     <i class="bx bx-layer"></i> แหล่งที่มาหลัก <span class="text-danger">*</span>
                   </label>
+                  @php
+                    $allowedMains = ['offline', 'online', 'walkin'];
+                    // เผื่อข้อมูลเดิมเป็นค่านอก 3 ตัว (อื่นๆ/ลูกค้าเก่า) คงไว้ไม่ให้หาย
+                    if (!in_array($source->main_source, $allowedMains)) {
+                        $allowedMains[] = $source->main_source;
+                    }
+                  @endphp
                   <select id="edit_sub_main" name="main_source" class="form-select" required>
                     <option value="">— เลือก —</option>
-                    @foreach ($mains as $key => $label)
+                    @foreach (\Illuminate\Support\Arr::only($mains, $allowedMains) as $key => $label)
                       <option value="{{ $key }}" {{ $source->main_source == $key ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                   </select>
