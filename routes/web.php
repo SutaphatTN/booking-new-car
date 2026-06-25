@@ -440,6 +440,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/sale-options', [PurchaseOrderController::class, 'saleOptions']);
     Route::get('/purchase-order/get-campaign', [PurchaseOrderController::class, 'getCampaign']);
     Route::get('purchase-order/summary/{id}', [PurchaseOrderController::class, 'summaryPurchase'])->name('purchase-order.summary');
+    Route::get('purchase-order/booking-pdf/{id}', [PurchaseOrderController::class, 'bookingPdf'])->name('purchase-order.booking-pdf');
     Route::get('/api/purchase-order/sub-model/{model_id}', [PurchaseOrderController::class, 'getSubModelPurchase']);
     Route::get('purchase-order/{id}/preview', [PurchaseOrderController::class, 'preview'])->name('purchase-order.preview');
     Route::get('purchase-order/{id}/proxy/{filename?}', [PurchaseOrderController::class, 'proxyAttachment'])->where('filename', '[^/]+')->name('purchase-order.proxy');

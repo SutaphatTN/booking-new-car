@@ -105,9 +105,11 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
 
                 // format comma
                 $numberColumns = [
-                    'H',
-                    'I',
-                    'K'
+                    'L',
+                    'N',
+                    // 'H',
+                    // 'I',
+                    // 'K'
                 ];
 
                 foreach ($numberColumns as $col) {
