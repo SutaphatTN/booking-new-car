@@ -419,6 +419,14 @@
           },
         });
       });
+
+      // blur focus กัน aria-hidden warning ตอนปิด modal
+      $(document).on('hide.bs.modal', '#gpEditModal', function () {
+        setTimeout(() => {
+          document.activeElement.blur();
+          $('body').trigger('focus');
+        }, 1);
+      });
     });
   </script>
 @endsection

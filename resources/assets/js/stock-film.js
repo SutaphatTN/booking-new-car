@@ -204,8 +204,8 @@ $(document).on('click', '.btnAuditComplete', function () {
     text: 'รายการนี้จะถูกซ่อนออกจากหน้าข้อมูลฟิล์ม',
     icon: 'question',
     showCancelButton: true,
-    confirmButtonColor: '#198754',
-    cancelButtonColor: '#6c757d',
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
     confirmButtonText: 'เสร็จสิ้น',
     cancelButtonText: 'ยกเลิก'
   }).then(function (result) {

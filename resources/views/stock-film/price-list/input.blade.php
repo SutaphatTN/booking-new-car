@@ -71,38 +71,38 @@
 
                 {{-- ตร.ฟุตแต่ละตำแหน่ง --}}
                 <div class="col-12">
-                  <label class="mf-label form-label mb-2">
+                  <div class="mf-label form-label mb-2">
                     <i class="bx bx-grid-alt ci-indigo"></i> ตร.ฟุตแต่ละตำแหน่ง
-                  </label>
+                  </div>
                   <div class="row g-2">
                     <div class="col">
-                      <label class="form-label small text-muted mb-1">รอบคัน</label>
-                      <input type="number" name="sqft_around" class="form-control form-control-sm text-end"
+                      <label for="fp_sqft_around" class="form-label small text-muted mb-1">รอบคัน</label>
+                      <input id="fp_sqft_around" type="number" name="sqft_around" class="form-control form-control-sm text-end"
                         min="0" step="0.01" placeholder="0.00">
                     </div>
                     <div class="col">
-                      <label class="form-label small text-muted mb-1">บานหน้า</label>
-                      <input type="number" name="sqft_windshield" class="form-control form-control-sm text-end"
+                      <label for="fp_sqft_windshield" class="form-label small text-muted mb-1">บานหน้า</label>
+                      <input id="fp_sqft_windshield" type="number" name="sqft_windshield" class="form-control form-control-sm text-end"
                         min="0" step="0.01" placeholder="0.00">
                     </div>
                     <div class="col">
-                      <label class="form-label small text-muted mb-1">บานหลัง</label>
-                      <input type="number" name="sqft_rear" class="form-control form-control-sm text-end"
+                      <label for="fp_sqft_rear" class="form-label small text-muted mb-1">บานหลัง</label>
+                      <input id="fp_sqft_rear" type="number" name="sqft_rear" class="form-control form-control-sm text-end"
                         min="0" step="0.01" placeholder="0.00">
                     </div>
                     <div class="col">
-                      <label class="form-label small text-muted mb-1">ประตูคู่หน้า</label>
-                      <input type="number" name="sqft_door_front" class="form-control form-control-sm text-end"
+                      <label for="fp_sqft_door_front" class="form-label small text-muted mb-1">ประตูคู่หน้า</label>
+                      <input id="fp_sqft_door_front" type="number" name="sqft_door_front" class="form-control form-control-sm text-end"
                         min="0" step="0.01" placeholder="0.00">
                     </div>
                     <div class="col">
-                      <label class="form-label small text-muted mb-1">ประตูคู่หลัง 1</label>
-                      <input type="number" name="sqft_door_rear1" class="form-control form-control-sm text-end"
+                      <label for="fp_sqft_door_rear1" class="form-label small text-muted mb-1">ประตูคู่หลัง 1</label>
+                      <input id="fp_sqft_door_rear1" type="number" name="sqft_door_rear1" class="form-control form-control-sm text-end"
                         min="0" step="0.01" placeholder="0.00">
                     </div>
                     <div class="col">
-                      <label class="form-label small text-muted mb-1">หูช้าง</label>
-                      <input type="number" name="sqft_quarter" class="form-control form-control-sm text-end"
+                      <label for="fp_sqft_quarter" class="form-label small text-muted mb-1">หูช้าง</label>
+                      <input id="fp_sqft_quarter" type="number" name="sqft_quarter" class="form-control form-control-sm text-end"
                         min="0" step="0.01" placeholder="0.00">
                     </div>
                   </div>
@@ -110,8 +110,8 @@
 
                 {{-- ตร.ฟุต ตามตัวเลือกเปิด --}}
                 <div id="fp_door_rear2_fields" class="col-md-3 d-none">
-                  <label class="form-label small text-muted mb-1">ตร.ฟุต ประตูคู่หลัง 2</label>
-                  <input type="number" name="sqft_door_rear2" class="form-control form-control-sm text-end"
+                  <label for="fp_sqft_door_rear2" class="form-label small text-muted mb-1">ตร.ฟุต ประตูคู่หลัง 2</label>
+                  <input id="fp_sqft_door_rear2" type="number" name="sqft_door_rear2" class="form-control form-control-sm text-end"
                     min="0" step="0.01" placeholder="0.00">
                 </div>
 
@@ -124,8 +124,8 @@
                 </div>
 
                 <div id="fp_3window_fields" class="col-md-3 d-none">
-                  <label class="form-label small text-muted mb-1">ตร.ฟุต แพ็กเกจ 3 บาน</label>
-                  <input type="number" name="sqft_3window" class="form-control form-control-sm text-end"
+                  <label for="fp_sqft_3window" class="form-label small text-muted mb-1">ตร.ฟุต แพ็กเกจ 3 บาน</label>
+                  <input id="fp_sqft_3window" type="number" name="sqft_3window" class="form-control form-control-sm text-end"
                     min="0" step="0.01" placeholder="0.00">
                 </div>
 

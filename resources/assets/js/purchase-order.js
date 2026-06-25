@@ -1889,6 +1889,14 @@ $(document).ready(function () {
     width: '100%'
   });
 
+  // select2 ไม่มี option ตั้ง id/name ให้ช่อง search ที่มันสร้างเอง
+  // เติม name เองกัน console warning "form field has neither an id nor a name"
+  // ใช้ focusin แบบ delegated เพราะ select2 สร้าง search field ใหม่ทุกครั้งที่ re-render
+  $(document).on('focusin', '.select2-search__field', function () {
+    if (!this.name && !this.id) this.setAttribute('name', 'select2_search');
+  });
+  $('.select2-search__field:not([name]):not([id])').attr('name', 'select2_search');
+
   // ป้ายแดง — searchable select
   if ($('#red_license').length) {
     $('#red_license').select2({

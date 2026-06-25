@@ -46,6 +46,9 @@ function initDatePicker(el) {
     altFormat: 'd/m/Y',
     altInputClass: isSmall ? 'form-control form-control-sm' : 'form-control',
     allowInput: false,
+    // ปิดโหมดมือถือ: ใช้ปฏิทิน flatpickr (พร้อมกล่องไอคอน) ให้เหมือนกันทุกจอ
+    // ไม่งั้นบนมือถือ flatpickr จะสลับไปใช้ native date input แยกออกจากกล่องไอคอน
+    disableMobile: true,
     defaultDate: val || null,
     onChange: function (_, __, fp) {
       // flatpickr fields can't use native `required` (readonly), so we validate
@@ -55,6 +58,23 @@ function initDatePicker(el) {
     onReady: function (_, __, fp) {
       const alt = fp.altInput;
       if (isRequired) alt.setAttribute('required', 'required');
+
+      // ใส่ id ให้ element ที่ flatpickr สร้างเอง (altInput + select เดือน + ช่องปี)
+      // เพื่อตัด console warning ของ Chrome: "form field has neither an id nor a name"
+      const base = el.id || el.name || 'fp_' + Math.random().toString(36).slice(2, 8);
+      if (!alt.id && !alt.name) alt.id = base + '_alt';
+      // flatpickr เปลี่ยน input เดิมเป็น type=hidden (ซึ่ง label ชี้ไม่ได้)
+      // ย้าย for ของ label ที่เคยชี้ input เดิม มาที่ altInput ที่แสดงจริง
+      if (el.id && alt.id) {
+        document.querySelectorAll(`label[for="${el.id}"]`).forEach((lbl) => lbl.setAttribute('for', alt.id));
+      }
+      const cal = fp.calendarContainer;
+      if (cal) {
+        const monthSel = cal.querySelector('.flatpickr-monthDropdown-months');
+        if (monthSel && !monthSel.id && !monthSel.name) monthSel.id = base + '_fpMonth';
+        const yearInp = cal.querySelector('.numInput.cur-year');
+        if (yearInp && !yearInp.id && !yearInp.name) yearInp.id = base + '_fpYear';
+      }
       if ('noIcon' in el.dataset) {
         if (el.style.width) alt.style.width = el.style.width;
         return;
@@ -79,6 +99,19 @@ function initDatePicker(el) {
 
 function initAllDatePickers(root) {
   (root || document).querySelectorAll('input[type="date"]').forEach(initDatePicker);
+}
+
+// ทำลาย flatpickr ของ input ที่ถูกถอดออกจาก DOM (เช่น modal โหลด html ใหม่ทับ)
+// ไม่งั้น calendarContainer เดิม (flatpickr แปะไว้ที่ body) จะค้าง → id ซ้ำ + memory leak
+function destroyDatePickers(node) {
+  const els = [];
+  if (node.matches && node.matches('.flatpickr-input') && node._flatpickr) els.push(node);
+  if (node.querySelectorAll) {
+    node.querySelectorAll('.flatpickr-input').forEach((el) => {
+      if (el._flatpickr) els.push(el);
+    });
+  }
+  els.forEach((el) => el._flatpickr.destroy());
 }
 
 // flatpickr converts date inputs to hidden/readonly fields, which makes the
@@ -118,6 +151,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   new MutationObserver(function (mutations) {
     mutations.forEach(function (m) {
+      m.removedNodes.forEach(function (node) {
+        if (node.nodeType !== 1) return;
+        destroyDatePickers(node);
+      });
       m.addedNodes.forEach(function (node) {
         if (node.nodeType !== 1) return;
         if (node.matches('input[type="date"]')) {
