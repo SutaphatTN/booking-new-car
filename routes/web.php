@@ -159,6 +159,8 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::post('source/place/{id}/clear/approve-pay', [SourceController::class, 'approveClearPay'])->name('source.place.clear.approve');
     // ขออนุมัติสถานที่ (batch) — ส่งเมลหา MD
     Route::post('source/request', [SourceController::class, 'storeRequest'])->name('source.request.store');
+    // ขออนุมัติเพิ่ม (topup งบประมาณของสถานที่ที่อนุมัติแล้ว)
+    Route::post('source/place/{id}/topup', [SourceController::class, 'storeTopupRequest'])->name('source.place.topup');
 
     //campaign
     Route::get('campaign/list', [CampaignController::class, 'listCampaign']);

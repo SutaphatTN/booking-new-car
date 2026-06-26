@@ -21,6 +21,10 @@ class SourcePlace extends Model
         'location',
         'expense_type',
         'cost',
+        'extra_cost',
+        'pending_extra',
+        'extra_request_id',
+        'extra_reason',
         'target',
         'status',
         'request_id',
@@ -56,5 +60,14 @@ class SourcePlace extends Model
     public function clear()
     {
         return $this->hasOne(SourcePlaceClear::class, 'place_id');
+    }
+
+    /** งบประมาณรวมที่เคลียร์ได้ = ประมาณค่าใช้จ่าย + งบเพิ่มที่อนุมัติแล้ว */
+    public function effectiveBudget(): ?float
+    {
+        if ($this->cost === null && $this->extra_cost === null) {
+            return null;
+        }
+        return (float) ($this->cost ?? 0) + (float) ($this->extra_cost ?? 0);
     }
 }

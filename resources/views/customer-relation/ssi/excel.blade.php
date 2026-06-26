@@ -15,6 +15,9 @@
       <th>ผลการติดต่อ</th>
       <th>สถานะการติดต่อ</th>
       <th>สถานการณ์ตรวจรถก่อนส่งมอบ</th>
+      @foreach ($scoreColumns as $label)
+        <th>{{ $label }}</th>
+      @endforeach
       <th>SSI โดยรวม</th>
     </tr>
   </thead>
@@ -35,11 +38,14 @@
         <td>{!! nl2br(e($r['contact_history'])) !!}</td>
         <td>{!! nl2br(e($r['contact_status'])) !!}</td>
         <td>{{ $r['pdi_status'] }}</td>
+        @foreach (array_keys($scoreColumns) as $key)
+          <td align="center">{{ $r['scores'][$key] ?? '-' }}</td>
+        @endforeach
         <td>{{ $r['ssi_score'] }}</td>
       </tr>
     @empty
       <tr>
-        <td colspan="15" align="center">ไม่มีข้อมูล</td>
+        <td colspan="{{ 15 + count($scoreColumns) }}" align="center">ไม่มีข้อมูล</td>
       </tr>
     @endforelse
   </tbody>

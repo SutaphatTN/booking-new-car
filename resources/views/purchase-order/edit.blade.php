@@ -27,7 +27,12 @@
     <div class="col-md-12">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h6 class="text-body-secondary mb-0">ข้อมูลการจอง</h6>
-        <a href="{{ route('purchase-order.index') }}" class="btn btn-outline-danger btn-sm">
+        @php
+          $backUrl = request('from') === 'history'
+              ? route('purchase-order.history')
+              : route('purchase-order.index');
+        @endphp
+        <a href="{{ $backUrl }}" class="btn btn-outline-danger btn-sm">
           <i class="bx bx-arrow-back me-1"></i> ย้อนกลับ
         </a>
       </div>

@@ -17,6 +17,7 @@ class SourcePlaceRequest extends Model
         'requester_id',
         'approver_id',
         'status',
+        'type',
         'token',
         'period',
         'reject_reason',
@@ -25,6 +26,9 @@ class SourcePlaceRequest extends Model
         'userZone',
         'branch',
     ];
+
+    public const TYPE_PLACE = 'place';
+    public const TYPE_TOPUP = 'topup';
 
     protected $casts = [
         'decided_at' => 'datetime',
@@ -39,6 +43,23 @@ class SourcePlaceRequest extends Model
     public function places()
     {
         return $this->hasMany(SourcePlace::class, 'request_id');
+    }
+
+    /** สถานที่ที่ผูกกับคำขอ "ของบเพิ่ม" (topup) ผ่าน extra_request_id */
+    public function topupPlaces()
+    {
+        return $this->hasMany(SourcePlace::class, 'extra_request_id');
+    }
+
+    public function getIsTopupAttribute(): bool
+    {
+        return ($this->type ?? self::TYPE_PLACE) === self::TYPE_TOPUP;
+    }
+
+    /** รายการที่จะแสดงในเอกสาร/อีเมล: topup ใช้ topupPlaces, ปกติใช้ places */
+    public function lines()
+    {
+        return $this->is_topup ? $this->topupPlaces : $this->places;
     }
 
     public function requester()

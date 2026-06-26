@@ -79,7 +79,9 @@
 @php
     $statuses = config('source.statuses', []);
     $st = $statuses[$req->status] ?? ['label' => $req->status, 'class' => ''];
-    $total = $req->places->sum('cost');
+    $isTopup = ($req->type ?? 'place') === 'topup';
+    $lines = $isTopup ? $req->topupPlaces : $req->places;
+    $total = $isTopup ? $lines->sum(fn($p) => (float) ($p->pending_extra ?? 0)) : $lines->sum('cost');
     $fmtDate = fn($d) => $d ? $d->format('d/m/') . ($d->year + 543) : '';
     $badgeColor = ['approved' => '#059669', 'rejected' => '#dc2626', 'pending' => '#d97706'][$req->status] ?? '#64748b';
 @endphp
@@ -87,8 +89,8 @@
     <div class="hd">
         <div class="icon">📋</div>
         <div>
-            <h1>ขออนุมัติค่าใช้จ่ายกิจกรรมการตลาด</h1>
-            <p>เอกสารขออนุมัติสถานที่ · ประจำเดือน {{ $req->period ?? '-' }}</p>
+            <h1>{{ $isTopup ? 'ขออนุมัติเพิ่มงบประมาณกิจกรรมการตลาด' : 'ขออนุมัติค่าใช้จ่ายกิจกรรมการตลาด' }}</h1>
+            <p>{{ $isTopup ? 'เอกสารขออนุมัติเพิ่มงบประมาณ' : 'เอกสารขออนุมัติสถานที่' }} · ประจำเดือน {{ $req->period ?? '-' }}</p>
         </div>
     </div>
     <div class="bd">
@@ -118,11 +120,51 @@
             <div class="chip"><div class="k">ผู้ขออนุมัติ</div><div class="v">{{ optional($req->requester)->full_name ?: (optional($req->requester)->name ?? '-') }}</div></div>
             <div class="chip"><div class="k">ผู้อนุมัติ</div><div class="v">{{ optional($req->approver)->full_name ?: (optional($req->approver)->name ?? '-') }}</div></div>
             <div class="chip"><div class="k">ประจำเดือน</div><div class="v">{{ $req->period ?? '-' }}</div></div>
-            <div class="chip"><div class="k">จำนวนรายการ</div><div class="v">{{ $req->places->count() }} รายการ</div></div>
-            <div class="chip total"><div class="k">ยอดรวมทั้งหมด</div><div class="v">{{ number_format($total, 2) }} ฿</div></div>
+            <div class="chip"><div class="k">จำนวนรายการ</div><div class="v">{{ $lines->count() }} รายการ</div></div>
+            <div class="chip total"><div class="k">{{ $isTopup ? 'ยอดที่ขอเพิ่มทั้งหมด' : 'ยอดรวมทั้งหมด' }}</div><div class="v">{{ number_format($total, 2) }} ฿</div></div>
         </div>
 
         <div class="tbl-wrap">
+            @if ($isTopup)
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:40px;">#</th>
+                        <th>สถานที่</th>
+                        <th>ประเภทบูธ</th>
+                        <th class="num" style="width:120px;">งบเดิม (฿)</th>
+                        <th class="num" style="width:120px;">ขอเพิ่ม (฿)</th>
+                        <th class="num" style="width:130px;">งบรวมใหม่ (฿)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($lines as $i => $p)
+                        @php
+                            $base = (float) ($p->cost ?? 0) + (float) ($p->extra_cost ?? 0);
+                            $add  = (float) ($p->pending_extra ?? 0);
+                        @endphp
+                        <tr>
+                            <td class="center">{{ $i + 1 }}</td>
+                            <td>{{ $p->location }}</td>
+                            <td>{{ $p->source->name ?? '-' }}</td>
+                            <td class="num">{{ number_format($base, 2) }}</td>
+                            <td class="num">{{ number_format($add, 2) }}</td>
+                            <td class="num">{{ number_format($base + $add, 2) }}</td>
+                        </tr>
+                        @if ($p->extra_reason)
+                            <tr><td></td><td colspan="5" style="color:#92400e;">เหตุผล: {{ $p->extra_reason }}</td></tr>
+                        @endif
+                    @endforeach
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" class="num">รวมที่ขอเพิ่ม</td>
+                        <td class="num">{{ number_format($total, 2) }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            @else
             <table>
                 <thead>
                     <tr>
@@ -138,7 +180,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($req->places as $i => $p)
+                    @foreach ($lines as $i => $p)
                         <tr>
                             <td class="center">{{ $i + 1 }}</td>
                             <td>{{ $p->las_number ?? '-' }}</td>
@@ -156,10 +198,11 @@
                     <tr>
                         <td colspan="7" class="num">รวม</td>
                         <td class="num">{{ number_format($total, 2) }}</td>
-                        <td class="num">{{ number_format($req->places->sum('target'), 0) }}</td>
+                        <td class="num">{{ number_format($lines->sum('target'), 0) }}</td>
                     </tr>
                 </tfoot>
             </table>
+            @endif
         </div>
 
         @if ($req->status === 'pending' && empty($justDecided))
@@ -167,7 +210,7 @@
                 <form method="POST" action="{{ route('source.approval.approve', $req->token) }}">
                     <button type="button" class="btn btn-approve" data-confirm
                         data-title="ยืนยันอนุมัติทั้งหมด?" data-text="ระบบจะอนุมัติสถานที่ทั้งหมดในใบนี้"
-                        data-icon="question" data-ok="อนุมัติ" data-color="#10b981">✓ อนุมัติทั้งหมด</button>
+                        data-icon="question" data-ok="อนุมัติ" data-color="#6c5ffc">✓ อนุมัติทั้งหมด</button>
                 </form>
                 <form method="POST" action="{{ route('source.approval.reject', $req->token) }}" class="reject-box">
                     <label>สิ่งที่ต้องแก้ไข (ระบุให้ผู้ขอทราบ)</label>
@@ -197,7 +240,7 @@
                 showCancelButton: true,
                 confirmButtonText: btn.dataset.ok || 'ยืนยัน',
                 cancelButtonText: 'ยกเลิก',
-                confirmButtonColor: btn.dataset.color || '#10b981',
+                confirmButtonColor: btn.dataset.color || '#6c5ffc',
                 cancelButtonColor: '#d33',
                 reverseButtons: true,
                 buttonsStyling: true

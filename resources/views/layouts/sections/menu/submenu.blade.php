@@ -103,6 +103,12 @@
             <i class="{{ $submenu->icon }}"></i>
           @endif
           <div>{{ isset($submenu->name) ? __($submenu->name) : '' }}</div>
+          @if (($submenu->slug ?? '') === 'ssi.index')
+            @php $ssiPending = \App\Models\SsiRecord::pendingLowScoreCount(); @endphp
+            @if ($ssiPending > 0)
+              <div class="badge rounded-pill bg-danger ms-auto" title="SSI ต่ำกว่า 90% ที่ยังไม่แก้ไขปัญหา">{{ $ssiPending }}</div>
+            @endif
+          @endif
           @isset($submenu->badge)
             <div class="badge rounded-pill bg-{{ $submenu->badge[0] }} text-uppercase ms-auto">{{ $submenu->badge[1] }}
             </div>

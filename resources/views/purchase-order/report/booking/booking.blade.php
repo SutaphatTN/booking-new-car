@@ -1,3 +1,13 @@
+@php
+  // role manager เห็นรายงานนี้ได้ แต่ไม่ให้เห็นคอลัมน์ราคาทุน
+  $showCost = auth()->user()->role !== 'manager';
+
+  // จำนวนคอลัมน์รวม (ปรับตาม brand + การซ่อนราคาทุน) สำหรับแถว "ไม่มีข้อมูล"
+  $totalCols = 26;
+  if (auth()->user()->brand == 2) $totalCols++;            // สีภายใน
+  if (in_array(auth()->user()->brand, [2, 3])) $totalCols--; // ไม่มี Option
+  if (!$showCost) $totalCols--;                             // ซ่อนราคาทุน
+@endphp
 <table>
   <thead>
     <tr>
@@ -12,7 +22,9 @@
       @if (!in_array(auth()->user()->brand, [2,3]))
         <th>Option</th>
       @endif
-      <th>ราคาทุน</th>
+      @if ($showCost)
+        <th>ราคาทุน</th>
+      @endif
       <th>ราคาขาย</th>
       <th>ประเภทการซื้อรถ</th>
       <th>สถานะรถ</th>
@@ -48,7 +60,9 @@
         @if (!in_array(auth()->user()->brand, [2,3]))
           <td>{{ $s['option'] }}</td>
         @endif
-        <td>{{ $s['car_DNP'] }}</td>
+        @if ($showCost)
+          <td>{{ $s['car_DNP'] }}</td>
+        @endif
         <td>{{ $s['car_MSRP'] }}</td>
         <td>{{ $s['purchase_type'] }}</td>
         <td>{{ $s['order_status'] }}</td>
@@ -71,7 +85,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="26" align="center">
+        <td colspan="{{ $totalCols }}" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

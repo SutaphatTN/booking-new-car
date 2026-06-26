@@ -1,4 +1,7 @@
-@php $clear = $place->clear; @endphp
+@php
+  $clear = $place->clear;
+  $effBudget = $place->effectiveBudget();
+@endphp
 <div class="modal fade clearPlace" tabindex="-1" role="dialog" data-bs-backdrop="static">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content border-0 shadow mf-content mf-content--input">
@@ -33,8 +36,11 @@
                 <div class="info-pill">{{ $place->location }}</div>
               </div>
               <div class="col-md-4">
-                <div class="po-label">ประมาณค่าใช้จ่าย</div>
-                <div class="info-pill text-end">{{ $place->cost !== null ? number_format($place->cost, 2) : '-' }} ฿</div>
+                <div class="po-label">งบประมาณ{{ $place->extra_cost ? ' (รวมงบเพิ่ม)' : '' }}</div>
+                <div class="info-pill text-end">{{ $effBudget !== null ? number_format($effBudget, 2) : '-' }} ฿</div>
+                @if ($place->extra_cost)
+                  <small class="text-muted">ประมาณ {{ number_format($place->cost ?? 0, 2) }} + เพิ่ม {{ number_format($place->extra_cost, 2) }}</small>
+                @endif
               </div>
               <div class="col-md-2">
                 <div class="po-label">เป้า PP</div>
@@ -49,7 +55,8 @@
         </div>
 
         {{-- ── ฟอร์มเคลียร์ ── --}}
-        <form id="clearForm" action="{{ route('source.place.clear.store', $place->id) }}" method="POST">
+        <form id="clearForm" action="{{ route('source.place.clear.store', $place->id) }}" method="POST"
+          data-budget="{{ $effBudget !== null ? $effBudget : '' }}">
           @csrf
           <div class="mf-section">
             <div class="mf-section-hd">

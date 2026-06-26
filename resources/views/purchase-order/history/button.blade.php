@@ -2,7 +2,7 @@
   <i class="bx bx-show"></i></a>
 </button>
 
-<a href="{{ route('purchase-order.edit', $s->id) }}"
+<a href="{{ route('purchase-order.edit', [$s->id, 'from' => 'history']) }}"
   class="btn btn-icon btn-success"
   title="ดูข้อมูล">
   <i class="bx bx-folder-open"></i>

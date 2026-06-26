@@ -42,8 +42,19 @@ class SsiController extends Controller
             ->orderByDesc('DeliveryDate')
             ->get();
 
+        // โหลด SSI record (พร้อมผลประเมิน + การแก้ไขปัญหา) เพื่อคำนวณคะแนน / สิทธิ์ปิดงาน
+        $records = SsiRecord::with(['assessment', 'resolution', 'salecar'])
+            ->whereIn('salecar_id', $salecars->pluck('id'))
+            ->get()
+            ->keyBy('salecar_id');
+
         $no = 1;
-        $data = $salecars->map(function ($s) use (&$no) {
+        $data = $salecars->map(function ($s) use (&$no, $records) {
+            $rec         = $records->get($s->id);
+            $ssiInfo     = $rec ? $rec->ssiScoreInfo() : ['score' => null, 'answered' => 0, 'total' => 0, 'complete' => false];
+            $canComplete = $rec ? $rec->canMarkComplete() : false;
+            $hasResolved = $rec ? $rec->hasResolutionDate() : false;
+
             $c        = $s->customer;
             $fullName = $c
                 ? trim(($c->prefix->Name_TH ?? '') . ' ' . $c->FirstName . ' ' . $c->LastName)
@@ -74,6 +85,12 @@ class SsiController extends Controller
                 'DeliveryDate' => $s->DeliveryDate
                     ? Carbon::parse($s->DeliveryDate)->format('d/m/Y')
                     : '-',
+                'ssi_score'    => $ssiInfo['score'],    // null = ยังไม่ได้ประเมิน
+                'ssi_answered' => $ssiInfo['answered'], // จำนวนข้อที่กรอก
+                'ssi_total'    => $ssiInfo['total'],    // จำนวนข้อทั้งหมด
+                'ssi_complete' => $ssiInfo['complete'], // กรอกครบหรือไม่
+                'can_complete' => $canComplete,
+                'has_resolved' => $hasResolved,     // มีวันที่แก้ไขปัญหาแล้ว
             ];
         });
 
@@ -279,7 +296,14 @@ class SsiController extends Controller
             ]
         );
 
-        return response()->json(['success' => true, 'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว']);
+        // คำนวณคะแนน SSI ใหม่หลังบันทึก เพื่อแสดงผลทันทีในหน้าแก้ไข
+        $ssiRecord->load(['assessment', 'salecar']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว',
+            'ssi'     => $ssiRecord->ssiScoreInfo(),
+        ]);
     }
 
     public function exportExcel(Request $request)
@@ -293,7 +317,17 @@ class SsiController extends Controller
 
     public function markComplete($salecarId)
     {
-        $ssiRecord = SsiRecord::where('salecar_id', $salecarId)->firstOrFail();
+        $ssiRecord = SsiRecord::with(['assessment', 'resolution', 'salecar'])
+            ->where('salecar_id', $salecarId)->firstOrFail();
+
+        // คะแนน SSI < 90% และยังไม่ได้ระบุวันที่แก้ไขปัญหา → ปิดงานไม่ได้
+        if (!$ssiRecord->canMarkComplete()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถปิดงานได้: คะแนน SSI ต่ำกว่า ' . SsiRecord::SSI_PASS_PERCENT . '% และยังไม่ได้ระบุวันที่แก้ไขปัญหา',
+            ], 422);
+        }
+
         $ssiRecord->update([
             'completed_at' => now(),
             'completed_by' => Auth::id(),

@@ -36,7 +36,7 @@ class SourcePlaceRevisionMail extends Mailable
             with: [
                 'req'         => $this->req,
                 'reason'      => $this->reason,
-                'settingsUrl' => route('source.index'),
+                'settingsUrl' => route('source.place.index'),
             ],
         );
     }
