@@ -34,6 +34,50 @@
             orderable: false,
             className: 'text-center',
             render: function(data, type, row) {
+              const resolvedTag = row.has_resolved
+                ? `<div class="text-success" style="font-size:.72rem;margin-top:2px;">
+                     <i class="bx bx-check-circle"></i> แก้ไขปัญหาแล้ว
+                   </div>`
+                : '';
+
+              let html;
+              if (!row.ssi_answered) {
+                // ยังไม่กรอกคะแนนเลย
+                html = '<span class="badge bg-label-secondary">ยังไม่ประเมิน</span>';
+              } else if (!row.ssi_complete) {
+                // กรอกมาบางส่วน ยังไม่ครบ — ยังไม่สรุปคะแนน
+                html = `<span class="badge bg-label-warning text-warning">กรอกไม่ครบ</span>
+                        <div class="text-muted" style="font-size:.72rem;margin-top:2px;">
+                          ${row.ssi_answered}/${row.ssi_total} ข้อ
+                        </div>`;
+              } else {
+                // กรอกครบ → คะแนนรวมจริง
+                const low = row.ssi_score < 90;
+                html = `<span class="badge ${low ? 'bg-label-danger' : 'bg-label-success'}">${row.ssi_score}%</span>`;
+                if (low) {
+                  html += `<div class="text-danger" style="font-size:.72rem;margin-top:2px;">
+                             <i class="bx bx-error-circle"></i> SSI &lt; 90%
+                           </div>`;
+                }
+              }
+              return html + resolvedTag;
+            },
+          },
+          {
+            data: null,
+            orderable: false,
+            className: 'text-center',
+            render: function(data, type, row) {
+              const completeBtn = row.can_complete
+                ? `<button class="btn btn-icon btn-success text-white btn-ssi-complete"
+                       data-id="${row.salecar_id}" title="ตรวจสอบเสร็จแล้ว">
+                     <i class="bx bx-check-double"></i>
+                   </button>`
+                : `<button class="btn btn-icon btn-success text-white" disabled
+                       style="opacity:.4;cursor:not-allowed;"
+                       title="SSI ต่ำกว่า 90% และยังไม่มีวันที่แก้ไขปัญหา จึงยังปิดงานไม่ได้">
+                     <i class="bx bx-check-double"></i>
+                   </button>`;
               return `
                 <div class="d-flex gap-1 justify-content-center">
                   <a href="/ssi/${row.salecar_id}/edit"
@@ -41,11 +85,7 @@
                      title="แก้ไข / บันทึก SSI">
                     <i class="bx bx-edit"></i>
                   </a>
-                  <button class="btn btn-icon btn-success text-white btn-ssi-complete"
-                     data-id="${row.salecar_id}"
-                     title="ตรวจสอบเสร็จแล้ว">
-                    <i class="bx bx-check-double"></i>
-                  </button>
+                  ${completeBtn}
                 </div>`;
             },
           },
@@ -179,6 +219,7 @@
                   <th>เบอร์โทร</th>
                   <th>รุ่นรถ</th>
                   <th class="text-center">วันที่ส่งมอบ</th>
+                  <th class="text-center" style="width:110px;">ผล SSI</th>
                   <th class="tbl-th-action" style="width:100px;">Action</th>
                 </tr>
               </thead>

@@ -5,6 +5,7 @@ namespace App\Exports\ssi;
 use App\Models\SsiRecord;
 use App\Models\TbProvinces;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -95,8 +96,12 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
 
         $provinces = TbProvinces::all()->keyBy('id');
 
+        // คอลัมน์คะแนน SSI รายข้อ (1-5) แยกตาม brand
+        $brand        = Auth::user()->brand ?? 1;
+        $scoreColumns = $this->scoreColumns($brand);
+
         $no = 1;
-        $rows = $records->map(function ($rec) use (&$no, $provinces) {
+        $rows = $records->map(function ($rec) use (&$no, $provinces, $scoreColumns) {
             $s = $rec->salecar;
             if (!$s) return null;
 
@@ -133,27 +138,14 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
                 return $cnt->interview_success ? 'ติดต่อได้ สัมภาษณ์เรียบร้อย' : 'ติดต่อได้ ไม่สะดวกคุย';
             })->implode("\n") ?: '-';
 
-            $ssiScore = 0;
-            $ass = $rec?->assessment;
-            if ($ass) {
-                if ($s->brand == 2) {
-                    $fields   = ['gwm_q1', 'gwm_q2', 'gwm_q3', 'gwm_q4', 'gwm_q5', 'gwm_q6', 'gwm_q7', 'gwm_q8'];
-                    $maxScore = 40;
-                } else {
-                    $isOffsite = ($s->delivery_location === 'Offsite');
-                    $fields = [
-                        'dw_website', 'q15_car_knowledge',
-                        'q17_service_responsibility', 'q18_sales_conditions', 'o27_car_condition',
-                        'fu_followup', 'recommend_showroom',
-                    ];
-                    if (!$isOffsite) {
-                        array_splice($fields, 1, 0, ['q11_facilities']);
-                    }
-                    $maxScore = $isOffsite ? 35 : 40;
-                }
-                $answered = collect($fields)->filter(fn($f) => !is_null($ass->{$f}) && $ass->{$f} > 0);
-                $sum = $answered->sum(fn($f) => (int) $ass->{$f});
-                $ssiScore = $answered->isNotEmpty() ? min(round(($sum / $maxScore) * 100, 2), 100) : 0;
+            $ssiScore = $rec?->ssiScorePercent() ?? 0;
+
+            // คะแนนรายข้อ (1-5) — ช่องที่ยังไม่ได้ให้คะแนนแสดง "-"
+            $ass    = $rec->assessment;
+            $scores = [];
+            foreach (array_keys($scoreColumns) as $key) {
+                $val = $ass?->{$key};
+                $scores[$key] = ($val !== null && $val !== '') ? (int) $val : '-';
             }
 
             $pdi = $s->preDeliveryInspection;
@@ -180,6 +172,7 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
                 'contact_history'   => $contactHistory,
                 'contact_status'    => $contactStatus,
                 'pdi_status'        => $pdiStatus,
+                'scores'            => $scores,
                 'ssi_score'         => $ssiScore,
             ];
         })->filter()->values();
@@ -189,8 +182,37 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
             . Carbon::parse($this->dateTo)->locale('th')->isoFormat('D MMMM YYYY');
 
         return view('customer-relation.ssi.excel', [
-            'rows' => $rows,
-            'date' => $dateLabel,
+            'rows'         => $rows,
+            'date'         => $dateLabel,
+            'scoreColumns' => $scoreColumns,
         ]);
+    }
+
+    /** หัวข้อคะแนน SSI รายข้อ (1-5) แยกตาม brand */
+    private function scoreColumns(int $brand): array
+    {
+        if ($brand == 2) {
+            return [
+                'gwm_q1' => 'Q1 การต้อนรับและการดูแลของเจ้าหน้าที่',
+                'gwm_q2' => 'Q2 ความสามารถของที่ปรึกษาการขาย (iAM)',
+                'gwm_q3' => 'Q3 ประสบการณ์การทดลองขับ',
+                'gwm_q4' => 'Q4 ความสะอาด/เรียบร้อยของรถใหม่',
+                'gwm_q5' => 'Q5 การอธิบายคุณสมบัติ/การใช้งานรถ',
+                'gwm_q6' => 'Q6 บรรยากาศ/สิ่งอำนวยความสะดวกในโชว์รูม',
+                'gwm_q7' => 'Q7 ความพึงพอใจโดยรวมต่อการซื้อรถ',
+                'gwm_q8' => 'Q8 แนวโน้มแนะนำ iAM/ศูนย์บริการ',
+            ];
+        }
+
+        return [
+            'dw_website'                 => 'DW เว็บไซต์',
+            'q11_facilities'             => 'Q11 สิ่งอำนวยความสะดวก',
+            'q15_car_knowledge'          => 'Q15 ความรอบรู้เกี่ยวกับรถยนต์ของที่ปรึกษาการขาย',
+            'q17_service_responsibility' => 'Q17 ความรับผิดชอบในการให้บริการ',
+            'q18_sales_conditions'       => 'Q18 การชี้แจงรายละเอียดเงื่อนไขการขาย',
+            'o27_car_condition'          => 'O27 รถที่ส่งมอบอยู่ในสภาพเรียบร้อยสมบูรณ์',
+            'fu_followup'                => 'FU การติดตามหลังจากส่งมอบ',
+            'recommend_showroom'         => 'แนวโน้มที่จะแนะนำโชว์รูม',
+        ];
     }
 }

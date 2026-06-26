@@ -13,6 +13,22 @@
 
       const salecarId = {{ $info['salecar_id'] }};
 
+      // ── อัปเดต badge คะแนน SSI หลังบันทึก ──
+      function updateSsiBadge(ssi) {
+        const $b = $('#ssiScoreBadge');
+        if (!$b.length || !ssi || !ssi.total) { $b.hide(); return; }
+        $b.removeClass('bg-secondary bg-danger bg-success');
+        if (ssi.complete && ssi.score !== null) {
+          $b.addClass(ssi.score < 90 ? 'bg-danger' : 'bg-success')
+            .text('คะแนนรวม ' + ssi.score + '%').show();
+        } else if (ssi.answered > 0) {
+          $b.addClass('bg-secondary')
+            .text('กรอกแล้ว ' + ssi.answered + '/' + ssi.total + ' ข้อ').show();
+        } else {
+          $b.hide();
+        }
+      }
+
       // ── Score buttons ──
       $(document).on('click', '.score-btn', function() {
         const $group = $(this).closest('.score-group');
@@ -412,11 +428,24 @@
             correction_form_sent_date: $('#correction_form_sent_date').val(),
           },
           success: function(res) {
+            const ssi = res.ssi || {};
+            updateSsiBadge(ssi);
+
+            let icon = 'success';
+            let text = res.message;
+            if (ssi.total > 0) {
+              if (ssi.complete) {
+                text = `บันทึกแล้ว · คะแนน SSI รวม ${ssi.score}%` + (ssi.score < 90 ? ' (ต่ำกว่า 90%)' : '');
+              } else {
+                icon = 'info';
+                text = `บันทึกแล้ว · กรอกคะแนนแล้ว ${ssi.answered}/${ssi.total} ข้อ — ยังไม่ครบ จึงยังไม่สรุปคะแนนรวม`;
+              }
+            }
             Swal.fire({
-              icon: 'success',
+              icon: icon,
               title: 'สำเร็จ',
-              text: res.message,
-              timer: 1500,
+              text: text,
+              timer: 2200,
               showConfirmButton: true
             });
           },
@@ -597,6 +626,11 @@
           $feedback = $ssiRecord->feedback;
           $resolution = $ssiRecord->resolution;
 
+          $ssiInfo    = $ssiRecord->ssiScoreInfo();
+          $ssiScore   = $ssiInfo['score'];                       // null = ยังไม่ได้ประเมิน
+          $ssiIsLow   = $ssiScore !== null && $ssiScore < 90;
+          $hasResDate = $resolution?->resolution_date !== null;
+
           $scoreItems = [
               ['key' => 'dw_website', 'label' => 'DW เว็บไซต์', 'icon' => 'bx bx-globe', 'color' => 'indigo'],
               [
@@ -658,8 +692,10 @@
               <div class="po-section-icon amber"><i class="bx bx-star"></i></div>
               <h6 class="po-section-title">ผลประเมิน SSI <small class="text-muted fw-normal ms-1">(คะแนน 1-5)</small>
               </h6>
+              @include('customer-relation.ssi._score-badge')
             </div>
             <div class="po-section-body-edit">
+              @include('customer-relation.ssi._score-hint')
               @foreach ($scoreItems as $item)
                 @php
                   $isQ11      = $item['key'] === 'q11_facilities';
@@ -792,9 +828,11 @@
             <div class="po-section-header">
               <div class="po-section-icon amber"><i class="bx bx-star"></i></div>
               <h6 class="po-section-title">ผลประเมิน SSI <small class="text-muted fw-normal ms-1">(คะแนน 1-5)</small></h6>
+              @include('customer-relation.ssi._score-badge')
             </div>
             <div class="po-section-body-edit">
 
+              @include('customer-relation.ssi._score-hint')
               @foreach ($gwmQuestions as $q)
                 @php
                   $savedScore   = (int) ($gwmAss?->{'gwm_'.$q['key']} ?? 0);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\source;
 
 use App\Http\Controllers\Controller;
 use App\Mail\SourcePlaceApprovalMail;
+use App\Mail\SourcePlaceApprovedMail;
 use App\Mail\SourcePlaceRevisionMail;
 use App\Models\CustomerTracking;
 use App\Models\SourcePlace;
@@ -153,7 +154,7 @@ class SourceController extends Controller
                 'las_number'   => $p->las_number ?? '-',
                 'date_range'   => $this->dateRange($p),
                 'expense_type' => $p->expense_type ?? '-',
-                'cost'         => $p->cost !== null ? number_format($p->cost, 2) : '-',
+                'cost'         => $this->costCell($p),
                 'target'       => $p->target !== null ? number_format($p->target, 0) : '-',
                 'status'       => '<span class="badge ' . $st['class'] . '">' . $st['label'] . '</span>',
                 'Action'       => view('source.place.button', ['p' => $p])->render(),
@@ -161,6 +162,22 @@ class SourceController extends Controller
         });
 
         return response()->json(['data' => $data]);
+    }
+
+    /** เซลล์ "ประมาณค่าใช้จ่าย" ในตาราง: แสดงงบรวม + ป้ายงบเพิ่มที่อนุมัติ/รออนุมัติ */
+    private function costCell(SourcePlace $p): string
+    {
+        $budget = $p->effectiveBudget();
+        $html   = $budget !== null ? number_format($budget, 2) : '-';
+
+        if ($p->extra_cost) {
+            $html .= ' <span class="badge bg-success" title="รวมงบเพิ่มที่อนุมัติแล้ว">+' . number_format($p->extra_cost, 2) . '</span>';
+        }
+        if ($p->pending_extra !== null) {
+            $html .= ' <span class="badge bg-warning text-dark" title="งบเพิ่มที่รออนุมัติ">รออนุมัติ +' . number_format($p->pending_extra, 2) . '</span>';
+        }
+
+        return $html;
     }
 
     private function dateRange(SourcePlace $p): string
@@ -207,7 +224,8 @@ class SourceController extends Controller
         $place          = SourcePlace::with('request')->findOrFail($id);
         $offlineSources = TbSalecarType::where('main_source', $this->placeMain())
             ->orderBy('name')->get();
-        return view('source.place.edit', compact('place', 'offlineSources'));
+        $approvers      = User::where('role', 'md')->orderBy('name')->get(['id', 'name', 'full_name']);
+        return view('source.place.edit', compact('place', 'offlineSources', 'approvers'));
     }
 
     public function updatePlace(Request $request, $id)
@@ -314,6 +332,80 @@ class SourceController extends Controller
         }
     }
 
+    /* ===================== ขออนุมัติเพิ่ม (topup งบประมาณ) ===================== */
+
+    public function storeTopupRequest(Request $request, $id)
+    {
+        try {
+            $place = SourcePlace::with('request')->findOrFail($id);
+
+            // ของบเพิ่มได้เฉพาะสถานที่ที่อนุมัติแล้ว และยังไม่มีคำขอเพิ่มที่ค้างอยู่
+            if ($place->status !== SourcePlace::STATUS_APPROVED) {
+                return response()->json(['success' => false, 'message' => 'ขออนุมัติเพิ่มได้เฉพาะสถานที่ที่อนุมัติแล้วเท่านั้น'], 422);
+            }
+            if ($place->pending_extra !== null) {
+                return response()->json(['success' => false, 'message' => 'มีคำขออนุมัติเพิ่มที่รอผลอยู่แล้ว กรุณารอผลก่อน'], 422);
+            }
+
+            $request->merge([
+                'extra_amount' => $request->filled('extra_amount') ? str_replace(',', '', $request->extra_amount) : null,
+            ]);
+
+            $validated = $request->validate([
+                'extra_amount' => 'required|numeric|gt:0',
+                'extra_reason' => 'required|string|max:500',
+                'approver_id'  => ['required', Rule::exists('users', 'id')->where('role', 'md')],
+                'period'       => 'required|date_format:Y-m',
+            ], [
+                'extra_amount.required' => 'กรุณากรอกจำนวนเงินที่ขอเพิ่ม',
+                'extra_amount.gt'       => 'จำนวนเงินที่ขอเพิ่มต้องมากกว่า 0',
+                'extra_reason.required' => 'กรุณาระบุเหตุผลในการขอเพิ่ม',
+                'approver_id.required'  => 'กรุณาเลือกผู้อนุมัติ',
+                'period.required'       => 'กรุณาเลือกประจำเดือน',
+                'period.date_format'    => 'รูปแบบเดือนไม่ถูกต้อง',
+            ]);
+
+            $user     = Auth::user();
+            $approver = User::where('role', 'md')->findOrFail($validated['approver_id']);
+            if (!$approver->email) {
+                return response()->json(['success' => false, 'message' => 'ผู้อนุมัติยังไม่มีอีเมลในระบบ'], 422);
+            }
+
+            $req = DB::transaction(function () use ($place, $user, $approver, $validated) {
+                $req = SourcePlaceRequest::create([
+                    'requester_id' => $user->id,
+                    'approver_id'  => $approver->id,
+                    'status'       => SourcePlaceRequest::STATUS_PENDING,
+                    'type'         => SourcePlaceRequest::TYPE_TOPUP,
+                    'token'        => Str::random(48),
+                    'period'       => $validated['period'],
+                    'brand'        => $user->brand ?? null,
+                    'userZone'     => $user->userZone ?? null,
+                    'branch'       => $user->branch ?? null,
+                ]);
+
+                // ผูกงบเพิ่มที่รออนุมัติเข้ากับสถานที่ (status เดิมคงเป็น approved — tracking ไม่กระทบ)
+                $place->update([
+                    'pending_extra'    => $validated['extra_amount'],
+                    'extra_request_id' => $req->id,
+                    'extra_reason'     => $validated['extra_reason'],
+                ]);
+
+                return $req;
+            });
+
+            // ส่งเมลหาผู้อนุมัติ พร้อม PDF แนบ + ลิงก์อนุมัติ
+            $pdf = $this->buildApprovalPdf($req->fresh(['topupPlaces.source', 'requester', 'approver']));
+            Mail::to($approver->email)->send(new SourcePlaceApprovalMail($req->fresh(['topupPlaces.source', 'requester', 'approver']), $pdf->output()));
+
+            return response()->json(['success' => true, 'message' => 'ส่งคำขออนุมัติเพิ่มเรียบร้อยแล้ว']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['success' => false, 'message' => $e->validator->errors()->first()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
+        }
+    }
+
     /** สร้าง PDF ใบขออนุมัติ (dompdf + ฟอนต์ไทย Sarabun) */
     private function buildRequestPdf(SourcePlaceRequest $req)
     {
@@ -322,6 +414,20 @@ class SourceController extends Controller
         return Pdf::loadView('source.place.pdf', ['req' => $req])
             ->setPaper('a4', 'landscape')
             ->setOption(['isRemoteEnabled' => true, 'isHtml5ParserEnabled' => true]);
+    }
+
+    /** เลือก PDF ตามชนิดคำขอ: topup ใช้ใบของบเพิ่ม, ปกติใช้ใบขออนุมัติสถานที่ */
+    private function buildApprovalPdf(SourcePlaceRequest $req)
+    {
+        if ($req->is_topup) {
+            $req->loadMissing(['topupPlaces.source', 'requester', 'approver']);
+
+            return Pdf::loadView('source.place.topup-pdf', ['req' => $req])
+                ->setPaper('a4', 'portrait')
+                ->setOption(['isRemoteEnabled' => true, 'isHtml5ParserEnabled' => true]);
+        }
+
+        return $this->buildRequestPdf($req);
     }
 
     /* ===================== รายงานสรุปตามเดือน (PDF) ===================== */
@@ -407,6 +513,16 @@ class SourceController extends Controller
             }
 
             $total = $items->sum(fn($it) => (float) $it['amount']);
+
+            // ค่าใช้จ่ายจริงต้องไม่เกินงบประมาณรวม (ประมาณค่าใช้จ่าย + งบเพิ่มที่อนุมัติแล้ว)
+            $budget = $place->effectiveBudget();
+            if ($budget !== null && $total > $budget) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ยอดค่าใช้จ่ายจริง (' . number_format($total, 2) . ' บาท) เกินงบประมาณ (' . number_format($budget, 2) . ' บาท)',
+                ], 422);
+            }
+
             $user  = Auth::user();
 
             DB::transaction(function () use ($place, $request, $items, $total, $user) {
@@ -470,7 +586,7 @@ class SourceController extends Controller
 
     public function showApproval($token)
     {
-        $req = SourcePlaceRequest::with(['places.source', 'requester', 'approver'])
+        $req = SourcePlaceRequest::with(['places.source', 'topupPlaces.source', 'requester', 'approver'])
             ->where('token', $token)->firstOrFail();
 
         return view('source.place.approval', ['req' => $req]);
@@ -488,7 +604,7 @@ class SourceController extends Controller
 
     private function decide($token, $decision, $reason = null)
     {
-        $req = SourcePlaceRequest::with(['places.source', 'requester', 'approver'])
+        $req = SourcePlaceRequest::with(['places.source', 'topupPlaces.source', 'requester', 'approver'])
             ->where('token', $token)->firstOrFail();
 
         // กดซ้ำ / ดำเนินการไปแล้ว
@@ -496,30 +612,70 @@ class SourceController extends Controller
             return view('source.place.approval', ['req' => $req, 'alreadyDone' => true]);
         }
 
+        $isTopup     = $req->is_topup;
         $placeStatus = $decision === SourcePlaceRequest::STATUS_APPROVED
             ? SourcePlace::STATUS_APPROVED
             : SourcePlace::STATUS_REJECTED;
 
-        DB::transaction(function () use ($req, $decision, $reason, $placeStatus) {
+        DB::transaction(function () use ($req, $decision, $reason, $placeStatus, $isTopup) {
             $req->update([
                 'status'        => $decision,
                 'reject_reason' => $decision === SourcePlaceRequest::STATUS_REJECTED ? $reason : null,
                 'decided_at'    => now(),
             ]);
 
-            SourcePlace::where('request_id', $req->id)->update(['status' => $placeStatus]);
+            if ($isTopup) {
+                // ของบเพิ่ม: ไม่แตะ status ของสถานที่ (ยังคงเป็น approved → tracking ไม่กระทบ)
+                foreach (SourcePlace::where('extra_request_id', $req->id)->get() as $p) {
+                    if ($decision === SourcePlaceRequest::STATUS_APPROVED) {
+                        // อนุมัติ → รวมงบเพิ่มเข้ากับ extra_cost สะสม
+                        $p->extra_cost = (float) ($p->extra_cost ?? 0) + (float) ($p->pending_extra ?? 0);
+                    }
+                    // ไม่ว่าจะอนุมัติหรือส่งกลับ → ล้างสถานะที่รออนุมัติ
+                    $p->pending_extra    = null;
+                    $p->extra_request_id = null;
+                    $p->extra_reason     = null;
+                    $p->save();
+                }
+            } else {
+                SourcePlace::where('request_id', $req->id)->update(['status' => $placeStatus]);
+            }
         });
+
+        // topup: ใช้ $req ใน memory (relation topupPlaces ยังมีค่า pending_extra ก่อนถูกล้างใน transaction)
+        // place: reload ใหม่เพื่อให้ได้ status ล่าสุดของสถานที่
+        $mailReq = $isTopup ? $req : $req->fresh(['places.source', 'requester', 'approver']);
 
         // ส่งกลับให้แก้ไข → แจ้งผู้ขอทางอีเมลให้แก้แล้วส่งใหม่
         if ($decision === SourcePlaceRequest::STATUS_REJECTED && optional($req->requester)->email) {
             try {
-                Mail::to($req->requester->email)->send(new SourcePlaceRevisionMail($req->fresh('places'), $reason));
+                Mail::to($req->requester->email)->send(new SourcePlaceRevisionMail($mailReq, $reason));
             } catch (\Exception $e) {
                 // ไม่ให้เมลล้มเหลวมาขวางผลการตัดสิน
             }
         }
 
-        return view('source.place.approval', ['req' => $req->fresh(['places.source', 'requester', 'approver']), 'justDecided' => true]);
+        // อนุมัติแล้ว → แจ้งผู้ขออนุมัติ และส่งสำเนาให้บัญชี (acc@chookiat.org)
+        if ($decision === SourcePlaceRequest::STATUS_APPROVED) {
+            try {
+                $pdf = $this->buildApprovalPdf($mailReq);
+
+                $mail = Mail::to('acc@chookiat.org');
+                $mail = Mail::to('acct@chookiat.org');
+                if (optional($req->requester)->email) {
+                    $mail->cc($req->requester->email);
+                }
+                $mail->send(new SourcePlaceApprovedMail($mailReq, $pdf->output()));
+            } catch (\Exception $e) {
+                // ไม่ให้เมลล้มเหลวมาขวางผลการตัดสิน
+            }
+        }
+
+        // topup ใช้ $mailReq (in-memory) ที่ relation topupPlaces ยังมีค่าให้แสดงบนหน้ายืนยันผล
+        return view('source.place.approval', [
+            'req'         => $mailReq,
+            'justDecided' => true,
+        ]);
     }
 
     /** validate + เตรียมค่าของสถานที่ (แปลงเงิน) */

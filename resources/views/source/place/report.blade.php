@@ -12,7 +12,8 @@
 
     $fmtDate = fn($d) => $d ? $d->format('d/m/') . ($d->year + 543) : '';
 
-    $sumCost   = $places->sum('cost');
+    $sumCost   = $places->sum(fn($p) => (float) ($p->cost ?? 0) + (float) ($p->extra_cost ?? 0));
+    $sumExtra  = $places->sum(fn($p) => (float) ($p->extra_cost ?? 0));
     $sumActual = $places->sum(fn($p) => optional($p->clear)->total ?? 0);
     $sumTarget = $places->sum('target');
     $sumPp     = $places->sum('pp_actual');
@@ -64,7 +65,13 @@
                     <td>{{ $p->source->name ?? '' }}</td>
                     <td>{{ $p->location }}</td>
                     <td>{{ $p->expense_type ?? '' }}</td>
-                    <td class="num">{{ $p->cost !== null ? number_format($p->cost, 2) : '' }}</td>
+                    @php $eff = (float) ($p->cost ?? 0) + (float) ($p->extra_cost ?? 0); @endphp
+                    <td class="num">
+                        {{ ($p->cost !== null || $p->extra_cost !== null) ? number_format($eff, 2) : '' }}
+                        @if ($p->extra_cost)
+                            <br><span style="font-size:9px; color:#0a7a3d;">(งบเพิ่ม +{{ number_format($p->extra_cost, 2) }})</span>
+                        @endif
+                    </td>
                     <td class="num">{{ optional($p->clear)->total !== null ? number_format($p->clear->total, 2) : '-' }}</td>
                     <td class="num">{{ $p->target !== null ? number_format($p->target, 0) : '' }}</td>
                     <td class="num">{{ number_format($p->pp_actual, 0) }}</td>
@@ -76,7 +83,12 @@
         <tfoot>
             <tr>
                 <td colspan="7" class="center">รวม</td>
-                <td class="num">{{ number_format($sumCost, 2) }}</td>
+                <td class="num">
+                    {{ number_format($sumCost, 2) }}
+                    @if ($sumExtra > 0)
+                        <br><span style="font-size:9px; color:#0a7a3d;">(รวมงบเพิ่ม +{{ number_format($sumExtra, 2) }})</span>
+                    @endif
+                </td>
                 <td class="num">{{ number_format($sumActual, 2) }}</td>
                 <td class="num">{{ number_format($sumTarget, 0) }}</td>
                 <td class="num">{{ number_format($sumPp, 0) }}</td>

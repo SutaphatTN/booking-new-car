@@ -168,8 +168,51 @@ $(document).on('click', '.btnEditPlace', function () {
   });
 });
 
+/* ===================== ขออนุมัติเพิ่ม (topup) ===================== */
+
+// เปิด modal ของบเพิ่ม (ปิด modal แก้ไขก่อน แล้วเปิด topup)
+$(document).on('click', '.btnOpenTopup', function () {
+  const $edit = $('.editPlace');
+  $edit.one('hidden.bs.modal', function () {
+    $('.topupPlace').modal('show');
+  });
+  $edit.modal('hide');
+});
+
+// ส่งคำขออนุมัติเพิ่ม
+$(document).on('click', '.btnSubmitTopup', function () {
+  const $btn = $(this);
+  const form = document.getElementById('topupForm');
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+  $.ajax({
+    url: form.action,
+    type: 'POST',
+    data: new FormData(form),
+    processData: false,
+    contentType: false,
+    beforeSend: function () {
+      $('.topupPlace').modal('hide');
+      Swal.fire({ title: 'กำลังส่งคำขอ...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      $btn.prop('disabled', true);
+    },
+    success: function (res) {
+      Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 2500, showConfirmButton: true });
+      placeTable.ajax.reload(null, false);
+    },
+    error: function (xhr) {
+      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message || 'ไม่สามารถส่งคำขอได้' });
+    },
+    complete: function () {
+      $btn.prop('disabled', false);
+    }
+  });
+});
+
 // blur focus กัน aria-hidden warning ตอนปิด modal (ครอบทั้ง add/edit ของ sub และ place)
-$(document).on('hide.bs.modal', '.inputSub, .editSub, .inputPlace, .editPlace', function () {
+$(document).on('hide.bs.modal', '.inputSub, .editSub, .inputPlace, .editPlace, .topupPlace', function () {
   setTimeout(() => {
     document.activeElement.blur();
     $('body').trigger('focus');
@@ -250,6 +293,13 @@ $(document).on('click', '.btnPlaceReport', function () {
 
 /* ===================== เคลียร์ค่าใช้จ่าย ===================== */
 
+function getClearBudget() {
+  const raw = $('#clearForm').attr('data-budget');
+  if (raw === undefined || raw === '') return null;
+  const v = parseFloat(String(raw).replace(/,/g, ''));
+  return isNaN(v) ? null : v;
+}
+
 function recalcClearTotal() {
   let total = 0;
   $('#clearItemsBody .clear-amount').each(function () {
@@ -257,6 +307,12 @@ function recalcClearTotal() {
     total += v;
   });
   $('#clearTotal').val(total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+  // เตือนเมื่อค่าใช้จ่ายจริงเกินประมาณค่าใช้จ่าย
+  const budget = getClearBudget();
+  const over = budget !== null && total > budget;
+  $('#clearTotal').toggleClass('is-invalid', over);
+  return total;
 }
 
 // เปิด modal เคลียร์
@@ -301,6 +357,19 @@ $(document).on('click', '.btnSaveClear', function () {
   const form = document.getElementById('clearForm');
   if (!form.checkValidity()) {
     form.reportValidity();
+    return;
+  }
+
+  // ค่าใช้จ่ายจริงต้องไม่เกินประมาณค่าใช้จ่าย
+  const budget = getClearBudget();
+  const total = recalcClearTotal();
+  if (budget !== null && total > budget) {
+    const fmt = (n) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    Swal.fire({
+      icon: 'warning',
+      title: 'ยอดเกินประมาณค่าใช้จ่าย',
+      html: 'ยอดค่าใช้จ่ายจริง <b>' + fmt(total) + '</b> บาท เกินประมาณค่าใช้จ่าย <b>' + fmt(budget) + '</b> บาท',
+    });
     return;
   }
   $.ajax({

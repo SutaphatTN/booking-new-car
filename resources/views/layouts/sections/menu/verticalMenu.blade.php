@@ -66,6 +66,17 @@
         $bpAllowed    = ['invoice', 'accessory', 'stock-film', 'film-price-list', 'film-usage', 'film-settings'];
         $croAllowed   = ['pre-delivery-inspection', 'ssi'];
       @endphp
+
+      {{-- role sale ไม่เห็นเมนู ลูกค้าสัมพันธ์ (pre-delivery-inspection/ssi) และ การตลาด (source) --}}
+      @if ($userRole === 'sale' && !empty(array_intersect($menuSlugs, ['pre-delivery-inspection', 'ssi', 'source'])))
+        @continue
+      @endif
+
+      {{-- role marketing เห็นแค่เมนู การตลาด (source) --}}
+      @if ($userRole === 'marketing' && empty(array_intersect($menuSlugs, ['source'])))
+        @continue
+      @endif
+
       @if ($userRole === 'cs' && empty(array_intersect($menuSlugs, $bpCsAllowed)))
         @continue
       @endif

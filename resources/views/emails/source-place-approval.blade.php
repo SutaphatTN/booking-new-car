@@ -1,12 +1,17 @@
+@php
+    $isTopup = ($req->type ?? 'place') === 'topup';
+    $lines = $isTopup ? $req->topupPlaces : $req->places;
+    $total = $isTopup ? $lines->sum(fn($p) => (float) ($p->pending_extra ?? 0)) : $lines->sum('cost');
+@endphp
 @component('mail::message')
-# ขออนุมัติค่าใช้จ่ายกิจกรรมการตลาด (สถานที่)
+# {{ $isTopup ? 'ขออนุมัติเพิ่มงบประมาณ (สถานที่)' : 'ขออนุมัติค่าใช้จ่ายกิจกรรมการตลาด (สถานที่)' }}
 
 เรียน คุณ{{ optional($req->approver)->full_name ?: (optional($req->approver)->name ?? 'ผู้อนุมัติ') }},
 
-มีคำขออนุมัติสถานที่/ค่าใช้จ่ายกิจกรรมการตลาด จำนวน **{{ $req->places->count() }}** รายการ
+มี{{ $isTopup ? 'คำขออนุมัติเพิ่มงบประมาณ' : 'คำขออนุมัติสถานที่/ค่าใช้จ่ายกิจกรรมการตลาด' }} จำนวน **{{ $lines->count() }}** รายการ
 - ผู้ขออนุมัติ: {{ optional($req->requester)->full_name ?: (optional($req->requester)->name ?? '-') }}
 - ประจำเดือน: {{ $req->period ?? '-' }}
-- ยอดรวม: {{ number_format($req->places->sum('cost'), 2) }} บาท
+- {{ $isTopup ? 'ยอดที่ขอเพิ่ม' : 'ยอดรวม' }}: {{ number_format($total, 2) }} บาท
 
 {{-- รายละเอียดทั้งหมดอยู่ในไฟล์ PDF ที่แนบมาในอีเมลนี้ --}}
 รายละเอียดทั้งหมดอยู่ในลิงก์ที่แนบมาในอีเมลนี้
