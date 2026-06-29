@@ -73,6 +73,11 @@
           "url": "purchase-order/gp-setting",
           "name": "ตั้งค่า GP",
           "slug": "purchase-order.gp-setting"
+        },
+        {
+          "url": "purchase-order/view-export-insurance",
+          "name": "รายงานข้อมูลประกันภัย",
+          "slug": "purchase-order.view-export-insurance"
         }
       ]
     },

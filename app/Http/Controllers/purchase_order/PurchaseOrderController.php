@@ -6,6 +6,7 @@ use App\Traits\ConvertsThaiDate;
 use App\Exports\booking\BookingExport;
 use App\Exports\commission\SaleCommissionExport;
 use App\Exports\gp\GPExport;
+use App\Exports\insurance\InsuranceExport;
 use App\Exports\gwm\GwmExport;
 use App\Exports\saleCar\estimated\EstimatedExport;
 use App\Exports\saleCar\estimated\SaleCarEstimatedExport;
@@ -2117,6 +2118,23 @@ class PurchaseOrderController extends Controller
         $status   = $request->con_status ?: null;
 
         return Excel::download(new SaleCarBookingExport($fromDate, $toDate, $status), 'ข้อมูลการจอง.xlsx');
+    }
+
+    // report ข้อมูลประกันภัย (เฉพาะ admin) — ดึงตามเดือน DeliveryDate ทุก brand แยก sheet
+    public function viewExportInsurance()
+    {
+        abort_unless(Auth::user()->role === 'admin', 403);
+
+        return view('purchase-order.report.insurance.view');
+    }
+
+    public function exportInsurance(Request $request)
+    {
+        abort_unless(Auth::user()->role === 'admin', 403);
+
+        $fromDate = $request->from_date ?: now()->startOfMonth()->format('Y-m');
+
+        return Excel::download(new InsuranceExport($fromDate), 'ข้อมูลประกันภัย.xlsx');
     }
 
     //delivery report

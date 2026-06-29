@@ -110,6 +110,9 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     //report gwm stock
     Route::get('purchase-order/view-export-gwm-stock', [PurchaseOrderController::class, 'viewExportGwmStock'])->name('purchase-order.view-export-gwm-stock');
     Route::get('/purchase-order/gwm-stock-export', [PurchaseOrderController::class, 'gwmStockExport'])->name('purchase-order.gwm-stock-export');
+    //insurance report (ข้อมูลประกันภัย) — เฉพาะ admin ดึงตามเดือน DeliveryDate ทุก brand แยก sheet
+    Route::get('purchase-order/view-export-insurance', [PurchaseOrderController::class, 'viewExportInsurance'])->name('purchase-order.view-export-insurance');
+    Route::get('/purchase-order/insurance-export', [PurchaseOrderController::class, 'exportInsurance'])->name('purchase-order.insurance-export');
     //delivery report
     Route::get('purchase-order/view-export-monthlyDelivery', [PurchaseOrderController::class, 'viewExportMonthlyDelivery'])->name('purchase-order.view-export-monthlyDelivery');
     Route::get('/purchase-order/monthlyDelivery-export', [PurchaseOrderController::class, 'exportMonthlyDelivery'])->name('purchase-order.monthlyDelivery-export');
