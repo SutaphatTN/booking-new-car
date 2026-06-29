@@ -2489,7 +2489,7 @@
                           </div>
 
                           {{-- ผู้จัดการกรอกยอดหักค่าคอมฝ่ายขาย + แสดงยอดที่เหลือ --}}
-                          <div class="col-12">
+                          {{-- <div class="col-12">
                             <div class="approval-card">
                               <div class="approval-card-header">
                                 <div class="approval-icon amber"><i class="bx bx-calculator"></i></div>
@@ -2521,7 +2521,7 @@
                                 </div>
                               </div>
                             </div>
-                          </div>
+                          </div> --}}
 
                         </div>
                       </div>

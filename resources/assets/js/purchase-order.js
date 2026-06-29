@@ -1507,15 +1507,18 @@ $(document).ready(function () {
           }
 
           res.forEach(a => {
-            // ต้องมีราคาทุนอะไหล่ (cost_spare) มากกว่า 0 ถึงจะเลือกได้ — ใช้ตอนขออนุมัติ
-            // null / ว่าง / 0 ถือว่า "ไม่มีราคาทุนอะไหล่" ทั้งหมด
-            const noSpareCost = !(parseFloat(a.cost_spare) > 0);
+            // ===== ปิดเงื่อนไขชั่วคราว (วันปิดยอด) — อนุญาตเลือกได้ทุกกรณี =====
+            // เปิดคืน: ใช้บรรทัดเดิมที่คอมเมนต์ไว้
+            // const noSpareCost = !(parseFloat(a.cost_spare) > 0);
+            const noSpareCost = false;
+            // ===== /ปิดเงื่อนไขชั่วคราว =====
 
             // ราคา 0 บาท เลือกได้เฉพาะของแถมมาตรฐาน (is_standard) เท่านั้น
             const buildPriceCell = (type, price, comAttr = '') => {
               if (price === null || price === undefined) return `<span>-</span>`;
 
-              const blockZero = parseFloat(price) === 0 && !a.is_standard;
+              // ปิดชั่วคราว (วันปิดยอด): const blockZero = parseFloat(price) === 0 && !a.is_standard;
+              const blockZero = false;
               const block = noSpareCost || blockZero;
               const title = noSpareCost
                 ? 'ไม่มีราคาทุนอะไหล่ จึงเลือกไม่ได้'
@@ -1657,19 +1660,22 @@ $(document).ready(function () {
         return;
       }
 
-      // กันราคา 0 บาท ที่ไม่ใช่ของแถมมาตรฐาน (เผื่อ DOM ถูกแก้)
-      const hasInvalidZero = items.some(it => parseFloat(it.price) === 0 && Number(it.standard) !== 1);
-      if (hasInvalidZero) {
-        Swal.fire({ icon: 'warning', title: 'ราคา 0 บาท เลือกได้เฉพาะของแถมมาตรฐาน', confirmButtonText: 'ตกลง' });
-        return;
-      }
-
-      // กันรายการที่ไม่มีราคาทุนอะไหล่ (เผื่อ DOM ถูกแก้)
-      const hasNoSpare = items.some(it => Number(it.spare) !== 1);
-      if (hasNoSpare) {
-        Swal.fire({ icon: 'warning', title: 'รายการนี้ไม่มีราคาทุนอะไหล่ จึงเลือกไม่ได้', confirmButtonText: 'ตกลง' });
-        return;
-      }
+      // ===== ปิดเงื่อนไขชั่วคราว (วันปิดยอด) — ไม่เช็คราคา 0 / ไม่มีราคาทุนอะไหล่ =====
+      // เปิดคืน: uncomment 2 block ด้านล่าง
+      // // กันราคา 0 บาท ที่ไม่ใช่ของแถมมาตรฐาน (เผื่อ DOM ถูกแก้)
+      // const hasInvalidZero = items.some(it => parseFloat(it.price) === 0 && Number(it.standard) !== 1);
+      // if (hasInvalidZero) {
+      //   Swal.fire({ icon: 'warning', title: 'ราคา 0 บาท เลือกได้เฉพาะของแถมมาตรฐาน', confirmButtonText: 'ตกลง' });
+      //   return;
+      // }
+      //
+      // // กันรายการที่ไม่มีราคาทุนอะไหล่ (เผื่อ DOM ถูกแก้)
+      // const hasNoSpare = items.some(it => Number(it.spare) !== 1);
+      // if (hasNoSpare) {
+      //   Swal.fire({ icon: 'warning', title: 'รายการนี้ไม่มีราคาทุนอะไหล่ จึงเลือกไม่ได้', confirmButtonText: 'ตกลง' });
+      //   return;
+      // }
+      // ===== /ปิดเงื่อนไขชั่วคราว =====
 
       items.forEach(function (it) {
         const rawPrice = it.price;
