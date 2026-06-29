@@ -44,6 +44,11 @@
         @continue
       @endif
 
+      {{-- เมนู "รายงานข้อมูลประกันภัย" เห็นเฉพาะ role admin --}}
+      @if ($submenu->slug == 'purchase-order.view-export-insurance' && $userRole !== 'admin')
+        @continue
+      @endif
+
       @if ($submenu->slug == 'report.gwm-stock-export' && $userBrand != 2)
         @continue
       @endif
