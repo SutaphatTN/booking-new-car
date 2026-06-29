@@ -101,6 +101,7 @@ class SsiController extends Controller
     {
         $salecar = Salecar::with([
             'customer.prefix',
+            'saleUser',
             'model',
             'subModel',
             'carOrder',
@@ -128,7 +129,10 @@ class SsiController extends Controller
             'salecar_id'        => $salecar->id,
             'brand'             => $salecar->brand,
             'full_name'         => $c ? trim(($c->prefix->Name_TH ?? '') . ' ' . $c->FirstName . ' ' . $c->LastName) : '-',
+            'sale_name'         => $salecar->saleUser?->name ?? '-',
             'phone'             => $c->formatted_mobile ?? '-',
+            'phone_backup'      => $c->Mobilephone2 ?? '',
+
             'model'             => $salecar->model?->Name_TH ?? '-',
             'sub_model'         => $salecar->subModel?->name ?? '-',
             'delivery_date'     => $salecar->DeliveryDate
@@ -153,6 +157,26 @@ class SsiController extends Controller
         $salecar->save();
 
         return response()->json(['success' => true]);
+    }
+
+    public function saveBackupPhone(Request $request, $salecarId)
+    {
+        $salecar = Salecar::findOrFail($salecarId);
+        $customer = $salecar->customer;
+
+        if (!$customer) {
+            return response()->json(['success' => false, 'message' => 'ไม่พบข้อมูลลูกค้า'], 404);
+        }
+
+        // เบอร์สำรองเก็บที่ Mobilephone2 (ไม่มี unique constraint จึงแก้/เพิ่มได้อิสระ)
+        $phone = preg_replace('/\D/', '', (string) $request->input('phone_backup'));
+        $customer->Mobilephone2 = $phone ?: null;
+        $customer->save();
+
+        return response()->json([
+            'success'      => true,
+            'phone_backup' => $customer->Mobilephone2 ?? '',
+        ]);
     }
 
     public function saveContact(Request $request, $salecarId)

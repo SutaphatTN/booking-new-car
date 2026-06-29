@@ -4,6 +4,35 @@
 @section('page-style')
 <style>
   #row-q11-facilities.q11-hidden { display: none !important; }
+
+  /* เบอร์สำรอง */
+  .backup-phone-group .input-group-text {
+    background: #e0f2fe;
+    border-color: #bae6fd;
+    color: #0284c7;
+  }
+  .backup-phone-group .form-control {
+    border-color: #bae6fd;
+    padding-top: .5rem;
+    padding-bottom: .5rem;
+    font-size: .95rem;
+  }
+  .backup-phone-group .form-control:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 .15rem rgba(56, 189, 248, .25);
+  }
+  .backup-phone-group .btn-save-backup {
+    background: linear-gradient(135deg, #0284c7, #38bdf8);
+    border: none;
+    color: #fff;
+  }
+  .backup-phone-group .btn-save-backup:hover {
+    filter: brightness(1.05);
+  }
+  .backup-phone-hint {
+    font-size: .75rem;
+    color: #94a3b8;
+  }
 </style>
 @endsection
 
@@ -211,6 +240,43 @@
           },
           error: function () {
             Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด' });
+          }
+        });
+      });
+
+      // ── Format เบอร์สำรอง: ใส่ - อัตโนมัติ (3-4-3) เหมือนหน้าลูกค้า ──
+      function formatBackupPhone(value) {
+        const digits = String(value).replace(/\D/g, '').substring(0, 10);
+        const parts = [];
+        if (digits.length > 0) parts.push(digits.substring(0, 3));
+        if (digits.length > 3) parts.push(digits.substring(3, 7));
+        if (digits.length > 7) parts.push(digits.substring(7, 10));
+        return parts.join('-');
+      }
+      $('#backupPhone').on('input', function () {
+        this.value = formatBackupPhone(this.value);
+      }).trigger('input'); // format ค่าเริ่มต้นตอนโหลด
+
+      // ── บันทึกเบอร์สำรอง ──
+      $('#btnSaveBackupPhone').on('click', function () {
+        const phone = $('#backupPhone').val();
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin"></i>');
+
+        $.ajax({
+          url: `/ssi/${salecarId}/backup-phone`,
+          method: 'POST',
+          headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+          data: { phone_backup: phone },
+          success: function (res) {
+            $('#backupPhone').val(formatBackupPhone(res.phone_backup ?? ''));
+            Swal.fire({ icon: 'success', title: 'บันทึกเบอร์สำรองสำเร็จ', timer: 1200, showConfirmButton: true });
+          },
+          error: function (xhr) {
+            Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: xhr.responseJSON?.message || 'เกิดข้อผิดพลาด' });
+          },
+          complete: function () {
+            $btn.prop('disabled', false).html('<i class="bx bx-save me-1"></i>บันทึก');
           }
         });
       });
@@ -522,8 +588,26 @@
                     <div class="info-pill fw-semibold">{{ $info['full_name'] }}</div>
                   </div>
                   <div class="col-12">
+                    <div class="po-label">ชื่อเซลล์</div>
+                    <div class="info-pill">{{ $info['sale_name'] }}</div>
+                  </div>
+                  <div class="col-12">
                     <div class="po-label">เบอร์โทร</div>
                     <div class="info-pill">{{ $info['phone'] }}</div>
+                  </div>
+                  <div class="col-12">
+                    <div class="po-label"><i class="bx bx-phone text-info me-1"></i>เบอร์สำรอง</div>
+                    <div class="input-group backup-phone-group">
+                      <span class="input-group-text"><i class="bx bx-phone-call"></i></span>
+                      <input type="text" id="backupPhone" class="form-control" maxlength="12"
+                        placeholder="เพิ่ม / แก้ไขเบอร์สำรอง..." value="{{ $info['phone_backup'] }}">
+                      <button type="button" class="btn btn-save-backup" id="btnSaveBackupPhone" title="บันทึกเบอร์สำรอง">
+                        <i class="bx bx-save me-1"></i>บันทึก
+                      </button>
+                    </div>
+                    <small class="backup-phone-hint d-inline-flex align-items-center gap-1 mt-1">
+                      <i class="bx bx-info-circle"></i> ใช้กรณีเบอร์หลักโทรไม่ติด
+                    </small>
                   </div>
                 </div>
               </div>
