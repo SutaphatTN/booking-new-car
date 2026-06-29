@@ -1417,7 +1417,12 @@ $(document).ready(function () {
     const $tableBody = $(options.tableBody);
     const $mainTable = $(options.mainTable);
 
+    // เก็บรายการที่ติ๊กไว้ (ยังไม่กดบันทึก) แยกตาม instance — key = accessory id
+    // ทำให้ค้นหาใหม่/พิมพ์ค้นหา แล้วของที่ติ๊กไว้ไม่หาย
+    let selectedMap = {};
+
     $(options.btnOpen).on('click', function () {
+      selectedMap = {}; // เปิด modal ใหม่ → เริ่มเลือกใหม่
       $modal.modal('show');
       $searchInput.val('');
       $tableBody.empty();
@@ -1433,16 +1438,52 @@ $(document).ready(function () {
       searchItem('');
     });
 
+    // พิมพ์แล้วค้นหาเลย (debounce กันยิงถี่เกินไป)
+    let searchTimer = null;
+    $searchInput.on('input', function () {
+      clearTimeout(searchTimer);
+      const kw = $searchInput.val();
+      searchTimer = setTimeout(() => searchItem(kw), 300);
+    });
+
     $searchInput.on('keypress', function (e) {
       if (e.which === 13) {
         e.preventDefault();
+        clearTimeout(searchTimer);
         searchItem($searchInput.val());
       }
     });
 
     $(options.btnSearch).on('click', function () {
+      clearTimeout(searchTimer);
       searchItem($searchInput.val());
     });
+
+    // ติ๊กเลือก/ยกเลิก radio ในผลค้นหา → บันทึกลง selectedMap (กดซ้ำเพื่อยกเลิกได้)
+    $tableBody
+      .on('mousedown', 'input[type="radio"]', function () {
+        this._wasChecked = this.checked;
+      })
+      .on('click', 'input[type="radio"]', function () {
+        const $radio = $(this);
+        const id = $radio.data('id');
+        if (this._wasChecked) {
+          this.checked = false;
+          delete selectedMap[id];
+        } else {
+          selectedMap[id] = {
+            id,
+            type: $radio.val(),
+            source: $radio.data('source'),
+            detail: $radio.data('detail'),
+            price: $radio.data('price'),
+            com: $radio.data('com'),
+            spare: $radio.data('spare'),
+            standard: $radio.data('standard'),
+          };
+        }
+        this._wasChecked = this.checked;
+      });
 
     // ฟังก์ชัน search item
     function searchItem(keyword = '') {
@@ -1508,6 +1549,17 @@ $(document).ready(function () {
                 <td class="text-center">${saleCell} (${formatNumber(a.AccessoryComSale ?? '-')})</td>
               </tr>
             `);
+          });
+
+          // ติ๊กกลับให้รายการที่เคยเลือกไว้ (ยังไม่บันทึก) ที่โผล่ในผลค้นหานี้
+          Object.values(selectedMap).forEach(sel => {
+            const $r = $tableBody.find(
+              `input[type="radio"][data-id="${sel.id}"][value="${sel.type}"]`
+            );
+            if ($r.length && !$r.prop('disabled')) {
+              $r.prop('checked', true);
+              $r[0]._wasChecked = true;
+            }
           });
         }
       });
@@ -1585,8 +1637,8 @@ $(document).ready(function () {
 
     // บันทึก modal
     $modal.find('button.save-item, #btnSaveGift, #btnSaveExtra').on('click', function () {
-      const selected = $tableBody.find('input[type="radio"]:checked');
-      if (selected.length === 0) {
+      const items = Object.values(selectedMap);
+      if (items.length === 0) {
         Swal.fire({ icon: 'warning', title: 'กรุณาเลือกราคาอย่างน้อยหนึ่งรายการ', confirmButtonText: 'ตกลง' });
         return;
       }
@@ -1597,12 +1649,7 @@ $(document).ready(function () {
         if (source) existingSources.push(source);
       });
 
-      let isDuplicate = false;
-      selected.each(function () {
-        const source = $(this).data('source');
-        if (existingSources.includes(source)) isDuplicate = true;
-      });
-
+      const isDuplicate = items.some(it => existingSources.includes(it.source));
       if (isDuplicate) {
         Swal.fire({ icon: 'warning', title: 'คุณได้เพิ่มข้อมูลนี้ไปแล้ว', confirmButtonText: 'ตกลง' });
         $searchInput.val('');
@@ -1611,45 +1658,32 @@ $(document).ready(function () {
       }
 
       // กันราคา 0 บาท ที่ไม่ใช่ของแถมมาตรฐาน (เผื่อ DOM ถูกแก้)
-      let hasInvalidZero = false;
-      selected.each(function () {
-        if (parseFloat($(this).data('price')) === 0 && Number($(this).data('standard')) !== 1) {
-          hasInvalidZero = true;
-        }
-      });
+      const hasInvalidZero = items.some(it => parseFloat(it.price) === 0 && Number(it.standard) !== 1);
       if (hasInvalidZero) {
         Swal.fire({ icon: 'warning', title: 'ราคา 0 บาท เลือกได้เฉพาะของแถมมาตรฐาน', confirmButtonText: 'ตกลง' });
         return;
       }
 
       // กันรายการที่ไม่มีราคาทุนอะไหล่ (เผื่อ DOM ถูกแก้)
-      let hasNoSpare = false;
-      selected.each(function () {
-        if (Number($(this).data('spare')) !== 1) hasNoSpare = true;
-      });
+      const hasNoSpare = items.some(it => Number(it.spare) !== 1);
       if (hasNoSpare) {
         Swal.fire({ icon: 'warning', title: 'รายการนี้ไม่มีราคาทุนอะไหล่ จึงเลือกไม่ได้', confirmButtonText: 'ตกลง' });
         return;
       }
 
-      selected.each(function () {
-        const $radio = $(this);
-        const source = $radio.data('source');
-        const detail = $radio.data('detail');
-        const type = $radio.val();
-        const rawPrice = $radio.data('price');
-        const rawCom = $radio.data('com');
+      items.forEach(function (it) {
+        const rawPrice = it.price;
+        const rawCom = it.com;
         const price = formatNumber(rawPrice);
         const comDisplay = rawCom && parseFloat(rawCom) > 0 ? formatNumber(rawCom) : '-';
-
-        const typeLabel = { cost: 'ราคาทุน', promo: 'ราคาพิเศษ', sale: 'ราคาขาย' }[type];
+        const typeLabel = { cost: 'ราคาทุน', promo: 'ราคาพิเศษ', sale: 'ราคาขาย' }[it.type];
 
         $mainTable.find(options.noDataRowId).remove();
         $mainTable.append(`
-        <tr data-id="${$radio.data('id')}" data-price="${rawPrice}" data-com="${rawCom}">
+        <tr data-id="${it.id}" data-price="${rawPrice}" data-com="${rawCom}">
           <td></td>
-          <td>${source}</td>
-          <td>${detail}</td>
+          <td>${it.source}</td>
+          <td>${it.detail}</td>
           <td>${typeLabel}</td>
           <td>${price} (${comDisplay})</td>
           <td>
@@ -1660,6 +1694,8 @@ $(document).ready(function () {
         </tr>
       `);
       });
+
+      selectedMap = {}; // เคลียร์รายการที่เลือกหลังบันทึกแล้ว
 
       reindexRows();
       updateTotal();
@@ -1714,19 +1750,7 @@ $(document).ready(function () {
     deleteBtnClass: '.btn-delete-extra'
   });
 
-  // ให้ radio ของแถม/ซื้อเพิ่ม กดซ้ำเพื่อยกเลิกการเลือกได้
-  // จำสถานะก่อนคลิก (mousedown ทำงานก่อน checked จะเปลี่ยน) แล้วถ้าก่อนหน้าติ๊กอยู่ ให้ติ๊กออก
-  const togglableRadios = '#tableGiftResult input[type="radio"], #tableExtraResult input[type="radio"]';
-  $(document)
-    .on('mousedown', togglableRadios, function () {
-      this._wasChecked = this.checked;
-    })
-    .on('click', togglableRadios, function () {
-      if (this._wasChecked) {
-        this.checked = false;
-      }
-      this._wasChecked = this.checked;
-    });
+  // (ย้าย logic กดซ้ำเพื่อยกเลิก + จำการติ๊ก ไปไว้ใน initAccessoryGift ต่อ instance แล้ว)
 
   // เมื่อเปลี่ยนรุ่นรถ
   $('#model_id').on('change', function () {
