@@ -279,6 +279,23 @@ class CustomerController extends Controller
     public function update(Request $request, $id)
     {
         try {
+            // กันข้อมูลซ้ำ (ยกเว้นตัวเอง) — เบอร์โทรมี unique index ใน DB, เลขบัตรเป็น business rule
+            $idNumber     = preg_replace('/\D/', '', $request->IDNumber);
+            $mobilephone1 = preg_replace('/\D/', '', $request->Mobilephone1);
+
+            if ($idNumber && Customer::where('IDNumber', $idNumber)->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'เลขบัตรประชาชนนี้มีอยู่ในระบบแล้ว'
+                ], 422);
+            }
+
+            if ($mobilephone1 && Customer::where('Mobilephone1', $mobilephone1)->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว'
+                ], 422);
+            }
 
             DB::beginTransaction();
 
@@ -352,11 +369,11 @@ class CustomerController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            // return response()->json([
-            //                 'success' => false,
-            //                 'message' => $e->getMessage(),
-            //                 'trace' => $e->getTraceAsString(),
-            //             ], 500);
+            \Illuminate\Support\Facades\Log::error('Customer update failed', [
+                'id'   => $id,
+                'msg'  => $e->getMessage(),
+                'file' => $e->getFile() . ':' . $e->getLine(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'

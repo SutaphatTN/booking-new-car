@@ -57,6 +57,12 @@ Route::get('source/approval/{token}', [SourceController::class, 'showApproval'])
 Route::post('source/approval/{token}/approve', [SourceController::class, 'approve'])->name('source.approval.approve');
 Route::post('source/approval/{token}/reject', [SourceController::class, 'reject'])->name('source.approval.reject');
 
+// อนุมัติใบจองผ่านลิงก์ในเมล (ไม่ต้อง login — ใช้ token)
+Route::get('purchase-order/approval/{token}', [PurchaseOrderController::class, 'emailApprove'])->name('purchase-order.emailApprove');
+Route::post('purchase-order/approval/{token}/manager', [PurchaseOrderController::class, 'managerApprove'])->name('purchase-order.managerApprove');
+Route::post('purchase-order/approval/{token}/gm-decide', [PurchaseOrderController::class, 'gmDecide'])->name('purchase-order.gmDecide');
+Route::post('purchase-order/approval/{token}/final', [PurchaseOrderController::class, 'finalApprove'])->name('purchase-order.finalApprove');
+
 Route::get('/keep-alive', function () {
     if (!Auth::check()) {
         return response()->json(['status' => 'expired'], 401)
@@ -249,12 +255,18 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     //car-order approve
     Route::get('car-order/approve', [CarOrderController::class, 'approve'])->name('car-order.approve');
     Route::get('car-order/approve/list', [CarOrderController::class, 'listApprove']);
+    // ขออนุมัติที่เลือก (ส่งเมลรวม) + อนุมัติที่เลือก (bulk)
+    Route::post('car-order/process/request-approval', [CarOrderController::class, 'requestApproval'])->name('car-order.requestApproval');
+    Route::post('car-order/process/bulk-approve', [CarOrderController::class, 'bulkApprove'])->name('car-order.bulkApprove');
     Route::get('car-order/edit-approve/{id}', [CarOrderController::class, 'editApprove'])->name('car-order.editApprove');
     Route::put('car-order/update-approve/{id}', [CarOrderController::class, 'updateApprove'])->name('car-order.updateApprove');
     // waiting
     Route::get('car-order/edit-approve-waiting/{id}', [CarOrderController::class, 'editApproveWaiting'])->name('car-order.editApproveWaiting');
     Route::put('car-order/update-approve-waiting/{id}', [CarOrderController::class, 'updateApproveWaiting'])->name('car-order.updateApproveWaiting');
     Route::delete('car-order/destroy-approve/{id}', [CarOrderController::class, 'destroyApprove']);
+    // รับทราบรายการไม่อนุมัติ (soft delete ออกจากหน้าผลการอนุมัติ)
+    Route::delete('car-order/acknowledge-reject/{id}', [CarOrderController::class, 'acknowledgeReject'])->name('car-order.acknowledgeReject');
+    Route::delete('car-order/acknowledge-reject-waiting/{id}', [CarOrderController::class, 'acknowledgeRejectWaiting'])->name('car-order.acknowledgeRejectWaiting');
     //condition select ca model 
     Route::get('/api/car-order/models-by-customer', [CarOrderController::class, 'getModelsByCustomer']);
 

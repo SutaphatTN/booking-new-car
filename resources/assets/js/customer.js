@@ -162,11 +162,13 @@ $(document).on('click', '.btnEditCust', function () {
             customerTable.ajax.reload(null, false);
           },
           error: function (xhr) {
-            $modal.modal('hide');
             Swal.fire({
               icon: 'error',
               title: 'เกิดข้อผิดพลาด!',
               text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้'
+            }).then(() => {
+              // เปิดหน้าแก้ไขเดิมกลับมา ข้อมูลที่กรอกไว้ยังอยู่ครบ
+              $modal.modal('show');
             });
           },
           complete: function () {

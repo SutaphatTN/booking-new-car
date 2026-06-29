@@ -87,6 +87,7 @@ class Salecar extends Model
 	protected $casts = [
 		'attachment_url' => 'array',
 		'withdraw_attachment_url' => 'array',
+		'approval_files' => 'array',
 		'CusID' => 'int',
 		'KeyInDate' => 'datetime',
 		'SaleID' => 'int',
@@ -246,6 +247,10 @@ class Salecar extends Model
 		'delivery_province',
 		'approval_type',
 		'approval_requested_at',
+		'approval_commission_deduct',
+		'approval_remaining',
+		'approval_token',
+		'approval_files',
 		'userZone',
 		'brand',
 		'UserInsert',

@@ -20,9 +20,12 @@ return [
     ],
 
     'brands' => [
-        // Mitsubishi — แก้ name/address/phone ได้ถ้าเป็นคนละนิติบุคคล
+        // Mitsubishi — คนละนิติบุคคลกับ default จึง override name/address/phone
         1 => [
-            'logo' => 'assets/img/Mitsubishi_logoCrop.png',
+            'name'    => 'บริษัท มิตซู ซูเกียรติยนต์ กระบี่ จำกัด',
+            'address' => '266 หมู่ 2 ถนน เพชรเกษม ต. กระบี่น้อย อ. เมือง จ. กระบี่ 81000',
+            'phone'   => '075-650919 มือถือ 098-0100386 แฟกซ์. 075-650683',
+            'logo'    => 'assets/img/Mitsubishi_logoCrop.png',
         ],
         // GWM
         2 => [

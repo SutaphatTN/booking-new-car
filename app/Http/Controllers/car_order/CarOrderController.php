@@ -6,6 +6,8 @@ use App\Exports\carOrder\CarOrderStockExport;
 use App\Http\Controllers\Controller;
 use App\Traits\ConvertsThaiDate;
 use App\Mail\ApproveCarOrderMail;
+use App\Mail\BatchApproveCarOrderMail;
+use Illuminate\Validation\Rule;
 use App\Models\CarOrder;
 use App\Models\CarOrderHistory;
 use App\Models\CarOrderWaiting;
@@ -454,7 +456,7 @@ class CarOrderController extends Controller
         $order = CarOrder::all();
         $model = TbCarmodel::all();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::whereIn('role', ['audit', 'md'])
+        $approvers = User::where('role', 'md')
             ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
         $purchaseType = TbPurchaseType::all();
@@ -595,11 +597,7 @@ class CarOrderController extends Controller
                 }
             });
 
-            $approverUser = User::find($request->approver);
-
-            if ($approverUser && $approverUser->email) {
-                Mail::to($approverUser->email)->send(new ApproveCarOrderMail($order));
-            }
+            // หมายเหตุ: ไม่ส่งเมลตอนสร้าง order แล้ว — ใช้ปุ่ม "ขออนุมัติที่เลือก" ในหน้า process ส่งเมลรวมครั้งเดียวแทน
 
             return response()->json([
                 'success' => true,
@@ -684,6 +682,8 @@ class CarOrderController extends Controller
 
             CarOrderWaiting::create($data);
 
+            // หมายเหตุ: ไม่ส่งเมลตอนสร้าง — ใช้ปุ่ม "ขออนุมัติที่เลือก" ในหน้า process ส่งเมลรวมครั้งเดียวแทน
+
             return response()->json([
                 'success' => true,
                 'message' => 'เพิ่มข้อมูลรออนุมัติเรียบร้อยแล้ว'
@@ -712,63 +712,7 @@ class CarOrderController extends Controller
             $received = (int) $request->received_order;
 
             DB::transaction(function () use ($waiting, $received) {
-                for ($i = 0; $i < $received; $i++) {
-                    $OrderYear  = Carbon::parse($waiting->order_date ?? now())->format('Y');
-                    $OrderMonth = Carbon::parse($waiting->order_date ?? now())->format('m');
-                    $OrderDate  = Carbon::parse($waiting->order_date ?? now())->format('d');
-
-                    $prefix = "{$OrderYear}-{$OrderMonth}-{$OrderDate}-{$waiting->model_id}-";
-
-                    $lastCode = CarOrder::where('order_code', 'like', $prefix . '%')
-                        ->orderBy('order_code', 'desc')
-                        ->lockForUpdate()
-                        ->first();
-
-                    $newNumber  = $lastCode
-                        ? str_pad(intval(substr($lastCode->order_code, -4)) + 1, 4, '0', STR_PAD_LEFT)
-                        : '0001';
-
-                    $order_code = $prefix . $newNumber;
-
-                    CarOrder::create([
-                        'model_id'       => $waiting->model_id,
-                        'subModel_id'    => $waiting->subModel_id,
-                        'option'         => $waiting->option,
-                        'purchase_source' => $waiting->purchase_source,
-                        'order_code'     => $order_code,
-                        'type'           => $waiting->type,
-                        'order_date'     => $waiting->order_date ?? now(),
-                        'color'          => $waiting->color,
-                        'type_color'     => $waiting->type_color,
-                        'gwm_color'      => $waiting->gwm_color,
-                        'interior_color' => $waiting->interior_color,
-                        'year'           => $waiting->year,
-                        'purchase_type'  => $waiting->purchase_type,
-                        'order_status'   => 1,
-                        'car_DNP'        => $waiting->car_DNP,
-                        'car_MSRP'       => $waiting->car_MSRP,
-                        'RI'             => $waiting->RI,
-                        'WS'             => $waiting->WS,
-                        'car_status'     => 'Available',
-                        'approver'       => $waiting->approver,
-                        'note'           => $waiting->note,
-                        'status'         => CarOrder::STATUS_APPROVED,
-                        'approved_by'    => Auth::id(),
-                        'approver_date'  => now(),
-                        'userZone'       => $waiting->userZone,
-                        'brand'          => $waiting->brand,
-                        'UserInsert'     => $waiting->UserInsert,
-                        'branch'         => $waiting->branch,
-                        'waiting_id'     => $waiting->id,
-                    ]);
-                }
-
-                $waiting->update([
-                    'received_order' => $received,
-                    'status'         => CarOrderWaiting::STATUS_APPROVED,
-                    'approved_by'    => Auth::id(),
-                    'approved_at'    => now(),
-                ]);
+                $this->createOrdersFromWaiting($waiting, $received);
             });
 
             return response()->json([
@@ -984,10 +928,16 @@ class CarOrderController extends Controller
     // process
     public function process(Request $request)
     {
+        $authUser = Auth::user();
         $process = CarOrder::all();
         $openId = $request->query('open_id');
 
-        return view('car-order.process.view', compact('process', 'openId'));
+        // ผู้อนุมัติ (role md) สำหรับ modal "ขออนุมัติที่เลือก"
+        $approvers = User::where('role', 'md')
+            ->where('brand', $authUser->brand == 2 ? 2 : 1)
+            ->get();
+
+        return view('car-order.process.view', compact('process', 'openId', 'approvers'));
     }
 
     public function listProcess()
@@ -1000,6 +950,19 @@ class CarOrderController extends Controller
             ->where('status', 'pending')
             ->get();
 
+        // จำนวนใน stock — นับ CarOrder ที่ status = approved/finished จัดกลุ่มตาม รุ่น + ปี + สี (auto brand-scope)
+        // ไม่นับคันที่ car_status = Delivered (ส่งมอบ = ขายไปแล้ว ไม่ใช่สต็อก)
+        // สี: brand 2/3 ใช้ gwm_color (id), อื่นๆ ใช้ฟิลด์ color
+        $stockKey = fn($o) => $o->model_id . '|' . ($o->year ?? '-')
+            . '|' . (in_array($o->brand, [2, 3]) ? 'g:' . $o->gwm_color : 'c:' . $o->color);
+        $stockMap = CarOrder::whereIn('status', [CarOrder::STATUS_APPROVED, CarOrder::STATUS_FINISHED])
+            ->where(function ($q) {
+                $q->where('car_status', '!=', 'Delivered')->orWhereNull('car_status');
+            })
+            ->get()
+            ->groupBy($stockKey)
+            ->map->count();
+
         $data = collect();
 
         foreach ($orders as $p) {
@@ -1009,13 +972,16 @@ class CarOrderController extends Controller
             $subModelFull = $subDetail ? "{$subDetail} - {$subModelOrder}" : $subModelOrder;
 
             $data->push([
+                'id'        => $p->id,
+                'row_type'  => 'order',
                 'No'        => 0,
                 'date'      => $p->format_order_date,
                 'type'      => $p->type,
                 'model_id'  => $modelOrder,
                 'subModel_id' => $subModelFull,
                 'color'     => $p->display_color,
-                'cost'      => number_format($p->car_MSRP, 2),
+                'stock'     => $stockMap[$stockKey($p)] ?? 0,
+                'order_qty' => 1,
                 'Action'    => view('car-order.process.button', compact('p'))->render(),
             ]);
         }
@@ -1027,13 +993,16 @@ class CarOrderController extends Controller
             $subModelFull = $subDetail ? "{$subDetail} - {$subModelOrder}" : $subModelOrder;
 
             $data->push([
+                'id'        => $w->id,
+                'row_type'  => 'waiting',
                 'No'        => 0,
                 'date'      => $w->format_order_date,
                 'type'      => $w->type,
                 'model_id'  => $modelOrder,
                 'subModel_id' => $subModelFull,
                 'color'     => $w->display_color,
-                'cost'      => $w->car_MSRP ? number_format($w->car_MSRP, 2) : '-',
+                'stock'     => $stockMap[$stockKey($w)] ?? 0,
+                'order_qty' => $w->count_order ?? 1,
                 'Action'    => view('car-order.process.button-waiting', compact('w'))->render(),
             ]);
         }
@@ -1044,6 +1013,188 @@ class CarOrderController extends Controller
         });
 
         return response()->json(['data' => $data]);
+    }
+
+    // ขออนุมัติที่เลือก — ส่งเมลรวมครั้งเดียวให้ผู้อนุมัติ (md) พร้อมรายการทั้งหมด + ลิงก์กลับหน้า process
+    public function requestApproval(Request $request)
+    {
+        $request->validate([
+            'approver_id' => ['required', Rule::exists('users', 'id')->where('role', 'md')],
+            'order_ids'   => ['array'],
+            'waiting_ids' => ['array'],
+        ], [
+            'approver_id.required' => 'กรุณาเลือกผู้อนุมัติ',
+            'approver_id.exists'   => 'ผู้อนุมัติไม่ถูกต้อง',
+        ]);
+
+        try {
+            $approver = User::where('role', 'md')->findOrFail($request->approver_id);
+            if (!$approver->email) {
+                return response()->json(['success' => false, 'message' => 'ผู้อนุมัติยังไม่มีอีเมลในระบบ'], 422);
+            }
+
+            $orders = CarOrder::with(['model', 'subModel', 'gwmColor'])
+                ->whereIn('id', $request->input('order_ids', []))
+                ->where('status', CarOrder::STATUS_PENDING)
+                ->get();
+
+            $waitings = CarOrderWaiting::with(['model', 'subModel', 'gwmColor'])
+                ->whereIn('id', $request->input('waiting_ids', []))
+                ->where('status', 'pending')
+                ->get();
+
+            if ($orders->isEmpty() && $waitings->isEmpty()) {
+                return response()->json(['success' => false, 'message' => 'ไม่พบรายการที่ขออนุมัติได้'], 422);
+            }
+
+            // อัปเดตผู้อนุมัติของรายการที่เลือกให้ตรงกับคนที่เลือกตอนขออนุมัติ
+            CarOrder::whereIn('id', $orders->pluck('id'))->update(['approver' => $approver->id]);
+            CarOrderWaiting::whereIn('id', $waitings->pluck('id'))->update(['approver' => $approver->id]);
+
+            // ประกอบรายการสำหรับเมล
+            $mapItem = function ($r) {
+                $subDetail = $r->subModel->detail ?? null;
+                $subName   = $r->subModel->name ?? '-';
+                return [
+                    'order_code' => $r->order_code,
+                    'type'       => $r->type,
+                    'model'      => $r->model->Name_TH ?? '-',
+                    'subModel'   => $subDetail ? "{$subDetail} - {$subName}" : $subName,
+                    'color'      => $r->display_color,
+                    'year'       => $r->year ?? '-',
+                    'qty'        => $r->count_order ?? 1,
+                ];
+            };
+            $items = $orders->map($mapItem)->merge($waitings->map($mapItem))->values()->all();
+
+            Mail::to($approver->email)->send(new BatchApproveCarOrderMail($items, $approver->name));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ส่งคำขออนุมัติเรียบร้อยแล้ว (' . count($items) . ' รายการ)'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
+        }
+    }
+
+    // สร้างรายการรถ (CarOrder) จากคำขอ waiting ตามจำนวนที่รับจริง + อัปเดตสถานะ waiting
+    // หมายเหตุ: ต้องเรียกภายใน DB::transaction
+    private function createOrdersFromWaiting(CarOrderWaiting $waiting, int $received)
+    {
+        for ($i = 0; $i < $received; $i++) {
+            $OrderYear  = Carbon::parse($waiting->order_date ?? now())->format('Y');
+            $OrderMonth = Carbon::parse($waiting->order_date ?? now())->format('m');
+            $OrderDate  = Carbon::parse($waiting->order_date ?? now())->format('d');
+
+            $prefix = "{$OrderYear}-{$OrderMonth}-{$OrderDate}-{$waiting->model_id}-";
+
+            $lastCode = CarOrder::where('order_code', 'like', $prefix . '%')
+                ->orderBy('order_code', 'desc')
+                ->lockForUpdate()
+                ->first();
+
+            $newNumber  = $lastCode
+                ? str_pad(intval(substr($lastCode->order_code, -4)) + 1, 4, '0', STR_PAD_LEFT)
+                : '0001';
+
+            $order_code = $prefix . $newNumber;
+
+            CarOrder::create([
+                'model_id'       => $waiting->model_id,
+                'subModel_id'    => $waiting->subModel_id,
+                'option'         => $waiting->option,
+                'purchase_source' => $waiting->purchase_source,
+                'order_code'     => $order_code,
+                'type'           => $waiting->type,
+                'order_date'     => $waiting->order_date ?? now(),
+                'color'          => $waiting->color,
+                'type_color'     => $waiting->type_color,
+                'gwm_color'      => $waiting->gwm_color,
+                'interior_color' => $waiting->interior_color,
+                'year'           => $waiting->year,
+                'purchase_type'  => $waiting->purchase_type,
+                'order_status'   => 1,
+                'car_DNP'        => $waiting->car_DNP,
+                'car_MSRP'       => $waiting->car_MSRP,
+                'RI'             => $waiting->RI,
+                'WS'             => $waiting->WS,
+                'car_status'     => 'Available',
+                'approver'       => $waiting->approver,
+                'note'           => $waiting->note,
+                'status'         => CarOrder::STATUS_APPROVED,
+                'approved_by'    => Auth::id(),
+                'approver_date'  => now(),
+                'userZone'       => $waiting->userZone,
+                'brand'          => $waiting->brand,
+                'UserInsert'     => $waiting->UserInsert,
+                'branch'         => $waiting->branch,
+                'waiting_id'     => $waiting->id,
+            ]);
+        }
+
+        $waiting->update([
+            'received_order' => $received,
+            'status'         => CarOrderWaiting::STATUS_APPROVED,
+            'approved_by'    => Auth::id(),
+            'approved_at'    => now(),
+        ]);
+    }
+
+    // อนุมัติที่เลือก — bulk approve ครั้งเดียว
+    // order ลูกค้า: อนุมัติตรงๆ | waiting: อนุมัติ "ตามจำนวนที่สั่ง" (received = count_order)
+    public function bulkApprove(Request $request)
+    {
+        $request->validate([
+            'order_ids'   => ['array'],
+            'waiting_ids' => ['array'],
+        ]);
+
+        $orderIds   = $request->input('order_ids', []);
+        $waitingIds = $request->input('waiting_ids', []);
+
+        if (empty($orderIds) && empty($waitingIds)) {
+            return response()->json(['success' => false, 'message' => 'กรุณาเลือกรายการที่จะอนุมัติ'], 422);
+        }
+
+        try {
+            $count = DB::transaction(function () use ($orderIds, $waitingIds) {
+                $approved = 0;
+
+                // order ลูกค้า
+                if (!empty($orderIds)) {
+                    $approved += CarOrder::whereIn('id', $orderIds)
+                        ->where('status', CarOrder::STATUS_PENDING)
+                        ->update([
+                            'status'        => CarOrder::STATUS_APPROVED,
+                            'approved_by'   => Auth::id(),
+                            'approver_date' => now(),
+                        ]);
+                }
+
+                // waiting — อนุมัติตามจำนวนที่สั่ง (count_order)
+                if (!empty($waitingIds)) {
+                    $waitings = CarOrderWaiting::whereIn('id', $waitingIds)
+                        ->where('status', 'pending')
+                        ->get();
+
+                    foreach ($waitings as $w) {
+                        $this->createOrdersFromWaiting($w, (int) ($w->count_order ?? 0));
+                        $approved++;
+                    }
+                }
+
+                return $approved;
+            });
+
+            if ($count === 0) {
+                return response()->json(['success' => false, 'message' => 'ไม่พบรายการที่อนุมัติได้'], 422);
+            }
+
+            return response()->json(['success' => true, 'message' => "อนุมัติเรียบร้อย {$count} รายการ"]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
+        }
     }
 
     public function editProcess($id)
@@ -1293,7 +1444,46 @@ class CarOrderController extends Controller
     public function viewWaiting($id)
     {
         $waiting = CarOrderWaiting::with(['model', 'subModel', 'approvers', 'purchaseType', 'gwmColor', 'interiorColor'])->findOrFail($id);
-        return view('car-order.process.view-waiting', compact('waiting'));
+
+        // สรุปสต็อกคงเหลือของรุ่นหลักเดียวกัน — แจกแจงตามรุ่นย่อย → สี (auto brand-scope)
+        // ไม่นับสถานะ rejected และไม่นับคันที่ car_status = Delivered (ส่งมอบ = ขายไปแล้ว ไม่ใช่สต็อก)
+        $modelOrders = CarOrder::with(['subModel', 'gwmColor'])
+            ->where('model_id', $waiting->model_id)
+            ->where('status', '!=', CarOrder::STATUS_REJECTED)
+            ->where(function ($q) {
+                $q->where('car_status', '!=', 'Delivered')->orWhereNull('car_status');
+            })
+            ->get();
+
+        $subLabel = function ($o) {
+            $sm = $o->subModel;
+            if (!$sm) {
+                return '-';
+            }
+            return $sm->detail ? ($sm->detail . ' - ' . $sm->name) : $sm->name;
+        };
+
+        $stockSummary = $modelOrders
+            ->groupBy($subLabel)
+            ->map(fn($group) => [
+                'count' => $group->count(),
+                'items' => $group
+                    ->groupBy(fn($o) => ($o->year ?? '-') . '|' . $o->display_color)
+                    ->map(fn($g) => [
+                        'year'  => $g->first()->year ?? '-',
+                        'color' => $g->first()->display_color,
+                        'count' => $g->count(),
+                    ])
+                    ->sortBy([
+                        ['year', 'desc'],
+                        ['color', 'asc'],
+                    ])
+                    ->values(),
+            ])
+            ->sortKeys();
+        $colorTotal = $modelOrders->count();
+
+        return view('car-order.process.view-waiting', compact('waiting', 'stockSummary', 'colorTotal'));
     }
 
     public function editWaiting($id)
@@ -1392,6 +1582,52 @@ class CarOrderController extends Controller
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
             ], 500);
+        }
+    }
+
+    // รับทราบรายการที่ไม่อนุมัติ (rejected) — soft delete เพื่อเอาออกจากหน้าผลการอนุมัติ
+    // เฉพาะ role: admin, audit, manager, md
+    private const ACK_REJECT_ROLES = ['admin', 'audit', 'manager', 'md'];
+
+    public function acknowledgeReject($id)
+    {
+        if (!in_array(Auth::user()->role, self::ACK_REJECT_ROLES)) {
+            return response()->json(['success' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
+        }
+
+        try {
+            $order = CarOrder::findOrFail($id);
+
+            if ($order->status !== CarOrder::STATUS_REJECTED) {
+                return response()->json(['success' => false, 'message' => 'รับทราบได้เฉพาะรายการที่ไม่อนุมัติ'], 422);
+            }
+
+            $order->delete();
+
+            return response()->json(['success' => true, 'message' => 'รับทราบรายการเรียบร้อยแล้ว']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
+        }
+    }
+
+    public function acknowledgeRejectWaiting($id)
+    {
+        if (!in_array(Auth::user()->role, self::ACK_REJECT_ROLES)) {
+            return response()->json(['success' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
+        }
+
+        try {
+            $waiting = CarOrderWaiting::findOrFail($id);
+
+            if ($waiting->status !== 'rejected') {
+                return response()->json(['success' => false, 'message' => 'รับทราบได้เฉพาะรายการที่ไม่อนุมัติ'], 422);
+            }
+
+            $waiting->delete();
+
+            return response()->json(['success' => true, 'message' => 'รับทราบรายการเรียบร้อยแล้ว']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
         }
     }
 

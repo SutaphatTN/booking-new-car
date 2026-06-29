@@ -313,6 +313,15 @@
                 <i class="bx bx-save me-1"></i>บันทึก
               </button>
             </div>
+          @elseif (in_array(auth()->user()->role, ['admin', 'audit', 'manager', 'md']))
+            <div class="d-flex justify-content-end gap-2 pt-1">
+              <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+                <i class="bx bx-x me-1"></i>ปิด
+              </button>
+              <button type="button" class="btn btn-success px-5 btnAcknowledgeReject" data-id="{{ $order->id }}">
+                <i class="bx bx-check-double me-1"></i>รับทราบ
+              </button>
+            </div>
           @endif
 
         </form>

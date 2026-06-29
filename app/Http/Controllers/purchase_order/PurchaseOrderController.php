@@ -42,6 +42,8 @@ use App\Models\User;
 use App\Services\GPQuery;
 use App\Services\OneDriveService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Mail\Mailables\Attachment;
+use App\Mail\SaleApprovedMail;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -163,10 +165,404 @@ class PurchaseOrderController extends Controller
                 'AccessoryPromoPrice' => $a->promo ?? null,
                 'AccessorySalePrice' => $a->sale ?? null,
                 'AccessoryComSale' => $a->comSale ?? null,
+                'is_standard' => (bool) $a->is_standard,
+                'cost_spare' => $a->cost_spare ?? null, // ราคาทุนอะไหล่ — ต้องมีถึงเลือกได้ (ใช้ตอนขออนุมัติ)
             ];
         });
 
         return response()->json($result->values());
+    }
+
+    // ประกอบข้อมูลสำหรับใบขออนุมัติ (เมล + เก็บยอดที่เหลือ)
+    private function buildApprovalData(Salecar $saleCar)
+    {
+        // รีเฟรช relations ที่เพิ่งถูก sync ในรีเควสต์เดียวกัน (accessories/campaigns) กัน cache เก่า
+        $saleCar->load([
+            'accessories',
+            'campaigns.campaign.type',
+            'campaigns.campaign.appellation',
+            'remainingPayment.financeInfo',
+            'model',
+        ]);
+
+        $brand = $saleCar->brand ?? Auth::user()->brand;
+
+        // campaign_type ที่นับเป็น ri ตาม brand (brand1/3: 1-8,14-22 | brand2: 26)
+        $campaignIds = $brand == 2
+            ? [26]
+            : array_merge(range(1, 8), range(14, 22));
+
+        // 1. ราคาขาย จาก price_sub
+        $priceSub = (float) ($saleCar->price_sub ?? 0);
+
+        // 3. margin = ราคาขาย × 2%
+        $margin = $priceSub * 0.02;
+
+        // 2. ri (cashSupport) จากแคมเปญที่ใช้ กรองตาม campaign_type + รายละเอียด
+        $usedCampaigns = $saleCar->campaigns->filter(
+            fn($c) => in_array($c->campaign?->campaign_type, $campaignIds)
+        );
+        $ri = $usedCampaigns->sum(fn($c) => (float) ($c->campaign?->cashSupport ?? 0));
+        $campaignDetails = $usedCampaigns->map(fn($c) => [
+            'name'   => trim(($c->campaign?->appellation?->name ?? '') . ' (' . ($c->campaign?->type?->name ?? '') . ')'),
+            'amount' => (float) ($c->campaign?->cashSupport ?? 0),
+        ])->values();
+
+        // 4. com finance (port calculateComFin จากหน้า FN)
+        $comFin = $this->calcComFinance($saleCar);
+
+        // 5. ยอดรวมแคมเปญ = ri + margin + com finance
+        $campaignTotal = $ri + $margin + $comFin;
+
+        // 6. ของแถม = ราคาทุนอะไหล่ (cost_spare) ของของแถมทั้งหมด + รายละเอียด
+        $giftAccessories = $saleCar->accessories->where('pivot.type', 'gift');
+        $giftTotal = $giftAccessories->sum(fn($a) => (float) ($a->cost_spare ?? 0));
+        $giftDetails = $giftAccessories->map(fn($a) => [
+            'detail' => $a->detail,
+            'amount' => (float) ($a->cost_spare ?? 0),
+        ])->values();
+
+        // 7. ส่วนลด
+        $discount = $saleCar->payment_mode === 'finance'
+            ? (float) ($saleCar->discount ?? 0)
+            : (float) ($saleCar->PaymentDiscount ?? 0);
+
+        // 8. ยอดที่เหลือ = ยอดรวมแคมเปญ − ของแถม − ส่วนลด
+        $remaining = $campaignTotal - $giftTotal - $discount;
+
+        return [
+            'price_sub'        => $priceSub,
+            'margin'           => $margin,
+            'ri'               => $ri,
+            'campaign_details' => $campaignDetails,
+            'com_fin'          => $comFin,
+            'campaign_total'   => $campaignTotal,
+            'gift_total'       => $giftTotal,
+            'gift_details'     => $giftDetails,
+            'discount'         => $discount,
+            'remaining'        => $remaining,
+        ];
+    }
+
+    // คำนวณ com finance ตามสูตรหน้า FN (finance.js: calculateComFin)
+    private function calcComFinance(Salecar $saleCar)
+    {
+        $rp = $saleCar->remainingPayment;
+        $fnCon = FinancesConfirm::withoutGlobalScopes()->where('SaleID', $saleCar->id)->first();
+
+        // ถ้าทำ FN แล้ว (มี com_fin บันทึกไว้) ใช้ค่านั้นเลย
+        if ($fnCon && $fnCon->com_fin !== null && (float) $fnCon->com_fin != 0.0) {
+            return (float) $fnCon->com_fin;
+        }
+
+        // excellent: ใช้ค่าใน FN ถ้ามี ไม่งั้น fallback เป็น balanceFinance (เหมือน editFN)
+        $excellent = (float) ($fnCon->excellent ?? $saleCar->balanceFinance ?? 0);
+
+        $alp      = (float) ($rp?->total_alp ?? 0);
+        $interest = (float) ($rp?->interest ?? 0) / 100;
+        $typeCom  = (float) ($rp?->type_com ?? 0) / 100;
+        $period   = (float) ($rp?->period ?? 0);
+        $maxYear  = (float) ($rp?->financeInfo?->max_year ?? 0);
+        $tax      = (float) ($rp?->financeInfo?->tax ?? 0) / 100;
+
+        $realYear = $period > 0 ? $period / 12 : 0;
+        $useYear  = $maxYear > 0 ? min($realYear, $maxYear) : $realYear;
+
+        $base = $excellent + $alp;
+        $per  = $typeCom * $interest * $useYear;
+        $com  = ($base * $per) / 1.07;
+
+        return $com * 1.07 - $com * $tax;
+    }
+
+    // เคสอนุมัติ (brand-aware):
+    //  normal     = งบปกติ → manager
+    //  b1_manager = brand1 เกิน ≤ over_budget → manager (จบ)
+    //  b1_md      = brand1 เกิน > over_budget → manager กรอกหัก → md
+    //  b2_gm      = brand2 เกินงบ → gm (เลือกหักเงินจบ / ส่งต่อ md)
+    //  b3_md      = brand3 เกินงบ → md ตรง
+    private function approvalCase(Salecar $saleCar): string
+    {
+        $balance = (float) ($saleCar->balanceCampaign ?? 0);
+        if ($balance >= 0) {
+            return 'normal';
+        }
+        $brand = (int) $saleCar->brand;
+        if ($brand === 2) {
+            return 'b2_gm';
+        }
+        if ($brand === 3) {
+            return 'b3_md';
+        }
+        // brand 1 (และ default)
+        $overBudget = (float) ($saleCar->model?->over_budget ?? 0);
+        return abs($balance) <= $overBudget ? 'b1_manager' : 'b1_md';
+    }
+
+    // signature ที่ถือว่า "อนุมัติครบ" ตามเคส (ใช้ gate การผูกรถ + ปลดล็อก save)
+    private function isApproved(Salecar $saleCar): bool
+    {
+        return match ($this->approvalCase($saleCar)) {
+            'normal'     => (bool) $saleCar->SMSignature,
+            'b1_manager' => (bool) $saleCar->ApprovalSignature,
+            'b1_md', 'b2_gm', 'b3_md' => (bool) $saleCar->GMApprovalSignature,
+            default      => false,
+        };
+    }
+
+    // role ผู้อนุมัติด่านแรกของแต่ละเคส (ใช้เลือกอีเมลตอนขออนุมัติ)
+    private function firstApproverRole(string $case): string
+    {
+        return match ($case) {
+            'b2_gm' => 'gm',
+            'b3_md' => 'md',
+            default => 'manager',   // normal, b1_manager, b1_md
+        };
+    }
+
+    // หาอีเมลผู้อนุมัติตามขั้น (manager/gm/md)
+    //  - brand 3 ใช้ของ brand 1 (alias ใน config/approval.php)
+    //  - manager: ดึงจาก DB ตาม brand+branch (รองรับสาขาใหม่อัตโนมัติ) ถ้าไม่เจอ fallback config
+    //  - gm/md: อ่านจาก config ระดับ brand
+    private function approverEmails($brand, $branch, string $stage): array
+    {
+        $alias = config("approval.$brand");
+        $resolvedBrand = is_int($alias) ? $alias : (int) $brand;
+        $cfg = config("approval.$resolvedBrand", []);
+
+        if ($stage === 'manager') {
+            $emails = User::where('role', 'manager')
+                ->where('brand', $resolvedBrand)
+                ->where('branch', $branch)
+                ->whereNotNull('email')
+                ->pluck('email')->unique()->values()->all();
+            if (!empty($emails)) {
+                return $emails;
+            }
+        }
+
+        return array_values((array) ($cfg[$stage] ?? []));
+    }
+
+    // สร้างไฟล์แนบสำหรับเมลขออนุมัติ: (1) PDF สรุปการขาย (ดึงจาก salecars, ซ่อนวันส่งมอบ) (2) ไฟล์ผู้ขอที่เก็บไว้
+    // ใช้ได้ทั้งเมลผู้จัดการและ GM (ดึงไฟล์ผู้ขอจาก salecars.approval_files ที่เก็บถาวร)
+    private function buildApprovalAttachments(Salecar $saleCar): array
+    {
+        $files = [];
+
+        // รีเฟรช accessories/campaigns ที่เพิ่ง sync กัน PDF ได้ข้อมูลเก่า
+        $saleCar->load(['accessories', 'campaigns.campaign.type', 'campaigns.campaign.appellation']);
+
+        // (1) ไฟล์สรุปการขาย — ใช้ view เดิม ซ่อน section วันส่งมอบ
+        $pdf = Pdf::loadView('purchase-order.report.summary', [
+            'saleCar'      => $saleCar,
+            'model'        => collect(),
+            'hideDelivery' => true,
+        ])->setPaper('A4', 'portrait');
+
+        $files[] = Attachment::fromData(fn() => $pdf->output(), 'summary-' . $saleCar->id . '.pdf')
+            ->withMime('application/pdf');
+
+        // (2) ไฟล์แนบจากผู้ขอ (เก็บไว้ใน storage — ส่งต่อ GM ได้)
+        foreach (($saleCar->approval_files ?? []) as $f) {
+            if (!empty($f['path']) && \Illuminate\Support\Facades\Storage::exists($f['path'])) {
+                $files[] = Attachment::fromPath(\Illuminate\Support\Facades\Storage::path($f['path']))
+                    ->as($f['name'] ?? basename($f['path']))
+                    ->withMime($f['mime'] ?? 'application/octet-stream');
+            }
+        }
+
+        return $files;
+    }
+
+    // อีเมลขั้นถัดไป (md) พร้อมข้อมูล+ไฟล์ทั้งสอง
+    private function emailFinalApprover(Salecar $saleCar, ?float $deduct): void
+    {
+        $mailMd = $this->approverEmails($saleCar->brand, $saleCar->branch, 'md');
+        if (empty($mailMd)) {
+            $mailMd = $saleCar->brand == 2 ? ['danut@chookiat.org'] : ['ketsudap@chookiat.org'];
+        }
+
+        $data = $this->buildApprovalData($saleCar);
+        if ($deduct !== null) {
+            $data['commission_deduct'] = $deduct;
+            $data['extra_budget'] = ($saleCar->approval_remaining ?? $data['remaining']) - $deduct;
+        }
+        $files = $this->buildApprovalAttachments($saleCar);
+
+        Mail::to($mailMd)->send(new SaleRequestMail(
+            $saleCar->fresh(['model', 'saleUser', 'customer.prefix']),
+            'gm',
+            $data,
+            $files
+        ));
+    }
+
+    // แจ้งเมื่ออนุมัติเสร็จสมบูรณ์ → ส่งหา เซลล์ (saleUser) + audit (ตาม brand จาก config)
+    private function notifyApproved(Salecar $saleCar): void
+    {
+        $to = [];
+        if ($saleCar->saleUser?->email) {
+            $to[] = $saleCar->saleUser->email;
+        }
+        $to = array_merge($to, $this->approverEmails($saleCar->brand, $saleCar->branch, 'audit'));
+        $to = array_values(array_unique(array_filter($to)));
+
+        if (empty($to)) {
+            return;
+        }
+
+        Mail::to($to)->send(new SaleApprovedMail(
+            $saleCar->fresh(['model', 'subModel', 'saleUser', 'customer.prefix', 'gwmColor', 'interiorColor'])
+        ));
+    }
+
+    // เปิดลิงก์อนุมัติจากเมล (ไม่ต้อง login — ใช้ token) — แสดงหน้าตามเคส/ขั้นปัจจุบัน
+    public function emailApprove($token)
+    {
+        $saleCar = Salecar::withoutGlobalScopes()
+            ->with(['model', 'saleUser', 'customer'])
+            ->where('approval_token', $token)
+            ->first();
+
+        if (!$saleCar) {
+            return response('ลิงก์ไม่ถูกต้องหรือหมดอายุ', 404);
+        }
+
+        if ($this->isApproved($saleCar)) {
+            return view('purchase-order.approval-result', [
+                'saleCar' => $saleCar,
+                'msg'     => 'รายการนี้อนุมัติเรียบร้อยแล้ว',
+            ]);
+        }
+
+        $case = $this->approvalCase($saleCar);
+
+        switch ($case) {
+            case 'normal':
+            case 'b1_manager':
+                // ผู้จัดการกดยืนยัน (ไม่ต้องกรอกหัก)
+                return view('purchase-order.approval-manager', ['saleCar' => $saleCar, 'token' => $token, 'showDeduct' => false]);
+
+            case 'b1_md':
+                // ผู้จัดการกรอกหัก → ส่งต่อ md
+                if (!$saleCar->ApprovalSignature) {
+                    return view('purchase-order.approval-manager', ['saleCar' => $saleCar, 'token' => $token, 'showDeduct' => true]);
+                }
+                return view('purchase-order.approval-confirm', compact('saleCar', 'token'));
+
+            case 'b2_gm':
+                // gm เลือก หักเงิน(จบ) / ส่งต่อ md
+                if (!$saleCar->ApprovalSignature) {
+                    return view('purchase-order.approval-gm', compact('saleCar', 'token'));
+                }
+                return view('purchase-order.approval-confirm', compact('saleCar', 'token'));
+
+            case 'b3_md':
+            default:
+                // md อนุมัติตรง
+                return view('purchase-order.approval-confirm', compact('saleCar', 'token'));
+        }
+    }
+
+    // ผู้จัดการกดอนุมัติ — normal/b1_manager: กดยืนยัน | b1_md: กรอกหัก → ส่งต่อ md
+    public function managerApprove(Request $request, $token)
+    {
+        $saleCar = Salecar::withoutGlobalScopes()->where('approval_token', $token)->firstOrFail();
+        $case = $this->approvalCase($saleCar);
+        $today = now();
+
+        if ($case === 'normal') {
+            $saleCar->update(['SMSignature' => 1, 'SMCheckedDate' => $today]);
+            $this->notifyApproved($saleCar);
+            $msg = 'อนุมัติเรียบร้อย (ผู้จัดการ – อนุมัติการขาย)';
+        } elseif ($case === 'b1_manager') {
+            $saleCar->update(['ApprovalSignature' => 1, 'ApprovalSignatureDate' => $today]);
+            $this->notifyApproved($saleCar);
+            $msg = 'อนุมัติเรียบร้อย (ผู้จัดการ – เกินงบ ไม่เกินเพดาน)';
+        } elseif ($case === 'b1_md') {
+            $request->merge(['commission_deduct' => str_replace(',', '', (string) $request->commission_deduct)]);
+            $request->validate([
+                'commission_deduct' => 'required|numeric|min:0',
+            ], [
+                'commission_deduct.required' => 'กรุณากรอกยอดหักค่าคอมฝ่ายขาย',
+            ]);
+            $deduct = (float) $request->commission_deduct;
+
+            $saleCar->update([
+                'approval_commission_deduct' => $deduct,
+                'ApprovalSignature' => 1,
+                'ApprovalSignatureDate' => $today,
+            ]);
+
+            $this->emailFinalApprover($saleCar, $deduct);
+            $msg = 'ผู้จัดการอนุมัติแล้ว — ส่งต่อให้ MD อนุมัติ (ส่งอีเมลพร้อมไฟล์แนบแล้ว)';
+        } else {
+            abort(400);
+        }
+
+        return view('purchase-order.approval-result', compact('saleCar', 'msg'));
+    }
+
+    // brand 2: gm เลือก หักเงิน(จบที่ gm) หรือ ส่งต่อ md
+    public function gmDecide(Request $request, $token)
+    {
+        $saleCar = Salecar::withoutGlobalScopes()->where('approval_token', $token)->firstOrFail();
+        if ($this->approvalCase($saleCar) !== 'b2_gm') {
+            abort(400);
+        }
+        $today = now();
+
+        if ($request->input('decision') === 'deduct') {
+            $request->merge(['commission_deduct' => str_replace(',', '', (string) $request->commission_deduct)]);
+            $request->validate([
+                'commission_deduct' => 'required|numeric|min:0',
+            ], [
+                'commission_deduct.required' => 'กรุณากรอกยอดหักค่าคอมฝ่ายขาย',
+            ]);
+            $deduct = (float) $request->commission_deduct;
+
+            // หักเงิน → จบที่ gm
+            $saleCar->update([
+                'approval_commission_deduct' => $deduct,
+                'GMApprovalSignature' => 1,
+                'GMApprovalSignatureDate' => $today,
+            ]);
+            $this->notifyApproved($saleCar);
+            $msg = 'อนุมัติเรียบร้อย (GM – หักเงิน จบที่ GM)';
+        } else {
+            // ส่งต่อ md (ไม่หักเงิน)
+            $saleCar->update([
+                'ApprovalSignature' => 1,
+                'ApprovalSignatureDate' => $today,
+            ]);
+            $this->emailFinalApprover($saleCar, null);
+            $msg = 'GM ส่งต่อให้ MD อนุมัติ (ส่งอีเมลพร้อมไฟล์แนบแล้ว)';
+        }
+
+        return view('purchase-order.approval-result', compact('saleCar', 'msg'));
+    }
+
+    // ขั้นสุดท้าย (md) กดยืนยันอนุมัติ
+    public function finalApprove($token)
+    {
+        $saleCar = Salecar::withoutGlobalScopes()->where('approval_token', $token)->firstOrFail();
+
+        if (!$saleCar->GMApprovalSignature) {
+            $saleCar->update(['GMApprovalSignature' => 1, 'GMApprovalSignatureDate' => now()]);
+            $this->notifyApproved($saleCar);
+        }
+
+        return view('purchase-order.approval-result', [
+            'saleCar' => $saleCar,
+            'msg'     => 'อนุมัติเรียบร้อย (MD)',
+        ]);
+    }
+
+    // resource route สร้าง GET purchase-order/{id} → show() แต่ไม่มี method นี้ → redirect ไปหน้า edit แทน
+    public function show($id)
+    {
+        return redirect()->route('purchase-order.edit', $id);
     }
 
     public function listPurchaseOrder(Request $request)
@@ -939,6 +1335,9 @@ class PurchaseOrderController extends Controller
                 'CheckerCheckedDate' => $this->toGregorian($request->CheckerCheckedDate),
                 'GMApprovalSignature' => $request->GMApprovalSignature,
                 'GMApprovalSignatureDate' => $this->toGregorian($request->GMApprovalSignatureDate),
+                'approval_commission_deduct' => $request->filled('approval_commission_deduct')
+                    ? str_replace(',', '', $request->approval_commission_deduct)
+                    : null,
                 'DeliveryEstimateDate' => $this->toGregorian($request->DeliveryEstimateDate),
                 'Note' => $request->Note,
                 'red_license' => $request->red_license,
@@ -968,6 +1367,19 @@ class PurchaseOrderController extends Controller
             //ดึง id
             $oldCarOrderID = $saleCar->CarOrderID;
             $newCarOrderID = $request->CarOrderID;
+
+            // ===== ปิดการขออนุมัติชั่วคราว (วันปิดยอด) — ปิด gate บังคับอนุมัติก่อนผูกรถ =====
+            // เปิดคืน: uncomment block ด้านล่าง
+            // gate: ผูกรถใหม่ได้ต่อเมื่ออนุมัติแล้ว (ยกเว้น admin) — บันทึก draft ที่ยังไม่ผูกรถได้ปกติ
+            // $bindingNewCar = $newCarOrderID && ($oldCarOrderID != $newCarOrderID);
+            // if ($bindingNewCar && Auth::user()->role !== 'admin' && !$this->isApproved($saleCar)) {
+            //     DB::rollBack();
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'กรุณาขออนุมัติให้ผ่านก่อน จึงจะผูกรถได้'
+            //     ], 422);
+            // }
+            // ===== /ปิดการขออนุมัติชั่วคราว =====
 
             $oldPlate = $saleCar->red_license;
 
@@ -1411,52 +1823,53 @@ class PurchaseOrderController extends Controller
             // Log::info('ACTION TYPE = ' . $request->action_type);
             $user = Auth::user();
 
-            $mailTo = [];
-            $mailGM = [];
+            // ขออนุมัติ — ส่งหา "ด่านแรก" ตามเคส/brand (manager/gm/md)
+            if (in_array($action, ['request_normal', 'request_over', 'request_gm'])) {
+                // เก็บไฟล์ที่ผู้ขอแนบลง storage (ไว้ส่งต่อขั้นถัดไป)
+                if ($request->hasFile('approval_files')) {
+                    $stored = [];
+                    foreach ($request->file('approval_files') as $f) {
+                        if ($f->isValid()) {
+                            $path = $f->store('approval-files/' . $saleCar->id);
+                            $stored[] = [
+                                'path' => $path,
+                                'name' => $f->getClientOriginalName(),
+                                'mime' => $f->getMimeType(),
+                            ];
+                        }
+                    }
+                    if ($stored) {
+                        $saleCar->update(['approval_files' => $stored]);
+                    }
+                }
 
-            if ($user->brand == 2) {
-                $mailTo[] = 'JirapornK@Chookiat.org';
-                $mailGM[] = 'danut@chookiat.org';
-                // $mailTo[] = 'sutaphat.thongnui@gmail.com';
-            } else {
-                $mailTo[] = 'Phung.mitsuchookiatkrabi@gmail.com';
-                $mailGM[] = 'ketsudap@chookiat.org';
-            }
+                $case      = $this->approvalCase($saleCar);
+                $stageRole = $this->firstApproverRole($case);   // manager | gm | md
 
-            if ($action === 'request_normal') {
-                // Log::info('SENDING NORMAL MAIL');
-                $saleCar->update([
-                    'approval_type' => 'normal',
+                $mailTo = $this->approverEmails($saleCar->brand, $saleCar->branch, $stageRole);
+                if (empty($mailTo)) {
+                    $mailTo = $saleCar->brand == 2
+                        ? ($stageRole === 'manager' ? ['JirapornK@Chookiat.org'] : ['danut@chookiat.org'])
+                        : ($stageRole === 'manager' ? ['Phung.mitsuchookiatkrabi@gmail.com'] : ['ketsudap@chookiat.org']);
+                }
+
+                $approvalData  = $this->buildApprovalData($saleCar);
+                $token         = $saleCar->approval_token ?: \Illuminate\Support\Str::random(48);
+                $approvalFiles = $this->buildApprovalAttachments($saleCar);
+
+                $update = [
+                    'approval_type'         => $case === 'normal' ? 'normal' : 'overbudget',
                     'approval_requested_at' => now(),
-                ]);
-                // ส่งเมลแบบยอดปกติ
-                Mail::to($mailTo)
-                    ->send(new SaleRequestMail($saleCar, 'normal'));
-            } elseif ($action === 'request_over') {
+                    'approval_remaining'    => $approvalData['remaining'],
+                    'approval_token'        => $token,
+                ];
+                if ($case !== 'normal') {
+                    $update['reason_campaign'] = $request->reason_campaign;
+                }
+                $saleCar->update($update);
 
-                $saleCar->update([
-                    'approval_type' => 'overbudget',
-                    'approval_requested_at' => now(),
-                    'reason_campaign' => $request->reason_campaign,
-                ]);
-
-                // ผู้จัดการ
-                Mail::to($mailTo)
-                    ->send(new SaleRequestMail($saleCar, 'manager'));
-            } elseif ($action === 'request_gm') {
-
-                $saleCar->update([
-                    'approval_type' => 'overbudget',
-                    'approval_requested_at' => now(),
-                    'reason_campaign' => $request->reason_campaign,
-                ]);
-
-                // GM
-                // Mail::to('sutaphat.thongnui@gmail.com')
-                //     ->cc('mitsuchookiat.programmer@gmail.com')
-                Mail::to($mailGM)
-                    ->cc($mailTo)
-                    ->send(new SaleRequestMail($saleCar, 'gm'));
+                $mailType = $case === 'normal' ? 'normal' : ($stageRole === 'manager' ? 'manager' : 'gm');
+                Mail::to($mailTo)->send(new SaleRequestMail($saleCar, $mailType, $approvalData, $approvalFiles));
             }
 
             DB::commit();
@@ -2019,7 +2432,7 @@ class PurchaseOrderController extends Controller
 
     /**
      * หน้า "ตั้งค่า GP" — กรอกราคาทุน / ค่าอุปกรณ์ตกแต่ง / คอมขาย รายคัน (ใช้ในรายงาน GP รายคัน)
-     * เห็นได้เฉพาะ role admin, audit ดึงรายการตามเดือนจาก DeliveryInCKDate (default เดือนปัจจุบัน)
+     * เห็นได้เฉพาะ role admin, audit ดึงรายการตามเดือนจาก DeliveryInDMSDate (default เดือนปัจจุบัน)
      */
     public function gpSetting(Request $request)
     {
@@ -2028,7 +2441,7 @@ class PurchaseOrderController extends Controller
         $month = $request->input('month') ?: now()->format('Y-m');
 
         $rows = GPQuery::base($month)
-            ->orderBy('DeliveryInCKDate')
+            ->orderBy('DeliveryInDMSDate')
             ->get();
 
         return view('purchase-order.gp-setting.view', compact('rows', 'month'));

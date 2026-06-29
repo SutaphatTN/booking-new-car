@@ -143,14 +143,13 @@
 
                 <div class="col-md-4">
                   <label for="edit_acc_cost" class="mf-label form-label">
-                    <i class="bx bx-store ci-amber"></i> ราคาทุน <span class="text-danger">*</span>
+                    <i class="bx bx-store ci-amber"></i> ราคาทุน
                   </label>
                   <div class="input-group">
                     <span class="input-group-text ig-amber">฿</span>
                     <input id="edit_acc_cost" type="text"
                       class="form-control text-end money-input @error('cost') is-invalid @enderror" name="cost"
-                      value="{{ $acc->cost !== null ? number_format($acc->cost, 2) : '' }}" placeholder="0.00"
-                      required>
+                      value="{{ $acc->cost !== null ? number_format($acc->cost, 2) : '' }}" placeholder="0.00">
                   </div>
                   @error('cost')
                     <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
@@ -171,14 +170,13 @@
 
                 <div class="col-md-4">
                   <label for="edit_acc_sale" class="mf-label form-label">
-                    <i class="bx bx-receipt ci-amber"></i> ราคาขาย <span class="text-danger">*</span>
+                    <i class="bx bx-receipt ci-amber"></i> ราคาขาย
                   </label>
                   <div class="input-group">
                     <span class="input-group-text ig-amber">฿</span>
                     <input id="edit_acc_sale" type="text"
                       class="form-control text-end money-input @error('sale') is-invalid @enderror" name="sale"
-                      value="{{ $acc->sale !== null ? number_format($acc->sale, 2) : '' }}" placeholder="0.00"
-                      required>
+                      value="{{ $acc->sale !== null ? number_format($acc->sale, 2) : '' }}" placeholder="0.00">
                   </div>
                   @error('sale')
                     <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
@@ -211,7 +209,7 @@
                     </span>
                     <span>
                       <span class="fw-bold"><i class="bx bx-check-shield ci-amber"></i> ประดับยนต์มาตรฐานของรุ่นนี้</span>
-                      <span class="text-muted small d-block">ถ้าเปิด จะใช้ "ราคาทุนอะไหล่" เป็นราคาคิด GP — ถ้าปิด ใช้ราคาที่แสดงในการจอง</span>
+                      <span class="text-muted small d-block">ถ้าเปิด รายการนี้จะถูกนับเป็นประดับยนต์มาตรฐาน</span>
                     </span>
                   </label>
                 </div>

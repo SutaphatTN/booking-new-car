@@ -227,6 +227,10 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       $campaign_ck = $r->campaigns->filter(fn($c) => $c->campaign?->type?->type == 4)->sum('CashSupportFinal');
 
       $group1Ids = array_merge(range(1, 8), range(14, 22));
+      // id = 26 เป็นของ brand = 2 เท่านั้น
+      if ($r->brand == 2) {
+        $group1Ids[] = 26;
+      }
       $group2Ids = array_merge(range(10, 12), range(23, 25));
 
       $campaign_detail_1 = $r->campaigns
@@ -269,13 +273,19 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       $accGiftVat = $r->AccessoryGiftVat ?? 0;
       $downDisAccVat = $down_payDis + $accGiftVat;
       $com_sale = $r->CommissionSale ?? 0;
-      $totalTotalAccessoryGift = $r->TotalAccessoryGift ?? 0;
       $ReferrerAmount = $r->ReferrerAmount ?? 0;
 
-      // ยอดของแถมมาตรฐาน — คิดจากราคาทุนอะไหล่ (cost_spare) ของประดับยนต์ที่ is_standard และเป็นของแถม (gift)
-      $standardGiftAcc = $r->accessories
-        ->filter(fn($a) => $a->is_standard && $a->pivot->type === 'gift')
+      // ยอดของแถมทั้งหมด — คิดจากราคาทุนอะไหล่ (cost_spare) ของของแถม (gift) ทุกชิ้น ไม่ว่าจะเป็นของแถมมาตรฐานหรือปกติ
+      $giftAccCostSpare = $r->accessories
+        ->filter(fn($a) => $a->pivot->type === 'gift')
         ->sum(fn($a) => (float) ($a->cost_spare ?? 0));
+
+      // ของเดิม (comment ไว้)
+      // $totalTotalAccessoryGift = $r->TotalAccessoryGift ?? 0;
+      // ยอดของแถมมาตรฐาน — คิดจากราคาทุนอะไหล่ (cost_spare) ของประดับยนต์ที่ is_standard และเป็นของแถม (gift)
+      // $standardGiftAcc = $r->accessories
+      //   ->filter(fn($a) => $a->is_standard && $a->pivot->type === 'gift')
+      //   ->sum(fn($a) => (float) ($a->cost_spare ?? 0));
 
       // ส่วนลดแคมเปญ — ยอดหัก cashSupport_deduct จาก campaign ที่ใช้ (เฉพาะ campaign_type กลุ่ม 1-8, 14-22)
       $campaign_deduct = $r->campaigns
@@ -283,7 +293,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         ->sum(fn($c) => (float) ($c->campaign?->cashSupport_deduct ?? 0));
 
       //รวมส่วนลด
-      $total_discount = $downDisAccVat + $carDiscount + $totalTotalAccessoryGift + $standardGiftAcc + $campaign_deduct + $ReferrerAmount;
+      $total_discount = $downDisAccVat + $carDiscount + $giftAccCostSpare + $campaign_deduct + $ReferrerAmount;
       $total_discount_re = $total_discount - $down_payDis - $carDiscount;
 
       //ต้นทุนรวม
@@ -323,7 +333,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       // $totalTotalAccessoryGift = $r->TotalAccessoryGift ?? 0;
       $totalCommissionSale = $r->CommissionSale ?? 0;
 
-      $sellingExpense = $totalDiscount + $totalPaymentDiscount + $totalDownPaymentDiscount + $totalTotalAccessoryGift + $totalCommissionSale;
+      $sellingExpense = $totalDiscount + $totalPaymentDiscount + $totalDownPaymentDiscount + $giftAccCostSpare + $totalCommissionSale;
 
       $netProfit = ($grossProfit + $otherIncome) - $sellingExpense;
 
