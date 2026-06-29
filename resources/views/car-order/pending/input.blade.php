@@ -215,6 +215,7 @@
                     </div>
                   </div>
 
+                  {{-- ผู้อนุมัติ: ย้ายไปเลือกตอน "ขออนุมัติที่เลือก" ในหน้า process แทน
                   <div class="col-md-4">
                     <label for="approver" class="mf-label form-label">
                       <i class="bx bx-user-check ci-amber"></i> ผู้อนุมัติ
@@ -226,6 +227,7 @@
                       @endforeach
                     </select>
                   </div>
+                  --}}
                 @elseif(auth()->user()->brand == 3)
                   <div class="col-md-4">
                     <label for="gwm_color" class="mf-label form-label">
@@ -269,6 +271,7 @@
                     </div>
                   </div>
 
+                  {{-- ผู้อนุมัติ: ย้ายไปเลือกตอน "ขออนุมัติที่เลือก" ในหน้า process แทน
                   <div class="col-md-4">
                     <label for="approver" class="mf-label form-label">
                       <i class="bx bx-user-check ci-amber"></i> ผู้อนุมัติ
@@ -280,6 +283,7 @@
                       @endforeach
                     </select>
                   </div>
+                  --}}
                 @else
                   <div class="col-md-3">
                     <label for="pricelist_color" class="mf-label form-label">
@@ -363,6 +367,7 @@
                     </div>
                   </div>
 
+                  {{-- ผู้อนุมัติ: ย้ายไปเลือกตอน "ขออนุมัติที่เลือก" ในหน้า process แทน
                   <div class="col-md-5">
                     <label for="approver" class="mf-label form-label">
                       <i class="bx bx-user-check ci-amber"></i> ผู้อนุมัติ
@@ -374,6 +379,7 @@
                       @endforeach
                     </select>
                   </div>
+                  --}}
                 @endif
 
               </div>

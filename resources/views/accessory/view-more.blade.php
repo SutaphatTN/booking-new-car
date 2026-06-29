@@ -145,7 +145,7 @@
                   </span>
                   <span>
                     <span class="fw-bold"><i class="bx bx-check-shield ci-amber"></i> ประดับยนต์มาตรฐานของรุ่นนี้</span>
-                    <span class="text-muted small d-block">{{ $acc->is_standard ? 'ใช่ — ใช้ราคาทุนอะไหล่ คิด GP' : 'ไม่ใช่ — ใช้ราคาที่แสดงในการจอง' }}</span>
+                    <span class="text-muted small d-block">{{ $acc->is_standard ? 'ใช่ — ประดับยนต์มาตรฐาน' : 'ไม่ใช่ — ประดับยนต์มาตรฐาน' }}</span>
                   </span>
                 </div>
               </div>

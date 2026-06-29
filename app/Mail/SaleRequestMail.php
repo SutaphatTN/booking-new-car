@@ -15,14 +15,18 @@ class SaleRequestMail extends Mailable
 
     public $saleCar;
     public $type;
+    public $data;
+    public $files;
 
     /**
-     * Create a new message instance.
+     * @param array $files รายการไฟล์แนบ (Illuminate\Mail\Mailables\Attachment)
      */
-    public function __construct($saleCar, $type)
+    public function __construct($saleCar, $type, $data = null, array $files = [])
     {
         $this->saleCar = $saleCar;
         $this->type = $type;
+        $this->data = $data;
+        $this->files = $files;
     }
 
     public function build()
@@ -62,6 +66,6 @@ class SaleRequestMail extends Mailable
      */
     public function attachments(): array
     {
-        return [];
+        return $this->files ?? [];
     }
 }

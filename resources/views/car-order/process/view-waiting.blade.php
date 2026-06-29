@@ -289,6 +289,74 @@
           </div>
         </div>
 
+        {{-- สรุปสต็อกคงเหลือ : แจกแจงตามรุ่นย่อย → สี (ไม่รวมไม่อนุมัติ และส่งมอบแล้ว) --}}
+        <div class="mf-section">
+          <div class="mf-section-hd">
+            <div class="mf-section-icon emerald">
+              <i class="bx bx-bar-chart-alt-2"></i>
+            </div>
+            <span class="mf-section-title">
+              สต็อกคงเหลือรุ่นนี้
+              <span class="badge bg-label-primary ms-2">รวม {{ $colorTotal ?? 0 }} คัน</span>
+            </span>
+          </div>
+          <div class="mf-section-body">
+            <div class="text-muted mb-3" style="font-size:.8rem;">
+              <i class="bx bx-info-circle"></i> ไม่รวมรายการที่ไม่อนุมัติ และที่ส่งมอบแล้ว (Delivered)
+            </div>
+            @if (!empty($stockSummary) && $stockSummary->count() > 0)
+              <div class="d-flex flex-column gap-3">
+                @foreach ($stockSummary as $subName => $info)
+                  <div style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:#fff;">
+                    {{-- หัวการ์ดรุ่นย่อย --}}
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2"
+                      style="background:#f8fafc;border-bottom:1px solid #eef2f7;">
+                      <span class="fw-semibold d-flex align-items-center gap-2" style="color:#334155;font-size:.9rem;">
+                        <i class="bx bx-barcode" style="color:#0ea5e9;"></i> {{ $subName }}
+                      </span>
+                      <span class="d-inline-flex align-items-center gap-1 fw-bold"
+                        style="background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;border-radius:999px;padding:2px 12px;font-size:.82rem;">
+                        <i class="bx bx-car"></i> {{ $info['count'] }} คัน
+                      </span>
+                    </div>
+
+                    {{-- ตารางปี/สี --}}
+                    <table class="table table-sm align-middle mb-0" style="font-size:.85rem;">
+                      <thead>
+                        <tr style="background:#fff;color:#94a3b8;font-size:.78rem;">
+                          <th style="width:70px;" class="text-center fw-semibold border-0">ปี</th>
+                          <th class="fw-semibold border-0">สี</th>
+                          <th style="width:120px;" class="text-center fw-semibold border-0">คงเหลือ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @foreach ($info['items'] as $item)
+                          <tr style="border-top:1px solid #f1f5f9;">
+                            <td class="text-center">
+                              <span style="background:#eff6ff;color:#2563eb;border-radius:6px;padding:1px 8px;font-size:.8rem;">
+                                {{ $item['year'] }}
+                              </span>
+                            </td>
+                            <td style="color:#334155;">{{ $item['color'] }}</td>
+                            <td class="text-center">
+                              <span class="fw-bold" style="color:#0f172a;">{{ $item['count'] }}</span>
+                            </td>
+                          </tr>
+                        @endforeach
+                      </tbody>
+                    </table>
+                  </div>
+                @endforeach
+              </div>
+            @else
+              <div class="text-center text-muted py-4" style="font-size:.9rem;">
+                <i class="bx bx-package d-block mb-2" style="font-size:2rem;opacity:.35;"></i>
+                ไม่มีสต็อกคงเหลือของรุ่นนี้
+              </div>
+            @endif
+          </div>
+        </div>
+
         {{-- Section 4 : หมายเหตุ --}}
         <div class="mf-section">
           <div class="mf-section-hd">

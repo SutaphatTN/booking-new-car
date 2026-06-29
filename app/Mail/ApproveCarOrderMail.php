@@ -16,7 +16,8 @@ class ApproveCarOrderMail extends Mailable
 
     public $order;
 
-    public function __construct(CarOrder $order)
+    // รับได้ทั้ง CarOrder (customer) และ CarOrderWaiting (stock/auction) เพราะ template ใช้ relation/field ชุดเดียวกัน
+    public function __construct($order)
     {
         $this->order = $order;
     }

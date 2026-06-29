@@ -2488,6 +2488,41 @@
                             </div>
                           </div>
 
+                          {{-- ผู้จัดการกรอกยอดหักค่าคอมฝ่ายขาย + แสดงยอดที่เหลือ --}}
+                          <div class="col-12">
+                            <div class="approval-card">
+                              <div class="approval-card-header">
+                                <div class="approval-icon amber"><i class="bx bx-calculator"></i></div>
+                                <div class="approval-title">ยอดหักค่าคอมฝ่ายขาย (ผู้จัดการกรอก)</div>
+                              </div>
+                              <div class="approval-card-body">
+                                <div class="row g-3">
+                                  <div class="col-md-6">
+                                    <label for="approval_commission_deduct" class="more-field-label mb-1">
+                                      ยอดหักค่าคอมฝ่ายขาย
+                                    </label>
+                                    <div class="input-group">
+                                      <span class="input-group-text">฿</span>
+                                      <input class="form-control text-end money-input"
+                                        id="approval_commission_deduct" name="approval_commission_deduct"
+                                        value="{{ $saleCar->approval_commission_deduct !== null ? number_format($saleCar->approval_commission_deduct, 2) : '' }}"
+                                        placeholder="0.00">
+                                    </div>
+                                  </div>
+                                  <div class="col-md-6">
+                                    <label class="more-field-label mb-1">ยอดที่เหลือ (จากใบขออนุมัติ)</label>
+                                    <div class="input-group">
+                                      <span class="input-group-text">฿</span>
+                                      <input class="form-control text-end" type="text" readonly
+                                        value="{{ $saleCar->approval_remaining !== null ? number_format($saleCar->approval_remaining, 2) : '-' }}"
+                                        style="background:#f8fafc;color:#64748b;">
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
                         </div>
                       </div>
                     </div>

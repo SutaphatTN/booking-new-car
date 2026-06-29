@@ -1007,13 +1007,23 @@ $(document).ready(function () {
   processOrderTable = $('.processOrderTable').DataTable({
     ajax: '/car-order/process/list',
     columns: [
+      {
+        data: null,
+        orderable: false,
+        searchable: false,
+        className: 'text-center',
+        render: function (row) {
+          return `<input type="checkbox" class="form-check-input rowChk" data-id="${row.id}" data-type="${row.row_type}">`;
+        }
+      },
       { data: 'No' },
       { data: 'date' },
       { data: 'type' },
       { data: 'model_id' },
       { data: 'subModel_id' },
       { data: 'color' },
-      { data: 'cost' },
+      { data: 'stock', className: 'text-center' },
+      { data: 'order_qty', className: 'text-center' },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
@@ -1034,6 +1044,125 @@ $(document).ready(function () {
         previous: 'ก่อนหน้า'
       }
     }
+  });
+});
+
+// ===== ขออนุมัติที่เลือก / อนุมัติที่เลือก (process page) =====
+
+// เลือกทั้งหมด
+$(document).on('change', '#processChkAll', function () {
+  $('.processOrderTable tbody .rowChk').prop('checked', this.checked);
+});
+
+// ถ้าติ๊กไม่ครบ ให้ยกเลิก checkbox หัวตาราง
+$(document).on('change', '.processOrderTable tbody .rowChk', function () {
+  const total = $('.processOrderTable tbody .rowChk').length;
+  const checked = $('.processOrderTable tbody .rowChk:checked').length;
+  $('#processChkAll').prop('checked', total > 0 && total === checked);
+});
+
+// เก็บรายการที่เลือก แยกตาม type
+function getSelectedProcessRows() {
+  const orderIds = [];
+  const waitingIds = [];
+  $('.processOrderTable tbody .rowChk:checked').each(function () {
+    const id = $(this).data('id');
+    if ($(this).data('type') === 'waiting') waitingIds.push(id);
+    else orderIds.push(id);
+  });
+  return { orderIds, waitingIds, total: orderIds.length + waitingIds.length };
+}
+
+// เปิด modal ขออนุมัติ
+$(document).on('click', '.btnRequestApproval', function () {
+  const sel = getSelectedProcessRows();
+  if (sel.total === 0) {
+    Swal.fire({ icon: 'warning', title: 'กรุณาเลือกรายการอย่างน้อย 1 รายการ', confirmButtonText: 'ตกลง' });
+    return;
+  }
+  $('#processApproverCount').text(sel.total);
+  $('#process_approver_id').val('');
+  $('#processApproverModal').modal('show');
+});
+
+// ยืนยันส่งคำขออนุมัติ
+$(document).on('click', '.btnConfirmRequestApproval', function () {
+  const approverId = $('#process_approver_id').val();
+  if (!approverId) {
+    Swal.fire({ icon: 'warning', title: 'กรุณาเลือกผู้อนุมัติ', confirmButtonText: 'ตกลง' });
+    return;
+  }
+  const sel = getSelectedProcessRows();
+  if (sel.total === 0) return;
+
+  $.ajax({
+    url: '/car-order/process/request-approval',
+    type: 'POST',
+    data: {
+      _token: $('meta[name="csrf-token"]').attr('content'),
+      approver_id: approverId,
+      order_ids: sel.orderIds,
+      waiting_ids: sel.waitingIds
+    },
+    beforeSend: function () {
+      $('#processApproverModal').modal('hide');
+      Swal.fire({ title: 'กำลังส่งคำขอ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    },
+    success: function (res) {
+      Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: res.message, timer: 2200, showConfirmButton: true });
+      $('#processChkAll').prop('checked', false);
+      processOrderTable.ajax.reload(null, false);
+    },
+    error: function (xhr) {
+      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด!', text: xhr.responseJSON?.message || 'ไม่สามารถส่งคำขอได้' });
+    }
+  });
+});
+
+// อนุมัติที่เลือก — order ลูกค้า + waiting (อนุมัติตามจำนวนที่สั่ง) ถ้ารับไม่ครบค่อยกดรายแถวกรอกจำนวนเอง
+$(document).on('click', '.btnBulkApprove', function () {
+  const sel = getSelectedProcessRows();
+  if (sel.total === 0) {
+    Swal.fire({ icon: 'warning', title: 'กรุณาเลือกรายการที่จะอนุมัติ', confirmButtonText: 'ตกลง' });
+    return;
+  }
+
+  const waitingNote = sel.waitingIds.length > 0
+    ? `<br><small class="text-muted">* รายการ stock/auction จะอนุมัติตามจำนวนที่สั่ง — หากรับไม่ครบ ให้กดอนุมัติทีละรายการแล้วระบุจำนวนเอง</small>`
+    : '';
+
+  Swal.fire({
+    title: 'ยืนยันการอนุมัติ?',
+    html: `อนุมัติตามจำนวนที่สั่ง ทั้งหมด <strong>${sel.total}</strong> รายการ${waitingNote}`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'อนุมัติ',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+
+    $.ajax({
+      url: '/car-order/process/bulk-approve',
+      type: 'POST',
+      data: {
+        _token: $('meta[name="csrf-token"]').attr('content'),
+        order_ids: sel.orderIds,
+        waiting_ids: sel.waitingIds
+      },
+      beforeSend: function () {
+        Swal.fire({ title: 'กำลังอนุมัติ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      },
+      success: function (res) {
+        Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: res.message, timer: 2000, showConfirmButton: true });
+        $('#processChkAll').prop('checked', false);
+        processOrderTable.ajax.reload(null, false);
+      },
+      error: function (xhr) {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด!', text: xhr.responseJSON?.message || 'ไม่สามารถอนุมัติได้' });
+      }
+    });
   });
 });
 
@@ -1625,6 +1754,54 @@ $(document).on('click', '.btnApproveCarOrder', function () {
         });
       });
   });
+});
+
+// รับทราบรายการไม่อนุมัติ (soft delete ออกจากหน้าผลการอนุมัติ)
+function acknowledgeReject(url) {
+  Swal.fire({
+    title: 'รับทราบรายการนี้?',
+    text: 'รายการที่ไม่อนุมัติจะถูกนำออกจากหน้านี้',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'รับทราบ',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+
+    $.ajax({
+      url: url,
+      type: 'POST',
+      data: {
+        _method: 'DELETE',
+        _token: $('meta[name="csrf-token"]').attr('content')
+      },
+      beforeSend: function () {
+        $('.editApproveOrder, .editApproveWaitingOrder').modal('hide');
+        Swal.fire({
+          title: 'กำลังดำเนินการ...',
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+      },
+      success: function (res) {
+        Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: res.message, timer: 2000, showConfirmButton: true });
+        approveOrderTable.ajax.reload(null, false);
+      },
+      error: function (xhr) {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด!', text: xhr.responseJSON?.message || 'ไม่สามารถดำเนินการได้' });
+      }
+    });
+  });
+}
+
+$(document).on('click', '.btnAcknowledgeReject', function () {
+  acknowledgeReject('/car-order/acknowledge-reject/' + $(this).data('id'));
+});
+
+$(document).on('click', '.btnAcknowledgeRejectWaiting', function () {
+  acknowledgeReject('/car-order/acknowledge-reject-waiting/' + $(this).data('id'));
 });
 
 // email

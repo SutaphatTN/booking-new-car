@@ -660,7 +660,7 @@ class SourceController extends Controller
             try {
                 $pdf = $this->buildApprovalPdf($mailReq);
 
-                $mail = Mail::to('acc@chookiat.org');
+                // $mail = Mail::to('acc@chookiat.org');
                 $mail = Mail::to('acct@chookiat.org');
                 if (optional($req->requester)->email) {
                     $mail->cc($req->requester->email);

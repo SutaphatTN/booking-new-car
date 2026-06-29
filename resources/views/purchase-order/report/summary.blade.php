@@ -672,28 +672,30 @@
             </div>
           </div>
 
-          {{-- วันส่งมอบ --}}
-          <div class="sec">
-            <div class="sec-title">ข้อมูลวันส่งมอบ</div>
-            <div class="sec-body">
-              <div class="f">
-                <div class="fl">วันที่ส่งเอกสารสรุปการขาย</div>
-                <div class="fv">{{ $saleCar->format_key_date ?? '-' }}</div>
-              </div>
-              <div class="f">
-                <div class="fl">วันส่งมอบจริง (แจ้งประกัน)</div>
-                <div class="fv">{{ $saleCar->format_delivery_date ?? '-' }}</div>
-              </div>
-              <div class="f">
-                <div class="fl">วันที่ส่งมอบของบริษัท</div>
-                <div class="fv">{{ $saleCar->format_dms_date ?? '-' }}</div>
-              </div>
-              <div class="f">
-                <div class="fl">วันที่ส่งมอบของฝ่ายขาย</div>
-                <div class="fv">{{ $saleCar->format_ck_date ?? '-' }}</div>
+          {{-- วันส่งมอบ (ซ่อนในไฟล์แนบอีเมลขออนุมัติ) --}}
+          @unless ($hideDelivery ?? false)
+            <div class="sec">
+              <div class="sec-title">ข้อมูลวันส่งมอบ</div>
+              <div class="sec-body">
+                <div class="f">
+                  <div class="fl">วันที่ส่งเอกสารสรุปการขาย</div>
+                  <div class="fv">{{ $saleCar->format_key_date ?? '-' }}</div>
+                </div>
+                <div class="f">
+                  <div class="fl">วันส่งมอบจริง (แจ้งประกัน)</div>
+                  <div class="fv">{{ $saleCar->format_delivery_date ?? '-' }}</div>
+                </div>
+                <div class="f">
+                  <div class="fl">วันที่ส่งมอบของบริษัท</div>
+                  <div class="fv">{{ $saleCar->format_dms_date ?? '-' }}</div>
+                </div>
+                <div class="f">
+                  <div class="fl">วันที่ส่งมอบของฝ่ายขาย</div>
+                  <div class="fv">{{ $saleCar->format_ck_date ?? '-' }}</div>
+                </div>
               </div>
             </div>
-          </div>
+          @endunless
 
 
         </div>{{-- /col-r --}}

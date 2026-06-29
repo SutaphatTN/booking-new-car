@@ -1466,35 +1466,43 @@ $(document).ready(function () {
           }
 
           res.forEach(a => {
-            const costCell =
-              a.accessoryCost !== null && a.accessoryCost !== undefined
-                ? `<input type="radio" name="priceType_${a.id}" value="cost"
-                  data-id="${a.id}" data-source="${a.AccessorySource}"
-                  data-detail="${a.AccessoryDetail}" data-price="${a.accessoryCost ?? ''}">
-                <span class="ms-1">${formatNumber(a.accessoryCost)}</span>`
-                : `<span>-</span>`;
+            // ต้องมีราคาทุนอะไหล่ (cost_spare) มากกว่า 0 ถึงจะเลือกได้ — ใช้ตอนขออนุมัติ
+            // null / ว่าง / 0 ถือว่า "ไม่มีราคาทุนอะไหล่" ทั้งหมด
+            const noSpareCost = !(parseFloat(a.cost_spare) > 0);
 
-            const promoCell =
-              a.AccessoryPromoPrice !== null && a.AccessoryPromoPrice !== undefined
-                ? `<input type="radio" name="priceType_${a.id}" value="promo"
-                  data-id="${a.id}" data-source="${a.AccessorySource}"
-                  data-detail="${a.AccessoryDetail}" data-price="${a.AccessoryPromoPrice ?? ''}">
-                <span class="ms-1">${formatNumber(a.AccessoryPromoPrice)}</span>`
-                : `<span>-</span>`;
+            // ราคา 0 บาท เลือกได้เฉพาะของแถมมาตรฐาน (is_standard) เท่านั้น
+            const buildPriceCell = (type, price, comAttr = '') => {
+              if (price === null || price === undefined) return `<span>-</span>`;
 
-            const saleCell =
-              a.AccessorySalePrice !== null && a.AccessorySalePrice !== undefined
-                ? `<input type="radio" name="priceType_${a.id}" value="sale"
+              const blockZero = parseFloat(price) === 0 && !a.is_standard;
+              const block = noSpareCost || blockZero;
+              const title = noSpareCost
+                ? 'ไม่มีราคาทุนอะไหล่ จึงเลือกไม่ได้'
+                : blockZero
+                  ? 'เลือกราคา 0 บาท ได้เฉพาะของแถมมาตรฐาน'
+                  : '';
+              const disabledAttr = block ? `disabled title="${title}"` : '';
+
+              return `<input type="radio" name="priceType_${a.id}" value="${type}"
                   data-id="${a.id}" data-source="${a.AccessorySource}"
-                  data-detail="${a.AccessoryDetail}" data-price="${a.AccessorySalePrice ?? ''}"
-                  data-com="${a.AccessoryComSale ?? ''}">
-                <span class="ms-1">${formatNumber(a.AccessorySalePrice) ?? ''}</span>`
-                : `<span>-</span>`;
+                  data-detail="${a.AccessoryDetail}" data-price="${price ?? ''}"
+                  data-standard="${a.is_standard ? 1 : 0}" data-spare="${noSpareCost ? 0 : 1}" ${comAttr} ${disabledAttr}>
+                <span class="ms-1${block ? ' text-muted' : ''}">${formatNumber(price)}</span>`;
+            };
+
+            const costCell = buildPriceCell('cost', a.accessoryCost);
+            const promoCell = buildPriceCell('promo', a.AccessoryPromoPrice);
+            const saleCell = buildPriceCell('sale', a.AccessorySalePrice, `data-com="${a.AccessoryComSale ?? ''}"`);
+
+            // note เล็กๆ ใต้รายละเอียด ถ้าไม่มีราคาทุนอะไหล่
+            const detailCell = noSpareCost
+              ? `${a.AccessoryDetail ?? '-'}<br><small class="text-danger">* ไม่มีราคาทุนอะไหล่ เลือกไม่ได้</small>`
+              : (a.AccessoryDetail ?? '-');
 
             $tableBody.append(`
               <tr>
                 <td class="text-center">${a.AccessorySource ?? '-'}</td>
-                <td>${a.AccessoryDetail ?? '-'}</td>
+                <td>${detailCell}</td>
                 <td class="text-center">${costCell}</td>
                 <td class="text-center">${promoCell}</td>
                 <td class="text-center">${saleCell} (${formatNumber(a.AccessoryComSale ?? '-')})</td>
@@ -1602,6 +1610,28 @@ $(document).ready(function () {
         return;
       }
 
+      // กันราคา 0 บาท ที่ไม่ใช่ของแถมมาตรฐาน (เผื่อ DOM ถูกแก้)
+      let hasInvalidZero = false;
+      selected.each(function () {
+        if (parseFloat($(this).data('price')) === 0 && Number($(this).data('standard')) !== 1) {
+          hasInvalidZero = true;
+        }
+      });
+      if (hasInvalidZero) {
+        Swal.fire({ icon: 'warning', title: 'ราคา 0 บาท เลือกได้เฉพาะของแถมมาตรฐาน', confirmButtonText: 'ตกลง' });
+        return;
+      }
+
+      // กันรายการที่ไม่มีราคาทุนอะไหล่ (เผื่อ DOM ถูกแก้)
+      let hasNoSpare = false;
+      selected.each(function () {
+        if (Number($(this).data('spare')) !== 1) hasNoSpare = true;
+      });
+      if (hasNoSpare) {
+        Swal.fire({ icon: 'warning', title: 'รายการนี้ไม่มีราคาทุนอะไหล่ จึงเลือกไม่ได้', confirmButtonText: 'ตกลง' });
+        return;
+      }
+
       selected.each(function () {
         const $radio = $(this);
         const source = $radio.data('source');
@@ -1683,6 +1713,20 @@ $(document).ready(function () {
     noDataRowId: '#no-data-extra',
     deleteBtnClass: '.btn-delete-extra'
   });
+
+  // ให้ radio ของแถม/ซื้อเพิ่ม กดซ้ำเพื่อยกเลิกการเลือกได้
+  // จำสถานะก่อนคลิก (mousedown ทำงานก่อน checked จะเปลี่ยน) แล้วถ้าก่อนหน้าติ๊กอยู่ ให้ติ๊กออก
+  const togglableRadios = '#tableGiftResult input[type="radio"], #tableExtraResult input[type="radio"]';
+  $(document)
+    .on('mousedown', togglableRadios, function () {
+      this._wasChecked = this.checked;
+    })
+    .on('click', togglableRadios, function () {
+      if (this._wasChecked) {
+        this.checked = false;
+      }
+      this._wasChecked = this.checked;
+    });
 
   // เมื่อเปลี่ยนรุ่นรถ
   $('#model_id').on('change', function () {
@@ -1783,6 +1827,12 @@ $(document).ready(function () {
     const accessories = [...accessoriesGift, ...accessoriesExtra];
     formData.append('accessories', JSON.stringify(accessories));
 
+    // แนบไฟล์จาก modal เหตุผลเกินงบ (ถ้ามี) แล้วล้างทิ้ง
+    if (window.__approvalFiles && window.__approvalFiles.length) {
+      Array.from(window.__approvalFiles).forEach(f => formData.append('approval_files[]', f));
+      window.__approvalFiles = null;
+    }
+
     $.ajax({
       url: actionUrl,
       type: 'POST',
@@ -1831,10 +1881,18 @@ $(document).ready(function () {
   });
 });
 
+// ปิดปุ่มทั้งหมดในฟุตเตอร์ preview (กันกดซ้ำตอนขออนุมัติ)
+function disablePreviewFooterButtons() {
+  document
+    .querySelectorAll('#previewPurchase .modal-footer button')
+    .forEach(btn => (btn.disabled = true));
+}
+
 // ปุ่มขออนุมัติ (ยอดปกติ)
 $(document).on('click', '#btnRequestNormal', function () {
   $('#action_type').val('request_normal');
   $('#btnUpdatePurchase').trigger('click');
+  disablePreviewFooterButtons();
 });
 
 // ปุ่มขออนุมัติเกินงบ
@@ -1851,28 +1909,35 @@ $(document).on('click', '#btnRequestOverBudget', function () {
     function () {
       Swal.fire({
         title: 'กรอกเหตุผลที่เกินงบ',
-        input: 'textarea',
-        inputLabel: 'เหตุผล',
-        inputPlaceholder: 'กรุณาระบุสาเหตุที่ต้องขออนุมัติเกินงบ...',
-        inputAttributes: {
-          'aria-label': 'กรอกเหตุผล'
-        },
+        html: `
+          <label class="d-block text-start mb-1" style="font-size:.9rem;">เหตุผล</label>
+          <textarea id="swal-reason" class="swal2-textarea" style="margin:0;width:100%;"
+            placeholder="กรุณาระบุสาเหตุที่ต้องขออนุมัติเกินงบ..."></textarea>
+          <label class="d-block text-start mt-3 mb-1" style="font-size:.9rem;">แนบไฟล์ (PDF / รูปภาพ)</label>
+          <input id="swal-files" type="file" class="form-control" multiple accept=".pdf,image/*">
+        `,
         showCancelButton: true,
         confirmButtonColor: '#6c5ffc',
         cancelButtonColor: '#d33',
         confirmButtonText: 'บันทึก',
         cancelButtonText: 'ยกเลิก',
         allowOutsideClick: false,
-        inputValidator: value => {
-          if (!value) {
-            return 'กรุณากรอกเหตุผลก่อนดำเนินการ';
+        preConfirm: () => {
+          const reason = document.getElementById('swal-reason').value.trim();
+          if (!reason) {
+            Swal.showValidationMessage('กรุณากรอกเหตุผลก่อนดำเนินการ');
+            return false;
           }
+          return { reason, files: document.getElementById('swal-files').files };
         }
       }).then(result => {
         if (result.isConfirmed) {
-          $('#reason_campaign').val(result.value);
+          $('#reason_campaign').val(result.value.reason);
+          // เก็บไฟล์แนบไว้ส่งไปกับฟอร์มตอนบันทึก
+          window.__approvalFiles = result.value.files;
           $('#action_type').val(level === 'gm' ? 'request_gm' : 'request_over');
           $('#btnUpdatePurchase').trigger('click');
+          disablePreviewFooterButtons();
         } else {
           previewModal.show();
         }
@@ -3241,36 +3306,45 @@ document.addEventListener('DOMContentLoaded', function () {
     btnRequestNormal.classList.add('d-none');
     btnRequestOverBudget.classList.add('d-none');
 
-    if (userRole !== 'sale') {
+    // ===== ปิดการขออนุมัติชั่วคราว (วันปิดยอด) — แสดงแค่ปุ่มบันทึก ทุก role =====
+    // ลบ/คอมเมนต์ block นี้เพื่อเปิดการขออนุมัติกลับคืน
+    btnSave.classList.remove('d-none');
+    content.innerHTML = html;
+    modal.show();
+    return;
+    // ===== /ปิดการขออนุมัติชั่วคราว =====
+
+    // admin บันทึกได้ตรง ไม่ต้องขออนุมัติ
+    if (userRole === 'admin') {
       btnSave.classList.remove('d-none');
       content.innerHTML = html;
       modal.show();
       return;
     }
 
-    // sale เคยขออนุมัติแล้ว แสดงแค่ปิด
-    if (approvalRequested || hasApproval) {
+    // อนุมัติแล้ว → บันทึกได้
+    if (hasApproval) {
+      btnSave.classList.remove('d-none');
       content.innerHTML = html;
       modal.show();
       return;
     }
 
-    // sale ต้องเห็นปุ่ม บันทึก ก่อนขออนุมัติ
-    btnSave.classList.remove('d-none');
+    // ขออนุมัติแล้ว รอผลอนุมัติ → แสดงแค่ปิด (ยังบันทึกไม่ได้)
+    if (approvalRequested) {
+      content.innerHTML = html;
+      modal.show();
+      return;
+    }
 
+    // ยังไม่ขอ → บันทึก draft ได้ (ยังไม่ผูกรถ) + ปุ่มขออนุมัติ (ผูกรถต้องอนุมัติก่อน ดักที่ backend)
+    btnSave.classList.remove('d-none');
     if (balanceCam >= 0) {
       btnRequestNormal.classList.remove('d-none');
     } else {
-      const overAmount = Math.abs(balanceCam);
-      if (overAmount <= budget) {
-        btnRequestOverBudget.classList.remove('d-none');
-        btnRequestOverBudget.dataset.level = 'manager';
-        btnRequestOverBudget.textContent = 'ขอ ผู้จัดการ อนุมัติเกินงบ';
-      } else {
-        btnRequestOverBudget.classList.remove('d-none');
-        btnRequestOverBudget.dataset.level = 'gm';
-        btnRequestOverBudget.textContent = 'ขอ GM อนุมัติเกินงบ';
-      }
+      btnRequestOverBudget.classList.remove('d-none');
+      btnRequestOverBudget.dataset.level = 'manager';
+      btnRequestOverBudget.textContent = 'ขออนุมัติ (เกินงบ)';
     }
 
     content.innerHTML = html;
