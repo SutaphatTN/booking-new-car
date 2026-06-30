@@ -3,6 +3,11 @@
   $pfx = empty($place) ? 'placeAdd' : 'placeEdit';
   // สีไอคอนวันที่ให้ตามธีม modal (เพิ่ม=indigo / แก้ไข=amber) — getDateIconColor อ่าน ci-* จาก label ก่อน
   $dateCi = empty($place) ? 'indigo' : 'amber';
+  // ล็อก ประมาณค่าใช้จ่าย/เป้า PP เมื่อขออนุมัติแล้ว (รออนุมัติ/อนุมัติแล้ว) — ฉบับร่าง/ถูกส่งกลับ ยังแก้ได้
+  $lockBudget = !empty($place) && in_array($place->status, [
+      \App\Models\SourcePlace::STATUS_PENDING,
+      \App\Models\SourcePlace::STATUS_APPROVED,
+  ]);
 @endphp
 @if (!empty($place) && $place->status === \App\Models\SourcePlace::STATUS_REJECTED && optional($place->request)->reject_reason)
   <div class="alert alert-warning d-flex align-items-start gap-2 mb-3">
@@ -67,15 +72,24 @@
         <div class="input-group">
           <span class="input-group-text">฿</span>
           <input id="{{ $pfx }}_cost" type="text" class="form-control text-end money-input" name="cost" autocomplete="off"
-            value="{{ isset($place->cost) ? number_format($place->cost, 2) : '' }}" placeholder="0.00">
+            value="{{ isset($place->cost) ? number_format($place->cost, 2) : '' }}" placeholder="0.00"
+            {{ $lockBudget ? 'readonly' : '' }}>
         </div>
       </div>
 
       <div class="col-md-2">
         <label for="{{ $pfx }}_target" class="mf-label form-label"><i class="bx bx-target-lock"></i> เป้า PP</label>
         <input id="{{ $pfx }}_target" type="number" min="0" step="1" class="form-control text-end" name="target" autocomplete="off"
-          value="{{ isset($place->target) ? (int) $place->target : '' }}" placeholder="0">
+          value="{{ isset($place->target) ? (int) $place->target : '' }}" placeholder="0"
+          {{ $lockBudget ? 'readonly' : '' }}>
       </div>
+
+      @if ($lockBudget)
+        <div class="col-12">
+          <small class="text-muted"><i class="bx bx-lock-alt"></i>
+            ขออนุมัติแล้ว — ไม่สามารถแก้ไขประมาณค่าใช้จ่าย / เป้า PP ได้</small>
+        </div>
+      @endif
 
       <div class="col-md-4">
         <label for="{{ $pfx }}_start_date" class="mf-label form-label"><i class="bx bx-calendar ci-{{ $dateCi }}"></i> วันเริ่มงาน</label>

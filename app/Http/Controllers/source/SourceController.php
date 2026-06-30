@@ -234,6 +234,11 @@ class SourceController extends Controller
             $place     = SourcePlace::findOrFail($id);
             $validated = $this->validatePlace($request);
 
+            // ขออนุมัติแล้ว (รออนุมัติ/อนุมัติแล้ว) ห้ามแก้ ประมาณค่าใช้จ่าย/เป้า PP — กันแก้ฝั่ง client
+            if (in_array($place->status, [SourcePlace::STATUS_PENDING, SourcePlace::STATUS_APPROVED])) {
+                unset($validated['cost'], $validated['target']);
+            }
+
             $place->update($validated);
 
             return response()->json(['success' => true, 'message' => 'แก้ไขข้อมูลเรียบร้อยแล้ว']);
