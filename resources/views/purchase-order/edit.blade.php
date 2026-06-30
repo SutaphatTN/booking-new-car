@@ -72,7 +72,7 @@
             </button>
           </li>
 
-          @if ($userRole == 'admin' || $userRole == 'audit' || $userRole == 'manager' || $userRole == 'md')
+          @if ($userRole == 'admin' || $userRole == 'audit' || $userRole == 'gm' || $userRole == 'manager' || $userRole == 'md')
             <li class="nav-item mb-1 mb-sm-0">
               <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#tab-more"
                 aria-controls="tab-more" aria-selected="false">
@@ -2128,7 +2128,7 @@
                                 </div>
                               </div>
 
-                              @if ($userRole == 'admin' || $userRole == 'audit' || $userRole == 'manager' || $userRole == 'md')
+                              @if ($userRole == 'admin' || $userRole == 'audit' || $userRole == 'gm' || $userRole == 'manager' || $userRole == 'md')
                                 <div class="col-md-4">
                                   <div class="date-card">
                                     <div class="date-card-icon rose">

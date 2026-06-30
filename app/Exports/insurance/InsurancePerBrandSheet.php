@@ -138,6 +138,7 @@ class InsurancePerBrandSheet implements FromView, WithTitle, WithStyles, WithEve
       ->with([
         'customer.prefix',
         'customer.documentAddress',
+        'customer.currentAddress',
         // ดึง รุ่น/รุ่นย่อย/ปี/สี/เลขวิน/เลขเครื่อง/ราคา ผ่าน car_order ที่ผูกไว้ (CarOrderID)
         // carOrder มี global scope userAccess (brand/branch) — ต้อง bypass ไม่งั้น brand อื่นได้ null
         // model/subModel/gwmColor มี global scope brandAccess (กรอง brand) — ต้อง bypass ด้วย
@@ -178,7 +179,8 @@ class InsurancePerBrandSheet implements FromView, WithTitle, WithStyles, WithEve
         'customer'      => $customerName,
         'id_card'       => $r->customer?->IDNumber ?? '',
         'phone'         => $r->customer?->formatted_mobile ?? '',
-        'address'       => $r->customer?->documentAddress?->full_address ?? '',
+        // ที่อยู่เอกสารก่อน ถ้าไม่มีให้ใช้ที่อยู่ปัจจุบันแทน
+        'address'       => ($r->customer?->documentAddress ?? $r->customer?->currentAddress)?->full_address ?? '',
         'insurer'       => '',                  // บริษัทประกัน — เว้นว่าง
         'insurer_class' => '',                  // ชั้นประกัน — เว้นว่าง
         'insure_start'  => $deliveryDate ? $deliveryDate->format('d/m/Y') : '',

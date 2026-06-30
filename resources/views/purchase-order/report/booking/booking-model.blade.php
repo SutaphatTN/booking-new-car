@@ -1,3 +1,7 @@
+@php
+  // role manager เห็นรายงานนี้ได้ แต่ไม่ให้เห็นคอลัมน์ราคาทุน
+  $showCost = auth()->user()->role !== 'manager';
+@endphp
 <table>
   <thead>
     <tr>
@@ -10,7 +14,9 @@
       @if (!in_array(auth()->user()->brand, [2, 3]))
         <th>Option</th>
       @endif
-      <th>ราคาทุน</th>
+      @if ($showCost)
+        <th>ราคาทุน</th>
+      @endif
       <th>ราคาขาย</th>
       <th>สถานะรถ</th>
       <th>Vin - Number</th>
@@ -43,7 +49,9 @@
         @if (!in_array(auth()->user()->brand, [2, 3]))
           <td>{{ $r['option'] }}</td>
         @endif
-        <td>{{ $r['car_DNP'] }}</td>
+        @if ($showCost)
+          <td>{{ $r['car_DNP'] }}</td>
+        @endif
         <td>{{ $r['car_MSRP'] }}</td>
         <td>{{ $r['order_status'] }}</td>
         <td>{{ $r['vin_number'] }}</td>
@@ -66,7 +74,7 @@
     @empty
       <tr>
         {{-- <td colspan="{{ auth()->user()->brand == 2 ? 21 : 20 }}" align="center"> --}}
-        <td colspan="23" align="center">
+        <td colspan="{{ $showCost ? 23 : 22 }}" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

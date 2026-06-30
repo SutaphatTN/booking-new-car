@@ -40,12 +40,22 @@
       @endif
 
       {{-- เมนู "ตั้งค่า GP" เห็นเฉพาะ role admin, audit และ account --}}
-      @if ($submenu->slug == 'purchase-order.gp-setting' && !in_array($userRole, ['admin', 'audit', 'account']))
+      @if ($submenu->slug == 'purchase-order.gp-setting' && !in_array($userRole, ['admin', 'audit', 'gm', 'account']))
         @continue
       @endif
 
       {{-- เมนู "รายงานข้อมูลประกันภัย" เห็นเฉพาะ role admin --}}
       @if ($submenu->slug == 'purchase-order.view-export-insurance' && $userRole !== 'admin')
+        @continue
+      @endif
+
+      {{-- เมนู "รายงาน GP" ปิดจาก role manager --}}
+      @if ($submenu->slug == 'report.gp-export' && $userRole === 'manager')
+        @continue
+      @endif
+
+      {{-- เมนู "ค่าคอมมิชชั่น" เห็นเฉพาะ role admin, manager, gm, md --}}
+      @if ($submenu->slug == 'purchase-order.viewCommission' && !in_array($userRole, ['admin', 'manager', 'gm', 'md']))
         @continue
       @endif
 

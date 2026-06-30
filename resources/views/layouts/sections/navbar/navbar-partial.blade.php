@@ -78,7 +78,7 @@
                               <i class="icon-base bx bx-cog icon-md me-3"></i><span>Settings</span>
                           </a>
                       </li> -->
-          @if (Auth::user()->role == 'audit' || Auth::user()->role == 'admin' || Auth::user()->role == 'manager')
+          @if (Auth::user()->role == 'audit' || Auth::user()->role == 'gm' || Auth::user()->role == 'admin' || Auth::user()->role == 'manager')
             <li>
               <div class="dropdown-divider my-1"></div>
             </li>
@@ -108,7 +108,7 @@
           @php
             $userRole = Auth::user()->role;
             $userBrand = Auth::user()->getOriginal('brand');
-            $canSwitchBrand = ($userBrand != 2 || $userRole == 'md') && in_array($userRole, ['admin', 'account', 'audit', 'manager', 'md', 'sale', 'lead_sale', 'registration', 'bp', 'cs', 'adminPage', 'cro', 'sp', 'marketing']);
+            $canSwitchBrand = ($userBrand != 2 || $userRole == 'md') && in_array($userRole, ['admin', 'account', 'audit', 'gm', 'manager', 'md', 'sale', 'lead_sale', 'registration', 'bp', 'cs', 'adminPage', 'cro', 'sp', 'marketing']);
           @endphp
           @if ($canSwitchBrand)
             <li>
@@ -123,7 +123,7 @@
                   @endif
                 </small>
                 @foreach (TbBrand::all() as $tbBrand)
-                  @if (!in_array($userRole, ['admin', 'account', 'audit', 'registration', 'md', 'adminPage']) && $tbBrand->id == 2)
+                  @if (!in_array($userRole, ['admin', 'account', 'audit', 'gm', 'registration', 'md', 'adminPage']) && $tbBrand->id == 2)
                     @continue
                   @endif
                   @php

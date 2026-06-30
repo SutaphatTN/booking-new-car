@@ -17,6 +17,7 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
@@ -46,12 +47,41 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
     return $this->model->initials;
   }
 
+  /**
+   * คำนวณตัวอักษรคอลัมน์ Option / ราคาทุน / ราคาขาย แบบ dynamic
+   * เพราะลำดับคอลัมน์ขึ้นกับ brand (สีภายใน/Option) และ role (manager ซ่อนราคาทุน)
+   * ต้องตรงกับลำดับใน blade booking-model.blade.php
+   */
+  private function dynamicColumns(): array
+  {
+    $brand    = auth()->user()->brand;
+    $showCost = auth()->user()->role !== 'manager';
+
+    $next = 3; // A=รุ่นย่อย, B=สี
+    if ($brand == 2) $next++;                       // สีภายใน
+    $next++;                                          // ปี
+    $option = null;
+    if (!in_array($brand, [2, 3])) $option = $next++; // Option
+    $cost = null;
+    if ($showCost) $cost = $next++;                  // ราคาทุน
+    $sale = $next++;                                  // ราคาขาย
+
+    return [
+      'option' => $option ? Coordinate::stringFromColumnIndex($option) : null,
+      'cost'   => $cost ? Coordinate::stringFromColumnIndex($cost) : null,
+      'sale'   => Coordinate::stringFromColumnIndex($sale),
+    ];
+  }
+
   public function columnFormats(): array
   {
-    return [
-      'E' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
-      'D' => NumberFormat::FORMAT_TEXT,
-    ];
+    $cols = $this->dynamicColumns();
+
+    $formats = [];
+    if ($cols['option']) $formats[$cols['option']] = NumberFormat::FORMAT_TEXT;
+    if ($cols['cost'])   $formats[$cols['cost']]   = NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1;
+
+    return $formats;
   }
 
   public function styles(Worksheet $sheet)
@@ -128,9 +158,9 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
           $colorMap[$sheetName] ?? '808080'
         );
 
-        // format comma
+        // format comma — ราคาขาย (ตำแหน่งคอลัมน์ขยับตาม brand/role)
         $numberColumns = [
-          'F'
+          $this->dynamicColumns()['sale'],
         ];
 
         foreach ($numberColumns as $col) {

@@ -30,7 +30,7 @@ class InvoiceController extends Controller
         $partners = AccessoryPartner::orderBy('name')->get();
         $today = now()->format('Y-m-d');
         $user = Auth::user();
-        $approvers = User::whereIn('role', ['audit', 'manager', 'md', 'bp', 'cs'])
+        $approvers = User::whereIn('role', ['audit', 'gm', 'manager', 'md', 'bp', 'cs'])
             ->where(function ($q) use ($user) {
                 $q->where('brand', $user->brand == 2 ? 2 : 1)
                   ->orWhereIn('id', [3, 45]);
@@ -109,7 +109,7 @@ class InvoiceController extends Controller
         $partners = AccessoryPartner::orderBy('name')->get();
 
         // ผู้อนุมัติอิงตาม brand/branch/zone ของ invoice เพื่อให้ค่าเดิมอยู่ในลิสต์
-        $approvers = User::whereIn('role', ['audit', 'manager', 'md', 'bp', 'cs'])
+        $approvers = User::whereIn('role', ['audit', 'gm', 'manager', 'md', 'bp', 'cs'])
             ->where(function ($q) use ($invoice) {
                 $q->where('brand', $invoice->brand == 2 ? 2 : 1)
                   ->orWhereIn('id', [3, 45]);
@@ -217,7 +217,7 @@ class InvoiceController extends Controller
     public function list(Request $request)
     {
         $user = Auth::user();
-        $canApprove = in_array($user->role, ['admin', 'audit', 'manager', 'md', 'bp', 'cs']);
+        $canApprove = in_array($user->role, ['admin', 'audit', 'gm', 'manager', 'md', 'bp', 'cs']);
         $canConfirmReceipt = in_array($user->role, ['admin', 'account']);
         $canManage = $user->role === 'admin';
 

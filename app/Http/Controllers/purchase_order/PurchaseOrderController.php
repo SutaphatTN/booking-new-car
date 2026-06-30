@@ -2347,6 +2347,10 @@ class PurchaseOrderController extends Controller
     //commission
     public function viewCommission()
     {
+        if (!in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md'])) {
+            abort(403);
+        }
+
         return view('purchase-order.commission.view');
     }
 
@@ -2427,6 +2431,9 @@ class PurchaseOrderController extends Controller
     // report gp
     public function viewExportGP()
     {
+        // รายงาน GP ปิดจาก role manager
+        abort_if(Auth::user()->role === 'manager', 403);
+
         return view('purchase-order.report.gp.view');
     }
 
@@ -2436,7 +2443,7 @@ class PurchaseOrderController extends Controller
      */
     public function gpSetting(Request $request)
     {
-        abort_unless(in_array(Auth::user()->role, ['admin', 'audit', 'account']), 403);
+        abort_unless(in_array(Auth::user()->role, ['admin', 'audit', 'gm', 'account']), 403);
 
         $month = $request->input('month') ?: now()->format('Y-m');
 
@@ -2451,7 +2458,7 @@ class PurchaseOrderController extends Controller
     {
         $role = Auth::user()->role;
         // admin, audit และ account แก้ไขได้ (audit/account แก้ได้ทุกอย่าง ยกเว้นราคาทุน/ราคาขาย ซึ่ง readonly)
-        abort_unless(in_array($role, ['admin', 'audit', 'account']), 403);
+        abort_unless(in_array($role, ['admin', 'audit', 'gm', 'account']), 403);
 
         $validated = $request->validate([
             'gp_cost_price_override' => 'nullable|numeric|min:0',
@@ -2486,6 +2493,9 @@ class PurchaseOrderController extends Controller
 
     public function exportGP(Request $request)
     {
+        // รายงาน GP ปิดจาก role manager
+        abort_if(Auth::user()->role === 'manager', 403);
+
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
 
         return Excel::download(new GPExport($fromDate), 'gp-report.xlsx');
