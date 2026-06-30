@@ -48,8 +48,10 @@
         .chip.total { background: linear-gradient(120deg, #ecfdf5, #d1fae5); border-color: #a7f3d0; }
         .chip.total .v { color: var(--green-d); }
 
-        .tbl-wrap { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+        .tbl-wrap { border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        table.t-place { min-width: 760px; }
+        table.t-topup { min-width: 560px; }
         thead th { background: #f1f5f9; color: #334155; font-weight: 600; padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
         tbody td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; }
         tbody tr:last-child td { border-bottom: none; }
@@ -126,7 +128,7 @@
 
         <div class="tbl-wrap">
             @if ($isTopup)
-            <table>
+            <table class="t-topup">
                 <thead>
                     <tr>
                         <th style="width:40px;">#</th>
@@ -165,7 +167,7 @@
                 </tfoot>
             </table>
             @else
-            <table>
+            <table class="t-place">
                 <thead>
                     <tr>
                         <th style="width:40px;">#</th>
