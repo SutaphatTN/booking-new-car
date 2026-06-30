@@ -313,7 +313,7 @@
                 <i class="bx bx-save me-1"></i>บันทึก
               </button>
             </div>
-          @elseif (in_array(auth()->user()->role, ['admin', 'audit', 'manager', 'md']))
+          @elseif (in_array(auth()->user()->role, ['admin', 'audit', 'gm', 'manager', 'md']))
             <div class="d-flex justify-content-end gap-2 pt-1">
               <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
                 <i class="bx bx-x me-1"></i>ปิด

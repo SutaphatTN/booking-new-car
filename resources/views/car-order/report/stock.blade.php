@@ -1,3 +1,7 @@
+@php
+  // role manager เห็นรายงานนี้ได้ แต่ไม่ให้เห็นคอลัมน์ราคาทุน
+  $showCost = auth()->user()->role !== 'manager';
+@endphp
 <table>
   <thead>
     <tr>
@@ -13,7 +17,9 @@
       <th>Option</th>
       <th>สี</th>
       <th>ปี</th>
-      <th>ราคาทุน</th>
+      @if ($showCost)
+        <th>ราคาทุน</th>
+      @endif
       <th>ราคาขาย</th>
       <th>ประเภทการจัดซื้อ</th>
       <th>แหล่งที่มา</th>
@@ -37,7 +43,9 @@
       <td>{{ $row->option ?? '-' }}</td>
       <td>{{ $row->display_color }}</td>
       <td>{{ $row->year ?? '-' }}</td>
-      <td>{{ $row->car_DNP ?? '-' }}</td>
+      @if ($showCost)
+        <td>{{ $row->car_DNP ?? '-' }}</td>
+      @endif
       <td>{{ $row->car_MSRP ?? '-' }}</td>
       <td>{{ $row->purchaseType->name ?? '-' }}</td>
       <td>{{ $row->purchase_source ?? '-' }}</td>
@@ -46,7 +54,7 @@
     </tr>
     @empty
     <tr>
-      <td colspan="18" align="center">ไม่มีข้อมูล</td>
+      <td colspan="{{ $showCost ? 18 : 17 }}" align="center">ไม่มีข้อมูล</td>
     </tr>
     @endforelse
   </tbody>

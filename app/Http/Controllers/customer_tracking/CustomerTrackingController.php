@@ -576,7 +576,7 @@ class CustomerTrackingController extends Controller
                 'UserInsert'        => $authUser->id,
             ]);
 
-            $isSaleRole = in_array($authUser->role, ['sale', 'lead_sale', 'adminPage', 'audit']);
+            $isSaleRole = in_array($authUser->role, ['sale', 'lead_sale', 'adminPage', 'audit', 'gm']);
             $entryType  = $isSaleRole ? 'sale' : 'manager';
             $decisionId = $request->decision_id ?: null;
             $baseDate   = Carbon::parse($request->contact_date);
@@ -665,7 +665,7 @@ class CustomerTrackingController extends Controller
         ]);
 
         $user       = Auth::user();
-        $isSaleRole = in_array($user->role, ['sale', 'adminPage', 'audit']);
+        $isSaleRole = in_array($user->role, ['sale', 'adminPage', 'audit', 'gm']);
         $entryType  = $isSaleRole ? 'sale' : 'manager';
         $decisionId = $request->decision_id ?: null;
 
