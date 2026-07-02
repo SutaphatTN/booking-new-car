@@ -12,20 +12,25 @@ class BatchApproveCarOrderMail extends Mailable
 
     public $items;
     public $approverName;
+    public $brand;
 
     /**
-     * @param array  $items        รายการที่ขออนุมัติ (order_code, model, subModel, color, year, type, qty)
-     * @param string $approverName ชื่อผู้อนุมัติ
+     * @param array    $items        รายการที่ขออนุมัติ (order_code, model, subModel, color, year, type, qty)
+     * @param string   $approverName ชื่อผู้อนุมัติ
+     * @param int|null $brand        brand ของคำขอ (สำหรับแสดงหัวอีเมล/subject)
      */
-    public function __construct(array $items, string $approverName)
+    public function __construct(array $items, string $approverName, $brand = null)
     {
         $this->items = $items;
         $this->approverName = $approverName;
+        $this->brand = $brand;
     }
 
     public function build()
     {
-        return $this->subject('มีคำขออนุมัติสั่งซื้อรถ')
+        $brandName = config("brand.names.{$this->brand}") ?? ('Brand ' . ($this->brand ?? '-'));
+
+        return $this->subject("[{$brandName}] มีคำขออนุมัติสั่งซื้อรถ")
             ->markdown('emails.batch-approve-order');
     }
 }

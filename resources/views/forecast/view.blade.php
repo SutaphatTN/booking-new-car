@@ -3,10 +3,12 @@
 
 @section('page-script')
 <script>
+  // กดปุ่ม "คำนวณ" → ส่ง target (ยอดที่อยากสั่งเดือนนี้) ไปคำนวณที่ ForecastController::forecastCalculate
   document.getElementById('btnCalculate').addEventListener('click', function() {
 
     let target = document.getElementById('target').value;
 
+    // ต้องกรอกยอดก่อน
     if (!target) {
       alert('กรุณากรอกยอด');
       return;
@@ -25,11 +27,13 @@
       .then(res => res.json())
       .then(res => {
 
+        // เช่น target = 0 หรือไม่มียอดขายย้อนหลัง 3 เดือน → backend ส่ง success=false พร้อมข้อความ
         if (!res.success) {
           alert(res.message);
           return;
         }
 
+        // สร้างตารางผลลัพธ์ — คอลัมน์ "ภายใน" (สีภายใน) แสดงเฉพาะ brand 2 (GWM)
         let html = `
         <div class="table-responsive">
         <table class="table table-bordered tbl-table tbl-styled">
@@ -47,6 +51,7 @@
             <tbody>
         `;
 
+        // หนึ่งแถวต่อหนึ่งรุ่น/สี — forecast_units = จำนวนที่ควรสั่ง (คำนวณจาก backend)
         res.data.forEach(item => {
           html += `
                 <tr>

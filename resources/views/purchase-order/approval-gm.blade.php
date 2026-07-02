@@ -39,15 +39,28 @@
       <div class="err">{{ $errors->first() }}</div>
     @endif
 
+    @php
+      // ยอดหักคอมแนะนำ = สูตรเดียวกับ displayBalanceCamHalf ในหน้า summary
+      // (balanceCampaign * 2 * per_budget%) — ใช้ค่าสัมบูรณ์เพราะช่องนี้รับค่าบวก
+      $balCam = $saleCar->balanceCampaign ?? null;
+      $perBudget = $saleCar->model->per_budget ?? 0;
+      $suggestDeduct = (is_numeric($balCam) && $balCam < 0)
+          ? abs($balCam * 2 * ($perBudget / 100))
+          : 0;
+      // ยังไม่เคยตัดสินใจ → เติมยอดแนะนำให้แก้ไขได้; ถ้าเคยกรอกไว้แล้วใช้ค่าเดิม
+      $defaultDeduct = $saleCar->approval_commission_deduct
+          ?? ($suggestDeduct > 0 ? number_format($suggestDeduct, 2) : '');
+    @endphp
+
     <form method="POST" action="{{ route('purchase-order.gmDecide', $token) }}">
       @csrf
       <label class="choice"><input type="radio" name="decision" value="deduct" checked onchange="toggle()"> หักเงิน (จบที่ GM)</label>
-      <label class="choice"><input type="radio" name="decision" value="forward" onchange="toggle()"> ไม่หักเงิน → ส่งต่อ MD</label>
+      <label class="choice"><input type="radio" name="decision" value="forward" onchange="toggle()"> ไม่หักเงิน VIP → ส่งต่อ MD</label>
 
       <div id="deductBox">
         <label class="field" for="commission_deduct">ยอดหักค่าคอมฝ่ายขาย (บาท)</label>
         <input type="text" inputmode="decimal" id="commission_deduct" name="commission_deduct"
-          value="{{ old('commission_deduct', $saleCar->approval_commission_deduct) }}" oninput="formatComma(this); calcExtra()">
+          value="{{ old('commission_deduct', $defaultDeduct) }}" oninput="formatComma(this); calcExtra()">
         <div class="extra">
           <span class="lbl">เก็บงบเพิ่มเติม (ยอดที่เหลือ − หักค่าคอม)</span>
           <span class="val" id="extraVal">-</span>

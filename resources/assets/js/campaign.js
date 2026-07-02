@@ -6,6 +6,7 @@ $.ajaxSetup({
 
 //view : table campaign
 let campaignTable;
+let typeFilterActive = null; // null = ทุกประเภท, array = เฉพาะ id ที่เลือก
 
 $(document).ready(function () {
   if ($.fn.DataTable.isDataTable('.campaignTable')) {
@@ -15,7 +16,16 @@ $(document).ready(function () {
   campaignTable = $('.campaignTable').DataTable({
     serverSide: true,
     processing: false,
-    ajax: '/campaign/list',
+    ajax: {
+      url: '/campaign/list',
+      data: function (d) {
+        d.filter_model_id = $('#filterModel').val();
+        d.filter_subModel_id = $('#filterSubModel').val();
+        if (typeFilterActive !== null) {
+          d.filter_campaign_type = JSON.stringify(typeFilterActive);
+        }
+      }
+    },
     columns: [
       { data: 'No', orderable: false },
       { data: 'model_id', orderable: false },
@@ -52,6 +62,130 @@ $(document).ready(function () {
   });
   campaignTable.on('xhr.dt', function () {
     $('#campaignLoadingOverlay').css('display', 'none');
+  });
+
+  // ── ตัวกรอง : รุ่นย่อย → reload ตาราง ──
+  $('#filterSubModel').on('change', function () {
+    campaignTable.ajax.reload();
+  });
+
+  // ── ตัวกรอง : รุ่นหลัก → โหลดรุ่นย่อยแบบ cascade แล้ว reload ──
+  $('#filterModel').on('change', function () {
+    const modelId = $(this).val();
+    const $sub = $('#filterSubModel');
+
+    $sub.prop('disabled', true).empty().append('<option value="">ทั้งหมด</option>');
+
+    if (!modelId) {
+      campaignTable.ajax.reload();
+      return;
+    }
+
+    $.get('/api/campaign/sub-model/' + modelId, function (data) {
+      (data || []).forEach(function (sub) {
+        const text = sub.detail ? `${sub.detail} - ${sub.name}` : sub.name;
+        $sub.append(`<option value="${sub.id}">${text}</option>`);
+      });
+      $sub.prop('disabled', false);
+    });
+
+    campaignTable.ajax.reload();
+  });
+
+  // ── ล้างตัวกรอง ──
+  $('#btnClearCamFilter').on('click', function () {
+    $('#filterModel').val('');
+    $('#filterSubModel').prop('disabled', true).empty().append('<option value="">ทั้งหมด</option>');
+    // reset ฟิลเตอร์ประเภท
+    typeFilterActive = null;
+    $('.type-chk-item').prop('checked', true);
+    $('#typeChkAll').prop({ indeterminate: false, checked: true });
+    $('#typeFilterBtn').removeClass('filtered active');
+    campaignTable.ajax.reload();
+  });
+
+  // ══ ฟิลเตอร์ประเภท (ปุ่มกรวยที่หัวคอลัมน์) ══
+  function syncTypeSelectAll() {
+    const $items = $('.type-chk-item:visible');
+    const total = $items.length;
+    const checked = $items.filter(':checked').length;
+    const $all = $('#typeChkAll');
+    if (total === 0 || checked === 0) {
+      $all.prop({ indeterminate: false, checked: false });
+    } else if (checked === total) {
+      $all.prop({ indeterminate: false, checked: true });
+    } else {
+      $all.prop({ indeterminate: true, checked: false });
+    }
+  }
+
+  // เปิด/ปิด dropdown – วางตำแหน่งแบบ fixed หนี overflow ของตาราง
+  $('#typeFilterBtn').on('click', function (e) {
+    e.stopPropagation();
+    const $dd = $('#typeFilterDropdown');
+    if ($dd.hasClass('show')) {
+      $dd.removeClass('show');
+      $(this).removeClass('active');
+      return;
+    }
+    const rect = this.getBoundingClientRect();
+    $dd.css({ top: rect.bottom + 4 + 'px', left: rect.left + 'px' });
+    $dd.addClass('show');
+    $(this).addClass('active');
+    $('#typeFilterSearch').val('').trigger('input').focus();
+  });
+
+  // ปิดเมื่อคลิกนอก dropdown
+  $(document).on('click.typeFilter', function (e) {
+    if (!$(e.target).closest('#typeFilterDropdown, #typeFilterBtn').length) {
+      $('#typeFilterDropdown').removeClass('show');
+      $('#typeFilterBtn').removeClass('active');
+    }
+  });
+
+  // เลือกทั้งหมด
+  $(document).on('change', '#typeChkAll', function () {
+    $('.type-chk-item:visible').prop('checked', $(this).is(':checked'));
+  });
+
+  // เลือกทีละรายการ → sync หัว
+  $(document).on('change', '.type-chk-item', function () {
+    syncTypeSelectAll();
+  });
+
+  // ค้นหาใน dropdown
+  $(document).on('input', '#typeFilterSearch', function () {
+    const q = $(this).val().toLowerCase();
+    $('#typeFilterList .col-filter-item:not(.col-filter-all)').each(function () {
+      const label = $(this).find('label').text().toLowerCase();
+      $(this).toggle(!q || label.includes(q));
+    });
+    syncTypeSelectAll();
+  });
+
+  // ตกลง
+  $(document).on('click', '#typeFilterApply', function () {
+    const $all = $('.type-chk-item');
+    const checked = [];
+    $all.filter(':checked').each(function () {
+      checked.push($(this).val());
+    });
+    const isAll = checked.length === $all.length;
+    typeFilterActive = isAll ? null : checked;
+    $('#typeFilterBtn').toggleClass('filtered', typeFilterActive !== null);
+    campaignTable.ajax.reload(null, false);
+    $('#typeFilterDropdown').removeClass('show');
+    $('#typeFilterBtn').removeClass('active');
+  });
+
+  // ล้าง (ในตัว dropdown)
+  $(document).on('click', '#typeFilterClear', function () {
+    typeFilterActive = null;
+    $('.type-chk-item').prop('checked', true);
+    $('#typeChkAll').prop({ indeterminate: false, checked: true });
+    $('#typeFilterBtn').removeClass('filtered active');
+    campaignTable.ajax.reload(null, false);
+    $('#typeFilterDropdown').removeClass('show');
   });
 });
 

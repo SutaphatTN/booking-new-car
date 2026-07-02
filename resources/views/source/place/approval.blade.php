@@ -86,13 +86,14 @@
     $total = $isTopup ? $lines->sum(fn($p) => (float) ($p->pending_extra ?? 0)) : $lines->sum('cost');
     $fmtDate = fn($d) => $d ? $d->format('d/m/') . ($d->year + 543) : '';
     $badgeColor = ['approved' => '#059669', 'rejected' => '#dc2626', 'pending' => '#d97706'][$req->status] ?? '#64748b';
+    $brandName = config("brand.names.{$req->brand}") ?? ('Brand ' . ($req->brand ?? '-'));
 @endphp
 <div class="card">
     <div class="hd">
         <div class="icon">📋</div>
         <div>
             <h1>{{ $isTopup ? 'ขออนุมัติเพิ่มงบประมาณกิจกรรมการตลาด' : 'ขออนุมัติค่าใช้จ่ายกิจกรรมการตลาด' }}</h1>
-            <p>{{ $isTopup ? 'เอกสารขออนุมัติเพิ่มงบประมาณ' : 'เอกสารขออนุมัติสถานที่' }} · ประจำเดือน {{ $req->period ?? '-' }}</p>
+            <p>{{ $brandName }} · {{ $isTopup ? 'เอกสารขออนุมัติเพิ่มงบประมาณ' : 'เอกสารขออนุมัติสถานที่' }} · ประจำเดือน {{ $req->period ?? '-' }}</p>
         </div>
     </div>
     <div class="bd">
@@ -119,6 +120,7 @@
         @endif
 
         <div class="meta">
+            <div class="chip"><div class="k">แบรนด์</div><div class="v">{{ $brandName }}</div></div>
             <div class="chip"><div class="k">ผู้ขออนุมัติ</div><div class="v">{{ optional($req->requester)->full_name ?: (optional($req->requester)->name ?? '-') }}</div></div>
             <div class="chip"><div class="k">ผู้อนุมัติ</div><div class="v">{{ optional($req->approver)->full_name ?: (optional($req->approver)->name ?? '-') }}</div></div>
             <div class="chip"><div class="k">ประจำเดือน</div><div class="v">{{ $req->period ?? '-' }}</div></div>

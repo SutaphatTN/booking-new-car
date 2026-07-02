@@ -16,6 +16,7 @@
     };
 
     $total = $req->places->sum('cost');
+    $brandName = config("brand.names.{$req->brand}") ?? ('Brand ' . ($req->brand ?? '-'));
 @endphp
 <!DOCTYPE html>
 <html>
@@ -47,6 +48,7 @@
 </head>
 <body>
     <h2>ประมาณการค่าใช้จ่ายกิจกรรมการตลาด ประจำเดือน {{ $periodLabel }}</h2>
+    <p style="text-align:center; margin:-6px 0 12px; font-size:13px; font-weight:bold;">แบรนด์: {{ $brandName }}</p>
 
     <table>
         <thead>

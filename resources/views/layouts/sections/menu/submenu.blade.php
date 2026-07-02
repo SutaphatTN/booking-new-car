@@ -54,6 +54,11 @@
         @continue
       @endif
 
+      {{-- เมนู "D/Bar" เห็นเฉพาะ role admin, audit, gm, manager, md --}}
+      @if ($submenu->slug == 'dbar.index' && !in_array($userRole, ['admin', 'audit', 'gm', 'manager', 'md']))
+        @continue
+      @endif
+
       {{-- เมนู "ค่าคอมมิชชั่น" เห็นเฉพาะ role admin, manager, gm, md --}}
       @if ($submenu->slug == 'purchase-order.viewCommission' && !in_array($userRole, ['admin', 'manager', 'gm', 'md']))
         @continue

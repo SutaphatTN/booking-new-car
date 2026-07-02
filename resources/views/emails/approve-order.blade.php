@@ -15,10 +15,14 @@
     $subModelText = $subDetail && $subName
         ? "{$subDetail} - {$subName}"
         : ($subDetail ?: ($subName ?: '-'));
+
+    $brandName = config("brand.names.{$brand}") ?? ('Brand ' . ($brand ?? '-'));
 @endphp
 
 @component('mail::message')
 # แจ้งเตือนคำขอสั่งซื้อรถ
+
+**แบรนด์: {{ $brandName }}**
 
 เรียน คุณ {{ $order->approvers->name ?? 'ผู้อนุมัติ' }}
 

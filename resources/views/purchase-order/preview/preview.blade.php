@@ -25,11 +25,11 @@
         if ($__balance >= 0) {
             // งบปกติ → manager (SMSignature)
             $hasApproval = (bool) $saleCar->SMSignature;
-        } elseif ($__brand === 2 || $__brand === 3) {
-            // brand 2: gm/md, brand 3: md → จบที่ GMApprovalSignature
+        } elseif ($__brand === 2) {
+            // brand 2: gm/md → จบที่ GMApprovalSignature
             $hasApproval = (bool) $saleCar->GMApprovalSignature;
         } else {
-            // brand 1: เกิน ≤ over_budget → manager(ApprovalSignature) / เกิน > over_budget → md(GMApprovalSignature)
+            // brand 1 + brand 3: เกิน ≤ over_budget → manager(ApprovalSignature) / เกิน > over_budget → md(GMApprovalSignature)
             $__overBudget = (float) ($saleCar->model?->over_budget ?? 0);
             $hasApproval = abs($__balance) <= $__overBudget
                 ? (bool) $saleCar->ApprovalSignature

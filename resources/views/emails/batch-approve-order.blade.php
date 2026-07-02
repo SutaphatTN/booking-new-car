@@ -1,5 +1,8 @@
+@php $brandName = config("brand.names.{$brand}") ?? ('Brand ' . ($brand ?? '-')); @endphp
 @component('mail::message')
 # แจ้งเตือนคำขอสั่งซื้อรถ
+
+**แบรนด์: {{ $brandName }}**
 
 เรียน คุณ {{ $approverName }}
 

@@ -226,21 +226,15 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       $campaign_other = $r->campaigns->filter(fn($c) => $c->campaign?->type?->type == 3)->sum('CashSupportFinal');
       $campaign_ck = $r->campaigns->filter(fn($c) => $c->campaign?->type?->type == 4)->sum('CashSupportFinal');
 
-      $group1Ids = array_merge(range(1, 8), range(14, 22));
-      // id = 26 เป็นของ brand = 2 เท่านั้น
-      if ($r->brand == 2) {
-        $group1Ids[] = 26;
-      }
-      $group2Ids = array_merge(range(10, 12), range(23, 25));
-
+      // group 1 = campaign_type ที่ type = 1 (รวม GWM id=26 อัตโนมัติ), group 2 = type = 2 (On-Top)
       $campaign_detail_1 = $r->campaigns
-        ->filter(fn($c) => in_array($c->campaign?->campaign_type, $group1Ids))
+        ->filter(fn($c) => $c->campaign?->type?->type == 1)
         ->map(fn($c) => ($c->campaign?->appellation?->name ?? '') . ' (' . ($c->campaign?->type?->name ?? '') . ')')
         ->filter()
         ->implode(' / ');
 
       $campaign_detail_2 = $r->campaigns
-        ->filter(fn($c) => in_array($c->campaign?->campaign_type, $group2Ids))
+        ->filter(fn($c) => $c->campaign?->type?->type == 2)
         ->map(fn($c) => ($c->campaign?->appellation?->name ?? '') . ' (' . ($c->campaign?->type?->name ?? '') . ')')
         ->filter()
         ->implode(' / ');
@@ -287,10 +281,10 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       //   ->filter(fn($a) => $a->is_standard && $a->pivot->type === 'gift')
       //   ->sum(fn($a) => (float) ($a->cost_spare ?? 0));
 
-      // ส่วนลดแคมเปญ — ยอดหัก cashSupport_deduct จาก campaign ที่ใช้ (เฉพาะ campaign_type กลุ่ม 1-8, 14-22)
+      // ส่วนลดแคมเปญ — ยอดหัก cashSupport_deduct จาก campaign ที่ใช้ (เฉพาะ type = 1)
       $campaign_deduct = $r->campaigns
-        ->filter(fn($c) => in_array($c->campaign?->campaign_type, $group1Ids))
-        ->sum(fn($c) => (float) ($c->campaign?->cashSupport_deduct ?? 0));
+        ->filter(fn($c) => $c->campaign?->type?->type == 1)
+        ->sum(fn($c) => (float) ($c->CashSupportDeduct ?? 0));
 
       //รวมส่วนลด
       $total_discount = $downDisAccVat + $carDiscount + $giftAccCostSpare + $campaign_deduct + $ReferrerAmount;

@@ -14,6 +14,7 @@ use App\Exports\saleCar\SaleCarBookingExport;
 use App\Exports\saleCar\MonthlyDeliveryExport;
 use App\Http\Controllers\Controller;
 use App\Mail\SaleRequestMail;
+use App\Models\Address;
 use App\Models\TbCarmodel;
 use App\Models\AccessoryPrice;
 use App\Models\Campaign;
@@ -202,10 +203,10 @@ class PurchaseOrderController extends Controller
         $usedCampaigns = $saleCar->campaigns->filter(
             fn($c) => in_array($c->campaign?->campaign_type, $campaignIds)
         );
-        $ri = $usedCampaigns->sum(fn($c) => (float) ($c->campaign?->cashSupport ?? 0));
+        $ri = $usedCampaigns->sum(fn($c) => (float) ($c->CashSupport ?? 0));
         $campaignDetails = $usedCampaigns->map(fn($c) => [
             'name'   => trim(($c->campaign?->appellation?->name ?? '') . ' (' . ($c->campaign?->type?->name ?? '') . ')'),
-            'amount' => (float) ($c->campaign?->cashSupport ?? 0),
+            'amount' => (float) ($c->CashSupport ?? 0),
         ])->values();
 
         // 4. com finance (port calculateComFin จากหน้า FN)
@@ -280,7 +281,7 @@ class PurchaseOrderController extends Controller
     //  b1_manager = brand1 เกิน ≤ over_budget → manager (จบ)
     //  b1_md      = brand1 เกิน > over_budget → manager กรอกหัก → md
     //  b2_gm      = brand2 เกินงบ → gm (เลือกหักเงินจบ / ส่งต่อ md)
-    //  b3_md      = brand3 เกินงบ → md ตรง
+    //  brand 3 ใช้ logic เดียวกับ brand 1 (ไม่มี over_budget → เกินงบทุกกรณีจะได้ b1_md เสมอ)
     private function approvalCase(Salecar $saleCar): string
     {
         $balance = (float) ($saleCar->balanceCampaign ?? 0);
@@ -291,10 +292,7 @@ class PurchaseOrderController extends Controller
         if ($brand === 2) {
             return 'b2_gm';
         }
-        if ($brand === 3) {
-            return 'b3_md';
-        }
-        // brand 1 (และ default)
+        // brand 1, brand 3 (และ default)
         $overBudget = (float) ($saleCar->model?->over_budget ?? 0);
         return abs($balance) <= $overBudget ? 'b1_manager' : 'b1_md';
     }
@@ -305,7 +303,7 @@ class PurchaseOrderController extends Controller
         return match ($this->approvalCase($saleCar)) {
             'normal'     => (bool) $saleCar->SMSignature,
             'b1_manager' => (bool) $saleCar->ApprovalSignature,
-            'b1_md', 'b2_gm', 'b3_md' => (bool) $saleCar->GMApprovalSignature,
+            'b1_md', 'b2_gm' => (bool) $saleCar->GMApprovalSignature,
             default      => false,
         };
     }
@@ -315,8 +313,7 @@ class PurchaseOrderController extends Controller
     {
         return match ($case) {
             'b2_gm' => 'gm',
-            'b3_md' => 'md',
-            default => 'manager',   // normal, b1_manager, b1_md
+            default => 'manager',   // normal, b1_manager, b1_md (รวม brand 3)
         };
     }
 
@@ -458,9 +455,8 @@ class PurchaseOrderController extends Controller
                 }
                 return view('purchase-order.approval-confirm', compact('saleCar', 'token'));
 
-            case 'b3_md':
             default:
-                // md อนุมัติตรง
+                // fallback — ขั้นสุดท้าย (md) กดยืนยัน
                 return view('purchase-order.approval-confirm', compact('saleCar', 'token'));
         }
     }
@@ -775,6 +771,19 @@ class PurchaseOrderController extends Controller
             ], [
                 'CusID.required' => 'กรุณาค้นหาและเลือกลูกค้า'
             ]);
+
+            // กันข้ามฝั่ง server: ลูกค้าต้องมีเลขบัตร/เบอร์โทร/ที่อยู่ปัจจุบันครบก่อนทำการจอง
+            $missingProfile = $this->customerProfileMissing(Customer::find($request->CusID));
+            if (!empty($missingProfile)) {
+                DB::rollBack();
+                return response()->json([
+                    'success'      => false,
+                    'need_profile' => true,
+                    'customer_id'  => (int) $request->CusID,
+                    'missing'      => $missingProfile,
+                    'message'      => 'ข้อมูลลูกค้ายังไม่ครบ (' . implode(', ', $missingProfile) . ') กรุณากรอกให้ครบก่อนทำการจอง',
+                ], 422);
+            }
 
             $turnCarID = null;
 
@@ -2222,6 +2231,157 @@ class PurchaseOrderController extends Controller
         return response()->json(['status' => 'no_tracking']);
     }
 
+    // คืนรายการข้อมูลที่ลูกค้ายังขาดสำหรับทำการจอง (ว่าง = ครบ) — ใช้ร่วมกันทั้ง gate หน้าจอและ store()
+    private function customerProfileMissing(?Customer $customer): array
+    {
+        if (!$customer) {
+            return ['ไม่พบข้อมูลลูกค้า'];
+        }
+
+        $addr = Address::where('customer_id', $customer->id)
+            ->where('type', 'current')
+            ->first();
+
+        $missing = [];
+        if (empty($customer->IDNumber))      $missing[] = 'เลขบัตรประชาชน';
+        if (empty($customer->Mobilephone1))  $missing[] = 'เบอร์โทรศัพท์';
+        if (!($addr && !empty($addr->province) && !empty($addr->district) && !empty($addr->subdistrict))) {
+            $missing[] = 'ที่อยู่ปัจจุบัน';
+        }
+
+        return $missing;
+    }
+
+    // ตรวจว่าลูกค้ามีข้อมูลครบก่อนทำการจอง: เลขบัตร + เบอร์โทร + ที่อยู่ปัจจุบัน (จังหวัด/อำเภอ/ตำบล)
+    public function customerProfile(Request $request)
+    {
+        $customer = Customer::find($request->customer_id);
+        if (!$customer) {
+            return response()->json(['found' => false], 404);
+        }
+
+        $addr = Address::where('customer_id', $customer->id)
+            ->where('type', 'current')
+            ->first();
+
+        $missing = $this->customerProfileMissing($customer);
+
+        return response()->json([
+            'found'         => true,
+            'complete'      => empty($missing),
+            'missing'       => $missing,
+            'prefix_id'     => $customer->PrefixName,
+            'first_name'    => $customer->FirstName,
+            'last_name'     => $customer->LastName,
+            'original_name' => $customer->OriginalName,
+            'id_number'     => $customer->IDNumber,
+            'mobile'        => $customer->Mobilephone1,
+            'address'   => $addr ? [
+                'house_number' => $addr->house_number,
+                'group'        => $addr->group,
+                'village'      => $addr->village,
+                'alley'        => $addr->alley,
+                'road'         => $addr->road,
+                'province'     => $addr->province,
+                'district'     => $addr->district,
+                'subdistrict'  => $addr->subdistrict,
+                'postal_code'  => $addr->postal_code,
+                'post_id'      => $addr->post_id,
+            ] : null,
+        ]);
+    }
+
+    // บันทึกข้อมูลที่ขาด (เลขบัตร/เบอร์โทร/ที่อยู่ปัจจุบัน) จาก modal หน้าจอง
+    public function saveCustomerProfile(Request $request)
+    {
+        $request->validate([
+            'customer_id'  => 'required|integer|exists:customers,id',
+            'PrefixName'   => 'nullable|integer|exists:tb_prefixname,id',
+            'FirstName'    => 'required|string|max:100',
+            'LastName'     => 'nullable|string|max:100',
+            'IDNumber'     => 'required|string',
+            'Mobilephone1' => 'required|string',
+            'house_number' => 'required|string|max:100',
+            'province'     => 'required|string|max:100',
+            'district'     => 'required|string|max:100',
+            'subdistrict'  => 'required|string|max:100',
+        ]);
+
+        $authUser = Auth::user();
+        $idNumber = preg_replace('/\D/', '', $request->IDNumber);
+        $mobile   = preg_replace('/\D/', '', $request->Mobilephone1);
+
+        if (strlen($idNumber) !== 13) {
+            return response()->json(['success' => false, 'message' => 'เลขบัตรประชาชนต้องมี 13 หลัก'], 422);
+        }
+
+        if (Customer::where('IDNumber', $idNumber)->where('id', '!=', $request->customer_id)->exists()) {
+            return response()->json(['success' => false, 'message' => 'เลขบัตรประชาชนนี้มีอยู่ในระบบแล้ว'], 422);
+        }
+
+        if (Customer::withTrashed()->where('Mobilephone1', $mobile)->where('id', '!=', $request->customer_id)->exists()) {
+            return response()->json(['success' => false, 'message' => 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว'], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $customer = Customer::findOrFail($request->customer_id);
+            $customer->update([
+                'PrefixName'   => $request->PrefixName ?: null,
+                'FirstName'    => $request->FirstName,
+                'LastName'     => $request->LastName ?: null,
+                'IDNumber'     => $idNumber,
+                'Mobilephone1' => $mobile,
+            ]);
+
+            $addrData = [
+                'house_number' => $request->house_number,
+                'group'        => $request->group,
+                'village'      => $request->village,
+                'alley'        => $request->alley,
+                'road'         => $request->road,
+                'subdistrict'  => $request->subdistrict,
+                'district'     => $request->district,
+                'province'     => $request->province,
+                'postal_code'  => $request->postal_code,
+                'post_id'      => $request->post_id ?: null,
+                'userZone'     => $customer->userZone ?? $authUser->userZone,
+                'brand'        => $customer->brand ?? $authUser->brand,
+                'branch'       => $customer->branch ?? $authUser->branch,
+            ];
+
+            Address::updateOrCreate(
+                ['customer_id' => $customer->id, 'type' => 'current'],
+                $addrData
+            );
+
+            // ถ้ายังไม่มีที่อยู่เอกสาร ให้สร้างตามที่อยู่ปัจจุบัน (รายงาน เช่น ประกันภัย อ่านจาก document)
+            // ไม่ทับของเดิมถ้ามีอยู่แล้ว เพราะที่อยู่เอกสารอาจตั้งใจให้ต่างจากปัจจุบัน
+            $hasDocAddress = Address::where('customer_id', $customer->id)
+                ->where('type', 'document')
+                ->exists();
+
+            if (!$hasDocAddress) {
+                Address::create(['customer_id' => $customer->id, 'type' => 'document'] + $addrData);
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาลองใหม่'], 500);
+        }
+
+        $customer->refresh()->load('prefix');
+        $fullName = trim(($customer->prefix->Name_TH ?? '') . ' ' . $customer->FirstName . ' ' . ($customer->LastName ?? ''));
+
+        return response()->json([
+            'success'   => true,
+            'name'      => $fullName,
+            'id_number' => $customer->formatted_id_number,
+            'mobile'    => $customer->formatted_mobile,
+        ]);
+    }
+
     public function listHistory(Request $request)
     {
         $user = Auth::user();
@@ -2269,7 +2429,8 @@ class PurchaseOrderController extends Controller
                     $c->FirstName ?? null,
                     $c->LastName  ?? null,
                 ])),
-                'code'   => $s->carOrder->order_code ?? '-',
+                // 'code'   => $s->carOrder->order_code ?? '-',
+                'vin_number' => $s->carOrder->vin_number ?? '-',
                 'Action' => view('purchase-order.history.button', compact('s'))->render(),
             ];
         });
@@ -2569,9 +2730,10 @@ class PurchaseOrderController extends Controller
     public function exportMonthlyDelivery(Request $request)
     {
         $fromDate   = $request->from_date ?? now()->startOfMonth()->format('Y-m');
+        $toDate     = $request->to_date ?? now()->startOfMonth()->format('Y-m');
         $dateType   = $request->date_type ?? 'dms';
 
-        return Excel::download(new MonthlyDeliveryExport($fromDate, $dateType), 'ส่งมอบประจำเดือน.xlsx');
+        return Excel::download(new MonthlyDeliveryExport($fromDate, $toDate, $dateType), 'ส่งมอบประจำเดือน.xlsx');
     }
 
     public function proxyAttachment(Request $request, $id, $filename = null)

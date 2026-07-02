@@ -2,9 +2,12 @@
     $isTopup = ($req->type ?? 'place') === 'topup';
     $lines = $isTopup ? $req->topupPlaces : $req->places;
     $total = $isTopup ? $lines->sum(fn($p) => (float) ($p->pending_extra ?? 0)) : $lines->sum('cost');
+    $brandName = config("brand.names.{$req->brand}") ?? ('Brand ' . ($req->brand ?? '-'));
 @endphp
 @component('mail::message')
 # {{ $isTopup ? 'คำขออนุมัติเพิ่มงบประมาณได้รับการอนุมัติแล้ว' : 'คำขออนุมัติสถานที่ได้รับการอนุมัติแล้ว' }}
+
+**แบรนด์: {{ $brandName }}**
 
 เรียน คุณ {{ optional($req->requester)->full_name ?: (optional($req->requester)->name ?? 'ผู้ขออนุมัติ') }},
 

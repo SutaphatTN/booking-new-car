@@ -1,9 +1,12 @@
 @php
     $isTopup = ($req->type ?? 'place') === 'topup';
     $lines = $isTopup ? $req->topupPlaces : $req->places;
+    $brandName = config("brand.names.{$req->brand}") ?? ('Brand ' . ($req->brand ?? '-'));
 @endphp
 @component('mail::message')
 # {{ $isTopup ? 'คำขออนุมัติเพิ่มงบประมาณถูกส่งกลับให้แก้ไข' : 'คำขออนุมัติสถานที่ถูกส่งกลับให้แก้ไข' }}
+
+**แบรนด์: {{ $brandName }}**
 
 เรียน คุณ {{ optional($req->requester)->full_name ?: (optional($req->requester)->name ?? 'ผู้ขออนุมัติ') }},
 

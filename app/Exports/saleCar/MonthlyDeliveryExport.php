@@ -19,11 +19,13 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
     protected $fromDate;
+    protected $toDate;
     protected $dateType;
 
-    public function __construct($fromDate = null, $dateType = 'dms')
+    public function __construct($fromDate = null, $toDate = null, $dateType = 'dms')
     {
         $this->fromDate = $fromDate ?? now()->startOfMonth()->format('Y-m');
+        $this->toDate   = $toDate   ?? now()->startOfMonth()->format('Y-m');
         $this->dateType = $dateType;
     }
 
@@ -84,7 +86,7 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
 
                 $sheet->getTabColor()->setRGB('a2d4ff');
 
-                $numberColumns = ['H', 'J', 'L'];
+                $numberColumns = ['L', 'N'];
                 foreach ($numberColumns as $col) {
                     $sheet->getStyle("{$col}2:{$col}{$highestRow}")
                         ->getNumberFormat()
@@ -96,16 +98,18 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
 
     public function view(): View
     {
-        $date = Carbon::createFromFormat('Y-m', $this->fromDate)->startOfMonth();
+        $start = Carbon::createFromFormat('Y-m', $this->fromDate)->startOfMonth();
+        $end   = Carbon::createFromFormat('Y-m', $this->toDate)->endOfMonth();
 
-        $month = $date->month;
-        $year  = $date->year;
+        // เผื่อกรอกช่วงกลับด้าน (เดือนเริ่ม > เดือนสิ้นสุด) ให้สลับให้ถูกต้อง
+        if ($start->greaterThan($end)) {
+            [$start, $end] = [$end->copy()->startOfMonth(), $start->copy()->endOfMonth()];
+        }
 
         $dateField = $this->dateType === 'ck' ? 'DeliveryInCKDate' : 'DeliveryInDMSDate';
 
         $rows = SaleBookingQuery::base()
-            ->whereMonth($dateField, $month)
-            ->whereYear($dateField, $year)
+            ->whereBetween($dateField, [$start, $end])
             ->where('con_status', 5)
             ->get();
 
@@ -132,8 +136,14 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
                 ? ($r->interiorColor->name ?? '-')
                 : null;
 
+            // ชื่อไฟแนนซ์: non-finance = ซื้อสด, finance = ชื่อบริษัทไฟแนนซ์ (ถ้าไม่ได้เลือก = -)
+            $financeName = $r->payment_mode === 'finance'
+                ? ($r->remainingPayment?->financeInfo?->FinanceCompany ?? '-')
+                : 'ซื้อสด';
+
             return [
                 'customer'            => $customerName,
+                'address'             => ($r->customer?->documentAddress ?? $r->customer?->currentAddress)?->full_address ?? '',
                 'sale'                => $r->saleUser?->name ?? '-',
                 'model'               => $model,
                 'subModel'            => $subModel,
@@ -146,7 +156,7 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
                 'car_MSRP'            => $r->carOrder?->car_MSRP ?? '-',
                 'reservation_cost'    => $r->CashDeposit ?? '-',
                 'bookingDate'         => $r?->format_booking_date ?? '-',
-                'name_fi'             => $r->remainingPayment->financeInfo->FinanceCompany ?? '-',
+                'name_fi'             => $financeName,
                 'order_status'        => $r->carOrder->orderStatus->name ?? '-',
                 'contract_date'       => $r?->remainingPayment->format_contract_date ?? '',
                 'ck_date'             => $r?->format_ck_date ?? '-',

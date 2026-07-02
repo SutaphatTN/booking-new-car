@@ -14,6 +14,7 @@ use App\Http\Controllers\color\ColorController;
 use App\Http\Controllers\customer\CustomerController;
 use App\Http\Controllers\finance\FinanceController;
 use App\Http\Controllers\forecast\ForecastController;
+use App\Http\Controllers\dbar\DbarController;
 use App\Http\Controllers\home\HomeController;
 use App\Http\Controllers\model_car\ModelCarController;
 use App\Http\Controllers\model_car\SubModelCarController;
@@ -432,6 +433,10 @@ Route::middleware(['auth', 'notsale'])->group(function () {
 
     Route::post('/forecast/calculate', [ForecastController::class, 'forecastCalculate'])
         ->name('forecast.calculate');
+
+    // D/Bar — คำนวณยอดที่ต้องสั่ง (แยก brand+branch)
+    Route::get('/dbar', [DbarController::class, 'index'])->name('dbar.index');
+    Route::post('/dbar/calculate', [DbarController::class, 'calculate'])->name('dbar.calculate');
 });
 
 Route::group(['middleware' => 'auth'], function () {
@@ -466,6 +471,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('purchase-order/{id}/change-buyer', [PurchaseOrderController::class, 'changeBuyer'])->name('purchase-order.change-buyer');
     Route::get('/api/purchase-order/customer-trackings', [PurchaseOrderController::class, 'getCustomerTrackings']);
     Route::get('/api/purchase-order/check-customer-tracking', [PurchaseOrderController::class, 'checkCustomerTracking']);
+    Route::get('/api/purchase-order/customer-profile', [PurchaseOrderController::class, 'customerProfile']);
+    Route::post('/api/purchase-order/customer-profile', [PurchaseOrderController::class, 'saveCustomerProfile']);
     Route::get('purchase-order/viewPO', [PurchaseOrderController::class, 'viewPO'])->name('purchase-order.viewPO');
     Route::get('purchase-order/list-po', [PurchaseOrderController::class, 'listPO']);
     Route::get('purchase-order/viewBooking', [PurchaseOrderController::class, 'viewBooking'])->name('purchase-order.viewBooking');

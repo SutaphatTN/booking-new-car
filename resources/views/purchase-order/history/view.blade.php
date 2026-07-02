@@ -29,7 +29,8 @@
               <tr>
                 <th class="tbl-th-no">No.</th>
                 <th>ชื่อ - นามสกุล ลูกค้า</th>
-                <th>รหัส Car Order</th>
+                {{-- <th>รหัส Car Order</th> --}}
+                <th>เลข Vin</th>
                 <th class="tbl-th-action" style="width:150px;">Action</th>
               </tr>
             </thead>

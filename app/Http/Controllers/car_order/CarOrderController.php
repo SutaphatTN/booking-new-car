@@ -1067,7 +1067,7 @@ class CarOrderController extends Controller
             };
             $items = $orders->map($mapItem)->merge($waitings->map($mapItem))->values()->all();
 
-            Mail::to($approver->email)->send(new BatchApproveCarOrderMail($items, $approver->name));
+            Mail::to($approver->email)->send(new BatchApproveCarOrderMail($items, $approver->name, Auth::user()->brand));
 
             return response()->json([
                 'success' => true,

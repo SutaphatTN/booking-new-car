@@ -51,8 +51,10 @@
                 <th>ชื่อ - นามสกุล</th>
                 <th>ชื่อไฟแนนซ์</th>
                 <th>วันที่ส่งมอบ</th>
+                <th>วันส่งเอกสาร</th>
                 <th>วันที่เฟิร์มเคส</th>
                 <th>วันที่ได้รับเงิน</th>
+                <th>สถานะ</th>
                 <th class="tbl-th-action" style="width:130px;">Action</th>
               </tr>
             </thead>

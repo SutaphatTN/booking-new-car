@@ -97,7 +97,11 @@ class StockFilmController extends Controller
                 $request->withdrawal_date
             );
 
-            if (FilmStock::where('stock_no', $stockNo)->exists()) {
+            // นับรวมแถวที่ถูกลบ (soft delete) ด้วย เพราะ UNIQUE index บน stock_no ใน DB
+            // ยังนับแถวที่ถูกลบอยู่ — ถ้าเช็คแค่แถว active จะหลุดไป INSERT แล้วชน unique
+            $existing = FilmStock::withTrashed()->where('stock_no', $stockNo)->first();
+
+            if ($existing && !$existing->trashed()) {
                 return response()->json([
                     'success' => false,
                     'message' => "Stock No. {$stockNo} มีอยู่แล้วในระบบ",
@@ -106,7 +110,7 @@ class StockFilmController extends Controller
 
             $user = Auth::user();
 
-            FilmStock::create([
+            $payload = [
                 'stock_no'        => $stockNo,
                 'part_no'         => $request->part_no ?: null,
                 'brand_group'     => $brandGroup,
@@ -119,7 +123,22 @@ class StockFilmController extends Controller
                 'withdrawal_date' => $this->toGregorian($request->withdrawal_date),
                 'initial_qty'     => $request->initial_qty,
                 'used_qty'        => 0,
-            ]);
+            ];
+
+            if ($existing) {
+                // stock_no เดิมเคยถูกลบไป — กู้คืนแล้วอัปเดตเป็นข้อมูลใหม่ (เริ่มต้นใหม่หมด)
+                $existing->restore();
+                $existing->update($payload + [
+                    'inspection_date'    => null,
+                    'inspection_qty'     => null,
+                    'inspection_result'  => null,
+                    'inspection_by'      => null,
+                    'audit_completed_at' => null,
+                    'audit_completed_by' => null,
+                ]);
+            } else {
+                FilmStock::create($payload);
+            }
 
             return response()->json(['success' => true, 'message' => 'เพิ่มข้อมูลเรียบร้อยแล้ว', 'stock_no' => $stockNo]);
         } catch (\Exception) {

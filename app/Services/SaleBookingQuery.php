@@ -11,6 +11,7 @@ class SaleBookingQuery
         return Salecar::with([
             'customer.prefix',
             'customer.documentAddress',
+            'customer.currentAddress',
             'carOrder.model',
             'carOrder.subModel',
             'carOrder.orderStatus',

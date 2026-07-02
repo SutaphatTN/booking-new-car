@@ -16,6 +16,19 @@ class ForecastController extends Controller
         return view('forecast.view');
     }
 
+    /**
+     * คำนวณจำนวนรถที่ "ควรสั่ง" เดือนนี้ ตามสัดส่วนการขายย้อนหลัง 3 เดือน (sales mix)
+     *
+     * สูตรหลัก ต่อรุ่น/สี:
+     *   Mix %    = ยอดขายรุ่นนี้ ÷ ยอดขายรวมทุกรุ่น (ย้อนหลัง 3 เดือน)
+     *   ควรสั่ง  = max( round(Mix% × target) − สต็อกที่มีอยู่, 0 )
+     *
+     * target = จำนวนรถที่ผู้ใช้อยากสั่งรวมทั้งเดือน (กรอกจากหน้า forecast)
+     * การจัดกลุ่ม (model + subModel + สี) ต่างกันตาม brand:
+     *   brand 2 (GWM)   : + สีภายใน (interior_color)
+     *   brand 3 (Wuling): ใช้ gwm_color
+     *   อื่นๆ (Mitsu)   : ใช้ Color (text)
+     */
     public function forecastCalculate(Request $request)
     {
         $request->validate([
@@ -25,17 +38,22 @@ class ForecastController extends Controller
         $target = $request->target;
         $brand = Auth::user()->brand;
 
+        // ── เงื่อนไขช่วงเวลา: ย้อนหลัง 3 เดือน นับจากต้นเดือนของเดือนที่ 3 ──
         $startDate = Carbon::now()->subMonths(3)->startOfMonth();
 
+        // ── ยอดขาย = รถที่ "ส่งมอบแล้ว" (มี DeliveryDate) ภายในช่วง 3 เดือน ──
         $query = Salecar::with(['model', 'subModel'])
             ->whereNotNull('DeliveryDate')
             ->where('DeliveryDate', '>=', $startDate);
 
+        // ── นิยามสต็อก = รถที่พร้อมขาย (Available) และผ่านสถานะ finished/approved ──
         $stockQuery = CarOrder::where('car_status', 'Available')
             ->whereIn('status', ['finished', 'approved']);
 
+        // ── จัดกลุ่ม + นับจำนวน แยกตาม brand (key ของยอดขายและสต็อกต้องตรงกันเพื่อ match ทีหลัง) ──
         if ($brand == 2) {
 
+            // GWM: แยกตาม รุ่น + รุ่นย่อย + สีภายนอก + สีภายใน
             $query->with(['gwmColor', 'interiorColor'])
                 ->selectRaw('model_id, subModel_id, gwm_color, interior_color, COUNT(*) as total')
                 ->groupBy('model_id', 'subModel_id', 'gwm_color', 'interior_color');
@@ -52,6 +70,7 @@ class ForecastController extends Controller
                 });
         } elseif ($brand == 3) {
 
+            // Wuling: แยกตาม รุ่น + รุ่นย่อย + สี (gwm_color)
             $query->with(['gwmColor'])
                 ->selectRaw('model_id, subModel_id, gwm_color, COUNT(*) as total')
                 ->groupBy('model_id', 'subModel_id', 'gwm_color');
@@ -67,6 +86,7 @@ class ForecastController extends Controller
                 });
         } else {
 
+            // Mitsubishi/อื่นๆ: แยกตาม รุ่น + รุ่นย่อย + สี (Color เป็น text)
             $query->selectRaw('model_id, subModel_id, Color, COUNT(*) as total')
                 ->groupBy('model_id', 'subModel_id', 'Color');
 
@@ -83,6 +103,7 @@ class ForecastController extends Controller
 
         $sales = $query->get();
 
+        // ── ยอดขายรวมทุกรุ่น (ตัวหารของ Mix %) ──
         $grandTotal = $sales->sum('total');
 
         if ($grandTotal == 0) {
@@ -96,6 +117,7 @@ class ForecastController extends Controller
 
         foreach ($sales as $sale) {
 
+            // สัดส่วนยอดขายของรุ่น/สีนี้ เทียบยอดขายรวม (0–1)
             $mixPercent = $sale->total / $grandTotal;
 
             $modelOrder = optional($sale->model)->Name_TH ?? '';
@@ -130,7 +152,10 @@ class ForecastController extends Controller
                     $sale->Color;
             }
 
+            // สต็อกที่มีอยู่ของรุ่น/สีนี้ (match ด้วย key เดียวกับตอนจัดกลุ่ม) ไม่เจอ = 0
             $currentStock = $stocks[$key]->stock_total ?? 0;
+
+            // ควรสั่ง = โควต้าตาม mix (Mix% × target) − สต็อกที่มีอยู่ ; ถ้าติดลบปัดเป็น 0
             $forecastUnits = max(
                 round($mixPercent * $target) - $currentStock,
                 0
