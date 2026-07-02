@@ -43,6 +43,7 @@ class FinancesConfirm extends Model
         'actually_received',
         'diff',
         'firm_date',
+        'document_date',
         'date',
         'remark',
         'userZone',
@@ -65,5 +66,15 @@ class FinancesConfirm extends Model
     public function getFormatFirmDateAttribute()
 	{
 		return $this->firm_date ? Carbon::parse($this->firm_date)->format('d-m-Y') : null;
+	}
+
+    public function getDocumentDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+    public function getFormatDocumentDateAttribute()
+	{
+		return $this->document_date ? Carbon::parse($this->document_date)->format('d-m-Y') : null;
 	}
 }

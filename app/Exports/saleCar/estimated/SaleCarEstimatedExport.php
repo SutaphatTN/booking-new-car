@@ -152,6 +152,11 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
                 ? ($r->interiorColor->name ?? '-')
                 : null;
 
+            // ชื่อไฟแนนซ์: non-finance = ซื้อสด, finance = ชื่อบริษัทไฟแนนซ์ (ถ้าไม่ได้เลือก = -)
+            $financeName = $r->payment_mode === 'finance'
+                ? ($r->remainingPayment?->financeInfo?->FinanceCompany ?? '-')
+                : 'ซื้อสด';
+
             return [
                 'customer' => $customerName,
                 'sale' => $r->saleUser?->name ?? '-',
@@ -164,7 +169,7 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
                 'car_MSRP' => $r->carOrder?->car_MSRP ?? '-',
                 'reservation_cost' => $r->CashDeposit ?? '-',
                 'bookingDate' => $r?->format_booking_date ?? '-',
-                'name_fi'       => $r->remainingPayment->financeInfo->FinanceCompany ?? '-',
+                'name_fi'       => $financeName,
                 'order_status' => $r->carOrder->orderStatus->name ?? '-',
                 'contract_date' => $r?->remainingPayment->format_contract_date ?? '',
                 'ck_date' => $r?->format_ck_date ?? '-',

@@ -537,7 +537,7 @@
                     @foreach ($saleCar->campaigns as $camp)
                       ({{ $camp->campaign->type->name ?? '-' }})
                       {{ $camp->campaign->appellation->name ?? '-' }} -
-                      {{ number_format($camp->campaign->cashSupport_final, 2) }}@if (!$loop->last)
+                      {{ number_format($camp->CashSupportFinal, 2) }}@if (!$loop->last)
                         +
                       @endif
                     @endforeach

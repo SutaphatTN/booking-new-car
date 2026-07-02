@@ -226,9 +226,9 @@
               "slug": "car-order.approve"
             },
             {
-              "url": "forecast",
-              "name": "คำนวนคำพยากรณ์สั่งรถ",
-              "slug": "car-order.form"
+              "url": "dbar",
+              "name": "D/Bar",
+              "slug": "dbar.index"
             }
           ]
         },

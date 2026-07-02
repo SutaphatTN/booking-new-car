@@ -327,6 +327,18 @@ class FinanceController extends Controller
 
             $financeF = $s->remainingPayment?->financeInfo?->FinanceCompany ?? '-';
 
+            // สถานะ lifecycle (เช็คจากขั้นสุดท้ายย้อนขึ้น): รับเงิน → เฟิร์ม → ส่งเอกสาร → ยังไม่ส่งเอกสาร
+            $fc = $s->financeConfirm;
+            if ($fc && $fc->date) {
+                $statusBadge = '<span class="badge bg-success">รับเงินเรียบร้อย</span>';
+            } elseif ($fc && $fc->firm_date) {
+                $statusBadge = '<span class="badge bg-info">เฟิร์มแล้ว</span>';
+            } elseif ($fc && $fc->document_date) {
+                $statusBadge = '<span class="badge bg-warning text-dark">รอเฟิร์ม</span>';
+            } else {
+                $statusBadge = '<span class="badge bg-secondary">ยังไม่ส่งเอกสาร</span>';
+            }
+
             return [
                 'No' => $start + $index + 1,
                 'FullName' => implode(' ', array_filter([
@@ -336,8 +348,10 @@ class FinanceController extends Controller
                 ])),
                 'finance_name' => $financeF,
                 'delivery_date' => $s->format_delivery_date ?? '-',
+                'document_date' => $s->financeConfirm->format_document_date ?? '-',
                 'firm_date' => $s->financeConfirm->format_firm_date ?? '-',
                 'date' => $s->financeConfirm->format_date ?? '-',
+                'status' => $statusBadge,
                 'Action' => view('finance.confirm-finance.button', compact('s'))->render()
             ];
         });
@@ -485,6 +499,7 @@ class FinanceController extends Controller
                     ? str_replace(',', '', $request->diff)
                     : null,
                 'firm_date' => $this->toGregorian($request->firm_date),
+                'document_date' => $request->document_date,
                 'date' => $request->date,
                 'remark' => $request->remark,
                 'userZone' => Auth::user()->userZone ?? null,

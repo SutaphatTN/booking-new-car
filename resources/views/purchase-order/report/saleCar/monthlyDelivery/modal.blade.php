@@ -1,12 +1,12 @@
 <div class="modal fade viewExportMonthlyDelivery" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-sm" role="document">
+  <div class="modal-dialog modal-md" role="document">
     <div class="modal-content border-0 shadow mf-content mf-content--view">
       <div class="modal-header mf-header mf-header--view px-4">
         <div class="d-flex align-items-center gap-3">
           <div class="mf-hd-icon"><i class="bx bx-download fs-5 text-white"></i></div>
           <div>
             <h6 class="mb-0 fw-bold text-white mf-hd-title">รายงานส่งมอบประจำเดือน</h6>
-            <small class="text-white mf-hd-sub">เลือกเดือนที่ต้องการ</small>
+            <small class="text-white mf-hd-sub">เลือกช่วงเดือนที่ต้องการ</small>
           </div>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -27,9 +27,13 @@
                 </div>
               </div>
             </div>
-            <div class="col-12">
-              <label for="from_date" class="mf-label form-label"><i class="bx bx-calendar"></i> เลือกเดือน</label>
-              <input type="month" id="from_date" name="from_date" class="form-control">
+            <div class="col-6">
+              <label for="from_date" class="mf-label form-label"><i class="bx bx-calendar"></i> ตั้งแต่เดือน</label>
+              <input type="month" id="from_date" name="from_date" class="form-control" value="{{ now()->format('Y-m') }}">
+            </div>
+            <div class="col-6">
+              <label for="to_date" class="mf-label form-label"><i class="bx bx-calendar"></i> ถึงเดือน</label>
+              <input type="month" id="to_date" name="to_date" class="form-control" value="{{ now()->format('Y-m') }}">
             </div>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4">

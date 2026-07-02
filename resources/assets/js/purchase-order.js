@@ -518,6 +518,12 @@ $(document).ready(function () {
             setDisplay('customerIDRef-display', res.id_number);
             setDisplay('customerPhoneRef-display', res.mobile);
           }
+
+          // ลูกค้าใหม่ฝั่งผู้ซื้อ → ยังไม่มีที่อยู่/อาจไม่มีเลขบัตร เปิด modal ให้กรอกให้ครบ
+          if (_activePoSearch.nameInput === '#customerName' && typeof window.poEnsureCustomerComplete === 'function') {
+            window.poCustomerComplete = false;
+            window.poEnsureCustomerComplete(res.id, {});
+          }
         }
 
         Swal.fire({ icon: 'success', title: 'เพิ่มลูกค้าสำเร็จ', timer: 1500, showConfirmButton: true });
@@ -531,6 +537,222 @@ $(document).ready(function () {
       }
     });
   });
+});
+
+// input : ตรวจ/กรอกข้อมูลลูกค้าให้ครบ (เลขบัตร/เบอร์โทร/ที่อยู่) ก่อนทำการจอง
+// window.poCustomerComplete = true/false (เช็คตอนเลือกลูกค้า), guard ตอนกดบันทึกใช้ค่านี้
+$(document).ready(function () {
+  const $modal = $('#modalCompleteCustomerPO');
+  if (!$modal.length) return;
+
+  let poCustomerId = null;
+
+  function fmtPhonePO(v) {
+    const d = v.replace(/\D/g, '').substring(0, 10);
+    const p = [];
+    if (d.length > 0) p.push(d.substring(0, 3));
+    if (d.length > 3) p.push(d.substring(3, 7));
+    if (d.length > 7) p.push(d.substring(7, 10));
+    return p.join('-');
+  }
+  function fmtIDPO(v) {
+    const d = v.replace(/\D/g, '').substring(0, 13);
+    const p = [];
+    if (d.length > 0) p.push(d.substring(0, 1));
+    if (d.length > 1) p.push(d.substring(1, 5));
+    if (d.length > 5) p.push(d.substring(5, 10));
+    if (d.length > 10) p.push(d.substring(10, 12));
+    if (d.length > 12) p.push(d.substring(12, 13));
+    return p.join('-');
+  }
+  $('#ccpo_phone').on('input', function () { this.value = fmtPhonePO(this.value); });
+  $('#ccpo_id_number').on('input', function () { this.value = fmtIDPO(this.value); });
+
+  // ─── Thailand cascade (scoped to this modal) ───
+  function ccpoLoadProvinces(preselect) {
+    return $.get('/api/thailand/provinces').then(function (data) {
+      const $sel = $('#ccpo_province').empty().append('<option value="">— เลือกจังหวัด —</option>');
+      data.forEach(p => $sel.append(`<option value="${p}">${p}</option>`));
+      if (preselect) $sel.val(preselect);
+    });
+  }
+  function ccpoLoadDistricts(province, preselect) {
+    const $sel = $('#ccpo_district').empty().append('<option value="">— เลือกอำเภอ —</option>').prop('disabled', true);
+    if (!province) return $.Deferred().resolve().promise();
+    return $.get('/api/thailand/districts', { province }).then(function (data) {
+      data.forEach(d => $sel.append(`<option value="${d}">${d}</option>`));
+      $sel.prop('disabled', false);
+      if (preselect) $sel.val(preselect);
+    });
+  }
+  function ccpoLoadTambons(province, district, preselect) {
+    const $sel = $('#ccpo_subdistrict').empty().append('<option value="">— เลือกตำบล —</option>').prop('disabled', true);
+    $('#ccpo_postal_code').val('');
+    $('#ccpo_post_id').val('');
+    if (!province || !district) return $.Deferred().resolve().promise();
+    return $.get('/api/thailand/tambons', { province, district }).then(function (data) {
+      data.forEach(t => $sel.append(
+        `<option value="${t.Tambon_pro}" data-postal="${t.Postcode_pro}" data-post-id="${t.id}">${t.Tambon_pro}</option>`
+      ));
+      $sel.prop('disabled', false);
+      if (preselect) {
+        $sel.val(preselect);
+        const opt = $sel.find('option:selected');
+        $('#ccpo_postal_code').val(opt.data('postal') || '');
+        $('#ccpo_post_id').val(opt.data('post-id') || '');
+      }
+    });
+  }
+
+  $('#ccpo_province').on('change', function () {
+    ccpoLoadDistricts(this.value, '');
+    $('#ccpo_subdistrict').empty().append('<option value="">— เลือกตำบล —</option>').prop('disabled', true);
+    $('#ccpo_postal_code').val('');
+    $('#ccpo_post_id').val('');
+  });
+  $('#ccpo_district').on('change', function () {
+    ccpoLoadTambons($('#ccpo_province').val(), this.value, '');
+  });
+  $('#ccpo_subdistrict').on('change', function () {
+    const opt = $(this).find('option:selected');
+    $('#ccpo_postal_code').val(opt.data('postal') || '');
+    $('#ccpo_post_id').val(opt.data('post-id') || '');
+  });
+
+  function openCompleteModal(profile) {
+    $('#ccpo_prefix').val(profile.prefix_id || '');
+    $('#ccpo_first_name').val(profile.first_name || '');
+    $('#ccpo_last_name').val(profile.last_name || '');
+    $('#ccpo_original_name').val(profile.original_name || '');
+    $('#ccpo_id_number').val(profile.id_number ? fmtIDPO(profile.id_number) : '');
+    $('#ccpo_phone').val(profile.mobile ? fmtPhonePO(profile.mobile) : '');
+
+    const $list = $('#ccpo_missing').empty();
+    (profile.missing || []).forEach(m => $list.append(`<span class="badge bg-label-warning me-1">${m}</span>`));
+
+    const a = profile.address || {};
+    $('#ccpo_house_number').val(a.house_number || '');
+    $('#ccpo_group').val(a.group || '');
+    $('#ccpo_village').val(a.village || '');
+    $('#ccpo_alley').val(a.alley || '');
+    $('#ccpo_road').val(a.road || '');
+    $('#ccpo_postal_code').val(a.postal_code || '');
+    $('#ccpo_post_id').val(a.post_id || '');
+
+    ccpoLoadProvinces(a.province || '').then(function () {
+      if (!a.province) return;
+      ccpoLoadDistricts(a.province, a.district || '').then(function () {
+        if (a.district) ccpoLoadTambons(a.province, a.district, a.subdistrict || '');
+      });
+    });
+
+    $modal.modal('show');
+  }
+
+  // ตรวจความครบของลูกค้า — incomplete จะเปิด modal ให้กรอก (เว้นแต่ opts.silent)
+  window.poEnsureCustomerComplete = function (customerId, opts) {
+    opts = opts || {};
+    poCustomerId = customerId;
+    if (!customerId) { window.poCustomerComplete = false; return; }
+    $.get('/api/purchase-order/customer-profile', { customer_id: customerId }).done(function (res) {
+      if (res.complete) {
+        window.poCustomerComplete = true;
+        if (opts.onComplete) opts.onComplete();
+      } else {
+        window.poCustomerComplete = false;
+        if (!opts.silent) openCompleteModal(res);
+      }
+    });
+  };
+
+  $('#btnSaveCompleteCustomerPO').on('click', function () {
+    const firstName = $('#ccpo_first_name').val().trim();
+    const idNumber = $('#ccpo_id_number').val().trim();
+    const phone = $('#ccpo_phone').val().trim();
+    const house = $('#ccpo_house_number').val().trim();
+    const province = $('#ccpo_province').val();
+    const district = $('#ccpo_district').val();
+    const subdistrict = $('#ccpo_subdistrict').val();
+
+    if (!firstName) {
+      Swal.fire({ icon: 'warning', title: 'กรอกชื่อ', text: 'กรุณากรอกชื่อลูกค้า' });
+      return;
+    }
+    if (idNumber.replace(/\D/g, '').length !== 13) {
+      Swal.fire({ icon: 'warning', title: 'เลขบัตรไม่ถูกต้อง', text: 'กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก' });
+      return;
+    }
+    if (phone.replace(/\D/g, '').length < 9) {
+      Swal.fire({ icon: 'warning', title: 'เบอร์โทรไม่ถูกต้อง', text: 'กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง' });
+      return;
+    }
+    if (!house || !province || !district || !subdistrict) {
+      Swal.fire({ icon: 'warning', title: 'กรอกที่อยู่ให้ครบ', text: 'เลขที่ จังหวัด อำเภอ และตำบล จำเป็นต้องกรอก' });
+      return;
+    }
+
+    const $btn = $(this).prop('disabled', true);
+    $.ajax({
+      url: '/api/purchase-order/customer-profile',
+      type: 'POST',
+      data: {
+        customer_id: poCustomerId,
+        PrefixName: $('#ccpo_prefix').val() || null,
+        FirstName: firstName,
+        LastName: $('#ccpo_last_name').val().trim(),
+        IDNumber: idNumber,
+        Mobilephone1: phone,
+        house_number: house,
+        group: $('#ccpo_group').val(),
+        village: $('#ccpo_village').val(),
+        alley: $('#ccpo_alley').val(),
+        road: $('#ccpo_road').val(),
+        province, district, subdistrict,
+        postal_code: $('#ccpo_postal_code').val(),
+        post_id: $('#ccpo_post_id').val() || null
+      },
+      success: function (res) {
+        if (!res.success) {
+          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: res.message || 'ไม่สามารถบันทึกได้' });
+          return;
+        }
+        window.poCustomerComplete = true;
+
+        // อัปเดตค่าที่แสดงบนหน้า ถ้าเป็นลูกค้าคนเดียวกับที่เลือกอยู่
+        if (String($('#CusID').val()) === String(poCustomerId)) {
+          const setDisplay = (id, val) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = val || '—';
+            el.classList.toggle('empty', !val);
+          };
+          if (res.name) {
+            $('#customerName').val(res.name);
+            setDisplay('customerName-display', res.name);
+          }
+          setDisplay('customerID-display', res.id_number);
+          setDisplay('customerPhone-display', res.mobile);
+        }
+
+        $modal.modal('hide');
+        Swal.fire({ icon: 'success', title: 'บันทึกข้อมูลลูกค้าแล้ว', timer: 1500, showConfirmButton: false });
+      },
+      error: function (xhr) {
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
+      },
+      complete: function () {
+        $btn.prop('disabled', false);
+      }
+    });
+  });
+
+  // path A: ลูกค้า prefill มาจากหน้าการติดตาม → เช็คตอนโหลดหน้า
+  const prefillCus = $('#CusID').val();
+  if (prefillCus) {
+    window.poEnsureCustomerComplete(prefillCus, {});
+  } else {
+    window.poCustomerComplete = false;
+  }
 });
 
 function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hiddenId, gate = false }) {
@@ -614,6 +836,12 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
 
     $modal.modal('hide');
     $search.val('');
+
+    // ลูกค้าผู้ซื้อ (gate) → ตรวจข้อมูลครบ ถ้าไม่ครบเปิด modal ให้กรอกก่อนจอง
+    if (gate && typeof window.poEnsureCustomerComplete === 'function') {
+      window.poCustomerComplete = false;
+      window.poEnsureCustomerComplete(data.id, {});
+    }
   }
 
   $(document).on('click', '.btnSelectCustomer', function () {
@@ -977,6 +1205,21 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
+    // ข้อมูลลูกค้าต้องครบ (เลขบัตร/เบอร์โทร/ที่อยู่) ก่อนบันทึกการจอง
+    if (window.poCustomerComplete === false) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ข้อมูลลูกค้ายังไม่ครบ',
+        text: 'กรุณากรอกเลขบัตรประชาชน เบอร์โทรศัพท์ และที่อยู่ของลูกค้าให้ครบก่อนทำการจอง',
+        confirmButtonText: 'กรอกข้อมูล'
+      }).then(() => {
+        if (typeof window.poEnsureCustomerComplete === 'function') {
+          window.poEnsureCustomerComplete($('#CusID').val(), {});
+        }
+      });
+      return;
+    }
+
     const url = $(form).attr('action');
     const formData = new FormData(form);
 
@@ -1012,6 +1255,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 1000);
       },
       error: function (xhr) {
+        // server ปฏิเสธเพราะข้อมูลลูกค้าไม่ครบ → เปิด modal ให้กรอกแทนการขึ้น error เฉยๆ
+        if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.need_profile) {
+          window.poCustomerComplete = false;
+          Swal.fire({
+            icon: 'warning',
+            title: 'ข้อมูลลูกค้ายังไม่ครบ',
+            text: xhr.responseJSON.message || 'กรุณากรอกข้อมูลลูกค้าให้ครบก่อนทำการจอง',
+            confirmButtonText: 'กรอกข้อมูล'
+          }).then(() => {
+            if (typeof window.poEnsureCustomerComplete === 'function') {
+              window.poEnsureCustomerComplete(xhr.responseJSON.customer_id || $('#CusID').val(), {});
+            }
+          });
+          return;
+        }
+
         let errMsg = 'ไม่สามารถบันทึกข้อมูลได้';
         if (xhr.responseJSON && xhr.responseJSON.message) {
           errMsg = xhr.responseJSON.message;
@@ -3192,7 +3451,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const con_status = document.querySelector('#con_status option:checked')?.textContent || '-';
 
     let dateAppHtml = '';
-    if (userRole === 'admin' || userRole === 'audit' || userRole === 'manager' || userRole === 'md') {
+    if (userRole === 'admin' || userRole === 'audit' || userRole === 'gm' || userRole === 'manager' || userRole === 'md') {
       dateAppHtml = `
           <div class="mf-info-row"><span class="mf-info-label">วันที่ส่งมอบของบริษัท</span><span class="mf-info-val">${DeliveryInDMSDate}</span></div>
           <div class="mf-info-row"><span class="mf-info-label">วันที่ส่งมอบของฝ่ายขาย</span><span class="mf-info-val">${DeliveryInCKDate}</span></div>
@@ -3502,7 +3761,8 @@ $(document).ready(function () {
     columns: [
       { data: 'No', orderable: false },
       { data: 'FullName', orderable: false },
-      { data: 'code', orderable: false },
+      // { data: 'code', orderable: false },
+      { data: 'vin_number', orderable: false },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,

@@ -1,5 +1,8 @@
+@php $__brandName = config("brand.names.{$saleCar->brand}") ?? ('Brand ' . ($saleCar->brand ?? '-')); @endphp
 @component('mail::message')
 # แจ้งเตือนการขออนุมัติ
+
+**แบรนด์: {{ $__brandName }}**
 
 มีรายการขออนุมัติจาก {{ $saleCar->saleUser->name }}
 
@@ -75,11 +78,12 @@
 @component('mail::button', ['url' => route('purchase-order.emailApprove', $saleCar->approval_token), 'color' => 'success'])
 อนุมัติ
 @endcomponent
-@endif
 
-@component('mail::button', ['url' => url('/purchase-order/'.$saleCar->id.'/edit'), 'color' => 'primary'])
+{{-- ลิงก์ผ่าน token (unscoped) เปิดได้ทุก brand — เดิมชี้ /edit/{id} ที่ scoped ทำให้ 404 ข้าม brand --}}
+@component('mail::button', ['url' => route('purchase-order.emailApprove', $saleCar->approval_token), 'color' => 'primary'])
 ดูรายละเอียด
 @endcomponent
+@endif
 
 
 ขอบคุณครับ

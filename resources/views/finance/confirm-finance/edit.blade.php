@@ -272,20 +272,28 @@
                       </div>
                     </div>
 
-                    <div class="col-md-6">
-                      <label for="date" class="mf-label form-label">
-                        <i class="bx bx-calendar-check ci-indigo"></i> วันที่ได้รับเงิน
+                    <div class="col-md-4">
+                      <label for="document_date" class="mf-label form-label">
+                        <i class="bx bx-calendar-plus ci-indigo"></i> วันส่งเอกสาร
                       </label>
-                      <input id="date" type="date" class="form-control" name="date"
-                        value="{{ old('date', $fnCon->date) }}">
+                      <input id="document_date" type="date" class="form-control" name="document_date"
+                        value="{{ old('document_date', $fnCon->document_date) }}">
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                       <label for="firm_date" class="mf-label form-label">
                         <i class="bx bx-calendar-event ci-indigo"></i> วันที่เฟิร์มเคส
                       </label>
                       <input id="firm_date" type="date" class="form-control" name="firm_date"
                         value="{{ old('firm_date', $fnCon->firm_date) }}">
+                    </div>
+
+                    <div class="col-md-4">
+                      <label for="date" class="mf-label form-label">
+                        <i class="bx bx-calendar-check ci-indigo"></i> วันที่ได้รับเงิน
+                      </label>
+                      <input id="date" type="date" class="form-control" name="date"
+                        value="{{ old('date', $fnCon->date) }}">
                     </div>
 
                     <div class="col-md-12">

@@ -12,6 +12,7 @@ return [
 
     // ── brand 1 ──
     1 => [
+        // มีแก้
         'manager' => ['mitsuchookiat.programmer@gmail.com'],
         'gm'      => [],                          // brand 1: ไม่มีขั้น gm (manager → md)
         'md'      => ['mitsuchookiat.programmer@gmail.com'],

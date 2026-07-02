@@ -254,6 +254,14 @@ class SourceController extends Controller
         try {
             $place = SourcePlace::findOrFail($id);
 
+            // ส่งขออนุมัติแล้ว (รออนุมัติ/อนุมัติแล้ว) ห้ามลบ — กันยิงลบตรงข้าม UI
+            if (in_array($place->status, [SourcePlace::STATUS_PENDING, SourcePlace::STATUS_APPROVED])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถลบได้ เนื่องจากสถานที่นี้ส่งขออนุมัติแล้ว',
+                ], 422);
+            }
+
             // กันลบ ถ้ามีการติดตามลูกค้าอ้างอิงสถานที่นี้อยู่ (ตรวจข้ามทุก scope)
             $used = CustomerTracking::withoutGlobalScopes()->where('place_id', $place->id)->exists();
             if ($used) {
@@ -589,10 +597,28 @@ class SourceController extends Controller
 
     /* ===================== อนุมัติผ่านลิงก์ (ไม่ต้อง login) ===================== */
 
+    /**
+     * หาใบคำขอจาก token (ลิงก์ในอีเมล) — ข้าม global scope brand ทั้งใบคำขอและ relation สถานที่
+     * เพราะผู้อนุมัติอาจล็อกอินอยู่คนละ brand กับคำขอ (ไม่งั้นหาไม่เจอ → 404)
+     */
+    private function findRequestByToken($token): SourcePlaceRequest
+    {
+        $unscope = fn($q) => $q->withoutGlobalScopes();
+
+        return SourcePlaceRequest::withoutGlobalScopes()
+            ->with([
+                'places'      => fn($q) => $q->withoutGlobalScopes()->with(['source' => $unscope]),
+                'topupPlaces' => fn($q) => $q->withoutGlobalScopes()->with(['source' => $unscope]),
+                'requester',
+                'approver',
+            ])
+            ->where('token', $token)
+            ->firstOrFail();
+    }
+
     public function showApproval($token)
     {
-        $req = SourcePlaceRequest::with(['places.source', 'topupPlaces.source', 'requester', 'approver'])
-            ->where('token', $token)->firstOrFail();
+        $req = $this->findRequestByToken($token);
 
         return view('source.place.approval', ['req' => $req]);
     }
@@ -609,8 +635,7 @@ class SourceController extends Controller
 
     private function decide($token, $decision, $reason = null)
     {
-        $req = SourcePlaceRequest::with(['places.source', 'topupPlaces.source', 'requester', 'approver'])
-            ->where('token', $token)->firstOrFail();
+        $req = $this->findRequestByToken($token);
 
         // กดซ้ำ / ดำเนินการไปแล้ว
         if ($req->status !== SourcePlaceRequest::STATUS_PENDING) {
@@ -631,7 +656,7 @@ class SourceController extends Controller
 
             if ($isTopup) {
                 // ของบเพิ่ม: ไม่แตะ status ของสถานที่ (ยังคงเป็น approved → tracking ไม่กระทบ)
-                foreach (SourcePlace::where('extra_request_id', $req->id)->get() as $p) {
+                foreach (SourcePlace::withoutGlobalScopes()->where('extra_request_id', $req->id)->get() as $p) {
                     if ($decision === SourcePlaceRequest::STATUS_APPROVED) {
                         // อนุมัติ → รวมงบเพิ่มเข้ากับ extra_cost สะสม
                         $p->extra_cost = (float) ($p->extra_cost ?? 0) + (float) ($p->pending_extra ?? 0);
@@ -643,13 +668,13 @@ class SourceController extends Controller
                     $p->save();
                 }
             } else {
-                SourcePlace::where('request_id', $req->id)->update(['status' => $placeStatus]);
+                SourcePlace::withoutGlobalScopes()->where('request_id', $req->id)->update(['status' => $placeStatus]);
             }
         });
 
         // topup: ใช้ $req ใน memory (relation topupPlaces ยังมีค่า pending_extra ก่อนถูกล้างใน transaction)
-        // place: reload ใหม่เพื่อให้ได้ status ล่าสุดของสถานที่
-        $mailReq = $isTopup ? $req : $req->fresh(['places.source', 'requester', 'approver']);
+        // place: reload ใหม่ (unscoped) เพื่อให้ได้ status ล่าสุดของสถานที่
+        $mailReq = $isTopup ? $req : $this->findRequestByToken($token);
 
         // ส่งกลับให้แก้ไข → แจ้งผู้ขอทางอีเมลให้แก้แล้วส่งใหม่
         if ($decision === SourcePlaceRequest::STATUS_REJECTED && optional($req->requester)->email) {
@@ -660,17 +685,20 @@ class SourceController extends Controller
             }
         }
 
-        // อนุมัติแล้ว → แจ้งผู้ขออนุมัติ และส่งสำเนาให้บัญชี (acc@chookiat.org)
+        // อนุมัติแล้ว → ส่งเมลให้บัญชี (acc.mitsuchookiatkrabi@gmail.com) cc บัญชีเดิม (acct@chookiat.org) + ผู้ขอ
         if ($decision === SourcePlaceRequest::STATUS_APPROVED) {
             try {
                 $pdf = $this->buildApprovalPdf($mailReq);
 
-                // $mail = Mail::to('acc@chookiat.org');
-                $mail = Mail::to('acct@chookiat.org');
+                // cc() set ทับ ไม่ append → รวมเป็น array เดียว
+                $cc = ['acct@chookiat.org'];
                 if (optional($req->requester)->email) {
-                    $mail->cc($req->requester->email);
+                    $cc[] = $req->requester->email;
                 }
-                $mail->send(new SourcePlaceApprovedMail($mailReq, $pdf->output()));
+
+                Mail::to('acc.mitsuchookiatkrabi@gmail.com')
+                    ->cc($cc)
+                    ->send(new SourcePlaceApprovedMail($mailReq, $pdf->output()));
             } catch (\Exception $e) {
                 // ไม่ให้เมลล้มเหลวมาขวางผลการตัดสิน
             }

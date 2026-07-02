@@ -25,8 +25,11 @@ class SourcePlaceApprovalMail extends Mailable
 
     public function envelope(): Envelope
     {
+        // ใส่ชื่อแบรนด์ใน subject เพื่อแยกคำขอของแต่ละแบรนด์ในกล่องเมล
+        $brandName = config("brand.names.{$this->req->brand}") ?? ('Brand ' . ($this->req->brand ?? '-'));
+
         return new Envelope(
-            subject: 'ขออนุมัติค่าใช้จ่ายกิจกรรมการตลาด (สถานที่)',
+            subject: "[{$brandName}] ขออนุมัติค่าใช้จ่ายกิจกรรมการตลาด (สถานที่)",
         );
     }
 

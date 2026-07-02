@@ -17,8 +17,10 @@ class CampaignController extends Controller
     use ConvertsThaiDate;
     public function index()
     {
-        $cam = Campaign::all();
-        return view('campaign.view', compact('cam'));
+        $cam   = Campaign::all();
+        $model = TbCarmodel::all();
+        $type  = TbCampaignType::all();
+        return view('campaign.view', compact('cam', 'model', 'type'));
     }
 
     public function listCampaign(Request $request)
@@ -29,6 +31,20 @@ class CampaignController extends Controller
         $search = trim($request->input('search.value', ''));
 
         $base = Campaign::query()->where('archived', 0);
+
+        // ── ตัวกรอง : รุ่นหลัก / รุ่นย่อย / ประเภท ──
+        if ($request->filled('filter_model_id')) {
+            $base->where('model_id', $request->filter_model_id);
+        }
+        if ($request->filled('filter_subModel_id')) {
+            $base->where('subModel_id', $request->filter_subModel_id);
+        }
+        if ($request->filled('filter_campaign_type')) {
+            $types = json_decode($request->filter_campaign_type, true);
+            if (is_array($types) && count($types)) {
+                $base->whereIn('campaign_type', $types);
+            }
+        }
 
         $recordsTotal = (clone $base)->count();
 

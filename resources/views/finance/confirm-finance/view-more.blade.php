@@ -256,20 +256,28 @@
                     </div>
                   </div>
 
-                  <div class="col-md-6">
+                  <div class="col-md-4">
+                    <label for="document_date" class="mf-label form-label">
+                      <i class="bx bx-calendar-plus ci-indigo"></i> วันส่งเอกสาร
+                    </label>
+                    <input id="document_date" type="text" class="form-control" name="document_date"
+                      value="{{ $fnCon->format_document_date ?? '-' }}" style="background:#f8fafc;color:#64748b;" disabled>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label for="firm_date" class="mf-label form-label">
+                      <i class="bx bx-calendar-event ci-indigo"></i> วันที่เฟิร์มเคส
+                    </label>
+                    <input id="firm_date" type="text" class="form-control" name="firm_date"
+                      value="{{ $fnCon->format_firm_date ?? '-' }}" style="background:#f8fafc;color:#64748b;" disabled>
+                  </div>
+
+                  <div class="col-md-4">
                     <label for="date" class="mf-label form-label">
                       <i class="bx bx-calendar-check ci-indigo"></i> วันที่ได้รับเงิน
                     </label>
                     <input id="date" type="text" class="form-control" name="date"
                       value="{{ $fnCon->format_date ?? '-' }}" style="background:#f8fafc;color:#64748b;" disabled>
-                  </div>
-
-                  <div class="col-md-6">
-                    <label for="firm_date" class="mf-label form-label">
-                      <i class="bx bx-calendar-event ci-indigo"></i> วันที่เฟิร์มเคส
-                    </label>
-                    <input id="firm_date" type="text" class="form-control" name="firm_date"
-                      value="{{ $fnCon->firm_date ?? '-' }}" style="background:#f8fafc;color:#64748b;" disabled>
                   </div>
 
                   <div class="col-md-12">
