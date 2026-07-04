@@ -270,6 +270,11 @@
               "slug": "campaign.index"
             },
             {
+              "url": "campaign/ck-approval",
+              "name": "อนุมัติแคมเปญ CK",
+              "slug": "campaign.ckApproval"
+            },
+            {
               "url": "campaign/claim",
               "name": "รายการใช้แคมเปญ",
               "slug": "campaign.claim"

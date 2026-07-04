@@ -24,7 +24,8 @@ class SaleCommissionQuery
             'carOrder.subModel',
             'carOrder',
             'remainingPayment',
-            'turnCar'
+            'turnCar',
+            'model', // ใช้คิดเคสอนุมัติ (over_budget/per_budget) ใน effectiveBalanceCommission()
         ])
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')

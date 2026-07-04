@@ -28,9 +28,7 @@
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h6 class="text-body-secondary mb-0">ข้อมูลการจอง</h6>
         @php
-          $backUrl = request('from') === 'history'
-              ? route('purchase-order.history')
-              : route('purchase-order.index');
+          $backUrl = request('from') === 'history' ? route('purchase-order.history') : route('purchase-order.index');
         @endphp
         <a href="{{ $backUrl }}" class="btn btn-outline-danger btn-sm">
           <i class="bx bx-arrow-back me-1"></i> ย้อนกลับ
@@ -49,6 +47,9 @@
       <div class="nav-align-top">
         <input type="hidden" id="userRole" value="{{ $userRole }}">
         <input type="hidden" id="userBrand" value="{{ auth()->user()->brand }}">
+        <input type="hidden" id="saleBrand" value="{{ $saleCar->brand }}">
+        {{-- ยอดหักค่าคอมที่ manager/gm กรอก (เคสเกิน over_budget → คอมงบเหลือใช้ −D) --}}
+        <input type="hidden" id="approvalCommissionDeduct" value="{{ $saleCar->approval_commission_deduct }}">
 
         <ul class="nav nav-pills mb-4 nav-fill" role="tablist">
 
@@ -197,7 +198,9 @@
             @if ($saleCar->originalCustomer)
               @php
                 $oc = $saleCar->originalCustomer;
-                $ocName = trim(($oc->prefix->Name_TH ?? '') . ' ' . ($oc->FirstName ?? '') . ' ' . ($oc->LastName ?? ''));
+                $ocName = trim(
+                    ($oc->prefix->Name_TH ?? '') . ' ' . ($oc->FirstName ?? '') . ' ' . ($oc->LastName ?? ''),
+                );
               @endphp
               <div class="po-section-edit" style="border:1px solid #fde68a;background:#fffbeb;">
                 <div class="po-section-header" style="background:#fef3c7;">
@@ -537,21 +540,21 @@
                         <input id="reservation_transfer_bank" type="text" class="form-control"
                           name="reservation_transfer_bank"
                           value="{{ old('reservation_transfer_bank', $reservationPayment->transfer_bank ?? (auth()->user()->brand == 2 ? 'กสิกร' : (auth()->user()->brand == 3 ? 'กสิกร' : ''))) }}"
-                          @if (in_array(auth()->user()->brand, [2, 3])) @endif>
+                          @if (in_array(auth()->user()->brand, [2, 3]))  @endif>
                       </div>
                       <div class="col-md-4">
                         <label for="reservation_transfer_branch" class="po-label">สาขา</label>
                         <input id="reservation_transfer_branch" type="text" class="form-control"
                           name="reservation_transfer_branch"
                           value="{{ old('reservation_transfer_branch', $reservationPayment->transfer_branch ?? (in_array(auth()->user()->brand, [2, 3]) ? 'โลตัส กระบี่' : '')) }}"
-                          @if (in_array(auth()->user()->brand, [2, 3])) @endif>
+                          @if (in_array(auth()->user()->brand, [2, 3]))  @endif>
                       </div>
                       <div class="col-md-3">
                         <label for="reservation_transfer_no" class="po-label">เลขที่</label>
                         <input id="reservation_transfer_no" type="text" class="form-control"
                           name="reservation_transfer_no"
                           value="{{ old('reservation_transfer_no', $reservationPayment->transfer_no ?? (auth()->user()->brand == 2 ? '1118544192' : (auth()->user()->brand == 3 ? '1248607854' : ''))) }}"
-                          @if (in_array(auth()->user()->brand, [2, 3])) @endif>
+                          @if (in_array(auth()->user()->brand, [2, 3]))  @endif>
                       </div>
                       @if (auth()->user()->brand == 2)
                         <div class="col-md-2">
@@ -593,48 +596,66 @@
                   <div class="d-flex flex-wrap gap-2 mb-3" id="existingAttachments">
                     @foreach ($saleCar->attachment_url as $item)
                       @php
-                        $url      = is_array($item) ? ($item['url']  ?? '') : $item;
-                        $name     = is_array($item) ? ($item['name'] ?? null) : null;
-                        $ext      = $name ? strtolower(pathinfo($name, PATHINFO_EXTENSION)) : null;
-                        $imgExts  = ['jpg','jpeg','png','gif','webp','bmp'];
-                        $isImg    = $ext && in_array($ext, $imgExts);
-                        $isFile   = $ext && !$isImg;
-                        $bgMap    = ['pdf'=>'#ef4444','xlsx'=>'#16a34a','xls'=>'#16a34a','csv'=>'#16a34a','doc'=>'#2563eb','docx'=>'#2563eb','ppt'=>'#ea580c','pptx'=>'#ea580c','zip'=>'#7c3aed','rar'=>'#7c3aed','7z'=>'#7c3aed'];
-                        $bg       = $ext ? ($bgMap[$ext] ?? '#6366f1') : '#6366f1';
-                        $label    = $ext ? strtoupper($ext) : 'FILE';
+                        $url = is_array($item) ? $item['url'] ?? '' : $item;
+                        $name = is_array($item) ? $item['name'] ?? null : null;
+                        $ext = $name ? strtolower(pathinfo($name, PATHINFO_EXTENSION)) : null;
+                        $imgExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+                        $isImg = $ext && in_array($ext, $imgExts);
+                        $isFile = $ext && !$isImg;
+                        $bgMap = [
+                            'pdf' => '#ef4444',
+                            'xlsx' => '#16a34a',
+                            'xls' => '#16a34a',
+                            'csv' => '#16a34a',
+                            'doc' => '#2563eb',
+                            'docx' => '#2563eb',
+                            'ppt' => '#ea580c',
+                            'pptx' => '#ea580c',
+                            'zip' => '#7c3aed',
+                            'rar' => '#7c3aed',
+                            '7z' => '#7c3aed',
+                        ];
+                        $bg = $ext ? $bgMap[$ext] ?? '#6366f1' : '#6366f1';
+                        $label = $ext ? strtoupper($ext) : 'FILE';
                         $proxyBase = route('purchase-order.proxy', $saleCar->id);
-                        $proxyUrl  = $name
+                        $proxyUrl = $name
                             ? $proxyBase . '/' . rawurlencode($name) . '?url=' . urlencode($url)
                             : $proxyBase . '?url=' . urlencode($url);
                       @endphp
-                      <div class="att-item position-relative d-inline-block m-1"
-                           style="width:80px;vertical-align:top;"
-                           data-index="{{ $loop->index }}"
-                           data-delete-url="{{ route('purchase-order.delete-attachment', $saleCar->id) }}">
-                        @if($isFile)
-                          <a href="{{ $proxyUrl }}" target="_blank" class="d-flex flex-column align-items-center justify-content-center rounded text-white text-decoration-none" style="width:80px;height:80px;background:{{ $bg }};">
+                      <div class="att-item position-relative d-inline-block m-1" style="width:80px;vertical-align:top;"
+                        data-index="{{ $loop->index }}"
+                        data-delete-url="{{ route('purchase-order.delete-attachment', $saleCar->id) }}">
+                        @if ($isFile)
+                          <a href="{{ $proxyUrl }}" target="_blank"
+                            class="d-flex flex-column align-items-center justify-content-center rounded text-white text-decoration-none"
+                            style="width:80px;height:80px;background:{{ $bg }};">
                             <i class="bx bx-file" style="font-size:1.8rem;"></i>
-                            <span class="badge bg-white mt-1" style="font-size:.6rem;color:{{ $bg }};font-weight:700;">{{ $label }}</span>
+                            <span class="badge bg-white mt-1"
+                              style="font-size:.6rem;color:{{ $bg }};font-weight:700;">{{ $label }}</span>
                           </a>
-                          @if($name)
-                            <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;" title="{{ $name }}">{{ $name }}</div>
+                          @if ($name)
+                            <div class="text-truncate text-center text-dark mt-1"
+                              style="font-size:.7rem;max-width:80px;" title="{{ $name }}">
+                              {{ $name }}</div>
                           @endif
                         @else
-                          <a href="{{ $proxyUrl }}" target="_blank" id="imgw-att-{{ $loop->index }}" style="display:block;">
-                            <img src="{{ $proxyUrl }}" class="rounded border" style="width:80px;height:80px;object-fit:cover;cursor:pointer;"
-                                 onerror="document.getElementById('imgw-att-{{ $loop->index }}').style.display='none';document.getElementById('filew-att-{{ $loop->index }}').style.display='flex';">
+                          <a href="{{ $proxyUrl }}" target="_blank" id="imgw-att-{{ $loop->index }}"
+                            style="display:block;">
+                            <img src="{{ $proxyUrl }}" class="rounded border"
+                              style="width:80px;height:80px;object-fit:cover;cursor:pointer;"
+                              onerror="document.getElementById('imgw-att-{{ $loop->index }}').style.display='none';document.getElementById('filew-att-{{ $loop->index }}').style.display='flex';">
                           </a>
-                          <a href="{{ $proxyUrl }}" target="_blank" id="filew-att-{{ $loop->index }}" class="text-decoration-none"
-                             style="display:none;width:80px;height:80px;border-radius:0.375rem;background:{{ $bg }};flex-direction:column;align-items:center;justify-content:center;color:white;">
+                          <a href="{{ $proxyUrl }}" target="_blank" id="filew-att-{{ $loop->index }}"
+                            class="text-decoration-none"
+                            style="display:none;width:80px;height:80px;border-radius:0.375rem;background:{{ $bg }};flex-direction:column;align-items:center;justify-content:center;color:white;">
                             <i class="bx bx-file" style="font-size:1.8rem;"></i>
-                            <span class="badge bg-white mt-1" style="font-size:.6rem;color:{{ $bg }};font-weight:700;">{{ $label }}</span>
+                            <span class="badge bg-white mt-1"
+                              style="font-size:.6rem;color:{{ $bg }};font-weight:700;">{{ $label }}</span>
                           </a>
                         @endif
                         @if (!$isHistory)
-                          <button type="button"
-                            class="btn btn-danger btn-att-delete position-absolute top-0 end-0"
-                            style="font-size:.8rem;line-height:1;padding:2px 5px;"
-                            title="ลบไฟล์นี้">
+                          <button type="button" class="btn btn-danger btn-att-delete position-absolute top-0 end-0"
+                            style="font-size:.8rem;line-height:1;padding:2px 5px;" title="ลบไฟล์นี้">
                             <i class="bx bx-x"></i>
                           </button>
                         @endif
@@ -653,8 +674,7 @@
                       <i class="bx bx-upload me-1"></i> แนบหลักฐานเพิ่มเติม
                     </label>
                     <div class="upload-area" style="max-width:520px;">
-                      <input id="attachments_edit" type="file"
-                        class="form-control border-0 bg-transparent p-0"
+                      <input id="attachments_edit" type="file" class="form-control border-0 bg-transparent p-0"
                         name="attachments[]" accept=".pdf,.jpg,.jpeg,.png" multiple>
                       <small class="text-muted mt-1 d-block">
                         <i class="bx bx-info-circle me-1"></i>รองรับ PDF, JPG, PNG — แนบได้หลายไฟล์
@@ -1200,8 +1220,8 @@
                       <div class="summary-stat-card">
                         <div class="summary-stat-label"><i class="bx bx-plus-circle me-1"></i> ลูกค้าซื้อเพิ่ม</div>
                         <div class="money-wrap">
-                          <input class="form-control text-end money-input mt-1" type="text" id="summaryExtraTotal"
-                            disabled />
+                          <input class="form-control text-end money-input mt-1" type="text"
+                            id="summaryExtraTotal" disabled />
                           <span class="money-suffix">฿</span>
                         </div>
                       </div>
@@ -1399,12 +1419,15 @@
                                       @if (auth()->user()->brand == 1 && !$isHistory)
                                         @php $savedRemainingBank = $remainingPayment->transfer_bank ?? ''; @endphp
                                         <div class="col-12">
-                                          <div class="po-label mb-1"><i class="bx bx-bank me-1"></i> เลือกธนาคารปลายทาง</div>
+                                          <div class="po-label mb-1"><i class="bx bx-bank me-1"></i>
+                                            เลือกธนาคารปลายทาง</div>
                                           <div class="pay-type-group">
-                                            <input type="radio" name="remaining_bank_select" id="rbKasikorn" value="kasikorn"
+                                            <input type="radio" name="remaining_bank_select" id="rbKasikorn"
+                                              value="kasikorn"
                                               {{ str_contains($savedRemainingBank, 'กสิกร') ? 'checked' : '' }}>
                                             <label for="rbKasikorn">กสิกร</label>
-                                            <input type="radio" name="remaining_bank_select" id="rbSCB" value="scb"
+                                            <input type="radio" name="remaining_bank_select" id="rbSCB"
+                                              value="scb"
                                               {{ str_contains($savedRemainingBank, 'ไทยพาณิชย์') ? 'checked' : '' }}>
                                             <label for="rbSCB">ไทยพาณิชย์</label>
                                           </div>
@@ -1415,21 +1438,21 @@
                                         <input id="remaining_transfer_bank" type="text" class="form-control"
                                           name="remaining_transfer_bank"
                                           value="{{ old('remaining_transfer_bank', $remainingPayment->transfer_bank ?? (auth()->user()->brand == 2 ? 'กสิกร' : (auth()->user()->brand == 3 ? 'กสิกร' : ''))) }}"
-                                          @if (in_array(auth()->user()->brand, [2, 3])) @endif>
+                                          @if (in_array(auth()->user()->brand, [2, 3]))  @endif>
                                       </div>
                                       <div class="col-md-4">
                                         <label for="remaining_transfer_branch" class="po-label">สาขา</label>
                                         <input id="remaining_transfer_branch" type="text" class="form-control"
                                           name="remaining_transfer_branch"
                                           value="{{ old('remaining_transfer_branch', $remainingPayment->transfer_branch ?? (in_array(auth()->user()->brand, [2, 3]) ? 'โลตัส กระบี่' : '')) }}"
-                                          @if (in_array(auth()->user()->brand, [2, 3])) @endif>
+                                          @if (in_array(auth()->user()->brand, [2, 3]))  @endif>
                                       </div>
                                       <div class="col-md-4">
                                         <label for="remaining_transfer_no" class="po-label">เลขที่</label>
                                         <input id="remaining_transfer_no" type="text" class="form-control"
                                           name="remaining_transfer_no"
                                           value="{{ old('remaining_transfer_no', $remainingPayment->transfer_no ?? (auth()->user()->brand == 2 ? '1118544192' : (auth()->user()->brand == 3 ? '1248607854' : ''))) }}"
-                                          @if (in_array(auth()->user()->brand, [2, 3])) @endif>
+                                          @if (in_array(auth()->user()->brand, [2, 3]))  @endif>
                                       </div>
                                     </div>
                                   </div>
@@ -1459,8 +1482,7 @@
                                 <div class="col-md-4">
                                   <div class="po-sub-card mb-0 h-100">
                                     <div class="po-sub-card-header">
-                                      <div class="sub-icon amber"><i
-                                          class="bx bx-tag"></i></div>
+                                      <div class="sub-icon amber"><i class="bx bx-tag"></i></div>
                                       ราคาและการปรับราคา
                                     </div>
                                     <div class="po-sub-card-body">
@@ -1517,8 +1539,7 @@
                                 <div class="col-md-4">
                                   <div class="po-sub-card mb-0 h-100">
                                     <div class="po-sub-card-header">
-                                      <div class="sub-icon emerald"><i
-                                          class="bx bx-down-arrow-circle"></i></div>
+                                      <div class="sub-icon emerald"><i class="bx bx-down-arrow-circle"></i></div>
                                       เงินดาวน์
                                     </div>
                                     <div class="po-sub-card-body">
@@ -1570,8 +1591,7 @@
                                 <div class="col-md-4">
                                   <div class="po-sub-card mb-0 h-100">
                                     <div class="po-sub-card-header">
-                                      <div class="sub-icon sky"><i
-                                          class="bx bx-calendar-event"></i></div>
+                                      <div class="sub-icon sky"><i class="bx bx-calendar-event"></i></div>
                                       วันออกรถ
                                     </div>
                                     <div class="po-sub-card-body">
@@ -1625,8 +1645,7 @@
                               {{-- Card: วันที่และประเภทการจ่ายเงินค่าออกรถ --}}
                               <div class="po-sub-card mt-3">
                                 <div class="po-sub-card-header">
-                                  <div class="sub-icon sky"><i
-                                      class="bx bx-calendar-check"></i></div>
+                                  <div class="sub-icon sky"><i class="bx bx-calendar-check"></i></div>
                                   วันที่และประเภทการจ่ายเงินค่าออกรถ
                                 </div>
                                 <div class="po-sub-card-body">
@@ -1717,12 +1736,15 @@
                                         @if (auth()->user()->brand == 1 && !$isHistory)
                                           @php $savedDeliveryBank = $deliveryPayment->transfer_bank ?? ''; @endphp
                                           <div class="col-12">
-                                            <div class="po-label mb-1"><i class="bx bx-bank me-1"></i> เลือกธนาคารปลายทาง</div>
+                                            <div class="po-label mb-1"><i class="bx bx-bank me-1"></i>
+                                              เลือกธนาคารปลายทาง</div>
                                             <div class="pay-type-group">
-                                              <input type="radio" name="delivery_bank_select" id="dbKasikorn" value="kasikorn"
+                                              <input type="radio" name="delivery_bank_select" id="dbKasikorn"
+                                                value="kasikorn"
                                                 {{ str_contains($savedDeliveryBank, 'กสิกร') ? 'checked' : '' }}>
                                               <label for="dbKasikorn">กสิกร</label>
-                                              <input type="radio" name="delivery_bank_select" id="dbSCB" value="scb"
+                                              <input type="radio" name="delivery_bank_select" id="dbSCB"
+                                                value="scb"
                                                 {{ str_contains($savedDeliveryBank, 'ไทยพาณิชย์') ? 'checked' : '' }}>
                                               <label for="dbSCB">ไทยพาณิชย์</label>
                                             </div>
@@ -1733,21 +1755,21 @@
                                           <input id="delivery_transfer_bank" type="text" class="form-control"
                                             name="delivery_transfer_bank"
                                             value="{{ old('delivery_transfer_bank', $deliveryPayment->transfer_bank ?? (auth()->user()->brand == 2 ? 'กสิกร' : (auth()->user()->brand == 3 ? 'กสิกร' : ''))) }}"
-                                            @if (in_array(auth()->user()->brand, [2, 3])) @endif>
+                                            @if (in_array(auth()->user()->brand, [2, 3]))  @endif>
                                         </div>
                                         <div class="col-md-4">
                                           <label for="delivery_transfer_branch" class="po-label">สาขา</label>
                                           <input id="delivery_transfer_branch" type="text" class="form-control"
                                             name="delivery_transfer_branch"
                                             value="{{ old('delivery_transfer_branch', $deliveryPayment->transfer_branch ?? (in_array(auth()->user()->brand, [2, 3]) ? 'โลตัส กระบี่' : '')) }}"
-                                            @if (in_array(auth()->user()->brand, [2, 3])) @endif>
+                                            @if (in_array(auth()->user()->brand, [2, 3]))  @endif>
                                         </div>
                                         <div class="col-md-3">
                                           <label for="delivery_transfer_no" class="po-label">เลขที่</label>
                                           <input id="delivery_transfer_no" type="text" class="form-control"
                                             name="delivery_transfer_no"
                                             value="{{ old('delivery_transfer_no', $deliveryPayment->transfer_no ?? (auth()->user()->brand == 2 ? '1118544192' : (auth()->user()->brand == 3 ? '1248607854' : ''))) }}"
-                                            @if (in_array(auth()->user()->brand, [2, 3])) @endif>
+                                            @if (in_array(auth()->user()->brand, [2, 3]))  @endif>
                                         </div>
                                       </div>
                                     </div>
@@ -1780,8 +1802,7 @@
                                 <div class="col-md-6">
                                   <div class="po-sub-card mb-0 h-100">
                                     <div class="po-sub-card-header">
-                                      <div class="sub-icon indigo"><i
-                                          class="bx bx-buildings"></i></div>
+                                      <div class="sub-icon indigo"><i class="bx bx-buildings"></i></div>
                                       ข้อมูลไฟแนนซ์
                                     </div>
                                     <div class="po-sub-card-body">
@@ -1866,8 +1887,7 @@
                                 <div class="col-md-6">
                                   <div class="po-sub-card mb-0 h-100">
                                     <div class="po-sub-card-header">
-                                      <div class="sub-icon amber"><i
-                                          class="bx bx-calculator"></i></div>
+                                      <div class="sub-icon amber"><i class="bx bx-calculator"></i></div>
                                       ค่างวด / ALP / PO
                                     </div>
                                     <div class="po-sub-card-body">
@@ -2343,34 +2363,35 @@
 
                   {{-- ── Card ทดลองขับ (แสดงเฉพาะเมื่อมี tracking) ── --}}
                   @if ($tracking)
-                  <div class="col-12">
-                    <div class="po-section-edit">
-                      <div class="po-section-header">
-                        <div class="po-section-icon rose"><i class="bx bx-trip"></i></div>
-                        <h6 class="po-section-title">ทดลองขับ</h6>
-                      </div>
-                      <div class="po-section-body-edit">
-                        <div class="row g-3">
-                          <div class="col-md-3">
-                            <label class="po-label" for="po_td_date"><i class="bx bx-calendar me-1"></i>วันที่ทดลองขับ</label>
-                            <input type="date" id="po_td_date" class="form-control"
-                              value="{{ $tracking->test_drive_date ?? '' }}">
-                          </div>
-                          <div class="col-md-9">
-                            <label class="po-label" for="po_td_note"><i class="bx bx-comment me-1"></i>หมายเหตุ</label>
-                            <textarea id="po_td_note" class="form-control" rows="2"
-                              placeholder="หมายเหตุ...">{{ $tracking->test_drive_note ?? '' }}</textarea>
-                          </div>
+                    <div class="col-12">
+                      <div class="po-section-edit">
+                        <div class="po-section-header">
+                          <div class="po-section-icon rose"><i class="bx bx-trip"></i></div>
+                          <h6 class="po-section-title">ทดลองขับ</h6>
                         </div>
-                        <div class="d-flex justify-content-end mt-3 mb-1">
-                          <button type="button" class="btn btn-primary btn-sm px-4" id="btnSaveTestDrivePO"
-                            data-tracking-id="{{ $tracking->id }}">
-                            <i class="bx bx-save me-1"></i> บันทึก
-                          </button>
+                        <div class="po-section-body-edit">
+                          <div class="row g-3">
+                            <div class="col-md-3">
+                              <label class="po-label" for="po_td_date"><i
+                                  class="bx bx-calendar me-1"></i>วันที่ทดลองขับ</label>
+                              <input type="date" id="po_td_date" class="form-control"
+                                value="{{ $tracking->test_drive_date ?? '' }}">
+                            </div>
+                            <div class="col-md-9">
+                              <label class="po-label" for="po_td_note"><i
+                                  class="bx bx-comment me-1"></i>หมายเหตุ</label>
+                              <textarea id="po_td_note" class="form-control" rows="2" placeholder="หมายเหตุ...">{{ $tracking->test_drive_note ?? '' }}</textarea>
+                            </div>
+                          </div>
+                          <div class="d-flex justify-content-end mt-3 mb-1">
+                            <button type="button" class="btn btn-primary btn-sm px-4" id="btnSaveTestDrivePO"
+                              data-tracking-id="{{ $tracking->id }}">
+                              <i class="bx bx-save me-1"></i> บันทึก
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
                   @endif
 
                   {{-- ── Card 2 : การเช็คและอนุมัติ ── --}}
@@ -2663,19 +2684,24 @@
 
           {{-- ค้นหาผู้ซื้อใหม่ --}}
           <div class="mb-3">
-            <label for="cbSearchInput" class="mf-label form-label"><i class="bx bx-search ci-emerald"></i> ค้นหาผู้ซื้อใหม่</label>
-            <input type="text" id="cbSearchInput" class="form-control" placeholder="ชื่อ, เบอร์, บัตรประชาชน...">
-            <div id="cbSearchResults" class="list-group mt-1" style="display:none;max-height:200px;overflow-y:auto;"></div>
+            <label for="cbSearchInput" class="mf-label form-label"><i class="bx bx-search ci-emerald"></i>
+              ค้นหาผู้ซื้อใหม่</label>
+            <input type="text" id="cbSearchInput" class="form-control"
+              placeholder="ชื่อ, เบอร์, บัตรประชาชน...">
+            <div id="cbSearchResults" class="list-group mt-1"
+              style="display:none;max-height:200px;overflow-y:auto;"></div>
           </div>
 
           {{-- ผู้ซื้อที่เลือก --}}
           <div id="cbSelectedWrap" style="display:none;">
             <div class="mb-3 p-3 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;">
-              <div class="mf-label form-label mb-1"><i class="bx bx-user-check ci-emerald"></i> ผู้ซื้อใหม่ที่เลือก</div>
+              <div class="mf-label form-label mb-1"><i class="bx bx-user-check ci-emerald"></i> ผู้ซื้อใหม่ที่เลือก
+              </div>
               <div class="fw-semibold" id="cbSelectedName"></div>
             </div>
             <div class="mb-3" id="cbTrackingWrap">
-              <label for="cbTrackingSelect" class="mf-label form-label"><i class="bx bx-notepad ci-indigo"></i> การติดตาม <span class="text-danger">*</span></label>
+              <label for="cbTrackingSelect" class="mf-label form-label"><i class="bx bx-notepad ci-indigo"></i>
+                การติดตาม <span class="text-danger">*</span></label>
               <select id="cbTrackingSelect" class="form-select">
                 <option value="">— เลือกการติดตาม —</option>
               </select>

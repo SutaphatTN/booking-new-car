@@ -6,11 +6,26 @@
 
 มีรายการขออนุมัติจาก {{ $saleCar->saleUser->name }}
 
+@php $__case = $saleCar->approvalCase(); @endphp
 ### ประเภทคำขอ
 @if ($type === 'normal')
 🔵 **ขออนุมัติยอดปกติ**
+@elseif ($type === 'manager_revise')
+🔁 **MD ตีกลับ — ขอให้ผู้จัดการกรอกยอดหักค่าคอมฝ่ายขายใหม่**
+@if (!empty($saleCar->approval_md_note))
+
+> **โน้ตจาก MD :** {{ $saleCar->approval_md_note }}
+@endif
+@elseif ($type === 'gm')
+🟠 **ขออนุมัติเกินงบ — เสนอ MD (ขั้นสุดท้าย)**
+@elseif ($__case === 'b1_md')
+🔴 **ขออนุมัติเกินงบ (เกินเพดาน)**
+
+🔺 *เกินเพดานอนุมัติของผู้จัดการ — กรุณากรอกยอดหักค่าคอมฝ่ายขาย จากนั้นระบบจะส่งต่อให้ MD อนุมัติขั้นสุดท้าย*
 @else
-🔴 **ขออนุมัติเกินงบ**
+🔴 **ขออนุมัติเกินงบ (ไม่เกินเพดาน)**
+
+🟢 *อยู่ในเพดานอนุมัติของผู้จัดการ — ผู้จัดการอนุมัติได้เลย*
 @endif
 
 ---
@@ -45,22 +60,34 @@
 - **ราคาขาย :** {{ number_format($data['price_sub'], 2) }}
 - **Margin (2%) :** {{ number_format($data['margin'], 2) }}
 - **RI (cashSupport) :** {{ number_format($data['ri'], 2) }}
-@forelse ($data['campaign_details'] as $c)
-&nbsp;&nbsp;• {{ $c['name'] }} — {{ number_format($c['amount'], 2) }}
-@empty
-&nbsp;&nbsp;• ไม่มีแคมเปญ
-@endforelse
 - **Com Finance :** {{ number_format($data['com_fin'], 2) }}
 - **ยอดรวมแคมเปญ :** **{{ number_format($data['campaign_total'], 2) }}**
 
+@if (!empty($data['campaign_details']) && count($data['campaign_details']))
+**รายละเอียด RI (cashSupport)**
+@component('mail::table')
+| แคมเปญ | จำนวนเงิน |
+| :----- | --------: |
+@foreach ($data['campaign_details'] as $c)
+| {{ str_replace('|', '/', $c['name']) }} | {{ number_format($c['amount'], 2) }} |
+@endforeach
+@endcomponent
+@endif
+
 ### รายการหัก
 - **ของแถม (ราคาทุนอะไหล่) :** {{ number_format($data['gift_total'], 2) }}
-@forelse ($data['gift_details'] as $g)
-&nbsp;&nbsp;• {{ $g['detail'] }} — {{ number_format($g['amount'], 2) }}
-@empty
-&nbsp;&nbsp;• ไม่มีของแถม
-@endforelse
 - **ส่วนลด :** {{ number_format($data['discount'], 2) }}
+
+@if (!empty($data['gift_details']) && count($data['gift_details']))
+**รายละเอียดของแถม (ราคาทุนอะไหล่)**
+@component('mail::table')
+| รายการ | ราคาทุนอะไหล่ |
+| :----- | -----------: |
+@foreach ($data['gift_details'] as $g)
+| {{ str_replace('|', '/', $g['detail']) }} | {{ number_format($g['amount'], 2) }} |
+@endforeach
+@endcomponent
+@endif
 
 ### ยอดที่เหลือ
 **{{ number_format($data['remaining'], 2) }}**
@@ -79,10 +106,11 @@
 อนุมัติ
 @endcomponent
 
-{{-- ลิงก์ผ่าน token (unscoped) เปิดได้ทุก brand — เดิมชี้ /edit/{id} ที่ scoped ทำให้ 404 ข้าม brand --}}
-@component('mail::button', ['url' => route('purchase-order.emailApprove', $saleCar->approval_token), 'color' => 'primary'])
+{{-- ปุ่ม "ดูรายละเอียด" ปิดไว้ก่อน (uncomment เพื่อเปิดใช้ — ชี้ PDF สรุปการขาย read-only ผ่าน token)
+@component('mail::button', ['url' => route('purchase-order.emailSummary', $saleCar->approval_token), 'color' => 'primary'])
 ดูรายละเอียด
 @endcomponent
+--}}
 @endif
 
 

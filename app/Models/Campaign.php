@@ -59,6 +59,11 @@ class Campaign extends Model
 		return $this->belongsTo(CampaignName::class, 'camName_id', 'id');
 	}
 
+	public function approvals()
+	{
+		return $this->hasMany(CampaignApproval::class, 'campaign_id', 'id');
+	}
+
 	public function getFormatStartDateAttribute()
 	{
 		return $this->startDate ? Carbon::parse($this->startDate)->format('d-m-Y') : null;

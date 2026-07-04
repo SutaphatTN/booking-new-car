@@ -38,6 +38,13 @@
     <div class="row"><span class="lbl">ลูกค้า</span><span class="val">{{ $saleCar->customer->FirstName ?? '' }} {{ $saleCar->customer->LastName ?? '' }}</span></div>
     <div class="row"><span class="lbl">ยอดที่เหลือ (จากใบขออนุมัติ)</span><span class="val">{{ number_format($saleCar->approval_remaining ?? 0, 2) }}</span></div>
 
+    @if ($showDeduct && !empty($saleCar->approval_md_note))
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-top:14px;font-size:.9rem;color:#92400e;">
+        🔁 <strong>MD ตีกลับ</strong> — ขอให้ทบทวนยอดหักค่าคอม<br>
+        <span style="color:#78350f;">โน้ตจาก MD : {{ $saleCar->approval_md_note }}</span>
+      </div>
+    @endif
+
     @if ($errors->any())
       <div class="err">{{ $errors->first() }}</div>
     @endif

@@ -245,17 +245,22 @@ class CampaignController extends Controller
             $cam = Campaign::findOrFail($id);
             $data = $request->except(['_token', '_method']);
 
-            $data['cashSupport'] = $request->cashSupport
-                ? str_replace(',', '', $request->cashSupport)
-                : null;
+            // ยอดเงินแก้ได้เฉพาะ admin — role อื่นให้คงค่าเดิมไว้ (กันแก้ผ่าน request)
+            if (Auth::user()->role === 'admin') {
+                $data['cashSupport'] = $request->cashSupport
+                    ? str_replace(',', '', $request->cashSupport)
+                    : null;
 
-            $data['cashSupport_deduct'] = $request->cashSupport_deduct
-                ? str_replace(',', '', $request->cashSupport_deduct)
-                : null;
+                $data['cashSupport_deduct'] = $request->cashSupport_deduct
+                    ? str_replace(',', '', $request->cashSupport_deduct)
+                    : null;
 
-            $data['cashSupport_final'] = $request->cashSupport_final
-                ? str_replace(',', '', $request->cashSupport_final)
-                : null;
+                $data['cashSupport_final'] = $request->cashSupport_final
+                    ? str_replace(',', '', $request->cashSupport_final)
+                    : null;
+            } else {
+                unset($data['cashSupport'], $data['cashSupport_deduct'], $data['cashSupport_final']);
+            }
 
             $cam->update($data);
 

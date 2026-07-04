@@ -28,6 +28,8 @@ use App\Models\PaymentType;
 use App\Models\Salecampaign;
 use App\Models\Salecar;
 use App\Models\SaleCarPayment;
+use App\Models\SaleCommissionMonthly;
+use App\Models\MonthlySaleTarget;
 use App\Models\CustomerTracking;
 use App\Models\TbConStatus;
 use App\Models\TbInteriorColor;
@@ -41,6 +43,9 @@ use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
 use App\Models\User;
 use App\Services\GPQuery;
+use App\Services\SaleCommissionQuery;
+use App\Services\SsiCommissionQuery;
+use App\Services\CarCommissionQuery;
 use App\Services\OneDriveService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Mail\Mailables\Attachment;
@@ -284,17 +289,8 @@ class PurchaseOrderController extends Controller
     //  brand 3 ใช้ logic เดียวกับ brand 1 (ไม่มี over_budget → เกินงบทุกกรณีจะได้ b1_md เสมอ)
     private function approvalCase(Salecar $saleCar): string
     {
-        $balance = (float) ($saleCar->balanceCampaign ?? 0);
-        if ($balance >= 0) {
-            return 'normal';
-        }
-        $brand = (int) $saleCar->brand;
-        if ($brand === 2) {
-            return 'b2_gm';
-        }
-        // brand 1, brand 3 (และ default)
-        $overBudget = (float) ($saleCar->model?->over_budget ?? 0);
-        return abs($balance) <= $overBudget ? 'b1_manager' : 'b1_md';
+        // ตรรกะเคสรวมไว้ที่ Salecar::approvalCase() (ใช้ร่วมกับการคิดค่าคอมสด)
+        return $saleCar->approvalCase();
     }
 
     // signature ที่ถือว่า "อนุมัติครบ" ตามเคส (ใช้ gate การผูกรถ + ปลดล็อก save)
@@ -396,13 +392,17 @@ class PurchaseOrderController extends Controller
     }
 
     // แจ้งเมื่ออนุมัติเสร็จสมบูรณ์ → ส่งหา เซลล์ (saleUser) + audit (ตาม brand จาก config)
-    private function notifyApproved(Salecar $saleCar): void
+    //  $includeManager = true → แจ้งผู้จัดการด้วย (ใช้กรณี MD กรอกยอดหักใหม่เองแล้วอนุมัติ)
+    private function notifyApproved(Salecar $saleCar, bool $includeManager = false): void
     {
         $to = [];
         if ($saleCar->saleUser?->email) {
             $to[] = $saleCar->saleUser->email;
         }
         $to = array_merge($to, $this->approverEmails($saleCar->brand, $saleCar->branch, 'audit'));
+        if ($includeManager) {
+            $to = array_merge($to, $this->approverEmails($saleCar->brand, $saleCar->branch, 'manager'));
+        }
         $to = array_values(array_unique(array_filter($to)));
 
         if (empty($to)) {
@@ -446,18 +446,19 @@ class PurchaseOrderController extends Controller
                 if (!$saleCar->ApprovalSignature) {
                     return view('purchase-order.approval-manager', ['saleCar' => $saleCar, 'token' => $token, 'showDeduct' => true]);
                 }
-                return view('purchase-order.approval-confirm', compact('saleCar', 'token'));
+                // MD: อนุมัติ (แก้ยอดได้) หรือ ตีกลับให้ผู้จัดการ
+                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => true]);
 
             case 'b2_gm':
                 // gm เลือก หักเงิน(จบ) / ส่งต่อ md
                 if (!$saleCar->ApprovalSignature) {
                     return view('purchase-order.approval-gm', compact('saleCar', 'token'));
                 }
-                return view('purchase-order.approval-confirm', compact('saleCar', 'token'));
+                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => false]);
 
             default:
                 // fallback — ขั้นสุดท้าย (md) กดยืนยัน
-                return view('purchase-order.approval-confirm', compact('saleCar', 'token'));
+                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => false]);
         }
     }
 
@@ -489,6 +490,7 @@ class PurchaseOrderController extends Controller
                 'approval_commission_deduct' => $deduct,
                 'ApprovalSignature' => 1,
                 'ApprovalSignatureDate' => $today,
+                'approval_md_note' => null, // เคลียร์โน้ต MD รอบก่อน (ถ้าเคยถูกตีกลับ)
             ]);
 
             $this->emailFinalApprover($saleCar, $deduct);
@@ -539,20 +541,91 @@ class PurchaseOrderController extends Controller
         return view('purchase-order.approval-result', compact('saleCar', 'msg'));
     }
 
-    // ขั้นสุดท้าย (md) กดยืนยันอนุมัติ
-    public function finalApprove($token)
+    // ขั้นสุดท้าย (md) — อนุมัติ (ใช้ยอดเดิม/กรอกใหม่) หรือ ตีกลับให้ผู้จัดการกรอกใหม่
+    public function finalApprove(Request $request, $token)
     {
         $saleCar = Salecar::withoutGlobalScopes()->where('approval_token', $token)->firstOrFail();
 
-        if (!$saleCar->GMApprovalSignature) {
-            $saleCar->update(['GMApprovalSignature' => 1, 'GMApprovalSignatureDate' => now()]);
-            $this->notifyApproved($saleCar);
+        // อนุมัติจบแล้ว → แสดงผลเดิม
+        if ($saleCar->GMApprovalSignature) {
+            return view('purchase-order.approval-result', [
+                'saleCar' => $saleCar,
+                'msg'     => 'รายการนี้อนุมัติเรียบร้อยแล้ว',
+            ]);
         }
+
+        $case = $this->approvalCase($saleCar);
+        $canRevise = $case === 'b1_md'; // ทางเลือก MD กรอกใหม่/ตีกลับ เฉพาะเคส b1_md
+
+        // ── MD ตีกลับให้ผู้จัดการกรอกยอดหักใหม่ ──
+        if ($canRevise && $request->input('decision') === 'return') {
+            $request->validate([
+                'md_note' => 'nullable|string|max:1000',
+            ]);
+
+            $saleCar->update([
+                'ApprovalSignature'     => 0,      // รีเซ็ต → ผู้จัดการเปิดลิงก์เดิมจะกลับไปหน้ากรอกยอดหัก
+                'ApprovalSignatureDate' => null,
+                'approval_md_note'      => $request->md_note,
+            ]);
+
+            $this->emailReturnToManager($saleCar, $request->md_note);
+
+            return view('purchase-order.approval-result', [
+                'saleCar' => $saleCar,
+                'msg'     => 'ส่งกลับให้ผู้จัดการกรอกยอดหักค่าคอมใหม่แล้ว (แจ้งอีเมลผู้จัดการเรียบร้อย)',
+            ]);
+        }
+
+        // ── MD อนุมัติ (ถ้ากรอกยอดใหม่มา → override) ──
+        $mdEdited = false;
+        if ($canRevise && $request->filled('commission_deduct')) {
+            $request->merge(['commission_deduct' => str_replace(',', '', (string) $request->commission_deduct)]);
+            $request->validate([
+                'commission_deduct' => 'numeric|min:0',
+            ]);
+            $newDeduct = (float) $request->commission_deduct;
+            $mdEdited = $newDeduct != (float) ($saleCar->approval_commission_deduct ?? 0);
+            $saleCar->approval_commission_deduct = $newDeduct;
+        }
+
+        $saleCar->update([
+            'approval_commission_deduct' => $saleCar->approval_commission_deduct,
+            'GMApprovalSignature'        => 1,
+            'GMApprovalSignatureDate'    => now(),
+            'approval_md_note'           => null, // เคลียร์โน้ตเมื่ออนุมัติจบ
+        ]);
+
+        // แจ้งผู้จัดการด้วยเมื่อ MD แก้ยอด (ตามที่ตกลง) — sale+audit แจ้งเสมอ
+        $this->notifyApproved($saleCar, $mdEdited);
 
         return view('purchase-order.approval-result', [
             'saleCar' => $saleCar,
-            'msg'     => 'อนุมัติเรียบร้อย (MD)',
+            'msg'     => $mdEdited
+                ? 'อนุมัติเรียบร้อย (MD — แก้ยอดหักค่าคอม แจ้งผู้จัดการแล้ว)'
+                : 'อนุมัติเรียบร้อย (MD)',
         ]);
+    }
+
+    // MD ตีกลับ → แจ้งผู้จัดการให้กรอกยอดหักค่าคอมใหม่ (ลิงก์เดิมจะกลับไปหน้ากรอกยอดหัก)
+    private function emailReturnToManager(Salecar $saleCar, ?string $note = null): void
+    {
+        $mailTo = $this->approverEmails($saleCar->brand, $saleCar->branch, 'manager');
+        if (empty($mailTo)) {
+            $mailTo = $saleCar->brand == 2
+                ? ['JirapornK@Chookiat.org']
+                : ['Phung.mitsuchookiatkrabi@gmail.com'];
+        }
+
+        $data  = $this->buildApprovalData($saleCar);
+        $files = $this->buildApprovalAttachments($saleCar);
+
+        Mail::to($mailTo)->send(new SaleRequestMail(
+            $saleCar->fresh(['model', 'saleUser', 'customer.prefix']),
+            'manager_revise',
+            $data,
+            $files
+        ));
     }
 
     // resource route สร้าง GET purchase-order/{id} → show() แต่ไม่มี method นี้ → redirect ไปหน้า edit แทน
@@ -997,12 +1070,21 @@ class PurchaseOrderController extends Controller
             return response()->json([]);
         }
 
+        // แคมเปญ CK (type = 4) ต้องได้รับอนุมัติของ "เดือนปัจจุบัน" ถึงจะเลือกได้
+        $currentPeriod = $today->format('Y-m');
+
         $campaigns = Campaign::with('appellation', 'type')
             ->where('subModel_id', $request->subModel_id)
             ->where('startYear', '<=', $year)
             ->where('endYear', '>=', $year)
             ->whereDate('startDate', '<=', $today)
             ->whereDate('endDate', '>=', $today)
+            ->where(function ($q) use ($currentPeriod) {
+                // ไม่ใช่ CK → เลือกได้ตามปกติ | เป็น CK → ต้องมีอนุมัติ approved ของเดือนนี้
+                $q->whereHas('type', fn($t) => $t->where('type', '!=', 4))
+                    ->orWhereDoesntHave('type')
+                    ->orWhereHas('approvals', fn($a) => $a->where('period_ym', $currentPeriod)->where('status', 'approved'));
+            })
             ->get();
 
         return response()->json($campaigns);
@@ -1377,18 +1459,16 @@ class PurchaseOrderController extends Controller
             $oldCarOrderID = $saleCar->CarOrderID;
             $newCarOrderID = $request->CarOrderID;
 
-            // ===== ปิดการขออนุมัติชั่วคราว (วันปิดยอด) — ปิด gate บังคับอนุมัติก่อนผูกรถ =====
-            // เปิดคืน: uncomment block ด้านล่าง
             // gate: ผูกรถใหม่ได้ต่อเมื่ออนุมัติแล้ว (ยกเว้น admin) — บันทึก draft ที่ยังไม่ผูกรถได้ปกติ
-            // $bindingNewCar = $newCarOrderID && ($oldCarOrderID != $newCarOrderID);
-            // if ($bindingNewCar && Auth::user()->role !== 'admin' && !$this->isApproved($saleCar)) {
-            //     DB::rollBack();
-            //     return response()->json([
-            //         'success' => false,
-            //         'message' => 'กรุณาขออนุมัติให้ผ่านก่อน จึงจะผูกรถได้'
-            //     ], 422);
-            // }
-            // ===== /ปิดการขออนุมัติชั่วคราว =====
+            // ── เปิดตอนปิดยอด: comment block นี้เพื่อปิด gate บังคับอนุมัติก่อนผูกรถ ──
+            $bindingNewCar = $newCarOrderID && ($oldCarOrderID != $newCarOrderID);
+            if ($bindingNewCar && Auth::user()->role !== 'admin' && !$this->isApproved($saleCar)) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'กรุณาขออนุมัติให้ผ่านก่อน จึงจะผูกรถได้'
+                ], 422);
+            }
 
             $oldPlate = $saleCar->red_license;
 
@@ -1970,6 +2050,24 @@ class PurchaseOrderController extends Controller
         return $pdf->stream($filename);
     }
 
+    // ดูรายละเอียด (PDF สรุปการขาย) จากลิงก์ในเมล — ไม่ต้อง login, unscoped (เปิดข้าม brand ได้), read-only
+    public function emailSummary($token)
+    {
+        $saleCar = Salecar::withoutGlobalScopes()
+            ->with(['customer.prefix', 'model', 'carOrder', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'reservationPayment', 'remainingPayment.financeInfo', 'deliveryPayment', 'turnCar', 'provinces'])
+            ->where('approval_token', $token)
+            ->firstOrFail();
+
+        $model = TbCarmodel::withoutGlobalScopes()->get();
+
+        $pdf = Pdf::loadView('purchase-order.report.summary', compact('saleCar', 'model'))
+            ->setPaper('A4', 'portrait');
+
+        $filename = 'purchase-order_' . $saleCar->id . '_' . now()->format('Ymd_His') . '.pdf';
+
+        return $pdf->stream($filename);
+    }
+
     public function bookingPdf($id)
     {
         // ใบจองสำหรับลูกค้า — ใช้ข้อมูลตอนทำการจอง
@@ -2515,43 +2613,95 @@ class PurchaseOrderController extends Controller
         return view('purchase-order.commission.view');
     }
 
-    public function listCommission()
+    public function listCommission(Request $request)
     {
-        $month = $request->month ?? Carbon::now()->month;
-        $year  = $request->year  ?? Carbon::now()->year;
+        // month มาเป็นรูปแบบ "YYYY-MM" จาก input type=month (default เดือนปัจจุบัน)
+        [$year, $month] = $this->resolveCommissionMonth($request->input('month'));
 
         $user = Auth::user();
 
-        $query = Salecar::with('saleUser.branchInfo')
-            ->selectRaw('
-            SaleID,
-            COUNT(CarOrderID) as total_cars,
-            SUM(CommissionSale) as total_commission
-        ')
-            ->whereNotNull('DeliveryInCKDate')
-            ->whereNotNull('CarOrderID')
-            ->whereMonth('DeliveryInCKDate', $month)
-            ->whereYear('DeliveryInCKDate', $year);
+        $fromDate = Carbon::create($year, $month, 1)->startOfMonth()->format('Y-m-d');
+        $toDate   = Carbon::create($year, $month, 1)->endOfMonth()->format('Y-m-d');
 
+        // ดึงรายคัน (พร้อม relation ที่ต้องใช้คิดค่าคอมสด) แล้วค่อยรวมต่อเซลล์ใน PHP
+        // — ใช้ effectiveCommissionSale() เพื่อรองรับเคสเกิน over_budget ที่ใช้ยอดหักของ manager
+        $rows = SaleCommissionQuery::base($user, false, $fromDate, $toDate)
+            ->with(['model', 'saleUser.branchInfo'])
+            ->when(in_array($user->role, ['sale', 'lead_sale']), function ($q) use ($user) {
+                $visibleSaleIds = [$user->id];
+                if ($user->role === 'lead_sale') {
+                    $visibleSaleIds = array_merge($visibleSaleIds, [9, 10, 11]);
+                }
+                $q->whereIn('SaleID', $visibleSaleIds);
+            })
+            ->get();
+
+        $saleCar = $rows->groupBy('SaleID')->map(function ($group, $saleId) {
+            $first = $group->first();
+            return (object) [
+                'SaleID'           => $saleId,
+                'saleUser'         => $first->saleUser,
+                'total_cars'       => $group->count(),
+                'total_commission' => (float) $group->sum(fn($r) => $r->effectiveCommissionSale()),
+            ];
+        })->values();
+
+        // คอม SSI (brand 1, เฉพาะเดือน 3/10) — คิดจากยอดส่งมอบย้อนหลัง 6 เดือน
+        $ssi = SsiCommissionQuery::forPeriod($year, $month);
+        $ssiPerSale = $ssi['perSale'];
+        // จำกัดสิทธิ์การมองเห็นให้ตรงกับ base query (sale/lead_sale)
         if (in_array($user->role, ['sale', 'lead_sale'])) {
-            $visibleSaleIds = [$user->id];
-            if ($user->role === 'lead_sale') {
-                $visibleSaleIds = array_merge($visibleSaleIds, [9, 10, 11]);
-            }
-            $query->whereIn('SaleID', $visibleSaleIds);
+            $visibleSaleIds = $user->role === 'lead_sale'
+                ? array_merge([$user->id], [9, 10, 11])
+                : [$user->id];
+            $ssiPerSale = $ssiPerSale->only($visibleSaleIds);
         }
 
-        $saleCar = $query
-            ->groupBy('SaleID')
-            ->orderByRaw('SUM(CommissionSale) DESC')
-            ->get();
+        // เซลล์ที่มีแต่คอม SSI (ได้เงินจริง แต่ไม่มีรถส่งมอบในเดือนที่เลือก) → เพิ่มเข้ารายการด้วย
+        $saleCar = $saleCar->keyBy('SaleID');
+        $ssiEarners = $ssiPerSale->filter(fn($v) => ($v['amount'] ?? 0) > 0);
+        $missingIds = $ssiEarners->keys()->diff($saleCar->keys());
+        if ($missingIds->isNotEmpty()) {
+            $extraUsers = User::with('branchInfo')->whereIn('id', $missingIds)->get()->keyBy('id');
+            foreach ($missingIds as $sid) {
+                $saleCar->put($sid, (object) [
+                    'SaleID'           => $sid,
+                    'saleUser'         => $extraUsers->get($sid),
+                    'total_cars'       => 0,
+                    'total_commission' => 0.0,
+                ]);
+            }
+        }
+
+        // คอมตัวรถรายคัน (รายเดือน) → รวมเข้ายอดสุทธิ
+        $carCommission = CarCommissionQuery::forMonth($year, $month)['perSale'];
+
+        // ค่าปรับต่อเซลล์ต่อเดือน (วินัย / ขาด-ลา-สาย / lead / clip) → รวมเข้ายอดสุทธิ
+        $adjustments = SaleCommissionMonthly::where('year', $year)
+            ->where('month', $month)
+            ->whereIn('SaleID', $saleCar->keys())
+            ->get()
+            ->keyBy('SaleID');
+
+        // คำนวณยอดสุทธิ (brand-aware + คอม SSI + คอมตัวรถรายคัน) แล้วค่อยจัดอันดับ (emoji อิงยอดสุทธิ)
+        $saleCar = $saleCar->map(function ($s) use ($adjustments, $ssiPerSale, $carCommission) {
+            $adj = $adjustments->get($s->SaleID);
+            $brand = (int) ($s->saleUser->brand ?? 0);
+            $net = $adj
+                ? $adj->computeNet($s->total_commission, $brand)
+                : $s->total_commission;
+            $net += (float) ($ssiPerSale[$s->SaleID]['amount'] ?? 0);
+            $net += (float) ($carCommission[$s->SaleID]['amount'] ?? 0);
+            $s->net_commission = $net;
+            return $s;
+        })->values()->sortByDesc('net_commission')->values();
 
         $showEmoji = !in_array($user->role, ['sale', 'lead_sale']) && $saleCar->count() > 1;
         $lastIndex = $saleCar->count() - 1;
 
         $data = $saleCar->map(function ($s, $index) use ($showEmoji, $lastIndex) {
-            $nameSale = $s->saleUser->name;
-            $branchSale = $s->saleUser->branchInfo->name;
+            $nameSale = $s->saleUser->name ?? '-';
+            $branchSale = $s->saleUser->branchInfo->name ?? '-';
 
             $emoji = '';
             if ($showEmoji) {
@@ -2568,11 +2718,211 @@ class PurchaseOrderController extends Controller
                 'No' => $index + 1,
                 'name' => $sale,
                 'total_car' => $s->total_cars . ' คัน',
-                'com' => number_format($s->total_commission ?? 0, 2),
+                'com' => number_format($s->net_commission ?? 0, 2),
+                'DT_RowData' => ['saleid' => $s->SaleID],
             ];
         });
 
         return response()->json(['data' => $data]);
+    }
+
+    /** แปลงค่า month ("YYYY-MM") เป็น [year, month]; ถ้าไม่ส่งมาใช้เดือนปัจจุบัน */
+    private function resolveCommissionMonth($monthInput): array
+    {
+        if ($monthInput && preg_match('/^(\d{4})-(\d{2})$/', $monthInput, $m)) {
+            return [(int) $m[1], (int) $m[2]];
+        }
+
+        return [(int) Carbon::now()->year, (int) Carbon::now()->month];
+    }
+
+    /**
+     * รายชื่อลูกค้าทั้งหมดของเซลล์คนนั้นในเดือนที่เลือก + ฟอร์มกรอกค่าคอมเพิ่มเติมต่อเดือน
+     * (ค่าคอมวินัย, ค่าขาด/ลา/มาสาย, คอม lead, คอม clip) — แสดงใน modal
+     */
+    public function commissionSaleDetail(Request $request, $saleId)
+    {
+        abort_unless(in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md']), 403);
+
+        [$year, $month] = $this->resolveCommissionMonth($request->input('month'));
+
+        $fromDate = Carbon::create($year, $month, 1)->startOfMonth()->format('Y-m-d');
+        $toDate   = Carbon::create($year, $month, 1)->endOfMonth()->format('Y-m-d');
+
+        $rows = SaleCommissionQuery::base(Auth::user(), false, $fromDate, $toDate)
+            ->with('model')
+            ->where('SaleID', $saleId)
+            ->get();
+
+        $saleUser = User::with('branchInfo')->find($saleId);
+
+        $cars = $rows->map(function ($r) {
+            $customerName = trim(
+                ($r->customer->prefix->Name_TH ?? '') . ' ' .
+                    ($r->customer->FirstName ?? '') . ' ' .
+                    ($r->customer->LastName ?? '')
+            );
+
+            $sub = $r->carOrder->subModel->name ?? '-';
+            $detailModel = $r->carOrder->subModel->detail ?? null;
+
+            // คอมงบเหลือคิดสด (รองรับเคสเกิน over_budget ที่ใช้ยอดหักของ manager = −D)
+            $balanceCampaign = $r->effectiveBalanceCommission();
+            // เกินงบ → ไม่คิดคอมประดับยนต์
+            $accessoryCom = $r->effectiveAccessoryCommission();
+            // คอมอื่นๆ — ใช้ค่า default ตามรุ่นถ้ายังไม่กรอก
+            $specialCom   = $r->effectiveSpecialCommission();
+            $interestCom  = $r->remainingPayment->total_com ?? 0;
+            $turnCarCom   = $r->turnCar->com_turn ?? 0;
+
+            return [
+                'id'              => $r->id,
+                'customer'        => $customerName ?: '-',
+                'model'           => $r->carOrder->model->Name_TH ?? '-',
+                'subModel'        => $detailModel ? "{$detailModel} - {$sub}" : $sub,
+                'balanceCampaign' => $balanceCampaign,
+                'accessoryCom'    => $accessoryCom,
+                'specialCom'      => $specialCom,
+                'interestCom'     => $interestCom,
+                'turnCarCom'      => $turnCarCom,
+                'commissionSale'  => $r->effectiveCommissionSale(),
+            ];
+        });
+
+        $baseCommission = (float) $rows->sum(fn($r) => $r->effectiveCommissionSale());
+
+        $adjustment = SaleCommissionMonthly::firstOrNew([
+            'SaleID' => $saleId,
+            'year'   => $year,
+            'month'  => $month,
+        ]);
+
+        $brand = (int) ($saleUser->brand ?? 0);
+
+        // คอม SSI (brand 1, เฉพาะเดือน 3/10) — เฉลี่ยแยกสาขา + เกณฑ์ ≥18 คัน/≥1 ทุกเดือน
+        $ssi = SsiCommissionQuery::forPeriod($year, $month);
+        $ssiEntry  = $ssi['perSale'][$saleId] ?? null;
+        $ssiActive = $ssi['active'] && $brand === 1;
+        $ssiData = [
+            'active'      => $ssiActive,
+            'branch'      => $ssiEntry['branch'] ?? SsiCommissionQuery::branchOf((int) $saleId),
+            'rate'        => $ssiEntry['rate'] ?? 0,
+            'average'     => $ssiEntry['average'] ?? null,
+            'count'       => $ssiEntry['count'] ?? 0,
+            'eligible'    => $ssiEntry['eligible'] ?? false,
+            'every_month' => $ssiEntry['every_month'] ?? false,
+            'min_cars'    => SsiCommissionQuery::MIN_CARS,
+            'amount'      => $ssiActive ? (float) ($ssiEntry['amount'] ?? 0) : 0.0,
+        ];
+
+        // คอมตัวรถรายคัน (รายเดือน)
+        $car = CarCommissionQuery::forMonth($year, $month);
+        $carEntry = $car['perSale'][$saleId] ?? null;
+        $carData = [
+            'active'   => $car['active'] && $carEntry !== null,
+            'mode'     => $carEntry['mode'] ?? 'volume',
+            'count'    => $carEntry['count'] ?? 0,
+            'rate'     => $carEntry['rate'] ?? 0,
+            'achieved' => $carEntry['achieved'] ?? false,
+            'amount'   => (float) ($carEntry['amount'] ?? 0),
+        ];
+
+        return view('purchase-order.commission.sale-detail', [
+            'saleUser'       => $saleUser,
+            'cars'           => $cars,
+            'baseCommission' => $baseCommission,
+            'adjustment'     => $adjustment,
+            'brand'          => $brand,
+            'ssi'            => $ssiData,
+            'car'            => $carData,
+            'year'           => $year,
+            'month'          => $month,
+        ]);
+    }
+
+    /** ดึงเป้ายอดขายของเดือน (ตาม brand ผู้ใช้) + สถานะบรรลุเป้า */
+    public function getMonthlyTarget(Request $request)
+    {
+        abort_unless(in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md']), 403);
+
+        [$year, $month] = $this->resolveCommissionMonth($request->input('month'));
+        $brand = (int) Auth::user()->brand;
+
+        $target = MonthlySaleTarget::where('brand', $brand)
+            ->where('year', $year)->where('month', $month)->value('target');
+
+        $car  = CarCommissionQuery::forMonth($year, $month);
+        $mult = (float) config('car_commission.target_multiplier', 1.2);
+
+        return response()->json([
+            'target'      => $target,
+            'brand_count' => (int) ($car['brandCount'][$brand] ?? 0),
+            'achieved'    => (bool) ($car['achievedByBrand'][$brand] ?? false),
+            'threshold'   => $target ? (int) ceil($target * $mult) : null,
+        ]);
+    }
+
+    /** บันทึกเป้ายอดขายของเดือน (ตาม brand ผู้ใช้) */
+    public function saveMonthlyTarget(Request $request)
+    {
+        abort_unless(in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md']), 403);
+
+        $data = $request->validate([
+            'target' => 'required|integer|min:0',
+        ]);
+
+        [$year, $month] = $this->resolveCommissionMonth($request->input('month'));
+        $brand = (int) Auth::user()->brand;
+
+        MonthlySaleTarget::updateOrCreate(
+            ['brand' => $brand, 'year' => $year, 'month' => $month],
+            ['target' => $data['target']]
+        );
+
+        return response()->json(['status' => 'success']);
+    }
+
+    /** บันทึกค่าคอมเพิ่มเติมต่อเซลล์ต่อเดือน */
+    public function saveCommissionMonthly(Request $request)
+    {
+        abort_unless(in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md']), 403);
+
+        $data = $request->validate([
+            'SaleID'            => 'required|integer',
+            'year'              => 'required|integer',
+            'month'             => 'required|integer|min:1|max:12',
+            'com_discipline'    => 'nullable|numeric',
+            'deduct_absence'    => 'nullable|numeric',
+            'com_lead'          => 'nullable|numeric',
+            'com_clip'          => 'nullable|numeric',
+            'discipline_failed' => 'nullable|boolean',
+        ]);
+
+        SaleCommissionMonthly::updateOrCreate(
+            [
+                'SaleID' => $data['SaleID'],
+                'year'   => $data['year'],
+                'month'  => $data['month'],
+            ],
+            [
+                'com_discipline'    => $data['com_discipline'] ?? 0,
+                'deduct_absence'    => $data['deduct_absence'] ?? 0,
+                'com_lead'          => $data['com_lead'] ?? 0,
+                'com_clip'          => $data['com_clip'] ?? 0,
+                'discipline_failed' => (bool) ($data['discipline_failed'] ?? false),
+            ]
+        );
+
+        // "คอมอื่นๆ" (CommissionSpecial) ต่อคัน — แก้ได้จากตารางในหน้ารายละเอียด
+        if (is_array($request->input('car_special'))) {
+            foreach ($request->input('car_special') as $salecarId => $value) {
+                Salecar::withoutGlobalScopes()
+                    ->where('id', (int) $salecarId)
+                    ->update(['CommissionSpecial' => is_numeric($value) ? (float) $value : 0]);
+            }
+        }
+
+        return response()->json(['status' => 'success']);
     }
 
     // report view com
