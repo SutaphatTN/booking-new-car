@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 /**
  * คอมตัวรถรายคัน (รายเดือน) — เรตต่อคันตามตาราง config/car_commission.php
  *  - นับเฉพาะ Retail (purchase_type=2) + type_sale Normal (=1) ตาม DeliveryInCKDate ในเดือน
+ *  - ตัดรถ dealer (purchase_source=OTHDealer) ออก ไม่คิดคอมตัวรถ
  *  - "บรรลุเป้า 120%" = ยอดรวมทั้ง brand ในเดือน >= เป้า × target_multiplier
  *  - ยอดต่อเซลล์ = เรต × จำนวนคันของเซลล์คนนั้น
  */
@@ -17,6 +18,7 @@ class CarCommissionQuery
 {
     public const SALE_TYPE_NORMAL   = 1; // salecars.type_sale
     public const PURCHASE_TYPE_RETAIL = 2; // carOrder.purchase_type
+    public const SOURCE_DEALER      = 'OTHDealer'; // carOrder.purchase_source — รถ dealer ไม่คิดคอม
 
     /** เริ่มใช้ตั้งแต่เดือน config('car_commission.start') เท่านั้น */
     public static function isActiveMonth(int $year, int $month): bool
@@ -83,7 +85,9 @@ class CarCommissionQuery
             ->whereBetween('DeliveryInCKDate', [$from, $to])
             ->where('type_sale', self::SALE_TYPE_NORMAL)
             ->whereHas('carOrder', fn($c) => $c->withoutGlobalScopes()
-                ->where('purchase_type', self::PURCHASE_TYPE_RETAIL))
+                ->where('purchase_type', self::PURCHASE_TYPE_RETAIL)
+                ->where(fn($q) => $q->where('purchase_source', '!=', self::SOURCE_DEALER)
+                    ->orWhereNull('purchase_source')))
             ->get(['id', 'SaleID', 'brand', 'model_id']);
 
         if ($cars->isEmpty()) {

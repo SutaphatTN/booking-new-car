@@ -58,6 +58,14 @@ $(document).ready(function () {
       }
     }
   });
+
+  // ── ตัวโหลดข้อมูล (โชว์ตอนดึงข้อมูล เช่น เปลี่ยนเดือน) ──
+  commissionTable.on('preXhr.dt', function () {
+    $('#commissionLoadingOverlay').css('display', 'flex');
+  });
+  commissionTable.on('xhr.dt', function () {
+    $('#commissionLoadingOverlay').css('display', 'none');
+  });
 });
 
 // ── เป้ายอดขายต่อเดือน (คอมตัวรถรายคัน) ──
@@ -131,6 +139,7 @@ function recomputeCommissionNet() {
   const brand = parseInt($display.data('brand'), 10) || 0;
   const ssi = parseFloat($display.data('ssi')) || 0; // คอม SSI (คิดสดจาก server) รวมเข้ายอด
   const car = parseFloat($display.data('car')) || 0; // คอมตัวรถรายคัน (คิดสดจาก server)
+  const held = parseFloat($display.data('held')) || 0; // คอมกั๊ก brand 1 = (ยกมา) − (กั๊กเดือนนี้)
 
   let net;
   if (brand === 1 || brand === 3) {
@@ -140,7 +149,7 @@ function recomputeCommissionNet() {
   } else {
     net = base + num('com_discipline') + num('com_lead') + num('com_clip') - num('deduct_absence');
   }
-  net += ssi + car;
+  net += ssi + car + held;
 
   $display.text(net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ฿');
 }

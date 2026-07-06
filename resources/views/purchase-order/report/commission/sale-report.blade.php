@@ -48,7 +48,7 @@
         <td></td>
         <td>{{ $c['turnCarCom'] }}</td>
 
-        <td></td>
+        <td>{{ $c['held'] }}</td>
         <td></td>
 
         <td>=SUM(F{{ $row }}:O{{ $row }})</td>
