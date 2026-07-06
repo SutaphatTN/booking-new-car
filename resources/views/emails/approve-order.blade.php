@@ -2,7 +2,7 @@
     $brand = $order->brand;
 
     // สี — brand 2/3 ใช้ gwmColor, นอกนั้นใช้ฟิลด์ color
-    $colorName = in_array($brand, [2, 3])
+    $colorName = in_array($brand, [2, 3, 4])
         ? ($order->gwmColor->name ?? '-')
         : ($order->color ?? '-');
 

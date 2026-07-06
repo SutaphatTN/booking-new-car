@@ -40,7 +40,7 @@
       @endif
 
       {{-- เมนู "ตั้งค่า GP" เห็นเฉพาะ role admin, audit และ account --}}
-      @if ($submenu->slug == 'purchase-order.gp-setting' && !in_array($userRole, ['admin', 'audit', 'gm', 'account']))
+      @if ($submenu->slug == 'purchase-order.gp-setting' && !in_array($userRole, ['admin', 'audit', 'audit_lead', 'gm', 'account']))
         @continue
       @endif
 
@@ -55,7 +55,7 @@
       @endif
 
       {{-- เมนู "D/Bar" เห็นเฉพาะ role admin, audit, gm, manager, md --}}
-      @if ($submenu->slug == 'dbar.index' && !in_array($userRole, ['admin', 'audit', 'gm', 'manager', 'md']))
+      @if ($submenu->slug == 'dbar.index' && !in_array($userRole, ['admin', 'audit', 'audit_lead', 'gm', 'manager', 'md']))
         @continue
       @endif
 

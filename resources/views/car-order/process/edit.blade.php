@@ -182,7 +182,7 @@
                       value="{{ $order->approvers->name ?? '-' }}" style="background:#f8fafc;color:#64748b;"
                       disabled>
                   </div>
-                @elseif (auth()->user()->brand == 3)
+                @elseif (in_array(auth()->user()->brand, [3, 4]))
                   <div class="col-md-4">
                     <label for="gwm_color" class="mf-label form-label">
                       <i class="bx bx-palette ci-amber"></i> สี

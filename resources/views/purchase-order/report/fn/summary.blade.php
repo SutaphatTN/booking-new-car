@@ -5,7 +5,7 @@
       <th>ชื่อ - นามสกุล ลูกค้า</th>
       <th>รุ่นรถหลัก</th>
       <th>รุ่นรถย่อย</th>
-      @if (!in_array(auth()->user()->brand, [2, 3]))
+      @if (!in_array(auth()->user()->brand, [2, 3, 4]))
         <th>Option</th>
       @endif
       <th>สี</th>
@@ -39,7 +39,7 @@
         <td>{{ $f['customer'] }}</td>
         <td>{{ $f['model'] }}</td>
         <td>{{ $f['subModel'] }}</td>
-        @if (!in_array(auth()->user()->brand, [2, 3]))
+        @if (!in_array(auth()->user()->brand, [2, 3, 4]))
           <td>{{ $f['option'] }}</td>
         @endif
         <td>{{ $f['color'] }}</td>

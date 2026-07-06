@@ -64,7 +64,7 @@ class CarOrderController extends Controller
             $row = fn($icon, $class, $tip, $text) =>
                 "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
 
-            if ($c->brand == 2 || $c->brand == 3) {
+            if (in_array($c->brand, [2, 3, 4])) {
                 $car = $row('bxs-car',         'text-primary', 'รุ่นหลัก', $modelOrder)
                      . $row('bx-git-branch',   'text-info',    'รุ่นย่อย', $subModelOrder)
                      . $row('bx-palette',      'text-danger',  'สี',       $c->display_color)
@@ -149,7 +149,7 @@ class CarOrderController extends Controller
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::whereIn('role', ['audit', 'gm', 'md'])
+        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'gm', 'md'])
             ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
         $purchaseType = TbPurchaseType::all();
@@ -301,7 +301,7 @@ class CarOrderController extends Controller
             if ($item->brand == 2) {
                 $item->display_color = $item->gwmColor->name ?? '-';
                 $item->display_interior_color = $item->interiorColor->name ?? '-';
-            } elseif ($item->brand == 3) {
+            } elseif (in_array($item->brand, [3, 4])) {
                 $item->display_color = $item->gwmColor->name ?? '-';
                 $item->display_interior_color = null;
             } else {
@@ -386,7 +386,7 @@ class CarOrderController extends Controller
             $subModelOrder = $p->subModel ? $p->subModel->name : '';
             $subDetail     = $p->subModel ? $p->subModel->detail : '';
 
-            if ($p->brand == 2 || $p->brand == 3) {
+            if (in_array($p->brand, [2, 3, 4])) {
                 $modelDisplay = $row('bxs-car',         'text-primary', 'รุ่นหลัก', $modelOrder)
                               . $row('bx-git-branch',   'text-info',    'รุ่นย่อย', $subModelOrder)
                               . $row('bx-palette',      'text-danger',  'สี',       $p->display_color)
@@ -416,7 +416,7 @@ class CarOrderController extends Controller
             $colorDisplay  = $w->display_color;
             $msrp          = $w->car_MSRP ? number_format($w->car_MSRP) : '-';
 
-            if ($w->brand == 2 || $w->brand == 3) {
+            if (in_array($w->brand, [2, 3, 4])) {
                 $modelDisplay = $row('bxs-car',         'text-primary', 'รุ่นหลัก', $modelOrder)
                               . $row('bx-git-branch',   'text-info',    'รุ่นย่อย', $subModelOrder)
                               . $row('bx-palette',      'text-danger',  'สี',       $colorDisplay)
@@ -553,7 +553,7 @@ class CarOrderController extends Controller
                 $data['interior_color'] = $request->interior_color;
             }
 
-            if ($brand == 3) {
+            if (in_array($brand, [3, 4])) {
                 $data['gwm_color'] = $request->gwm_color;
             }
 
@@ -676,7 +676,7 @@ class CarOrderController extends Controller
                 $data['gwm_color']     = $request->gwm_color;
                 $data['interior_color'] = $request->interior_color;
             }
-            if ($brand == 3) {
+            if (in_array($brand, [3, 4])) {
                 $data['gwm_color'] = $request->gwm_color;
             }
 
@@ -857,7 +857,7 @@ class CarOrderController extends Controller
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::whereIn('role', ['audit', 'gm', 'md'])
+        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'gm', 'md'])
             ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
         $purchaseType = TbPurchaseType::all();
@@ -954,7 +954,7 @@ class CarOrderController extends Controller
         // ไม่นับคันที่ car_status = Delivered (ส่งมอบ = ขายไปแล้ว ไม่ใช่สต็อก)
         // สี: brand 2/3 ใช้ gwm_color (id), อื่นๆ ใช้ฟิลด์ color
         $stockKey = fn($o) => $o->model_id . '|' . ($o->year ?? '-')
-            . '|' . (in_array($o->brand, [2, 3]) ? 'g:' . $o->gwm_color : 'c:' . $o->color);
+            . '|' . (in_array($o->brand, [2, 3, 4]) ? 'g:' . $o->gwm_color : 'c:' . $o->color);
         $stockMap = CarOrder::whereIn('status', [CarOrder::STATUS_APPROVED, CarOrder::STATUS_FINISHED])
             ->where(function ($q) {
                 $q->where('car_status', '!=', 'Delivered')->orWhereNull('car_status');
@@ -1205,7 +1205,7 @@ class CarOrderController extends Controller
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::whereIn('role', ['audit', 'gm', 'md'])
+        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'gm', 'md'])
             ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
 
@@ -1344,7 +1344,7 @@ class CarOrderController extends Controller
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::whereIn('role', ['audit', 'gm', 'md'])
+        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'gm', 'md'])
             ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
 
@@ -1492,7 +1492,7 @@ class CarOrderController extends Controller
 
         $waiting = CarOrderWaiting::findOrFail($id);
         $purchaseType = TbPurchaseType::all();
-        $approvers = User::whereIn('role', ['audit', 'gm', 'md'])
+        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'gm', 'md'])
             ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
         $gwmColor = $waiting->subModel
@@ -1587,7 +1587,7 @@ class CarOrderController extends Controller
 
     // รับทราบรายการที่ไม่อนุมัติ (rejected) — soft delete เพื่อเอาออกจากหน้าผลการอนุมัติ
     // เฉพาะ role: admin, audit, manager, md
-    private const ACK_REJECT_ROLES = ['admin', 'audit', 'gm', 'manager', 'md'];
+    private const ACK_REJECT_ROLES = ['admin', 'audit', 'audit_lead', 'gm', 'manager', 'md'];
 
     public function acknowledgeReject($id)
     {

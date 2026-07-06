@@ -166,7 +166,7 @@
                     <input id="interior_color" type="text" class="form-control" name="interior_color"
                       value="{{ $order->interiorColor->name ?? '-' }}" disabled>
                   </div>
-                @elseif (auth()->user()->brand == 3)
+                @elseif (in_array(auth()->user()->brand, [3, 4]))
                   <div class="col-md-2">
                     <label for="year" class="mf-label form-label">
                       <i class="bx bx-calendar ci-indigo"></i> ปี
@@ -267,7 +267,7 @@
                       <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
                     @enderror
                   </div>
-                @elseif (auth()->user()->brand == 3)
+                @elseif (in_array(auth()->user()->brand, [3, 4]))
                   <div class="col-md-3">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-wallet ci-amber"></i> ราคาทุน
@@ -392,6 +392,10 @@
                     @endif
                     @if (auth()->user()->brand == 3)
                       <option value="WULING" {{ $order->purchase_source == 'WULING' ? 'selected' : '' }}>WULING
+                      </option>
+                    @endif
+                    @if (auth()->user()->brand == 4)
+                      <option value="LEPAS" {{ $order->purchase_source == 'LEPAS' ? 'selected' : '' }}>LEPAS
                       </option>
                     @endif
                     <option value="OTHDealer" {{ $order->purchase_source == 'OTHDealer' ? 'selected' : '' }}>OTHDealer

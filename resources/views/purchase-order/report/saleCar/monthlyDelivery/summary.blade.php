@@ -9,7 +9,7 @@
       <th>รุ่นรถย่อย</th>
       <th>Vin-Number</th>
       <th>เลขเครื่อง</th>
-      @if (!in_array(auth()->user()->brand, [2,3]))
+      @if (!in_array(auth()->user()->brand, [2, 3, 4]))
         <th>Option</th>
       @endif
       <th>สี</th>
@@ -42,7 +42,7 @@
         <td>{{ $s['subModel'] }}</td>
         <td>{{ $s['vin'] }}</td>
         <td>{{ $s['engine'] }}</td>
-        @if (!in_array(auth()->user()->brand, [2,3]))
+        @if (!in_array(auth()->user()->brand, [2, 3, 4]))
           <td>{{ $s['option'] }}</td>
         @endif
         <td>{{ $s['color'] }}</td>

@@ -201,7 +201,7 @@ class CustomerTrackingController extends Controller
             $row = fn($icon, $class, $tip, $text) =>
             "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
 
-            if ($t->brand == 2 || $t->brand == 3) {
+            if (in_array($t->brand, [2, 3, 4])) {
                 $car = $row('bxs-car',       'text-primary', 'รุ่นหลัก', $model)
                     . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale);
             } else {
@@ -576,7 +576,7 @@ class CustomerTrackingController extends Controller
                 'UserInsert'        => $authUser->id,
             ]);
 
-            $isSaleRole = in_array($authUser->role, ['sale', 'lead_sale', 'adminPage', 'audit', 'gm']);
+            $isSaleRole = in_array($authUser->role, ['sale', 'lead_sale', 'adminPage', 'audit', 'audit_lead', 'gm']);
             $entryType  = $isSaleRole ? 'sale' : 'manager';
             $decisionId = $request->decision_id ?: null;
             $baseDate   = Carbon::parse($request->contact_date);
@@ -665,7 +665,7 @@ class CustomerTrackingController extends Controller
         ]);
 
         $user       = Auth::user();
-        $isSaleRole = in_array($user->role, ['sale', 'adminPage', 'audit', 'gm']);
+        $isSaleRole = in_array($user->role, ['sale', 'adminPage', 'audit', 'audit_lead', 'gm']);
         $entryType  = $isSaleRole ? 'sale' : 'manager';
         $decisionId = $request->decision_id ?: null;
 

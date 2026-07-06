@@ -68,6 +68,9 @@
                     @if (auth()->user()->brand == 3)
                       <option value="WULING">WULING</option>
                     @endif
+                    @if (auth()->user()->brand == 4)
+                      <option value="LEPAS">LEPAS</option>
+                    @endif
                     <option value="OTHDealer">OTHDealer</option>
                   </select>
                 </div>
@@ -228,7 +231,7 @@
                     </select>
                   </div>
                   --}}
-                @elseif(auth()->user()->brand == 3)
+                @elseif(in_array(auth()->user()->brand, [3, 4]))
                   <div class="col-md-4">
                     <label for="gwm_color" class="mf-label form-label">
                       <i class="bx bx-palette ci-amber"></i> สี

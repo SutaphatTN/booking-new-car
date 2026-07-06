@@ -162,7 +162,7 @@ class InsurancePerBrandSheet implements FromView, WithTitle, WithStyles, WithEve
       $order = $r->carOrder;
 
       // สีรถ(ไทย): brand 2,3 ใช้ gwmColor, นอกนั้นใช้ color — ดึงจาก car_order
-      $color = in_array($r->brand, [2, 3])
+      $color = in_array($r->brand, [2, 3, 4])
         ? ($order?->gwmColor?->name ?? '-')
         : ($order?->color ?? '-');
 

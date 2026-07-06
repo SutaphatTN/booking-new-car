@@ -8,7 +8,7 @@
 | brands  = override รายแบรนด์ (อย่างน้อยคือโลโก้) — ถ้าแต่ละ brand เป็น
 |           คนละนิติบุคคล ให้เพิ่ม name/address/phone ในแต่ละ brand ได้เลย
 |
-| brand id : 1 = Mitsubishi, 2 = GWM, 3 = Wuling
+| brand id : 1 = Mitsubishi, 2 = GWM, 3 = Wuling, 4 = Lepas
 */
 
 return [
@@ -34,6 +34,11 @@ return [
         // Wuling
         3 => [
             'logo' => 'assets/img/Wuling_logo.png',
+        ],
+        // Lepas — ใช้นิติบุคคล ซูเกียรติ อีวี (ระบุชื่อชัดเจน) override โลโก้
+        4 => [
+            'name' => 'บริษัท ซูเกียรติ อีวี จำกัด สำนักงานใหญ่',
+            'logo' => 'assets/img/lepas_logo.png',
         ],
     ],
 ];

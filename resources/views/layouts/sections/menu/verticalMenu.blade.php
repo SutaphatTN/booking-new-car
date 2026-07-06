@@ -13,6 +13,9 @@
       @elseif (auth()->user()->brand == 3)
         <img src="{{ asset('assets/img/Wuling_logo.png') }}" width="200" class="me-2">
         {{-- <span class="app-brand-text demo menu-text fw-bold ms-2">Wuling</span> --}}
+      @elseif (auth()->user()->brand == 4)
+        <img src="{{ asset('assets/img/lepas_logo.png') }}" width="180" class="me-2">
+        {{-- <span class="app-brand-text demo menu-text fw-bold ms-2">Lepas</span> --}}
       @else
         <img src="{{ asset('assets/img/Mitsubishi_logoCrop.png') }}" width="40" class="me-2">
         <span class="app-brand-text demo menu-text fw-bold ms-2">New Car</span>

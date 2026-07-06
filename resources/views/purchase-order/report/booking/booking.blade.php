@@ -5,7 +5,7 @@
   // จำนวนคอลัมน์รวม (ปรับตาม brand + การซ่อนราคาทุน) สำหรับแถว "ไม่มีข้อมูล"
   $totalCols = 26;
   if (auth()->user()->brand == 2) $totalCols++;            // สีภายใน
-  if (in_array(auth()->user()->brand, [2, 3])) $totalCols--; // ไม่มี Option
+  if (in_array(auth()->user()->brand, [2, 3, 4])) $totalCols--; // ไม่มี Option
   if (!$showCost) $totalCols--;                             // ซ่อนราคาทุน
 @endphp
 <table>
@@ -19,7 +19,7 @@
         <th>สีภายใน</th>
       @endif
       <th>ปี</th>
-      @if (!in_array(auth()->user()->brand, [2,3]))
+      @if (!in_array(auth()->user()->brand, [2, 3, 4]))
         <th>Option</th>
       @endif
       @if ($showCost)
@@ -57,7 +57,7 @@
           <td>{{ $s['interior_color'] }}</td>
         @endif
         <td>{{ $s['year'] }}</td>
-        @if (!in_array(auth()->user()->brand, [2,3]))
+        @if (!in_array(auth()->user()->brand, [2, 3, 4]))
           <td>{{ $s['option'] }}</td>
         @endif
         @if ($showCost)

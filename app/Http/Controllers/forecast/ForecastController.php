@@ -68,7 +68,7 @@ class ForecastController extends Controller
                         $item->gwm_color . '_' .
                         $item->interior_color;
                 });
-        } elseif ($brand == 3) {
+        } elseif (in_array($brand, [3, 4])) {
 
             // Wuling: แยกตาม รุ่น + รุ่นย่อย + สี (gwm_color)
             $query->with(['gwmColor'])
@@ -135,7 +135,7 @@ class ForecastController extends Controller
                     $sale->subModel_id . '_' .
                     $sale->gwm_color . '_' .
                     $sale->interior_color;
-            } elseif ($brand == 3) {
+            } elseif (in_array($brand, [3, 4])) {
 
                 $color = optional($sale->gwmColor)->name ?? '-';
 

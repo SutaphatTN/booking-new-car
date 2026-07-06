@@ -15,7 +15,7 @@
 - **ลูกค้า :** {{ $saleCar->customer->prefix->Name_TH ?? '' }} {{ $saleCar->customer->FirstName ?? '' }} {{ $saleCar->customer->LastName ?? '' }}
 - **รุ่นรถหลัก :** {{ $saleCar->model->Name_TH ?? '-' }}
 - **รุ่นรถย่อย :** {{ $saleCar->subModel->name ?? '-' }}
-- **สี :** {{ in_array($__brand, [2, 3]) ? ($saleCar->gwmColor->name ?? '-') : ($saleCar->Color ?? '-') }}
+- **สี :** {{ in_array($__brand, [2, 3, 4]) ? ($saleCar->gwmColor->name ?? '-') : ($saleCar->Color ?? '-') }}
 @if ($__brand == 2)
 - **สีภายใน :** {{ $saleCar->interiorColor->name ?? '-' }}
 @endif

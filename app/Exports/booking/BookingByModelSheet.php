@@ -61,7 +61,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
     if ($brand == 2) $next++;                       // สีภายใน
     $next++;                                          // ปี
     $option = null;
-    if (!in_array($brand, [2, 3])) $option = $next++; // Option
+    if (!in_array($brand, [2, 3, 4])) $option = $next++; // Option
     $cost = null;
     if ($showCost) $cost = $next++;                  // ราคาทุน
     $sale = $next++;                                  // ราคาขาย
@@ -244,7 +244,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         }
       }
 
-      $color = in_array($order->brand, [2,3])
+      $color = in_array($order->brand, [2, 3, 4])
         ? ($order->gwmColor->name ?? '-')
         : ($order->color ?? '-');
 
@@ -342,7 +342,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
 
     foreach ($orphanSales as $sale) {
 
-      $color = in_array($sale->brand, [2,3])
+      $color = in_array($sale->brand, [2, 3, 4])
         ? ($sale->gwmColor->name ?? '-')
         : ($sale->Color ?? '-');
 

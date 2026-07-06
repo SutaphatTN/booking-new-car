@@ -29,7 +29,7 @@ class PricelistCarController extends Controller
         $subModelsDetail = TbSubcarmodel::whereIn('id', $subModelIds)->pluck('detail', 'id');
 
         $data = $prices->map(function ($p, $index) use ($models, $subModels, $subModelsDetail, $userBrand) {
-            $hide = in_array($userBrand, [2, 3]);
+            $hide = in_array($userBrand, [2, 3, 4]);
 
             $model_id = $models[$p->model_id] ?? '-';
             $subModel_id = $subModels[$p->subModel_id] ?? '-';

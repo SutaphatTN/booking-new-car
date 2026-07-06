@@ -21,10 +21,11 @@ return [
         1 => 'M',
         2 => 'G',
         3 => 'M',
+        4 => 'M',   // Lepas — กลุ่มเดียวกับ Mitsu/Wuling (แชร์ป้ายแดง + ฟิล์ม)
     ],
 
     'brands_in' => [
-        'M' => [1, 3],
+        'M' => [1, 3, 4],
         'G' => [2],
     ],
 
@@ -33,6 +34,25 @@ return [
         1 => 'Mitsubishi',
         2 => 'GWM',
         3 => 'Wuling',
+        4 => 'Lepas',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | ขอบเขตการสลับ brand ของ sale / audit / manager
+    |--------------------------------------------------------------------------
+    | key = brand ประจำตัว (home brand) ของ user, value = brand ที่สลับไปได้
+    |  - Mitsu(1) ขาย Wuling ได้ → [1, 3]
+    |  - Lepas(4) ขาย Wuling ได้ → [3, 4]
+    |  - GWM(2)/Wuling(3) เห็นเฉพาะตัวเอง
+    | (role อื่น: admin/gm/md/account/registration/adminPage = ทุก brand,
+    |  marketing/cro/sp/bp/cs/lead_sale = ทุก brand ยกเว้น GWM(2))
+    */
+    'sale_switch_scope' => [
+        1 => [1, 3],
+        2 => [2],
+        3 => [3],
+        4 => [3, 4],
     ],
 
 ];

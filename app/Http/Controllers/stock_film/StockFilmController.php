@@ -198,7 +198,7 @@ class StockFilmController extends Controller
     public function auditComplete(int $id)
     {
         $user = Auth::user();
-        if (!in_array($user->role, ['admin', 'audit', 'gm'])) {
+        if (!in_array($user->role, ['admin', 'audit', 'audit_lead', 'gm'])) {
             return response()->json(['success' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
         }
 

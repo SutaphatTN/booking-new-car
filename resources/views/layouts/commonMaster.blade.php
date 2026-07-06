@@ -36,6 +36,10 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/img/Wuling-Steed.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/img/Wuling-Steed.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/Wuling-Steed.png') }}">
+    @elseif (auth()->user()->brand == 4)
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/img/lepas.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/img/lepas.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/img/lepas.png') }}">
     @else
     <link rel="icon" type="image/png" href="{{ asset('assets/img/Mitsubishi_logoCrop32.png') }}">
     <link rel="icon" type="image/png" href="{{ asset('assets/img/Mitsubishi_logoCrop16.png') }}">

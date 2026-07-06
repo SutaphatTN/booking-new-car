@@ -11,7 +11,7 @@
         <th>สีภายใน</th>
       @endif
       <th>ปี</th>
-      @if (!in_array(auth()->user()->brand, [2, 3]))
+      @if (!in_array(auth()->user()->brand, [2, 3, 4]))
         <th>Option</th>
       @endif
       @if ($showCost)
@@ -46,7 +46,7 @@
           <td>{{ $r['interior_color'] }}</td>
         @endif
         <td>{{ $r['year'] }}</td>
-        @if (!in_array(auth()->user()->brand, [2, 3]))
+        @if (!in_array(auth()->user()->brand, [2, 3, 4]))
           <td>{{ $r['option'] }}</td>
         @endif
         @if ($showCost)

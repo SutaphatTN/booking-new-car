@@ -149,7 +149,7 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
                 ? "{$detailModel} - {$sub}"
                 : $sub;
 
-            $color = in_array($r->brand, [2,3])
+            $color = in_array($r->brand, [2, 3, 4])
                 ? ($r->gwmColor->name ?? '-')
                 : ($r->Color ?? '-');
 

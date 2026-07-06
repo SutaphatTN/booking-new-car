@@ -163,7 +163,7 @@
                     <input id="year" type="text" class="form-control" value="{{ $order->year }}"
                       style="background:#f8fafc;color:#64748b;" disabled>
                   </div>
-                @elseif (auth()->user()->brand == 3)
+                @elseif (in_array(auth()->user()->brand, [3, 4]))
                   <div class="col-md-4">
                     <label for="gwm_color" class="mf-label form-label">
                       <i class="bx bx-palette ci-sky"></i> สี
@@ -239,7 +239,7 @@
                   </div>
                 </div>
 
-                @if (!in_array(auth()->user()->brand, [2, 3]))
+                @if (!in_array(auth()->user()->brand, [2, 3, 4]))
                   <div class="col-md-3">
                     <label for="RI" class="mf-label form-label">
                       <i class="bx bx-coin-stack ci-amber"></i> RI
@@ -313,7 +313,7 @@
                 <i class="bx bx-save me-1"></i>บันทึก
               </button>
             </div>
-          @elseif (in_array(auth()->user()->role, ['admin', 'audit', 'gm', 'manager', 'md']))
+          @elseif (in_array(auth()->user()->role, ['admin', 'audit', 'audit_lead', 'gm', 'manager', 'md']))
             <div class="d-flex justify-content-end gap-2 pt-1">
               <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
                 <i class="bx bx-x me-1"></i>ปิด

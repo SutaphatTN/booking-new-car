@@ -151,7 +151,7 @@ class FirmExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldA
                 : $sub;
             $typeCom = "c{$r->remainingPayment->type_com}";
 
-            $color = in_array($r->brand, [2,3])
+            $color = in_array($r->brand, [2, 3, 4])
                 ? ($r->gwmColor->name ?? '-')
                 : ($r->Color ?? '-');
 

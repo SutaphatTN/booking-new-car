@@ -73,7 +73,7 @@
             </button>
           </li>
 
-          @if ($userRole == 'admin' || $userRole == 'audit' || $userRole == 'gm' || $userRole == 'manager' || $userRole == 'md')
+          @if ($userRole == 'admin' || $userRole == 'audit' || $userRole == 'audit_lead' || $userRole == 'gm' || $userRole == 'manager' || $userRole == 'md')
             <li class="nav-item mb-1 mb-sm-0">
               <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#tab-more"
                 aria-controls="tab-more" aria-selected="false">
@@ -304,7 +304,7 @@
                         @endif
                       </select>
                     </div>
-                  @elseif (auth()->user()->brand == 3)
+                  @elseif (in_array(auth()->user()->brand, [3, 4]))
                     <div class="col-md-3">
                       <label for="model_id" class="po-label"><i class="bx bx-cube"></i> รุ่นรถหลัก</label>
                       <select id="model_id" name="model_id" class="form-select" required
@@ -773,7 +773,7 @@
                             <input id="carOrderInterior" type="text" class="form-control"
                               value="{{ $saleCar->carOrder->interiorColor->name ?? '' }}" readonly>
                           </div>
-                        @elseif (auth()->user()->brand == 3)
+                        @elseif (in_array(auth()->user()->brand, [3, 4]))
                           <div class="col-md-3">
                             <label for="carOrderVin" class="po-label"><i class="bx bx-key"></i> Vin-Number</label>
                             <input id="carOrderVin" type="text" class="form-control"
@@ -2148,7 +2148,7 @@
                                 </div>
                               </div>
 
-                              @if ($userRole == 'admin' || $userRole == 'audit' || $userRole == 'gm' || $userRole == 'manager' || $userRole == 'md')
+                              @if ($userRole == 'admin' || $userRole == 'audit' || $userRole == 'audit_lead' || $userRole == 'gm' || $userRole == 'manager' || $userRole == 'md')
                                 <div class="col-md-4">
                                   <div class="date-card">
                                     <div class="date-card-icon rose">

@@ -140,7 +140,7 @@
                   <input id="interior_color" class="form-control" type="text"
                     value="{{ $order->interiorColor->name ?? '-' }}" disabled>
                 </div>
-              @elseif (auth()->user()->brand == 3)
+              @elseif (in_array(auth()->user()->brand, [3, 4]))
                 <div class="col-md-2">
                   <label for="year" class="mf-label form-label">
                     <i class="bx bx-calendar ci-indigo"></i> ปี
@@ -215,7 +215,7 @@
                       value="{{ $order->car_MSRP !== null ? number_format($order->car_MSRP, 2) : '-' }}" disabled>
                   </div>
                 </div>
-              @elseif (auth()->user()->brand == 3)
+              @elseif (in_array(auth()->user()->brand, [3, 4]))
                 <div class="col-md-3">
                   <label for="car_DNP" class="mf-label form-label">
                     <i class="bx bx-wallet ci-amber"></i> ราคาทุน
