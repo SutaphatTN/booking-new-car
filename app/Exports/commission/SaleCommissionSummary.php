@@ -3,6 +3,9 @@
 namespace App\Exports\commission;
 
 use App\Services\SaleCommissionQuery;
+use App\Services\HeldCommissionQuery;
+use Illuminate\Support\Carbon;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -129,10 +132,15 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
             ->get()
             ->groupBy('SaleID');
 
-        $data = $sales->map(function ($rows) {
+        // คอมกั๊ก (brand 1) — คิดตามเดือนของช่วงรายงาน (net = ยกมาจากเดือนก่อน − กั๊กเดือนนี้)
+        $periodMonth = Carbon::parse($this->fromDate);
+        $held = HeldCommissionQuery::forMonth((int) $periodMonth->year, (int) $periodMonth->month)['perSale'];
+
+        $data = $sales->map(function ($rows, $saleId) use ($held) {
 
             $saleUser = $rows->first()->saleUser;
             $branch = $saleUser->branchInfo->name ?? '-';
+            $brand = (int) ($saleUser->brand ?? 0);
 
             $totalCars = $rows->count();
 
@@ -157,6 +165,11 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
 
             $ssi = $totalCars * 1000;
 
+            // ค่าคอมกั๊ก (เฉพาะ brand 1) — net เข้ายอด "รวมค่าคอมรับ"
+            $heldNet = $brand === HeldCommissionQuery::BRAND
+                ? (float) ($held[$saleId]['net'] ?? 0)
+                : null;
+
             return [
                 'branch' => $branch,
                 'saleName' => optional($saleUser)->name ?? '-',
@@ -169,12 +182,42 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
                 'specialCom' => $specialCom,
                 'interestCom' => $interestCom,
                 'turnCarCom' => $turnCarCom,
+                'held' => $heldNet,
                 'ssi' => $ssi
             ];
-        })->values();
+        });
+
+        // เซลล์ brand 1 ที่มีคอมกั๊กยกมาจากเดือนก่อน แต่เดือนนี้ไม่มีรถส่งมอบ → เพิ่มเข้ารายงานด้วย
+        $carryOnlyIds = $held->filter(fn($h) => ($h['carried'] ?? 0) > 0)->keys()->diff($data->keys());
+        if ($carryOnlyIds->isNotEmpty()) {
+            $extraUsers = User::with('branchInfo')
+                ->whereIn('id', $carryOnlyIds)
+                ->where('brand', HeldCommissionQuery::BRAND)
+                ->get()->keyBy('id');
+            foreach ($carryOnlyIds as $sid) {
+                $u = $extraUsers->get($sid);
+                if (!$u) {
+                    continue;
+                }
+                $data->put($sid, [
+                    'branch' => $u->branchInfo->name ?? '-',
+                    'saleName' => $u->name ?? '-',
+                    'totalCars' => 0,
+                    'retail' => 0,
+                    'testDrive' => 0,
+                    'balanceCampaign' => 0,
+                    'accessoryCom' => 0,
+                    'specialCom' => 0,
+                    'interestCom' => 0,
+                    'turnCarCom' => 0,
+                    'held' => (float) ($held[$sid]['net'] ?? 0),
+                    'ssi' => 0,
+                ]);
+            }
+        }
 
         return view('purchase-order.report.commission.sale-report', [
-            'commission' => $data
+            'commission' => $data->values()
         ]);
     }
 }

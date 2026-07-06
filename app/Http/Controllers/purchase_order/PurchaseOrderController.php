@@ -46,6 +46,7 @@ use App\Services\GPQuery;
 use App\Services\SaleCommissionQuery;
 use App\Services\SsiCommissionQuery;
 use App\Services\CarCommissionQuery;
+use App\Services\HeldCommissionQuery;
 use App\Services\OneDriveService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Mail\Mailables\Attachment;
@@ -1470,14 +1471,16 @@ class PurchaseOrderController extends Controller
             $oldCarOrderID = $saleCar->CarOrderID;
             $newCarOrderID = $request->CarOrderID;
 
-            // gate: ผูกรถใหม่ได้ต่อเมื่ออนุมัติแล้ว (ยกเว้น admin) — บันทึก draft ที่ยังไม่ผูกรถได้ปกติ
-            // ── เปิดตอนปิดยอด: comment block นี้เพื่อปิด gate บังคับอนุมัติก่อนผูกรถ ──
-            $bindingNewCar = $newCarOrderID && ($oldCarOrderID != $newCarOrderID);
-            if ($bindingNewCar && Auth::user()->role !== 'admin' && !$this->isApproved($saleCar)) {
+            // gate: เปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5) ได้ต่อเมื่ออนุมัติแล้ว (ยกเว้น admin)
+            //  - ผูกรถได้เลยแม้ยังไม่อนุมัติ — บังคับอนุมัติเฉพาะตอนจะปิดการส่งมอบ
+            //  - ดักเฉพาะ "การเปลี่ยนเข้าเป็น 5" (ของเดิมไม่ใช่ 5) เพื่อไม่กวนการแก้ฟิลด์อื่นของรายการที่ส่งมอบไปแล้ว
+            // ── เปิดตอนปิดยอด: comment block นี้เพื่อปิด gate บังคับอนุมัติก่อนส่งมอบ ──
+            $deliveringNow = (int) $request->con_status === 5 && (int) $saleCar->con_status !== 5;
+            if ($deliveringNow && Auth::user()->role !== 'admin' && !$this->isApproved($saleCar)) {
                 DB::rollBack();
                 return response()->json([
                     'success' => false,
-                    'message' => 'กรุณาขออนุมัติให้ผ่านก่อน จึงจะผูกรถได้'
+                    'message' => 'กรุณาขออนุมัติให้ผ่านก่อน จึงจะเปลี่ยนสถานะเป็นส่งมอบได้'
                 ], 422);
             }
 
@@ -2662,18 +2665,25 @@ class PurchaseOrderController extends Controller
         // คอม SSI (brand 1, เฉพาะเดือน 3/10) — คิดจากยอดส่งมอบย้อนหลัง 6 เดือน
         $ssi = SsiCommissionQuery::forPeriod($year, $month);
         $ssiPerSale = $ssi['perSale'];
+        // คอมกั๊ก (brand 1) — รถส่งมอบหลังวันที่ 10 กั๊กคันละ 2,000 ยกไปจ่ายคืนเดือนถัดไป
+        $heldCommission = HeldCommissionQuery::forMonth($year, $month)['perSale'];
+
         // จำกัดสิทธิ์การมองเห็นให้ตรงกับ base query (sale/lead_sale)
         if (in_array($user->role, ['sale', 'lead_sale'])) {
             $visibleSaleIds = $user->role === 'lead_sale'
                 ? array_merge([$user->id], [9, 10, 11])
                 : [$user->id];
             $ssiPerSale = $ssiPerSale->only($visibleSaleIds);
+            $heldCommission = $heldCommission->only($visibleSaleIds);
         }
 
-        // เซลล์ที่มีแต่คอม SSI (ได้เงินจริง แต่ไม่มีรถส่งมอบในเดือนที่เลือก) → เพิ่มเข้ารายการด้วย
+        // เซลล์ที่ได้เงินจริงแต่ไม่มีรถส่งมอบในเดือนที่เลือก → เพิ่มเข้ารายการด้วย
+        //   - คอม SSI (amount > 0)
+        //   - คอมกั๊กยกมาจากเดือนก่อน (carried > 0) แม้เดือนนี้ขายไม่ได้
         $saleCar = $saleCar->keyBy('SaleID');
-        $ssiEarners = $ssiPerSale->filter(fn($v) => ($v['amount'] ?? 0) > 0);
-        $missingIds = $ssiEarners->keys()->diff($saleCar->keys());
+        $ssiEarners  = $ssiPerSale->filter(fn($v) => ($v['amount'] ?? 0) > 0);
+        $heldEarners = $heldCommission->filter(fn($v) => ($v['carried'] ?? 0) > 0);
+        $missingIds  = $ssiEarners->keys()->merge($heldEarners->keys())->unique()->diff($saleCar->keys());
         if ($missingIds->isNotEmpty()) {
             $extraUsers = User::with('branchInfo')->whereIn('id', $missingIds)->get()->keyBy('id');
             foreach ($missingIds as $sid) {
@@ -2696,8 +2706,8 @@ class PurchaseOrderController extends Controller
             ->get()
             ->keyBy('SaleID');
 
-        // คำนวณยอดสุทธิ (brand-aware + คอม SSI + คอมตัวรถรายคัน) แล้วค่อยจัดอันดับ (emoji อิงยอดสุทธิ)
-        $saleCar = $saleCar->map(function ($s) use ($adjustments, $ssiPerSale, $carCommission) {
+        // คำนวณยอดสุทธิ (brand-aware + คอม SSI + คอมตัวรถรายคัน + คอมกั๊ก) แล้วค่อยจัดอันดับ (emoji อิงยอดสุทธิ)
+        $saleCar = $saleCar->map(function ($s) use ($adjustments, $ssiPerSale, $carCommission, $heldCommission) {
             $adj = $adjustments->get($s->SaleID);
             $brand = (int) ($s->saleUser->brand ?? 0);
             $net = $adj
@@ -2705,6 +2715,9 @@ class PurchaseOrderController extends Controller
                 : $s->total_commission;
             $net += (float) ($ssiPerSale[$s->SaleID]['amount'] ?? 0);
             $net += (float) ($carCommission[$s->SaleID]['amount'] ?? 0);
+            if ($brand === HeldCommissionQuery::BRAND) {
+                $net += (float) ($heldCommission[$s->SaleID]['net'] ?? 0);
+            }
             $s->net_commission = $net;
             return $s;
         })->values()->sortByDesc('net_commission')->values();
@@ -2788,11 +2801,17 @@ class PurchaseOrderController extends Controller
             $interestCom  = $r->remainingPayment->total_com ?? 0;
             $turnCarCom   = $r->turnCar->com_turn ?? 0;
 
+            // รถส่งมอบหลังวันที่ 10 → เข้าเงื่อนไขคอมกั๊ก (โชว์เฉพาะ brand 1 ในหน้า detail)
+            $deliveryDay = $r->DeliveryInCKDate ? (int) Carbon::parse($r->DeliveryInCKDate)->day : null;
+            $isHeld = $deliveryDay !== null && $deliveryDay > HeldCommissionQuery::CUTOFF_DAY;
+
             return [
                 'id'              => $r->id,
                 'customer'        => $customerName ?: '-',
                 'model'           => $r->carOrder->model->Name_TH ?? '-',
                 'subModel'        => $detailModel ? "{$detailModel} - {$sub}" : $sub,
+                'deliveryDate'    => $r->DeliveryInCKDate,
+                'isHeld'          => $isHeld,
                 'balanceCampaign' => $balanceCampaign,
                 'accessoryCom'    => $accessoryCom,
                 'specialCom'      => $specialCom,
@@ -2840,6 +2859,22 @@ class PurchaseOrderController extends Controller
             'amount'   => (float) ($carEntry['amount'] ?? 0),
         ];
 
+        // คอมกั๊ก (brand 1) — รถส่งมอบหลังวันที่ 10 กั๊กคันละ 2,000 ยกไปจ่ายคืนเดือนถัดไป
+        $heldEntry = HeldCommissionQuery::forMonth($year, $month)['perSale'][$saleId] ?? null;
+        $prevMonth = Carbon::create($year, $month, 1)->subMonthNoOverflow();
+        $heldData = [
+            'active'      => $brand === HeldCommissionQuery::BRAND,
+            'held_count'  => $heldEntry['held_count'] ?? 0,
+            'held'        => (float) ($heldEntry['held'] ?? 0),
+            'carry_count' => $heldEntry['carry_count'] ?? 0,
+            'carried'     => (float) ($heldEntry['carried'] ?? 0),
+            'net'         => (float) ($heldEntry['net'] ?? 0),
+            'per_car'     => HeldCommissionQuery::HOLD_PER_CAR,
+            'cutoff_day'  => HeldCommissionQuery::CUTOFF_DAY,
+            'prev_month'  => (int) $prevMonth->month,
+            'prev_year'   => (int) $prevMonth->year,
+        ];
+
         return view('purchase-order.commission.sale-detail', [
             'saleUser'       => $saleUser,
             'cars'           => $cars,
@@ -2848,6 +2883,7 @@ class PurchaseOrderController extends Controller
             'brand'          => $brand,
             'ssi'            => $ssiData,
             'car'            => $carData,
+            'held'           => $heldData,
             'year'           => $year,
             'month'          => $month,
         ]);
