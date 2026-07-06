@@ -150,10 +150,12 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
         default => '-',
       };
 
-      $balanceCampaign = min($r->balanceCampaign ?? 0, 2500);
+      // คอมงบเหลือคิดสด (รองรับเคสเกิน over_budget → ใช้ยอดหักของ manager = −D)
+      $balanceCampaign = $r->effectiveBalanceCommission();
 
-      $accessoryCom = ($r->AccessoryGiftCom ?? 0) + ($r->AccessoryExtraCom ?? 0);
-      $specialCom   = $r->CommissionSpecial ?? 0;
+      // เกินงบ → ไม่คิดคอมประดับยนต์
+      $accessoryCom = $r->effectiveAccessoryCommission();
+      $specialCom   = $r->effectiveSpecialCommission();
       $interestCom  = $r->remainingPayment->total_com ?? 0;
       $turnCarCom   = $r->turnCar->com_turn ?? 0;
 

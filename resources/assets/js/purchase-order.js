@@ -1766,18 +1766,17 @@ $(document).ready(function () {
           }
 
           res.forEach(a => {
-            // ===== ปิดเงื่อนไขชั่วคราว (วันปิดยอด) — อนุญาตเลือกได้ทุกกรณี =====
-            // เปิดคืน: ใช้บรรทัดเดิมที่คอมเมนต์ไว้
-            // const noSpareCost = !(parseFloat(a.cost_spare) > 0);
-            const noSpareCost = false;
-            // ===== /ปิดเงื่อนไขชั่วคราว =====
+            // ต้องมีราคาทุนอะไหล่ (cost_spare) มากกว่า 0 ถึงจะเลือกได้ — ใช้ตอนขออนุมัติ
+            // null / ว่าง / 0 ถือว่า "ไม่มีราคาทุนอะไหล่" ทั้งหมด
+            const noSpareCost = !(parseFloat(a.cost_spare) > 0);
+            // ปิดเงื่อนไขชั่วคราว (วันปิดยอด): const noSpareCost = false;
 
             // ราคา 0 บาท เลือกได้เฉพาะของแถมมาตรฐาน (is_standard) เท่านั้น
             const buildPriceCell = (type, price, comAttr = '') => {
               if (price === null || price === undefined) return `<span>-</span>`;
 
-              // ปิดชั่วคราว (วันปิดยอด): const blockZero = parseFloat(price) === 0 && !a.is_standard;
-              const blockZero = false;
+              const blockZero = parseFloat(price) === 0 && !a.is_standard;
+              // ปิดเงื่อนไขชั่วคราว (วันปิดยอด): const blockZero = false;
               const block = noSpareCost || blockZero;
               const title = noSpareCost
                 ? 'ไม่มีราคาทุนอะไหล่ จึงเลือกไม่ได้'
@@ -1919,22 +1918,20 @@ $(document).ready(function () {
         return;
       }
 
-      // ===== ปิดเงื่อนไขชั่วคราว (วันปิดยอด) — ไม่เช็คราคา 0 / ไม่มีราคาทุนอะไหล่ =====
-      // เปิดคืน: uncomment 2 block ด้านล่าง
-      // // กันราคา 0 บาท ที่ไม่ใช่ของแถมมาตรฐาน (เผื่อ DOM ถูกแก้)
-      // const hasInvalidZero = items.some(it => parseFloat(it.price) === 0 && Number(it.standard) !== 1);
-      // if (hasInvalidZero) {
-      //   Swal.fire({ icon: 'warning', title: 'ราคา 0 บาท เลือกได้เฉพาะของแถมมาตรฐาน', confirmButtonText: 'ตกลง' });
-      //   return;
-      // }
-      //
-      // // กันรายการที่ไม่มีราคาทุนอะไหล่ (เผื่อ DOM ถูกแก้)
-      // const hasNoSpare = items.some(it => Number(it.spare) !== 1);
-      // if (hasNoSpare) {
-      //   Swal.fire({ icon: 'warning', title: 'รายการนี้ไม่มีราคาทุนอะไหล่ จึงเลือกไม่ได้', confirmButtonText: 'ตกลง' });
-      //   return;
-      // }
-      // ===== /ปิดเงื่อนไขชั่วคราว =====
+      // ── เปิดตอนปิดยอด: comment 2 block ด้านล่างเพื่อไม่เช็คราคา 0 / ไม่มีราคาทุนอะไหล่ ──
+      // กันราคา 0 บาท ที่ไม่ใช่ของแถมมาตรฐาน (เผื่อ DOM ถูกแก้)
+      const hasInvalidZero = items.some(it => parseFloat(it.price) === 0 && Number(it.standard) !== 1);
+      if (hasInvalidZero) {
+        Swal.fire({ icon: 'warning', title: 'ราคา 0 บาท เลือกได้เฉพาะของแถมมาตรฐาน', confirmButtonText: 'ตกลง' });
+        return;
+      }
+
+      // กันรายการที่ไม่มีราคาทุนอะไหล่ (เผื่อ DOM ถูกแก้)
+      const hasNoSpare = items.some(it => Number(it.spare) !== 1);
+      if (hasNoSpare) {
+        Swal.fire({ icon: 'warning', title: 'รายการนี้ไม่มีราคาทุนอะไหล่ จึงเลือกไม่ได้', confirmButtonText: 'ตกลง' });
+        return;
+      }
 
       items.forEach(function (it) {
         const rawPrice = it.price;
@@ -2676,19 +2673,34 @@ function calculateCommission() {
 //edit : com sale
 function calculateCommissionSale() {
   let balanceCam = safeNumber('#balanceCampaign');
-  const giftCom = safeNumber('#total_gift_com');
-  const extraCom = safeNumber('#total_extra_com');
+  const isOverBudget = balanceCam < 0; // จับสถานะก่อน reassign balanceCam
+
+  // เกินงบทุกกรณี → ไม่คิดคอมประดับยนต์ (gift + extra)
+  let giftCom = isOverBudget ? 0 : safeNumber('#total_gift_com');
+  let extraCom = isOverBudget ? 0 : safeNumber('#total_extra_com');
   const fiCom = safeNumber('#remaining_total_com');
   const turnCom = safeNumber('#com_turn');
   const comSpecial = safeNumber('#CommissionSpecial');
 
   const selectedModel = $('#model_id option:selected');
   const perBudget = parseFloat(selectedModel.data('perbudget')) || 0;
+  const overBudget = parseFloat(selectedModel.data('overbudget')) || 0;
+  const saleBrand = parseInt($('#saleBrand').val()) || 0;
+
+  // ยอดหักค่าคอมที่ manager/gm กรอกไว้ (เคสเกิน over_budget → คอมงบเหลือ = −D)
+  const deductRaw = ($('#approvalCommissionDeduct').val() || '').toString().replace(/,/g, '').trim();
+  const managerDeduct = deductRaw !== '' ? parseFloat(deductRaw) : null;
 
   if (balanceCam >= 0) {
     balanceCam = Math.min(balanceCam, 2500);
   } else {
-    balanceCam = balanceCam * 2 * (perBudget / 100);
+    // เกินเพดาน: เทียบ "ยอดเต็ม" (×2) กับ over_budget (brand 2 = เกินเสมอ) ; ถ้าเกิน+manager กรอกหัก → ใช้ −D
+    const isOverCeiling = saleBrand === 2 || Math.abs(balanceCam) * 2 > overBudget;
+    if (isOverCeiling && managerDeduct !== null && !isNaN(managerDeduct)) {
+      balanceCam = -managerDeduct;
+    } else {
+      balanceCam = balanceCam * 2 * (perBudget / 100);
+    }
   }
 
   const totalCommission = balanceCam + giftCom + extraCom + fiCom + turnCom + comSpecial;
@@ -3028,7 +3040,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const btnRequestOverBudget = document.getElementById('btnRequestOverBudget');
 
   const approvalRequested = document.getElementById('approvalRequested')?.value === '1';
-  const approvalType = document.getElementById('approvalType')?.value || '';
 
   function handlePreview() {
     function formatThaiDate(inputId, type = 'date') {
@@ -3596,11 +3607,11 @@ document.addEventListener('DOMContentLoaded', function () {
     btnRequestOverBudget.classList.add('d-none');
 
     // ===== ปิดการขออนุมัติชั่วคราว (วันปิดยอด) — แสดงแค่ปุ่มบันทึก ทุก role =====
-    // ลบ/คอมเมนต์ block นี้เพื่อเปิดการขออนุมัติกลับคืน
-    btnSave.classList.remove('d-none');
-    content.innerHTML = html;
-    modal.show();
-    return;
+    // เปิดใช้ block นี้ (uncomment) เพื่อ "ปิด" การขออนุมัติชั่วคราวอีกครั้ง
+    // btnSave.classList.remove('d-none');
+    // content.innerHTML = html;
+    // modal.show();
+    // return;
     // ===== /ปิดการขออนุมัติชั่วคราว =====
 
     // admin บันทึกได้ตรง ไม่ต้องขออนุมัติ
@@ -3632,8 +3643,23 @@ document.addEventListener('DOMContentLoaded', function () {
       btnRequestNormal.classList.remove('d-none');
     } else {
       btnRequestOverBudget.classList.remove('d-none');
-      btnRequestOverBudget.dataset.level = 'manager';
-      btnRequestOverBudget.textContent = 'ขออนุมัติ (เกินงบ)';
+
+      // แยกเกินงบ 2 แบบ (mirror approvalCase):
+      //  - brand 2 → เกินงบส่ง GM เสมอ
+      //  - brand 1/3 เทียบ "ยอดเต็ม" (×2) กับ over_budget : เกิน > เพดาน → ส่ง MD ; ≤ เพดาน → manager จบ
+      const overBudgetVal = parseFloat((selectedModel?.dataset.overbudget || '0')) || 0;
+      const saleBrand = parseInt(document.getElementById('saleBrand')?.value, 10) || 0;
+
+      if (saleBrand === 2) {
+        btnRequestOverBudget.dataset.level = 'gm';
+        btnRequestOverBudget.textContent = 'ขออนุมัติเกินงบ (GM)';
+      } else if (Math.abs(balanceCam) * 2 > overBudgetVal) {
+        btnRequestOverBudget.dataset.level = 'gm';
+        btnRequestOverBudget.textContent = 'ขออนุมัติเกินงบ (MD)';
+      } else {
+        btnRequestOverBudget.dataset.level = 'manager';
+        btnRequestOverBudget.textContent = 'ขออนุมัติเกินงบ';
+      }
     }
 
     content.innerHTML = html;

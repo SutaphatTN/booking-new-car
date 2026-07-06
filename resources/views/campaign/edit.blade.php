@@ -17,6 +17,7 @@
       </div>
 
       <div class="modal-body mf-body">
+        @php $canEditMoney = auth()->user()->role === 'admin'; @endphp
         <form action="{{ route('campaign.update', $cam->id) }}" method="POST" enctype="multipart/form-data">
           @csrf
           @method('PUT')
@@ -114,6 +115,11 @@
               <span class="mf-section-title">ข้อมูลการเงิน</span>
             </div>
             <div class="mf-section-body">
+              @unless ($canEditMoney)
+                <div class="alert alert-warning py-2 px-3 mb-3 small d-flex align-items-center gap-2">
+                  <i class="bx bx-lock-alt"></i> เฉพาะผู้ดูแลระบบ (admin) เท่านั้นที่แก้ไขยอดเงินได้
+                </div>
+              @endunless
               <div class="row g-3">
 
                 <div class="col-md-4">
@@ -126,7 +132,7 @@
                       class="form-control text-end money-input @error('cashSupport') is-invalid @enderror"
                       name="cashSupport"
                       value="{{ $cam->cashSupport !== null ? number_format($cam->cashSupport, 2) : '' }}"
-                      placeholder="0.00" required>
+                      placeholder="0.00" required @readonly(!$canEditMoney)>
                   </div>
                   @error('cashSupport')
                     <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
@@ -143,7 +149,7 @@
                       class="form-control text-end money-input @error('cashSupport_deduct') is-invalid @enderror"
                       name="cashSupport_deduct"
                       value="{{ $cam->cashSupport_deduct !== null ? number_format($cam->cashSupport_deduct, 2) : '' }}"
-                      placeholder="0.00" required>
+                      placeholder="0.00" required @readonly(!$canEditMoney)>
                   </div>
                   @error('cashSupport_deduct')
                     <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>

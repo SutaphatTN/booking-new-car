@@ -8,6 +8,7 @@ use App\Http\Controllers\auth\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\campaign\CampaignController;
 use App\Http\Controllers\campaign\CampaignClaimController;
+use App\Http\Controllers\campaign\CampaignApprovalController;
 use App\Http\Controllers\car_order\CarOrderController;
 use App\Http\Controllers\car_order\WsImportController;
 use App\Http\Controllers\color\ColorController;
@@ -60,9 +61,16 @@ Route::post('source/approval/{token}/reject', [SourceController::class, 'reject'
 
 // อนุมัติใบจองผ่านลิงก์ในเมล (ไม่ต้อง login — ใช้ token)
 Route::get('purchase-order/approval/{token}', [PurchaseOrderController::class, 'emailApprove'])->name('purchase-order.emailApprove');
+// ดูรายละเอียด (PDF สรุปการขาย) แบบ read-only ผ่าน token — ไม่มีปุ่มอนุมัติ
+Route::get('purchase-order/approval/{token}/summary', [PurchaseOrderController::class, 'emailSummary'])->name('purchase-order.emailSummary');
 Route::post('purchase-order/approval/{token}/manager', [PurchaseOrderController::class, 'managerApprove'])->name('purchase-order.managerApprove');
 Route::post('purchase-order/approval/{token}/gm-decide', [PurchaseOrderController::class, 'gmDecide'])->name('purchase-order.gmDecide');
 Route::post('purchase-order/approval/{token}/final', [PurchaseOrderController::class, 'finalApprove'])->name('purchase-order.finalApprove');
+
+// อนุมัติแคมเปญ CK ผ่านลิงก์ในเมล (ไม่ต้อง login — ใช้ token)
+Route::get('campaign-approval/{token}', [CampaignApprovalController::class, 'emailApprove'])->name('campaign.ckApproval.email');
+Route::post('campaign-approval/{token}/approve', [CampaignApprovalController::class, 'approve'])->name('campaign.ckApproval.approve');
+Route::post('campaign-approval/{token}/reject', [CampaignApprovalController::class, 'reject'])->name('campaign.ckApproval.reject');
 
 Route::get('/keep-alive', function () {
     if (!Auth::check()) {
@@ -174,6 +182,12 @@ Route::middleware(['auth', 'notsale'])->group(function () {
 
     //campaign
     Route::get('campaign/list', [CampaignController::class, 'listCampaign']);
+    // อนุมัติแคมเปญ CK (type = 4) — รายเดือน
+    Route::get('campaign/ck-approval', [CampaignApprovalController::class, 'index'])->name('campaign.ckApproval');
+    Route::get('campaign/ck-approval/list', [CampaignApprovalController::class, 'list']);
+    Route::get('campaign/ck-approval/pending-list', [CampaignApprovalController::class, 'pendingList']);
+    Route::get('campaign/ck-approval/model-options', [CampaignApprovalController::class, 'modelOptions']);
+    Route::post('campaign/ck-approval/request', [CampaignApprovalController::class, 'requestApproval'])->name('campaign.ckApproval.request');
     Route::get('campaign/{id}/view-more', [CampaignController::class, 'viewMore'])->name('campaign.viewMore');
     Route::post('/campaign/status-cam', [CampaignController::class, 'statusCam'])->name('campaign.status-cam');
     Route::post('/campaign/{id}/archive', [CampaignController::class, 'archiveCam'])->name('campaign.archive');
@@ -490,6 +504,10 @@ Route::group(['middleware' => 'auth'], function () {
     //commission sale
     Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('purchase-order.viewCommission');
     Route::get('purchase-order/list-Commission', [PurchaseOrderController::class, 'listCommission']);
+    Route::get('purchase-order/commission-sale-detail/{saleId}', [PurchaseOrderController::class, 'commissionSaleDetail'])->name('purchase-order.commission-sale-detail');
+    Route::post('purchase-order/commission-monthly', [PurchaseOrderController::class, 'saveCommissionMonthly'])->name('purchase-order.commission-monthly.save');
+    Route::get('purchase-order/commission-target', [PurchaseOrderController::class, 'getMonthlyTarget'])->name('purchase-order.commission-target.get');
+    Route::post('purchase-order/commission-target', [PurchaseOrderController::class, 'saveMonthlyTarget'])->name('purchase-order.commission-target.save');
     // cancellation
     Route::get('purchase-order/cancellation', [CancellationController::class, 'index'])->name('purchase-order.cancellation');
     Route::get('purchase-order/list-cancellation', [CancellationController::class, 'list']);

@@ -173,7 +173,7 @@ $(document).ready(function () {
     const isAll = checked.length === $all.length;
     typeFilterActive = isAll ? null : checked;
     $('#typeFilterBtn').toggleClass('filtered', typeFilterActive !== null);
-    campaignTable.ajax.reload(null, false);
+    campaignTable.ajax.reload(null, false); if (window.ckApprovalTable) window.ckApprovalTable.ajax.reload(null, false);
     $('#typeFilterDropdown').removeClass('show');
     $('#typeFilterBtn').removeClass('active');
   });
@@ -184,7 +184,7 @@ $(document).ready(function () {
     $('.type-chk-item').prop('checked', true);
     $('#typeChkAll').prop({ indeterminate: false, checked: true });
     $('#typeFilterBtn').removeClass('filtered active');
-    campaignTable.ajax.reload(null, false);
+    campaignTable.ajax.reload(null, false); if (window.ckApprovalTable) window.ckApprovalTable.ajax.reload(null, false);
     $('#typeFilterDropdown').removeClass('show');
   });
 });
@@ -335,7 +335,7 @@ $(document).on('click', '.btnStoreCampaign', function (e) {
         showConfirmButton: true
       });
 
-      campaignTable.ajax.reload(null, false);
+      campaignTable.ajax.reload(null, false); if (window.ckApprovalTable) window.ckApprovalTable.ajax.reload(null, false);
     },
     error: function (xhr) {
       let errMsg = 'ไม่สามารถบันทึกข้อมูลได้';
@@ -443,7 +443,7 @@ $(document).on('click', '.btnEditCam', function () {
               showConfirmButton: true
             });
 
-            campaignTable.ajax.reload(null, false);
+            campaignTable.ajax.reload(null, false); if (window.ckApprovalTable) window.ckApprovalTable.ajax.reload(null, false);
           },
           error: function (xhr) {
             $modal.modal('hide');
@@ -508,7 +508,7 @@ $(document).on('click', '.btnDeleteCam', function () {
               showConfirmButton: true
             });
 
-            campaignTable.ajax.reload(null, false);
+            campaignTable.ajax.reload(null, false); if (window.ckApprovalTable) window.ckApprovalTable.ajax.reload(null, false);
           } else {
             Swal.fire({
               icon: 'error',
@@ -562,7 +562,7 @@ $(document).on('click', '.btnArchiveCam', function () {
               showConfirmButton: true
             });
 
-            campaignTable.ajax.reload(null, false);
+            campaignTable.ajax.reload(null, false); if (window.ckApprovalTable) window.ckApprovalTable.ajax.reload(null, false);
           } else {
             Swal.fire({
               icon: 'error',

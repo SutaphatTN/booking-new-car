@@ -35,12 +35,12 @@
               <ul class="dropdown-menu dropdown-menu-end">
                 <li>
                   <a class="dropdown-item" data-type="stock" href="{{ route('license.stock-export') }}">
-                    Stock
+                    ทั้งหมด
                   </a>
                 </li>
                 <li>
                   <a class="dropdown-item btnExportLicenseAll" data-type="all" href="#">
-                    ทั้งหมด
+                    ประวัติการใช้
                   </a>
                 </li>
               </ul>

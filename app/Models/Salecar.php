@@ -248,6 +248,7 @@ class Salecar extends Model
 		'approval_type',
 		'approval_requested_at',
 		'approval_commission_deduct',
+		'approval_md_note',
 		'approval_remaining',
 		'approval_token',
 		'approval_files',
@@ -413,6 +414,90 @@ class Salecar extends Model
 	public function interiorColor()
 	{
 		return $this->belongsTo(TbInteriorColor::class, 'interior_color', 'id');
+	}
+
+	/**
+	 * เคสอนุมัติ (brand-aware) — ตรรกะเดียวกับ PurchaseOrderController::approvalCase
+	 *  normal     = งบปกติ
+	 *  b1_manager = brand1/3 เกิน ≤ over_budget → manager (จบ)
+	 *  b1_md      = brand1/3 เกิน > over_budget → manager กรอกหัก → md
+	 *  b2_gm      = brand2 เกินงบ → gm/md
+	 */
+	public function approvalCase(): string
+	{
+		$balance = (float) ($this->balanceCampaign ?? 0);
+		if ($balance >= 0) {
+			return 'normal';
+		}
+		if ((int) $this->brand === 2) {
+			return 'b2_gm';
+		}
+		// เทียบ "ยอดเต็ม" (balanceCampaign เก็บค่าที่หาร 2 แล้ว → คูณกลับ ×2) กับเพดาน over_budget
+		$overBudget = (float) ($this->model?->over_budget ?? 0);
+		return abs($balance) * 2 <= $overBudget ? 'b1_manager' : 'b1_md';
+	}
+
+	/**
+	 * "คอมงบเหลือ" (component เดียวของค่าคอม) — คิดสดจากสถานะปัจจุบัน
+	 *  - งบเหลือ (balance ≥ 0): ได้งบเหลือ เพดาน 2500
+	 *  - เกินงบไม่เกินเพดาน (b1_manager): สูตรอัตโนมัติ balance × 2 × per_budget%
+	 *  - เกิน over_budget ที่ MD/GM อนุมัติ (b1_md/b2_gm) และ manager กรอกยอดหัก D แล้ว: ใช้ −D
+	 * ต้อง eager load relation 'model' เพื่อความแม่นของเคส
+	 */
+	public function effectiveBalanceCommission(): float
+	{
+		$balance = (float) ($this->balanceCampaign ?? 0);
+		$case = $this->approvalCase();
+
+		if (in_array($case, ['b1_md', 'b2_gm'], true) && $this->approval_commission_deduct !== null) {
+			return -1 * (float) $this->approval_commission_deduct;
+		}
+
+		if ($balance >= 0) {
+			return min($balance, 2500);
+		}
+
+		$perBudget = (float) ($this->model?->per_budget ?? 0);
+		return $balance * 2 * ($perBudget / 100);
+	}
+
+	/**
+	 * "คอมประดับยนต์" (gift + extra) — เกินงบทุกกรณี (balance < 0) ไม่คิด (คืน 0)
+	 */
+	public function effectiveAccessoryCommission(): float
+	{
+		if ((float) ($this->balanceCampaign ?? 0) < 0) {
+			return 0.0;
+		}
+		return (float) ($this->AccessoryGiftCom ?? 0) + (float) ($this->AccessoryExtraCom ?? 0);
+	}
+
+	/**
+	 * "คอมอื่นๆ" (CommissionSpecial) — ถ้ายังไม่กรอก (=0) ใช้ค่า default ตามรุ่นหลักของ brand นั้น
+	 * (config: car_commission.special_by_model[brand][model_id])
+	 */
+	public function effectiveSpecialCommission(): float
+	{
+		$stored = (float) ($this->CommissionSpecial ?? 0);
+		if ($stored != 0.0) {
+			return $stored;
+		}
+		return (float) config("car_commission.special_by_model.{$this->brand}.{$this->model_id}", 0);
+	}
+
+	/**
+	 * รวมค่าคอม Sale (คิดสด) = คอมงบเหลือ + คอมประดับยนต์(gift+extra) + คอมดอกเบี้ย + คอมรถเทิร์น + คอมอื่นๆ
+	 * ตรงกับสูตรใน purchase-order.js: calculateCommissionSale()
+	 * หมายเหตุ: เกินงบ → คอมประดับยนต์เป็น 0 (ผ่าน effectiveAccessoryCommission)
+	 */
+	public function effectiveCommissionSale(): float
+	{
+		$fiCom    = (float) ($this->remainingPayment->total_com ?? 0);
+		$turnCom  = (float) ($this->turnCar->com_turn ?? 0);
+
+		return $this->effectiveBalanceCommission()
+			+ $this->effectiveAccessoryCommission()
+			+ $fiCom + $turnCom + $this->effectiveSpecialCommission();
 	}
 
 	public function branchInfo()

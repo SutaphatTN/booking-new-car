@@ -139,15 +139,13 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
             $testDrive = $rows->where('carOrder.purchase_type', 1)->count();
             $retail = $rows->where('carOrder.purchase_type', 2)->count();
 
-            $balanceCampaign = $rows->sum(function ($r) {
-                return min($r->balanceCampaign ?? 0, 2500);
-            });
+            // คอมงบเหลือคิดสด (รองรับเคสเกิน over_budget → ใช้ยอดหักของ manager = −D)
+            $balanceCampaign = $rows->sum(fn($r) => $r->effectiveBalanceCommission());
 
-            $accessoryCom = $rows->sum(function ($r) {
-                return ($r->AccessoryGiftCom ?? 0) + ($r->AccessoryExtraCom ?? 0);
-            });
+            // เกินงบ → ไม่คิดคอมประดับยนต์
+            $accessoryCom = $rows->sum(fn($r) => $r->effectiveAccessoryCommission());
 
-            $specialCom = $rows->sum('CommissionSpecial');
+            $specialCom = $rows->sum(fn($r) => $r->effectiveSpecialCommission());
 
             $interestCom = $rows->sum(function ($r) {
                 return $r->remainingPayment->total_com ?? 0;

@@ -29,16 +29,17 @@
             // brand 2: gm/md → จบที่ GMApprovalSignature
             $hasApproval = (bool) $saleCar->GMApprovalSignature;
         } else {
-            // brand 1 + brand 3: เกิน ≤ over_budget → manager(ApprovalSignature) / เกิน > over_budget → md(GMApprovalSignature)
+            // brand 1 + brand 3: เทียบ "ยอดเต็ม" (×2) กับ over_budget
+            //   เกิน ≤ เพดาน → manager(ApprovalSignature) / เกิน > เพดาน → md(GMApprovalSignature)
             $__overBudget = (float) ($saleCar->model?->over_budget ?? 0);
-            $hasApproval = abs($__balance) <= $__overBudget
+            $hasApproval = abs($__balance) * 2 <= $__overBudget
                 ? (bool) $saleCar->ApprovalSignature
                 : (bool) $saleCar->GMApprovalSignature;
         }
       @endphp
 
       <div class="modal-footer mt-4">
-        <button type="button" class="btn btn-danger px-4" data-bs-dismiss="modal">
+        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
           <i class="bx bx-x me-1"></i>ปิด
         </button>
 
