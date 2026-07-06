@@ -321,7 +321,7 @@
                   {{ $saleCar->subModel->name ?? '-' }}
                 </div>
               </div>
-              @if (auth()->user()->brand == 1)
+              @if ($saleCar->brand == 1)
                 <div class="f">
                   <div class="fl">Option</div>
                   <div class="fv">{{ $saleCar->option ?? '-' }}</div>
@@ -333,7 +333,7 @@
                   {{ $saleCar->carOrder?->engine_number ?? '-' }}</div>
               </div>
 
-              @if (auth()->user()->brand == 2)
+              @if ($saleCar->brand == 2)
                 <div class="f">
                   <div class="fl">สีรถ</div>
                   <div class="fv">{{ $saleCar->gwmColor->name ?? '-' }}</div>
@@ -342,7 +342,7 @@
                   <div class="fl">สีภายในรถ</div>
                   <div class="fv">{{ $saleCar->interiorColor->name ?? '-' }}</div>
                 </div>
-              @elseif (auth()->user()->brand == 3)
+              @elseif ($saleCar->brand == 3)
                 <div class="f">
                   <div class="fl">สีรถ</div>
                   <div class="fv">{{ $saleCar->gwmColor->name ?? '-' }}</div>
