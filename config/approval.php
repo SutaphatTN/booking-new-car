@@ -13,7 +13,7 @@ return [
     // ── brand 1 ──
     1 => [
         'manager' => ['Phung.mitsuchookiatkrabi@gmail.com'],
-        'gm'      => [],                          // brand 1: ไม่มีขั้น gm (manager → md)
+        'gm'      => ['JirapornK@Chookiat.org'],  // เกินเพดาน (b1_md) → GM (คนเดียวกับ brand 2) อนุมัติจบ, CC ให้ md
         'md'      => ['ketsudap@chookiat.org'],
         'audit'   => ['daw.mitsuchookiatkrabi@gmail.com'],   // แจ้งเมื่ออนุมัติเสร็จ
     ],
