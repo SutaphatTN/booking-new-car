@@ -30,7 +30,7 @@
   <div class="card">
     <h1>อนุมัติคำขอสั่งจอง</h1>
     <div class="sub">
-      @if ($showDeduct) ผู้จัดการ — กรอกยอดหักค่าคอมฝ่ายขายก่อนส่งต่อ MD @else ผู้จัดการ — ยืนยันการอนุมัติ @endif
+      @if ($showDeduct) ผู้จัดการ — กรอกยอดหักค่าคอมฝ่ายขายก่อนส่งต่อ GM @else ผู้จัดการ — ยืนยันการอนุมัติ @endif
     </div>
 
     <div class="row"><span class="lbl">ใบจอง</span><span class="val">{{ $saleCar->order_code ?? $saleCar->id }}</span></div>
@@ -40,8 +40,8 @@
 
     @if ($showDeduct && !empty($saleCar->approval_md_note))
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-top:14px;font-size:.9rem;color:#92400e;">
-        🔁 <strong>MD ตีกลับ</strong> — ขอให้ทบทวนยอดหักค่าคอม<br>
-        <span style="color:#78350f;">โน้ตจาก MD : {{ $saleCar->approval_md_note }}</span>
+        🔁 <strong>GM ตีกลับ</strong> — ขอให้ทบทวนยอดหักค่าคอม<br>
+        <span style="color:#78350f;">โน้ตจาก GM : {{ $saleCar->approval_md_note }}</span>
       </div>
     @endif
 
@@ -62,7 +62,7 @@
           <span class="val" id="extraVal">-</span>
         </div>
 
-        <button type="submit">อนุมัติ และส่งต่อ MD</button>
+        <button type="submit">อนุมัติ และส่งต่อ GM</button>
       @else
         <button type="submit">ยืนยันอนุมัติ</button>
       @endif

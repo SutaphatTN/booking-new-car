@@ -50,10 +50,22 @@ class HeldCommissionQuery
      */
     public static function forMonth(int $year, int $month): array
     {
-        $thisMonth = self::lateCounts($year, $month);
+        $thisFrom = Carbon::create($year, $month, 1)->startOfMonth();
+        $thisTo   = Carbon::create($year, $month, 1)->endOfMonth();
+        $prevFrom = $thisFrom->copy()->subMonthNoOverflow()->startOfMonth();
 
-        $prev      = Carbon::create($year, $month, 1)->subMonthNoOverflow();
-        $prevMonth = self::lateCounts($prev->year, $prev->month);
+        // ดึงรถ brand 1 "ส่งมอบหลังวันที่ 10" ของเดือนนี้ + เดือนก่อน ในควิวรีเดียว แล้วแยกเดือนใน PHP
+        $late = Salecar::withoutGlobalScopes()
+            ->whereNotNull('DeliveryInCKDate')
+            ->whereNotNull('CarOrderID')
+            ->where('brand', self::BRAND)
+            ->whereBetween('DeliveryInCKDate', [$prevFrom, $thisTo])
+            ->whereDay('DeliveryInCKDate', '>', self::CUTOFF_DAY)
+            ->get(['SaleID', 'DeliveryInCKDate'])
+            ->groupBy(fn($r) => Carbon::parse($r->DeliveryInCKDate)->format('Y-m'));
+
+        $thisMonth = ($late[$thisFrom->format('Y-m')] ?? collect())->groupBy('SaleID')->map->count();
+        $prevMonth = ($late[$prevFrom->format('Y-m')] ?? collect())->groupBy('SaleID')->map->count();
 
         $saleIds = $thisMonth->keys()->merge($prevMonth->keys())->unique();
 

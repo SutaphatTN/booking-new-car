@@ -285,7 +285,7 @@ class PurchaseOrderController extends Controller
     // เคสอนุมัติ (brand-aware):
     //  normal     = งบปกติ → manager
     //  b1_manager = brand1 เกิน ≤ over_budget → manager (จบ)
-    //  b1_md      = brand1 เกิน > over_budget → manager กรอกหัก → md
+    //  b1_md      = brand1 เกิน > over_budget → manager กรอกหัก → gm อนุมัติขั้นสุดท้าย (CC ให้ md)
     //  b2_gm      = brand2 เกินงบ → gm (เลือกหักเงินจบ / ส่งต่อ md)
     //  brand 3 ใช้ logic เดียวกับ brand 1 (ไม่มี over_budget → เกินงบทุกกรณีจะได้ b1_md เสมอ)
     private function approvalCase(Salecar $saleCar): string
@@ -309,8 +309,8 @@ class PurchaseOrderController extends Controller
     private function firstApproverRole(string $case): string
     {
         return match ($case) {
-            'b2_gm' => 'gm',
-            default => 'manager',   // normal, b1_manager, b1_md (รวม brand 3)
+            'b2_gm' => 'gm',        // brand 2 เกินงบ → GM (ด่านแรก)
+            default => 'manager',   // normal, b1_manager, b1_md (brand 1/3) → manager ด่านแรก
         };
     }
 
@@ -369,23 +369,36 @@ class PurchaseOrderController extends Controller
         return $files;
     }
 
-    // อีเมลที่ CC เพิ่มตลอดสายอนุมัติเกินงบ brand 2 (ให้ผู้บริหารเห็นทุกคำขอ ทั้งขั้น gm และส่งต่อ md)
+    // อีเมลที่ CC เพิ่มในสายอนุมัติเกินงบขั้น gm
+    //  - brand 2 : CC ผู้บริหาร (ketsudap + danut) ตลอดสาย (ทั้งขั้น gm และส่งต่อ md)
+    //  - brand 1/3 (b1_md) : CC ให้ md (ketsudap) รับทราบ — md ไม่ต้องกดอนุมัติ
     //  - กันซ้ำกับ To ที่ส่ง (เช่น danut เป็น md อยู่แล้วในเมลส่งต่อ → เหลือ CC แค่ ketsudap)
     private function overBudgetCc(Salecar $saleCar, array $to = []): array
     {
-        if ((int) $saleCar->brand !== 2) {
-            return [];
+        if ((int) $saleCar->brand === 2) {
+            $cc = ['ketsudap@chookiat.org', 'danut@chookiat.org'];
+        } else {
+            $cc = $this->approverEmails($saleCar->brand, $saleCar->branch, 'md');
+            if (empty($cc)) {
+                $cc = ['ketsudap@chookiat.org'];
+            }
         }
-        $cc = ['ketsudap@chookiat.org', 'danut@chookiat.org'];
         return array_values(array_diff($cc, $to));
     }
 
-    // อีเมลขั้นถัดไป (md) พร้อมข้อมูล+ไฟล์ทั้งสอง
+    // อีเมลขั้นถัดไป (ผู้อนุมัติขั้นสุดท้าย) พร้อมข้อมูล+ไฟล์ทั้งสอง
+    //  - b1_md (brand 1/3) : ส่งต่อ GM (CC ให้ md รับทราบ)
+    //  - b2_gm (brand 2)   : ส่งต่อ MD (CC ให้ ketsudap)
     private function emailFinalApprover(Salecar $saleCar, ?float $deduct): void
     {
-        $mailMd = $this->approverEmails($saleCar->brand, $saleCar->branch, 'md');
-        if (empty($mailMd)) {
-            $mailMd = $saleCar->brand == 2 ? ['danut@chookiat.org'] : ['ketsudap@chookiat.org'];
+        $case      = $this->approvalCase($saleCar);
+        $finalRole = $case === 'b1_md' ? 'gm' : 'md';
+
+        $mailTo = $this->approverEmails($saleCar->brand, $saleCar->branch, $finalRole);
+        if (empty($mailTo)) {
+            $mailTo = $finalRole === 'gm'
+                ? ['JirapornK@Chookiat.org']
+                : ($saleCar->brand == 2 ? ['danut@chookiat.org'] : ['ketsudap@chookiat.org']);
         }
 
         $data = $this->buildApprovalData($saleCar);
@@ -395,9 +408,9 @@ class PurchaseOrderController extends Controller
         }
         $files = $this->buildApprovalAttachments($saleCar);
 
-        Mail::to($mailMd)->cc($this->overBudgetCc($saleCar, (array) $mailMd))->send(new SaleRequestMail(
+        Mail::to($mailTo)->cc($this->overBudgetCc($saleCar, (array) $mailTo))->send(new SaleRequestMail(
             $saleCar->fresh(['model', 'saleUser', 'customer.prefix']),
-            'gm',
+            $finalRole === 'gm' ? 'gm_final' : 'md_final',
             $data,
             $files
         ));
@@ -454,27 +467,27 @@ class PurchaseOrderController extends Controller
                 return view('purchase-order.approval-manager', ['saleCar' => $saleCar, 'token' => $token, 'showDeduct' => false]);
 
             case 'b1_md':
-                // ผู้จัดการกรอกหัก → ส่งต่อ md
+                // ผู้จัดการกรอกหัก → ส่งต่อ gm อนุมัติขั้นสุดท้าย
                 if (!$saleCar->ApprovalSignature) {
                     return view('purchase-order.approval-manager', ['saleCar' => $saleCar, 'token' => $token, 'showDeduct' => true]);
                 }
-                // MD: อนุมัติ (แก้ยอดได้) หรือ ตีกลับให้ผู้จัดการ
-                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => true]);
+                // gm: อนุมัติ (แก้ยอดได้) หรือ ตีกลับให้ผู้จัดการ
+                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => true, 'approverLabel' => 'GM']);
 
             case 'b2_gm':
                 // gm เลือก หักเงิน(จบ) / ส่งต่อ md
                 if (!$saleCar->ApprovalSignature) {
                     return view('purchase-order.approval-gm', compact('saleCar', 'token'));
                 }
-                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => false]);
+                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => false, 'approverLabel' => 'MD']);
 
             default:
                 // fallback — ขั้นสุดท้าย (md) กดยืนยัน
-                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => false]);
+                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => false, 'approverLabel' => 'MD']);
         }
     }
 
-    // ผู้จัดการกดอนุมัติ — normal/b1_manager: กดยืนยัน | b1_md: กรอกหัก → ส่งต่อ md
+    // ผู้จัดการกดอนุมัติ — normal/b1_manager: กดยืนยัน | b1_md: กรอกหัก → ส่งต่อ gm
     public function managerApprove(Request $request, $token)
     {
         $saleCar = Salecar::withoutGlobalScopes()->where('approval_token', $token)->firstOrFail();
@@ -506,7 +519,7 @@ class PurchaseOrderController extends Controller
             ]);
 
             $this->emailFinalApprover($saleCar, $deduct);
-            $msg = 'ผู้จัดการอนุมัติแล้ว — ส่งต่อให้ MD อนุมัติ (ส่งอีเมลพร้อมไฟล์แนบแล้ว)';
+            $msg = 'ผู้จัดการอนุมัติแล้ว — ส่งต่อให้ GM อนุมัติ (ส่งอีเมลพร้อมไฟล์แนบแล้ว)';
         } else {
             abort(400);
         }
@@ -553,7 +566,7 @@ class PurchaseOrderController extends Controller
         return view('purchase-order.approval-result', compact('saleCar', 'msg'));
     }
 
-    // ขั้นสุดท้าย (md) — อนุมัติ (ใช้ยอดเดิม/กรอกใหม่) หรือ ตีกลับให้ผู้จัดการกรอกใหม่
+    // ขั้นสุดท้าย (b1_md → GM | b2_gm → MD) — อนุมัติ (ใช้ยอดเดิม/กรอกใหม่) หรือ ตีกลับให้ผู้จัดการกรอกใหม่
     public function finalApprove(Request $request, $token)
     {
         $saleCar = Salecar::withoutGlobalScopes()->where('approval_token', $token)->firstOrFail();
@@ -567,7 +580,8 @@ class PurchaseOrderController extends Controller
         }
 
         $case = $this->approvalCase($saleCar);
-        $canRevise = $case === 'b1_md'; // ทางเลือก MD กรอกใหม่/ตีกลับ เฉพาะเคส b1_md
+        $canRevise = $case === 'b1_md'; // ทางเลือกแก้ยอด/ตีกลับ เฉพาะเคส b1_md (ผู้อนุมัติขั้นสุดท้าย = GM)
+        $approverLabel = $case === 'b1_md' ? 'GM' : 'MD'; // b1_md → GM, b2_gm → MD
 
         // ── MD ตีกลับให้ผู้จัดการกรอกยอดหักใหม่ ──
         if ($canRevise && $request->input('decision') === 'return') {
@@ -614,8 +628,8 @@ class PurchaseOrderController extends Controller
         return view('purchase-order.approval-result', [
             'saleCar' => $saleCar,
             'msg'     => $mdEdited
-                ? 'อนุมัติเรียบร้อย (MD — แก้ยอดหักค่าคอม แจ้งผู้จัดการแล้ว)'
-                : 'อนุมัติเรียบร้อย (MD)',
+                ? "อนุมัติเรียบร้อย ({$approverLabel} — แก้ยอดหักค่าคอม แจ้งผู้จัดการแล้ว)"
+                : "อนุมัติเรียบร้อย ({$approverLabel})",
         ]);
     }
 
@@ -1951,9 +1965,11 @@ class PurchaseOrderController extends Controller
 
                 $mailTo = $this->approverEmails($saleCar->brand, $saleCar->branch, $stageRole);
                 if (empty($mailTo)) {
-                    $mailTo = $saleCar->brand == 2
-                        ? ($stageRole === 'manager' ? ['JirapornK@Chookiat.org'] : ['danut@chookiat.org'])
-                        : ($stageRole === 'manager' ? ['Phung.mitsuchookiatkrabi@gmail.com'] : ['ketsudap@chookiat.org']);
+                    $mailTo = $stageRole === 'gm'
+                        ? ['JirapornK@Chookiat.org']   // GM ใช้คนเดียวกันทุก brand
+                        : ($saleCar->brand == 2
+                            ? ($stageRole === 'manager' ? ['SasithornK@chookiat.org'] : ['danut@chookiat.org'])
+                            : ($stageRole === 'manager' ? ['Phung.mitsuchookiatkrabi@gmail.com'] : ['ketsudap@chookiat.org']));
                 }
 
                 $approvalData  = $this->buildApprovalData($saleCar);
@@ -1971,8 +1987,8 @@ class PurchaseOrderController extends Controller
                 }
                 $saleCar->update($update);
 
-                $mailType = $case === 'normal' ? 'normal' : ($stageRole === 'manager' ? 'manager' : 'gm');
-                // CC ผู้บริหาร (ketsudap + danut) เฉพาะคำขอที่วิ่งเข้า gm = brand 2 เกินงบ
+                $mailType = $case === 'normal' ? 'normal' : ($stageRole === 'gm' ? 'gm' : 'manager');
+                // CC เฉพาะคำขอที่วิ่งเข้า gm (b1_md → CC md | b2_gm → CC ketsudap+danut)
                 $mailCc = $stageRole === 'gm' ? $this->overBudgetCc($saleCar, (array) $mailTo) : [];
                 Mail::to($mailTo)->cc($mailCc)->send(new SaleRequestMail($saleCar, $mailType, $approvalData, $approvalFiles));
             }
@@ -2677,22 +2693,25 @@ class PurchaseOrderController extends Controller
             $heldCommission = $heldCommission->only($visibleSaleIds);
         }
 
-        // เซลล์ที่ได้เงินจริงแต่ไม่มีรถส่งมอบในเดือนที่เลือก → เพิ่มเข้ารายการด้วย
-        //   - คอม SSI (amount > 0)
-        //   - คอมกั๊กยกมาจากเดือนก่อน (carried > 0) แม้เดือนนี้ขายไม่ได้
         $saleCar = $saleCar->keyBy('SaleID');
-        $ssiEarners  = $ssiPerSale->filter(fn($v) => ($v['amount'] ?? 0) > 0);
-        $heldEarners = $heldCommission->filter(fn($v) => ($v['carried'] ?? 0) > 0);
-        $missingIds  = $ssiEarners->keys()->merge($heldEarners->keys())->unique()->diff($saleCar->keys());
-        if ($missingIds->isNotEmpty()) {
-            $extraUsers = User::with('branchInfo')->whereIn('id', $missingIds)->get()->keyBy('id');
-            foreach ($missingIds as $sid) {
-                $saleCar->put($sid, (object) [
-                    'SaleID'           => $sid,
-                    'saleUser'         => $extraUsers->get($sid),
-                    'total_cars'       => 0,
-                    'total_commission' => 0.0,
-                ]);
+
+        // เฉพาะ viewer brand 1: เพิ่มเซลล์ที่ได้เงินจริงแต่ไม่มีรถส่งมอบในเดือนที่เลือก
+        //   - คอม SSI (amount > 0)  · คอมกั๊กยกมาจากเดือนก่อน (carried > 0)
+        // SSI/คอมกั๊กเป็นของ brand 1 เท่านั้น — gate ด้วย brand ผู้เปิด กันชื่อ brand 1 รั่วไป view brand อื่น
+        if ((int) $user->brand === 1) {
+            $ssiEarners  = $ssiPerSale->filter(fn($v) => ($v['amount'] ?? 0) > 0);
+            $heldEarners = $heldCommission->filter(fn($v) => ($v['carried'] ?? 0) > 0);
+            $missingIds  = $ssiEarners->keys()->merge($heldEarners->keys())->unique()->diff($saleCar->keys());
+            if ($missingIds->isNotEmpty()) {
+                $extraUsers = User::with('branchInfo')->whereIn('id', $missingIds)->get()->keyBy('id');
+                foreach ($missingIds as $sid) {
+                    $saleCar->put($sid, (object) [
+                        'SaleID'           => $sid,
+                        'saleUser'         => $extraUsers->get($sid),
+                        'total_cars'       => 0,
+                        'total_commission' => 0.0,
+                    ]);
+                }
             }
         }
 
@@ -2707,15 +2726,17 @@ class PurchaseOrderController extends Controller
             ->keyBy('SaleID');
 
         // คำนวณยอดสุทธิ (brand-aware + คอม SSI + คอมตัวรถรายคัน + คอมกั๊ก) แล้วค่อยจัดอันดับ (emoji อิงยอดสุทธิ)
-        $saleCar = $saleCar->map(function ($s) use ($adjustments, $ssiPerSale, $carCommission, $heldCommission) {
+        // SSI/คอมกั๊กเป็นของ brand 1 → คิดเฉพาะตอนดูหน้า brand 1 (brand 3 ใช้เซลล์ร่วมกับ brand 1 จึงต้อง gate ด้วย viewer brand)
+        $viewerBrand = (int) $user->brand;
+        $saleCar = $saleCar->map(function ($s) use ($adjustments, $ssiPerSale, $carCommission, $heldCommission, $viewerBrand) {
             $adj = $adjustments->get($s->SaleID);
             $brand = (int) ($s->saleUser->brand ?? 0);
             $net = $adj
                 ? $adj->computeNet($s->total_commission, $brand)
                 : $s->total_commission;
-            $net += (float) ($ssiPerSale[$s->SaleID]['amount'] ?? 0);
             $net += (float) ($carCommission[$s->SaleID]['amount'] ?? 0);
-            if ($brand === HeldCommissionQuery::BRAND) {
+            if ($viewerBrand === 1) {
+                $net += (float) ($ssiPerSale[$s->SaleID]['amount'] ?? 0);
                 $net += (float) ($heldCommission[$s->SaleID]['net'] ?? 0);
             }
             $s->net_commission = $net;
@@ -2777,6 +2798,7 @@ class PurchaseOrderController extends Controller
 
         $rows = SaleCommissionQuery::base(Auth::user(), false, $fromDate, $toDate)
             ->with('model')
+            ->without('saleUser') // modal ไม่ได้ใช้ saleUser ต่อคัน (โหลด $saleUser แยกด้านล่าง) → ตัด eager-load 2 query
             ->where('SaleID', $saleId)
             ->get();
 
@@ -2830,11 +2852,13 @@ class PurchaseOrderController extends Controller
         ]);
 
         $brand = (int) ($saleUser->brand ?? 0);
+        // brand ที่กำลังดู (brand 3 ใช้เซลล์ร่วมกับ brand 1 → SSI/กั๊กต้องผูกกับหน้าที่ดู ไม่ใช่ brand ของตัวเซลล์)
+        $viewerBrand = (int) Auth::user()->brand;
 
         // คอม SSI (brand 1, เฉพาะเดือน 3/10) — เฉลี่ยแยกสาขา + เกณฑ์ ≥18 คัน/≥1 ทุกเดือน
         $ssi = SsiCommissionQuery::forPeriod($year, $month);
         $ssiEntry  = $ssi['perSale'][$saleId] ?? null;
-        $ssiActive = $ssi['active'] && $brand === 1;
+        $ssiActive = $ssi['active'] && $brand === 1 && $viewerBrand === 1;
         $ssiData = [
             'active'      => $ssiActive,
             'branch'      => $ssiEntry['branch'] ?? SsiCommissionQuery::branchOf((int) $saleId),
@@ -2863,7 +2887,7 @@ class PurchaseOrderController extends Controller
         $heldEntry = HeldCommissionQuery::forMonth($year, $month)['perSale'][$saleId] ?? null;
         $prevMonth = Carbon::create($year, $month, 1)->subMonthNoOverflow();
         $heldData = [
-            'active'      => $brand === HeldCommissionQuery::BRAND,
+            'active'      => $brand === HeldCommissionQuery::BRAND && $viewerBrand === 1,
             'held_count'  => $heldEntry['held_count'] ?? 0,
             'held'        => (float) ($heldEntry['held'] ?? 0),
             'carry_count' => $heldEntry['carry_count'] ?? 0,

@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>อนุมัติคำขอ (MD)</title>
+  @php $approverLabel = $approverLabel ?? 'MD'; @endphp
+  <title>อนุมัติคำขอ ({{ $approverLabel }})</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f1f5f9; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
     .card { background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 32px; max-width: 480px; width: 100%; }
@@ -32,8 +33,8 @@
 <body>
   @php $allowRevise = $allowRevise ?? false; @endphp
   <div class="card">
-    <h1>อนุมัติคำขอเกินงบ (MD)</h1>
-    <div class="sub">ส่งต่อมาขั้น MD — อนุมัติขั้นสุดท้าย</div>
+    <h1>อนุมัติคำขอเกินงบ ({{ $approverLabel }})</h1>
+    <div class="sub">ส่งต่อมาขั้น {{ $approverLabel }} — อนุมัติขั้นสุดท้าย</div>
 
     <div class="row"><span class="lbl">ใบจอง</span><span class="val">{{ $saleCar->order_code ?? $saleCar->id }}</span></div>
     <div class="row"><span class="lbl">รุ่นรถ</span><span class="val">{{ $saleCar->model->Name_TH ?? '-' }}</span></div>
@@ -68,7 +69,7 @@
         <button type="submit" data-decision="return" class="btn-return">ส่งกลับให้ผู้จัดการแก้</button>
       @else
         <input type="hidden" name="decision" value="approve">
-        <button type="submit" class="btn-approve">ยืนยันอนุมัติ (MD)</button>
+        <button type="submit" class="btn-approve">ยืนยันอนุมัติ ({{ $approverLabel }})</button>
       @endif
     </form>
   </div>

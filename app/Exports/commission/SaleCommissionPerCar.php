@@ -3,6 +3,12 @@
 namespace App\Exports\commission;
 
 use App\Services\SaleCommissionQuery;
+use App\Services\CarCommissionQuery;
+use App\Services\HeldCommissionQuery;
+use App\Services\SsiCommissionQuery;
+use App\Models\SaleCommissionMonthly;
+use App\Exports\commission\Concerns\BuildsCommissionReport;
+use Illuminate\Support\Carbon;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -17,6 +23,8 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 
 class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
+  use BuildsCommissionReport;
+
   protected $user;
   protected $fromDate;
   protected $toDate;
@@ -28,93 +36,100 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
     $this->toDate   = $toDate   ?? now()->format('Y-m-d');
   }
 
+  /** brand ของผู้เปิดรายงาน (base query ถูก scope ตาม brand นี้อยู่แล้ว) */
+  protected function brand(): int
+  {
+    return (int) ($this->user->brand ?: 1);
+  }
+
   public function title(): string
   {
     return 'ค่าคอมรายคัน';
   }
 
+  /**
+   * คอลัมน์ตาม brand — รายการเสริมรายเซลล์ (กั๊กยกมา/SSI/วินัย/lead/clip/หักอื่นๆ)
+   * โชว์ "แถวแรกของเซลล์" ครั้งเดียว กัน Total ซ้ำ ; ส่วนค่าคอมรถ/กั๊กหัก เป็นรายคัน
+   */
+  protected function columns(): array
+  {
+    $b = $this->brand();
+
+    $cols = [
+      ['label' => 'สาขา',       'key' => 'branch',   'role' => 'info'],
+      ['label' => 'ชื่อฝ่ายขาย', 'key' => 'saleName', 'role' => 'info'],
+      ['label' => 'ชื่อลูกค้า',  'key' => 'customer', 'role' => 'info'],
+      ['label' => 'ประเภทรถ',   'key' => 'carType',  'role' => 'info'],
+      ['label' => 'รุ่นรถหลัก',  'key' => 'model',    'role' => 'info'],
+      ['label' => 'รุ่นรถย่อย',  'key' => 'subModel', 'role' => 'info'],
+
+      ['label' => 'ค่าคอมรถ',       'key' => 'carCommission',   'role' => 'recv', 'money' => true],
+      ['label' => 'ยอดแบ่งงบเหลือ', 'key' => 'balanceCampaign', 'role' => 'recv', 'money' => true],
+      ['label' => 'คอมประดับยนต์',  'key' => 'accessoryCom',    'role' => 'recv', 'money' => true],
+      ['label' => 'คอมอื่นๆ',       'key' => 'specialCom',      'role' => 'recv', 'money' => true],
+      ['label' => 'คอมดอกเบี้ย',    'key' => 'interestCom',     'role' => 'recv', 'money' => true],
+      ['label' => 'คอมรถเทิร์น',    'key' => 'turnCarCom',      'role' => 'recv', 'money' => true],
+    ];
+
+    if ($b === 1) {
+      $cols[] = ['label' => 'คอมกั๊ก (ยกมาเดือนก่อน)', 'key' => 'heldCarried', 'role' => 'recv', 'money' => true];
+      $cols[] = ['label' => 'SSI',                     'key' => 'ssi',         'role' => 'recv', 'money' => true];
+    } elseif ($b === 2) {
+      $cols[] = ['label' => 'คอมวินัย',  'key' => 'comDiscipline', 'role' => 'recv', 'money' => true];
+      $cols[] = ['label' => 'คอม Lead',  'key' => 'comLead',       'role' => 'recv', 'money' => true];
+      $cols[] = ['label' => 'คอม Clip',  'key' => 'comClip',       'role' => 'recv', 'money' => true];
+    }
+
+    $cols[] = ['label' => 'รวมค่าคอมรับ', 'key' => '__recv', 'role' => 'sum_recv', 'money' => true];
+
+    $cols[] = ['label' => 'หักอื่นๆ (หักเงินเดือน/ สาย)', 'key' => 'deductAbsence', 'role' => 'ded', 'money' => true];
+    if ($b === 1) {
+      $cols[] = ['label' => 'คอมกั๊ก (หักเดือนนี้)', 'key' => 'heldHeld', 'role' => 'ded', 'money' => true];
+    }
+
+    $cols[] = ['label' => 'รวมยอดหัก', 'key' => '__ded', 'role' => 'sum_ded', 'money' => true];
+    $cols[] = ['label' => 'คอมสุทธิ',  'key' => '__net', 'role' => 'net',     'money' => true];
+
+    return $cols;
+  }
+
   public function styles(Worksheet $sheet)
   {
     return [
-      //แถวบนสุด
       1 => [
-        'font' => [],
-        'fill' => [
-          'fillType' => 'solid',
-          'startColor' => ['rgb' => 'ffc000'],
-        ],
-        'alignment' => [
-          'horizontal' => 'center',
-          'vertical' => 'center',
-        ],
+        'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => 'ffc000']],
+        'alignment' => ['horizontal' => 'center', 'vertical' => 'center'],
       ],
     ];
   }
 
   public function registerEvents(): array
   {
+    $moneyCols = $this->moneyColumnLetters($this->columns());
+
     return [
-      AfterSheet::class => function (AfterSheet $event) {
+      AfterSheet::class => function (AfterSheet $event) use ($moneyCols) {
 
         $sheet = $event->sheet->getDelegate();
         $highestRow = $sheet->getHighestRow();
         $highestCol = $sheet->getHighestColumn();
 
-        // font
-        $sheet->getStyle("A1:{$highestCol}{$highestRow}")
-          ->getFont()
-          ->setName('Angsana New')
-          ->setSize(14);
+        $sheet->getStyle("A1:{$highestCol}{$highestRow}")->getFont()->setName('Angsana New')->setSize(14);
+        $sheet->getStyle("A1:{$highestCol}{$highestRow}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getStyle("A1:{$highestCol}{$highestRow}")->getBorders()->getAllBorders()
+          ->setBorderStyle(Border::BORDER_THIN)->setColor(new Color(Color::COLOR_BLACK));
 
-        // กึ่งกลางตาม row
-        $sheet->getStyle("A1:{$highestCol}{$highestRow}")
-          ->getAlignment()
-          ->setVertical(Alignment::VERTICAL_CENTER);
-
-        // เส้นกรอบ
-        $sheet->getStyle("A1:{$highestCol}{$highestRow}")
-          ->getBorders()
-          ->getAllBorders()
-          ->setBorderStyle(Border::BORDER_THIN)
-          ->setColor(new Color(Color::COLOR_BLACK));
-
-        // ความสูงของ row
         $sheet->getRowDimension(1)->setRowHeight(25);
         for ($row = 2; $row <= $highestRow; $row++) {
           $sheet->getRowDimension($row)->setRowHeight(20);
         }
 
-        // ฟิลเตอร์เฉพาะ B1
         $sheet->setAutoFilter("B1:B{$highestRow}");
-
-        // freeze header
         $sheet->freezePane('A2');
-
-        // สี sheet
         $sheet->getTabColor()->setRGB('ffc000');
 
-        // format comma
-        $numberColumns = [
-          'G',
-          'H',
-          'I',
-          'J',
-          'K',
-          'L',
-          'M',
-          'N',
-          'O',
-          'P',
-          'Q',
-          'R',
-          'S',
-          'T'
-        ];
-
-        foreach ($numberColumns as $col) {
-          $sheet->getStyle("{$col}2:{$col}{$highestRow}")
-            ->getNumberFormat()
-            ->setFormatCode('#,##0.00');
+        foreach ($moneyCols as $col) {
+          $sheet->getStyle("{$col}2:{$col}{$highestRow}")->getNumberFormat()->setFormatCode('#,##0.00');
         }
       },
     ];
@@ -122,12 +137,27 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
 
   public function view(): View
   {
+    $brand = $this->brand();
 
     $rows = SaleCommissionQuery::base($this->user, true, $this->fromDate, $this->toDate)
       ->get()
-      ->sortBy(fn($r) => optional($r->saleUser)->name);
+      ->sortBy(fn($r) => optional($r->saleUser)->name)
+      ->values();
 
-    $data = $rows->map(function ($r) {
+    $period = Carbon::parse($this->fromDate);
+    $year   = (int) $period->year;
+    $month  = (int) $period->month;
+
+    $carCom = CarCommissionQuery::forMonth($year, $month)['perSale'];
+    $held   = HeldCommissionQuery::forMonth($year, $month)['perSale'];
+    $ssiPer = SsiCommissionQuery::forPeriod($year, $month)['perSale'];
+    $adjust = SaleCommissionMonthly::where('year', $year)->where('month', $month)
+      ->get()->keyBy('SaleID');
+
+    // ค่ารายเซลล์/เดือน โชว์ครั้งเดียว (แถวแรกของเซลล์) กัน Total ซ้ำ
+    $seen = [];
+
+    $data = $rows->map(function ($r) use ($brand, $carCom, $held, $ssiPer, $adjust, &$seen) {
 
       $customerName = trim(
         ($r->customer->prefix->Name_TH ?? '') . ' ' .
@@ -135,49 +165,71 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
           ($r->customer->LastName ?? '')
       );
 
-      $saleUser = $r->saleUser;
-      $model = $r->carOrder->model->Name_TH ?? '-';
+      $saleId = (int) $r->SaleID;
       $sub = $r->carOrder->subModel->name ?? '-';
       $detailModel = $r->carOrder->subModel->detail ?? null;
 
-      $subModel = $detailModel
-        ? "{$detailModel} - {$sub}"
-        : $sub;
+      // ค่าคอมรถ (คอมรายคันรถปกติ) รายคัน — นับเฉพาะ Retail + Normal + ไม่ใช่ dealer (ตรงกับ CarCommissionQuery)
+      $entry = $carCom[$saleId] ?? null;
+      $src = optional($r->carOrder)->purchase_source;
+      $isCounted = ((int) $r->type_sale === CarCommissionQuery::SALE_TYPE_NORMAL)
+        && ((int) optional($r->carOrder)->purchase_type === CarCommissionQuery::PURCHASE_TYPE_RETAIL)
+        && ($src !== CarCommissionQuery::SOURCE_DEALER);
+      $carCommission = 0.0;
+      if ($entry && $isCounted) {
+        $carCommission = ($entry['mode'] ?? 'volume') === 'model'
+          ? CarCommissionQuery::modelRate($brand, $r->model_id !== null ? (int) $r->model_id : null)
+          : (float) ($entry['rate'] ?? 0);
+      }
 
-      $carType = match ((int) ($r->carOrder->purchase_type ?? 0)) {
-        1 => 'รถทดลองขับ',
-        2 => 'รถปกติ',
-        default => '-',
-      };
+      $row = [
+        'branch'   => optional($r->saleUser?->branchInfo)->name ?? '-',
+        'saleName' => optional($r->saleUser)->name ?? '-',
+        'customer' => $customerName ?: '-',
+        'carType'  => match ((int) ($r->carOrder->purchase_type ?? 0)) {
+          1 => 'รถทดลองขับ',
+          2 => 'รถปกติ',
+          default => '-',
+        },
+        'model'    => $r->carOrder->model->Name_TH ?? '-',
+        'subModel' => $detailModel ? "{$detailModel} - {$sub}" : $sub,
 
-      // คอมงบเหลือคิดสด (รองรับเคสเกิน over_budget → ใช้ยอดหักของ manager = −D)
-      $balanceCampaign = $r->effectiveBalanceCommission();
-
-      // เกินงบ → ไม่คิดคอมประดับยนต์
-      $accessoryCom = $r->effectiveAccessoryCommission();
-      $specialCom   = $r->effectiveSpecialCommission();
-      $interestCom  = $r->remainingPayment->total_com ?? 0;
-      $turnCarCom   = $r->turnCar->com_turn ?? 0;
-
-      return [
-        'branch' => optional($saleUser?->branchInfo)->name ?? '-',
-        'saleName' => optional($saleUser)->name ?? '-',
-
-        'customer' => $customerName,
-        'model' => $model,
-        'subModel' => $subModel,
-        'carType' => $carType,
-
-        'balanceCampaign' => $balanceCampaign,
-        'accessoryCom' => $accessoryCom,
-        'specialCom' => $specialCom,
-        'interestCom' => $interestCom,
-        'turnCarCom' => $turnCarCom,
+        'carCommission'   => $carCommission,
+        'balanceCampaign' => $r->effectiveBalanceCommission(),
+        'accessoryCom'    => $r->effectiveAccessoryCommission(),
+        'specialCom'      => $r->effectiveSpecialCommission(),
+        'interestCom'     => $r->remainingPayment->total_com ?? 0,
+        'turnCarCom'      => $r->turnCar->com_turn ?? 0,
       ];
+
+      // per-car : คอมกั๊ก (หักเดือนนี้) — brand 1 + ส่งมอบหลังวันที่ 10
+      $day = $r->DeliveryInCKDate ? (int) Carbon::parse($r->DeliveryInCKDate)->day : null;
+      if ($brand === 1) {
+        $row['heldHeld'] = ($day !== null && $day > HeldCommissionQuery::CUTOFF_DAY)
+          ? (float) HeldCommissionQuery::HOLD_PER_CAR : 0.0;
+      }
+
+      // per-sale : โชว์แถวแรกของเซลล์ครั้งเดียว
+      $first = !isset($seen[$saleId]);
+      $seen[$saleId] = true;
+      $adj = $adjust->get($saleId);
+
+      $row['deductAbsence'] = $first ? (float) ($adj->deduct_absence ?? 0) : 0.0;
+
+      if ($brand === 1) {
+        $row['heldCarried'] = $first ? (float) ($held[$saleId]['carried'] ?? 0) : 0.0;
+        $row['ssi']         = $first ? (float) ($ssiPer[$saleId]['amount'] ?? 0) : 0.0;
+      } elseif ($brand === 2) {
+        $row['comDiscipline'] = $first ? (float) ($adj->com_discipline ?? 0) : 0.0;
+        $row['comLead']       = $first ? (float) ($adj->com_lead ?? 0) : 0.0;
+        $row['comClip']       = $first ? (float) ($adj->com_clip ?? 0) : 0.0;
+      }
+
+      return $row;
     });
 
-    return view('purchase-order.report.commission.sale-report-per-car', [
-      'commission' => $data
-    ]);
+    $payload = $this->buildReport($this->columns(), $data);
+
+    return view('purchase-order.report.commission.sale-report-generic', $payload);
   }
 }

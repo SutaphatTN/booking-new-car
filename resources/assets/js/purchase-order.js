@@ -3646,7 +3646,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // แยกเกินงบ 2 แบบ (mirror approvalCase):
       //  - brand 2 → เกินงบส่ง GM เสมอ
-      //  - brand 1/3 เทียบ "ยอดเต็ม" (×2) กับ over_budget : เกิน > เพดาน → ส่ง MD ; ≤ เพดาน → manager จบ
+      //  - brand 1/3 เทียบ "ยอดเต็ม" (×2) กับ over_budget : เกิน > เพดาน → ส่ง GM (จบที่ GM, CC md) ; ≤ เพดาน → manager จบ
       const overBudgetVal = parseFloat((selectedModel?.dataset.overbudget || '0')) || 0;
       const saleBrand = parseInt(document.getElementById('saleBrand')?.value, 10) || 0;
 
@@ -3655,7 +3655,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btnRequestOverBudget.textContent = 'ขออนุมัติเกินงบ (GM)';
       } else if (Math.abs(balanceCam) * 2 > overBudgetVal) {
         btnRequestOverBudget.dataset.level = 'gm';
-        btnRequestOverBudget.textContent = 'ขออนุมัติเกินงบ (MD)';
+        btnRequestOverBudget.textContent = 'ขออนุมัติเกินงบ (GM)';
       } else {
         btnRequestOverBudget.dataset.level = 'manager';
         btnRequestOverBudget.textContent = 'ขออนุมัติเกินงบ';
