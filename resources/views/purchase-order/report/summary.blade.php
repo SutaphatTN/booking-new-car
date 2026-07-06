@@ -342,7 +342,7 @@
                   <div class="fl">สีภายในรถ</div>
                   <div class="fv">{{ $saleCar->interiorColor->name ?? '-' }}</div>
                 </div>
-              @elseif ($saleCar->brand == 3)
+              @elseif (in_array($saleCar->brand, [3, 4]))
                 <div class="f">
                   <div class="fl">สีรถ</div>
                   <div class="fv">{{ $saleCar->gwmColor->name ?? '-' }}</div>

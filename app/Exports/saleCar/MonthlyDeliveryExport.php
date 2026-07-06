@@ -128,7 +128,7 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
                 ? "{$detailModel} - {$sub}"
                 : $sub;
 
-            $color = in_array($r->brand, [2, 3])
+            $color = in_array($r->brand, [2, 3, 4])
                 ? ($r->gwmColor->name ?? '-')
                 : ($r->Color ?? '-');
 

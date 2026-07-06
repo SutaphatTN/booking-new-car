@@ -144,7 +144,7 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
                 ? "{$detailModel} - {$sub}"
                 : $sub;
 
-            $color = in_array($r->brand, [2, 3])
+            $color = in_array($r->brand, [2, 3, 4])
                 ? ($r->gwmColor->name ?? '-')
                 : ($r->Color ?? '-');
 

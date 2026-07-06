@@ -14,7 +14,7 @@
         <th>สีภายใน</th>
       @endif
       <th>ปี</th>
-      @if (!in_array(auth()->user()->brand, [2, 3]))
+      @if (!in_array(auth()->user()->brand, [2, 3, 4]))
         <th>Option</th>
       @endif
       <th>Vin-Number</th>
@@ -102,7 +102,7 @@
           <td>{{ $p['interior_color'] }}</td>
         @endif
         <td>{{ $p['year'] }}</td>
-        @if (!in_array(auth()->user()->brand, [2, 3]))
+        @if (!in_array(auth()->user()->brand, [2, 3, 4]))
           <td>{{ $p['option'] }}</td>
         @endif
         <td>{{ $p['vin_number'] }}</td>

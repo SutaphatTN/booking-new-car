@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Auth;
 class DbarController extends Controller
 {
     // เห็น/ใช้เมนูนี้ได้เฉพาะ role เหล่านี้
-    private const ALLOWED_ROLES = ['admin', 'audit', 'gm', 'manager', 'md'];
+    private const ALLOWED_ROLES = ['admin', 'audit', 'audit_lead', 'gm', 'manager', 'md'];
 
     public function index()
     {
@@ -113,7 +113,7 @@ class DbarController extends Controller
             $query->with(['gwmColor', 'interiorColor'])
                 ->selectRaw('model_id, subModel_id, gwm_color, interior_color, COUNT(*) as sold')
                 ->groupBy('model_id', 'subModel_id', 'gwm_color', 'interior_color');
-        } elseif ($brand == 3) {
+        } elseif (in_array($brand, [3, 4])) {
             $query->with(['gwmColor'])
                 ->selectRaw('model_id, subModel_id, gwm_color, COUNT(*) as sold')
                 ->groupBy('model_id', 'subModel_id', 'gwm_color');
@@ -126,7 +126,7 @@ class DbarController extends Controller
             if ($brand == 2) {
                 $color    = optional($r->gwmColor)->name ?? '-';
                 $interior = optional($r->interiorColor)->name ?? '-';
-            } elseif ($brand == 3) {
+            } elseif (in_array($brand, [3, 4])) {
                 $color    = optional($r->gwmColor)->name ?? '-';
                 $interior = null;
             } else {

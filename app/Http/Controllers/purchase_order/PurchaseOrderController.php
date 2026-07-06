@@ -728,7 +728,7 @@ class PurchaseOrderController extends Controller
             $row = fn($icon, $class, $tip, $text) =>
                 "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
 
-            if ($s->brand == 2 || $s->brand == 3) {
+            if (in_array($s->brand, [2, 3, 4])) {
                 $car = $row('bxs-car',       'text-primary', 'รุ่นหลัก', $model)
                      . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale);
             } else {
@@ -937,7 +937,7 @@ class PurchaseOrderController extends Controller
                 'brand' => Auth::user()->brand ?? null,
                 'UserInsert' => Auth::id(),
                 'branch' => Auth::user()->branch ?? null,
-                'gwm_color' => in_array(Auth::user()->brand, [2, 3]) ? $request->gwm_color : null,
+                'gwm_color' => in_array(Auth::user()->brand, [2, 3, 4]) ? $request->gwm_color : null,
                 'interior_color' => Auth::user()->brand == 2 ? $request->interior_color : null,
                 'tracking_id' => $trackingId,
             ]);
@@ -1475,7 +1475,7 @@ class PurchaseOrderController extends Controller
                 'delivery_province' => $request->delivery_province,
             ];
 
-            if (in_array(Auth::user()->brand, [2, 3])) {
+            if (in_array(Auth::user()->brand, [2, 3, 4])) {
                 $data['gwm_color'] = $request->gwm_color;
             }
 
@@ -3029,7 +3029,7 @@ class PurchaseOrderController extends Controller
      */
     public function gpSetting(Request $request)
     {
-        abort_unless(in_array(Auth::user()->role, ['admin', 'audit', 'gm', 'account']), 403);
+        abort_unless(in_array(Auth::user()->role, ['admin', 'audit', 'audit_lead', 'gm', 'account']), 403);
 
         $month = $request->input('month') ?: now()->format('Y-m');
 
@@ -3044,7 +3044,7 @@ class PurchaseOrderController extends Controller
     {
         $role = Auth::user()->role;
         // admin, audit และ account แก้ไขได้ (audit/account แก้ได้ทุกอย่าง ยกเว้นราคาทุน/ราคาขาย ซึ่ง readonly)
-        abort_unless(in_array($role, ['admin', 'audit', 'gm', 'account']), 403);
+        abort_unless(in_array($role, ['admin', 'audit', 'audit_lead', 'gm', 'account']), 403);
 
         $validated = $request->validate([
             'gp_cost_price_override' => 'nullable|numeric|min:0',

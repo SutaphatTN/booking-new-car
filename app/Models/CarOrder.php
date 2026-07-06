@@ -140,7 +140,7 @@ class CarOrder extends Model
 
     public function getDisplayColorAttribute()
     {
-        if ($this->brand == 2 || $this->brand == 3) {
+        if (in_array($this->brand, [2, 3, 4])) {
             return $this->gwmColor?->name ?? '-';
         }
 

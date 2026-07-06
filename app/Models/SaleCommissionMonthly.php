@@ -56,7 +56,7 @@ class SaleCommissionMonthly extends Model
      */
     public function computeNet(float $baseCommission, int $brand): float
     {
-        if (in_array($brand, [1, 3], true)) {
+        if (in_array($brand, [1, 3, 4], true)) {
             $base = $this->discipline_failed
                 ? $baseCommission * (1 - self::DISCIPLINE_FAIL_RATE)
                 : $baseCommission;

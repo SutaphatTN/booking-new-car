@@ -109,4 +109,28 @@ class User extends Authenticatable
 
 		return substr($mobile, 0, 3) . '-' . substr($mobile, 3, 4) . '-' . substr($mobile, 7, 3);
 	}
+
+	/**
+	 * รายการ brand id ที่ user นี้ "สลับไปได้" (ใช้ที่ปุ่มสลับ navbar + กันใน BrandSwitcher middleware)
+	 *  - admin/gm/md/account/registration/adminPage → ทุก brand
+	 *  - marketing/cro/sp/bp/cs/lead_sale           → ทุก brand ยกเว้น GWM(2)
+	 *  - sale/audit/manager                         → ตาม config brand.sale_switch_scope[home brand]
+	 * ใช้ home brand (getOriginal) เสมอ เพราะ BrandSwitcher เขียนทับ $this->brand ตอน runtime
+	 */
+	public function switchableBrandIds(): array
+	{
+		$all = array_map('intval', array_keys(config('brand.names', [])));
+
+		if (in_array($this->role, ['admin', 'gm', 'md', 'account', 'registration', 'adminPage', 'audit_lead'], true)) {
+			return $all;
+		}
+
+		if (in_array($this->role, ['sale', 'audit', 'manager'], true)) {
+			$home = (int) $this->getOriginal('brand');
+			return array_map('intval', config("brand.sale_switch_scope.$home", [$home]));
+		}
+
+		// marketing/cro/sp/bp/cs/lead_sale และอื่นๆ → ทุก brand ยกเว้น GWM(2)
+		return array_values(array_diff($all, [2]));
+	}
 }

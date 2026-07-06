@@ -94,7 +94,7 @@
                     <span class="mf-info-label">สีภายใน</span>
                     <span class="mf-info-val">{{ $saleCar->interiorColor->name ?? '-' }}</span>
                   </div>
-                @elseif (auth()->user()->brand == 3)
+                @elseif (in_array(auth()->user()->brand, [3, 4]))
                   <div class="mf-info-row">
                     <span class="mf-info-label">สี</span>
                     <span class="mf-info-val">{{ $saleCar->gwmColor->name ?? '-' }}</span>

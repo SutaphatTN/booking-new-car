@@ -161,7 +161,7 @@
                   <input id="approver" type="text" class="form-control"
                     value="{{ $waiting->approvers->name ?? '-' }}" disabled>
                 </div>
-              @elseif (auth()->user()->brand == 3)
+              @elseif (in_array(auth()->user()->brand, [3, 4]))
                 <div class="col-md-4">
                   <label for="gwm_color" class="mf-label form-label">
                     <i class="bx bx-palette ci-amber"></i> สี

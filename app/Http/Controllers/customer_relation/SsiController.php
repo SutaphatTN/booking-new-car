@@ -67,7 +67,7 @@ class SsiController extends Controller
             $row = fn($icon, $class, $tip, $text) =>
                 "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
 
-            if ($s->brand == 2 || $s->brand == 3) {
+            if (in_array($s->brand, [2, 3, 4])) {
                 $car = $row('bxs-car',       'text-primary', 'รุ่นหลัก', $model)
                      . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale);
             } else {

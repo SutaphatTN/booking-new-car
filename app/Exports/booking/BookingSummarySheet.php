@@ -165,7 +165,7 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 }
             }
 
-            $color = in_array($order->brand, [2,3])
+            $color = in_array($order->brand, [2, 3, 4])
                 ? ($order->gwmColor->name ?? '-')
                 : ($order->color ?? '-');
 

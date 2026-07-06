@@ -10,14 +10,13 @@ class BrandSwitcher
 {
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check()) {
-            $user = Auth::user();
-            $role = $user->role;
-            $allowed = ($user->brand != 2 || $role == 'md')
-                && in_array($role, ['admin', 'account', 'audit', 'gm', 'manager', 'md', 'sale', 'lead_sale', 'registration', 'bp', 'cs', 'adminPage', 'cro', 'sp', 'marketing']);
+        if (Auth::check() && session()->has('brand_switch')) {
+            $user   = Auth::user();
+            $target = (int) session('brand_switch');
 
-            if ($allowed && session()->has('brand_switch')) {
-                $user->brand = session('brand_switch');
+            // สลับได้เฉพาะ brand ที่อยู่ในสิทธิ์ของ user (กันยิง request ตรงไป brand ที่ไม่อนุญาต)
+            if (in_array($target, $user->switchableBrandIds(), true)) {
+                $user->brand = $target;
             }
         }
 

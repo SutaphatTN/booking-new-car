@@ -78,7 +78,7 @@
                               <i class="icon-base bx bx-cog icon-md me-3"></i><span>Settings</span>
                           </a>
                       </li> -->
-          @if (Auth::user()->role == 'audit' || Auth::user()->role == 'gm' || Auth::user()->role == 'admin' || Auth::user()->role == 'manager')
+          @if (Auth::user()->role == 'audit' || Auth::user()->role == 'audit_lead' || Auth::user()->role == 'gm' || Auth::user()->role == 'admin' || Auth::user()->role == 'manager')
             <li>
               <div class="dropdown-divider my-1"></div>
             </li>
@@ -106,9 +106,9 @@
             </li> --}}
           @endif
           @php
-            $userRole = Auth::user()->role;
             $userBrand = Auth::user()->getOriginal('brand');
-            $canSwitchBrand = ($userBrand != 2 || $userRole == 'md') && in_array($userRole, ['admin', 'account', 'audit', 'gm', 'manager', 'md', 'sale', 'lead_sale', 'registration', 'bp', 'cs', 'adminPage', 'cro', 'sp', 'marketing']);
+            $switchableBrands = Auth::user()->switchableBrandIds();
+            $canSwitchBrand = count($switchableBrands) > 1;   // สลับได้เมื่อมีมากกว่า 1 brand
           @endphp
           @if ($canSwitchBrand)
             <li>
@@ -122,10 +122,7 @@
                     <span class="badge bg-warning text-white ms-1">Active</span>
                   @endif
                 </small>
-                @foreach (TbBrand::all() as $tbBrand)
-                  @if (!in_array($userRole, ['admin', 'account', 'audit', 'gm', 'registration', 'md', 'adminPage']) && $tbBrand->id == 2)
-                    @continue
-                  @endif
+                @foreach (TbBrand::whereIn('id', $switchableBrands)->get() as $tbBrand)
                   @php
                     $isActive = session('brand_switch')
                         ? session('brand_switch') == $tbBrand->id

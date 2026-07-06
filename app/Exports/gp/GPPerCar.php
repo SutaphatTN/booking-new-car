@@ -172,7 +172,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         ? "{$detailModel} - {$sub}"
         : $sub;
 
-      $color = in_array($r->brand, [2, 3])
+      $color = in_array($r->brand, [2, 3, 4])
         ? ($r->carOrder->gwmColor->name ?? '-')
         : ($r->carOrder->color ?? '-');
 
