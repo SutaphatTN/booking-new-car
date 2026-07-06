@@ -368,6 +368,17 @@ class PurchaseOrderController extends Controller
         return $files;
     }
 
+    // อีเมลที่ CC เพิ่มตลอดสายอนุมัติเกินงบ brand 2 (ให้ผู้บริหารเห็นทุกคำขอ ทั้งขั้น gm และส่งต่อ md)
+    //  - กันซ้ำกับ To ที่ส่ง (เช่น danut เป็น md อยู่แล้วในเมลส่งต่อ → เหลือ CC แค่ ketsudap)
+    private function overBudgetCc(Salecar $saleCar, array $to = []): array
+    {
+        if ((int) $saleCar->brand !== 2) {
+            return [];
+        }
+        $cc = ['ketsudap@chookiat.org', 'danut@chookiat.org'];
+        return array_values(array_diff($cc, $to));
+    }
+
     // อีเมลขั้นถัดไป (md) พร้อมข้อมูล+ไฟล์ทั้งสอง
     private function emailFinalApprover(Salecar $saleCar, ?float $deduct): void
     {
@@ -383,7 +394,7 @@ class PurchaseOrderController extends Controller
         }
         $files = $this->buildApprovalAttachments($saleCar);
 
-        Mail::to($mailMd)->send(new SaleRequestMail(
+        Mail::to($mailMd)->cc($this->overBudgetCc($saleCar, (array) $mailMd))->send(new SaleRequestMail(
             $saleCar->fresh(['model', 'saleUser', 'customer.prefix']),
             'gm',
             $data,
@@ -1958,7 +1969,9 @@ class PurchaseOrderController extends Controller
                 $saleCar->update($update);
 
                 $mailType = $case === 'normal' ? 'normal' : ($stageRole === 'manager' ? 'manager' : 'gm');
-                Mail::to($mailTo)->send(new SaleRequestMail($saleCar, $mailType, $approvalData, $approvalFiles));
+                // CC ผู้บริหาร (ketsudap + danut) เฉพาะคำขอที่วิ่งเข้า gm = brand 2 เกินงบ
+                $mailCc = $stageRole === 'gm' ? $this->overBudgetCc($saleCar, (array) $mailTo) : [];
+                Mail::to($mailTo)->cc($mailCc)->send(new SaleRequestMail($saleCar, $mailType, $approvalData, $approvalFiles));
             }
 
             DB::commit();
