@@ -494,35 +494,37 @@ class PurchaseOrderController extends Controller
         $case = $this->approvalCase($saleCar);
         $today = now();
 
-        if ($case === 'normal') {
-            $saleCar->update(['SMSignature' => 1, 'SMCheckedDate' => $today]);
-            $this->notifyApproved($saleCar);
-            $msg = 'อนุมัติเรียบร้อย (ผู้จัดการ – อนุมัติการขาย)';
-        } elseif ($case === 'b1_manager') {
-            $saleCar->update(['ApprovalSignature' => 1, 'ApprovalSignatureDate' => $today]);
-            $this->notifyApproved($saleCar);
-            $msg = 'อนุมัติเรียบร้อย (ผู้จัดการ – เกินงบ ไม่เกินเพดาน)';
-        } elseif ($case === 'b1_md') {
-            $request->merge(['commission_deduct' => str_replace(',', '', (string) $request->commission_deduct)]);
-            $request->validate([
-                'commission_deduct' => 'required|numeric|min:0',
-            ], [
-                'commission_deduct.required' => 'กรุณากรอกยอดหักค่าคอมฝ่ายขาย',
-            ]);
-            $deduct = (float) $request->commission_deduct;
+        // ครอบ transaction: ถ้าส่งอีเมลขั้นถัดไปพัง → rollback การเซ็นอนุมัติ (กันค้างสถานะ "อนุมัติแล้วแต่เมลไม่ออก")
+        $msg = DB::transaction(function () use ($request, $saleCar, $case, $today) {
+            if ($case === 'normal') {
+                $saleCar->update(['SMSignature' => 1, 'SMCheckedDate' => $today]);
+                $this->notifyApproved($saleCar);
+                return 'อนุมัติเรียบร้อย (ผู้จัดการ – อนุมัติการขาย)';
+            } elseif ($case === 'b1_manager') {
+                $saleCar->update(['ApprovalSignature' => 1, 'ApprovalSignatureDate' => $today]);
+                $this->notifyApproved($saleCar);
+                return 'อนุมัติเรียบร้อย (ผู้จัดการ – เกินงบ ไม่เกินเพดาน)';
+            } elseif ($case === 'b1_md') {
+                $request->merge(['commission_deduct' => str_replace(',', '', (string) $request->commission_deduct)]);
+                $request->validate([
+                    'commission_deduct' => 'required|numeric|min:0',
+                ], [
+                    'commission_deduct.required' => 'กรุณากรอกยอดหักค่าคอมฝ่ายขาย',
+                ]);
+                $deduct = (float) $request->commission_deduct;
 
-            $saleCar->update([
-                'approval_commission_deduct' => $deduct,
-                'ApprovalSignature' => 1,
-                'ApprovalSignatureDate' => $today,
-                'approval_md_note' => null, // เคลียร์โน้ต MD รอบก่อน (ถ้าเคยถูกตีกลับ)
-            ]);
+                $saleCar->update([
+                    'approval_commission_deduct' => $deduct,
+                    'ApprovalSignature' => 1,
+                    'ApprovalSignatureDate' => $today,
+                    'approval_md_note' => null, // เคลียร์โน้ต MD รอบก่อน (ถ้าเคยถูกตีกลับ)
+                ]);
 
-            $this->emailFinalApprover($saleCar, $deduct);
-            $msg = 'ผู้จัดการอนุมัติแล้ว — ส่งต่อให้ GM อนุมัติ (ส่งอีเมลพร้อมไฟล์แนบแล้ว)';
-        } else {
+                $this->emailFinalApprover($saleCar, $deduct);
+                return 'ผู้จัดการอนุมัติแล้ว — ส่งต่อให้ GM อนุมัติ (ส่งอีเมลพร้อมไฟล์แนบแล้ว)';
+            }
             abort(400);
-        }
+        });
 
         return view('purchase-order.approval-result', compact('saleCar', 'msg'));
     }
