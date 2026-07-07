@@ -32,7 +32,17 @@
   <div class="menu-inner-shadow"></div>
 
   <ul class="menu-inner py-1">
+    @php
+      // manager/audit ของ Lepas(4) สลับไป Wuling(3) → โชว์เฉพาะเมนู ติดตาม/ลูกค้า/จอง (ซ่อนที่เหลือ รวมรายงาน)
+      $__u = auth()->user();
+      $b4CrossWuling = in_array($userRole, ['manager', 'audit'], true)
+          && (int) $__u->getOriginal('brand') === 4 && (int) $__u->brand === 3;
+      $wulingAllowedMenus = ['customer-tracking', 'customer', 'purchase-order'];
+    @endphp
     @foreach ($menuData[0]->menu as $menu)
+      @if ($b4CrossWuling && empty(array_intersect(is_array($menu->slug) ? $menu->slug : [$menu->slug], $wulingAllowedMenus)))
+        @continue
+      @endif
       @php
         $hideForSale = [
             'model',
