@@ -128,6 +128,9 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     //insurance report (ข้อมูลประกันภัย) — เฉพาะ admin ดึงตามเดือน DeliveryDate ทุก brand แยก sheet
     Route::get('purchase-order/view-export-insurance', [PurchaseOrderController::class, 'viewExportInsurance'])->name('purchase-order.view-export-insurance');
     Route::get('/purchase-order/insurance-export', [PurchaseOrderController::class, 'exportInsurance'])->name('purchase-order.insurance-export');
+    //lead online allocation report (จัดสรร Lead Online) — admin/gm/md/manager ดึงทุก brand แยก sheet
+    Route::get('purchase-order/view-export-lead-online', [PurchaseOrderController::class, 'viewExportLeadOnline'])->name('purchase-order.view-export-lead-online');
+    Route::get('/purchase-order/lead-online-export', [PurchaseOrderController::class, 'exportLeadOnline'])->name('purchase-order.lead-online-export');
     //delivery report
     Route::get('purchase-order/view-export-monthlyDelivery', [PurchaseOrderController::class, 'viewExportMonthlyDelivery'])->name('purchase-order.view-export-monthlyDelivery');
     Route::get('/purchase-order/monthlyDelivery-export', [PurchaseOrderController::class, 'exportMonthlyDelivery'])->name('purchase-order.monthlyDelivery-export');

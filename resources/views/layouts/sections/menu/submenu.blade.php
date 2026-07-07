@@ -56,6 +56,11 @@
         @continue
       @endif
 
+      {{-- เมนู "จัดสรร Lead Online" เห็นเฉพาะ role admin, gm, md, audit, manager --}}
+      @if ($submenu->slug == 'purchase-order.view-export-lead-online' && !in_array($userRole, ['admin', 'gm', 'md', 'audit', 'manager']))
+        @continue
+      @endif
+
       {{-- เมนู "รายงาน GP" ปิดจาก role manager --}}
       @if ($submenu->slug == 'report.gp-export' && $userRole === 'manager')
         @continue

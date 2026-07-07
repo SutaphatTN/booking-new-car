@@ -7,6 +7,7 @@ use App\Exports\booking\BookingExport;
 use App\Exports\commission\SaleCommissionExport;
 use App\Exports\gp\GPExport;
 use App\Exports\insurance\InsuranceExport;
+use App\Exports\lead_online\LeadOnlineAllocationExport;
 use App\Exports\gwm\GwmExport;
 use App\Exports\saleCar\estimated\EstimatedExport;
 use App\Exports\saleCar\estimated\SaleCarEstimatedExport;
@@ -3144,6 +3145,34 @@ class PurchaseOrderController extends Controller
         $fromDate = $request->from_date ?: now()->startOfMonth()->format('Y-m');
 
         return Excel::download(new InsuranceExport($fromDate), 'ข้อมูลประกันภัย.xlsx');
+    }
+
+    //lead online allocation report (จัดสรร Lead Online) — แยก sheet ตาม brand + sheet Master_Settings
+    public function viewExportLeadOnline()
+    {
+        abort_unless(in_array(Auth::user()->role, ['admin', 'gm', 'md', 'audit', 'manager']), 403);
+
+        return view('purchase-order.report.lead-online.view');
+    }
+
+    public function exportLeadOnline(Request $request)
+    {
+        $user = Auth::user();
+        abort_unless(in_array($user->role, ['admin', 'gm', 'md', 'audit', 'manager']), 403);
+
+        $fromDate = $request->from_date ?: now()->startOfMonth()->format('Y-m');
+
+        // admin/gm/md เห็นทุก brand รวมกัน
+        // audit/manager เห็นตาม brand ของตน: 1→[1,3], 2→[2], 3→[3], 4→[4]
+        if (in_array($user->role, ['admin', 'gm', 'md'])) {
+            $brands = [1, 2, 3, 4];
+        } else {
+            $homeBrand = (int) $user->getOriginal('brand');
+            $scope = [1 => [1, 3], 2 => [2], 3 => [3], 4 => [4]];
+            $brands = $scope[$homeBrand] ?? [$homeBrand];
+        }
+
+        return Excel::download(new LeadOnlineAllocationExport($fromDate, $brands), 'จัดสรร Lead Online.xlsx');
     }
 
     //delivery report

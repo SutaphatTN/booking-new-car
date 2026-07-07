@@ -158,8 +158,8 @@
                     <select id="type" name="type" class="form-select">
                       <option value="">— เลือก —</option>
                       @foreach ($type as $item)
-                        {{-- ซ่อนแหล่งที่มา id 12,20 จาก sale/lead_sale --}}
-                        @if (in_array(auth()->user()->role, ['sale', 'lead_sale']) && in_array($item->id, [12, 20]))
+                        {{-- ซ่อนแหล่งที่มา id 12,16 จาก sale/lead_sale --}}
+                        @if (in_array(auth()->user()->role, ['sale', 'lead_sale']) && in_array($item->id, [12, 16]))
                           @continue
                         @endif
                         <option value="{{ @$item->id }}" {{ $saleCar->type == $item->id ? 'selected' : '' }}>
