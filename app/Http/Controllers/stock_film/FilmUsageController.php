@@ -65,14 +65,14 @@ class FilmUsageController extends Controller
     public function create()
     {
         $user         = Auth::user();
-        // brand 3 ใช้รายชื่อเซลล์ร่วมกับ brand 1
-        $brandForSale = $user->brand == 3 ? 1 : $user->brand;
+        // รายชื่อเซลล์ตาม brand ที่ทำงาน (Wuling รวมเซลล์ Mitsu + Lepas)
+        $saleBrands   = config("brand.sale_pool.{$user->brand}", [$user->brand]);
         $models       = TbCarmodel::orderBy('Name_TH')->get();
         $filmBrands   = FilmBrand::orderBy('id')->get();
         $carBrands    = CarBrand::where('is_active', 1)->orderBy('sort_order')->orderBy('name')->get();
         $insurances   = InsuranceCompany::where('is_active', 1)->orderBy('sort_order')->orderBy('name')->get();
         $saleUsers    = User::whereIn('role', ['sale', 'lead_sale'])
-            ->where('brand', $brandForSale)
+            ->whereIn('brand', $saleBrands)
             ->orderBy('name')
             ->get(['id', 'name']);
         return view('stock-film.usage.create', compact('models', 'filmBrands', 'carBrands', 'insurances', 'saleUsers'));

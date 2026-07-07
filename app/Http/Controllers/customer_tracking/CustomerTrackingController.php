@@ -410,9 +410,9 @@ class CustomerTrackingController extends Controller
         $hiddenMains   = config('source.tracking_hidden_main', []);
         $sources       = TbSalecarType::whereNotIn('main_source', $hiddenMains)->get();
         $decisions     = TbDecision::all();
-        $brandForSale  = $authUser->brand == 3 ? 1 : $authUser->brand;
+        $saleBrands = config("brand.sale_pool.{$authUser->brand}", [$authUser->brand]);
         $saleUser = User::whereIn('role', ['sale', 'lead_sale'])
-            ->where('brand', $brandForSale)
+            ->whereIn('brand', $saleBrands)
             ->when($authUser->brand == 2, function ($q) use ($authUser) {
                 $q->where('branch', $authUser->branch);
             })

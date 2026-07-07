@@ -2,12 +2,19 @@
   use Illuminate\Support\Facades\Route;
   $userRole = auth()->user()->role ?? null;
   $userBrand = auth()->user()->brand ?? null;
+  // manager/audit ของ Lepas(4) สลับไป Wuling(3) → ซ่อน report/export ในเมนูย่อย
+  $b4CrossWuling = in_array($userRole, ['manager', 'audit'], true)
+      && (int) auth()->user()->getOriginal('brand') === 4 && (int) $userBrand === 3;
 @endphp
 
 <ul class="menu-sub">
   @if (isset($menu))
     @foreach ($menu as $submenu)
       @if ($submenu->slug == 'model.color.index' && $userBrand == 1)
+        @continue
+      @endif
+
+      @if ($b4CrossWuling && in_array($submenu->slug, ['purchase-order.viewCommission', 'purchase-order.viewFN', 'purchase-order.gp-setting', 'purchase-order.view-export-insurance']))
         @continue
       @endif
 

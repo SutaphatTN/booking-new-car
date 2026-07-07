@@ -88,9 +88,9 @@ class PurchaseOrderController extends Controller
 
         $model = TbCarmodel::all();
         $type = TbSalecarType::all();
-        $brandForSale = $authUser->brand == 3 ? 1 : $authUser->brand;
+        $saleBrands = config("brand.sale_pool.{$authUser->brand}", [$authUser->brand]);
         $saleUser = User::whereIn('role', ['sale', 'lead_sale'])
-            ->where('brand', $brandForSale)
+            ->whereIn('brand', $saleBrands)
             ->get();
         $typeSale = TbSalePurchaseType::all();
         $interiorColor = TbInteriorColor::all();
