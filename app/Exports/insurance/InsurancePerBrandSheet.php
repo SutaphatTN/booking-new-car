@@ -21,11 +21,12 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 
 class InsurancePerBrandSheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
-  // 1 = MITSUBISHI, 2 = GWM, 3 = Wuling
+  // 1 = MITSUBISHI, 2 = GWM, 3 = Wuling, 4 = Lepas
   public const BRANDS = [
     1 => 'MITSUBISHI',
     2 => 'GWM',
     3 => 'Wuling',
+    4 => 'LEPAS',
   ];
 
   protected $brand;

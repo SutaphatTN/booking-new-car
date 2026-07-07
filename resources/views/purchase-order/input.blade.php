@@ -173,6 +173,10 @@
                 <select id="type" name="type" class="form-select" required>
                   <option value="">— เลือก —</option>
                   @foreach ($type as $item)
+                    {{-- ซ่อนแหล่งที่มา id 12,20 จาก sale/lead_sale --}}
+                    @if (in_array(auth()->user()->role, ['sale', 'lead_sale']) && in_array($item->id, [12, 20]))
+                      @continue
+                    @endif
                     <option value="{{ $item->id }}"
                       {{ isset($prefill['source_id']) && $prefill['source_id'] == $item->id ? 'selected' : '' }}>
                       {{ $item->name }}
