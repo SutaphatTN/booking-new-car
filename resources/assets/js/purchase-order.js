@@ -1767,8 +1767,8 @@ $(document).ready(function () {
 
           res.forEach(a => {
             // ต้องมีราคาทุนอะไหล่ (cost_spare) มากกว่า 0 ถึงจะเลือกได้ — ใช้ตอนขออนุมัติ
-            // null / ว่าง / 0 ถือว่า "ไม่มีราคาทุนอะไหล่" ทั้งหมด
-            const noSpareCost = !(parseFloat(a.cost_spare) > 0);
+            // ยกเว้น "ของแถมมาตรฐาน" (is_standard) อนุญาตให้ cost_spare = 0 ได้ (บางตัวมาตรฐานแต่ทุนอะไหล่เป็น 0)
+            const noSpareCost = !a.is_standard && !(parseFloat(a.cost_spare) > 0);
             // ปิดเงื่อนไขชั่วคราว (วันปิดยอด): const noSpareCost = false;
 
             // ราคา 0 บาท เลือกได้เฉพาะของแถมมาตรฐาน (is_standard) เท่านั้น
