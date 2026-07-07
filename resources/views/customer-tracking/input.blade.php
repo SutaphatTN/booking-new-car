@@ -278,8 +278,8 @@
                   class="form-select @error('source_id') is-invalid @enderror" required disabled>
                   <option value="">— เลือก —</option>
                   @foreach ($sources as $s)
-                    {{-- ซ่อนแหล่งที่มา id 12,20 จาก sale/lead_sale --}}
-                    @if (in_array(auth()->user()->role, ['sale', 'lead_sale']) && in_array($s->id, [12, 20]))
+                    {{-- ซ่อนแหล่งที่มา id 12,16 จาก sale/lead_sale --}}
+                    @if (in_array(auth()->user()->role, ['sale', 'lead_sale']) && in_array($s->id, [12, 16]))
                       @continue
                     @endif
                     <option value="{{ $s->id }}" data-main="{{ $s->main_source }}"

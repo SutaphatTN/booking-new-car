@@ -384,6 +384,11 @@
           "url": "car-order/view-export-stock",
           "name": "ข้อมูลรับรถเข้า Stock",
           "slug": "car-order.view-export-stock"
+        },
+        {
+          "url": "purchase-order/view-export-lead-online",
+          "name": "จัดสรร Lead Online",
+          "slug": "purchase-order.view-export-lead-online"
         }
       ]
     }
