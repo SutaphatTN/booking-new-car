@@ -4121,6 +4121,20 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+//view report over budget (รายงานเกินงบ)
+document.addEventListener('DOMContentLoaded', function () {
+  const modalEl = document.querySelector('.viewExportOverBudget');
+  if (!modalEl) return;
+
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+
+  // ปิด modal แล้วกลับหน้าก่อนหน้า
+  modalEl.addEventListener('hidden.bs.modal', function () {
+    window.history.back();
+  });
+});
+
 // Brand 1 — auto-fill bank transfer details when bank radio is selected
 const TRANSFER_BANK_INFO = {
   kasikorn: { bank: 'กสิกร', branch: 'โลตัส กระบี่', no: '5892179370' },

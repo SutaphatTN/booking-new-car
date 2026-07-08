@@ -35,6 +35,14 @@ class SaleCommissionExport implements WithMultipleSheets
       $this->toDate
     );
 
+    // ชีทคอมกั๊กรายคัน (DRAFT) — เฉพาะ brand 1
+    if ((int) ($this->user->brand ?: 1) === 1 && !in_array($this->user->role, ['sale', 'lead_sale'])) {
+      $sheets[] = new HeldCommissionSheet(
+        $this->user,
+        $this->fromDate
+      );
+    }
+
     return $sheets;
   }
 }

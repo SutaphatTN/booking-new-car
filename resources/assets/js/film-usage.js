@@ -5,8 +5,13 @@ $.ajaxSetup({
 // ── DataTable (list page) ──────────────────────────────────
 if ($('.filmUsageTable').length) {
   $(document).ready(function () {
-    $('.filmUsageTable').DataTable({
-      ajax: '/film-usage/list',
+    const table = $('.filmUsageTable').DataTable({
+      ajax: {
+        url: '/film-usage/list',
+        data: function (d) {
+          d.month = $('#filmUsageMonth').val();
+        }
+      },
       columns: [
         { data: 'No' },
         { data: 'type', className: 'text-center', orderable: false },
@@ -34,6 +39,25 @@ if ($('.filmUsageTable').length) {
         search: 'ค้นหา:',
         paginate: { next: 'ถัดไป', previous: 'ก่อนหน้า' }
       }
+    });
+
+    // คุม loader overlay เอง (ทั้งตอนโหลดครั้งแรกและตอนเปลี่ยนเดือน)
+    table.on('preXhr.dt', function () {
+      $('#filmUsageLoadingOverlay').css('display', 'flex');
+    });
+    table.on('xhr.dt', function () {
+      $('#filmUsageLoadingOverlay').css('display', 'none');
+    });
+
+    // เปลี่ยนเดือน → โหลดข้อมูลใหม่ตามวันที่สั่งงาน
+    $('#filmUsageMonth').on('change', function () {
+      table.ajax.reload();
+    });
+
+    // ปุ่มรายงาน → ดาวน์โหลด Excel ประวัติการใช้งานตามเดือนที่เลือก
+    $('#btnFilmUsageReport').on('click', function () {
+      const month = $('#filmUsageMonth').val();
+      window.location.href = '/film-usage/report-export?month=' + encodeURIComponent(month || '');
     });
   });
 

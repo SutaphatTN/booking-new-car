@@ -389,6 +389,11 @@
           "url": "purchase-order/view-export-lead-online",
           "name": "จัดสรร Lead Online",
           "slug": "purchase-order.view-export-lead-online"
+        },
+        {
+          "url": "purchase-order/view-export-over-budget",
+          "name": "รายงานเกินงบ",
+          "slug": "purchase-order.view-export-over-budget"
         }
       ]
     }

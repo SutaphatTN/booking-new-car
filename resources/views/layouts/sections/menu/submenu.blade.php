@@ -61,6 +61,11 @@
         @continue
       @endif
 
+      {{-- เมนู "รายงานเกินงบ" เห็นเฉพาะ role admin, md, account, gm, manager, audit --}}
+      @if ($submenu->slug == 'purchase-order.view-export-over-budget' && !in_array($userRole, ['admin', 'md', 'account', 'gm', 'manager', 'audit', 'audit_lead']))
+        @continue
+      @endif
+
       {{-- เมนู "รายงาน GP" ปิดจาก role manager --}}
       @if ($submenu->slug == 'report.gp-export' && $userRole === 'manager')
         @continue

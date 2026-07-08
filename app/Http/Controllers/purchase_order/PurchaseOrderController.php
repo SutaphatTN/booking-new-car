@@ -8,6 +8,7 @@ use App\Exports\commission\SaleCommissionExport;
 use App\Exports\gp\GPExport;
 use App\Exports\insurance\InsuranceExport;
 use App\Exports\lead_online\LeadOnlineAllocationExport;
+use App\Exports\over_budget\OverBudgetExport;
 use App\Exports\gwm\GwmExport;
 use App\Exports\saleCar\estimated\EstimatedExport;
 use App\Exports\saleCar\estimated\SaleCarEstimatedExport;
@@ -2684,8 +2685,6 @@ class PurchaseOrderController extends Controller
         // คอม SSI (brand 1, เฉพาะเดือน 3/10) — คิดจากยอดส่งมอบย้อนหลัง 6 เดือน
         $ssi = SsiCommissionQuery::forPeriod($year, $month);
         $ssiPerSale = $ssi['perSale'];
-        // คอมกั๊ก (brand 1) — รถส่งมอบหลังวันที่ 10 กั๊กคันละ 2,000 ยกไปจ่ายคืนเดือนถัดไป
-        $heldCommission = HeldCommissionQuery::forMonth($year, $month)['perSale'];
 
         // จำกัดสิทธิ์การมองเห็นให้ตรงกับ base query (sale/lead_sale)
         if (in_array($user->role, ['sale', 'lead_sale'])) {
@@ -2693,18 +2692,13 @@ class PurchaseOrderController extends Controller
                 ? array_merge([$user->id], [9, 10, 11])
                 : [$user->id];
             $ssiPerSale = $ssiPerSale->only($visibleSaleIds);
-            $heldCommission = $heldCommission->only($visibleSaleIds);
         }
 
         $saleCar = $saleCar->keyBy('SaleID');
 
-        // เฉพาะ viewer brand 1: เพิ่มเซลล์ที่ได้เงินจริงแต่ไม่มีรถส่งมอบในเดือนที่เลือก
-        //   - คอม SSI (amount > 0)  · คอมกั๊กยกมาจากเดือนก่อน (carried > 0)
-        // SSI/คอมกั๊กเป็นของ brand 1 เท่านั้น — gate ด้วย brand ผู้เปิด กันชื่อ brand 1 รั่วไป view brand อื่น
+        // เฉพาะ viewer brand 1: เพิ่มเซลล์ที่ได้ SSI แต่ไม่มีรถส่งมอบในเดือนที่เลือก (SSI เป็นของ brand 1)
         if ((int) $user->brand === 1) {
-            $ssiEarners  = $ssiPerSale->filter(fn($v) => ($v['amount'] ?? 0) > 0);
-            $heldEarners = $heldCommission->filter(fn($v) => ($v['carried'] ?? 0) > 0);
-            $missingIds  = $ssiEarners->keys()->merge($heldEarners->keys())->unique()->diff($saleCar->keys());
+            $missingIds = $ssiPerSale->filter(fn($v) => ($v['amount'] ?? 0) > 0)->keys()->diff($saleCar->keys());
             if ($missingIds->isNotEmpty()) {
                 $extraUsers = User::with('branchInfo')->whereIn('id', $missingIds)->get()->keyBy('id');
                 foreach ($missingIds as $sid) {
@@ -2728,19 +2722,19 @@ class PurchaseOrderController extends Controller
             ->get()
             ->keyBy('SaleID');
 
-        // คำนวณยอดสุทธิ (brand-aware + คอม SSI + คอมตัวรถรายคัน + คอมกั๊ก) แล้วค่อยจัดอันดับ (emoji อิงยอดสุทธิ)
-        // SSI/คอมกั๊กเป็นของ brand 1 → คิดเฉพาะตอนดูหน้า brand 1 (brand 3 ใช้เซลล์ร่วมกับ brand 1 จึงต้อง gate ด้วย viewer brand)
+        // ยอดสุทธิ = ยอดที่ได้ "ทั้งเดือน" (base + คอมตัวรถ + SSI) — คอมกั๊กเป็นเรื่องเวลาจ่าย ไม่ลดยอดรวม
+        // SSI เป็นของ brand 1 → คิดเฉพาะตอนดูหน้า brand 1 (brand 3 ใช้เซลล์ร่วมกับ brand 1 จึง gate ด้วย viewer brand)
         $viewerBrand = (int) $user->brand;
-        $saleCar = $saleCar->map(function ($s) use ($adjustments, $ssiPerSale, $carCommission, $heldCommission, $viewerBrand) {
+        $saleCar = $saleCar->map(function ($s) use ($adjustments, $ssiPerSale, $carCommission, $viewerBrand) {
             $adj = $adjustments->get($s->SaleID);
             $brand = (int) ($s->saleUser->brand ?? 0);
             $net = $adj
                 ? $adj->computeNet($s->total_commission, $brand)
                 : $s->total_commission;
-            $net += (float) ($carCommission[$s->SaleID]['amount'] ?? 0);
+            $carEntry = CarCommissionQuery::entry($carCommission, (int) $s->SaleID, $viewerBrand);
+            $net += (float) ($carEntry['amount'] ?? 0);
             if ($viewerBrand === 1) {
                 $net += (float) ($ssiPerSale[$s->SaleID]['amount'] ?? 0);
-                $net += (float) ($heldCommission[$s->SaleID]['net'] ?? 0);
             }
             $s->net_commission = $net;
             return $s;
@@ -2794,6 +2788,7 @@ class PurchaseOrderController extends Controller
     {
         abort_unless(in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md']), 403);
 
+        // ช่องเดือน = เดือน CK (เดือนที่ตัดยอด/ขาย)
         [$year, $month] = $this->resolveCommissionMonth($request->input('month'));
 
         $fromDate = Carbon::create($year, $month, 1)->startOfMonth()->format('Y-m-d');
@@ -2806,8 +2801,16 @@ class PurchaseOrderController extends Controller
             ->get();
 
         $saleUser = User::with('branchInfo')->find($saleId);
+        // brand ที่กำลังดู (brand 3 ใช้เซลล์ร่วมกับ brand 1 → SSI/กั๊กต้องผูกกับหน้าที่ดู ไม่ใช่ brand ของตัวเซลล์)
+        $viewerBrand = (int) Auth::user()->brand;
 
-        $cars = $rows->map(function ($r) {
+        // เรตคอมรายคันของเซลล์นี้ (ใช้คิดค่าคอมรายคัน C ต่อคัน + คอมกั๊ก) — ตาม brand ที่กำลังดู
+        $car = CarCommissionQuery::forMonth($year, $month);
+        $carEntry = CarCommissionQuery::entry($car['perSale'], (int) $saleId, $viewerBrand);
+        $carMode  = $carEntry['mode'] ?? 'volume';
+        $carRate  = (float) ($carEntry['rate'] ?? 0);
+
+        $cars = $rows->map(function ($r) use ($viewerBrand, $carEntry, $carMode, $carRate) {
             $customerName = trim(
                 ($r->customer->prefix->Name_TH ?? '') . ' ' .
                     ($r->customer->FirstName ?? '') . ' ' .
@@ -2826,17 +2829,34 @@ class PurchaseOrderController extends Controller
             $interestCom  = $r->remainingPayment->total_com ?? 0;
             $turnCarCom   = $r->turnCar->com_turn ?? 0;
 
-            // รถส่งมอบหลังวันที่ 10 → เข้าเงื่อนไขคอมกั๊ก (โชว์เฉพาะ brand 1 ในหน้า detail)
-            $deliveryDay = $r->DeliveryInCKDate ? (int) Carbon::parse($r->DeliveryInCKDate)->day : null;
-            $isHeld = $deliveryDay !== null && $deliveryDay > HeldCommissionQuery::CUTOFF_DAY;
+            // ค่าคอมรายคัน C ของคันนี้ (สำหรับคิดคอมกั๊ก brand 1)
+            $C = 0.0;
+            if ($carEntry) {
+                $C = $carMode === 'model'
+                    ? CarCommissionQuery::modelRate((int) $r->brand, $r->model_id !== null ? (int) $r->model_id : null)
+                    : $carRate;
+            }
+
+            // คอมกั๊ก (โมเดลใหม่): DD > รอบหลักของ CK หรือ DD ว่าง → กั๊ก H=min(2000,C) ; โชว์เฉพาะ brand 1
+            $ck = $r->DeliveryInCKDate ? Carbon::parse($r->DeliveryInCKDate) : null;
+            $dd = $r->DeliveryDate ? Carbon::parse($r->DeliveryDate) : null;
+            $p = ($viewerBrand === 1 && $ck)
+                ? HeldCommissionQuery::paymentFor($ck, $dd, $C)
+                : ['held' => false, 'held_amount' => 0.0, 'main_amount' => $C, 'main_payday' => null, 'held_payday' => null];
 
             return [
                 'id'              => $r->id,
                 'customer'        => $customerName ?: '-',
                 'model'           => $r->carOrder->model->Name_TH ?? '-',
                 'subModel'        => $detailModel ? "{$detailModel} - {$sub}" : $sub,
-                'deliveryDate'    => $r->DeliveryInCKDate,
-                'isHeld'          => $isHeld,
+                'ckDate'          => $r->DeliveryInCKDate,
+                'ddDate'          => $r->DeliveryDate,
+                'ddDay'           => $dd ? (int) $dd->day : null,
+                'isHeld'          => $p['held'],
+                'carCommission'   => $C,
+                'heldAmount'      => $p['held_amount'],
+                'heldPayday'      => $p['held_payday']?->format('Y-m-d'),
+                'mainPayDate'     => $p['main_payday']?->format('Y-m-d'),
                 'balanceCampaign' => $balanceCampaign,
                 'accessoryCom'    => $accessoryCom,
                 'specialCom'      => $specialCom,
@@ -2855,8 +2875,6 @@ class PurchaseOrderController extends Controller
         ]);
 
         $brand = (int) ($saleUser->brand ?? 0);
-        // brand ที่กำลังดู (brand 3 ใช้เซลล์ร่วมกับ brand 1 → SSI/กั๊กต้องผูกกับหน้าที่ดู ไม่ใช่ brand ของตัวเซลล์)
-        $viewerBrand = (int) Auth::user()->brand;
 
         // คอม SSI (brand 1, เฉพาะเดือน 3/10) — เฉลี่ยแยกสาขา + เกณฑ์ ≥18 คัน/≥1 ทุกเดือน
         $ssi = SsiCommissionQuery::forPeriod($year, $month);
@@ -2874,9 +2892,7 @@ class PurchaseOrderController extends Controller
             'amount'      => $ssiActive ? (float) ($ssiEntry['amount'] ?? 0) : 0.0,
         ];
 
-        // คอมตัวรถรายคัน (รายเดือน)
-        $car = CarCommissionQuery::forMonth($year, $month);
-        $carEntry = $car['perSale'][$saleId] ?? null;
+        // คอมตัวรถรายคัน (รายเดือน) — ใช้ $carEntry ที่คิดไว้ด้านบน
         $carData = [
             'active'   => $car['active'] && $carEntry !== null,
             'mode'     => $carEntry['mode'] ?? 'volume',
@@ -2886,21 +2902,52 @@ class PurchaseOrderController extends Controller
             'amount'   => (float) ($carEntry['amount'] ?? 0),
         ];
 
-        // คอมกั๊ก (brand 1) — รถส่งมอบหลังวันที่ 10 กั๊กคันละ 2,000 ยกไปจ่ายคืนเดือนถัดไป
-        $heldEntry = HeldCommissionQuery::forMonth($year, $month)['perSale'][$saleId] ?? null;
-        $prevMonth = Carbon::create($year, $month, 1)->subMonthNoOverflow();
-        $heldData = [
-            'active'      => $brand === HeldCommissionQuery::BRAND && $viewerBrand === 1,
-            'held_count'  => $heldEntry['held_count'] ?? 0,
-            'held'        => (float) ($heldEntry['held'] ?? 0),
-            'carry_count' => $heldEntry['carry_count'] ?? 0,
-            'carried'     => (float) ($heldEntry['carried'] ?? 0),
-            'net'         => (float) ($heldEntry['net'] ?? 0),
-            'per_car'     => HeldCommissionQuery::HOLD_PER_CAR,
-            'cutoff_day'  => HeldCommissionQuery::CUTOFF_DAY,
-            'prev_month'  => (int) $prevMonth->month,
-            'prev_year'   => (int) $prevMonth->year,
-        ];
+        // ── ยอดสุทธิ = คอมเต็มของ CK เดือนนี้ (กั๊กเป็นแค่ "เวลาจ่าย" ไม่กระทบยอดรวม) ──
+        $carAmount = (float) $carData['amount'];
+        $nonCarNet = $adjustment->computeNet($baseCommission, (int) $brand) + (float) $ssiData['amount'];
+        $net = $nonCarNet + $carAmount;
+
+        // ── แตกรอบจ่ายเงิน (brand 1) — รอบหลัก 10 ของเดือนถัดจาก CK ; กั๊ก 2000 ยกไป 10 เดือนถัดจากรับรถ ──
+        $rounds = ['active' => false];
+        if ($viewerBrand === 1) {
+            $mainCK  = Carbon::create($year, $month, 1)->addMonthNoOverflow()->day(10);
+            $carMain = 0.0;
+            $gakItems = [];
+            $pendingTotal = 0.0;
+            foreach ($cars as $c) {
+                if ($c['mainPayDate'] === null) {        // DD ว่าง → พักทั้งก้อน
+                    $pendingTotal += (float) $c['carCommission'];
+                    continue;
+                }
+                $carMain += (float) $c['carCommission'] - (float) $c['heldAmount'];
+                if ($c['isHeld'] && $c['heldAmount'] > 0) {
+                    $gakItems[] = [
+                        'customer' => $c['customer'],
+                        'amount'   => (float) $c['heldAmount'],
+                        'date'     => Carbon::parse($c['heldPayday'])->format('d/m/Y'),
+                    ];
+                }
+            }
+            // ยกมา: กั๊กของรถ CK เดือนก่อน ที่มาถึงกำหนดจ่ายในรอบหลักเดือนนี้ (10 ของ M+1)
+            $ymM = Carbon::create($year, $month, 1)->format('Y-m');
+            $carriedIn = HeldCommissionQuery::paymentsInMonth((int) $mainCK->year, (int) $mainCK->month)
+                ->where('SaleID', (int) $saleId)
+                ->where('kind', 'held')
+                ->filter(fn($p) => Carbon::parse($p['ck'])->format('Y-m') < $ymM)
+                ->sum('amount');
+
+            $rounds = [
+                'active'     => true,
+                'main_date'  => $mainCK->format('d/m/Y'),
+                'main_own'   => $nonCarNet + $carMain,   // รอบหลักของเดือนนี้ (base + SSI + คอมรถส่วนหลัก)
+                'carried_in' => (float) $carriedIn,        // + กั๊กยกมาจากเดือนก่อน
+                'gak_items'  => $gakItems,                 // กั๊กของเดือนนี้ที่ยกไป (พร้อมวันจ่าย)
+                'gak_total'  => (float) array_sum(array_column($gakItems, 'amount')),
+                'pending'    => $pendingTotal,
+            ];
+        }
+
+        $months = [1 => 'มกราคม', 2 => 'กุมภาพันธ์', 3 => 'มีนาคม', 4 => 'เมษายน', 5 => 'พฤษภาคม', 6 => 'มิถุนายน', 7 => 'กรกฎาคม', 8 => 'สิงหาคม', 9 => 'กันยายน', 10 => 'ตุลาคม', 11 => 'พฤศจิกายน', 12 => 'ธันวาคม'];
 
         return view('purchase-order.commission.sale-detail', [
             'saleUser'       => $saleUser,
@@ -2910,7 +2957,9 @@ class PurchaseOrderController extends Controller
             'brand'          => $brand,
             'ssi'            => $ssiData,
             'car'            => $carData,
-            'held'           => $heldData,
+            'rounds'         => $rounds,
+            'net'            => $net,
+            'monthLabel'     => ($months[$month] ?? $month) . ' ' . ($year + 543),
             'year'           => $year,
             'month'          => $month,
         ]);
@@ -3173,6 +3222,35 @@ class PurchaseOrderController extends Controller
         }
 
         return Excel::download(new LeadOnlineAllocationExport($fromDate, $brands), 'จัดสรร Lead Online.xlsx');
+    }
+
+    // report เกินงบ (รายงานเกินงบ) — กรองตามเดือนที่ขอเกินงบ (approval_requested_at)
+    //  admin/md/account/gm เห็นทุก brand แยก sheet ; manager/audit เห็น brand ตัวเอง (1 → 1,3)
+    public function viewExportOverBudget()
+    {
+        abort_unless(in_array(Auth::user()->role, ['admin', 'md', 'account', 'gm', 'manager', 'audit', 'audit_lead']), 403);
+
+        return view('purchase-order.report.over-budget.view');
+    }
+
+    public function exportOverBudget(Request $request)
+    {
+        $user = Auth::user();
+        abort_unless(in_array($user->role, ['admin', 'md', 'account', 'gm', 'manager', 'audit', 'audit_lead']), 403);
+
+        $fromDate = $request->from_date ?: now()->format('Y-m');
+
+        // admin/md/account/gm เห็นทุก brand รวมกัน
+        // manager/audit เห็นตาม brand ประจำตัว: 1→[1,3], 2→[2], 3→[3], 4→[4]
+        if (in_array($user->role, ['admin', 'md', 'account', 'gm'])) {
+            $brands = [1, 2, 3, 4];
+        } else {
+            $homeBrand = (int) $user->getOriginal('brand');
+            $scope = [1 => [1, 3], 2 => [2], 3 => [3], 4 => [4]];
+            $brands = $scope[$homeBrand] ?? [$homeBrand];
+        }
+
+        return Excel::download(new OverBudgetExport($fromDate, $brands), 'รายงานเกินงบ.xlsx');
     }
 
     //delivery report

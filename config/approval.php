@@ -10,43 +10,30 @@
 
 return [
 
-
-    // ── brand 1 ──
     1 => [
-        // มีแก้
-        'manager' => ['mitsuchookiat.programmer@gmail.com//'],
-        'gm'      => ['mitsuchookiat.programmer@gmail.com'],                          // brand 1: ไม่มีขั้น gm (manager → md)
-        'md'      => ['mitsuchookiat.programmer@gmail.com'],
+        'manager' => ['Phung.mitsuchookiatkrabi@gmail.com'],
+        'gm'      => ['JirapornK@Chookiat.org'],  // เกินเพดาน (b1_md) → GM (คนเดียวกับ brand 2) อนุมัติจบ, CC ให้ md
+        'md'      => ['ketsudap@chookiat.org'],
         'audit'   => ['daw.mitsuchookiatkrabi@gmail.com'],   // แจ้งเมื่ออนุมัติเสร็จ
     ],
 
     // ── brand 2 ──
     2 => [
-        'manager' => ['mitsuchookiat.programmer@gmail.com'],
-        'gm'      => ['mitsuchookiat.programmer@gmail.com'],      // TODO: ยืนยันว่า gm ของ brand 2 คือใคร
-        'md'      => ['mitsuchookiat.programmer@gmail.com'],      // TODO: ยืนยัน md ของ brand 2
+        'manager' => ['SasithornK@chookiat.org'],
+        'gm'      => ['JirapornK@Chookiat.org'],      // TODO: ยืนยันว่า gm ของ brand 2 คือใคร
+        'md'      => ['danut@chookiat.org'],      // TODO: ยืนยัน md ของ brand 2
         'audit'   => ['admingwm@chookiat.org'],                  // แจ้งเมื่ออนุมัติเสร็จ
     ],
-    // // ── brand 1 ──
-    // 1 => [
-    //     'manager' => ['Phung.mitsuchookiatkrabi@gmail.com'],
-    //     'gm'      => ['JirapornK@Chookiat.org'],  // เกินเพดาน (b1_md) → GM (คนเดียวกับ brand 2) อนุมัติจบ, CC ให้ md
-    //     'md'      => ['ketsudap@chookiat.org'],
-    //     'audit'   => ['daw.mitsuchookiatkrabi@gmail.com'],   // แจ้งเมื่ออนุมัติเสร็จ
-    // ],
-
-    // // ── brand 2 ──
-    // 2 => [
-    //     'manager' => ['SasithornK@chookiat.org'],
-    //     'gm'      => ['JirapornK@Chookiat.org'],      // TODO: ยืนยันว่า gm ของ brand 2 คือใคร
-    //     'md'      => ['danut@chookiat.org'],      // TODO: ยืนยัน md ของ brand 2
-    //     'audit'   => ['admingwm@chookiat.org'],                  // แจ้งเมื่ออนุมัติเสร็จ
-    // ],
 
     // ── brand 3 ── ใช้ชุดเดียวกับ brand 1 (ใส่เลข brand ที่จะชี้ไป)
     3 => 1,
 
-    // ── brand 4 (Lepas) ── กลุ่ม M ใช้ผู้อนุมัติชุดเดียวกับ brand 1
-    4 => 1,
+    // ── brand 4 (Lepas)
+    4 => [
+        'manager' => ['sm.chookiat@gmail.com'],
+        'gm'      => ['JirapornK@Chookiat.org'],
+        'md'      => ['ketsudap@chookiat.org'],
+        'audit'   => ['julalak181831@gmail.com'], 
+    ],
 
 ];

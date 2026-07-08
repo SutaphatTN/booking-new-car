@@ -72,8 +72,7 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
     ];
 
     if ($b === 1) {
-      $cols[] = ['label' => 'คอมกั๊ก (ยกมาเดือนก่อน)', 'key' => 'heldCarried', 'role' => 'recv', 'money' => true];
-      $cols[] = ['label' => 'SSI',                     'key' => 'ssi',         'role' => 'recv', 'money' => true];
+      $cols[] = ['label' => 'SSI', 'key' => 'ssi', 'role' => 'recv', 'money' => true];
     } elseif ($b === 2) {
       $cols[] = ['label' => 'คอมวินัย',  'key' => 'comDiscipline', 'role' => 'recv', 'money' => true];
       $cols[] = ['label' => 'คอม Lead',  'key' => 'comLead',       'role' => 'recv', 'money' => true];
@@ -83,9 +82,6 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
     $cols[] = ['label' => 'รวมค่าคอมรับ', 'key' => '__recv', 'role' => 'sum_recv', 'money' => true];
 
     $cols[] = ['label' => 'หักอื่นๆ (หักเงินเดือน/ สาย)', 'key' => 'deductAbsence', 'role' => 'ded', 'money' => true];
-    if ($b === 1) {
-      $cols[] = ['label' => 'คอมกั๊ก (หักเดือนนี้)', 'key' => 'heldHeld', 'role' => 'ded', 'money' => true];
-    }
 
     $cols[] = ['label' => 'รวมยอดหัก', 'key' => '__ded', 'role' => 'sum_ded', 'money' => true];
     $cols[] = ['label' => 'คอมสุทธิ',  'key' => '__net', 'role' => 'net',     'money' => true];
@@ -149,7 +145,6 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
     $month  = (int) $period->month;
 
     $carCom = CarCommissionQuery::forMonth($year, $month)['perSale'];
-    $held   = HeldCommissionQuery::forMonth($year, $month)['perSale'];
     $ssiPer = SsiCommissionQuery::forPeriod($year, $month)['perSale'];
     $adjust = SaleCommissionMonthly::where('year', $year)->where('month', $month)
       ->get()->keyBy('SaleID');
@@ -157,7 +152,7 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
     // ค่ารายเซลล์/เดือน โชว์ครั้งเดียว (แถวแรกของเซลล์) กัน Total ซ้ำ
     $seen = [];
 
-    $data = $rows->map(function ($r) use ($brand, $carCom, $held, $ssiPer, $adjust, &$seen) {
+    $data = $rows->map(function ($r) use ($brand, $carCom, $ssiPer, $adjust, &$seen) {
 
       $customerName = trim(
         ($r->customer->prefix->Name_TH ?? '') . ' ' .
@@ -170,7 +165,7 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       $detailModel = $r->carOrder->subModel->detail ?? null;
 
       // ค่าคอมรถ (คอมรายคันรถปกติ) รายคัน — นับเฉพาะ Retail + Normal + ไม่ใช่ dealer (ตรงกับ CarCommissionQuery)
-      $entry = $carCom[$saleId] ?? null;
+      $entry = CarCommissionQuery::entry($carCom, $saleId, (int) $r->brand);
       $src = optional($r->carOrder)->purchase_source;
       $isCounted = ((int) $r->type_sale === CarCommissionQuery::SALE_TYPE_NORMAL)
         && ((int) optional($r->carOrder)->purchase_type === CarCommissionQuery::PURCHASE_TYPE_RETAIL)
@@ -178,7 +173,7 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       $carCommission = 0.0;
       if ($entry && $isCounted) {
         $carCommission = ($entry['mode'] ?? 'volume') === 'model'
-          ? CarCommissionQuery::modelRate($brand, $r->model_id !== null ? (int) $r->model_id : null)
+          ? CarCommissionQuery::modelRate((int) $r->brand, $r->model_id !== null ? (int) $r->model_id : null)
           : (float) ($entry['rate'] ?? 0);
       }
 
@@ -202,13 +197,6 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
         'turnCarCom'      => $r->turnCar->com_turn ?? 0,
       ];
 
-      // per-car : คอมกั๊ก (หักเดือนนี้) — brand 1 + ส่งมอบหลังวันที่ 10
-      $day = $r->DeliveryInCKDate ? (int) Carbon::parse($r->DeliveryInCKDate)->day : null;
-      if ($brand === 1) {
-        $row['heldHeld'] = ($day !== null && $day > HeldCommissionQuery::CUTOFF_DAY)
-          ? (float) HeldCommissionQuery::HOLD_PER_CAR : 0.0;
-      }
-
       // per-sale : โชว์แถวแรกของเซลล์ครั้งเดียว
       $first = !isset($seen[$saleId]);
       $seen[$saleId] = true;
@@ -217,8 +205,7 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       $row['deductAbsence'] = $first ? (float) ($adj->deduct_absence ?? 0) : 0.0;
 
       if ($brand === 1) {
-        $row['heldCarried'] = $first ? (float) ($held[$saleId]['carried'] ?? 0) : 0.0;
-        $row['ssi']         = $first ? (float) ($ssiPer[$saleId]['amount'] ?? 0) : 0.0;
+        $row['ssi'] = $first ? (float) ($ssiPer[$saleId]['amount'] ?? 0) : 0.0;
       } elseif ($brand === 2) {
         $row['comDiscipline'] = $first ? (float) ($adj->com_discipline ?? 0) : 0.0;
         $row['comLead']       = $first ? (float) ($adj->com_lead ?? 0) : 0.0;

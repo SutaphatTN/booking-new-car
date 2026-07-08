@@ -13,6 +13,8 @@
 #carOrderLoadingOverlay,
 #gwmLoadingOverlay,
 #vehicleLoadingOverlay,
+#filmUsageLoadingOverlay,
+#placeLoadingOverlay,
 #gpLoadingOverlay {
   display: none;
   position: fixed;

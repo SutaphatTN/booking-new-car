@@ -132,14 +132,23 @@ class SourceController extends Controller
 
     /* ===================== สถานที่ (place) ===================== */
 
-    public function listPlace()
+    public function listPlace(Request $request)
     {
         $statuses = config('source.statuses', []);
+        $state    = $request->input('state', 'active'); // active | settled | all
+        $month    = $request->input('month');           // Y-m (ใช้เฉพาะ settled/all)
 
-        $data = SourcePlace::with('source')
-            // ซ่อนรายการที่เคลียร์เสร็จแล้ว (บัญชีอนุมัติการจ่ายแล้ว)
-            ->whereDoesntHave('clear', fn($q) => $q->where('pay_approved', 1))
-            ->orderBy('id', 'desc')->get()->map(function ($p, $index) use ($statuses) {
+        $data = SourcePlace::with(['source', 'clears'])
+            ->orderBy('id', 'desc')
+            // สถานะ: กำลังใช้งาน = ยังไม่ปิดยอด / ปิดยอดแล้ว = ปิดยอด / ทั้งหมด = ไม่กรอง
+            ->when($state === 'active', fn($q) => $q->whereNull('settled_at'))
+            ->when($state === 'settled', fn($q) => $q->whereNotNull('settled_at'))
+            // กรองเดือน (อิง period ของใบขออนุมัติ) เฉพาะตอนดูปิดยอด/ทั้งหมด — กันข้อมูลย้อนหลังเยอะเกิน
+            ->when($state !== 'active' && $month && preg_match('/^\d{4}-\d{2}$/', $month), function ($q) use ($month) {
+                $q->whereHas('request', fn($r) => $r->where('period', $month));
+            })
+            ->get()
+            ->map(function ($p, $index) use ($statuses) {
             $st = $statuses[$p->status] ?? ['label' => $p->status, 'class' => 'bg-secondary'];
             // เลือกขออนุมัติได้เฉพาะ draft / rejected
             $selectable = in_array($p->status, [SourcePlace::STATUS_DRAFT, SourcePlace::STATUS_REJECTED]);
@@ -156,7 +165,12 @@ class SourceController extends Controller
                 'expense_type' => $p->expense_type ?? '-',
                 'cost'         => $this->costCell($p),
                 'target'       => $p->target !== null ? number_format($p->target, 0) : '-',
-                'status'       => '<span class="badge ' . $st['class'] . '">' . $st['label'] . '</span>',
+                'status'       => '<div class="d-inline-flex flex-column align-items-center gap-1">'
+                    . '<span class="badge rounded-pill ' . $st['class'] . '">' . $st['label'] . '</span>'
+                    . ($p->isSettled()
+                        ? '<span class="badge rounded-pill" style="background:#eef0f2;color:#5a6675;border:1px solid #d9dee3;font-weight:600;" title="บัญชีปิดยอดแล้ว"><i class="bx bx-lock-alt me-1"></i>ปิดยอดแล้ว</span>'
+                        : '')
+                    . '</div>',
                 'Action'       => view('source.place.button', ['p' => $p])->render(),
             ];
         });
@@ -232,6 +246,12 @@ class SourceController extends Controller
     {
         try {
             $place     = SourcePlace::findOrFail($id);
+
+            // ปิดยอดแล้ว = ดูอย่างเดียว ต้องเปิดใหม่ก่อนจึงแก้ได้
+            if ($place->isSettled()) {
+                return response()->json(['success' => false, 'message' => 'ปิดยอดแล้ว — ต้องเปิดใหม่ก่อนจึงแก้ไขได้'], 422);
+            }
+
             $validated = $this->validatePlace($request);
 
             // ขออนุมัติแล้ว (รออนุมัติ/อนุมัติแล้ว) ห้ามแก้ ประมาณค่าใช้จ่าย/เป้า PP — กันแก้ฝั่ง client
@@ -453,7 +473,7 @@ class SourceController extends Controller
         }
 
         // สถานที่ทั้งหมดของเดือนนั้น (อ้างอิงจาก period ของใบขออนุมัติ)
-        $places = SourcePlace::with(['source', 'clear'])
+        $places = SourcePlace::with(['source', 'clears'])
             ->whereHas('request', fn($q) => $q->where('period', $period))
             ->orderBy('salecar_type_id')
             ->orderBy('start_date')
@@ -474,6 +494,19 @@ class SourceController extends Controller
         return $pdf->stream('source-report-' . $period . '.pdf');
     }
 
+    // PDF สรุปการเคลียร์ค่าใช้จ่ายของสถานที่ (แนบรายการทำจ่าย — เห็นที่มาของค่าใช้จ่าย)
+    public function clearPdf($id)
+    {
+        $place = SourcePlace::with(['source', 'request', 'clears.items', 'clears.payApprover', 'settledBy'])
+            ->findOrFail($id);
+
+        $pdf = Pdf::loadView('source.place.clear-pdf', ['place' => $place])
+            ->setPaper('a4', 'portrait')
+            ->setOption(['isRemoteEnabled' => true, 'isHtml5ParserEnabled' => true]);
+
+        return $pdf->stream('clear-' . $place->id . '.pdf');
+    }
+
     /* ===================== เคลียร์ค่าใช้จ่าย ===================== */
 
     private function accountingRoles(): array
@@ -483,7 +516,7 @@ class SourceController extends Controller
 
     public function clearForm($id)
     {
-        $place      = SourcePlace::with(['source', 'clear.items', 'clear.payApprover'])->findOrFail($id);
+        $place      = SourcePlace::with(['source', 'clears.items', 'clears.payApprover', 'settledBy'])->findOrFail($id);
         $clearTypes = config('source.clear_types', []);
         $canAccount = in_array(Auth::user()->role, $this->accountingRoles());
 
@@ -494,6 +527,11 @@ class SourceController extends Controller
     {
         try {
             $place = SourcePlace::findOrFail($id);
+
+            // ปิดยอดแล้ว = ดูอย่างเดียว
+            if ($place->isSettled()) {
+                return response()->json(['success' => false, 'message' => 'ปิดยอดแล้ว — ต้องเปิดใหม่ก่อนจึงแก้ไขได้'], 422);
+            }
 
             // ทำความสะอาดรายการ (ตัด comma, ตัดแถวว่าง)
             $items = collect($request->input('items', []))
@@ -527,22 +565,39 @@ class SourceController extends Controller
 
             $total = $items->sum(fn($it) => (float) $it['amount']);
 
-            // ค่าใช้จ่ายจริงต้องไม่เกินงบประมาณรวม (ประมาณค่าใช้จ่าย + งบเพิ่มที่อนุมัติแล้ว)
+            // ใบเคลียร์ที่กำลังแก้ไข (ถ้ามี clear_id) — ต้องเป็นของสถานที่นี้
+            $editing = null;
+            if ($request->filled('clear_id')) {
+                $editing = SourcePlaceClear::where('place_id', $place->id)->find($request->clear_id);
+                if (!$editing) {
+                    return response()->json(['success' => false, 'message' => 'ไม่พบใบเคลียร์ที่ต้องการแก้ไข'], 422);
+                }
+            }
+
+            // ค่าใช้จ่ายจริงรวมทุกใบต้องไม่เกินงบประมาณ (ประมาณค่าใช้จ่าย + งบเพิ่มที่อนุมัติแล้ว)
+            // งบคงเหลือสำหรับใบนี้ = งบรวม − ยอดใบอื่น (ไม่รวมใบที่กำลังแก้ไข)
             $budget = $place->effectiveBudget();
-            if ($budget !== null && $total > $budget) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ยอดค่าใช้จ่ายจริง (' . number_format($total, 2) . ' บาท) เกินงบประมาณ (' . number_format($budget, 2) . ' บาท)',
-                ], 422);
+            if ($budget !== null) {
+                $otherTotal = SourcePlaceClear::where('place_id', $place->id)
+                    ->when($editing, fn($q) => $q->where('id', '!=', $editing->id))
+                    ->sum('total');
+                if ($total + (float) $otherTotal > $budget + 0.01) {
+                    $remain = $budget - (float) $otherTotal;
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'ยอดใบนี้ (' . number_format($total, 2) . ' บาท) เกินงบคงเหลือ (' . number_format($remain, 2) . ' บาท) — เคลียร์ไปแล้ว ' . number_format((float) $otherTotal, 2) . ' จากงบ ' . number_format($budget, 2),
+                    ], 422);
+                }
             }
 
             $user  = Auth::user();
 
-            DB::transaction(function () use ($place, $request, $items, $total, $user) {
-                $clear = SourcePlaceClear::firstOrNew(['place_id' => $place->id]);
+            DB::transaction(function () use ($place, $request, $items, $total, $user, $editing) {
+                $clear = $editing ?: new SourcePlaceClear(['place_id' => $place->id]);
                 $clear->clear_date = $request->clear_date ?: null;
                 $clear->total      = $total;
                 if (!$clear->exists) {
+                    $clear->place_id   = $place->id;
                     $clear->brand      = $user->brand ?? null;
                     $clear->userZone   = $user->userZone ?? null;
                     $clear->branch     = $user->branch ?? null;
@@ -556,7 +611,7 @@ class SourceController extends Controller
                 }
             });
 
-            return response()->json(['success' => true, 'message' => 'บันทึกการเคลียร์เรียบร้อยแล้ว']);
+            return response()->json(['success' => true, 'message' => $editing ? 'อัปเดตใบเคลียร์เรียบร้อยแล้ว' : 'บันทึกใบเคลียร์เรียบร้อยแล้ว']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
         }
@@ -569,16 +624,24 @@ class SourceController extends Controller
 
         try {
             $place = SourcePlace::findOrFail($id);
-            $clear = SourcePlaceClear::where('place_id', $place->id)->first();
 
-            if (!$clear) {
-                return response()->json(['success' => false, 'message' => 'ยังไม่มีข้อมูลการเคลียร์'], 422);
+            if ($place->isSettled()) {
+                return response()->json(['success' => false, 'message' => 'ปิดยอดแล้ว — ต้องเปิดใหม่ก่อนจึงแก้ไขได้'], 422);
             }
 
             $request->validate(
-                ['pay_date' => 'required|date'],
-                ['pay_date.required' => 'กรุณาระบุวันที่จ่ายก่อนอนุมัติ']
+                ['pay_date' => 'required|date', 'clear_id' => 'required'],
+                [
+                    'pay_date.required' => 'กรุณาระบุวันที่จ่ายก่อนอนุมัติ',
+                    'clear_id.required' => 'ไม่พบใบเคลียร์ที่ต้องการอนุมัติ',
+                ]
             );
+
+            // อนุมัติ "ต่อใบเคลียร์" — ต้องเป็นใบของสถานที่นี้
+            $clear = SourcePlaceClear::where('place_id', $place->id)->find($request->clear_id);
+            if (!$clear) {
+                return response()->json(['success' => false, 'message' => 'ไม่พบใบเคลียร์ที่ต้องการอนุมัติ'], 422);
+            }
 
             $clear->update([
                 'pay_date'        => $request->pay_date ?: null,
@@ -590,6 +653,76 @@ class SourceController extends Controller
             return response()->json(['success' => true, 'message' => 'อนุมัติการจ่ายเรียบร้อยแล้ว']);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['success' => false, 'message' => $e->validator->errors()->first()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
+        }
+    }
+
+    // ลบใบเคลียร์ (งวด) หนึ่งใบ — ลบรายการย่อยด้วย
+    public function destroyClear($id, $clearId)
+    {
+        try {
+            $place = SourcePlace::findOrFail($id);
+
+            if ($place->isSettled()) {
+                return response()->json(['success' => false, 'message' => 'ปิดยอดแล้ว — ต้องเปิดใหม่ก่อนจึงลบได้'], 422);
+            }
+
+            $clear = SourcePlaceClear::where('place_id', $place->id)->find($clearId);
+
+            if (!$clear) {
+                return response()->json(['success' => false, 'message' => 'ไม่พบใบเคลียร์'], 422);
+            }
+
+            // อนุมัติจ่ายแล้ว ลบได้เฉพาะบัญชี/แอดมิน/MD
+            if ($clear->pay_approved && !in_array(Auth::user()->role, $this->accountingRoles())) {
+                return response()->json(['success' => false, 'message' => 'ใบเคลียร์นี้อนุมัติจ่ายแล้ว ไม่สามารถลบได้'], 403);
+            }
+
+            DB::transaction(function () use ($clear) {
+                $clear->items()->delete();
+                $clear->delete();
+            });
+
+            return response()->json(['success' => true, 'message' => 'ลบใบเคลียร์เรียบร้อยแล้ว']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
+        }
+    }
+
+    // ปิดยอด/จบงาน (บัญชี) — ต้องเคลียร์และจ่ายครบทุกงวดก่อน แล้วจึงซ่อนออกจากรายการ
+    public function settlePlace($id)
+    {
+        abort_unless(in_array(Auth::user()->role, $this->accountingRoles()), 403);
+
+        try {
+            $place = SourcePlace::with('clears')->findOrFail($id);
+
+            if (!$place->canSettle()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ต้องมีใบเคลียร์และอนุมัติจ่ายครบทุกงวดก่อนจึงจะปิดยอดได้',
+                ], 422);
+            }
+
+            $place->update(['settled_at' => now(), 'settled_by' => Auth::id()]);
+
+            return response()->json(['success' => true, 'message' => 'ปิดยอดเรียบร้อยแล้ว']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
+        }
+    }
+
+    // เปิดใหม่ (ยกเลิกปิดยอด) — บัญชี + admin
+    public function reopenPlace($id)
+    {
+        abort_unless(in_array(Auth::user()->role, $this->accountingRoles()) || Auth::user()->role === 'admin', 403);
+
+        try {
+            $place = SourcePlace::findOrFail($id);
+            $place->update(['settled_at' => null, 'settled_by' => null]);
+
+            return response()->json(['success' => true, 'message' => 'เปิดรายการใหม่เรียบร้อยแล้ว']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
         }

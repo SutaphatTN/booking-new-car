@@ -131,6 +131,9 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     //lead online allocation report (จัดสรร Lead Online) — admin/gm/md/manager ดึงทุก brand แยก sheet
     Route::get('purchase-order/view-export-lead-online', [PurchaseOrderController::class, 'viewExportLeadOnline'])->name('purchase-order.view-export-lead-online');
     Route::get('/purchase-order/lead-online-export', [PurchaseOrderController::class, 'exportLeadOnline'])->name('purchase-order.lead-online-export');
+    //over budget report (รายงานเกินงบ) — admin/md/account/gm ทุก brand แยก sheet ; manager/audit brand ตัวเอง (1→1,3)
+    Route::get('purchase-order/view-export-over-budget', [PurchaseOrderController::class, 'viewExportOverBudget'])->name('purchase-order.view-export-over-budget');
+    Route::get('/purchase-order/over-budget-export', [PurchaseOrderController::class, 'exportOverBudget'])->name('purchase-order.over-budget-export');
     //delivery report
     Route::get('purchase-order/view-export-monthlyDelivery', [PurchaseOrderController::class, 'viewExportMonthlyDelivery'])->name('purchase-order.view-export-monthlyDelivery');
     Route::get('/purchase-order/monthlyDelivery-export', [PurchaseOrderController::class, 'exportMonthlyDelivery'])->name('purchase-order.monthlyDelivery-export');
@@ -175,9 +178,14 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::put('source/place/update/{id}', [SourceController::class, 'updatePlace'])->name('source.place.update');
     Route::delete('source/place/destroy/{id}', [SourceController::class, 'destroyPlace'])->name('source.place.destroy');
     // เคลียร์ค่าใช้จ่ายของสถานที่ + อนุมัติการจ่าย (บัญชี)
+    Route::get('source/place/{id}/clear/pdf', [SourceController::class, 'clearPdf'])->name('source.place.clear.pdf');
     Route::get('source/place/{id}/clear', [SourceController::class, 'clearForm']);
     Route::post('source/place/{id}/clear', [SourceController::class, 'storeClear'])->name('source.place.clear.store');
     Route::post('source/place/{id}/clear/approve-pay', [SourceController::class, 'approveClearPay'])->name('source.place.clear.approve');
+    Route::delete('source/place/{id}/clear/{clearId}', [SourceController::class, 'destroyClear'])->name('source.place.clear.destroy');
+    // ปิดยอด/จบงาน + เปิดใหม่ (บัญชี)
+    Route::post('source/place/{id}/settle', [SourceController::class, 'settlePlace'])->name('source.place.settle');
+    Route::post('source/place/{id}/reopen', [SourceController::class, 'reopenPlace'])->name('source.place.reopen');
     // ขออนุมัติสถานที่ (batch) — ส่งเมลหา MD
     Route::post('source/request', [SourceController::class, 'storeRequest'])->name('source.request.store');
     // ขออนุมัติเพิ่ม (topup งบประมาณของสถานที่ที่อนุมัติแล้ว)
@@ -432,6 +440,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
 
     // film-usage
     Route::get('film-usage/list', [FilmUsageController::class, 'list']);
+    Route::get('film-usage/report-export', [FilmUsageController::class, 'exportReport'])->name('film-usage.report-export');
     Route::get('film-usage/vin-search', [FilmUsageController::class, 'vinSearch'])->name('film-usage.vinSearch');
     Route::get('film-usage/vin-suggest', [FilmUsageController::class, 'vinSuggest']);
     Route::get('film-usage/price-list-lookup', [FilmUsageController::class, 'priceListLookup']);
