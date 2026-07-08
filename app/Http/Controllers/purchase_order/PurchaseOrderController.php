@@ -53,6 +53,7 @@ use App\Services\OneDriveService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Mail\Mailables\Attachment;
 use App\Mail\SaleApprovedMail;
+use App\Mail\CarDeliveredMail;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -1998,6 +1999,19 @@ class PurchaseOrderController extends Controller
             }
 
             DB::commit();
+
+            // แจ้งอีเมลเมื่อ "ส่งมอบ" (เพิ่งเปลี่ยนเข้าเป็น con_status=5) — ส่งข้อมูลลูกค้า/รถ/VIN ไปให้จบยอดที่ธนาคาร
+            if ($deliveringNow) {
+                try {
+                    $saleCar->load([
+                        'customer.prefix', 'model', 'subModel', 'carOrder',
+                        'saleUser.branchInfo', 'gwmColor', 'interiorColor',
+                    ]);
+                    Mail::to('waliwan.mitsuchookiatkrabi@gmail.com')->send(new CarDeliveredMail($saleCar));
+                } catch (\Throwable $mailEx) {
+                    report($mailEx); // ส่งเมลล้มเหลวไม่ควรทำให้การบันทึกล้มเหลว
+                }
+            }
 
             return response()->json([
                 'success' => true,
