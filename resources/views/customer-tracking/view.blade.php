@@ -77,7 +77,7 @@
             </div>
             @endif
 
-            {{-- แถว 3: รายงานเลยกำหนดติดตามลูกค้า --}}
+            {{-- แถว 3: รายงานเลยกำหนดติดตามลูกค้า (ผจก.) --}}
             @if (Auth::user()->role !== 'sale')
             <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
               <i class="bx bx-file-export text-muted"></i>
@@ -88,6 +88,18 @@
               </button>
             </div>
             @endif
+
+            {{-- แถว 3.1: รายงานเลยกำหนดติดตามลูกค้า (เซลล์) — เห็นทุก role ; sale เห็นเฉพาะของตัวเอง
+                 ** ปิดชั่วคราว (ยังไม่เปิดหน้าบ้าน) — backend/route พร้อมใช้ เปิดได้โดยเอาคอมเมนต์ออก **
+            <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
+              <i class="bx bx-file-export text-muted"></i>
+              <span class="text-muted small">รายงานเลยกำหนดติดตาม (เซลล์) :</span>
+              <input type="month" id="reportOverdueSaleMonth" class="form-control form-control-sm" value="{{ date('Y-m') }}" style="width:155px;">
+              <button type="button" class="btn btn-success btn-sm" id="btnExportOverdueSale">
+                <i class="bx bx-download me-1"></i>Excel
+              </button>
+            </div>
+            --}}
 
             {{-- แถว 4: สถานะ (mobile เท่านั้น) --}}
             <div class="d-flex d-md-none align-items-center gap-2">

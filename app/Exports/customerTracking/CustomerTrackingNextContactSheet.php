@@ -20,7 +20,7 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 
 class CustomerTrackingNextContactSheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
-    public function __construct(protected string $month) {}
+    public function __construct(protected string $month, protected ?int $saleId = null) {}
 
     public function title(): string
     {
@@ -87,6 +87,7 @@ class CustomerTrackingNextContactSheet implements FromView, WithTitle, WithStyle
 
         // tracking ที่ยัง active (ไม่ยกเลิก, ลูกค้ายังไม่มีใบจอง active) ในแบรนด์นี้
         $validTrackingIds = CustomerTracking::where('brand', $user->brand)
+            ->when($this->saleId, fn($q) => $q->where('sale_id', $this->saleId)) // รายงานฝั่งเซลล์ → เฉพาะของตัวเอง
             ->whereNull('cancelled_at')
             ->whereNotIn('customer_id', $bookedCustomerIds)
             ->pluck('id');

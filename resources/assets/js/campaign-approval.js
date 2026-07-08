@@ -202,7 +202,7 @@ $(document).on('click', '#btnOpenApproval', function () {
   );
   $('#approvalEmpty').addClass('d-none');
   $('#approvalSearch').val('');
-  $('#approvalSelectAll').prop('checked', true);
+  $('#approvalSelectAll').prop({ checked: false, indeterminate: false });
   approvalModal.show();
 
   $.get('/campaign/ck-approval/pending-list', { period: period }, function (res) {
@@ -215,17 +215,53 @@ $(document).on('click', '#btnOpenApproval', function () {
     }
 
     const statusClass = { 'ยังไม่ขอ': 'bg-secondary', 'รออนุมัติ': 'bg-warning', 'ส่งกลับแก้ไข': 'bg-danger' };
-    const html = rows.map(r => `
-      <tr class="ap-row" data-search="${(r.model + ' ' + r.name + ' ' + r.type).toLowerCase()}">
-        <td class="text-center">
-          <input type="checkbox" class="form-check-input ap-item" value="${r.id}" data-amount="${r.amount}" checked>
-        </td>
-        <td>${r.model}</td>
-        <td>${r.name}</td>
-        <td class="text-end">${fmtMoney(r.amount)}</td>
-        <td><span class="badge ${statusClass[r.status] || 'bg-secondary'}">${r.status}</span></td>
-      </tr>
-    `).join('');
+
+    // จัดกลุ่มตาม "รุ่นหลัก" (model_id) — ตามลำดับที่ backend ส่งมา (เรียงตามรุ่นหลักแล้ว)
+    const groups = {}, order = [];
+    rows.forEach(r => {
+      const key = r.model_id ?? 0;
+      if (!groups[key]) { groups[key] = []; order.push(key); }
+      groups[key].push(r);
+    });
+
+    let html = '';
+    order.forEach(mid => {
+      const items = groups[mid];
+      const mainName = items[0].model_main || '-';
+      const groupTotal = items.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+
+      // แถวหัวรุ่นหลัก — ติ๊กเพื่อเลือกทุกแคมเปญใต้รุ่นนี้ + ปุ่มย่อ/ขยาย
+      html += `
+        <tr class="ap-group table-light" data-model-id="${mid}">
+          <td class="text-center">
+            <input type="checkbox" class="form-check-input ap-group-chk" data-model-id="${mid}">
+          </td>
+          <td colspan="2">
+            <strong class="ap-group-title" style="cursor:pointer;">${mainName}</strong>
+            <span class="text-muted small">(${items.length} รายการ)</span>
+          </td>
+          <td class="text-end text-muted small">${fmtMoney(groupTotal)}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-link p-0 ap-group-toggle" title="ย่อ/ขยาย">
+              <i class="bx bx-chevron-down"></i>
+            </button>
+          </td>
+        </tr>`;
+
+      // แถวแคมเปญย่อย (รุ่นย่อย)
+      items.forEach(r => {
+        html += `
+          <tr class="ap-row" data-model-id="${mid}" data-search="${(r.model + ' ' + r.name + ' ' + r.type).toLowerCase()}">
+            <td class="text-center">
+              <input type="checkbox" class="form-check-input ap-item" value="${r.id}" data-model-id="${mid}" data-amount="${r.amount}">
+            </td>
+            <td class="ps-4 text-muted">${r.sub || '-'}</td>
+            <td>${r.name}</td>
+            <td class="text-end">${fmtMoney(r.amount)}</td>
+            <td><span class="badge ${statusClass[r.status] || 'bg-secondary'}">${r.status}</span></td>
+          </tr>`;
+      });
+    });
 
     $('#approvalModalBody').html(html);
     updateApprovalTotals();
@@ -234,32 +270,107 @@ $(document).on('click', '#btnOpenApproval', function () {
   });
 });
 
-// ค้นหาในโมดัล (client-side)
-$(document).on('input', '#approvalSearch', function () {
-  const q = $(this).val().toLowerCase().trim();
-  $('#approvalModalBody .ap-row').each(function () {
-    $(this).toggle(!q || $(this).data('search').indexOf(q) !== -1);
+// การ "เลือก" อิงจากแถวที่ตรงคำค้น (ไม่ผูกกับการย่อ) ; การ "แสดง" อิงคำค้น + สถานะย่อ
+function apSearchQ() { return $('#approvalSearch').val().toLowerCase().trim(); }
+function apRowMatches($row, q) { return !q || String($row.data('search')).indexOf(q) !== -1; }
+
+// แถวย่อย (ap-item) ของรุ่นที่ตรงคำค้น — ใช้กับการติ๊กเลือก
+function apGroupItems(mid) {
+  const q = apSearchQ();
+  return $(`#approvalModalBody .ap-row[data-model-id="${mid}"]`)
+    .filter(function () { return apRowMatches($(this), q); })
+    .find('.ap-item');
+}
+function apAllItems() {
+  const q = apSearchQ();
+  return $('#approvalModalBody .ap-row')
+    .filter(function () { return apRowMatches($(this), q); })
+    .find('.ap-item');
+}
+
+// ปรับการแสดงผล: ค้นหา → โชว์ทุก match (มองข้ามการย่อ) ; ไม่ค้นหา → โชว์เฉพาะกลุ่มที่ไม่ย่อ
+function refreshApprovalVisibility() {
+  const q = apSearchQ();
+  $('#approvalModalBody .ap-group').each(function () {
+    const $g = $(this);
+    const mid = $g.data('model-id');
+    const collapsed = $g.hasClass('collapsed');
+    let anyMatch = false;
+    $(`#approvalModalBody .ap-row[data-model-id="${mid}"]`).each(function () {
+      const match = apRowMatches($(this), q);
+      if (match) anyMatch = true;
+      $(this).toggle(match && (q ? true : !collapsed));
+    });
+    $g.toggle(q ? anyMatch : true);
   });
+  syncAllGroupChk();
   syncApprovalSelectAll();
+}
+
+// ค้นหาในโมดัล (client-side)
+$(document).on('input', '#approvalSearch', refreshApprovalVisibility);
+
+// ── ปุ่มย่อ/ขยาย รายรุ่นหลัก (ปุ่มลูกศร หรือคลิกชื่อรุ่น) ──
+$(document).on('click', '.ap-group-toggle, .ap-group-title', function () {
+  const $g = $(this).closest('.ap-group');
+  $g.toggleClass('collapsed');
+  const collapsed = $g.hasClass('collapsed');
+  $g.find('.ap-group-toggle i').attr('class', collapsed ? 'bx bx-chevron-right' : 'bx bx-chevron-down');
+  refreshApprovalVisibility();
 });
 
-// เลือกทั้งหมด (เฉพาะแถวที่มองเห็นจากการค้นหา)
+// ── ย่อ/ขยายทั้งหมด ──
+$(document).on('click', '#approvalToggleAll', function () {
+  const collapseAll = $(this).data('collapsed') !== true;
+  $('#approvalModalBody .ap-group').toggleClass('collapsed', collapseAll);
+  $('#approvalModalBody .ap-group-toggle i').attr('class', collapseAll ? 'bx bx-chevron-right' : 'bx bx-chevron-down');
+  $(this).data('collapsed', collapseAll)
+    .html(collapseAll ? '<i class="bx bx-expand-vertical me-1"></i>ขยายทั้งหมด' : '<i class="bx bx-collapse-vertical me-1"></i>ย่อทั้งหมด');
+  refreshApprovalVisibility();
+});
+
+// เลือกทั้งหมด (ทุกแถวที่ตรงคำค้น)
 $(document).on('change', '#approvalSelectAll', function () {
-  const checked = $(this).is(':checked');
-  $('#approvalModalBody .ap-row:visible').find('.ap-item').prop('checked', checked);
+  apAllItems().prop('checked', $(this).is(':checked'));
+  syncAllGroupChk();
+  updateApprovalTotals();
+});
+
+// ── ติ๊กหัว "รุ่นหลัก" → เลือก/ยกเลิกทุกแคมเปญใต้รุ่นนั้น (ที่ตรงคำค้น แม้ย่ออยู่) ──
+$(document).on('change', '.ap-group-chk', function () {
+  const mid = $(this).data('model-id');
+  apGroupItems(mid).prop('checked', $(this).is(':checked'));
+  $(this).prop('indeterminate', false);
+  syncApprovalSelectAll();
   updateApprovalTotals();
 });
 
 $(document).on('change', '.ap-item', function () {
+  syncGroupChk($(this).data('model-id'));
   syncApprovalSelectAll();
   updateApprovalTotals();
 });
 
+// ซิงก์สถานะติ๊กหัวรุ่นจากแถวย่อยที่ตรงคำค้น (ไม่ขึ้นกับการย่อ)
+function syncGroupChk(mid) {
+  const $items = apGroupItems(mid);
+  const total = $items.length;
+  const checked = $items.filter(':checked').length;
+  $(`.ap-group-chk[data-model-id="${mid}"]`)
+    .prop({ indeterminate: checked > 0 && checked < total, checked: total > 0 && checked === total });
+}
+
+function syncAllGroupChk() {
+  $('#approvalModalBody .ap-group-chk').each(function () {
+    syncGroupChk($(this).data('model-id'));
+  });
+}
+
 function syncApprovalSelectAll() {
-  const $visible = $('#approvalModalBody .ap-row:visible').find('.ap-item');
-  const total = $visible.length;
-  const checked = $visible.filter(':checked').length;
-  $('#approvalSelectAll').prop('checked', total > 0 && checked === total);
+  const $items = apAllItems();
+  const total = $items.length;
+  const checked = $items.filter(':checked').length;
+  $('#approvalSelectAll').prop({ indeterminate: checked > 0 && checked < total, checked: total > 0 && checked === total });
 }
 
 function updateApprovalTotals() {
