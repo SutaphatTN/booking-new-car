@@ -14,7 +14,7 @@
 
     $sumCost   = $places->sum(fn($p) => (float) ($p->cost ?? 0) + (float) ($p->extra_cost ?? 0));
     $sumExtra  = $places->sum(fn($p) => (float) ($p->extra_cost ?? 0));
-    $sumActual = $places->sum(fn($p) => optional($p->clear)->total ?? 0);
+    $sumActual = $places->sum(fn($p) => $p->clears->sum('total'));
     $sumTarget = $places->sum('target');
     $sumPp     = $places->sum('pp_actual');
 @endphp
@@ -72,7 +72,7 @@
                             <br><span style="font-size:9px; color:#0a7a3d;">(งบเพิ่ม +{{ number_format($p->extra_cost, 2) }})</span>
                         @endif
                     </td>
-                    <td class="num">{{ optional($p->clear)->total !== null ? number_format($p->clear->total, 2) : '-' }}</td>
+                    <td class="num">{{ $p->clears->count() ? number_format($p->clears->sum('total'), 2) : '-' }}</td>
                     <td class="num">{{ $p->target !== null ? number_format($p->target, 0) : '' }}</td>
                     <td class="num">{{ number_format($p->pp_actual, 0) }}</td>
                 </tr>

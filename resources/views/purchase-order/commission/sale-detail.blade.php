@@ -1,26 +1,7 @@
 @php
-  $months = [
-      1 => 'มกราคม',
-      2 => 'กุมภาพันธ์',
-      3 => 'มีนาคม',
-      4 => 'เมษายน',
-      5 => 'พฤษภาคม',
-      6 => 'มิถุนายน',
-      7 => 'กรกฎาคม',
-      8 => 'สิงหาคม',
-      9 => 'กันยายน',
-      10 => 'ตุลาคม',
-      11 => 'พฤศจิกายน',
-      12 => 'ธันวาคม',
-  ];
-  $monthLabel = ($months[$month] ?? $month) . ' ' . ($year + 543);
-
   $isBrand13 = in_array((int) $brand, [1, 3], true);
   $ssiAmount = $ssi['active'] ? (float) $ssi['amount'] : 0.0;
-  $carAmount = $car['active'] ? (float) $car['amount'] : 0.0;
-  $heldNet   = ($held['active'] ?? false) ? (float) $held['net'] : 0.0; // (ยกมาจากเดือนก่อน) − (กั๊กเดือนนี้)
-  $net = $adjustment->computeNet($baseCommission, (int) $brand) + $ssiAmount + $carAmount + $heldNet;
-  $prevMonthLabel = ($held['active'] ?? false) ? (($months[$held['prev_month']] ?? $held['prev_month']) . ' ' . ($held['prev_year'] + 543)) : '';
+  // $net = คอมพื้นฐาน(CK เดือน P−1) + SSI + ค่าคอมรถจ่ายจริงเดือน P (คิดมาจาก controller)
 @endphp
 
 <div class="modal fade commissionDetail" tabindex="-1" role="dialog" data-bs-backdrop="static">
@@ -71,19 +52,10 @@
                   <td class="text-center text-muted">{{ $i + 1 }}</td>
                   <td>
                     {{ $c['customer'] }}
-                    @if (!empty($c['deliveryDate']))
-                      <div class="text-muted" style="font-size:.75rem;">
-                        <i class="bx bx-calendar-check"></i> ส่งมอบ {{ \Illuminate\Support\Carbon::parse($c['deliveryDate'])->format('d-m-Y') }}
-                      </div>
-                    @endif
-                    @if (($held['active'] ?? false) && $c['isHeld'])
-                      <div>
-                        <span class="badge bg-warning text-dark" style="font-size:.68rem;"
-                          title="ส่งมอบ {{ $c['deliveryDate'] }} (หลังวันที่ {{ $held['cutoff_day'] }}) — กั๊ก {{ number_format($held['per_car'], 0) }} ยกไปจ่ายเดือนหน้า">
-                          <i class="bx bx-time-five"></i> กั๊ก {{ number_format($held['per_car'], 0) }}
-                        </span>
-                      </div>
-                    @endif
+                    <div class="text-muted" style="font-size:.72rem; line-height:1.4;">
+                      <div><i class="bx bx-calendar-check"></i> CK : {{ !empty($c['ckDate']) ? \Illuminate\Support\Carbon::parse($c['ckDate'])->format('d-m-Y') : '-' }}</div>
+                      <div><i class="bx bx-car"></i> DD : {{ !empty($c['ddDate']) ? \Illuminate\Support\Carbon::parse($c['ddDate'])->format('d-m-Y') : '— ยังไม่รับรถ' }}</div>
+                    </div>
                   </td>
                   <td>
                     {{ $c['model'] }}
@@ -212,7 +184,7 @@
             </div>
           @endif
 
-          {{-- ── คอมตัวรถรายคัน (รายเดือน) — คิดสด รวมเข้ายอดสุทธิ ── --}}
+          {{-- ── คอมตัวรถรายคัน (รายเดือน) — รวมเข้ายอดสุทธิ ── --}}
           @if ($car['active'])
             <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3">
               <div class="small">
@@ -228,33 +200,39 @@
                   </span>
                 @endif
               </div>
-              <div class="fw-bold text-info">= {{ number_format($carAmount, 2) }} ฿</div>
+              <div class="fw-bold text-info">= {{ number_format($car['amount'], 2) }} ฿</div>
             </div>
           @endif
 
-          {{-- ── คอมกั๊ก (brand 1) — รถส่งมอบหลังวันที่ 10 กั๊กคันละ 2,000 ยกไปจ่ายเดือนถัดไป ── --}}
-          @if ($held['active'] ?? false)
-            <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3">
-              <div class="small">
-                <i class="bx bx-time-five me-1"></i>
-                <strong>คอมกั๊ก (ส่งมอบหลังวันที่ {{ $held['cutoff_day'] }})</strong>
-                <div class="mt-1">
-                  <span class="text-danger">
-                    หักเดือนนี้ : {{ $held['held_count'] }} คัน × {{ number_format($held['per_car'], 0) }}
-                    = −{{ number_format($held['held'], 2) }} ฿
-                  </span>
-                  <span class="mx-1">·</span>
-                  <span class="text-success">
-                    ยกมาจาก {{ $prevMonthLabel }} : {{ $held['carry_count'] }} คัน
-                    = +{{ number_format($held['carried'], 2) }} ฿
-                  </span>
-                </div>
-                <div class="text-muted" style="font-size:.75rem;">
-                  * ยอดที่กั๊กเดือนนี้ ({{ number_format($held['held'], 2) }} ฿) จะไปจ่ายคืนในเดือนถัดไป
-                </div>
+          {{-- ── แตกรอบจ่ายเงิน (brand 1) — รอบหลัก + กั๊กที่ยกไป ── --}}
+          @if ($rounds['active'] ?? false)
+            <div class="alert alert-warning mt-3 mb-0 py-2 px-3">
+              <div class="fw-bold small mb-1">
+                <i class="bx bx-calendar-check me-1"></i> รอบจ่ายเงิน
               </div>
-              <div class="fw-bold {{ $heldNet >= 0 ? 'text-success' : 'text-danger' }}">
-                = {{ $heldNet >= 0 ? '+' : '' }}{{ number_format($heldNet, 2) }} ฿
+              <div class="small">
+                <div class="d-flex justify-content-between">
+                  <span><i class="bx bx-money text-success"></i> รอบหลัก {{ $rounds['main_date'] }} (คอมพื้นฐาน + SSI + ค่าคอมรถส่วนหลัก)</span>
+                  <span class="fw-bold text-success">{{ number_format($rounds['main_own'], 2) }} ฿</span>
+                </div>
+                @if ($rounds['carried_in'] > 0)
+                  <div class="d-flex justify-content-between text-success">
+                    <span class="ps-3"><i class="bx bx-log-in"></i> + กั๊กยกมาจากเดือนก่อน (จ่ายรอบนี้ด้วย)</span>
+                    <span>{{ number_format($rounds['carried_in'], 2) }} ฿</span>
+                  </div>
+                @endif
+                @foreach ($rounds['gak_items'] as $g)
+                  <div class="d-flex justify-content-between text-warning">
+                    <span class="ps-3"><i class="bx bx-time-five"></i> กั๊ก 2,000 — {{ $g['customer'] }} → ยกไปจ่าย {{ $g['date'] }}</span>
+                    <span class="fw-bold">{{ number_format($g['amount'], 2) }} ฿</span>
+                  </div>
+                @endforeach
+                @if ($rounds['pending'] > 0)
+                  <div class="d-flex justify-content-between text-danger">
+                    <span class="ps-3"><i class="bx bx-pause-circle"></i> พักไว้ (ยังไม่รับรถ DD ว่าง)</span>
+                    <span class="fw-bold">{{ number_format($rounds['pending'], 2) }} ฿</span>
+                  </div>
+                @endif
               </div>
             </div>
           @endif
@@ -262,10 +240,10 @@
           {{-- ── สรุปยอดสุทธิ ── --}}
           <div class="d-flex align-items-center justify-content-end gap-3 mt-4 flex-wrap">
             <div class="text-end">
-              <div class="text-muted small">ยอดค่าคอมสุทธิ (รวมรายการเพิ่มเติม{{ $ssi['active'] ? ' + SSI' : '' }}{{ $car['active'] ? ' + คอมตัวรถ' : '' }}{{ ($held['active'] ?? false) ? ' + คอมกั๊ก' : '' }})</div>
+              <div class="text-muted small">ยอดค่าคอมสุทธิ (คอมทั้งเดือน{{ $ssi['active'] ? ' + SSI' : '' }} + ค่าคอมรถ) — กั๊กเป็นเรื่องเวลาจ่าย</div>
               <div class="fs-4 fw-bold text-success" id="netCommissionDisplay"
                 data-base="{{ $baseCommission }}" data-brand="{{ (int) $brand }}"
-                data-ssi="{{ $ssiAmount }}" data-car="{{ $carAmount }}" data-held="{{ $heldNet }}">
+                data-ssi="{{ $ssiAmount }}" data-car="{{ (float) $car['amount'] }}" data-held="0">
                 {{ number_format($net, 2) }} ฿
               </div>
             </div>

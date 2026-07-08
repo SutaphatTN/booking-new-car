@@ -16,24 +16,39 @@
       </div>
 
       <div class="modal-body mf-body">
+        @php $isSettled = $place->isSettled(); @endphp
+
+        @if ($isSettled)
+          <div class="alert alert-secondary d-flex align-items-center py-2 mb-3">
+            <i class="bx bx-lock-alt me-2 fs-5"></i>
+            <div><strong>ปิดยอดแล้ว — ดูข้อมูลได้อย่างเดียว</strong>
+              <div class="small text-muted">หากต้องแก้ไข ให้ "เปิดใหม่" ที่หน้าเคลียร์ค่าใช้จ่ายก่อน</div>
+            </div>
+          </div>
+        @endif
+
         <form action="{{ route('source.place.update', $place->id) }}" method="POST">
           @csrf
           @method('PUT')
-          @include('source.place._fields', ['place' => $place, 'offlineSources' => $offlineSources])
+          <fieldset {{ $isSettled ? 'disabled' : '' }}>
+            @include('source.place._fields', ['place' => $place, 'offlineSources' => $offlineSources])
+          </fieldset>
 
           <div class="d-flex justify-content-end gap-2 pt-1">
             <button type="button" class="btn btn-danger px-4" data-bs-dismiss="modal">
-              <i class="bx bx-x me-1"></i>ยกเลิก
+              <i class="bx bx-x me-1"></i>{{ $isSettled ? 'ปิด' : 'ยกเลิก' }}
             </button>
-            @if ($place->status === \App\Models\SourcePlace::STATUS_APPROVED)
-              <button type="button" class="btn btn-warning px-4 btnOpenTopup" data-id="{{ $place->id }}"
-                {{ $place->pending_extra !== null ? 'disabled' : '' }}>
-                <i class="bx bx-plus-circle me-1"></i>{{ $place->pending_extra !== null ? 'รออนุมัติงบเพิ่ม' : 'ขออนุมัติเพิ่ม' }}
+            @unless ($isSettled)
+              @if ($place->status === \App\Models\SourcePlace::STATUS_APPROVED)
+                <button type="button" class="btn btn-warning px-4 btnOpenTopup" data-id="{{ $place->id }}"
+                  {{ $place->pending_extra !== null ? 'disabled' : '' }}>
+                  <i class="bx bx-plus-circle me-1"></i>{{ $place->pending_extra !== null ? 'รออนุมัติงบเพิ่ม' : 'ขออนุมัติเพิ่ม' }}
+                </button>
+              @endif
+              <button type="button" class="btn btn-primary px-5 btnUpdatePlace">
+                <i class="bx bx-save me-1"></i>บันทึก
               </button>
-            @endif
-            <button type="button" class="btn btn-primary px-5 btnUpdatePlace">
-              <i class="bx bx-save me-1"></i>บันทึก
-            </button>
+            @endunless
           </div>
 
         </form>

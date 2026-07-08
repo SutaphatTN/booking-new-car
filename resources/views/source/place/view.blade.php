@@ -10,6 +10,13 @@
 <div class="editPlaceModal"></div>
 <div class="clearPlaceModal"></div>
 
+<div id="placeLoadingOverlay">
+  <div class="ct-loading-box">
+    <div class="spinner-border text-primary" role="status" style="width:1.4rem;height:1.4rem;"></div>
+    <span>กำลังโหลด...</span>
+  </div>
+</div>
+
 <div class="row">
   <div class="col-12">
     <div class="card tbl-card">
@@ -37,6 +44,13 @@
             </button>
           </div>
           <div class="d-flex align-items-center gap-2">
+            <select id="placeStateFilter" class="form-select form-select-sm" style="width:140px;" title="กรองตามสถานะ">
+              <option value="active" selected>กำลังใช้งาน</option>
+              <option value="settled">ปิดยอดแล้ว</option>
+              <option value="all">ทั้งหมด</option>
+            </select>
+            <input type="month" id="placeFilterMonth" class="form-control form-control-sm d-none" style="width:150px;"
+              title="เดือนที่ขออนุมัติ (period)" value="{{ now()->format('Y-m') }}">
             <button class="btn btn-success btn-sm btnRequestApproval">
               <i class="bx bx-mail-send me-1"></i> ขออนุมัติที่เลือก
             </button>

@@ -45,6 +45,22 @@ class FilmUsage extends Model
         return $this->hasMany(FilmUsageItem::class, 'film_usage_id');
     }
 
+    /**
+     * ป้ายกำกับ "รุ่นรถ" สำหรับแสดงในตาราง/รายงาน
+     *  - BP: ยี่ห้อ + รุ่น + ปี (กรอกเอง)
+     *  - ทั่วไป: ชื่อรุ่นจากระบบ
+     *  - ถ้าไม่มีรุ่น (มักเป็นงานของอีก brand ที่ใช้ stock ฟิล์มร่วมกัน) → แสดงชื่อ brand แทน
+     *    กัน user งงว่าเป็นของ brand ไหน (เช่น Wuling / Lepas)
+     */
+    public function carLabel(): string
+    {
+        $txt = $this->type === 'bp'
+            ? trim(implode(' ', array_filter([$this->car_brand, $this->car_model, $this->car_year])))
+            : ($this->model?->Name_TH ?? '');
+
+        return $txt !== '' ? $txt : (config("brand.names.{$this->brand}") ?? '-');
+    }
+
     public function model()
     {
         return $this->belongsTo(TbCarmodel::class, 'model_id');

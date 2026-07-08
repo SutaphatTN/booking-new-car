@@ -14,9 +14,11 @@ use App\Models\FilmUsageItem;
 use App\Models\Salecar;
 use App\Models\TbCarmodel;
 use App\Models\User;
+use App\Exports\film_usage\FilmUsageReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class FilmUsageController extends Controller
 {
@@ -25,9 +27,18 @@ class FilmUsageController extends Controller
         return view('stock-film.usage.view');
     }
 
-    public function list()
+    public function list(Request $request)
     {
-        $records = FilmUsage::with(['model', 'filmBrand', 'items'])->get();
+        // กรองตามเดือนของ "วันที่สั่งงาน" (order_date) — default เดือนปัจจุบัน กันข้อมูลเยอะเกินไป
+        $month = $request->input('month') ?: now()->format('Y-m');
+        [$year, $mon] = array_pad(explode('-', $month), 2, null);
+
+        $records = FilmUsage::with(['model', 'filmBrand', 'items'])
+            ->when($year && $mon, function ($q) use ($year, $mon) {
+                $q->whereYear('order_date', (int) $year)
+                    ->whereMonth('order_date', (int) $mon);
+            })
+            ->get();
 
         $data = $records->map(function ($r, $index) {
             $typeBadge = $r->type === 'bp'
@@ -37,12 +48,8 @@ class FilmUsageController extends Controller
             $totalSqft  = $r->items->sum('sqft_used');
             $totalPrice = $r->items->sum('price');
 
-            // BP ใช้ ยี่ห้อ+รุ่น+ปี (กรอกเอง), ทั่วไปใช้รุ่นรถจากระบบ
-            if ($r->type === 'bp') {
-                $modelText = trim(implode(' ', array_filter([$r->car_brand, $r->car_model, $r->car_year]))) ?: '-';
-            } else {
-                $modelText = $r->model?->Name_TH ?? '-';
-            }
+            // รุ่นรถ — ถ้าไม่มีรุ่น (งานของอีก brand ที่ใช้ stock ร่วมกัน) จะ fallback เป็นชื่อ brand
+            $modelText = $r->carLabel();
 
             return [
                 'No'          => $index + 1,
@@ -60,6 +67,14 @@ class FilmUsageController extends Controller
         });
 
         return response()->json(['data' => $data]);
+    }
+
+    // รายงานประวัติการใช้ฟิล์ม (Excel) — กรองตามเดือนของวันที่สั่งงาน (default เดือนปัจจุบัน)
+    public function exportReport(Request $request)
+    {
+        $month = $request->input('month') ?: now()->format('Y-m');
+
+        return Excel::download(new FilmUsageReport($month), "ประวัติการใช้ฟิล์ม-{$month}.xlsx");
     }
 
     public function create()

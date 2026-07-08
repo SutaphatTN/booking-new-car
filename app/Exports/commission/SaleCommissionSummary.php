@@ -3,11 +3,9 @@
 namespace App\Exports\commission;
 
 use App\Services\SaleCommissionQuery;
-use App\Services\HeldCommissionQuery;
 use App\Services\CarCommissionQuery;
 use App\Services\SsiCommissionQuery;
 use App\Models\SaleCommissionMonthly;
-use App\Models\User;
 use App\Exports\commission\Concerns\BuildsCommissionReport;
 use Illuminate\Support\Carbon;
 use Illuminate\Contracts\View\View;
@@ -63,11 +61,9 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
         $b = $this->brand();
 
         $cols = [
-            ['label' => 'สาขา',            'key' => 'branch',    'role' => 'info'],
-            ['label' => 'ชื่อฝ่ายขาย',      'key' => 'saleName',  'role' => 'info'],
-            ['label' => 'รวมจำนวนคัน',      'key' => 'totalCars', 'role' => 'info', 'num' => true],
-            ['label' => 'ขายปกติ',          'key' => 'retail',    'role' => 'info', 'num' => true],
-            ['label' => 'ขายรถ Test Drive', 'key' => 'testDrive', 'role' => 'info', 'num' => true],
+            ['label' => 'สาขา',       'key' => 'branch',    'role' => 'info'],
+            ['label' => 'ชื่อฝ่ายขาย', 'key' => 'saleName',  'role' => 'info'],
+            ['label' => 'จำนวนคัน',   'key' => 'totalCars', 'role' => 'info', 'num' => true],
 
             ['label' => 'คอมรายคันรถปกติ',  'key' => 'carCommission',   'role' => 'recv', 'money' => true],
             ['label' => 'ยอดแบ่งงบเหลือ',   'key' => 'balanceCampaign', 'role' => 'recv', 'money' => true],
@@ -78,8 +74,7 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
         ];
 
         if ($b === 1) {
-            $cols[] = ['label' => 'คอมกั๊ก (ยกมาเดือนก่อน)', 'key' => 'heldCarried', 'role' => 'recv', 'money' => true];
-            $cols[] = ['label' => 'SSI',                     'key' => 'ssi',         'role' => 'recv', 'money' => true];
+            $cols[] = ['label' => 'SSI', 'key' => 'ssi', 'role' => 'recv', 'money' => true];
         } elseif ($b === 2) {
             $cols[] = ['label' => 'คอมวินัย',  'key' => 'comDiscipline', 'role' => 'recv', 'money' => true];
             $cols[] = ['label' => 'คอม Lead',  'key' => 'comLead',       'role' => 'recv', 'money' => true];
@@ -89,9 +84,6 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
         $cols[] = ['label' => 'รวมค่าคอมรับ', 'key' => '__recv', 'role' => 'sum_recv', 'money' => true];
 
         $cols[] = ['label' => 'หักอื่นๆ (หักเงินเดือน/ สาย)', 'key' => 'deductAbsence', 'role' => 'ded', 'money' => true];
-        if ($b === 1) {
-            $cols[] = ['label' => 'คอมกั๊ก (หักเดือนนี้)', 'key' => 'heldHeld', 'role' => 'ded', 'money' => true];
-        }
 
         $cols[] = ['label' => 'รวมยอดหัก', 'key' => '__ded', 'role' => 'sum_ded', 'money' => true];
         $cols[] = ['label' => 'คอมสุทธิ',  'key' => '__net', 'role' => 'net',     'money' => true];
@@ -154,16 +146,16 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
         $month  = (int) $period->month;
 
         $carCom = CarCommissionQuery::forMonth($year, $month)['perSale'];
-        $held   = HeldCommissionQuery::forMonth($year, $month)['perSale'];
         $ssiPer = SsiCommissionQuery::forPeriod($year, $month)['perSale'];
         $adjust = SaleCommissionMonthly::where('year', $year)->where('month', $month)
             ->get()->keyBy('SaleID');
 
-        $data = $sales->map(function ($rows, $saleId) use ($brand, $carCom, $held, $ssiPer, $adjust) {
+        $data = $sales->map(function ($rows, $saleId) use ($brand, $carCom, $ssiPer, $adjust) {
 
             $saleUser = $rows->first()->saleUser;
             $adj = $adjust->get($saleId);
 
+            // ยอดสุทธิ = ยอดที่ได้ทั้งเดือน (คอมกั๊กเป็นเรื่องเวลาจ่าย ดูละเอียดในชีท "คอมกั๊ก (รายคัน)")
             $row = [
                 'branch'    => $saleUser->branchInfo->name ?? '-',
                 'saleName'  => optional($saleUser)->name ?? '-',
@@ -171,7 +163,7 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
                 'retail'    => $rows->where('carOrder.purchase_type', 2)->count(),
                 'testDrive' => $rows->where('carOrder.purchase_type', 1)->count(),
 
-                'carCommission'   => (float) ($carCom[$saleId]['amount'] ?? 0),
+                'carCommission'   => (float) (CarCommissionQuery::entry($carCom, (int) $saleId, $brand)['amount'] ?? 0),
                 'balanceCampaign' => $rows->sum(fn($r) => $r->effectiveBalanceCommission()),
                 'accessoryCom'    => $rows->sum(fn($r) => $r->effectiveAccessoryCommission()),
                 'specialCom'      => $rows->sum(fn($r) => $r->effectiveSpecialCommission()),
@@ -182,9 +174,7 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
             ];
 
             if ($brand === 1) {
-                $row['heldCarried'] = (float) ($held[$saleId]['carried'] ?? 0);
-                $row['heldHeld']    = (float) ($held[$saleId]['held'] ?? 0);
-                $row['ssi']         = (float) ($ssiPer[$saleId]['amount'] ?? 0);
+                $row['ssi'] = (float) ($ssiPer[$saleId]['amount'] ?? 0);
             } elseif ($brand === 2) {
                 $row['comDiscipline'] = (float) ($adj->com_discipline ?? 0);
                 $row['comLead']       = (float) ($adj->com_lead ?? 0);
@@ -193,33 +183,6 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
 
             return $row;
         });
-
-        // brand 1 : เซลล์ที่มีคอมกั๊กยกมาจากเดือนก่อน แต่เดือนนี้ไม่มีรถส่งมอบ → เพิ่มเข้ารายงาน
-        if ($brand === 1) {
-            $carryOnlyIds = $held->filter(fn($h) => ($h['carried'] ?? 0) > 0)->keys()->diff($data->keys());
-            if ($carryOnlyIds->isNotEmpty()) {
-                $extra = User::with('branchInfo')->whereIn('id', $carryOnlyIds)
-                    ->where('brand', 1)->get()->keyBy('id');
-                foreach ($carryOnlyIds as $sid) {
-                    $u = $extra->get($sid);
-                    if (!$u) {
-                        continue;
-                    }
-                    $adj = $adjust->get($sid);
-                    $data->put($sid, [
-                        'branch' => $u->branchInfo->name ?? '-',
-                        'saleName' => $u->name ?? '-',
-                        'totalCars' => 0, 'retail' => 0, 'testDrive' => 0,
-                        'carCommission' => 0, 'balanceCampaign' => 0, 'accessoryCom' => 0,
-                        'specialCom' => 0, 'interestCom' => 0, 'turnCarCom' => 0,
-                        'deductAbsence' => (float) ($adj->deduct_absence ?? 0),
-                        'heldCarried' => (float) ($held[$sid]['carried'] ?? 0),
-                        'heldHeld' => (float) ($held[$sid]['held'] ?? 0),
-                        'ssi' => 0,
-                    ]);
-                }
-            }
-        }
 
         $payload = $this->buildReport($this->columns(), $data->values());
 

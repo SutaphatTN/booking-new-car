@@ -54,6 +54,13 @@ class CarCommissionQuery
         return (float) (config("car_commission.model_rates.$brand.$modelId", 0));
     }
 
+    /** ดึง entry คอมตัวรถของ (SaleID + brand) จาก perSale (nested) — null ถ้าไม่มี */
+    public static function entry($perSale, int $saleId, int $brand): ?array
+    {
+        $sale = $perSale[$saleId] ?? null;
+        return $sale ? ($sale[$brand] ?? null) : null;
+    }
+
     /**
      * @return array{
      *   active:bool,
@@ -108,35 +115,39 @@ class CarCommissionQuery
             return $target !== null && $target > 0 && $cnt >= $target * $mult;
         });
 
+        // แยกคอมตาม (SaleID + brand) — เซลล์ที่ขายหลาย brand (เช่น brand 3 ใช้ทีมขายร่วมกับ brand 1)
+        // จะได้คอมของแต่ละ brand แยกกัน ไม่ปนกัน → perSale[SaleID][brand]
         $perSale = $cars->groupBy('SaleID')->map(function (Collection $g) use ($achievedByBrand) {
-            $brand = (int) $g->first()->brand;
-            $count = $g->count();
+            return $g->groupBy('brand')->map(function (Collection $bg) use ($achievedByBrand) {
+                $brand = (int) $bg->first()->brand;
+                $count = $bg->count();
 
-            // brand ที่ไม่มีเป้า (เช่น brand 3) → คิดเรตตามรุ่นหลัก รวมทุกคัน
-            if (self::isModelBased($brand)) {
-                $amount = (float) $g->sum(fn($c) => self::modelRate($brand, $c->model_id !== null ? (int) $c->model_id : null));
+                // brand ที่ไม่มีเป้า (เช่น brand 3) → คิดเรตตามรุ่นหลัก รวมทุกคัน
+                if (self::isModelBased($brand)) {
+                    $amount = (float) $bg->sum(fn($c) => self::modelRate($brand, $c->model_id !== null ? (int) $c->model_id : null));
+                    return [
+                        'brand'    => $brand,
+                        'mode'     => 'model',
+                        'count'    => $count,
+                        'achieved' => null,
+                        'rate'     => null,
+                        'amount'   => $amount,
+                    ];
+                }
+
+                // brand ที่มีเป้า (1/2) → เรตตามจำนวนคัน × บรรลุเป้า
+                $achieved = (bool) ($achievedByBrand[$brand] ?? false);
+                $rate     = self::rate($brand, $count, $achieved);
+
                 return [
                     'brand'    => $brand,
-                    'mode'     => 'model',
+                    'mode'     => 'volume',
                     'count'    => $count,
-                    'achieved' => null,
-                    'rate'     => null,
-                    'amount'   => $amount,
+                    'achieved' => $achieved,
+                    'rate'     => $rate,
+                    'amount'   => $rate * $count,
                 ];
-            }
-
-            // brand ที่มีเป้า (1/2) → เรตตามจำนวนคัน × บรรลุเป้า
-            $achieved = (bool) ($achievedByBrand[$brand] ?? false);
-            $rate     = self::rate($brand, $count, $achieved);
-
-            return [
-                'brand'    => $brand,
-                'mode'     => 'volume',
-                'count'    => $count,
-                'achieved' => $achieved,
-                'rate'     => $rate,
-                'amount'   => $rate * $count,
-            ];
+            });
         });
 
         return [

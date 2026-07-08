@@ -294,6 +294,22 @@ class Salecar extends Model
 		return $this->belongsTo(CarOrder::class, 'CarOrderID', 'id');
 	}
 
+	/**
+	 * รถที่นับเป็น "ยอดขาย" (คิดคอม) — ตรงกับเงื่อนไข CarCommissionQuery
+	 *  - type_sale Normal (=1)
+	 *  - purchase_type Retail (=2)  → ตัด TestDrive / ActivityCar / Company
+	 *  - purchase_source ไม่ใช่ OTHDealer → ตัดรถ dealer
+	 */
+	public function scopeSalesQualifying($query)
+	{
+		return $query
+			->where($this->getTable() . '.type_sale', 1)
+			->whereHas('carOrder', fn($c) => $c->withoutGlobalScopes()
+				->where('purchase_type', 2)
+				->where(fn($q) => $q->where('purchase_source', '!=', 'OTHDealer')
+					->orWhereNull('purchase_source')));
+	}
+
 	public function carOrderHistories()
 	{
 		return $this->hasOne(CarOrderHistory::class, 'SaleID')->latest();

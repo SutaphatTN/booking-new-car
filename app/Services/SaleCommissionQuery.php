@@ -29,6 +29,7 @@ class SaleCommissionQuery
         ])
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
+            ->salesQualifying() // นับเฉพาะยอดขายจริง (Retail + Normal + ไม่ใช่ dealer) — ตัด TestDrive/dealer ออกจากคอม
             ->whereBetween('DeliveryInCKDate', [
                 $fromDate,
                 $toDate
