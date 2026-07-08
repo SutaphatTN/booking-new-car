@@ -20,7 +20,7 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 
 class CustomerTrackingOverdueExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
-    public function __construct(protected string $month) {}
+    public function __construct(protected string $month, protected ?int $saleId = null) {}
 
     public function title(): string
     {
@@ -86,6 +86,7 @@ class CustomerTrackingOverdueExport implements FromView, WithTitle, WithStyles, 
             ->pluck('CusID');
 
         $trackingIds = CustomerTracking::where('brand', $user->brand)
+            ->when($this->saleId, fn($q) => $q->where('sale_id', $this->saleId)) // รายงานฝั่งเซลล์ → เฉพาะของตัวเอง
             ->whereYear('created_at', $year)
             ->whereMonth('created_at', $month)
             ->whereNull('cancelled_at')

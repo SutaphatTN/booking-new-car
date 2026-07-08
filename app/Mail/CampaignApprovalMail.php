@@ -40,7 +40,7 @@ class CampaignApprovalMail extends Mailable
             'approvals' => $this->approvals,
             'period'    => $this->period,
             'brandName' => $this->brandName,
-        ])->setPaper('A4', 'portrait');
+        ])->setPaper('A4', 'landscape');
 
         return [
             Attachment::fromData(fn() => $pdf->output(), 'ck-approval-' . $this->period . '.pdf')

@@ -112,8 +112,9 @@ class CampaignApprovalController extends Controller
         $data = $cams
             ->filter(function ($c) {
                 $ap = $c->approvals->first();
-                // ตัดตัวที่อนุมัติแล้วออก เหลือเฉพาะที่ยังต้องขอ (ยังไม่ขอ / รออนุมัติ / ไม่อนุมัติ)
-                return !($ap && $ap->status === 'approved');
+                // เหลือเฉพาะที่ยัง "ต้องขอ" = ยังไม่ขอ หรือ ส่งกลับแก้ไข
+                // ตัด approved (อนุมัติแล้ว) และ pending (รออนุมัติ — กันขอซ้ำทับ token เดิม) ออก
+                return !$ap || !in_array($ap->status, ['approved', 'pending'], true);
             })
             ->map(function ($c) {
                 $ap = $c->approvals->first();
@@ -123,14 +124,19 @@ class CampaignApprovalController extends Controller
                 }
 
                 return [
-                    'id'     => $c->id,
-                    'model'  => trim(($c->model->Name_TH ?? '') . ' / ' . ($c->subModel?->name ?? '-')),
-                    'name'   => $c->appellation?->name ?? '-',
-                    'type'   => $c->type?->name ?? '-',
-                    'amount' => (float) ($c->cashSupport_final ?? 0),
-                    'status' => $statusText,
+                    'id'         => $c->id,
+                    'model_id'   => $c->model->id ?? 0,
+                    'model_main' => $c->model->Name_TH ?? '-',           // รุ่นหลัก (ใช้จัดกลุ่ม/เลือกทั้งรุ่น)
+                    'sub'        => $c->subModel?->name ?? '-',           // รุ่นย่อย
+                    'model'      => trim(($c->model->Name_TH ?? '') . ' / ' . ($c->subModel?->name ?? '-')),
+                    'name'       => $c->appellation?->name ?? '-',
+                    'type'       => $c->type?->name ?? '-',
+                    'amount'     => (float) ($c->cashSupport_final ?? 0),
+                    'status'     => $statusText,
                 ];
             })
+            // จัดเรียงตามรุ่นหลัก เพื่อให้จัดกลุ่มในโมดัลได้ต่อเนื่อง
+            ->sortBy('model_main')
             ->values();
 
         return response()->json(['period' => $period, 'data' => $data]);
@@ -185,6 +191,7 @@ class CampaignApprovalController extends Controller
 
             $created         = collect();
             $skippedApproved = 0;
+            $skippedPending  = 0;
             $skippedNotCk    = 0;
 
             foreach ($campaigns as $campaign) {
@@ -194,12 +201,18 @@ class CampaignApprovalController extends Controller
                     continue;
                 }
 
-                // ข้ามตัวที่อนุมัติแล้วในเดือนนั้น (กันรีเซ็ตของที่ใช้งานอยู่)
+                // ข้ามตัวที่อนุมัติแล้ว / รออนุมัติอยู่ ในเดือนนั้น
+                //  - approved: กันรีเซ็ตของที่ใช้งานอยู่
+                //  - pending : กันขอซ้ำทับ token เดิม (ลิงก์อนุมัติในเมลรอบก่อนจะใช้ไม่ได้)
                 $existing = CampaignApproval::where('campaign_id', $campaign->id)
                     ->where('period_ym', $period)
                     ->first();
                 if ($existing && $existing->status === 'approved') {
                     $skippedApproved++;
+                    continue;
+                }
+                if ($existing && $existing->status === 'pending') {
+                    $skippedPending++;
                     continue;
                 }
 
@@ -226,8 +239,8 @@ class CampaignApprovalController extends Controller
             if ($created->isEmpty()) {
                 return response()->json([
                     'success' => false,
-                    'message' => $skippedApproved > 0
-                        ? 'แคมเปญที่เลือกได้รับอนุมัติสำหรับเดือนนี้แล้วทั้งหมด'
+                    'message' => ($skippedApproved > 0 || $skippedPending > 0)
+                        ? 'แคมเปญที่เลือกถูกขอ/อนุมัติสำหรับเดือนนี้แล้วทั้งหมด'
                         : 'ไม่มีแคมเปญ CK ที่ต้องขออนุมัติ',
                 ], 422);
             }
@@ -236,8 +249,11 @@ class CampaignApprovalController extends Controller
             $this->sendBatchMail($period, $token, $brand);
 
             $msg = 'ส่งคำขออนุมัติ ' . $created->count() . ' รายการ ไปยัง MD เรียบร้อยแล้ว (เดือน ' . $period . ')';
-            if ($skippedApproved > 0) {
-                $msg .= " — ข้าม {$skippedApproved} รายการที่อนุมัติแล้ว";
+            $skips = [];
+            if ($skippedApproved > 0) $skips[] = "{$skippedApproved} รายการที่อนุมัติแล้ว";
+            if ($skippedPending > 0)  $skips[] = "{$skippedPending} รายการที่รออนุมัติอยู่";
+            if ($skips) {
+                $msg .= ' — ข้าม ' . implode(' · ', $skips);
             }
 
             return response()->json(['success' => true, 'message' => $msg, 'period' => $period]);

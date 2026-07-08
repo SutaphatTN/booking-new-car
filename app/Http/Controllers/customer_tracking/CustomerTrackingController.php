@@ -823,6 +823,17 @@ class CustomerTrackingController extends Controller
         return Excel::download(new CustomerTrackingOverdueReport($month), $filename);
     }
 
+    // รายงานเลยกำหนดติดตาม (เซลล์) — เห็นได้ทุก role ; role = sale เห็นเฉพาะของตัวเอง (คนอื่นเห็นทั้งหมด)
+    public function exportOverdueSaleReport(Request $request)
+    {
+        $user     = Auth::user();
+        $month    = $request->month ?? now()->format('Y-m');
+        $saleId   = $user->role === 'sale' ? $user->id : null;
+        $filename = 'รายงานเลยกำหนดติดตามลูกค้า(เซลล์)_' . $month . '.xlsx';
+
+        return Excel::download(new CustomerTrackingOverdueReport($month, $saleId), $filename);
+    }
+
     public function saveTestDrive(Request $request, $id)
     {
         $tracking = CustomerTracking::findOrFail($id);

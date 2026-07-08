@@ -110,9 +110,12 @@
             <input type="text" id="approvalSearch" class="form-control" placeholder="ค้นหา รุ่น / ชื่อ / ประเภท...">
           </div>
           <div class="form-check ms-2 m-0">
-            <input class="form-check-input" type="checkbox" id="approvalSelectAll" checked>
+            <input class="form-check-input" type="checkbox" id="approvalSelectAll">
             <label class="form-check-label" for="approvalSelectAll">เลือกทั้งหมด</label>
           </div>
+          <button type="button" class="btn btn-sm btn-light ms-auto" id="approvalToggleAll" data-collapsed="false">
+            <i class="bx bx-collapse-vertical me-1"></i>ย่อทั้งหมด
+          </button>
         </div>
 
         <div class="table-responsive" style="max-height:52vh;">
