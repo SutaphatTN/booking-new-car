@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\CampaignApproval;
 use App\Mail\CampaignApprovalMail;
 use App\Mail\CampaignRevisionMail;
+use App\Support\ScopeBypass;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -269,6 +270,9 @@ class CampaignApprovalController extends Controller
     // ── หน้าอนุมัติจากลิงก์ในเมล (ไม่ต้อง login — ใช้ token) — แสดงทั้งชุด ──
     public function emailApprove($token)
     {
+        // เปิดผ่านลิงก์ในเมล — ผู้กดอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
+        ScopeBypass::$brand = true;
+
         $approvals = CampaignApproval::withoutGlobalScopes()
             ->with(['campaign.model', 'campaign.subModel', 'campaign.appellation', 'campaign.type'])
             ->where('approval_token', $token)
@@ -298,6 +302,8 @@ class CampaignApprovalController extends Controller
     // MD กดอนุมัติทั้งชุด
     public function approve($token)
     {
+        ScopeBypass::$brand = true; // ผู้อนุมัติอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
+
         $approvals = CampaignApproval::withoutGlobalScopes()
             ->with(['campaign.model', 'campaign.appellation', 'campaign.type'])
             ->where('approval_token', $token)
@@ -321,6 +327,8 @@ class CampaignApprovalController extends Controller
     // MD ส่งกลับให้ผู้ขอแก้ไข (พร้อมเหตุผล) → แจ้งผู้ขอทางอีเมล
     public function reject(Request $request, $token)
     {
+        ScopeBypass::$brand = true; // ผู้อนุมัติอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
+
         $approvals = CampaignApproval::withoutGlobalScopes()
             ->with(['campaign.model', 'campaign.subModel', 'campaign.appellation', 'campaign.type', 'requester'])
             ->where('approval_token', $token)

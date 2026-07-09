@@ -50,6 +50,7 @@ use App\Services\SsiCommissionQuery;
 use App\Services\CarCommissionQuery;
 use App\Services\HeldCommissionQuery;
 use App\Services\OneDriveService;
+use App\Support\ScopeBypass;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Mail\Mailables\Attachment;
 use App\Mail\SaleApprovedMail;
@@ -445,6 +446,9 @@ class PurchaseOrderController extends Controller
     // เปิดลิงก์อนุมัติจากเมล (ไม่ต้อง login — ใช้ token) — แสดงหน้าตามเคส/ขั้นปัจจุบัน
     public function emailApprove($token)
     {
+        // เปิดผ่านลิงก์ในเมล — ผู้กดอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
+        ScopeBypass::$brand = true;
+
         $saleCar = Salecar::withoutGlobalScopes()
             ->with(['model', 'saleUser', 'customer'])
             ->where('approval_token', $token)
@@ -493,6 +497,8 @@ class PurchaseOrderController extends Controller
     // ผู้จัดการกดอนุมัติ — normal/b1_manager: กดยืนยัน | b1_md: กรอกหัก → ส่งต่อ gm
     public function managerApprove(Request $request, $token)
     {
+        ScopeBypass::$brand = true; // ผู้อนุมัติอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
+
         $saleCar = Salecar::withoutGlobalScopes()->where('approval_token', $token)->firstOrFail();
         $case = $this->approvalCase($saleCar);
         $today = now();
@@ -535,6 +541,8 @@ class PurchaseOrderController extends Controller
     // brand 2: gm เลือก หักเงิน(จบที่ gm) หรือ ส่งต่อ md
     public function gmDecide(Request $request, $token)
     {
+        ScopeBypass::$brand = true; // ผู้อนุมัติอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
+
         $saleCar = Salecar::withoutGlobalScopes()->where('approval_token', $token)->firstOrFail();
         if ($this->approvalCase($saleCar) !== 'b2_gm') {
             abort(400);
@@ -574,6 +582,8 @@ class PurchaseOrderController extends Controller
     // ขั้นสุดท้าย (b1_md → GM | b2_gm → MD) — อนุมัติ (ใช้ยอดเดิม/กรอกใหม่) หรือ ตีกลับให้ผู้จัดการกรอกใหม่
     public function finalApprove(Request $request, $token)
     {
+        ScopeBypass::$brand = true; // ผู้อนุมัติอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
+
         $saleCar = Salecar::withoutGlobalScopes()->where('approval_token', $token)->firstOrFail();
 
         // อนุมัติจบแล้ว → แสดงผลเดิม
@@ -2103,6 +2113,9 @@ class PurchaseOrderController extends Controller
     // ดูรายละเอียด (PDF สรุปการขาย) จากลิงก์ในเมล — ไม่ต้อง login, unscoped (เปิดข้าม brand ได้), read-only
     public function emailSummary($token)
     {
+        // เปิดผ่านลิงก์ในเมล — ผู้กดอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
+        ScopeBypass::$brand = true;
+
         $saleCar = Salecar::withoutGlobalScopes()
             ->with(['customer.prefix', 'model', 'carOrder', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'reservationPayment', 'remainingPayment.financeInfo', 'deliveryPayment', 'turnCar', 'provinces'])
             ->where('approval_token', $token)

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Http\Middleware\NotSale;
+use App\Http\Middleware\RoleGate;
+use App\Http\Middleware\UserManage;
 use App\Http\Middleware\BrandSwitcher;
 use App\Http\Middleware\BranchSwitcher;
 
@@ -19,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
   ->withMiddleware(function (Middleware $middleware) {
     $middleware->alias([
       'notsale' => NotSale::class,
+      'usermanage' => UserManage::class,
+      'role' => RoleGate::class,
     ]);
     $middleware->appendToGroup('web', BrandSwitcher::class);
     $middleware->appendToGroup('web', BranchSwitcher::class);

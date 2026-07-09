@@ -3,12 +3,15 @@
 namespace App\Models\Traits;
 
 use Illuminate\Support\Facades\Auth;
+use App\Support\ScopeBypass;
 
 trait BrandScope
 {
     protected static function bootBrandScope()
     {
         static::addGlobalScope('brandAccess', function ($query) {
+            // flow อนุมัติผ่าน token (คนละ brand ได้) สั่งปิด scope ชั่วคราว
+            if (ScopeBypass::$brand) return;
             if (!Auth::check()) return;
 
             $user = Auth::user();
