@@ -87,11 +87,14 @@
                 <i class="icon-base bx bx-id-card icon-md me-3"></i><span>ลงทะเบียน</span>
               </a>
             </li>
-            <li>
-              <a class="dropdown-item" href="{{ route('user.index') }}">
-                <i class="icon-base bx bx-group icon-md me-3"></i><span>รายชื่อผู้ใช้งาน</span>
-              </a>
-            </li>
+            {{-- รายชื่อผู้ใช้งาน — เฉพาะ admin + audit_lead (audit_lead ดูได้อย่างเดียว) --}}
+            @if (in_array(Auth::user()->role, ['admin', 'audit_lead'], true))
+              <li>
+                <a class="dropdown-item" href="{{ route('user.index') }}">
+                  <i class="icon-base bx bx-group icon-md me-3"></i><span>รายชื่อผู้ใช้งาน</span>
+                </a>
+              </li>
+            @endif
 
             <!-- <li>
                           <a class="dropdown-item" href="javascript:void(0);">

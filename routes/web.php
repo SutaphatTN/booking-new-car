@@ -51,7 +51,10 @@ Route::post('/login', [LoginController::class, 'store'])
 Route::post('/logout', [LoginController::class, 'logout'])
     ->name('logout');
 
-Route::resource('register', RegisterController::class);
+// ลงทะเบียน (สร้าง user) — ต้อง login และเป็น role ที่มีสิทธิ์เท่านั้น
+Route::middleware(['auth', 'role:audit,audit_lead,gm,admin,manager'])->group(function () {
+    Route::resource('register', RegisterController::class)->only(['index', 'store']);
+});
 Route::resource('forgot', ForgotController::class);
 
 // อนุมัติสถานที่ผ่านลิงก์ในเมล (ไม่ต้อง login — ใช้ token เป็นความลับ)
@@ -218,9 +221,19 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::put('campaign/update-appellation/{id}', [CampaignController::class, 'updateAppellation'])->name('campaign.updateAppellation');
     Route::delete('campaign/destroy-appellation/{id}', [CampaignController::class, 'destroyAppellation'])->name('campaign.destroyAppellation');
 
-    // user
-    Route::get('user/list', [UserController::class, 'listUser']);
-    Route::get('user/{id}/view-more', [UserController::class, 'viewMore'])->name('user.viewMore');
+    // user (จัดการผู้ใช้งาน)
+    //  - อ่าน (admin + audit_lead)
+    Route::middleware('usermanage:read')->group(function () {
+        Route::get('user', [UserController::class, 'index'])->name('user.index');
+        Route::get('user/list', [UserController::class, 'listUser']);
+        Route::get('user/{id}/view-more', [UserController::class, 'viewMore'])->name('user.viewMore');
+    });
+    //  - แก้ไข/ลบ (admin เท่านั้น — audit_lead ดูได้อย่างเดียว)
+    Route::middleware('usermanage:write')->group(function () {
+        Route::get('user/{id}/edit', [UserController::class, 'edit'])->name('user.edit');
+        Route::put('user/{id}', [UserController::class, 'update'])->name('user.update');
+        Route::delete('user/{id}', [UserController::class, 'destroy'])->name('user.destroy');
+    });
 
     //finance
     Route::get('finance/list', [FinanceController::class, 'listFinance']);
@@ -333,7 +346,6 @@ Route::middleware(['auth', 'notsale'])->group(function () {
 
     Route::resource('accessory', AccessoryController::class);
     Route::resource('campaign', CampaignController::class);
-    Route::resource('user', UserController::class);
     Route::resource('finance', FinanceController::class);
     Route::resource('car-order', CarOrderController::class);
     Route::resource('vehicle', VehicleController::class);
