@@ -53,7 +53,7 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
       'ประเภทเกินงบ',
       'ยอดเกินงบ (เต็มจำนวน)',
       'งบเพดาน (over_budget)',
-      'ยอดหักคอม (ผู้จัดการกรอก)',
+      $this->brand == 2 ? 'ยอดหักคอม (ผู้จัดการกรอก)' : 'ค่าคอมฝ่ายขายที่ได้ (ผู้จัดการกรอก)',
       'เหตุผลขอเกินงบ',
       'สถานะอนุมัติ',
       'หมายเหตุ MD',
@@ -172,7 +172,7 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
           return;
         }
 
-        // คอลัมน์เงิน H (ยอดเกินงบ), I (งบเพดาน), J (ยอดหักคอม)
+        // คอลัมน์เงิน H (ยอดเกินงบ), I (งบเพดาน), J (ค่าคอมฝ่ายขายที่ได้)
         foreach (['H', 'I', 'J'] as $col) {
           $sheet->getStyle("{$col}2:{$col}{$highestRow}")->getNumberFormat()->setFormatCode('#,##0.00');
         }

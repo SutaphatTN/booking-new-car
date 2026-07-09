@@ -49,6 +49,7 @@ use App\Services\SaleCommissionQuery;
 use App\Services\SsiCommissionQuery;
 use App\Services\CarCommissionQuery;
 use App\Services\HeldCommissionQuery;
+use App\Services\ExtraBudgetLedger;
 use App\Services\OneDriveService;
 use App\Support\ScopeBypass;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -196,22 +197,16 @@ class PurchaseOrderController extends Controller
             'model',
         ]);
 
-        $brand = $saleCar->brand ?? Auth::user()->brand;
-
-        // campaign_type ที่นับเป็น ri ตาม brand (brand1/3: 1-8,14-22 | brand2: 26)
-        $campaignIds = $brand == 2
-            ? [26]
-            : array_merge(range(1, 8), range(14, 22));
-
         // 1. ราคาขาย จาก price_sub
         $priceSub = (float) ($saleCar->price_sub ?? 0);
 
         // 3. margin = ราคาขาย × 2%
         $margin = $priceSub * 0.02;
 
-        // 2. ri (cashSupport) จากแคมเปญที่ใช้ กรองตาม campaign_type + รายละเอียด
+        // 2. ri (cashSupport) จากแคมเปญที่ใช้ — นับเฉพาะ type = 1 (RI) และ type = 2 (On-Top)
+        //    เช็คตาม type ของแคมเปญที่ใช้จริง (tb_campaign_type แยก brand อยู่แล้ว จึงไม่ต้อง hardcode ตาม brand)
         $usedCampaigns = $saleCar->campaigns->filter(
-            fn($c) => in_array($c->campaign?->campaign_type, $campaignIds)
+            fn($c) => in_array((int) ($c->campaign?->type?->type ?? 0), [1, 2], true)
         );
         $ri = $usedCampaigns->sum(fn($c) => (float) ($c->CashSupport ?? 0));
         $campaignDetails = $usedCampaigns->map(fn($c) => [
@@ -408,7 +403,8 @@ class PurchaseOrderController extends Controller
         $data = $this->buildApprovalData($saleCar);
         if ($deduct !== null) {
             $data['commission_deduct'] = $deduct;
-            $data['extra_budget'] = ($saleCar->approval_remaining ?? $data['remaining']) - $deduct;
+            // เก็บงบเพิ่มเติม = ค่าที่ผู้จัดการกรอกเอง (ไม่คำนวณจากยอดที่เหลือแล้ว)
+            $data['extra_budget'] = $saleCar->approval_extra_budget !== null ? (float) $saleCar->approval_extra_budget : null;
         }
         $files = $this->buildApprovalAttachments($saleCar);
 
@@ -514,16 +510,21 @@ class PurchaseOrderController extends Controller
                 $this->notifyApproved($saleCar);
                 return 'อนุมัติเรียบร้อย (ผู้จัดการ – เกินงบ ไม่เกินเพดาน)';
             } elseif ($case === 'b1_md') {
-                $request->merge(['commission_deduct' => str_replace(',', '', (string) $request->commission_deduct)]);
+                $request->merge([
+                    'commission_deduct' => str_replace(',', '', (string) $request->commission_deduct),
+                    'extra_budget'      => $request->filled('extra_budget') ? str_replace(',', '', (string) $request->extra_budget) : null,
+                ]);
                 $request->validate([
                     'commission_deduct' => 'required|numeric|min:0',
+                    'extra_budget'      => 'nullable|numeric|min:0',
                 ], [
-                    'commission_deduct.required' => 'กรุณากรอกยอดหักค่าคอมฝ่ายขาย',
+                    'commission_deduct.required' => 'กรุณากรอกค่าคอมฝ่ายขายที่ได้',
                 ]);
                 $deduct = (float) $request->commission_deduct;
 
                 $saleCar->update([
                     'approval_commission_deduct' => $deduct,
+                    'approval_extra_budget'      => $request->filled('extra_budget') ? (float) $request->extra_budget : null,
                     'ApprovalSignature' => 1,
                     'ApprovalSignatureDate' => $today,
                     'approval_md_note' => null, // เคลียร์โน้ต MD รอบก่อน (ถ้าเคยถูกตีกลับ)
@@ -614,7 +615,7 @@ class PurchaseOrderController extends Controller
 
             return view('purchase-order.approval-result', [
                 'saleCar' => $saleCar,
-                'msg'     => 'ส่งกลับให้ผู้จัดการกรอกยอดหักค่าคอมใหม่แล้ว (แจ้งอีเมลผู้จัดการเรียบร้อย)',
+                'msg'     => 'ส่งกลับให้ผู้จัดการกรอกค่าคอมฝ่ายขายที่ได้ใหม่แล้ว (แจ้งอีเมลผู้จัดการเรียบร้อย)',
             ]);
         }
 
@@ -630,8 +631,18 @@ class PurchaseOrderController extends Controller
             $saleCar->approval_commission_deduct = $newDeduct;
         }
 
+        // เก็บงบเพิ่มเติม — GM แก้ได้ก่อนอนุมัติ (เฉพาะ b1_md)
+        if ($canRevise && $request->has('extra_budget')) {
+            $request->merge([
+                'extra_budget' => $request->filled('extra_budget') ? str_replace(',', '', (string) $request->extra_budget) : null,
+            ]);
+            $request->validate(['extra_budget' => 'nullable|numeric|min:0']);
+            $saleCar->approval_extra_budget = $request->filled('extra_budget') ? (float) $request->extra_budget : null;
+        }
+
         $saleCar->update([
             'approval_commission_deduct' => $saleCar->approval_commission_deduct,
+            'approval_extra_budget'      => $saleCar->approval_extra_budget,
             'GMApprovalSignature'        => 1,
             'GMApprovalSignatureDate'    => now(),
             'approval_md_note'           => null, // เคลียร์โน้ตเมื่ออนุมัติจบ
@@ -643,12 +654,12 @@ class PurchaseOrderController extends Controller
         return view('purchase-order.approval-result', [
             'saleCar' => $saleCar,
             'msg'     => $mdEdited
-                ? "อนุมัติเรียบร้อย ({$approverLabel} — แก้ยอดหักค่าคอม แจ้งผู้จัดการแล้ว)"
+                ? "อนุมัติเรียบร้อย ({$approverLabel} — แก้ค่าคอมฝ่ายขายที่ได้ แจ้งผู้จัดการแล้ว)"
                 : "อนุมัติเรียบร้อย ({$approverLabel})",
         ]);
     }
 
-    // MD ตีกลับ → แจ้งผู้จัดการให้กรอกยอดหักค่าคอมใหม่ (ลิงก์เดิมจะกลับไปหน้ากรอกยอดหัก)
+    // MD ตีกลับ → แจ้งผู้จัดการให้กรอกค่าคอมฝ่ายขายที่ได้ใหม่ (ลิงก์เดิมจะกลับไปหน้ากรอก)
     private function emailReturnToManager(Salecar $saleCar, ?string $note = null): void
     {
         $mailTo = $this->approverEmails($saleCar->brand, $saleCar->branch, 'manager');
@@ -673,6 +684,32 @@ class PurchaseOrderController extends Controller
     public function show($id)
     {
         return redirect()->route('purchase-order.edit', $id);
+    }
+
+    // ชื่อเต็มลูกค้าปัจจุบัน + ชื่อผู้จองเดิม (ถ้ามีการเปลี่ยนผู้ซื้อ) — คืน HTML สำหรับตาราง
+    // ต้อง eager load 'originalCustomer.prefix' มาก่อน
+    private function customerNameWithOriginal(Salecar $s): string
+    {
+        $c = $s->customer;
+        $name = implode(' ', array_filter([
+            $c?->prefix?->Name_TH,
+            $c?->FirstName,
+            $c?->LastName,
+        ]));
+
+        if ($s->original_customer_id && $s->originalCustomer) {
+            $o = $s->originalCustomer;
+            $origName = trim(implode(' ', array_filter([
+                $o->prefix->Name_TH ?? null,
+                $o->FirstName ?? null,
+                $o->LastName ?? null,
+            ])));
+            if ($origName !== '') {
+                $name .= "<br><small style=\"color:#6c757d;\">ผู้จอง : {$origName}</small>";
+            }
+        }
+
+        return $name;
     }
 
     public function listPurchaseOrder(Request $request)
@@ -723,7 +760,7 @@ class PurchaseOrderController extends Controller
         $recordsFiltered = (clone $base)->count();
 
         $saleCars = $base
-            ->with('customer.prefix', 'conStatus', 'saleUser', 'model', 'subModel', 'carOrder', 'remainingPayment')
+            ->with('customer.prefix', 'originalCustomer.prefix', 'conStatus', 'saleUser', 'model', 'subModel', 'carOrder', 'remainingPayment')
             ->orderBy('BookingDate', 'desc')
             ->skip($start)
             ->take($length)
@@ -731,8 +768,6 @@ class PurchaseOrderController extends Controller
 
         $rowNum = $start + 1;
         $data = $saleCars->map(function ($s) use (&$rowNum) {
-            $c            = $s->customer;
-            $prefixText   = $s->customer?->prefix?->Name_TH;
             $model        = $s->model ? $s->model->Name_TH : '';
             $subModelSale = $s->subModel ? $s->subModel->name : '';
             $subDetail    = $s->subModel ? $s->subModel->detail : '';
@@ -784,11 +819,7 @@ class PurchaseOrderController extends Controller
 
             return [
                 'No'         => $rowNum++,
-                'FullName'   => implode(' ', array_filter([
-                    $prefixText ?? null,
-                    $c->FirstName ?? null,
-                    $c->LastName ?? null,
-                ])),
+                'FullName'   => $this->customerNameWithOriginal($s),
                 'model'  => $car,
                 'order'  => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
                 'dates'  => (function () use ($s, $row) {
@@ -1201,7 +1232,11 @@ class PurchaseOrderController extends Controller
             ? CustomerTracking::find($saleCar->tracking_id)
             : null;
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking'));
+        // เก็บงบเพิ่มเติม (running deduction): ยอดที่คันนี้โดนหัก + หนี้คงเหลือก่อนถึงคันนี้ (ให้ JS คำนวณสด)
+        $extraAbsorbed   = ExtraBudgetLedger::absorbedFor($saleCar);
+        $extraDebtBefore = ExtraBudgetLedger::debtBeforeFor($saleCar);
+
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore'));
     }
 
     public function update(Request $request, $id)
@@ -2547,7 +2582,7 @@ class PurchaseOrderController extends Controller
     {
         $user = Auth::user();
 
-        $query = Salecar::with(['customer.prefix', 'carOrder'])
+        $query = Salecar::with(['customer.prefix', 'originalCustomer.prefix', 'carOrder'])
             ->where('con_status', '5');
 
         if (in_array($user->role, ['sale', 'lead_sale'])) {
@@ -2582,14 +2617,9 @@ class PurchaseOrderController extends Controller
             ->get();
 
         $data = $saleCar->map(function ($s, $index) use ($start) {
-            $c = $s->customer;
             return [
                 'No'       => $start + $index + 1,
-                'FullName' => implode(' ', array_filter([
-                    $s->customer?->prefix?->Name_TH,
-                    $c->FirstName ?? null,
-                    $c->LastName  ?? null,
-                ])),
+                'FullName' => $this->customerNameWithOriginal($s),
                 // 'code'   => $s->carOrder->order_code ?? '-',
                 'vin_number' => $s->carOrder->vin_number ?? '-',
                 'Action' => view('purchase-order.history.button', compact('s'))->render(),
@@ -2885,6 +2915,7 @@ class PurchaseOrderController extends Controller
                 'heldPayday'      => $p['held_payday']?->format('Y-m-d'),
                 'mainPayDate'     => $p['main_payday']?->format('Y-m-d'),
                 'balanceCampaign' => $balanceCampaign,
+                'extraDeduct'     => ExtraBudgetLedger::absorbedFor($r),
                 'accessoryCom'    => $accessoryCom,
                 'specialCom'      => $specialCom,
                 'interestCom'     => $interestCom,

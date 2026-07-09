@@ -48,8 +48,10 @@
         <input type="hidden" id="userRole" value="{{ $userRole }}">
         <input type="hidden" id="userBrand" value="{{ auth()->user()->brand }}">
         <input type="hidden" id="saleBrand" value="{{ $saleCar->brand }}">
-        {{-- ยอดหักค่าคอมที่ manager/gm กรอก (เคสเกิน over_budget → คอมงบเหลือใช้ −D) --}}
+        {{-- ค่าคอมที่ manager/gm กรอก (เคสเกิน over_budget → คอมงบเหลือ: brand2 ใช้ −D, แบรนด์อื่น +D) --}}
         <input type="hidden" id="approvalCommissionDeduct" value="{{ $saleCar->approval_commission_deduct }}">
+        {{-- เก็บงบเพิ่มเติม: หนี้คงเหลือก่อนถึงคันนี้ (เคสงบปกติหักจากงบเต็มก่อนหาร 2) --}}
+        <input type="hidden" id="extraDebtBefore" value="{{ $extraDebtBefore ?? 0 }}">
 
         <ul class="nav nav-pills mb-4 nav-fill" role="tablist">
 
@@ -2202,6 +2204,11 @@
                                   <span class="com-lbl">คอมงบเหลือ</span>
                                   <input type="text" class="com-readonly-val money-input"
                                     id="TotalbalanceCampaign" readonly>
+                                  <div id="extraDeductNote" class="text-danger"
+                                    style="font-size:.72rem; margin-top:2px; {{ ($extraAbsorbed ?? 0) > 0 ? '' : 'display:none;' }}"
+                                    title="ถูกหักเพื่อชดเก็บงบเพิ่มเติมของคันที่เกินงบก่อนหน้า">
+                                    − หักเก็บงบเพิ่มเติม <span id="extraDeductVal">{{ number_format($extraAbsorbed ?? 0, 2) }}</span>
+                                  </div>
                                 </div>
 
                                 <div class="com-stat-cell">
@@ -2513,18 +2520,18 @@
                             </div>
                           </div>
 
-                          {{-- ผู้จัดการกรอกยอดหักค่าคอมฝ่ายขาย + แสดงยอดที่เหลือ --}}
+                          {{-- ผู้จัดการกรอกค่าคอมฝ่ายขายที่ได้ + แสดงยอดที่เหลือ --}}
                           {{-- <div class="col-12">
                             <div class="approval-card">
                               <div class="approval-card-header">
                                 <div class="approval-icon amber"><i class="bx bx-calculator"></i></div>
-                                <div class="approval-title">ยอดหักค่าคอมฝ่ายขาย (ผู้จัดการกรอก)</div>
+                                <div class="approval-title">{{ (int) $saleCar->brand === 2 ? 'ยอดหักค่าคอมฝ่ายขาย' : 'ค่าคอมฝ่ายขายที่ได้' }} (ผู้จัดการกรอก)</div>
                               </div>
                               <div class="approval-card-body">
                                 <div class="row g-3">
                                   <div class="col-md-6">
                                     <label for="approval_commission_deduct" class="more-field-label mb-1">
-                                      ยอดหักค่าคอมฝ่ายขาย
+                                      {{ (int) $saleCar->brand === 2 ? 'ยอดหักค่าคอมฝ่ายขาย' : 'ค่าคอมฝ่ายขายที่ได้' }}
                                     </label>
                                     <div class="input-group">
                                       <span class="input-group-text">฿</span>

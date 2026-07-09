@@ -39,8 +39,11 @@
     <div class="row"><span class="lbl">ใบจอง</span><span class="val">{{ $saleCar->order_code ?? $saleCar->id }}</span></div>
     <div class="row"><span class="lbl">รุ่นรถ</span><span class="val">{{ $saleCar->model->Name_TH ?? '-' }}</span></div>
     <div class="row"><span class="lbl">ลูกค้า</span><span class="val">{{ $saleCar->customer->FirstName ?? '' }} {{ $saleCar->customer->LastName ?? '' }}</span></div>
-    <div class="row"><span class="lbl">ยอดที่เหลือ</span><span class="val">{{ number_format($saleCar->approval_remaining ?? 0, 2) }}</span></div>
-    <div class="row"><span class="lbl">ยอดหักค่าคอม (ผู้จัดการกรอก)</span><span class="val">{{ number_format($saleCar->approval_commission_deduct ?? 0, 2) }}</span></div>
+    <div class="row"><span class="lbl">ยอดที่เหลือ</span><span class="val" style="color: {{ ($saleCar->approval_remaining ?? 0) < 0 ? '#dc2626' : '#059669' }}">{{ number_format($saleCar->approval_remaining ?? 0, 2) }}</span></div>
+    <div class="row"><span class="lbl">{{ (int) $saleCar->brand === 2 ? 'ยอดหักค่าคอม (ผู้จัดการกรอก)' : 'ค่าคอมฝ่ายขายที่ได้ (ผู้จัดการกรอก)' }}</span><span class="val">{{ number_format($saleCar->approval_commission_deduct ?? 0, 2) }}</span></div>
+    @if ((int) $saleCar->brand !== 2)
+      <div class="row"><span class="lbl">เก็บงบเพิ่มเติม (ผู้จัดการกรอก)</span><span class="val">{{ $saleCar->approval_extra_budget !== null ? number_format($saleCar->approval_extra_budget, 2) : '-' }}</span></div>
+    @endif
 
     @if ($errors->any())
       <div class="err">{{ $errors->first() }}</div>
@@ -50,15 +53,15 @@
       @csrf
 
       @if ($allowRevise)
-        <label for="commission_deduct">ยอดหักค่าคอมฝ่ายขาย (แก้ได้ก่อนอนุมัติ)</label>
+        <label for="commission_deduct">ค่าคอมฝ่ายขายที่ได้ (แก้ได้ก่อนอนุมัติ)</label>
         <input type="text" inputmode="decimal" id="commission_deduct" name="commission_deduct"
           value="{{ old('commission_deduct', $saleCar->approval_commission_deduct) }}"
-          oninput="formatComma(this); calcExtra()">
+          oninput="formatComma(this)">
 
-        <div class="extra">
-          <span class="lbl">เก็บงบเพิ่มเติม (ยอดที่เหลือ − หักค่าคอม)</span>
-          <span class="val" id="extraVal">-</span>
-        </div>
+        <label for="extra_budget">เก็บงบเพิ่มเติม (บาท)</label>
+        <input type="text" inputmode="decimal" id="extra_budget" name="extra_budget"
+          value="{{ old('extra_budget', $saleCar->approval_extra_budget) }}"
+          oninput="formatComma(this)">
 
         <label for="md_note">เหตุผล/โน้ตถึงผู้จัดการ (ไม่บังคับ)</label>
         <textarea id="md_note" name="md_note" placeholder="เช่น ยอดหักน้อยไป ขอให้ทบทวน...">{{ old('md_note') }}</textarea>
@@ -79,7 +82,6 @@
     const deductInput = document.getElementById('commission_deduct');
 
     @if ($allowRevise)
-      const remaining = {{ (float) ($saleCar->approval_remaining ?? 0) }};
       function formatComma(el) {
         let v = el.value.replace(/[^\d.]/g, '');
         const dot = v.indexOf('.');
@@ -88,13 +90,7 @@
         intp = (intp || '').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         el.value = dec !== undefined ? intp + '.' + dec.slice(0, 2) : intp;
       }
-      function calcExtra() {
-        const d = parseFloat(deductInput.value.replace(/,/g, '')) || 0;
-        document.getElementById('extraVal').textContent =
-          (remaining - d).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      }
-      formatComma(deductInput);
-      calcExtra();
+      document.querySelectorAll('input[inputmode=decimal]').forEach(formatComma);
 
       // ตั้งค่า decision จากปุ่มที่กด (เก็บใน hidden field กันค่าหายตอน disable ปุ่ม)
       document.querySelectorAll('button[type=submit][data-decision]').forEach(function (b) {
@@ -105,7 +101,7 @@
     @endif
 
     form.addEventListener('submit', function (e) {
-      if (deductInput) deductInput.value = deductInput.value.replace(/,/g, '');
+      form.querySelectorAll('input[inputmode=decimal]').forEach(inp => inp.value = inp.value.replace(/,/g, ''));
       const btn = e.submitter || this.querySelector('button[type=submit]');
       if (btn) {
         btn.disabled = true;

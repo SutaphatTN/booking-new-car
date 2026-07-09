@@ -33,7 +33,7 @@
     <div class="row"><span class="lbl">ใบจอง</span><span class="val">{{ $saleCar->order_code ?? $saleCar->id }}</span></div>
     <div class="row"><span class="lbl">รุ่นรถ</span><span class="val">{{ $saleCar->model->Name_TH ?? '-' }}</span></div>
     <div class="row"><span class="lbl">ลูกค้า</span><span class="val">{{ $saleCar->customer->FirstName ?? '' }} {{ $saleCar->customer->LastName ?? '' }}</span></div>
-    <div class="row"><span class="lbl">ยอดที่เหลือ</span><span class="val">{{ number_format($saleCar->approval_remaining ?? 0, 2) }}</span></div>
+    <div class="row"><span class="lbl">ยอดที่เหลือ</span><span class="val" style="color: {{ ($saleCar->approval_remaining ?? 0) < 0 ? '#dc2626' : '#059669' }}">{{ number_format($saleCar->approval_remaining ?? 0, 2) }}</span></div>
 
     @if ($errors->any())
       <div class="err">{{ $errors->first() }}</div>
@@ -60,11 +60,13 @@
       <div id="deductBox">
         <label class="field" for="commission_deduct">ยอดหักค่าคอมฝ่ายขาย (บาท)</label>
         <input type="text" inputmode="decimal" id="commission_deduct" name="commission_deduct"
-          value="{{ old('commission_deduct', $defaultDeduct) }}" oninput="formatComma(this); calcExtra()">
+          value="{{ old('commission_deduct', $defaultDeduct) }}" oninput="formatComma(this)">
+        {{-- brand 2 ไม่ใช้ "เก็บงบเพิ่มเติม" — comment ไว้
         <div class="extra">
           <span class="lbl">เก็บงบเพิ่มเติม (ยอดที่เหลือ − หักค่าคอม)</span>
           <span class="val" id="extraVal">-</span>
         </div>
+        --}}
       </div>
 
       <button type="submit" id="btnSubmit">ยืนยัน — หักเงิน (จบที่ GM)</button>
@@ -72,7 +74,7 @@
   </div>
 
   <script>
-    const remaining = {{ (float) ($saleCar->approval_remaining ?? 0) }};
+    // brand 2 ไม่ใช้ "เก็บงบเพิ่มเติม (ยอดที่เหลือ − หักค่าคอม)" แล้ว
     function formatComma(el) {
       let v = el.value.replace(/[^\d.]/g, '');
       const dot = v.indexOf('.');
@@ -81,18 +83,13 @@
       intp = (intp || '').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
       el.value = dec !== undefined ? intp + '.' + dec.slice(0, 2) : intp;
     }
-    function calcExtra() {
-      const d = parseFloat(document.getElementById('commission_deduct').value.replace(/,/g, '')) || 0;
-      document.getElementById('extraVal').textContent =
-        (remaining - d).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
     function toggle() {
       const isDeduct = document.querySelector('input[name=decision]:checked').value === 'deduct';
       document.getElementById('deductBox').style.display = isDeduct ? 'block' : 'none';
       document.getElementById('commission_deduct').required = isDeduct;
       document.getElementById('btnSubmit').textContent = isDeduct ? 'ยืนยัน — หักเงิน (จบที่ GM)' : 'ยืนยัน — ส่งต่อ MD';
     }
-    toggle(); calcExtra();
+    toggle();
 
     // กดแล้วโชว์ loading (กันกดซ้ำ + ระหว่างส่งเมล/สร้าง PDF) + ตัดลูกน้ำก่อนส่ง
     document.querySelector('form').addEventListener('submit', function () {
