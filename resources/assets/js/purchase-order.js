@@ -2687,17 +2687,23 @@ function calculateCommissionSale() {
   const overBudget = parseFloat(selectedModel.data('overbudget')) || 0;
   const saleBrand = parseInt($('#saleBrand').val()) || 0;
 
-  // ยอดหักค่าคอมที่ manager/gm กรอกไว้ (เคสเกิน over_budget → คอมงบเหลือ = −D)
+  // ยอดที่ manager/gm กรอกไว้ (เคสเกิน over_budget) — brand 2 = หักเงิน (−D) ; แบรนด์อื่น = ค่าคอมที่ได้ (+D)
   const deductRaw = ($('#approvalCommissionDeduct').val() || '').toString().replace(/,/g, '').trim();
   const managerDeduct = deductRaw !== '' ? parseFloat(deductRaw) : null;
 
+  // เก็บงบเพิ่มเติม (running deduction): หนี้คงเหลือก่อนถึงคันนี้ → หักจาก "งบเต็ม" ในเคสงบปกติ
+  const extraDebtBefore = parseFloat(($('#extraDebtBefore').val() || '0').toString().replace(/,/g, '')) || 0;
+  let extraAbsorbed = 0;
+
   if (balanceCam >= 0) {
-    balanceCam = Math.min(balanceCam, 2500);
+    const full = balanceCam * 2;
+    extraAbsorbed = Math.min(full, extraDebtBefore);
+    balanceCam = Math.min(Math.max(0, full - extraAbsorbed) / 2, 2500);
   } else {
-    // เกินเพดาน: เทียบ "ยอดเต็ม" (×2) กับ over_budget (brand 2 = เกินเสมอ) ; ถ้าเกิน+manager กรอกหัก → ใช้ −D
+    // เกินเพดาน: เทียบ "ยอดเต็ม" (×2) กับ over_budget (brand 2 = เกินเสมอ) ; ถ้าเกิน+manager กรอกยอด → brand2 −D, อื่น +D
     const isOverCeiling = saleBrand === 2 || Math.abs(balanceCam) * 2 > overBudget;
     if (isOverCeiling && managerDeduct !== null && !isNaN(managerDeduct)) {
-      balanceCam = -managerDeduct;
+      balanceCam = saleBrand === 2 ? -managerDeduct : managerDeduct;
     } else {
       balanceCam = balanceCam * 2 * (perBudget / 100);
     }
@@ -2719,6 +2725,18 @@ function calculateCommissionSale() {
   $('#TotalbalanceCampaign').val(
     balanceCam.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   );
+
+  // แสดง/ซ่อนข้อความ "หักเก็บงบเพิ่มเติม"
+  const extraNote = document.getElementById('extraDeductNote');
+  if (extraNote) {
+    if (extraAbsorbed > 0.005) {
+      const ev = document.getElementById('extraDeductVal');
+      if (ev) ev.textContent = extraAbsorbed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      extraNote.style.display = '';
+    } else {
+      extraNote.style.display = 'none';
+    }
+  }
 
   $('#ComInterestDisplay').val(fiCom.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 

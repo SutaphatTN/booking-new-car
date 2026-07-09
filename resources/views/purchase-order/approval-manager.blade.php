@@ -30,17 +30,17 @@
   <div class="card">
     <h1>อนุมัติคำขอสั่งจอง</h1>
     <div class="sub">
-      @if ($showDeduct) ผู้จัดการ — กรอกยอดหักค่าคอมฝ่ายขายก่อนส่งต่อ GM @else ผู้จัดการ — ยืนยันการอนุมัติ @endif
+      @if ($showDeduct) ผู้จัดการ — กรอกค่าคอมฝ่ายขายที่ได้ ก่อนส่งต่อ GM @else ผู้จัดการ — ยืนยันการอนุมัติ @endif
     </div>
 
     <div class="row"><span class="lbl">ใบจอง</span><span class="val">{{ $saleCar->order_code ?? $saleCar->id }}</span></div>
     <div class="row"><span class="lbl">รุ่นรถ</span><span class="val">{{ $saleCar->model->Name_TH ?? '-' }}</span></div>
     <div class="row"><span class="lbl">ลูกค้า</span><span class="val">{{ $saleCar->customer->FirstName ?? '' }} {{ $saleCar->customer->LastName ?? '' }}</span></div>
-    <div class="row"><span class="lbl">ยอดที่เหลือ (จากใบขออนุมัติ)</span><span class="val">{{ number_format($saleCar->approval_remaining ?? 0, 2) }}</span></div>
+    <div class="row"><span class="lbl">ยอดที่เหลือ (จากใบขออนุมัติ)</span><span class="val" style="color: {{ ($saleCar->approval_remaining ?? 0) < 0 ? '#dc2626' : '#059669' }}">{{ number_format($saleCar->approval_remaining ?? 0, 2) }}</span></div>
 
     @if ($showDeduct && !empty($saleCar->approval_md_note))
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-top:14px;font-size:.9rem;color:#92400e;">
-        🔁 <strong>GM ตีกลับ</strong> — ขอให้ทบทวนยอดหักค่าคอม<br>
+        🔁 <strong>GM ตีกลับ</strong> — ขอให้ทบทวนค่าคอมฝ่ายขายที่ได้<br>
         <span style="color:#78350f;">โน้ตจาก GM : {{ $saleCar->approval_md_note }}</span>
       </div>
     @endif
@@ -52,15 +52,15 @@
     <form method="POST" action="{{ route('purchase-order.managerApprove', $token) }}">
       @csrf
       @if ($showDeduct)
-        <label for="commission_deduct">ยอดหักค่าคอมฝ่ายขาย (บาท)</label>
+        <label for="commission_deduct">ค่าคอมฝ่ายขายที่ได้ (บาท)</label>
         <input type="text" inputmode="decimal" id="commission_deduct" name="commission_deduct"
           value="{{ old('commission_deduct', $saleCar->approval_commission_deduct) }}" required
-          oninput="formatComma(this); calcExtra()">
+          oninput="formatComma(this)">
 
-        <div class="extra">
-          <span class="lbl">เก็บงบเพิ่มเติม (ยอดที่เหลือ − หักค่าคอม)</span>
-          <span class="val" id="extraVal">-</span>
-        </div>
+        <label for="extra_budget">เก็บงบเพิ่มเติม (บาท)</label>
+        <input type="text" inputmode="decimal" id="extra_budget" name="extra_budget"
+          value="{{ old('extra_budget', $saleCar->approval_extra_budget) }}"
+          oninput="formatComma(this)">
 
         <button type="submit">อนุมัติ และส่งต่อ GM</button>
       @else
@@ -72,8 +72,7 @@
   <script>
     // กดแล้วโชว์ loading (กันกดซ้ำ + ระหว่างส่งเมล/สร้าง PDF) + ตัดลูกน้ำก่อนส่ง
     document.querySelector('form').addEventListener('submit', function () {
-      const inp = document.getElementById('commission_deduct');
-      if (inp) inp.value = inp.value.replace(/,/g, '');
+      this.querySelectorAll('input[inputmode=decimal]').forEach(inp => inp.value = inp.value.replace(/,/g, ''));
       const btn = this.querySelector('button[type=submit]');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> กำลังดำเนินการ...';
@@ -82,7 +81,6 @@
 
   @if ($showDeduct)
     <script>
-      const remaining = {{ (float) ($saleCar->approval_remaining ?? 0) }};
       function formatComma(el) {
         let v = el.value.replace(/[^\d.]/g, '');
         const dot = v.indexOf('.');
@@ -91,14 +89,7 @@
         intp = (intp || '').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         el.value = dec !== undefined ? intp + '.' + dec.slice(0, 2) : intp;
       }
-      function calcExtra() {
-        const d = parseFloat(document.getElementById('commission_deduct').value.replace(/,/g, '')) || 0;
-        const extra = remaining - d;
-        document.getElementById('extraVal').textContent =
-          extra.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      }
-      formatComma(document.getElementById('commission_deduct'));
-      calcExtra();
+      document.querySelectorAll('input[inputmode=decimal]').forEach(formatComma);
     </script>
   @endif
 </body>

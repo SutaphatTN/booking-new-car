@@ -61,7 +61,14 @@
                     {{ $c['model'] }}
                     <div class="text-muted" style="font-size:.78rem;">{{ $c['subModel'] }}</div>
                   </td>
-                  <td class="text-end">{{ number_format($c['balanceCampaign'], 2) }}</td>
+                  <td class="text-end">
+                    {{ number_format($c['balanceCampaign'], 2) }}
+                    @if (!empty($c['extraDeduct']))
+                      <div class="text-danger" style="font-size:.7rem;" title="ถูกหักเพื่อชดเก็บงบเพิ่มเติม">
+                        − เก็บงบเพิ่มเติม {{ number_format($c['extraDeduct'], 2) }}
+                      </div>
+                    @endif
+                  </td>
                   <td class="text-end">{{ number_format($c['accessoryCom'], 2) }}</td>
                   <td class="text-end" style="min-width:120px;">
                     <input type="number" step="0.01"

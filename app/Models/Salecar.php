@@ -9,6 +9,7 @@ namespace App\Models;
 use App\Models\Traits\TracksUserActions;
 use App\Models\Traits\UserAccessScope;
 use App\Models\CustomerTracking;
+use App\Services\ExtraBudgetLedger;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -248,6 +249,7 @@ class Salecar extends Model
 		'approval_type',
 		'approval_requested_at',
 		'approval_commission_deduct',
+		'approval_extra_budget',
 		'approval_md_note',
 		'approval_remaining',
 		'approval_token',
@@ -457,7 +459,9 @@ class Salecar extends Model
 	 * "คอมงบเหลือ" (component เดียวของค่าคอม) — คิดสดจากสถานะปัจจุบัน
 	 *  - งบเหลือ (balance ≥ 0): ได้งบเหลือ เพดาน 2500
 	 *  - เกินงบไม่เกินเพดาน (b1_manager): สูตรอัตโนมัติ balance × 2 × per_budget%
-	 *  - เกิน over_budget ที่ MD/GM อนุมัติ (b1_md/b2_gm) และ manager กรอกยอดหัก D แล้ว: ใช้ −D
+	 *  - เกิน over_budget ที่ MD/GM อนุมัติ และ manager กรอกยอด D แล้ว:
+	 *      · brand 2 (b2_gm)    → ใช้ −D (หักเงิน แบบเดิม)
+	 *      · แบรนด์อื่น (b1_md) → ใช้ +D ("ให้ค่าคอมฝ่ายขายเท่านี้แทน")
 	 * ต้อง eager load relation 'model' เพื่อความแม่นของเคส
 	 */
 	public function effectiveBalanceCommission(): float
@@ -466,11 +470,15 @@ class Salecar extends Model
 		$case = $this->approvalCase();
 
 		if (in_array($case, ['b1_md', 'b2_gm'], true) && $this->approval_commission_deduct !== null) {
-			return -1 * (float) $this->approval_commission_deduct;
+			$d = (float) $this->approval_commission_deduct;
+			return (int) $this->brand === 2 ? -1 * $d : $d;
 		}
 
 		if ($balance >= 0) {
-			return min($balance, 2500);
+			// เคสงบปกติ: หัก "เก็บงบเพิ่มเติม" (running deduction) จากงบเต็มก่อน แล้วค่อยหาร 2 + เพดาน 2500
+			$full     = $balance * 2;
+			$absorbed = ExtraBudgetLedger::absorbedFor($this);
+			return min(max(0.0, $full - $absorbed) / 2, 2500);
 		}
 
 		$perBudget = (float) ($this->model?->per_budget ?? 0);
