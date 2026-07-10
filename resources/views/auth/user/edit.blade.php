@@ -1,3 +1,20 @@
+@php
+    $selectableRoles = [
+        'sale' => 'Sale',
+        'audit' => 'Audit',
+        'account' => 'Account',
+        'registration' => 'Registration',
+        'bp' => 'BP',
+        'cs' => 'CS',
+        'manager' => 'Manager',
+        'md' => 'MD',
+    ];
+
+    // role พิเศษ (admin/gm/audit_lead/cro/sp/marketing/adminPage) ตั้งใจไม่ให้เลือกจาก dropdown
+    // ต้องส่งค่าเดิมกลับไปด้วย ไม่งั้นฟอร์มจะเขียนทับเป็น option แรก (sale) ตอนแก้ฟิลด์อื่น
+    $isSpecialRole = !array_key_exists($user->role, $selectableRoles);
+@endphp
+
 <div class="modal fade editUser" tabindex="-1" role="dialog" data-bs-backdrop="static">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -84,16 +101,23 @@
                             class="col-md-4 col-form-label text-md-end">{{ __('Role') }}</label>
 
                         <div class="col-md-6">
-                            <select id="role" class="form-control @error('role') is-invalid @enderror" name="role" required>
-                                <option value="sale" {{ $user->role == 'sale' ? 'selected' : '' }}>Sale</option>
-                                <option value="audit" {{ $user->role == 'audit' ? 'selected' : '' }}>Audit</option>
-                                <option value="account" {{ $user->role == 'account' ? 'selected' : '' }}>Account</option>
-                                <option value="registration" {{ $user->role == 'registration' ? 'selected' : '' }}>Registration</option>
-                                <option value="bp" {{ $user->role == 'bp' ? 'selected' : '' }}>BP</option>
-                                <option value="cs" {{ $user->role == 'cs' ? 'selected' : '' }}>CS</option>
-                                <option value="manager" {{ $user->role == 'manager' ? 'selected' : '' }}>Manager</option>
-                                <option value="md" {{ $user->role == 'md' ? 'selected' : '' }}>MD</option>
+                            <select id="role" class="form-control @error('role') is-invalid @enderror" name="role"
+                                required @disabled($isSpecialRole)>
+                                @if ($isSpecialRole)
+                                <option value="{{ $user->role }}" selected>{{ $user->role }}</option>
+                                @endif
+
+                                @foreach ($selectableRoles as $value => $label)
+                                <option value="{{ $value }}" {{ $user->role === $value ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                                @endforeach
                             </select>
+
+                            @if ($isSpecialRole)
+                            <input type="hidden" name="role" value="{{ $user->role }}">
+                            <small class="text-muted">role พิเศษ — เปลี่ยนได้จากฐานข้อมูลเท่านั้น</small>
+                            @endif
 
                             @error('role')
                             <span class="invalid-feedback" role="alert">
