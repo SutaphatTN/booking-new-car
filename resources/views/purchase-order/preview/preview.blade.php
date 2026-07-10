@@ -18,25 +18,9 @@
       <div class="modal-body mf-body" id="previewPurchaseContent">
       </div>
 
-      @php
-        // อนุมัติแล้วหรือยัง (brand-aware ให้ตรงกับ approvalCase/isApproved ใน controller)
-        $__balance = (float) ($saleCar->balanceCampaign ?? 0);
-        $__brand = (int) $saleCar->brand;
-        if ($__balance >= 0) {
-            // งบปกติ → manager (SMSignature)
-            $hasApproval = (bool) $saleCar->SMSignature;
-        } elseif ($__brand === 2) {
-            // brand 2: gm/md → จบที่ GMApprovalSignature
-            $hasApproval = (bool) $saleCar->GMApprovalSignature;
-        } else {
-            // brand 1 + brand 3: เทียบ "ยอดเต็ม" (×2) กับ over_budget
-            //   เกิน ≤ เพดาน → manager(ApprovalSignature) / เกิน > เพดาน → md(GMApprovalSignature)
-            $__overBudget = (float) ($saleCar->model?->over_budget ?? 0);
-            $hasApproval = abs($__balance) * 2 <= $__overBudget
-                ? (bool) $saleCar->ApprovalSignature
-                : (bool) $saleCar->GMApprovalSignature;
-        }
-      @endphp
+      {{-- หมายเหตุ: "อนุมัติแล้วหรือยัง" ไม่คำนวณฝั่ง PHP อีกต่อไป —
+           JS คำนวณสดจากค่าในฟอร์ม (balanceCampaign + รุ่นรถ + ลายเซ็นด้านล่าง)
+           เพื่อจับเคสที่ผู้ใช้แก้ข้อมูลจนเคสอนุมัติเปลี่ยน แต่ยังไม่ได้บันทึก --}}
 
       <div class="modal-footer mt-4">
         <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
@@ -63,7 +47,13 @@
         </button>
 
         <input type="hidden" id="userRole" value="{{ $userRole }}">
-        <input type="hidden" id="hasApproval" value="{{ $hasApproval ? 1 : 0 }}">
+        {{-- ประเภทการขาย = Dealer → ไม่ต้องขออนุมัติ (JS เทียบกับค่าที่เลือกใน #type_sale) --}}
+        <input type="hidden" id="dealerTypeSaleId" value="{{ \App\Models\Salecar::TYPE_SALE_DEALER }}">
+        {{-- ลายเซ็นอนุมัติแต่ละขั้น + ประเภทคำขอเดิม — ให้ JS ประเมิน "อนุมัติตรงกับข้อมูลปัจจุบันไหม" แบบสด
+             (กันเคส: อนุมัติงบปกติแล้ว แก้ข้อมูลจนเกินงบ → ต้องขออนุมัติเกินงบใหม่) --}}
+        <input type="hidden" id="smSignature" value="{{ $saleCar->SMSignature ? 1 : 0 }}">
+        <input type="hidden" id="approvalSignature" value="{{ $saleCar->ApprovalSignature ? 1 : 0 }}">
+        <input type="hidden" id="gmApprovalSignature" value="{{ $saleCar->GMApprovalSignature ? 1 : 0 }}">
         <input type="hidden" name="action_type" id="action_type" value="">
       </div>
 

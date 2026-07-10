@@ -4,6 +4,7 @@ namespace App\Exports\commission;
 
 use App\Services\SaleCommissionQuery;
 use App\Services\CarCommissionQuery;
+use App\Services\ExtraBudgetLedger;
 use App\Services\HeldCommissionQuery;
 use App\Services\SsiCommissionQuery;
 use App\Models\SaleCommissionMonthly;
@@ -65,6 +66,8 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
 
       ['label' => 'ค่าคอมรถ',       'key' => 'carCommission',   'role' => 'recv', 'money' => true],
       ['label' => 'ยอดแบ่งงบเหลือ', 'key' => 'balanceCampaign', 'role' => 'recv', 'money' => true],
+      // info เท่านั้น — ยอดนี้ถูกหักออกจาก "ยอดแบ่งงบเหลือ" ไปแล้ว (โชว์ให้รู้ว่าโดนหักอะไร ไม่หักซ้ำ)
+      ['label' => 'หักเก็บงบเพิ่มเติม', 'key' => 'extraDeduct', 'role' => 'info', 'money' => true, 'num' => true],
       ['label' => 'คอมประดับยนต์',  'key' => 'accessoryCom',    'role' => 'recv', 'money' => true],
       ['label' => 'คอมอื่นๆ',       'key' => 'specialCom',      'role' => 'recv', 'money' => true],
       ['label' => 'คอมดอกเบี้ย',    'key' => 'interestCom',     'role' => 'recv', 'money' => true],
@@ -191,6 +194,7 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
 
         'carCommission'   => $carCommission,
         'balanceCampaign' => $r->effectiveBalanceCommission(),
+        'extraDeduct'     => ExtraBudgetLedger::absorbedFor($r) ?: null,
         'accessoryCom'    => $r->effectiveAccessoryCommission(),
         'specialCom'      => $r->effectiveSpecialCommission(),
         'interestCom'     => $r->remainingPayment->total_com ?? 0,

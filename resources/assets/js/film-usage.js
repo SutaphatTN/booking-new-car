@@ -29,7 +29,7 @@ if ($('.filmUsageTable').length) {
       searching: true,
       ordering: false,
       info: true,
-      pageLength: 25,
+      pageLength: 10,
       autoWidth: false,
       language: {
         lengthMenu: 'แสดง _MENU_ แถว',

@@ -4,6 +4,7 @@ namespace App\Exports\commission;
 
 use App\Services\SaleCommissionQuery;
 use App\Services\CarCommissionQuery;
+use App\Services\ExtraBudgetLedger;
 use App\Services\SsiCommissionQuery;
 use App\Models\SaleCommissionMonthly;
 use App\Exports\commission\Concerns\BuildsCommissionReport;
@@ -67,6 +68,8 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
 
             ['label' => 'คอมรายคันรถปกติ',  'key' => 'carCommission',   'role' => 'recv', 'money' => true],
             ['label' => 'ยอดแบ่งงบเหลือ',   'key' => 'balanceCampaign', 'role' => 'recv', 'money' => true],
+            // info เท่านั้น — ยอดนี้ถูกหักออกจาก "ยอดแบ่งงบเหลือ" ไปแล้ว (โชว์ให้รู้ว่าโดนหักอะไร ไม่หักซ้ำ)
+            ['label' => 'หักเก็บงบเพิ่มเติม', 'key' => 'extraDeduct', 'role' => 'info', 'money' => true, 'num' => true],
             ['label' => 'คอมประดับยนต์',    'key' => 'accessoryCom',    'role' => 'recv', 'money' => true],
             ['label' => 'คอมอื่นๆ',         'key' => 'specialCom',      'role' => 'recv', 'money' => true],
             ['label' => 'คอมดอกเบี้ย',      'key' => 'interestCom',     'role' => 'recv', 'money' => true],
@@ -165,6 +168,7 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
 
                 'carCommission'   => (float) (CarCommissionQuery::entry($carCom, (int) $saleId, $brand)['amount'] ?? 0),
                 'balanceCampaign' => $rows->sum(fn($r) => $r->effectiveBalanceCommission()),
+                'extraDeduct'     => $rows->sum(fn($r) => ExtraBudgetLedger::absorbedFor($r)) ?: null,
                 'accessoryCom'    => $rows->sum(fn($r) => $r->effectiveAccessoryCommission()),
                 'specialCom'      => $rows->sum(fn($r) => $r->effectiveSpecialCommission()),
                 'interestCom'     => $rows->sum(fn($r) => $r->remainingPayment->total_com ?? 0),

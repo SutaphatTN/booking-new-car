@@ -76,6 +76,11 @@
         @continue
       @endif
 
+      {{-- เมนู "ขออนุมัติเกินงบล่วงหน้า" เห็นเฉพาะ admin, audit_lead, manager, gm, md + sale/lead_sale (เห็นเฉพาะของตัวเอง) --}}
+      @if ($submenu->slug == 'pre-approval.index' && !in_array($userRole, ['admin', 'audit_lead', 'manager', 'gm', 'md', 'sale', 'lead_sale']))
+        @continue
+      @endif
+
       {{-- เมนู "ค่าคอมมิชชั่น" เห็นเฉพาะ role admin, manager, gm, md --}}
       @if ($submenu->slug == 'purchase-order.viewCommission' && !in_array($userRole, ['admin', 'manager', 'gm', 'md']))
         @continue

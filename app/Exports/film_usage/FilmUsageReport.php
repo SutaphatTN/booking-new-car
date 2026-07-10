@@ -10,6 +10,7 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -44,6 +45,8 @@ class FilmUsageReport implements FromArray, WithTitle, WithHeadings, WithStyles,
       'เลข VIN',
       'ชื่อลูกค้า',
       'รุ่นรถ',
+      // stock ฟิล์มใช้ร่วมกันข้าม brand → บอกให้ชัดว่างานนี้ของแบรนด์ไหน
+      'แบรนด์',
       'ฝ่ายขาย',
       'ยี่ห้อฟิล์ม',
       'ตำแหน่ง',
@@ -80,9 +83,10 @@ class FilmUsageReport implements FromArray, WithTitle, WithHeadings, WithStyles,
 
       $date = $r->order_date?->format('d/m/Y') ?? '-';
       $type = $r->type === 'bp' ? 'BP' : 'ทั่วไป';
-      // รุ่นรถ — fallback เป็นชื่อ brand เมื่อไม่มีรุ่น (งานของอีก brand ที่ใช้ stock ร่วมกัน)
-      $car  = $r->carLabel();
-      $film = $r->filmBrand?->name ?? '-';
+      // รุ่นรถจริงเสมอ (relation ปลด BrandScope) + แบรนด์แยกคอลัมน์
+      $car   = $r->carLabel();
+      $brand = $r->brandName();
+      $film  = $r->filmBrand?->name ?? '-';
 
       // 1 แถว = 1 ตำแหน่งฟิล์ม ; ถ้าไม่มีรายการ แสดงหัวข้อแถวเดียว
       $items = $r->items->count() ? $r->items : collect([null]);
@@ -94,6 +98,7 @@ class FilmUsageReport implements FromArray, WithTitle, WithHeadings, WithStyles,
           $r->vin ?: '-',
           $r->customer_name ?: '-',
           $car,
+          $brand,
           $r->sale_person ?: '-',
           $film,
           $item?->position ?: '-',
@@ -137,19 +142,24 @@ class FilmUsageReport implements FromArray, WithTitle, WithHeadings, WithStyles,
         $sheet->freezePane('A2');
         $sheet->getTabColor()->setRGB('ffc000');
 
+        // คำนวณคอลัมน์จากจำนวนหัวตาราง (กันเพี้ยนเวลาเพิ่ม/ลดคอลัมน์)
+        $colCount = count($this->headings());
+        $lastCol  = Coordinate::stringFromColumnIndex($colCount);
+
         // ไม่มีข้อมูล — รวมช่องข้อความให้เต็มบรรทัด
         if (!$this->hasData) {
-          $sheet->mergeCells('A2:N2');
-          $sheet->getStyle('A2:N2')->getAlignment()
+          $sheet->mergeCells("A2:{$lastCol}2");
+          $sheet->getStyle("A2:{$lastCol}2")->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
           $sheet->getStyle('A2')->getFont()->setItalic(true)->getColor()->setRGB('999999');
           return;
         }
 
-        $sheet->setAutoFilter("A1:N{$highestRow}");
+        $sheet->setAutoFilter("A1:{$lastCol}{$highestRow}");
 
-        // คอลัมน์ตัวเลข L (ตร.ฟุต), M (ราคาขาย), N (ค่าคอม)
-        foreach (['L', 'M', 'N'] as $col) {
+        // คอลัมน์ตัวเลข = 3 คอลัมน์สุดท้าย (ตร.ฟุต, ราคาขาย, ค่าคอม)
+        foreach ([$colCount - 2, $colCount - 1, $colCount] as $i) {
+          $col = Coordinate::stringFromColumnIndex($i);
           $sheet->getStyle("{$col}2:{$col}{$highestRow}")->getNumberFormat()->setFormatCode('#,##0.00');
         }
       },

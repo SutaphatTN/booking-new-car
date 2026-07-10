@@ -1,5 +1,5 @@
 @extends('layouts/contentNavbarLayout')
-@section('title', 'Add Purchase Order')
+@section('title', !empty($isPreApproval) ? 'เพิ่มคำขออนุมัติเกินงบ' : 'Add Purchase Order')
 
 @section('page-style')
   @vite(['resources/css/app.css'])
@@ -18,12 +18,29 @@
       <i class="bx bx-plus-circle"></i>
     </div>
     <div>
-      <h5 class="pur-page-name">เพิ่มข้อมูลการจอง</h5>
+      <h5 class="pur-page-name">
+        {{ !empty($isPreApproval) ? 'เพิ่มคำขออนุมัติเกินงบ' : 'เพิ่มข้อมูลการจอง' }}
+      </h5>
+      {{-- @if (!empty($isPreApproval))
+        <div class="text-muted" style="font-size:.82rem;">
+          รายการนี้ <strong>ยังไม่เป็นการจอง</strong> — ต้องได้รับอนุมัติก่อน จึงจะกด “สร้างการจอง” ได้<br>
+          ข้อมูลการจอง (วันที่จอง / เงินจอง / การชำระเงินจอง) <strong>กรอกหรือไม่กรอกก็ได้</strong>
+          — ที่ยังไม่มี ค่อยไปกรอกในหน้าจองหลังอนุมัติ
+        </div>
+      @endif --}}
     </div>
   </div>
 
   <form action="{{ route('purchase-order.store') }}" method="POST" enctype="multipart/form-data">
     @csrf
+    {{-- โหมด "ขออนุมัติเกินงบล่วงหน้า" → บันทึกเป็นคำขอ ยังไม่เข้าระบบจอง (JS อ่าน #isPreApproval ด้วย) --}}
+    <input type="hidden" id="isPreApproval" name="is_pre_approval" value="{{ !empty($isPreApproval) ? 1 : 0 }}">
+
+    @php
+      // ข้อมูลการจอง (วันที่จอง/เงินจอง/การจ่ายเงินจอง) — หน้าจองบังคับกรอก
+      // แต่โหมดคำขออนุมัติเกินงบ "กรอกหรือไม่กรอกก็ได้" (บางเคสมีข้อมูลแล้ว บางเคสยังไม่มี)
+      $reqIfBooking = empty($isPreApproval) ? 'required' : '';
+    @endphp
 
     <div class="row g-4">
 
@@ -185,11 +202,11 @@
                 </select>
               </div>
 
-              {{-- วันที่จอง --}}
+              {{-- วันที่จอง (โหมดคำขออนุมัติ: ไม่บังคับ) --}}
               <div class="col-md-6">
                 <label class="po-label" for="BookingDate"><i class='bx bx-calendar'></i> วันที่จอง</label>
                 <input id="BookingDate" type="date" name="BookingDate"
-                  class="form-control @error('BookingDate') is-invalid @enderror" required>
+                  class="form-control @error('BookingDate') is-invalid @enderror" {{ $reqIfBooking }}>
                 @error('BookingDate')
                   <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -380,26 +397,27 @@
                 </div>
               </div>
 
-              {{-- เงินจอง --}}
+              {{-- เงินจอง (โหมดคำขออนุมัติ: ไม่บังคับ) --}}
               <div class="col-md-4">
                 <label class="po-label" for="CashDeposit"><i class="bx bx-wallet"></i> เงินจอง</label>
                 <div class="money-wrap">
                   <input id="CashDeposit" type="text" class="form-control text-end money-input" name="CashDeposit"
-                    required placeholder="0.00">
+                    {{ $reqIfBooking }} placeholder="0.00">
                   <span class="money-suffix">฿</span>
                 </div>
               </div>
 
-              {{-- วันที่จ่ายเงินจอง --}}
+              {{-- วันที่จ่ายเงินจอง (โหมดคำขออนุมัติ: ไม่บังคับ) --}}
               <div class="col-md-4">
                 <label class="po-label" for="reservation_date"><i class='bx bx-calendar-check'></i>
                   วันที่จ่ายเงินจอง</label>
-                <input id="reservation_date" type="date" class="form-control" name="reservation_date" required>
+                <input id="reservation_date" type="date" class="form-control" name="reservation_date"
+                  {{ $reqIfBooking }}>
               </div>
 
             </div>
 
-            {{-- แถว 2 : ประเภทการจ่าย --}}
+            {{-- แถว 2 : ประเภทการจ่าย (โหมดคำขออนุมัติ: ไม่บังคับเลือก — JS ข้าม submit-guard) --}}
             <div class="row g-9 pb-2">
               <div class="col-12">
                 <div class="po-label"><i class='bx bx-money'></i> ประเภทการจ่ายเงินจอง</div>
@@ -677,7 +695,7 @@
         <i class="bx bx-arrow-back me-1"></i> ยกเลิก
       </a>
       <button type="submit" class="btn btn-primary px-5 btnSavePurchase">
-        <i class="bx bx-save me-2"></i> บันทึกการจอง
+        <i class="bx bx-save me-2"></i> {{ !empty($isPreApproval) ? 'บันทึกคำขออนุมัติ' : 'บันทึกการจอง' }}
       </button>
     </div>
 

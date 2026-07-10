@@ -131,7 +131,10 @@ class PurchaseOrderController extends Controller
 
         $prefixes = TbPrefixname::all();
 
-        return view('purchase-order.input', compact('model', 'type', 'typeSale', 'interiorColor', 'saleUser', 'prefill', 'prefixes'));
+        // สร้างจากโมดูล "ขออนุมัติเกินงบล่วงหน้า" (?pre_approval=1) → ยังไม่เป็นการจอง
+        $isPreApproval = $request->boolean('pre_approval');
+
+        return view('purchase-order.input', compact('model', 'type', 'typeSale', 'interiorColor', 'saleUser', 'prefill', 'prefixes', 'isPreApproval'));
     }
 
     public function searchAccessory(Request $request)
@@ -690,12 +693,13 @@ class PurchaseOrderController extends Controller
     // ต้อง eager load 'originalCustomer.prefix' มาก่อน
     private function customerNameWithOriginal(Salecar $s): string
     {
+        // คอลัมน์นี้ถูก render เป็น HTML ใน DataTables → ต้อง escape ชื่อที่มาจากข้อมูลผู้ใช้
         $c = $s->customer;
-        $name = implode(' ', array_filter([
+        $name = e(implode(' ', array_filter([
             $c?->prefix?->Name_TH,
             $c?->FirstName,
             $c?->LastName,
-        ]));
+        ])));
 
         if ($s->original_customer_id && $s->originalCustomer) {
             $o = $s->originalCustomer;
@@ -705,7 +709,7 @@ class PurchaseOrderController extends Controller
                 $o->LastName ?? null,
             ])));
             if ($origName !== '') {
-                $name .= "<br><small style=\"color:#6c757d;\">ผู้จอง : {$origName}</small>";
+                $name .= '<br><small style="color:#6c757d;">ผู้จอง : ' . e($origName) . '</small>';
             }
         }
 
@@ -956,7 +960,12 @@ class PurchaseOrderController extends Controller
                 ->whereNull('cancelled_at')
                 ->value('id');
 
+            // สร้างจากโมดูล "ขออนุมัติเกินงบล่วงหน้า" → ยังไม่เป็นการจอง (global scope ซ่อนไว้)
+            $isPreApproval = $request->boolean('is_pre_approval');
+
             $salecar = Salecar::create([
+                'is_pre_approval' => $isPreApproval,
+                'pre_approval_at' => $isPreApproval ? now() : null,
                 'SaleID' => $request->SaleID,
                 'type' => $request->type,
                 'type_sale' => $request->type_sale,
@@ -1090,9 +1099,11 @@ class PurchaseOrderController extends Controller
 
             DB::commit();
 
+            // คำขออนุมัติล่วงหน้า → กลับหน้าโมดูลของมัน ไม่ใช่รายการจอง (record ยังไม่เป็นการจอง)
             return response()->json([
-                'success' => true,
-                'message' => 'เพิ่มข้อมูลเรียบร้อยแล้ว'
+                'success'  => true,
+                'message'  => $isPreApproval ? 'บันทึกคำขออนุมัติเรียบร้อยแล้ว' : 'เพิ่มข้อมูลเรียบร้อยแล้ว',
+                'redirect' => $isPreApproval ? route('pre-approval.index') : route('purchase-order.index'),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1164,7 +1175,8 @@ class PurchaseOrderController extends Controller
 
     public function edit($id)
     {
-        $saleCar = Salecar::with(['customer.prefix', 'customer.currentAddress', 'customer.documentAddress', 'customerReferrer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'conStatus', 'provinces', 'remainingPayment.financeInfo', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'originalCustomer.prefix', 'originalTracking',])->findOrFail($id);
+        // ปลด scope preApproval — id-based จึงปลอดภัย และต้องแก้ไข "คำขออนุมัติล่วงหน้า" ได้ด้วย
+        $saleCar = Salecar::withoutGlobalScope('preApproval')->with(['customer.prefix', 'customer.currentAddress', 'customer.documentAddress', 'customerReferrer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'conStatus', 'provinces', 'remainingPayment.financeInfo', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'originalCustomer.prefix', 'originalTracking',])->findOrFail($id);
         $model = TbCarmodel::all();
         $finances = Finance::all();
         $subModels = TbSubcarmodel::where('model_id', $saleCar->model_id)->get();
@@ -1319,7 +1331,7 @@ class PurchaseOrderController extends Controller
             // ]);
 
 
-            $saleCar = Salecar::with('accessories')->findOrFail($id);
+            $saleCar = Salecar::withoutGlobalScope('preApproval')->with('accessories')->findOrFail($id);
 
             $turnCarID = $saleCar->TurnCarID;
 
@@ -1540,17 +1552,30 @@ class PurchaseOrderController extends Controller
             //  - ดักเฉพาะ "การเปลี่ยนเข้าเป็น 5" (ของเดิมไม่ใช่ 5) เพื่อไม่กวนการแก้ฟิลด์อื่นของรายการที่ส่งมอบไปแล้ว
             // ── เปิดตอนปิดยอด: comment block นี้เพื่อปิด gate บังคับอนุมัติก่อนส่งมอบ ──
             $deliveringNow = (int) $request->con_status === 5 && (int) $saleCar->con_status !== 5;
-            if ($deliveringNow && Auth::user()->role !== 'admin' && !$this->isApproved($saleCar)) {
-                DB::rollBack();
-                return response()->json([
-                    'success' => false,
-                    'message' => 'กรุณาขออนุมัติให้ผ่านก่อน จึงจะเปลี่ยนสถานะเป็นส่งมอบได้'
-                ], 422);
-            }
+            // ประเภทการขาย = Dealer → ไม่ต้องขออนุมัติ (เช็คค่าที่กำลังบันทึก เผื่อเพิ่งเปลี่ยนเป็น Dealer)
+            $isDealerSale = (int) $request->input('type_sale', $saleCar->type_sale) === Salecar::TYPE_SALE_DEALER;
+            $prevApprovalType = $saleCar->approval_type;
 
             $oldPlate = $saleCar->red_license;
 
             $saleCar->update($data);
+
+            // เช็คสิทธิ์ส่งมอบ "หลัง" อัปเดตข้อมูล → ใช้ balanceCampaign/รุ่นรถ ค่าล่าสุดเสมอ
+            // ดักเคส: อนุมัติงบปกติผ่านแล้ว แต่แก้ข้อมูลจนเกินงบ → ลายเซ็นเดิมใช้ไม่ได้ ต้องขออนุมัติเกินงบก่อน
+            if ($deliveringNow && !$isDealerSale && Auth::user()->role !== 'admin') {
+                $saleCar->unsetRelation('model'); // model_id อาจเปลี่ยน → อ่าน over_budget ของรุ่นใหม่
+                if (!$this->isApproved($saleCar)) {
+                    $becameOverBudget = $prevApprovalType === 'normal'
+                        && $this->approvalCase($saleCar) !== 'normal';
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => $becameOverBudget
+                            ? 'ข้อมูลเปลี่ยนแปลงจนเกินงบ — คำขออนุมัติงบปกติเดิมใช้ไม่ได้แล้ว กรุณาขออนุมัติเกินงบก่อนส่งมอบ'
+                            : 'กรุณาขออนุมัติให้ผ่านก่อน จึงจะเปลี่ยนสถานะเป็นส่งมอบได้',
+                    ], 422);
+                }
+            }
 
             // ค่างวดล่วงหน้า — เก็บลง finances_confirm.advance_installment (ค่าเดียวกัน)
             $advanceInstallment = $request->filled('advance_installment')
@@ -1991,7 +2016,8 @@ class PurchaseOrderController extends Controller
             $user = Auth::user();
 
             // ขออนุมัติ — ส่งหา "ด่านแรก" ตามเคส/brand (manager/gm/md)
-            if (in_array($action, ['request_normal', 'request_over', 'request_gm'])) {
+            // ประเภทการขาย = Dealer → ข้ามการขออนุมัติทั้งหมด (ไม่ส่งเมล/ไม่ออก token)
+            if (!$saleCar->isDealerSale() && in_array($action, ['request_normal', 'request_over', 'request_gm'])) {
                 // เก็บไฟล์ที่ผู้ขอแนบลง storage (ไว้ส่งต่อขั้นถัดไป)
                 if ($request->hasFile('approval_files')) {
                     $stored = [];
@@ -2011,6 +2037,16 @@ class PurchaseOrderController extends Controller
                 }
 
                 $case      = $this->approvalCase($saleCar);
+
+                // โมดูล "ขออนุมัติเกินงบล่วงหน้า" รับเฉพาะเคสทะลุเพดาน (b1_md) และ brand 2 เกินงบ (b2_gm)
+                if ($saleCar->is_pre_approval && !in_array($case, Salecar::PRE_APPROVAL_CASES, true)) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'คำขออนุมัติล่วงหน้ารับเฉพาะกรณีเกินงบทะลุเพดาน — รายการนี้ไม่เข้าเงื่อนไข กรุณาใช้หน้าจองปกติ',
+                    ], 422);
+                }
+
                 $stageRole = $this->firstApproverRole($case);   // manager | gm | md
 
                 $mailTo = $this->approverEmails($saleCar->brand, $saleCar->branch, $stageRole);
@@ -2028,6 +2064,8 @@ class PurchaseOrderController extends Controller
 
                 $update = [
                     'approval_type'         => $case === 'normal' ? 'normal' : 'overbudget',
+                    // เคสจริง ณ ตอนยื่นคำขอ — ใช้ตรวจว่า "ข้อมูลเปลี่ยนจนเคสไม่ตรงเดิม" แล้วต้องขอใหม่
+                    'approval_case'         => $case,
                     'approval_requested_at' => now(),
                     'approval_remaining'    => $approvalData['remaining'],
                     'approval_token'        => $token,
@@ -2058,9 +2096,13 @@ class PurchaseOrderController extends Controller
                 }
             }
 
+            // คำขออนุมัติล่วงหน้า (ยังไม่เป็นการจอง) → กลับหน้าโมดูลของมัน ไม่ใช่รายการจอง
             return response()->json([
-                'success' => true,
-                'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว'
+                'success'  => true,
+                'message'  => 'บันทึกข้อมูลเรียบร้อยแล้ว',
+                'redirect' => $saleCar->is_pre_approval
+                    ? route('pre-approval.index')
+                    : route('purchase-order.index'),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -2134,7 +2176,7 @@ class PurchaseOrderController extends Controller
 
     public function summaryPurchase($id)
     {
-        $saleCar = Salecar::with(['customer.prefix', 'model', 'carOrder', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'reservationPayment', 'remainingPayment.financeInfo', 'deliveryPayment', 'turnCar', 'provinces'])->findOrFail($id);
+        $saleCar = Salecar::withoutGlobalScope('preApproval')->with(['customer.prefix', 'model', 'carOrder', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'reservationPayment', 'remainingPayment.financeInfo', 'deliveryPayment', 'turnCar', 'provinces'])->findOrFail($id);
         $model = TbCarmodel::all();
 
         $pdf = Pdf::loadView('purchase-order.report.summary', compact('saleCar', 'model'))
@@ -2198,7 +2240,7 @@ class PurchaseOrderController extends Controller
 
     public function preview($id)
     {
-        $saleCar = Salecar::with(['customer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'campaigns', 'remainingPayment.financeInfo'])->findOrFail($id);
+        $saleCar = Salecar::withoutGlobalScope('preApproval')->with(['customer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'campaigns', 'remainingPayment.financeInfo'])->findOrFail($id);
         $model = TbCarmodel::all();
         $finances = Finance::all();
         $subModels = TbSubcarmodel::where('model_id', $saleCar->model_id)->get();

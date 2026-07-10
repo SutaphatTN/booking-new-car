@@ -56,6 +56,7 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
       $this->brand == 2 ? 'ยอดหักคอม (ผู้จัดการกรอก)' : 'ค่าคอมฝ่ายขายที่ได้ (ผู้จัดการกรอก)',
       'เหตุผลขอเกินงบ',
       'สถานะอนุมัติ',
+      'สถานะการจอง',
       'หมายเหตุ MD',
     ];
   }
@@ -65,13 +66,17 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
     $start = Carbon::parse($this->fromDate)->startOfMonth();
     $end   = Carbon::parse($this->fromDate)->endOfMonth();
 
+    // ปลด scope preApproval → เห็น "คำขออนุมัติเกินงบล่วงหน้า" ที่ยังไม่จองด้วย
+    // (แถวเดียวกันนี้จะเปลี่ยนสถานะเป็น "จองแล้ว" เมื่อกดสร้างการจอง → ไม่มีการนับซ้ำ)
     $rows = Salecar::withoutGlobalScope('userAccess')
+      ->withoutGlobalScope('preApproval')
       ->with([
         'saleUser.branchInfo',
         'customer.prefix',
         'carOrder.model',
         'carOrder.subModel',
-        'model', // ใช้คิดเคสอนุมัติ (over_budget/per_budget) ใน approvalCase()
+        'model',    // ใช้คิดเคสอนุมัติ (over_budget/per_budget) ใน approvalCase() + fallback รุ่นรถ
+        'subModel', // fallback เมื่อยังไม่ผูกรถ (คำขอล่วงหน้า)
       ])
       ->where('brand', $this->brand)
       ->where('approval_type', 'overbudget')
@@ -93,8 +98,9 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
           ($r->customer->LastName ?? '')
       );
 
-      $sub    = $r->carOrder->subModel->name ?? '-';
-      $detail = $r->carOrder->subModel->detail ?? null;
+      // คำขอล่วงหน้ายังไม่ผูกรถ (ไม่มี carOrder) → fallback ไปรุ่นที่เลือกไว้ในใบคำขอ
+      $sub    = $r->carOrder?->subModel?->name ?? $r->subModel?->name ?? '-';
+      $detail = $r->carOrder?->subModel?->detail ?? $r->subModel?->detail;
 
       // ประเภทเกินงบ จากเคสอนุมัติ (b1_manager = ไม่ทะลุเพดาน ; b1_md/b2_gm = ทะลุเพดาน)
       $type = match ($r->approvalCase()) {
@@ -120,7 +126,7 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
         optional($r->saleUser?->branchInfo)->name ?? '-',
         optional($r->saleUser)->name ?? '-',
         $customer ?: '-',
-        $r->carOrder->model->Name_TH ?? '-',
+        $r->carOrder?->model?->Name_TH ?? $r->model?->Name_TH ?? '-',
         $detail ? "{$detail} - {$sub}" : $sub,
         $type,
         $overAmount,
@@ -128,6 +134,7 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
         $r->approval_commission_deduct !== null ? (float) $r->approval_commission_deduct : 0.0,
         $r->reason_campaign ?: '-',
         $status,
+        $r->bookingStatusLabel(),
         $r->approval_md_note ?: '-',
       ];
     })->all();
@@ -159,14 +166,17 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
 
         $sheet->getRowDimension(1)->setRowHeight(25);
 
-        $sheet->setAutoFilter("A1:M{$highestRow}");
+        // คำนวณคอลัมน์สุดท้ายจากจำนวนหัวตาราง (กันเพี้ยนเวลาเพิ่ม/ลดคอลัมน์)
+        $lastCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($this->headings()));
+
+        $sheet->setAutoFilter("A1:{$lastCol}{$highestRow}");
         $sheet->freezePane('A2');
         $sheet->getTabColor()->setRGB('ffc000');
 
         // ไม่มีข้อมูล — รวมช่องแถวข้อความให้เต็มบรรทัด จัดกึ่งกลาง
         if (!$this->hasData) {
-          $sheet->mergeCells('A2:M2');
-          $sheet->getStyle('A2:M2')->getAlignment()
+          $sheet->mergeCells("A2:{$lastCol}2");
+          $sheet->getStyle("A2:{$lastCol}2")->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
           $sheet->getStyle('A2')->getFont()->setItalic(true)->getColor()->setRGB('999999');
           return;

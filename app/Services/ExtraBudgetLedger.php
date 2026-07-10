@@ -50,21 +50,25 @@ class ExtraBudgetLedger
 
         foreach ($cars as $c) {
             $balance = (float) ($c->balanceCampaign ?? 0);
+            $extra   = (float) ($c->approval_extra_budget ?? 0);
 
-            // คันเกินงบที่ผู้จัดการกรอกเก็บงบเพิ่มเติม → บวกเข้ากองหนี้ (ตำแหน่งตาม DeliveryDate)
-            $extra = (float) ($c->approval_extra_budget ?? 0);
-            if ($extra > 0) {
-                $debt += $extra;
+            // ── คันเกินงบ (balance < 0) ──
+            //  - ถ้ามีเก็บงบเพิ่มเติม → บวกเข้ากองหนี้ ณ ตำแหน่ง DeliveryDate ของมัน
+            //    (นับเฉพาะตอนที่ยัง "เกินงบจริง" — ถ้าข้อมูลถูกแก้จนไม่เกินงบแล้ว ไม่ถือเป็นหนี้)
+            //  - คันเกินงบไม่ใช่คัน "งบเหลือ" → ไม่ดูดหนี้ (หักจากคันอื่นที่ส่งมอบทีหลังเท่านั้น)
+            if ($balance < 0) {
+                if ($extra > 0) {
+                    $debt += $extra;
+                }
+                continue;
             }
 
-            // คันงบปกติ (balance ≥ 0) → ดูดหนี้จากงบเต็ม
-            if ($balance >= 0) {
-                $debtBefore = max(0.0, $debt);
-                $full       = $balance * 2;
-                $absorbed   = min($full, $debtBefore);
-                $map[$c->id] = ['absorbed' => $absorbed, 'debtBefore' => $debtBefore];
-                $debt -= $absorbed;
-            }
+            // ── คันงบปกติ (balance ≥ 0) → ดูดหนี้จากงบเต็ม ──
+            $debtBefore  = max(0.0, $debt);
+            $full        = $balance * 2;
+            $absorbed    = min($full, $debtBefore);
+            $map[$c->id] = ['absorbed' => $absorbed, 'debtBefore' => $debtBefore];
+            $debt -= $absorbed;
         }
 
         return self::$cache[$key] = $map;
