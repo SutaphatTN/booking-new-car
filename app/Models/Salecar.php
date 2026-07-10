@@ -6,6 +6,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\PreApprovalScope;
 use App\Models\Traits\TracksUserActions;
 use App\Models\Traits\UserAccessScope;
 use App\Models\CustomerTracking;
@@ -81,6 +82,7 @@ class Salecar extends Model
 {
 	use SoftDeletes;
 	use UserAccessScope;
+	use PreApprovalScope;
 	use TracksUserActions;
 
 	protected $table = 'salecars';
@@ -89,6 +91,9 @@ class Salecar extends Model
 		'attachment_url' => 'array',
 		'withdraw_attachment_url' => 'array',
 		'approval_files' => 'array',
+		'is_pre_approval' => 'bool',
+		'pre_approval_at' => 'datetime',
+		'pre_approval_booked_at' => 'datetime',
 		'CusID' => 'int',
 		'KeyInDate' => 'datetime',
 		'SaleID' => 'int',
@@ -247,6 +252,10 @@ class Salecar extends Model
 		'delivery_location',
 		'delivery_province',
 		'approval_type',
+		'approval_case',
+		'is_pre_approval',
+		'pre_approval_at',
+		'pre_approval_booked_at',
 		'approval_requested_at',
 		'approval_commission_deduct',
 		'approval_extra_budget',
@@ -432,6 +441,46 @@ class Salecar extends Model
 	public function interiorColor()
 	{
 		return $this->belongsTo(TbInteriorColor::class, 'interior_color', 'id');
+	}
+
+	/** เคสอนุมัติที่ต้องผ่านโมดูล "ขออนุมัติเกินงบล่วงหน้า" */
+	public const PRE_APPROVAL_CASES = ['b1_md', 'b2_gm'];
+
+	/**
+	 * อนุมัติแล้ว "ตรงกับข้อมูลปัจจุบัน" ไหม (mirror PurchaseOrderController::isApproved)
+	 * ต้อง eager load relation 'model' เพื่อความแม่นของเคส
+	 */
+	public function isApprovedNow(): bool
+	{
+		return match ($this->approvalCase()) {
+			'normal'         => (bool) $this->SMSignature,
+			'b1_manager'     => (bool) $this->ApprovalSignature,
+			'b1_md', 'b2_gm' => (bool) $this->GMApprovalSignature,
+			default          => false,
+		};
+	}
+
+	/** ต้องขออนุมัติล่วงหน้าไหม (เกินงบทะลุเพดาน / brand 2 เกินงบ) */
+	public function requiresPreApproval(): bool
+	{
+		return in_array($this->approvalCase(), self::PRE_APPROVAL_CASES, true);
+	}
+
+	/** สถานะการจอง (ใช้ในรายงานเกินงบ) */
+	public function bookingStatusLabel(): string
+	{
+		if ($this->is_pre_approval) {
+			return 'ยังไม่จอง';
+		}
+		return $this->pre_approval_at ? 'จองแล้ว (จากคำขอล่วงหน้า)' : 'จองแล้ว';
+	}
+
+	/** ประเภทการขาย = Dealer (tb_sale_purchase_type.id) → ไม่ต้องขออนุมัติงบ */
+	public const TYPE_SALE_DEALER = 3;
+
+	public function isDealerSale(): bool
+	{
+		return (int) $this->type_sale === self::TYPE_SALE_DEALER;
 	}
 
 	/**

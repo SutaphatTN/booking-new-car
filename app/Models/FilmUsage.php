@@ -48,9 +48,8 @@ class FilmUsage extends Model
     /**
      * ป้ายกำกับ "รุ่นรถ" สำหรับแสดงในตาราง/รายงาน
      *  - BP: ยี่ห้อ + รุ่น + ปี (กรอกเอง)
-     *  - ทั่วไป: ชื่อรุ่นจากระบบ
-     *  - ถ้าไม่มีรุ่น (มักเป็นงานของอีก brand ที่ใช้ stock ฟิล์มร่วมกัน) → แสดงชื่อ brand แทน
-     *    กัน user งงว่าเป็นของ brand ไหน (เช่น Wuling / Lepas)
+     *  - ทั่วไป: ชื่อรุ่นจากระบบ (อ่านข้าม brand ได้ — ดู model())
+     *  - ไม่มีข้อมูลรุ่นจริงๆ → '-' (แบรนด์ดูจาก brandName() / คอลัมน์แบรนด์แยก)
      */
     public function carLabel(): string
     {
@@ -58,12 +57,23 @@ class FilmUsage extends Model
             ? trim(implode(' ', array_filter([$this->car_brand, $this->car_model, $this->car_year])))
             : ($this->model?->Name_TH ?? '');
 
-        return $txt !== '' ? $txt : (config("brand.names.{$this->brand}") ?? '-');
+        return $txt !== '' ? $txt : '-';
     }
 
+    /** ชื่อแบรนด์เจ้าของงาน (stock ฟิล์มใช้ร่วมกันข้าม brand จึงต้องบอกให้ชัด) */
+    public function brandName(): string
+    {
+        return config("brand.names.{$this->brand}") ?? '-';
+    }
+
+    /**
+     * ปลดเฉพาะ BrandScope — ฟิล์มใช้ stock ร่วมกันข้าม brand (sharedByBrandGroup)
+     * จึงต้องอ่านชื่อรุ่นของ brand อื่นได้ ไม่งั้นรุ่นรถจะว่าง
+     * (ไม่ใช้ withoutGlobalScopes() เพราะยังต้องการ SoftDeletes ของ TbCarmodel)
+     */
     public function model()
     {
-        return $this->belongsTo(TbCarmodel::class, 'model_id');
+        return $this->belongsTo(TbCarmodel::class, 'model_id')->withoutGlobalScope('brandAccess');
     }
 
     public function filmBrand()

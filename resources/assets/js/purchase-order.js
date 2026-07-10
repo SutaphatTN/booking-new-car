@@ -1179,7 +1179,10 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    if (!$('input[name="reservationCondition"]:checked').val()) {
+    // โหมดคำขออนุมัติเกินงบล่วงหน้า: ไม่มีส่วน "ประเภทการจ่ายเงินจอง" ในฟอร์ม → ข้ามการเช็ค
+    const isPreApprovalForm = document.getElementById('isPreApproval')?.value === '1';
+
+    if (!isPreApprovalForm && !$('input[name="reservationCondition"]:checked').val()) {
       const $err = $('#payTypeError');
       const $group = $('#payTypeGroup');
       $err.show();
@@ -1251,7 +1254,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         setTimeout(() => {
-          window.location.href = '/purchase-order';
+          // server เป็นคนบอกปลายทาง (คำขออนุมัติล่วงหน้า → /pre-approval)
+          window.location.href = res.redirect || '/purchase-order';
         }, 1000);
       },
       error: function (xhr) {
@@ -2146,7 +2150,8 @@ $(document).ready(function () {
           timer: 2000
         });
         setTimeout(() => {
-          window.location.href = '/purchase-order';
+          // server เป็นคนบอกปลายทาง (คำขออนุมัติล่วงหน้า → /pre-approval)
+          window.location.href = res.redirect || '/purchase-order';
         }, 1000);
       },
       error: function (xhr) {
@@ -3047,7 +3052,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // check role
   const userRole = document.getElementById('userRole')?.value || '';
-  const hasApproval = document.getElementById('hasApproval').value === '1';
 
   //check brand
   const userBrand = document.getElementById('userBrand')?.value || '';
@@ -3624,6 +3628,38 @@ document.addEventListener('DOMContentLoaded', function () {
     btnRequestNormal.classList.add('d-none');
     btnRequestOverBudget.classList.add('d-none');
 
+    // ── mirror ของ Salecar::approvalCase() (คิดจากค่าสดในฟอร์ม) ──
+    const overBudgetVal = parseFloat(selectedModel?.dataset.overbudget || '0') || 0;
+    const saleBrand = parseInt(document.getElementById('saleBrand')?.value, 10) || 0;
+
+    let currentCase;
+    if (balanceCam >= 0) {
+      currentCase = 'normal';
+    } else if (saleBrand === 2) {
+      currentCase = 'b2_gm';
+    } else {
+      currentCase = Math.abs(balanceCam) * 2 <= overBudgetVal ? 'b1_manager' : 'b1_md';
+    }
+
+    // คำขออนุมัติเกินงบล่วงหน้า — รับเฉพาะ b1_md (ทะลุเพดาน) / b2_gm (brand 2 เกินงบ)
+    // เคสอื่นบล็อกตั้งแต่ Preview (server ก็ดักซ้ำอีกชั้นตอนกดขออนุมัติ)
+    const isPreApproval = document.getElementById('isPreApproval')?.value === '1';
+    if (isPreApproval && currentCase !== 'b1_md' && currentCase !== 'b2_gm') {
+      const caseText = currentCase === 'normal' ? 'ยอดปกติ (ไม่เกินงบ)' : 'เกินงบ แต่ไม่ทะลุเพดาน';
+      btnSave.classList.remove('d-none');
+      content.innerHTML =
+        '<div class="alert alert-warning d-flex align-items-start gap-2 mb-3">' +
+        '<i class="bx bx-error-circle fs-5"></i>' +
+        '<div><strong>ขออนุมัติล่วงหน้าไม่ได้</strong> — รายการนี้เป็น <strong>' +
+        caseText +
+        '</strong><br>หน้านี้รับเฉพาะกรณี <strong>เกินงบทะลุเพดาน</strong> <br>' +
+        'บันทึกข้อมูลไว้ก่อนได้ แต่ยังส่งขออนุมัติไม่ได้ — หากต้องการจองตามปกติ กรุณาใช้หน้า “เพิ่มรายการจอง”</div>' +
+        '</div>' +
+        html;
+      modal.show();
+      return;
+    }
+
     // ===== ปิดการขออนุมัติชั่วคราว (วันปิดยอด) — แสดงแค่ปุ่มบันทึก ทุก role =====
     // เปิดใช้ block นี้ (uncomment) เพื่อ "ปิด" การขออนุมัติชั่วคราวอีกครั้ง
     // btnSave.classList.remove('d-none');
@@ -3640,16 +3676,47 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // อนุมัติแล้ว → บันทึกได้
-    if (hasApproval) {
+    // ประเภทการขาย = Dealer → ไม่ต้องขออนุมัติ (อ่านค่าที่เลือกอยู่สดๆ เผื่อเพิ่งเปลี่ยนยังไม่บันทึก)
+    const dealerTypeId = parseInt(document.getElementById('dealerTypeSaleId')?.value, 10) || 0;
+    const typeSaleVal = parseInt(document.getElementById('type_sale')?.value, 10) || 0;
+    if (dealerTypeId > 0 && typeSaleVal === dealerTypeId) {
       btnSave.classList.remove('d-none');
       content.innerHTML = html;
       modal.show();
       return;
     }
 
-    // ขออนุมัติแล้ว รอผลอนุมัติ → แสดงแค่ปิด (ยังบันทึกไม่ได้)
+    // ── ประเมิน "อนุมัติแล้วหรือยัง" จากค่าสดในฟอร์ม (mirror isApproved ฝั่ง server) ──
+    // ดักทั้ง 2 แบบ: งบปกติ→เกินงบ  และ  เกินงบไม่ทะลุเพดาน→ทะลุเพดาน (b1_manager→b1_md)
+    const smSig = document.getElementById('smSignature')?.value === '1';
+    const appSig = document.getElementById('approvalSignature')?.value === '1';
+    const gmSig = document.getElementById('gmApprovalSignature')?.value === '1';
+
+    // mirror ของ isApproved(): เคสไหนต้องใช้ลายเซ็นตัวไหน
+    const approvedNow =
+      currentCase === 'normal' ? smSig : currentCase === 'b1_manager' ? appSig : gmSig;
+
+    // อนุมัติแล้ว (ตรงกับข้อมูลปัจจุบัน) → บันทึกได้
+    if (approvedNow) {
+      btnSave.classList.remove('d-none');
+      content.innerHTML = html;
+      modal.show();
+      return;
+    }
+
+    // คำขอเดิม "ใช้ไม่ได้แล้ว" ถ้าเคสเปลี่ยนไปจากตอนยื่นคำขอ → เปิดให้ขออนุมัติใหม่
+    const storedCase = document.getElementById('approvalCase')?.value || '';
+    const approvalType = document.getElementById('approvalType')?.value || '';
+    let staleRequest = false;
     if (approvalRequested) {
+      staleRequest = storedCase
+        ? storedCase !== currentCase
+        : // ใบเก่าที่ยังไม่มี approval_case → เทียบหยาบด้วย approval_type (งบปกติ ↔ เกินงบ)
+          (balanceCam < 0) !== (approvalType === 'overbudget');
+    }
+
+    // ขออนุมัติแล้ว รอผลอนุมัติ (เคสยังตรงเดิม) → แสดงแค่ปิด (ยังบันทึกไม่ได้)
+    if (approvalRequested && !staleRequest) {
       content.innerHTML = html;
       modal.show();
       return;
@@ -3665,9 +3732,6 @@ document.addEventListener('DOMContentLoaded', function () {
       // แยกเกินงบ 2 แบบ (mirror approvalCase):
       //  - brand 2 → เกินงบส่ง GM เสมอ
       //  - brand 1/3 เทียบ "ยอดเต็ม" (×2) กับ over_budget : เกิน > เพดาน → ส่ง GM (จบที่ GM, CC md) ; ≤ เพดาน → manager จบ
-      const overBudgetVal = parseFloat((selectedModel?.dataset.overbudget || '0')) || 0;
-      const saleBrand = parseInt(document.getElementById('saleBrand')?.value, 10) || 0;
-
       if (saleBrand === 2) {
         btnRequestOverBudget.dataset.level = 'gm';
         btnRequestOverBudget.textContent = 'ขออนุมัติเกินงบ (GM)';

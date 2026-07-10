@@ -52,6 +52,8 @@
         <input type="hidden" id="approvalCommissionDeduct" value="{{ $saleCar->approval_commission_deduct }}">
         {{-- เก็บงบเพิ่มเติม: หนี้คงเหลือก่อนถึงคันนี้ (เคสงบปกติหักจากงบเต็มก่อนหาร 2) --}}
         <input type="hidden" id="extraDebtBefore" value="{{ $extraDebtBefore ?? 0 }}">
+        {{-- คำขออนุมัติเกินงบล่วงหน้า (ยังไม่เป็นการจอง) — Preview จะบล็อกถ้าเคสไม่ใช่ทะลุเพดาน --}}
+        <input type="hidden" id="isPreApproval" value="{{ $saleCar->is_pre_approval ? 1 : 0 }}">
 
         <ul class="nav nav-pills mb-4 nav-fill" role="tablist">
 
@@ -2568,6 +2570,11 @@
                   value="{{ $saleCar->approval_requested_at ? 1 : 0 }}">
 
                 <input type="hidden" id="approvalType" value="{{ $saleCar->approval_type ?? '' }}">
+
+                {{-- เคสอนุมัติ ณ ตอนที่ "ยื่นคำขอ" (normal | b1_manager | b1_md | b2_gm)
+                     ใช้เทียบกับเคสปัจจุบัน → ถ้าเคสเปลี่ยน (เช่น เกินงบไม่ทะลุเพดาน → ทะลุเพดาน)
+                     คำขอเดิมใช้ไม่ได้ ต้องเปิดให้ขออนุมัติใหม่ --}}
+                <input type="hidden" id="approvalCase" value="{{ $saleCar->approval_case ?? '' }}">
 
                 @if (!$isHistory)
                   <div class="mt-6 d-flex justify-content-end gap-2">

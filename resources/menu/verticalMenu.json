@@ -37,7 +37,7 @@
     {
       "name": "การจอง/ซื้อ",
       "icon": "menu-icon icon-base bx bx-file",
-      "slug": "purchase-order",
+      "slug": ["purchase-order", "pre-approval"],
       "submenu": [
         {
           "url": "purchase-order",
@@ -48,6 +48,11 @@
           "url": "purchase-order/create",
           "name": "เพิ่มรายการจอง",
           "slug": "purchase-order.create"
+        },
+        {
+          "url": "pre-approval",
+          "name": "ขออนุมัติเกินงบล่วงหน้า",
+          "slug": "pre-approval.index"
         },
         {
           "url": "sale/viewCommission",

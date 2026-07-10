@@ -48,8 +48,10 @@ class FilmUsageController extends Controller
             $totalSqft  = $r->items->sum('sqft_used');
             $totalPrice = $r->items->sum('price');
 
-            // รุ่นรถ — ถ้าไม่มีรุ่น (งานของอีก brand ที่ใช้ stock ร่วมกัน) จะ fallback เป็นชื่อ brand
-            $modelText = $r->carLabel();
+            // รุ่นรถจริงเสมอ (relation ปลด BrandScope) + บอกแบรนด์เจ้าของงานใต้ชื่อ
+            // เพราะ stock ฟิล์มใช้ร่วมกันข้าม brand — ต้องรู้ว่างานนี้ของแบรนด์ไหน
+            $modelText = e($r->carLabel())
+                . '<div class="text-muted" style="font-size:.72rem;">' . e($r->brandName()) . '</div>';
 
             return [
                 'No'          => $index + 1,

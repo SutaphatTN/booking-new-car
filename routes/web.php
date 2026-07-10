@@ -38,6 +38,7 @@ use App\Http\Controllers\stock_film\StockFilmController;
 use App\Http\Controllers\service_check_tracking\ServiceCheckTrackingController;
 use App\Http\Controllers\customer_relation\PreDeliveryInspectionController;
 use App\Http\Controllers\customer_relation\SsiController;
+use App\Http\Controllers\pre_approval\PreApprovalController;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -592,6 +593,19 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('ssi/{salecarId}/contact/{contactId}', [SsiController::class, 'deleteContact'])->name('ssi.contact.delete');
     Route::post('ssi/{salecarId}/tab2', [SsiController::class, 'saveTab2'])->name('ssi.tab2.save');
     Route::post('ssi/{salecarId}/complete', [SsiController::class, 'markComplete'])->name('ssi.complete');
+
+    // ขออนุมัติเกินงบล่วงหน้า (ยังไม่เป็นการจอง)
+    //  - ดูลิสต์: admin/audit_lead/manager/gm/md + sale/lead_sale (เห็นเฉพาะของตัวเอง)
+    //  - สร้างการจอง: admin/audit_lead/manager/gm เท่านั้น
+    Route::middleware('role:admin,audit_lead,manager,gm,md,sale,lead_sale')->group(function () {
+        Route::get('pre-approval', [PreApprovalController::class, 'index'])->name('pre-approval.index');
+        Route::get('pre-approval/list', [PreApprovalController::class, 'list']);
+        // ลบ: sale ลบได้เฉพาะของตัวเองที่ยังไม่ส่งขออนุมัติ (ตรวจจริงใน canDelete())
+        Route::delete('pre-approval/{id}', [PreApprovalController::class, 'destroy'])->name('pre-approval.destroy');
+    });
+    Route::post('pre-approval/{id}/convert', [PreApprovalController::class, 'convert'])
+        ->middleware('role:admin,audit_lead,manager,gm')
+        ->name('pre-approval.convert');
 
     //all resource
     Route::resource('customer-tracking', CustomerTrackingController::class);
