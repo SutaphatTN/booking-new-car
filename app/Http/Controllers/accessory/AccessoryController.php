@@ -150,8 +150,39 @@ class AccessoryController extends Controller
         return response()->json($subModels);
     }
 
+    /**
+     * ราคาทุนอะไหล่ (cost_spare) ใช้เป็นยอด "ของแถม" ตอนขออนุมัติเกินงบ
+     * ถ้าเป็น 0 ยอดที่เหลือในอีเมลจะสูงกว่าความจริง → ห้ามกรอก 0 ผ่านฟอร์ม
+     *
+     * $allowZero = true เฉพาะตอนแก้ไขแถวที่ค่าเดิมใน DB เป็น 0 อยู่แล้ว (ตั้งไว้เองจากฐานข้อมูล)
+     * เพื่อให้ยังแก้ชื่อ/วันที่ของแถวนั้นได้โดยไม่ถูกบังคับทับ 0 ทิ้ง
+     *
+     * ต้องเรียก "นอก" try/catch เพราะ ValidationException เป็นลูกของ \Exception
+     */
+    private function validateCostSpare(Request $request, bool $allowZero = false): void
+    {
+        $request->merge([
+            'cost_spare' => $request->filled('cost_spare')
+                ? str_replace(',', '', (string) $request->cost_spare)
+                : null,
+        ]);
+
+        $request->validate([
+            'cost_spare' => $allowZero
+                ? 'required|numeric|min:0'
+                : 'required|numeric|gt:0',
+        ], [
+            'cost_spare.required' => 'กรุณากรอกราคาทุนอะไหล่',
+            'cost_spare.numeric'  => 'ราคาทุนอะไหล่ต้องเป็นตัวเลข',
+            'cost_spare.gt'       => 'ราคาทุนอะไหล่ต้องมากกว่า 0',
+            'cost_spare.min'      => 'ราคาทุนอะไหล่ต้องไม่ติดลบ',
+        ]);
+    }
+
     function store(Request $request)
     {
+        $this->validateCostSpare($request);
+
         try {
             $active = 'active';
 
@@ -163,9 +194,7 @@ class AccessoryController extends Controller
                 'is_standard' => $request->boolean('is_standard'),
                 'is_registration' => $request->boolean('is_registration'),
                 'accessoryPartner_id' => $request->accessoryPartner_id,
-                'cost_spare' => $request->filled('cost_spare')
-                    ? str_replace(',', '', $request->cost_spare)
-                    : null,
+                'cost_spare' => $request->cost_spare,
                 'cost' => $request->filled('cost')
                     ? str_replace(',', '', $request->cost)
                     : null,
@@ -224,13 +253,15 @@ class AccessoryController extends Controller
 
     public function update(Request $request, $id)
     {
+        $acc = AccessoryPrice::findOrFail($id);
+
+        // ค่าเดิมเป็น 0 (ตั้งจาก DB) → ยอมให้บันทึก 0 ซ้ำได้ | NULL หรือ > 0 → บังคับ > 0
+        $this->validateCostSpare($request, $acc->cost_spare !== null && (float) $acc->cost_spare === 0.0);
+
         try {
-            $acc = AccessoryPrice::findOrFail($id);
             $data = $request->except(['_token', '_method']);
 
-            $data['cost_spare'] = $request->cost_spare
-                ? str_replace(',', '', $request->cost_spare)
-                : null;
+            $data['cost_spare'] = $request->cost_spare;
 
             $data['cost'] = $request->cost
                 ? str_replace(',', '', $request->cost)

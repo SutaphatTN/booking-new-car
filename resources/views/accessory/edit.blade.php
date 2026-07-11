@@ -134,7 +134,9 @@
                       class="form-control text-end money-input @error('cost_spare') is-invalid @enderror"
                       name="cost_spare"
                       value="{{ $acc->cost_spare !== null ? number_format($acc->cost_spare, 2) : '' }}"
-                      placeholder="0.00" required>
+                      {{-- ค่าเดิมเป็น 0 อยู่แล้ว → บันทึก 0 ซ้ำได้ (ตั้งค่า 0 ใหม่ต้องทำใน DB) --}}
+                      @if ($acc->cost_spare !== null && (float) $acc->cost_spare === 0.0) data-allow-zero="1" @endif
+                      placeholder="ต้องมากกว่า 0" required>
                   </div>
                   @error('cost_spare')
                     <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>

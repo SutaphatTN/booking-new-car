@@ -125,7 +125,7 @@
                     <span class="input-group-text ig-amber">฿</span>
                     <input id="inp_acc_cost_spare" type="text"
                       class="form-control text-end money-input @error('cost_spare') is-invalid @enderror"
-                      name="cost_spare" placeholder="0.00" required>
+                      name="cost_spare" placeholder="ต้องมากกว่า 0" required>
                   </div>
                   @error('cost_spare')
                     <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
