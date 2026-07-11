@@ -752,6 +752,8 @@ class PurchaseOrderController extends Controller
         if ($search) {
             $base->where(function ($q) use ($search) {
                 $q->whereHas('customer', fn($q) => $q->searchFullName($search))
+                // ค้นชื่อ "ผู้จองเดิม" ด้วย (กรณีเปลี่ยนผู้ซื้อ) — ตารางแสดง 2 ชื่อ ต้องค้นเจอทั้งคู่
+                ->orWhereHas('originalCustomer', fn($q) => $q->searchFullName($search))
                 ->orWhereHas('saleUser', fn($q) =>
                     $q->where('name', 'like', "%{$search}%")
                 )
@@ -2641,6 +2643,9 @@ class PurchaseOrderController extends Controller
         if ($searchValue) {
             $query->where(function ($q) use ($searchValue) {
                 $q->whereHas('customer', function ($cq) use ($searchValue) {
+                    $cq->searchFullName($searchValue);
+                })->orWhereHas('originalCustomer', function ($cq) use ($searchValue) {
+                    // ค้นชื่อ "ผู้จองเดิม" ด้วย (กรณีเปลี่ยนผู้ซื้อ) — ตารางแสดง 2 ชื่อ ต้องค้นเจอทั้งคู่
                     $cq->searchFullName($searchValue);
                 })->orWhereHas('carOrder', function ($cq) use ($searchValue) {
                     $cq->where('order_code', 'like', "%{$searchValue}%");

@@ -1540,12 +1540,17 @@
   }
 
   /* Delivery date cards (sum-tab4) */
+  /* ซ่อนไอคอนตกแต่งบนมือถือ → input เต็มความกว้างการ์ด ยาวเท่าช่องวันที่เซ็นสัญญา
+     (desktop ยังมีไอคอนเหมือนเดิม) กันปัญหา native date แคบจน wrap 2 บรรทัด */
   #sum-tab4 .date-card {
-    overflow: hidden;
+    padding: 12px 14px;
+  }
+  #sum-tab4 .date-card-icon {
+    display: none;
   }
   #sum-tab4 .date-card-body {
     min-width: 0;
-    overflow: hidden;
+    width: 100%;
   }
   #sum-tab4 .date-card-label {
     white-space: normal;
@@ -1556,6 +1561,22 @@
     width: 100%;
     max-width: 100%;
     min-width: 0;
+  }
+
+  /* ── มือถือ: ช่องหมายเหตุเตี้ยไป (rows=1/2) → ให้สูงพอพิมพ์หลายบรรทัด ── */
+  #reason_other_cost,
+  #reason_other_cost_fi,
+  #po_td_note {
+    min-height: 92px;
+    line-height: 1.5;
+  }
+
+  /* วันที่ (วันส่งมอบ + ทดลองขับ) — ปล่อยเป็น .form-control เปล่า เหมือนช่อง
+     "วันที่เซ็นสัญญา" ที่ render 1 บรรทัดปกติบนมือถือ; ห้ามใส่ min-height/height/
+     padding override เพราะ native date บนมือถือจะดัน icon ตกเป็น 2 บรรทัด
+     (เต็มความกว้างได้จากการซ่อน .date-card-icon ด้านบนแล้ว) */
+  #po_td_note {
+    width: 100%;
   }
 }
 

@@ -86,6 +86,26 @@ $(document).on('blur', '.money-input', function () {
   }
 });
 
+// ราคาทุนอะไหล่ต้อง > 0 (checkValidity ดัก required ได้ แต่ไม่ดัก 0)
+// ยกเว้นแถวที่ค่าเดิมใน DB เป็น 0 อยู่แล้ว (data-allow-zero) → บันทึก 0 ซ้ำได้
+// เช็คก่อนยิง ajax เพื่อให้ modal ยังเปิดอยู่ ผู้ใช้ไม่เสียข้อมูลที่กรอกมา
+function costSpareIsValid(form) {
+  const $input = $(form).find('[name="cost_spare"]');
+  const allowZero = $input.data('allow-zero') == 1;
+  const value = parseFloat(String($input.val()).replace(/,/g, ''));
+
+  const ok = allowZero ? value >= 0 : value > 0;
+  if (!ok) {
+    Swal.fire({
+      icon: 'error',
+      title: 'ข้อมูลไม่ถูกต้อง',
+      text: allowZero ? 'กรุณากรอกราคาทุนอะไหล่' : 'ราคาทุนอะไหล่ต้องมากกว่า 0'
+    }).then(() => $input.trigger('focus'));
+    return false;
+  }
+  return true;
+}
+
 //view : toggle
 $(document).on('change', '.status-acc', function () {
   const $checkbox = $(this);
@@ -196,6 +216,9 @@ $(document).on('click', '.btnStoreAccessory', function (e) {
     form.reportValidity();
     return;
   }
+  if (!costSpareIsValid(form)) {
+    return;
+  }
 
   const url = $(form).attr('action');
   const formData = new FormData(form);
@@ -272,6 +295,10 @@ $(document).on('click', '.btnEditAcc', function () {
         e.preventDefault();
 
         const form = $modal.find('form')[0];
+        if (!costSpareIsValid(form)) {
+          return;
+        }
+
         const formData = new FormData(form);
 
         $.ajax({
