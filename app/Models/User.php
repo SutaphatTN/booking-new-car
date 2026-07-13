@@ -122,15 +122,33 @@ class User extends Authenticatable
 		$all = array_map('intval', array_keys(config('brand.names', [])));
 
 		if (in_array($this->role, ['admin', 'gm', 'md', 'account', 'registration', 'adminPage', 'audit_lead'], true)) {
-			return $all;
-		}
-
-		if (in_array($this->role, ['sale', 'audit', 'manager'], true)) {
+			$base = $all;
+		} elseif (in_array($this->role, ['sale', 'audit', 'manager'], true)) {
 			$home = (int) $this->getOriginal('brand');
-			return array_map('intval', config("brand.sale_switch_scope.$home", [$home]));
+			$base = array_map('intval', config("brand.sale_switch_scope.$home", [$home]));
+		} else {
+			// marketing/cro/sp/bp/cs/lead_sale และอื่นๆ → ทุก brand ยกเว้น GWM(2)
+			$base = array_values(array_diff($all, [2]));
 		}
 
-		// marketing/cro/sp/bp/cs/lead_sale และอื่นๆ → ทุก brand ยกเว้น GWM(2)
-		return array_values(array_diff($all, [2]));
+		// สิทธิ์ขาย brand เสริม "ราย user" (config brand.sale_switch_extra[user id])
+		$extra = array_map('intval', (array) config("brand.sale_switch_extra.{$this->id}", []));
+
+		return array_values(array_unique(array_merge($base, $extra)));
+	}
+
+	/**
+	 * user id ที่ได้สิทธิ์ขาย brand นี้ "แบบราย user" (config brand.sale_switch_extra)
+	 * ใช้เสริม dropdown เซลล์ตอนทำงานใต้ brand นั้น (คู่กับ sale_pool ที่เป็นระดับ brand)
+	 */
+	public static function extraSaleUserIdsForBrand(int $brand): array
+	{
+		$ids = [];
+		foreach (config('brand.sale_switch_extra', []) as $userId => $brands) {
+			if (in_array($brand, array_map('intval', (array) $brands), true)) {
+				$ids[] = (int) $userId;
+			}
+		}
+		return $ids;
 	}
 }
