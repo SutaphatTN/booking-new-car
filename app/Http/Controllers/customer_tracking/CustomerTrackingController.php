@@ -411,8 +411,12 @@ class CustomerTrackingController extends Controller
         $sources       = TbSalecarType::whereNotIn('main_source', $hiddenMains)->get();
         $decisions     = TbDecision::all();
         $saleBrands = config("brand.sale_pool.{$authUser->brand}", [$authUser->brand]);
+        $extraSaleIds = User::extraSaleUserIdsForBrand((int) $authUser->brand);
         $saleUser = User::whereIn('role', ['sale', 'lead_sale'])
-            ->whereIn('brand', $saleBrands)
+            ->where(function ($q) use ($saleBrands, $extraSaleIds) {
+                $q->whereIn('brand', $saleBrands)
+                    ->orWhereIn('id', $extraSaleIds);
+            })
             ->when($authUser->brand == 2, function ($q) use ($authUser) {
                 $q->where('branch', $authUser->branch);
             })
