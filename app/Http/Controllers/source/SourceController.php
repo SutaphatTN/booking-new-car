@@ -475,8 +475,8 @@ class SourceController extends Controller
         // สถานที่ทั้งหมดของเดือนนั้น (อ้างอิงจาก period ของใบขออนุมัติ)
         $places = SourcePlace::with(['source', 'clears'])
             ->whereHas('request', fn($q) => $q->where('period', $period))
-            ->orderBy('salecar_type_id')
-            ->orderBy('start_date')
+            ->orderBy('start_date')          // เรียงตามวันเริ่มงานเป็นหลัก
+            ->orderBy('salecar_type_id')      // วันเดียวกัน → เรียงตามประเภทเป็นตัวรอง
             ->get();
 
         // ยอด PP จริง = จำนวนการติดตามลูกค้าที่เลือกสถานที่นี้ (นับทุก scope, ไม่รวมที่ลบ)

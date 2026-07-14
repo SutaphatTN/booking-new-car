@@ -163,6 +163,8 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
                 : 'ซื้อสด';
 
             return [
+                'id'         => $r->id,
+                'con_status' => $r->con_status,
                 'customer'   => $customerName,
                 'id_card'    => $r->customer?->IDNumber ?? '-',
                 'phone'      => $r->customer?->formatted_mobile ?? '-',

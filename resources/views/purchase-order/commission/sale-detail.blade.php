@@ -1,5 +1,6 @@
 @php
   $isBrand13 = in_array((int) $brand, [1, 3], true);
+  $isBrand2  = (int) $brand === 2;
   $ssiAmount = $ssi['active'] ? (float) $ssi['amount'] : 0.0;
   // $net = คอมพื้นฐาน(CK เดือน P−1) + SSI + ค่าคอมรถจ่ายจริงเดือน P (คิดมาจาก controller)
 @endphp
@@ -43,6 +44,9 @@
                 <th class="text-end">คอมอื่นๆ</th>
                 <th class="text-end">ดอกเบี้ย</th>
                 <th class="text-end">รถเทิร์น</th>
+                @if ($isBrand2)
+                  <th class="text-end">budget หัก</th>
+                @endif
                 <th class="text-end">รวมค่าคอมรถ</th>
               </tr>
             </thead>
@@ -71,25 +75,33 @@
                   </td>
                   <td class="text-end">{{ number_format($c['accessoryCom'], 2) }}</td>
                   <td class="text-end" style="min-width:120px;">
-                    <input type="number" step="0.01"
+                    <input type="text" inputmode="decimal"
                       class="form-control form-control-sm text-end car-special-input"
                       data-id="{{ $c['id'] }}"
-                      data-rowbase="{{ $c['commissionSale'] - $c['specialCom'] }}"
+                      data-rowbase="{{ $c['commissionSale'] - $c['specialCom'] - $c['budgetDeduct'] }}"
                       value="{{ $c['specialCom'] }}">
                   </td>
                   <td class="text-end">{{ number_format($c['interestCom'], 2) }}</td>
                   <td class="text-end">{{ number_format($c['turnCarCom'], 2) }}</td>
+                  @if ($isBrand2)
+                    <td class="text-end" style="min-width:120px;">
+                      <input type="text" inputmode="decimal"
+                        class="form-control form-control-sm text-end car-budget-input"
+                        data-id="{{ $c['id'] }}"
+                        value="{{ $c['budgetDeduct'] ?: '' }}" placeholder="0">
+                    </td>
+                  @endif
                   <td class="text-end fw-semibold car-row-total">{{ number_format($c['commissionSale'], 2) }}</td>
                 </tr>
               @empty
                 <tr>
-                  <td colspan="9" class="text-center py-4 text-muted">ไม่มีรายการส่งมอบในเดือนนี้</td>
+                  <td colspan="{{ $isBrand2 ? 10 : 9 }}" class="text-center py-4 text-muted">ไม่มีรายการส่งมอบในเดือนนี้</td>
                 </tr>
               @endforelse
             </tbody>
             <tfoot>
               <tr class="table-light fw-bold">
-                <td colspan="8" class="text-end">รวมค่าคอมรถทั้งหมด</td>
+                <td colspan="{{ $isBrand2 ? 9 : 8 }}" class="text-end">รวมค่าคอมรถทั้งหมด</td>
                 <td class="text-end" id="carsBaseTotal">{{ number_format($baseCommission, 2) }}</td>
               </tr>
             </tfoot>
@@ -127,7 +139,7 @@
                 <label for="deduct_absence" class="mf-label form-label">
                   <i class="bx bx-minus-circle text-danger"></i> ค่าขาด/ลา/มาสาย (หัก)
                 </label>
-                <input type="number" step="0.01" class="form-control text-end" id="deduct_absence"
+                <input type="text" inputmode="decimal" class="form-control text-end cmoney" id="deduct_absence"
                   name="deduct_absence" value="{{ $adjustment->deduct_absence ?? 0 }}">
               </div>
             @else
@@ -136,32 +148,50 @@
                 <label for="com_discipline" class="mf-label form-label">
                   <i class="bx bx-medal text-success"></i> ค่าคอมวินัย
                 </label>
-                <input type="number" step="0.01" class="form-control text-end" id="com_discipline"
+                <input type="text" inputmode="decimal" class="form-control text-end cmoney" id="com_discipline"
                   name="com_discipline" value="{{ $adjustment->com_discipline ?? 0 }}">
               </div>
               <div class="col-md-3 col-6">
                 <label for="deduct_absence" class="mf-label form-label">
                   <i class="bx bx-minus-circle text-danger"></i> ค่าขาด/ลา/มาสาย (หัก)
                 </label>
-                <input type="number" step="0.01" class="form-control text-end" id="deduct_absence"
+                <input type="text" inputmode="decimal" class="form-control text-end cmoney" id="deduct_absence"
                   name="deduct_absence" value="{{ $adjustment->deduct_absence ?? 0 }}">
               </div>
               <div class="col-md-3 col-6">
                 <label for="com_lead" class="mf-label form-label">
                   <i class="bx bx-target-lock text-primary"></i> คอม Lead
                 </label>
-                <input type="number" step="0.01" class="form-control text-end" id="com_lead" name="com_lead"
+                <input type="text" inputmode="decimal" class="form-control text-end cmoney" id="com_lead" name="com_lead"
                   value="{{ $adjustment->com_lead ?? 0 }}">
               </div>
               <div class="col-md-3 col-6">
                 <label for="com_clip" class="mf-label form-label">
                   <i class="bx bx-video text-info"></i> คอม Clip
                 </label>
-                <input type="number" step="0.01" class="form-control text-end" id="com_clip" name="com_clip"
+                <input type="text" inputmode="decimal" class="form-control text-end cmoney" id="com_clip" name="com_clip"
                   value="{{ $adjustment->com_clip ?? 0 }}">
               </div>
             @endif
           </div>
+
+          {{-- ── budget ยกมา (brand 2) — กระเป๋าตังค์จากรถส่งมอบเดือนก่อน × 1,000 ── --}}
+          @if ($budget['active'])
+            <div class="alert alert-primary d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3"
+              id="budgetWalletBox" data-carried="{{ $budget['carried'] }}">
+              <div class="small">
+                <i class="bx bx-wallet me-1"></i>
+                <strong>budget ยกมา</strong> (จากรถส่งมอบเดือนก่อน × 1,000)
+                <div class="mt-1">
+                  ยกมา <strong>{{ number_format($budget['carried'], 2) }}</strong> ฿
+                  · ใช้ไป (budget หัก) <strong class="text-danger" id="budgetUsedDisplay">{{ number_format($budget['used'], 2) }}</strong> ฿
+                </div>
+              </div>
+              <div class="fw-bold text-primary">
+                คงเหลือ = <span id="budgetRemainingDisplay">{{ number_format($budget['remaining'], 2) }}</span> ฿
+              </div>
+            </div>
+          @endif
 
           {{-- ── คอม SSI (brand 1 เดือน 3/10) — เฉลี่ยแยกสาขา + เกณฑ์ ≥18 คัน/≥1 ทุกเดือน ── --}}
           @if ($ssi['active'])

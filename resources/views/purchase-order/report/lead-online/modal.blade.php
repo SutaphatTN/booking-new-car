@@ -6,7 +6,7 @@
           <div class="mf-hd-icon"><i class="bx bx-download fs-5 text-white"></i></div>
           <div>
             <h6 class="mb-0 fw-bold text-white mf-hd-title">จัดสรร Lead Online</h6>
-            <small class="text-white mf-hd-sub">เลือกเดือน (brand 1,3 รายเดือน · brand 2,4 รายไตรมาส · แยก sheet ทุกยี่ห้อ)</small>
+            <small class="text-white mf-hd-sub">เลือกเดือน (brand Mitsu, Wuling รายเดือน · brand GWM, Lepas รายไตรมาส · แยก sheet ทุกยี่ห้อ)</small>
           </div>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>

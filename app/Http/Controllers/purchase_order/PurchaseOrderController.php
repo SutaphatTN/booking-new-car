@@ -44,12 +44,14 @@ use App\Models\TbPricelistCar;
 use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
 use App\Models\User;
+use App\Models\TbBranch;
 use App\Services\GPQuery;
 use App\Services\SaleCommissionQuery;
 use App\Services\SsiCommissionQuery;
 use App\Services\CarCommissionQuery;
 use App\Services\HeldCommissionQuery;
 use App\Services\ExtraBudgetLedger;
+use App\Services\BudgetWallet;
 use App\Services\OneDriveService;
 use App\Support\ScopeBypass;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -1254,7 +1256,17 @@ class PurchaseOrderController extends Controller
         $extraAbsorbed   = ExtraBudgetLedger::absorbedFor($saleCar);
         $extraDebtBefore = ExtraBudgetLedger::debtBeforeFor($saleCar);
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore'));
+        // budget ยกมา (brand 2) — งบเดือนก่อน × 1,000 ; availableBefore = คงเหลือก่อนหักคันนี้ (ตอนนั้นมี budget เท่าไหร่)
+        $budgetWallet = null;
+        if ((int) $saleCar->brand === 2 && $saleCar->DeliveryInCKDate) {
+            $ck = Carbon::parse($saleCar->DeliveryInCKDate);
+            $budgetWallet = [
+                'carried'         => BudgetWallet::carried((int) $saleCar->SaleID, $ck->year, $ck->month),
+                'availableBefore' => BudgetWallet::remaining((int) $saleCar->SaleID, $ck->year, $ck->month, $saleCar->id),
+            ];
+        }
+
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet'));
     }
 
     public function update(Request $request, $id)
@@ -1502,6 +1514,9 @@ class PurchaseOrderController extends Controller
                     : null,
                 'CommissionSpecial' => $request->filled('CommissionSpecial')
                     ? str_replace(',', '', $request->CommissionSpecial)
+                    : null,
+                'budget_deduct' => $request->filled('budget_deduct')
+                    ? str_replace(',', '', $request->budget_deduct)
                     : null,
                 'ApprovalSignature' => $request->ApprovalSignature,
                 'ApprovalSignatureDate' => $this->toGregorian($request->ApprovalSignatureDate),
@@ -2971,7 +2986,8 @@ class PurchaseOrderController extends Controller
                 'specialCom'      => $specialCom,
                 'interestCom'     => $interestCom,
                 'turnCarCom'      => $turnCarCom,
-                'commissionSale'  => $r->effectiveCommissionSale(),
+                'budgetDeduct'    => $r->effectiveBudgetDeduct(),   // budget หัก (brand 2)
+                'commissionSale'  => $r->effectiveCommissionSale(), // รวมค่าคอมรถ (รวม budget หักแล้ว)
             ];
         });
 
@@ -3058,6 +3074,15 @@ class PurchaseOrderController extends Controller
 
         $months = [1 => 'มกราคม', 2 => 'กุมภาพันธ์', 3 => 'มีนาคม', 4 => 'เมษายน', 5 => 'พฤษภาคม', 6 => 'มิถุนายน', 7 => 'กรกฎาคม', 8 => 'สิงหาคม', 9 => 'กันยายน', 10 => 'ตุลาคม', 11 => 'พฤศจิกายน', 12 => 'ธันวาคม'];
 
+        // budget ยกมา (brand 2) — กระเป๋าตังค์จากรถส่งมอบเดือนก่อน × 1,000 ; หักผ่าน budget_deduct ต่อคัน
+        $carried = $brand === 2 ? BudgetWallet::carried((int) $saleId, $year, $month) : 0.0;
+        $budget = [
+            'active'    => $brand === 2,
+            'carried'   => $carried,
+            'used'      => $brand === 2 ? BudgetWallet::used((int) $saleId, $year, $month) : 0.0,
+            'remaining' => $brand === 2 ? BudgetWallet::remaining((int) $saleId, $year, $month) : 0.0,
+        ];
+
         return view('purchase-order.commission.sale-detail', [
             'saleUser'       => $saleUser,
             'cars'           => $cars,
@@ -3068,6 +3093,7 @@ class PurchaseOrderController extends Controller
             'car'            => $carData,
             'rounds'         => $rounds,
             'net'            => $net,
+            'budget'         => $budget,
             'monthLabel'     => ($months[$month] ?? $month) . ' ' . ($year + 543),
             'year'           => $year,
             'month'          => $month,
@@ -3153,6 +3179,16 @@ class PurchaseOrderController extends Controller
                 Salecar::withoutGlobalScopes()
                     ->where('id', (int) $salecarId)
                     ->update(['CommissionSpecial' => is_numeric($value) ? (float) $value : 0]);
+            }
+        }
+
+        // "budget หัก" ต่อคัน (brand 2) — งบเดือนก่อนที่เอามากลบคันติดลบ
+        if (is_array($request->input('car_budget_deduct'))) {
+            foreach ($request->input('car_budget_deduct') as $salecarId => $value) {
+                Salecar::withoutGlobalScopes()
+                    ->where('id', (int) $salecarId)
+                    ->where('brand', 2)
+                    ->update(['budget_deduct' => is_numeric($value) ? (float) $value : 0]);
             }
         }
 
@@ -3320,17 +3356,43 @@ class PurchaseOrderController extends Controller
 
         $fromDate = $request->from_date ?: now()->startOfMonth()->format('Y-m');
 
-        // admin/gm/md เห็นทุก brand รวมกัน
-        // audit/manager เห็นตาม brand ของตน: 1→[1,3], 2→[2], 3→[3], 4→[4]
+        // admin/gm/md เห็นทุก brand → ทุกสาขา (branchFilter = null)
+        // audit/manager เห็นตาม brand ของตน: 1→[1,3], 2→[2], 3→[3], 4→[4] → เฉพาะสาขาของตนเอง
         if (in_array($user->role, ['admin', 'gm', 'md'])) {
-            $brands = [1, 2, 3, 4];
+            $brands       = [1, 2, 3, 4];
+            $branchFilter = null;
         } else {
-            $homeBrand = (int) $user->getOriginal('brand');
-            $scope = [1 => [1, 3], 2 => [2], 3 => [3], 4 => [4]];
-            $brands = $scope[$homeBrand] ?? [$homeBrand];
+            $homeBrand    = (int) $user->getOriginal('brand');
+            $scope        = [1 => [1, 3], 2 => [2], 3 => [3], 4 => [4]];
+            $brands       = $scope[$homeBrand] ?? [$homeBrand];
+            $branchFilter = (int) $user->branch;   // เห็นแค่สาขาตัวเอง
         }
 
-        return Excel::download(new LeadOnlineAllocationExport($fromDate, $brands), 'จัดสรร Lead Online.xlsx');
+        // แตกเป็น unit = (brand × สาขาที่มีเซลล์จริง) — brand 3 รวมเซลล์ brand 4 (Lepas ขายรถ Wuling)
+        $branchNames = TbBranch::pluck('name', 'id')->all();
+        $units = [];
+        foreach ($brands as $brand) {
+            $rosterBrands = $brand === 3 ? [3, 4] : [$brand];
+            $q = User::withoutGlobalScopes()
+                ->whereIn('role', ['sale', 'lead_sale'])
+                ->whereIn('brand', $rosterBrands)
+                ->whereNotNull('branch');
+            if ($branchFilter !== null) {
+                $q->where('branch', $branchFilter);
+            }
+            $branchIds = $q->distinct()->pluck('branch')->map(fn($b) => (int) $b)->sort()->values();
+            foreach ($branchIds as $br) {
+                $units[] = [
+                    'brand'      => $brand,
+                    'branch'     => $br,
+                    'branchName' => $branchNames[$br] ?? ('สาขา ' . $br),
+                ];
+            }
+        }
+
+        abort_if(empty($units), 404, 'ไม่มีข้อมูลเซลล์สำหรับรายงานนี้');
+
+        return Excel::download(new LeadOnlineAllocationExport($fromDate, $units), 'จัดสรร Lead Online.xlsx');
     }
 
     // report เกินงบ (รายงานเกินงบ) — กรองตามเดือนที่ขอเกินงบ (approval_requested_at)

@@ -134,7 +134,7 @@ function recomputeCommissionNet() {
   const $display = $('#netCommissionDisplay');
   if (!$display.length) return;
 
-  const num = id => parseFloat($('#' + id).val()) || 0;
+  const num = id => parseMoney($('#' + id).val());
   const base = parseFloat($display.data('base')) || 0;
   const brand = parseInt($display.data('brand'), 10) || 0;
   const ssi = parseFloat($display.data('ssi')) || 0; // คอม SSI (คิดสดจาก server) รวมเข้ายอด
@@ -154,25 +154,107 @@ function recomputeCommissionNet() {
   $display.text(net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ฿');
 }
 
-$(document).on('input', '#commissionMonthlyForm input[type="number"]', recomputeCommissionNet);
+// ช่องค่าคอมรายเดือน (วินัย/lead/clip/ขาดลา) : ใส่ comma + คิด net สด
+$(document).on('input', '.cmoney', function () {
+  formatMoneyInput(this);
+  recomputeCommissionNet();
+});
+$(document).on('blur', '.cmoney', function () {
+  if (this.value.trim() === '') return;
+  this.value = parseMoney(this.value)
+    .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+});
 $(document).on('change', '#commissionMonthlyForm input[name="discipline_failed"]', recomputeCommissionNet);
 
-// แก้ "คอมอื่นๆ" ต่อคัน → คิดรวมค่าคอมรถต่อแถว + ยอดรวม + net สด
-function recomputeCarsTable() {
-  let base = 0;
-  $('.car-special-input').each(function () {
-    const rowbase = parseFloat($(this).data('rowbase')) || 0;
-    const special = parseFloat($(this).val()) || 0;
-    const rowTotal = rowbase + special;
-    $(this).closest('tr').find('.car-row-total')
-      .text(rowTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    base += rowTotal;
+// อ่านตัวเลขจากช่องที่มี comma
+function parseMoney(v) {
+  return parseFloat(String(v == null ? '' : v).replace(/,/g, '')) || 0;
+}
+
+// ใส่ comma ระหว่างพิมพ์ (คงเครื่องหมายลบ + จุดทศนิยม ≤ 2 ตำแหน่ง)
+function formatMoneyInput(el) {
+  let raw = el.value.replace(/,/g, '');
+  if (raw === '' || raw === '-') return;
+  const neg = raw.trim().charAt(0) === '-';
+  raw = raw.replace(/[^0-9.]/g, '');
+  const hasDot = raw.indexOf('.') !== -1;
+  const parts = raw.split('.');
+  const intFmt = parts[0] ? parseInt(parts[0], 10).toLocaleString('en-US') : '';
+  let out = intFmt;
+  if (hasDot) out = (intFmt || '0') + '.' + (parts[1] ? parts[1].slice(0, 2) : '');
+  el.value = (neg ? '-' : '') + out;
+}
+
+// กันกรอก "budget หัก" เกิน budget ที่มี (รวมทุกคัน ≤ ยกมา)
+function clampBudgetInput(el) {
+  const carried = parseMoney($('#budgetWalletBox').data('carried'));
+  let val = parseMoney(el.value);
+  if (val < 0) val = 0;
+  let otherUsed = 0;
+  $('.car-budget-input').each(function () {
+    if (this !== el) otherUsed += parseMoney(this.value);
   });
-  $('#carsBaseTotal').text(base.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  const maxForThis = Math.max(0, carried - otherUsed);
+  if (val > maxForThis) {
+    el.value = String(maxForThis);
+  }
+}
+
+// แก้ "คอมอื่นๆ" / "budget หัก" ต่อคัน → คิดรวมค่าคอมรถต่อแถว + ยอดรวม + budget คงเหลือ + net สด
+function recomputeCarsTable() {
+  const fmt = n => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  let base = 0;
+  let budgetUsed = 0;
+  $('.car-special-input').each(function () {
+    const $row = $(this).closest('tr');
+    const rowbase = parseFloat($(this).data('rowbase')) || 0;
+    const special = parseMoney($(this).val());
+    const budget = parseMoney($row.find('.car-budget-input').val()); // budget หัก (brand 2)
+    const rowTotal = rowbase + special + budget;
+    $row.find('.car-row-total').text(fmt(rowTotal));
+    base += rowTotal;
+    budgetUsed += budget;
+  });
+  $('#carsBaseTotal').text(fmt(base));
   $('#netCommissionDisplay').data('base', base);
+
+  // budget ยกมา (brand 2): อัปเดต ใช้ไป / คงเหลือ สด
+  const $wallet = $('#budgetWalletBox');
+  if ($wallet.length) {
+    const carried = parseMoney($wallet.data('carried'));
+    $('#budgetUsedDisplay').text(fmt(budgetUsed));
+    $('#budgetRemainingDisplay').text(fmt(carried - budgetUsed));
+  }
   recomputeCommissionNet();
 }
-$(document).on('input', '.car-special-input', recomputeCarsTable);
+
+// คอมอื่นๆ : ใส่ comma + คิดใหม่
+$(document).on('input', '.car-special-input', function () {
+  formatMoneyInput(this);
+  recomputeCarsTable();
+});
+// budget หัก : กันเกิน budget ที่มี → ใส่ comma → คิดใหม่
+$(document).on('input', '.car-budget-input', function () {
+  clampBudgetInput(this);
+  formatMoneyInput(this);
+  recomputeCarsTable();
+});
+// ออกจากช่อง → เติมทศนิยม 2 ตำแหน่ง
+$(document).on('blur', '.car-special-input, .car-budget-input', function () {
+  if (this.value.trim() === '') return;
+  this.value = parseMoney(this.value)
+    .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+});
+// เปิด modal → จัด comma ค่าที่ server ส่งมา + คิดยอดครั้งแรก
+$(document).on('shown.bs.modal', '.commissionDetail', function () {
+  $('.car-special-input, .car-budget-input, .cmoney').each(function () {
+    if (this.value.trim() !== '') {
+      this.value = parseMoney(this.value)
+        .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+  });
+  recomputeCarsTable();
+});
 
 // save monthly extra commission (+ คอมอื่นๆ ต่อคัน)
 $(document).on('submit', '#commissionMonthlyForm', function (e) {
@@ -180,9 +262,16 @@ $(document).on('submit', '#commissionMonthlyForm', function (e) {
   const $btn = $('#btnSaveCommissionMonthly');
   $btn.prop('disabled', true);
 
-  const payload = $(this).serializeArray();
+  // strip comma ช่องค่าคอมรายเดือน (backend validate numeric)
+  const moneyFields = ['com_discipline', 'deduct_absence', 'com_lead', 'com_clip'];
+  const payload = $(this).serializeArray().map(f =>
+    moneyFields.includes(f.name) ? { name: f.name, value: parseMoney(f.value) } : f
+  );
   $('.car-special-input').each(function () {
-    payload.push({ name: 'car_special[' + $(this).data('id') + ']', value: $(this).val() || 0 });
+    payload.push({ name: 'car_special[' + $(this).data('id') + ']', value: parseMoney($(this).val()) });
+  });
+  $('.car-budget-input').each(function () {
+    payload.push({ name: 'car_budget_deduct[' + $(this).data('id') + ']', value: parseMoney($(this).val()) });
   });
 
   $.post('/purchase-order/commission-monthly', $.param(payload), function () {

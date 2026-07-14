@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\CampaignApproval;
 use App\Mail\CampaignApprovalMail;
+use App\Mail\CampaignApprovedMail;
 use App\Mail\CampaignRevisionMail;
 use App\Support\ScopeBypass;
 use Carbon\Carbon;
@@ -49,6 +50,23 @@ class CampaignApprovalController extends Controller
         }
 
         $this->applyCkSearch($base, $search);
+
+        // ── ตัวกรองคอลัมน์ สถานะ (ตามเดือนที่เลือก) ──
+        //   none = ยังไม่ขอ (ไม่มี approval ของเดือนนั้น) · pending/approved/rejected = ตาม status
+        if ($request->filled('status_filter')) {
+            $statuses = json_decode($request->status_filter, true);
+            if (is_array($statuses) && count($statuses) && count($statuses) < 4) {
+                $base->where(function ($q) use ($statuses, $period) {
+                    foreach ($statuses as $st) {
+                        if ($st === 'none') {
+                            $q->orWhereDoesntHave('approvals', fn($a) => $a->where('period_ym', $period));
+                        } elseif (in_array($st, ['pending', 'approved', 'rejected'], true)) {
+                            $q->orWhereHas('approvals', fn($a) => $a->where('period_ym', $period)->where('status', $st));
+                        }
+                    }
+                });
+            }
+        }
 
         $recordsFiltered = (clone $base)->count();
 
@@ -305,22 +323,25 @@ class CampaignApprovalController extends Controller
         ScopeBypass::$brand = true; // ผู้อนุมัติอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
 
         $approvals = CampaignApproval::withoutGlobalScopes()
-            ->with(['campaign.model', 'campaign.appellation', 'campaign.type'])
+            ->with(['campaign.model', 'campaign.subModel', 'campaign.appellation', 'campaign.type', 'requester'])
             ->where('approval_token', $token)
             ->get();
 
         abort_if($approvals->isEmpty(), 404);
 
-        $count = 0;
+        $approved = collect();
         foreach ($approvals->where('status', 'pending') as $ap) {
             $ap->update(['status' => 'approved', 'approved_at' => now()]);
-            $count++;
+            $approved->push($ap);
         }
+
+        // แจ้งผู้ขอทางอีเมลว่าแคมเปญได้รับการอนุมัติแล้ว (เมลล้มเหลวไม่ให้ขวางผลการตัดสิน)
+        $this->notifyApproved($approved);
 
         return view('campaign.approval.result', [
             'approvals' => $approvals,
             'period'    => $approvals->first()->period_ym,
-            'msg'       => 'อนุมัติแคมเปญเรียบร้อยแล้ว ' . $count . ' รายการ (MD)',
+            'msg'       => 'อนุมัติแคมเปญเรียบร้อยแล้ว ' . $approved->count() . ' รายการ (MD)',
         ]);
     }
 
@@ -456,6 +477,26 @@ class CampaignApprovalController extends Controller
                 Mail::to($email)->send(new CampaignRevisionMail($items->values(), $items->first()->period_ym, $reason));
             } catch (\Exception $e) {
                 Log::error('CK revision mail failed: ' . $e->getMessage());
+            }
+        }
+    }
+
+    // แจ้งผู้ขอ (แยกตามคนขอ) ว่าแคมเปญได้รับการอนุมัติแล้ว
+    private function notifyApproved($approvals): void
+    {
+        if ($approvals->isEmpty()) {
+            return;
+        }
+
+        foreach ($approvals->groupBy('requested_by') as $items) {
+            $email = optional($items->first()->requester)->email;
+            if (!$email) {
+                continue;
+            }
+            try {
+                Mail::to($email)->send(new CampaignApprovedMail($items->values(), $items->first()->period_ym));
+            } catch (\Exception $e) {
+                Log::error('CK approved mail failed: ' . $e->getMessage());
             }
         }
     }

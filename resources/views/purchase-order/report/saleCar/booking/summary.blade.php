@@ -29,6 +29,7 @@
       <th>ประมาณการส่งมอบ</th>
       <th>วันส่งมอบจริง</th>
       <th>สถานะ</th>
+      <th>ลิงก์</th>
     </tr>
   </thead>
   <tbody>
@@ -62,10 +63,17 @@
         <td>{{ $s['DeliveryEstimateDate'] }}</td>
         <td>{{ $s['DeliveryDate'] }}</td>
         <td>{{ $s['status'] }}</td>
+        @php
+          // ส่งมอบแล้ว/ถอน (con_status 5,9) → เปิดหน้า edit แบบ history (ปุ่มย้อนกลับไป history)
+          $poUrl = in_array($s['con_status'], [5, 9])
+            ? route('purchase-order.edit', [$s['id'], 'from' => 'history'])
+            : route('purchase-order.edit', $s['id']);
+        @endphp
+        <td><a href="{{ $poUrl }}">เปิดการจอง</a></td>
       </tr>
     @empty
       <tr>
-        <td colspan="23" align="center">
+        <td colspan="24" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

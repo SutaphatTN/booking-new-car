@@ -11,16 +11,18 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 
 /**
- * sheet "Master_Settings" — ค่าคงที่ที่สูตรในแต่ละ sheet brand อ้างถึง
- * แยกตารางต่อ brand (แต่ละ brand กรอกค่าไม่เท่ากันได้) วางเรียงลงมาใน sheet เดียว
+ * sheet "Master_Settings" — ค่าคงที่ที่สูตรในแต่ละ sheet brand×สาขา อ้างถึง
+ * แยกตารางต่อ "unit" (brand + สาขา) — แต่ละสาขากรอกค่า/เป้าไม่เท่ากันได้ วางเรียงลงมาใน sheet เดียว
  * ผู้ใช้เปิดไฟล์ Excel แล้วแก้ค่าในคอลัมน์ B ได้เอง สูตรจะคำนวณใหม่ทันที
  *
- * ตำแหน่งแถวของแต่ละ brand คำนวณจาก layout() ซึ่ง Export ใช้ร่วมกับ LeadOnlinePerBrandSheet
- * เพื่อให้สูตรอ้าง cell ของ brand ตัวเองถูกต้อง
+ * ตำแหน่งแถวของแต่ละ unit คำนวณจาก layout() ซึ่ง Export ใช้ร่วมกับ LeadOnlinePerBrandSheet
+ * เพื่อให้สูตรอ้าง cell ของ unit ตัวเองถูกต้อง
+ *
+ * unit = ['brand' => int, 'branch' => int, 'branchName' => string]
  */
 class MasterSettingsSheet implements FromArray, WithTitle, WithEvents
 {
-  /** ค่า default (เท่ากันทุก brand ตอน export — ผู้ใช้ไปแก้แยกเองในไฟล์) */
+  /** ค่า default (เท่ากันทุก unit ตอน export — ผู้ใช้ไปแก้เป้าแยกต่อสาขาเองในไฟล์) */
   protected const DEFAULTS = [
     'target'          => 450,  // Target PP / Month  → สูตรอ้าง (Raw Next PP)
     'weight_delivery' => 0.8,  // Weight: Delivery   → สูตรอ้าง (Score)
@@ -39,14 +41,15 @@ class MasterSettingsSheet implements FromArray, WithTitle, WithEvents
     'rounding'        => 'Rounding Base',
   ];
 
-  protected const START_ROW = 3;   // แถวหัวตารางของ brand แรก
-  protected const STRIDE    = 9;   // ความสูงต่อ 1 brand (หัว 1 + ค่า 6 + เว้น 2)
+  protected const START_ROW = 3;   // แถวหัวตารางของ unit แรก
+  protected const STRIDE    = 9;   // ความสูงต่อ 1 unit (หัว 1 + ค่า 6 + เว้น 2)
 
-  protected array $brands;
+  /** @var array<int,array{brand:int,branch:int,branchName:string}> */
+  protected array $units;
 
-  public function __construct(array $brands = [1, 2, 3, 4])
+  public function __construct(array $units = [])
   {
-    $this->brands = array_values($brands);
+    $this->units = array_values($units);
   }
 
   public function title(): string
@@ -54,40 +57,46 @@ class MasterSettingsSheet implements FromArray, WithTitle, WithEvents
     return 'Master_Settings';
   }
 
+  /** key ประจำ unit (brand + สาขา) — ใช้ให้สูตรของ sheet brand×สาขา อ้างแถวถูกบล็อก */
+  public static function unitKey(array $unit): string
+  {
+    return $unit['brand'] . '-' . $unit['branch'];
+  }
+
   /**
-   * แผนที่แถวของแต่ละ brand: [ brand => ['header'=>, 'target'=>, 'weight_delivery'=>, ...] ]
+   * แผนที่แถวของแต่ละ unit: [ "brand-branch" => ['header'=>, 'target'=>, 'weight_delivery'=>, ...] ]
    * (คอลัมน์ค่าคือ B เสมอ)
    */
-  public static function layout(array $brands): array
+  public static function layout(array $units): array
   {
     $keys = array_keys(self::DEFAULTS);
     $map  = [];
-    foreach (array_values($brands) as $i => $brand) {
+    foreach (array_values($units) as $i => $unit) {
       $header = self::START_ROW + $i * self::STRIDE;
       $rows = ['header' => $header];
       foreach ($keys as $k => $key) {
         $rows[$key] = $header + 1 + $k;
       }
-      $map[$brand] = $rows;
+      $map[self::unitKey($unit)] = $rows;
     }
     return $map;
   }
 
   public function array(): array
   {
-    $layout = self::layout($this->brands);
-    $lastRow = max(array_map(fn($r) => $r['rounding'], $layout));
+    $layout = self::layout($this->units);
+    $lastRow = empty($layout) ? 1 : max(array_map(fn($r) => $r['rounding'], $layout));
 
-    // เตรียมกริดว่าง (คอลัมน์ A,B) แล้วเติมตามตำแหน่งของแต่ละ brand
+    // เตรียมกริดว่าง (คอลัมน์ A,B) แล้วเติมตามตำแหน่งของแต่ละ unit
     $grid = [];
     for ($r = 1; $r <= $lastRow; $r++) {
       $grid[$r] = ['', ''];
     }
     $grid[1] = ['Online PP Allocation – Master Settings (ใช้ทุกเดือน)', ''];
 
-    foreach ($this->brands as $brand) {
-      $rows = $layout[$brand];
-      $grid[$rows['header']] = [LeadOnlinePerBrandSheet::BRANDS[$brand] ?? ('Brand ' . $brand), ''];
+    foreach ($this->units as $unit) {
+      $rows = $layout[self::unitKey($unit)];
+      $grid[$rows['header']] = [self::unitLabel($unit), ''];
       foreach (self::LABELS as $key => $label) {
         $grid[$rows[$key]] = [$label, self::DEFAULTS[$key]];
       }
@@ -96,12 +105,23 @@ class MasterSettingsSheet implements FromArray, WithTitle, WithEvents
     return array_values($grid);
   }
 
+  /** ป้ายบล็อก: ชื่อ brand + ชื่อสาขา */
+  protected static function unitLabel(array $unit): string
+  {
+    $brandName = LeadOnlinePerBrandSheet::BRANDS[$unit['brand']] ?? ('Brand ' . $unit['brand']);
+    $branch    = $unit['branchName'] ?? ('สาขา ' . $unit['branch']);
+    return $brandName . ' - ' . $branch;
+  }
+
   public function registerEvents(): array
   {
     return [
       AfterSheet::class => function (AfterSheet $event) {
         $sheet = $event->sheet->getDelegate();
-        $layout = self::layout($this->brands);
+        $layout = self::layout($this->units);
+        if (empty($layout)) {
+          return;
+        }
         $lastRow = max(array_map(fn($r) => $r['rounding'], $layout));
 
         $sheet->getStyle("A1:B{$lastRow}")->getFont()->setName('Angsana New')->setSize(14);
@@ -113,16 +133,16 @@ class MasterSettingsSheet implements FromArray, WithTitle, WithEvents
 
         $tabColors = [1 => 'a4d4ae', 2 => 'ffe699', 3 => 'b4c7e7', 4 => 'f8cbad'];
 
-        foreach ($this->brands as $brand) {
-          $rows = $layout[$brand];
+        foreach ($this->units as $unit) {
+          $rows = $layout[self::unitKey($unit)];
           $h = $rows['header'];
 
-          // หัวตาราง brand
+          // หัวตาราง unit
           $sheet->mergeCells("A{$h}:B{$h}");
           $sheet->getStyle("A{$h}")->getFont()->setBold(true)->setSize(14);
           $sheet->getStyle("A{$h}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
           $sheet->getStyle("A{$h}")->getFill()->setFillType('solid')
-            ->getStartColor()->setRGB($tabColors[$brand] ?? 'd9d9d9');
+            ->getStartColor()->setRGB($tabColors[$unit['brand']] ?? 'd9d9d9');
 
           // แถวค่า
           $valTop = $rows['target'];

@@ -68,7 +68,15 @@
                 <th>ชื่อแคมเปญ</th>
                 <th>ประเภท</th>
                 <th>จำนวนเงิน</th>
-                <th>สถานะ (เดือนที่เลือก)</th>
+                <th class="col-filter-th">
+                  <div class="col-filter-wrap">
+                    <span>สถานะ (เดือนที่เลือก)</span>
+                    <button class="col-filter-btn" id="statusFilterBtn" type="button" title="กรองสถานะ">
+                      <i class="bx bx-filter-alt"></i>
+                      <span class="col-filter-dot"></span>
+                    </button>
+                  </div>
+                </th>
                 <th class="tbl-th-action" style="width:170px;">Action</th>
               </tr>
             </thead>
@@ -89,6 +97,15 @@
   <div class="col-filter-actions">
     <button class="btn btn-sm btn-light" id="modelFilterClear">ล้าง</button>
     <button class="btn btn-sm btn-primary" id="modelFilterApply">ตกลง</button>
+  </div>
+</div>
+
+{{-- ── ตัวกรองสถานะ (ค่าคงที่ 4 สถานะ) ── --}}
+<div class="col-filter-dropdown" id="statusFilterDropdown">
+  <div class="col-filter-list" id="statusFilterList"></div>
+  <div class="col-filter-actions">
+    <button class="btn btn-sm btn-light" id="statusFilterClear">ล้าง</button>
+    <button class="btn btn-sm btn-primary" id="statusFilterApply">ตกลง</button>
   </div>
 </div>
 
