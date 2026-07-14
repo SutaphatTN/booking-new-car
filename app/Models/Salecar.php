@@ -223,6 +223,7 @@ class Salecar extends Model
 		'CommissionSale',
 		'CommissionDeduct',
 		'CommissionSpecial',
+		'budget_deduct',
 		'ApprovalSignature',
 		'ApprovalSignatureDate',
 		'FinanceAmount',
@@ -524,12 +525,17 @@ class Salecar extends Model
 		}
 
 		if ($balance >= 0) {
+			// brand 2 : งบเหลือไม่คิดเป็นค่าคอมเซลล์ → 0 (จะได้คอมจากส่วนนี้เฉพาะตอนเกินงบ = −D ที่ GM อนุมัติ)
+			if ((int) $this->brand === 2) {
+				return 0.0;
+			}
 			// เคสงบปกติ: หัก "เก็บงบเพิ่มเติม" (running deduction) จากงบเต็มก่อน แล้วค่อยหาร 2 + เพดาน 2500
 			$full     = $balance * 2;
 			$absorbed = ExtraBudgetLedger::absorbedFor($this);
 			return min(max(0.0, $full - $absorbed) / 2, 2500);
 		}
 
+		// เกินงบ (balance < 0): brand 2 คูณ per_budget (30%) → เคสเกินงบ ส่งเมล GM แล้วใช้ −D ที่อนุมัติ (บล็อกบนสุด)
 		$perBudget = (float) ($this->model?->per_budget ?? 0);
 		return $balance * 2 * ($perBudget / 100);
 	}
@@ -559,7 +565,17 @@ class Salecar extends Model
 	}
 
 	/**
+	 * "budget หัก" (brand 2) — งบจากเดือนก่อน (กระเป๋าตังค์) ที่ admin กรอกมากลบคันนี้ตอนคอมติดลบ
+	 * บวกเข้ารวมค่าคอมรถ (−3000 + budget 3000 = 0) ; brand อื่นไม่ใช้ (คืน 0)
+	 */
+	public function effectiveBudgetDeduct(): float
+	{
+		return (int) $this->brand === 2 ? (float) ($this->budget_deduct ?? 0) : 0.0;
+	}
+
+	/**
 	 * รวมค่าคอม Sale (คิดสด) = คอมงบเหลือ + คอมประดับยนต์(gift+extra) + คอมดอกเบี้ย + คอมรถเทิร์น + คอมอื่นๆ
+	 *                        + budget หัก (brand 2 : งบเดือนก่อนที่เอามากลบคันติดลบ)
 	 * ตรงกับสูตรใน purchase-order.js: calculateCommissionSale()
 	 * หมายเหตุ: เกินงบ → คอมประดับยนต์เป็น 0 (ผ่าน effectiveAccessoryCommission)
 	 */
@@ -570,7 +586,8 @@ class Salecar extends Model
 
 		return $this->effectiveBalanceCommission()
 			+ $this->effectiveAccessoryCommission()
-			+ $fiCom + $turnCom + $this->effectiveSpecialCommission();
+			+ $fiCom + $turnCom + $this->effectiveSpecialCommission()
+			+ $this->effectiveBudgetDeduct();
 	}
 
 	public function branchInfo()

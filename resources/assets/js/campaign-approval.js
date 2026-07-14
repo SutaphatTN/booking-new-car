@@ -8,6 +8,14 @@ $.ajaxSetup({
 let ckApprovalTable;
 let modelFilterActive = null; // null = ทุกรุ่น, array = เฉพาะ model_id ที่เลือก
 let cachedCkModels = [];      // [{id, name}]
+let statusFilterActive = null; // null = ทุกสถานะ, array = เฉพาะ key ที่เลือก
+// ค่าคงที่ของสถานะ (ตรงกับ statusBadge ใน CampaignApprovalController: none=ยังไม่ขอ)
+const CK_STATUS_OPTS = [
+  { key: 'none', name: 'ยังไม่ขอ' },
+  { key: 'pending', name: 'รออนุมัติ' },
+  { key: 'approved', name: 'อนุมัติแล้ว' },
+  { key: 'rejected', name: 'ส่งกลับแก้ไข' }
+];
 
 function fmtMoney(n) {
   return Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -27,6 +35,9 @@ $(document).ready(function () {
         d.period = $('#ckPeriod').val();
         if (modelFilterActive !== null) {
           d.model_filter = JSON.stringify(modelFilterActive);
+        }
+        if (statusFilterActive !== null) {
+          d.status_filter = JSON.stringify(statusFilterActive);
         }
       }
     },
@@ -143,6 +154,64 @@ $(document).ready(function () {
     ckApprovalTable.ajax.reload(null, false);
     $('#modelFilterDropdown').removeClass('show');
   });
+
+  // ── ตัวกรองคอลัมน์ สถานะ (ค่าคงที่) ──
+  buildStatusFilterList();
+
+  // เปิด/ปิด dropdown — วางตำแหน่ง fixed หนี overflow ของตาราง
+  $('#statusFilterBtn').on('click', function (e) {
+    e.stopPropagation();
+    const $dd = $('#statusFilterDropdown');
+    if ($dd.hasClass('show')) {
+      $dd.removeClass('show');
+      $(this).removeClass('active');
+      return;
+    }
+    const rect = this.getBoundingClientRect();
+    $dd.css({ top: rect.bottom + 4 + 'px', left: rect.left + 'px' });
+    $dd.addClass('show');
+    $(this).addClass('active');
+    buildStatusFilterList();
+  });
+
+  // ปิดเมื่อคลิกนอก dropdown
+  $(document).on('click.statusFilter', function (e) {
+    if (!$(e.target).closest('#statusFilterDropdown, #statusFilterBtn').length) {
+      $('#statusFilterDropdown').removeClass('show');
+      $('#statusFilterBtn').removeClass('active');
+    }
+  });
+
+  // เลือกทั้งหมด
+  $(document).on('change', '#statusChkAll', function () {
+    $('.status-chk-item').prop('checked', $(this).is(':checked'));
+  });
+
+  // เลือกทีละรายการ → sync หัว
+  $(document).on('change', '.status-chk-item', syncStatusSelectAll);
+
+  // ตกลง
+  $(document).on('click', '#statusFilterApply', function () {
+    const $all = $('.status-chk-item');
+    const checked = [];
+    $all.filter(':checked').each(function () { checked.push($(this).val()); });
+    const isAll = checked.length === $all.length;
+    statusFilterActive = isAll ? null : checked;
+    $('#statusFilterBtn').toggleClass('filtered', statusFilterActive !== null);
+    ckApprovalTable.ajax.reload(null, false);
+    $('#statusFilterDropdown').removeClass('show');
+    $('#statusFilterBtn').removeClass('active');
+  });
+
+  // ล้าง
+  $(document).on('click', '#statusFilterClear', function () {
+    statusFilterActive = null;
+    $('.status-chk-item').prop('checked', true);
+    $('#statusChkAll').prop({ indeterminate: false, checked: true });
+    $('#statusFilterBtn').removeClass('filtered active');
+    ckApprovalTable.ajax.reload(null, false);
+    $('#statusFilterDropdown').removeClass('show');
+  });
 });
 
 function populateModelFilterList() {
@@ -178,6 +247,41 @@ function syncModelSelectAll() {
   const total = $items.length;
   const checked = $items.filter(':checked').length;
   const $all = $('#modelChkAll');
+  if (total === 0 || checked === 0) {
+    $all.prop({ indeterminate: false, checked: false });
+  } else if (checked === total) {
+    $all.prop({ indeterminate: false, checked: true });
+  } else {
+    $all.prop({ indeterminate: true, checked: false });
+  }
+}
+
+function buildStatusFilterList() {
+  const $list = $('#statusFilterList').empty();
+  const allSelected = statusFilterActive === null;
+  $list.append(
+    `<div class="col-filter-item col-filter-all">
+      <input type="checkbox" id="statusChkAll" ${allSelected ? 'checked' : ''}>
+      <label for="statusChkAll">(เลือกทั้งหมด)</label>
+    </div>`
+  );
+  CK_STATUS_OPTS.forEach(function (s, i) {
+    const checked = allSelected || (statusFilterActive !== null && statusFilterActive.includes(s.key)) ? 'checked' : '';
+    $list.append(
+      `<div class="col-filter-item">
+        <input type="checkbox" class="status-chk-item" id="statusChk${i}" value="${s.key}" ${checked}>
+        <label for="statusChk${i}">${s.name}</label>
+      </div>`
+    );
+  });
+  syncStatusSelectAll();
+}
+
+function syncStatusSelectAll() {
+  const $items = $('.status-chk-item');
+  const total = $items.length;
+  const checked = $items.filter(':checked').length;
+  const $all = $('#statusChkAll');
   if (total === 0 || checked === 0) {
     $all.prop({ indeterminate: false, checked: false });
   } else if (checked === total) {

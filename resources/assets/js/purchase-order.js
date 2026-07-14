@@ -2686,6 +2686,7 @@ function calculateCommissionSale() {
   const fiCom = safeNumber('#remaining_total_com');
   const turnCom = safeNumber('#com_turn');
   const comSpecial = safeNumber('#CommissionSpecial');
+  const budgetDeduct = safeNumber('#budget_deduct'); // budget หัก (brand 2) — งบเดือนก่อนมากลบคันติดลบ
 
   const selectedModel = $('#model_id option:selected');
   const perBudget = parseFloat(selectedModel.data('perbudget')) || 0;
@@ -2701,9 +2702,14 @@ function calculateCommissionSale() {
   let extraAbsorbed = 0;
 
   if (balanceCam >= 0) {
-    const full = balanceCam * 2;
-    extraAbsorbed = Math.min(full, extraDebtBefore);
-    balanceCam = Math.min(Math.max(0, full - extraAbsorbed) / 2, 2500);
+    // brand 2 : งบเหลือไม่คิดเป็นค่าคอมเซลล์ → 0 (เกินงบถึงจะคิด: −D ที่ GM อนุมัติ ในบล็อก else)
+    if (saleBrand === 2) {
+      balanceCam = 0;
+    } else {
+      const full = balanceCam * 2;
+      extraAbsorbed = Math.min(full, extraDebtBefore);
+      balanceCam = Math.min(Math.max(0, full - extraAbsorbed) / 2, 2500);
+    }
   } else {
     // เกินเพดาน: เทียบ "ยอดเต็ม" (×2) กับ over_budget (brand 2 = เกินเสมอ) ; ถ้าเกิน+manager กรอกยอด → brand2 −D, อื่น +D
     const isOverCeiling = saleBrand === 2 || Math.abs(balanceCam) * 2 > overBudget;
@@ -2714,7 +2720,15 @@ function calculateCommissionSale() {
     }
   }
 
-  const totalCommission = balanceCam + giftCom + extraCom + fiCom + turnCom + comSpecial;
+  const totalCommission = balanceCam + giftCom + extraCom + fiCom + turnCom + comSpecial + budgetDeduct;
+
+  // budget หัก (brand 2): โชว์ budget คงเหลือหลังหักคันนี้สด
+  const $budgetEl = $('#budget_deduct');
+  if ($budgetEl.length) {
+    const available = parseFloat(($budgetEl.data('available') || 0).toString().replace(/,/g, '')) || 0;
+    const left = available - budgetDeduct;
+    $('#budgetLeftNote').text('· เหลือหลังหักคันนี้ ' + left.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ฿');
+  }
 
   const formatted = totalCommission.toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -2795,9 +2809,20 @@ $(document).on(
   calculateBalanceCampaign
 );
 
+// budget หัก (brand 2, หน้า edit) : กันกรอกเกิน budget ที่มี (availableBefore)
+$(document).on('input', '#budget_deduct', function () {
+  const strip = s => parseFloat((s == null ? '' : s).toString().replace(/,/g, '')) || 0;
+  const available = strip($(this).data('available'));
+  let val = strip(this.value);
+  if (val < 0) { this.value = ''; return; }
+  if (val > available) {
+    this.value = available.toLocaleString(); // ตัดให้พอดี budget ที่มี
+  }
+});
+
 $(document).on(
   'input change',
-  '#remaining_total_com, #com_turn, #CommissionSpecial, #model_id',
+  '#remaining_total_com, #com_turn, #CommissionSpecial, #model_id, #budget_deduct',
   calculateCommissionSale
 );
 

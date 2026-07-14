@@ -16,14 +16,15 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 
 /**
- * 1 sheet = 1 brand ของรายงาน "จัดสรร Lead Online"
+ * 1 sheet = 1 (brand × สาขา) ของรายงาน "จัดสรร Lead Online"
  *
  * ช่วงเวลา (period) ต่างกันตาม brand:
  *   - brand 1,3 : รายเดือน (เดือนที่เลือก)
  *   - brand 2,4 : รายไตรมาสปฏิทินที่ครอบเดือนที่เลือก (เลือกเดือน 6 → เดือน 4-6, เลือกเดือน 8 → 7-9)
  *
- * แถว = เซลล์ทุกคนของ brand (role sale/lead_sale) รวมคนที่ค่าเป็น 0
- * คอลัมน์ F,G,H,I,J,K,L เขียนเป็น "สูตร Excel จริง" อ้างถึง sheet Master_Settings จึงคำนวณสดในไฟล์
+ * แถว = เซลล์ของ brand นี้ "เฉพาะสาขานี้" (role sale/lead_sale) รวมคนที่ค่าเป็น 0
+ * คอลัมน์ F,G,H,I,J,K,L เขียนเป็น "สูตร Excel จริง" อ้างถึง sheet Master_Settings (บล็อกของ brand×สาขานี้)
+ * จึงคำนวณสดในไฟล์ — แต่ละสาขาตั้งเป้า (target) ต่างกันได้
  */
 class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, ShouldAutoSize
 {
@@ -36,6 +37,8 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
   ];
 
   protected int $brand;
+  protected int $branch;
+  protected string $branchName;
   protected string $fromDate;
 
   /** id แหล่งที่มาที่นับ (main_source online ยกเว้น 7,20) — ส่งมาจาก Export */
@@ -53,9 +56,11 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
   protected int $lastDataRow  = 2;   // = firstDataRow - 1 เมื่อไม่มีข้อมูล
   protected int $totalRow     = 3;
 
-  public function __construct($brand, $fromDate = null, array $onlineSourceIds = [], array $settingRows = [])
+  public function __construct($brand, $branch = null, $branchName = '', $fromDate = null, array $onlineSourceIds = [], array $settingRows = [])
   {
     $this->brand           = (int) $brand;
+    $this->branch          = (int) $branch;
+    $this->branchName      = $branchName !== '' ? $branchName : ('สาขา ' . (int) $branch);
     $this->fromDate        = $fromDate ?? now()->startOfMonth()->format('Y-m');
     $this->onlineSourceIds = $onlineSourceIds;
     // default: ตาราง Master_Settings บล็อกเดียวเริ่มแถว 3 (header=3, ค่าเริ่มแถว 4)
@@ -78,7 +83,17 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
 
   public function title(): string
   {
-    return self::BRANDS[$this->brand] ?? ('Brand ' . $this->brand);
+    $brandName = self::BRANDS[$this->brand] ?? ('Brand ' . $this->brand);
+    // ชื่อ sheet Excel ห้ามเกิน 31 ตัว และห้ามมีอักขระ : \ / ? * [ ]
+    $title = $brandName . ' - ' . $this->branchName;
+    return mb_substr(str_replace([':', '\\', '/', '?', '*', '[', ']'], ' ', $title), 0, 31);
+  }
+
+  /** ป้ายหัวตาราง (แถว 1) — ชื่อเต็มไม่ต้องตัด */
+  protected function heading(): string
+  {
+    $brandName = self::BRANDS[$this->brand] ?? ('Brand ' . $this->brand);
+    return $brandName . ' - ' . $this->branchName;
   }
 
   public function array(): array
@@ -99,7 +114,7 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
     ];
 
     $rows = [];
-    $rows[] = [$this->title()];  // แถว 1 : ชื่อ brand (merge ทีหลัง)
+    $rows[] = [$this->heading()];  // แถว 1 : ชื่อ brand + สาขา (merge ทีหลัง)
     $rows[] = $header;           // แถว 2 : หัวคอลัมน์
 
     $n = count($sales);
@@ -147,7 +162,7 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
   }
 
   /**
-   * เซลล์ทุกคนของ brand นี้ (role sale/lead_sale) เรียงตามชื่อ — รวมคนที่ยังไม่มีข้อมูล
+   * เซลล์ของ brand นี้ "เฉพาะสาขานี้" (role sale/lead_sale) เรียงตามชื่อ — รวมคนที่ยังไม่มีข้อมูล
    * brand 3 (Wuling) รวมเซลล์ brand 4 (Lepas) ด้วย เพราะ Lepas ขายรถ Wuling (record brand=3)
    */
   protected function salespeople(): array
@@ -157,6 +172,7 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
     return User::withoutGlobalScopes()
       ->whereIn('role', ['sale', 'lead_sale'])
       ->whereIn('brand', $rosterBrands)
+      ->where('branch', $this->branch)
       ->orderBy('name')
       ->get(['id', 'name'])
       ->map(fn($u) => ['id' => $u->id, 'name' => $u->name])

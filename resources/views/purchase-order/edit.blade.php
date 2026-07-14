@@ -1285,14 +1285,12 @@
                           <i class="bx bx-calendar-event me-1"></i> ข้อมูลวันส่งมอบ
                         </button>
                       </li>
-                      @if (auth()->user()->brand != 2)
-                        <li class="nav-item" role="presentation">
-                          <button class="nav-link" id="sum-tab5-tab" data-bs-toggle="tab"
-                            data-bs-target="#sum-tab5" type="button" role="tab">
-                            <i class="bx bx-dollar-circle me-1"></i> ยอดค่าคอม Sale
-                          </button>
-                        </li>
-                      @endif
+                      <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="sum-tab5-tab" data-bs-toggle="tab"
+                          data-bs-target="#sum-tab5" type="button" role="tab">
+                          <i class="bx bx-dollar-circle me-1"></i> ยอดค่าคอม Sale
+                        </button>
+                      </li>
                     </ul>
 
                     <div class="tab-content" id="summaryTabsContent">
@@ -2186,7 +2184,7 @@
                       </div>{{-- /sum-tab4 --}}
 
                       {{-- ══ Tab 5: ยอดค่าคอม Sale ══ --}}
-                      @if (auth()->user()->brand != 2)
+                      {{-- brand 2 เปิดให้เห็นด้วย (ดูข้อมูล) — "คอมงบเหลือ" ถูกบังคับเป็น 0 ใน JS ตามนโยบาย brand 2 --}}
                         <div class="tab-pane fade" id="sum-tab5" role="tabpanel">
 
                           {{-- ── ยอดค่าคอม sale ── --}}
@@ -2241,6 +2239,29 @@
                                   </div>
                                 </div>
 
+                                @if (auth()->user()->brand == 2)
+                                  {{-- budget หัก (brand 2) : งบเดือนก่อนเอามากลบคันติดลบ --}}
+                                  <div class="com-stat-cell">
+                                    <span class="com-lbl">budget หัก</span>
+                                    <div class="money-wrap">
+                                      <input type="number" step="0.01" min="0"
+                                        class="form-control text-end money-input" id="budget_deduct"
+                                        name="budget_deduct" {{ $disabled }}
+                                        data-available="{{ data_get($budgetWallet, 'availableBefore', 0) }}"
+                                        value="{{ old('budget_deduct', $saleCar->budget_deduct ?: '') }}" placeholder="0">
+                                      <span class="money-suffix">฿</span>
+                                    </div>
+                                    <div class="text-muted" style="font-size:.72rem; margin-top:2px;">
+                                      budget ที่มี:
+                                      <strong>{{ number_format(data_get($budgetWallet, 'availableBefore', 0), 2) }}</strong> ฿
+                                      @if (!$budgetWallet)
+                                        <span class="text-warning">(ยังไม่มีวัน CK — budget คิดเมื่อส่งมอบ)</span>
+                                      @endif
+                                      <span id="budgetLeftNote"></span>
+                                    </div>
+                                  </div>
+                                @endif
+
                                 <div class="com-stat-cell com-total-cell">
                                   <span class="com-lbl">รวมค่าคอม</span>
                                   <input type="text" class="com-readonly-val money-input"
@@ -2251,7 +2272,6 @@
                             </div>
                           </div>
                         </div>{{-- /sum-tab5 --}}
-                      @endif
 
                     </div>{{-- /tab-content #summaryTabsContent --}}
 
