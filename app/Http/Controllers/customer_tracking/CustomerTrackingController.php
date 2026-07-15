@@ -8,6 +8,7 @@ use App\Exports\customerTracking\CustomerTrackingDailyExport;
 use App\Exports\customerTracking\CustomerTrackingOverdueExport;
 use App\Exports\customerTracking\CustomerTrackingOverdueReport;
 use App\Http\Controllers\Controller;
+use App\Models\Ad;
 use App\Traits\ConvertsThaiDate;
 use App\Models\CustomerTracking;
 use App\Models\CustomerTrackingDetail;
@@ -426,7 +427,14 @@ class CustomerTrackingController extends Controller
         $sourceMains   = collect(config('source.main', []))->except($hiddenMains)->all();
         $placeMain     = config('source.place_main', 'offline');
 
-        return view('customer-tracking.input', compact('model', 'sources', 'decisions', 'saleUser', 'interiorColor', 'prefixes', 'sourceMains', 'placeMain'));
+        // ตัวเลือก "คลิปที่ยิงแอด" — เฉพาะแอดที่ยังแสดง (is_active=1) ของ brand+branch นี้
+        $ads = Ad::where('is_active', 1)
+            ->where('brand', $authUser->brand)
+            ->where('branch', $authUser->branch)
+            ->orderBy('name')
+            ->get();
+
+        return view('customer-tracking.input', compact('model', 'sources', 'decisions', 'saleUser', 'interiorColor', 'prefixes', 'sourceMains', 'placeMain', 'ads'));
     }
 
     public function checkDuplicate(Request $request)
@@ -865,12 +873,23 @@ class CustomerTrackingController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function cancelTracking($id)
+    public function cancelTracking(Request $request, $id)
     {
+        $request->validate([
+            'reason'      => 'required|in:ไม่ผ่านอนุมัติไฟแนนซ์,ออกรถแบรนด์อื่น,เคสชนกัน,อื่นๆ',
+            'reason_note' => 'required_if:reason,อื่นๆ|nullable|string|max:1000',
+        ], [
+            'reason.required'         => 'กรุณาเลือกเหตุผล',
+            'reason.in'               => 'เหตุผลไม่ถูกต้อง',
+            'reason_note.required_if' => 'กรุณากรอกเหตุผล',
+        ]);
+
         $tracking = CustomerTracking::findOrFail($id);
         $tracking->update([
-            'cancelled_at'  => now(),
-            'CancelledBy'   => Auth::id(),
+            'cancelled_at'       => now(),
+            'CancelledBy'        => Auth::id(),
+            'cancel_reason'      => $request->reason,
+            'cancel_reason_note' => $request->reason === 'อื่นๆ' ? trim($request->reason_note) : null,
         ]);
         return response()->json(['success' => true]);
     }

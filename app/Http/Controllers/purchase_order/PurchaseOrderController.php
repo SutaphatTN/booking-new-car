@@ -2209,6 +2209,43 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    // ดึงคำขออนุมัติกลับ (เฉพาะ admin) — ใช้ตอนส่งคำขอไปแล้วแต่ข้อมูลผิด อยากแก้ก่อนถูกอนุมัติ
+    //  - กันเคสที่อนุมัติไปแล้ว (มีลายเซ็นตามเคส) → ดึงกลับไม่ได้
+    //  - เคลียร์สถานะคำขอ + ล้าง token เพื่อให้ลิงก์อนุมัติในอีเมลเดิมใช้ไม่ได้
+    public function withdrawApproval($id)
+    {
+        abort_unless(Auth::user()->role === 'admin', 403);
+
+        $saleCar = Salecar::withoutGlobalScope('preApproval')->findOrFail($id);
+
+        if (!$saleCar->approval_requested_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีคำขอที่รออนุมัติอยู่',
+            ], 422);
+        }
+
+        if ($this->isApproved($saleCar)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'คำขอนี้อนุมัติแล้ว ดึงกลับไม่ได้',
+            ], 422);
+        }
+
+        $saleCar->update([
+            'approval_requested_at' => null,
+            'approval_token'        => null,
+            'approval_case'         => null,
+            'approval_type'         => null,
+            'approval_remaining'    => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ดึงคำขอกลับเรียบร้อยแล้ว',
+        ]);
+    }
+
     public function summaryPurchase($id)
     {
         $saleCar = Salecar::withoutGlobalScope('preApproval')->with(['customer.prefix', 'model', 'carOrder', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'reservationPayment', 'remainingPayment.financeInfo', 'deliveryPayment', 'turnCar', 'provinces'])->findOrFail($id);

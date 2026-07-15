@@ -117,7 +117,8 @@
 
           {{-- ── Table ── --}}
           <div class="table-responsive">
-            <table class="table table-bordered tbl-table tbl-styled" id="trackingTable" style="min-width:1300px;">
+            <table class="table table-bordered tbl-table tbl-styled" id="trackingTable" style="min-width:1300px;"
+              data-user-role="{{ auth()->user()->role }}">
               <thead>
                 <tr>
                   <th class="tbl-th-no">No.</th>

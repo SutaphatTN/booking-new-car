@@ -303,11 +303,19 @@
                 @enderror
               </div>
 
-              <div class="col-md-12">
-                <label class="po-label" for="clip_add"><i class='bx bx-link'></i> คลิปที่ยิงแอด<span class="text-secondary">(กรณีลุกค้าจาก Online)</span></label>
-                <textarea id="clip_add" name="clip_add" class="form-control" rows="2"
-                  placeholder="ชื่อคลิปที่ใช้โฆษณา...">{{ old('clip_add') }}</textarea>
-              </div>
+              {{-- คลิปที่ยิงแอด (ลูกค้าจาก Online) — เฉพาะ admin/adminPage เลือก role อื่นไม่ต้องเห็น
+                   ตัวเลือกมาจากเมนู การตลาด > แอด (เฉพาะที่ยังไม่ถูก "เก็บ" ของ brand+branch นี้) --}}
+              @if (in_array(auth()->user()->role, ['admin', 'adminPage']))
+                <div class="col-md-12">
+                  <label class="po-label" for="clip_add"><i class='bx bx-link'></i> คลิปที่ยิงแอด<span class="text-secondary">(กรณีลูกค้าจาก Online)</span></label>
+                  <select id="clip_add" name="clip_add" class="form-select">
+                    <option value="">— เลือก —</option>
+                    @foreach ($ads as $ad)
+                      <option value="{{ $ad->id }}" {{ old('clip_add') == $ad->id ? 'selected' : '' }}>{{ $ad->name }}</option>
+                    @endforeach
+                  </select>
+                </div>
+              @endif
 
             </div>
           </div>

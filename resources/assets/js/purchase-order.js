@@ -2186,6 +2186,34 @@ $(document).on('click', '#btnRequestNormal', function () {
   disablePreviewFooterButtons();
 });
 
+// ปุ่มดึงคำขอกลับ (admin เท่านั้น — backend กันเคสที่อนุมัติไปแล้ว)
+$(document).on('click', '#btnWithdrawApproval', function () {
+  const id = this.dataset.id;
+  Swal.fire({
+    title: 'ดึงคำขอกลับ?',
+    html: 'คำขออนุมัติจะถูกยกเลิก และลิงก์อนุมัติในอีเมลจะใช้ไม่ได้<br><small class="text-muted">แก้ข้อมูลแล้วส่งขออนุมัติใหม่ได้</small>',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#dc3545',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'ยืนยัน ดึงกลับ',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    $.ajax({
+      url: `/purchase-order/${id}/withdraw-approval`,
+      type: 'POST',
+      success: function (res) {
+        Swal.fire({ icon: 'success', title: 'ดึงคำขอกลับแล้ว', text: res.message || '', timer: 1500, showConfirmButton: false })
+          .then(() => location.reload());
+      },
+      error: function (xhr) {
+        Swal.fire({ icon: 'error', title: 'ไม่สำเร็จ', text: xhr.responseJSON?.message || 'ไม่สามารถดึงคำขอกลับได้' });
+      }
+    });
+  });
+});
+
 // ปุ่มขออนุมัติเกินงบ
 $(document).on('click', '#btnRequestOverBudget', function () {
   const level = this.dataset.level || 'manager';
@@ -3085,6 +3113,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const btnSave = document.getElementById('btnUpdatePurchase');
   const btnRequestNormal = document.getElementById('btnRequestNormal');
   const btnRequestOverBudget = document.getElementById('btnRequestOverBudget');
+  const btnWithdrawApproval = document.getElementById('btnWithdrawApproval');
 
   const approvalRequested = document.getElementById('approvalRequested')?.value === '1';
 
@@ -3652,6 +3681,7 @@ document.addEventListener('DOMContentLoaded', function () {
     btnSave.classList.add('d-none');
     btnRequestNormal.classList.add('d-none');
     btnRequestOverBudget.classList.add('d-none');
+    btnWithdrawApproval?.classList.add('d-none');
 
     // ── mirror ของ Salecar::approvalCase() (คิดจากค่าสดในฟอร์ม) ──
     const overBudgetVal = parseFloat(selectedModel?.dataset.overbudget || '0') || 0;
@@ -3696,6 +3726,15 @@ document.addEventListener('DOMContentLoaded', function () {
     // admin บันทึกได้ตรง ไม่ต้องขออนุมัติ
     if (userRole === 'admin') {
       btnSave.classList.remove('d-none');
+      // มีคำขอค้างและยังไม่อนุมัติ → admin ดึงคำขอกลับได้ (backend กันเคสอนุมัติแล้วอีกชั้น)
+      const smSig = document.getElementById('smSignature')?.value === '1';
+      const appSig = document.getElementById('approvalSignature')?.value === '1';
+      const gmSig = document.getElementById('gmApprovalSignature')?.value === '1';
+      const isApprovedNow =
+        currentCase === 'normal' ? smSig : currentCase === 'b1_manager' ? appSig : gmSig;
+      if (approvalRequested && !isApprovedNow) {
+        btnWithdrawApproval?.classList.remove('d-none');
+      }
       content.innerHTML = html;
       modal.show();
       return;
@@ -3741,7 +3780,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ขออนุมัติแล้ว รอผลอนุมัติ (เคสยังตรงเดิม) → แสดงแค่ปิด (ยังบันทึกไม่ได้)
+    // admin ดึงคำขอกลับได้ (backend กันเคสที่อนุมัติไปแล้ว)
     if (approvalRequested && !staleRequest) {
+      if (userRole === 'admin') btnWithdrawApproval?.classList.remove('d-none');
       content.innerHTML = html;
       modal.show();
       return;

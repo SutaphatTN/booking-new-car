@@ -38,6 +38,7 @@ use App\Http\Controllers\stock_film\StockFilmController;
 use App\Http\Controllers\service_check_tracking\ServiceCheckTrackingController;
 use App\Http\Controllers\customer_relation\PreDeliveryInspectionController;
 use App\Http\Controllers\customer_relation\SsiController;
+use App\Http\Controllers\marketing\AdController;
 use App\Http\Controllers\pre_approval\PreApprovalController;
 use Illuminate\Support\Facades\Auth;
 
@@ -161,6 +162,15 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     //export accessory partner
     Route::get('accessory/view-export-accessory', [AccessoryController::class, 'viewExportAccessory'])->name('accessory.view-export-accessory');
     Route::get('/accessory/accessory-partner-export', [AccessoryController::class, 'exportAccessoryPartner'])->name('accessory.accessory-partner-export');
+
+    //marketing : แอด (คลิปที่ยิงแอด) — เฉพาะ admin/adminPage, แยก brand+branch
+    Route::get('marketing/ad', [AdController::class, 'index'])->name('ad.index');
+    Route::get('marketing/ad/list', [AdController::class, 'list'])->name('ad.list');
+    Route::post('marketing/ad/store', [AdController::class, 'store'])->name('ad.store');
+    Route::get('marketing/ad/{id}/edit', [AdController::class, 'edit'])->name('ad.edit');
+    Route::put('marketing/ad/{id}', [AdController::class, 'update'])->name('ad.update');
+    Route::patch('marketing/ad/{id}/archive', [AdController::class, 'archive'])->name('ad.archive');
+    Route::patch('marketing/ad/{id}/restore', [AdController::class, 'restore'])->name('ad.restore');
 
     //source (แหล่งที่มา) — แยกหน้า แหล่งที่มาย่อย + สถานที่
     Route::get('source', [SourceController::class, 'index'])->name('source.index');
@@ -525,6 +535,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/view-more-history/{id}', [PurchaseOrderController::class, 'viewMoreHistory']);
     Route::post('/purchase-order/{id}/cancel-car-order', [PurchaseOrderController::class, 'cancelCarOrder']);
     Route::post('purchase-order/{id}/change-status', [PurchaseOrderController::class, 'changeStatus'])->name('purchase-order.change-status');
+    // ดึงคำขออนุมัติกลับ (เฉพาะ admin — เช็คใน controller) : เคลียร์คำขอ + หมุน token กันลิงก์เมลเดิม
+    Route::post('purchase-order/{id}/withdraw-approval', [PurchaseOrderController::class, 'withdrawApproval'])->name('purchase-order.withdrawApproval');
     Route::get('/purchase-order/search', [PurchaseOrderController::class, 'search'])->name('purchase-order.search');
     //commission sale
     Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('purchase-order.viewCommission');
