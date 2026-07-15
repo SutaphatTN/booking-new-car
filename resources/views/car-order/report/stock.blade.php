@@ -1,6 +1,17 @@
 @php
   // role manager เห็นรายงานนี้ได้ แต่ไม่ให้เห็นคอลัมน์ราคาทุน
   $showCost = auth()->user()->role !== 'manager';
+
+  // รายงานถูก brand-scope อยู่แล้ว (UserAccessScope) → อิง brand ของ user ที่ login
+  //  - Option: เฉพาะ brand 1
+  //  - สีภายใน: เฉพาะ brand 2
+  $brand = auth()->user()->brand;
+
+  // นับคอลัมน์ไว้ทำ colspan ของแถว "ไม่มีข้อมูล"
+  $colCount = 16
+      + ($brand == 1 ? 1 : 0)   // Option
+      + ($brand == 2 ? 1 : 0)   // สีภายใน
+      + ($showCost ? 1 : 0);    // ราคาทุน
 @endphp
 <table>
   <thead>
@@ -14,8 +25,13 @@
       <th>VIN Number</th>
       <th>J Number</th>
       <th>Engine Number</th>
-      <th>Option</th>
+      @if ($brand == 1)
+        <th>Option</th>
+      @endif
       <th>สี</th>
+      @if ($brand == 2)
+        <th>สีภายใน</th>
+      @endif
       <th>ปี</th>
       @if ($showCost)
         <th>ราคาทุน</th>
@@ -25,7 +41,7 @@
       <th>แหล่งที่มา</th>
       <th>สถานะออเดอร์</th>
       <th>สถานะรถ</th>
-      
+
     </tr>
   </thead>
   <tbody>
@@ -40,8 +56,13 @@
       <td>{{ $row->vin_number ?? '-' }}</td>
       <td>{{ $row->j_number ?? '-' }}</td>
       <td>{{ $row->engine_number ?? '-' }}</td>
-      <td>{{ $row->option ?? '-' }}</td>
+      @if ($brand == 1)
+        <td>{{ $row->option ?? '-' }}</td>
+      @endif
       <td>{{ $row->display_color }}</td>
+      @if ($brand == 2)
+        <td>{{ $row->interiorColor->name ?? '-' }}</td>
+      @endif
       <td>{{ $row->year ?? '-' }}</td>
       @if ($showCost)
         <td>{{ $row->car_DNP ?? '-' }}</td>
@@ -54,7 +75,7 @@
     </tr>
     @empty
     <tr>
-      <td colspan="{{ $showCost ? 18 : 17 }}" align="center">ไม่มีข้อมูล</td>
+      <td colspan="{{ $colCount }}" align="center">ไม่มีข้อมูล</td>
     </tr>
     @endforelse
   </tbody>

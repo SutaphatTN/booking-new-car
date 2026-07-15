@@ -10,6 +10,7 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -81,10 +82,16 @@ class CarOrderStockExport implements FromView, WithTitle, WithStyles, WithEvents
                 $sheet->freezePane('A2');
                 $sheet->getTabColor()->setRGB('c6efce');
 
-                foreach (['L', 'M'] as $col) {
-                    $sheet->getStyle("{$col}2:{$col}{$highestRow}")
-                        ->getNumberFormat()
-                        ->setFormatCode('#,##0.00');
+                // จัดรูปแบบเงินคอลัมน์ "ราคาทุน"/"ราคาขาย" โดยหาจากหัวตาราง
+                // (ตำแหน่งคอลัมน์เลื่อนตาม brand: Option เฉพาะ brand 1, สีภายใน เฉพาะ brand 2)
+                $lastColIndex = Coordinate::columnIndexFromString($highestCol);
+                for ($i = 1; $i <= $lastColIndex; $i++) {
+                    $letter = Coordinate::stringFromColumnIndex($i);
+                    if (in_array($sheet->getCell("{$letter}1")->getValue(), ['ราคาทุน', 'ราคาขาย'], true)) {
+                        $sheet->getStyle("{$letter}2:{$letter}{$highestRow}")
+                            ->getNumberFormat()
+                            ->setFormatCode('#,##0.00');
+                    }
                 }
             },
         ];
@@ -92,7 +99,7 @@ class CarOrderStockExport implements FromView, WithTitle, WithStyles, WithEvents
 
     public function view(): View
     {
-        $rows = CarOrder::with(['model', 'subModel', 'purchaseType', 'orderStatus', 'gwmColor'])
+        $rows = CarOrder::with(['model', 'subModel', 'purchaseType', 'orderStatus', 'gwmColor', 'interiorColor'])
             ->whereNotNull('system_date')
             ->whereBetween('system_date', [$this->fromDate, $this->toDate])
             ->orderBy('system_date')

@@ -44,6 +44,8 @@ class CustomerTracking extends Model
         'booked_at',
         'cancelled_at',
         'CancelledBy',
+        'cancel_reason',
+        'cancel_reason_note',
         'delivery_timeline_scoring',
         'test_drive_scoring',
         'occupation_scoring',
@@ -95,6 +97,13 @@ class CustomerTracking extends Model
     {
         // withTrashed: แหล่งที่มาที่ถูกลบไปแล้ว ประวัติการติดตามเดิมยังต้องแสดงชื่อได้
         return $this->belongsTo(TbSalecarType::class, 'source_id')->withTrashed();
+    }
+
+    // แอด (คลิปที่ยิงแอด) — clip_add เก็บเป็น id อ้างถึง tb_ad
+    // แอดที่ถูก "เก็บ" (is_active=0) ยังต้องแสดงชื่อในประวัติเดิมได้ จึงไม่ scope is_active
+    public function ad()
+    {
+        return $this->belongsTo(Ad::class, 'clip_add');
     }
 
     public function place()

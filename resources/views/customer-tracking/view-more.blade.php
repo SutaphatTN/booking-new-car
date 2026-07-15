@@ -148,7 +148,7 @@
                   <div class="col-md-12">
                     <label class="po-label" for="vmClipAdd">คลิปที่ยิงแอด</label>
                     <textarea id="vmClipAdd" name="clip_add_view" class="form-control" rows="2" readonly
-                      style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:9px 14px;font-size:0.9rem;color:#334155;resize:none;">{{ $tracking->clip_add ?? '-' }}</textarea>
+                      style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:9px 14px;font-size:0.9rem;color:#334155;resize:none;">{{ $tracking->ad ? trim($tracking->ad->name . ($tracking->ad->url ? "\n" . $tracking->ad->url : '')) : '-' }}</textarea>
                   </div>
                 </div>
               </div>
@@ -484,10 +484,13 @@
                   <i class="bx bx-plus me-1"></i> เพิ่มบันทึก
                 </button>
               @endif
-              <button type="button" class="btn btn-outline-danger btn-sm" id="btnCancelTracking"
-                data-id="{{ $tracking->id }}">
-                <i class="bx bx-x-circle me-1"></i> ยกเลิกการติดตาม
-              </button>
+              {{-- ปุ่มยกเลิกการติดตาม ซ่อนจาก role sale, adminPage, lead_sale --}}
+              @if (!in_array(auth()->user()->role, ['sale', 'adminPage', 'lead_sale']))
+                <button type="button" class="btn btn-outline-danger btn-sm" id="btnCancelTracking"
+                  data-id="{{ $tracking->id }}">
+                  <i class="bx bx-x-circle me-1"></i> ยกเลิกการติดตาม
+                </button>
+              @endif
             @endif
           </div>
         </div>

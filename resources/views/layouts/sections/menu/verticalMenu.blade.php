@@ -109,7 +109,8 @@
       @endif
 
       @php
-        $adminPageAllowed = ['customer-tracking', 'customer', 'purchase-order'];
+        // 'ad' = เมนูการตลาด > แอด (adminPage จัดการแอดได้ ; sub อื่นของ source ถูกซ่อนใน submenu)
+        $adminPageAllowed = ['customer-tracking', 'customer', 'purchase-order', 'ad'];
       @endphp
       @if ($userRole === 'adminPage' && empty(array_intersect($menuSlugs, $adminPageAllowed)))
         @continue

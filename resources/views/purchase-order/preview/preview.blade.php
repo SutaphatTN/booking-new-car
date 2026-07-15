@@ -46,6 +46,14 @@
           <i class="bx bx-error-circle me-1"></i>ขออนุมัติเกินงบ
         </button>
 
+        {{-- ดึงคำขอกลับ (เฉพาะ admin) — โชว์ตอนสถานะ "รออนุมัติ" ที่ยังไม่อนุมัติ --}}
+        <button type="button"
+          class="btn btn-outline-danger px-4 d-none"
+          id="btnWithdrawApproval"
+          data-id="{{ $saleCar->id }}">
+          <i class="bx bx-undo me-1"></i>ดึงคำขอกลับ
+        </button>
+
         <input type="hidden" id="userRole" value="{{ $userRole }}">
         {{-- ประเภทการขาย = Dealer → ไม่ต้องขออนุมัติ (JS เทียบกับค่าที่เลือกใน #type_sale) --}}
         <input type="hidden" id="dealerTypeSaleId" value="{{ \App\Models\Salecar::TYPE_SALE_DEALER }}">

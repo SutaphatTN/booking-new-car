@@ -14,6 +14,16 @@
         @continue
       @endif
 
+      {{-- เมนู "แอด" (การตลาด) เห็นเฉพาะ admin, adminPage --}}
+      @if ($submenu->slug == 'ad.index' && !in_array($userRole, ['admin', 'adminPage']))
+        @continue
+      @endif
+
+      {{-- adminPage เห็นเฉพาะ "แอด" ในเมนูการตลาด — ซ่อนแหล่งที่มาย่อย/สถานที่ --}}
+      @if ($userRole === 'adminPage' && in_array($submenu->slug, ['source.sub.index', 'source.place.index']))
+        @continue
+      @endif
+
       @if ($b4CrossWuling && in_array($submenu->slug, ['purchase-order.viewCommission', 'purchase-order.viewFN', 'purchase-order.gp-setting', 'purchase-order.view-export-insurance']))
         @continue
       @endif

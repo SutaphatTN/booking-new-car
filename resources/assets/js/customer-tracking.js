@@ -2,6 +2,50 @@ $.ajaxSetup({
   headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
 });
 
+// เหตุผลการจบ/ยกเลิกการติดตาม — Swal เลือกเหตุผล (dropdown + "อื่นๆ" กรอกเอง)
+// คืน Swal promise ; result.value = { reason, note } เมื่อ isConfirmed
+function ctPickCancelReason(titleText) {
+  return Swal.fire({
+    title: titleText,
+    html:
+      '<p class="text-muted mb-2" style="font-size:.85rem;">รายการนี้จะไม่แสดงในหน้ารายการติดตามอีกต่อไป</p>' +
+      '<div class="text-start">' +
+      '<label class="form-label mb-1">เหตุผล <span class="text-danger">*</span></label>' +
+      '<select id="ctReason" class="form-select mb-2">' +
+      '<option value="">— เลือกเหตุผล —</option>' +
+      '<option value="ไม่ผ่านอนุมัติไฟแนนซ์">ไม่ผ่านอนุมัติไฟแนนซ์</option>' +
+      '<option value="ออกรถแบรนด์อื่น">ออกรถแบรนด์อื่น</option>' +
+      '<option value="เคสชนกัน">เคสชนกัน</option>' +
+      '<option value="อื่นๆ">อื่นๆ</option>' +
+      '</select>' +
+      '<div id="ctReasonNoteWrap" style="display:none;">' +
+      '<label class="form-label mb-1">ระบุเหตุผล <span class="text-danger">*</span></label>' +
+      '<textarea id="ctReasonNote" class="form-control" rows="2" placeholder="กรอกเหตุผล..."></textarea>' +
+      '</div>' +
+      '</div>',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#f59e0b',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'ยืนยัน',
+    cancelButtonText: 'ยกเลิก',
+    didOpen: () => {
+      const sel = document.getElementById('ctReason');
+      const wrap = document.getElementById('ctReasonNoteWrap');
+      sel.addEventListener('change', () => {
+        wrap.style.display = sel.value === 'อื่นๆ' ? 'block' : 'none';
+      });
+    },
+    preConfirm: () => {
+      const reason = document.getElementById('ctReason').value;
+      const note = document.getElementById('ctReasonNote').value.trim();
+      if (!reason) { Swal.showValidationMessage('กรุณาเลือกเหตุผล'); return false; }
+      if (reason === 'อื่นๆ' && !note) { Swal.showValidationMessage('กรุณากรอกเหตุผล'); return false; }
+      return { reason, note };
+    }
+  });
+}
+
 // ── Tracking table column filter ──
 let ctTrackingTable;
 // active filters store raw YYYY-MM-DD for dates, name strings for sale/source/status
@@ -88,6 +132,10 @@ function ctSyncAll(allId, itemClass) {
 $(document).ready(function () {
   if (!$('#trackingTable').length) return;
 
+  // ปุ่ม "จบการติดตาม" ซ่อนจาก role sale, adminPage, lead_sale
+  const ctUserRole = $('#trackingTable').data('userRole') || '';
+  const ctCanEndTracking = !['sale', 'adminPage', 'lead_sale'].includes(ctUserRole);
+
   ctTrackingTable = $('#trackingTable').DataTable({
     serverSide: true,
     processing: false,
@@ -117,14 +165,17 @@ $(document).ready(function () {
         orderable: false,
         searchable: false,
         render: function (id) {
+          const endBtn = ctCanEndTracking
+            ? `<button class="btn btn-icon btn-warning text-white btnEndTracking" data-id="${id}" title="จบการติดตาม">
+                 <i class="bx bx-flag"></i>
+               </button>`
+            : '';
           return `
             <div class="d-flex justify-content-center gap-1">
               <a href="/customer-tracking/${id}" class="btn btn-icon btn-info text-white" title="ดูรายละเอียด">
                 <i class="bx bx-show"></i>
               </a>
-              <button class="btn btn-icon btn-warning text-white btnEndTracking" data-id="${id}" title="จบการติดตาม">
-                <i class="bx bx-flag"></i>
-              </button>
+              ${endBtn}
               <button class="btn btn-icon btn-danger text-white btnDeleteTracking" data-id="${id}" title="ลบ">
                 <i class="bx bx-trash"></i>
               </button>
@@ -173,20 +224,12 @@ $(document).ready(function () {
   // จบการติดตาม
   $(document).on('click', '.btnEndTracking', function () {
     const id = $(this).data('id');
-    Swal.fire({
-      title: 'จบการติดตาม?',
-      html: 'ต้องการจบการติดตามลูกค้ารายนี้ใช่หรือไม่?<br><small class="text-muted">รายการนี้จะไม่แสดงในหน้ารายการติดตามอีกต่อไป</small>',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#f59e0b',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'ยืนยัน จบการติดตาม',
-      cancelButtonText: 'ยกเลิก'
-    }).then(result => {
+    ctPickCancelReason('จบการติดตาม?').then(result => {
       if (!result.isConfirmed) return;
       $.ajax({
         url: `/customer-tracking/${id}/cancel`,
         type: 'POST',
+        data: { reason: result.value.reason, reason_note: result.value.note },
         success: function () {
           Swal.fire({ icon: 'success', title: 'จบการติดตามเรียบร้อยแล้ว', timer: 1500, showConfirmButton: true });
           ctTrackingTable.ajax.reload();
@@ -1046,21 +1089,13 @@ $(document).ready(function () {
   $('#btnCancelTracking').on('click', function () {
     const trackingId = $(this).data('id');
 
-    Swal.fire({
-      title: 'ยกเลิกการติดตาม?',
-      html: 'ต้องการยกเลิกการติดตามลูกค้ารายนี้ใช่หรือไม่?<br><small class="text-muted">รายการนี้จะไม่แสดงในหน้ารายการติดตามอีกต่อไป</small>',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#6c5ffc',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'ยืนยัน',
-      cancelButtonText: 'ไม่ใช่'
-    }).then(result => {
+    ctPickCancelReason('ยกเลิกการติดตาม?').then(result => {
       if (!result.isConfirmed) return;
 
       $.ajax({
         url: `/customer-tracking/${trackingId}/cancel`,
         type: 'POST',
+        data: { reason: result.value.reason, reason_note: result.value.note },
         success: function () {
           Swal.fire({
             icon: 'success',

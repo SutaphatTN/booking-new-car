@@ -109,8 +109,13 @@
     {
       "name": "การตลาด",
       "icon": "menu-icon icon-base bx bx-map-pin",
-      "slug": "source",
+      "slug": ["source", "ad"],
       "submenu": [
+        {
+          "url": "marketing/ad",
+          "name": "ชื่อแอด",
+          "slug": "ad.index"
+        },
         {
           "url": "source/sub",
           "name": "แหล่งที่มาย่อย",
