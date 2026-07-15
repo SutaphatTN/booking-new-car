@@ -2342,7 +2342,8 @@
                             <select id="con_status" name="con_status" class="form-select" required>
                               <option value="">-- เลือกสถานะ --</option>
                               @foreach ($conStatus as $con)
-                                @if ($con->id != 9)
+                                {{-- pre-approval ยังไม่ใช่การจอง → ห้ามเลือก "ระหว่างแต่งรถ" (4) / "ส่งมอบ" (5) กัน side effect ส่งมอบ --}}
+                                @if ($con->id != 9 && !($saleCar->is_pre_approval && in_array($con->id, [4, 5])))
                                   <option value="{{ @$con->id }}"
                                     {{ $saleCar->con_status == $con->id ? 'selected' : '' }}>{{ @$con->name }}
                                   </option>

@@ -1351,6 +1351,16 @@ class PurchaseOrderController extends Controller
 
             $saleCar = Salecar::withoutGlobalScope('preApproval')->with('accessories')->findOrFail($id);
 
+            // pre-approval (ขออนุมัติเกินงบล่วงหน้า) ยังไม่ใช่การจอง → ห้ามตั้งสถานะ "ระหว่างแต่งรถ" (4) / "ส่งมอบ" (5)
+            // กัน side effect ส่งมอบ (CarOrder=Delivered / ปิด tracking / ส่งอีเมล) หลุดกับรายการที่ยังไม่เป็นการจอง
+            if ($saleCar->is_pre_approval && in_array((int) $request->con_status, [4, 5], true)) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'คำขออนุมัติล่วงหน้ายังไม่ใช่การจอง — ตั้งสถานะ "ระหว่างแต่งรถ/ส่งมอบ" ไม่ได้',
+                ], 422);
+            }
+
             $turnCarID = $saleCar->TurnCarID;
 
             if ($request->hasTurnCar === 'yes') {
@@ -1568,11 +1578,14 @@ class PurchaseOrderController extends Controller
             $oldCarOrderID = $saleCar->CarOrderID;
             $newCarOrderID = $request->CarOrderID;
 
-            // gate: เปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5) ได้ต่อเมื่ออนุมัติแล้ว (ยกเว้น admin)
-            //  - ผูกรถได้เลยแม้ยังไม่อนุมัติ — บังคับอนุมัติเฉพาะตอนจะปิดการส่งมอบ
-            //  - ดักเฉพาะ "การเปลี่ยนเข้าเป็น 5" (ของเดิมไม่ใช่ 5) เพื่อไม่กวนการแก้ฟิลด์อื่นของรายการที่ส่งมอบไปแล้ว
-            // ── เปิดตอนปิดยอด: comment block นี้เพื่อปิด gate บังคับอนุมัติก่อนส่งมอบ ──
+            // gate: เปลี่ยนสถานะเป็น "ระหว่างแต่งรถ" (con_status = 4) หรือ "ส่งมอบ" (con_status = 5) ได้ต่อเมื่ออนุมัติแล้ว (ยกเว้น admin)
+            //  - ผูกรถได้เลยแม้ยังไม่อนุมัติ — บังคับอนุมัติเฉพาะตอนจะเข้าสองสถานะนี้
+            //  - ดักเฉพาะ "การเปลี่ยนเข้าสถานะเป้าหมาย" (ของเดิมไม่ใช่สถานะที่กำลังจะเปลี่ยนไป) เพื่อไม่กวนการแก้ฟิลด์อื่นของรายการที่อยู่สถานะนั้นแล้ว
+            // ── เปิดตอนปิดยอด: comment block นี้เพื่อปิด gate บังคับอนุมัติ ──
             $deliveringNow = (int) $request->con_status === 5 && (int) $saleCar->con_status !== 5;
+            // ต้องอนุมัติ/เซ็นให้ครบก่อน จึงจะเข้าสถานะ "ระหว่างแต่งรถ" (4) หรือ "ส่งมอบ" (5) ได้
+            $enteringApprovalStage = in_array((int) $request->con_status, [4, 5], true)
+                && (int) $saleCar->con_status !== (int) $request->con_status;
             // ประเภทการขาย = Dealer → ไม่ต้องขออนุมัติ (เช็คค่าที่กำลังบันทึก เผื่อเพิ่งเปลี่ยนเป็น Dealer)
             $isDealerSale = (int) $request->input('type_sale', $saleCar->type_sale) === Salecar::TYPE_SALE_DEALER;
             $prevApprovalType = $saleCar->approval_type;
@@ -1581,9 +1594,9 @@ class PurchaseOrderController extends Controller
 
             $saleCar->update($data);
 
-            // เช็คสิทธิ์ส่งมอบ "หลัง" อัปเดตข้อมูล → ใช้ balanceCampaign/รุ่นรถ ค่าล่าสุดเสมอ
+            // เช็คสิทธิ์ "หลัง" อัปเดตข้อมูล → ใช้ balanceCampaign/รุ่นรถ ค่าล่าสุดเสมอ
             // ดักเคส: อนุมัติงบปกติผ่านแล้ว แต่แก้ข้อมูลจนเกินงบ → ลายเซ็นเดิมใช้ไม่ได้ ต้องขออนุมัติเกินงบก่อน
-            if ($deliveringNow && !$isDealerSale && Auth::user()->role !== 'admin') {
+            if ($enteringApprovalStage && !$isDealerSale && Auth::user()->role !== 'admin') {
                 $saleCar->unsetRelation('model'); // model_id อาจเปลี่ยน → อ่าน over_budget ของรุ่นใหม่
                 if (!$this->isApproved($saleCar)) {
                     $becameOverBudget = $prevApprovalType === 'normal'
@@ -1592,8 +1605,8 @@ class PurchaseOrderController extends Controller
                     return response()->json([
                         'success' => false,
                         'message' => $becameOverBudget
-                            ? 'ข้อมูลเปลี่ยนแปลงจนเกินงบ — คำขออนุมัติงบปกติเดิมใช้ไม่ได้แล้ว กรุณาขออนุมัติเกินงบก่อนส่งมอบ'
-                            : 'กรุณาขออนุมัติให้ผ่านก่อน จึงจะเปลี่ยนสถานะเป็นส่งมอบได้',
+                            ? 'ข้อมูลเปลี่ยนแปลงจนเกินงบ — คำขออนุมัติงบปกติเดิมใช้ไม่ได้แล้ว กรุณาขออนุมัติเกินงบก่อนเปลี่ยนสถานะ'
+                            : 'กรุณาขออนุมัติให้ผ่านก่อน จึงจะเปลี่ยนสถานะนี้ได้',
                     ], 422);
                 }
             }
@@ -2127,6 +2140,7 @@ class PurchaseOrderController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            // report($e); // เปิดบรรทัดนี้เพื่อเขียน exception จริง + stack trace ลง storage/logs/laravel.log เวลาต้องวินิจฉัย
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
