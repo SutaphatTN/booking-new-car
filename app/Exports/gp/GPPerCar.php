@@ -400,6 +400,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         'actually_received' => $r->financeConfirm?->actually_received ?? 0,
         'fn_diff' => $r->financeConfirm?->diff ?? 0,
         'remark' => $r->financeConfirm?->remark ?? '',
+        'status' => $r->conStatus?->name ?? '-',
 
         // 'gross_profit' => $grossProfit,
         // 'gross_percent' => $grossProfitPercent,
