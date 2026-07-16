@@ -756,15 +756,8 @@ class CarOrderController extends Controller
     public function getSubModelCarOrder(Request $request)
     {
         $modelId = $request->model_id;
-        $typeCarOrder = $request->type_carOrder;
 
-        $query = TbSubcarmodel::where('model_id', $modelId);
-
-        if ($typeCarOrder) {
-            $query->where('type_carOrder', $typeCarOrder);
-        }
-
-        $subModels = $query
+        $subModels = TbSubcarmodel::where('model_id', $modelId)
             ->select('id', 'name', 'detail')
             ->orderBy('name')
             ->get();
@@ -1389,8 +1382,16 @@ class CarOrderController extends Controller
     {
         $saleCar = Salecar::with([
             'reservationPayment',
-            'deliveryPayment'
+            'remainingPayment'
         ])->findOrFail($request->salecar_id);
+
+        // ใบจองเก่าที่ยังไม่ได้ระบุประเภทการซื้อ (ผ่อนชำระ/เงินสด) → แจ้งให้ไปแก้ไขใบจองก่อน
+        if (!in_array($saleCar->payment_mode, ['finance', 'non-finance'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ใบจองนี้ยังไม่ได้ระบุประเภทการซื้อ (ผ่อนชำระ/เงินสด) กรุณาแก้ไขใบจองก่อน'
+            ]);
+        }
 
         $cash = $saleCar->CashDeposit;
         $query = TbCarmodel::query();
@@ -1405,35 +1406,28 @@ class CarOrderController extends Controller
             }
 
             if (
-                !$saleCar->deliveryPayment ||
-                empty($saleCar->deliveryPayment->po_number)
+                !$saleCar->remainingPayment ||
+                empty($saleCar->remainingPayment->po_number)
             ) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ลูกค้าไม่มีข้อมูล PO Number'
                 ]);
             }
-
-            if ($cash < TbCarmodel::min('money_min')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'เงินจองไม่ถึงเงื่อนไขที่กำหนด'
-                ]);
-            }
-
-            $query->where('money_min', '<=', $cash);
         }
 
-        if ($saleCar->payment_mode === 'non-finance') {
-            $query->where('money_min', '<=', $cash);
-        }
+        // กรองรุ่นตามเงินจองขั้นต่ำ — รุ่นที่ไม่ได้ตั้ง money_min ถือว่าผ่านเงื่อนไข
+        $query->where(function ($q) use ($cash) {
+            $q->whereNull('money_min')
+                ->orWhere('money_min', '<=', (float) $cash);
+        });
 
         $models = $query->select('id', 'Name_TH')->get();
 
         if ($models->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่พบรุ่นรถที่ผ่านเงื่อนไข'
+                'message' => 'เงินจองไม่ถึงเงื่อนไขที่กำหนด'
             ]);
         }
 

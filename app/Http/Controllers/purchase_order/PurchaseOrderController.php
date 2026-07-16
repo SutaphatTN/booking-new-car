@@ -2842,8 +2842,7 @@ class PurchaseOrderController extends Controller
         ])
             ->whereNull('CarOrderID')
             ->whereHas('customer', function ($q) use ($keyword) {
-                $q->where('FirstName', 'like', "%{$keyword}%")
-                    ->orWhere('LastName', 'like', "%{$keyword}%");
+                $q->searchFullName($keyword);
             })
             ->limit(10)
             ->get();
