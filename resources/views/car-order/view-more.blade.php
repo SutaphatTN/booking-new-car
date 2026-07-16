@@ -315,6 +315,14 @@
               </div>
 
               <div class="col-md-3">
+                <label for="payment_type" class="mf-label form-label">
+                  <i class="bx bx-wallet ci-emerald"></i> ประเภทการจ่าย
+                </label>
+                <input id="payment_type" class="form-control" type="text"
+                  value="{{ $order->payment_type_label }}" disabled>
+              </div>
+
+              <div class="col-md-3">
                 <label for="car_status" class="mf-label form-label">
                   <i class="bx bx-check-shield ci-emerald"></i> สถานะรถ
                 </label>

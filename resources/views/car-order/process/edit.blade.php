@@ -60,6 +60,14 @@
                 </div>
 
                 <div class="col-md-3">
+                  <label for="payment_type" class="mf-label form-label">
+                    <i class="bx bx-wallet ci-indigo"></i> ประเภทการจ่าย
+                  </label>
+                  <input id="payment_type" type="text" class="form-control" value="{{ $order->payment_type_label }}"
+                    style="background:#f8fafc;color:#64748b;" disabled>
+                </div>
+
+                <div class="col-md-3">
                   <label for="order_date" class="mf-label form-label">
                     <i class="bx bx-calendar ci-indigo"></i> วันที่สั่งซื้อ
                   </label>

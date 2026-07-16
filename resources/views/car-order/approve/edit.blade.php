@@ -95,6 +95,14 @@
                     value="{{ $order->purchaseType->name }}" style="background:#f8fafc;color:#64748b;" disabled>
                 </div>
 
+                <div class="col-md-4">
+                  <label for="payment_type" class="mf-label form-label">
+                    <i class="bx bx-wallet"></i> ประเภทการจ่าย
+                  </label>
+                  <input id="payment_type" type="text" class="form-control"
+                    value="{{ $order->payment_type_label }}" style="background:#f8fafc;color:#64748b;" disabled>
+                </div>
+
                 <div class="col-12">
                   <div id="fieldPurchase" class="row g-3 d-none">
                     <div class="col-md-12">

@@ -32,6 +32,7 @@ class CarOrderWaiting extends Model
         'interior_color',
         'year',
         'purchase_type',
+        'payment_type',
         'car_DNP',
         'car_MSRP',
         'RI',
@@ -111,5 +112,15 @@ class CarOrderWaiting extends Model
     public function getFormatApprovedAtAttribute()
     {
         return $this->approved_at ? Carbon::parse($this->approved_at)->format('d-m-Y') : null;
+    }
+
+    const PAYMENT_TYPES = [
+        'cash'     => 'เงินสด',
+        'fp_tisco' => 'FP Tisco',
+    ];
+
+    public function getPaymentTypeLabelAttribute()
+    {
+        return self::PAYMENT_TYPES[$this->payment_type] ?? '-';
     }
 }

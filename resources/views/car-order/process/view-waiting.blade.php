@@ -60,6 +60,14 @@
                   value="{{ $waiting->purchaseType->name ?? '-' }}" disabled>
               </div>
 
+              <div class="col-md-3">
+                <label for="payment_type" class="mf-label form-label">
+                  <i class="bx bx-wallet ci-indigo"></i> ประเภทการจ่าย
+                </label>
+                <input id="payment_type" type="text" class="form-control"
+                  value="{{ $waiting->payment_type_label }}" disabled>
+              </div>
+
             </div>
           </div>
         </div>

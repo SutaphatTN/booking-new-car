@@ -14,10 +14,12 @@ class CarDeliveredMail extends Mailable
     use Queueable, SerializesModels;
 
     public $saleCar;
+    public $triggers;
 
-    public function __construct($saleCar)
+    public function __construct($saleCar, $triggers = [])
     {
-        $this->saleCar = $saleCar;
+        $this->saleCar  = $saleCar;
+        $this->triggers = $triggers;
     }
 
     public function build()
