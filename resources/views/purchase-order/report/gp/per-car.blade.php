@@ -69,6 +69,7 @@
       <th>ยอดรับเข้าบัญชี</th>
       <th>DIFF</th>
       <th>หมายเหตุ</th>
+      <th>สถานะ</th>
 
       {{-- <th>กำไรขั้นต้น</th>
       <th>% กำไรขั้นต้น</th>
@@ -157,6 +158,7 @@
         <td>{{ $p['actually_received'] }}</td>
         <td>{{ $p['fn_diff'] }}</td>
         <td>{{ $p['remark'] }}</td>
+        <td>{{ $p['status'] }}</td>
 
         {{-- <td>{{ $p['sale_price'] }}</td>
       <td>{{ $p['cost_price'] }}</td>
@@ -178,7 +180,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="61" align="center">ไม่มีข้อมูล</td>
+        <td colspan="62" align="center">ไม่มีข้อมูล</td>
       </tr>
     @endforelse
 
