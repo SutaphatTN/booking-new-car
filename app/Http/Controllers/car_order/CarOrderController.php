@@ -523,6 +523,7 @@ class CarOrderController extends Controller
                 'type_color' => $request->type_color ?? null,
                 'year' => $request->year,
                 'purchase_type' => $request->purchase_type,
+                'payment_type' => $request->payment_type,
                 'order_status' => 1,
                 'car_DNP' => $request->filled('car_DNP')
                     ? str_replace(',', '', $request->car_DNP)
@@ -657,6 +658,7 @@ class CarOrderController extends Controller
                 'type_color'     => $request->type_color ?? null,
                 'year'           => $request->year,
                 'purchase_type'  => $request->purchase_type,
+                'payment_type'   => $request->payment_type,
                 'car_DNP'        => $request->filled('car_DNP')  ? str_replace(',', '', $request->car_DNP)  : null,
                 'car_MSRP'       => $request->filled('car_MSRP') ? str_replace(',', '', $request->car_MSRP) : null,
                 'RI'             => $request->filled('RI')  ? str_replace(',', '', $request->RI)  : null,
@@ -1114,6 +1116,7 @@ class CarOrderController extends Controller
                 'interior_color' => $waiting->interior_color,
                 'year'           => $waiting->year,
                 'purchase_type'  => $waiting->purchase_type,
+                'payment_type'   => $waiting->payment_type,
                 'order_status'   => 1,
                 'car_DNP'        => $waiting->car_DNP,
                 'car_MSRP'       => $waiting->car_MSRP,

@@ -425,6 +425,20 @@
                 </div>
 
                 <div class="col-md-3">
+                  <label for="payment_type" class="mf-label form-label">
+                    <i class="bx bx-wallet ci-emerald"></i> ประเภทการจ่าย
+                  </label>
+                  <select id="payment_type" name="payment_type" class="form-select" required>
+                    <option value="">-- เลือกประเภทการจ่าย --</option>
+                    <option value="cash" {{ $order->payment_type == 'cash' ? 'selected' : '' }}>เงินสด</option>
+                    <option value="fp_tisco" {{ $order->payment_type == 'fp_tisco' ? 'selected' : '' }}>FP Tisco</option>
+                  </select>
+                  @error('payment_type')
+                    <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                  @enderror
+                </div>
+
+                <div class="col-md-3">
                   <label for="car_status" class="mf-label form-label">
                     <i class="bx bx-check-shield ci-emerald"></i> สถานะรถ
                   </label>

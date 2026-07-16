@@ -250,6 +250,7 @@ class Salecar extends Model
 		'balance',
 		'balanceFinance',
 		'con_status',
+		'delivered_notified_at',
 		'delivery_location',
 		'delivery_province',
 		'approval_type',

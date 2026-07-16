@@ -40,6 +40,7 @@ class CarOrder extends Model
         'interior_color',
         'year',
         'purchase_type',
+        'payment_type',
         'order_status',
         'order_invoice_date',
         'fp_date',
@@ -230,5 +231,15 @@ class CarOrder extends Model
     public function getFormatFpDateAttribute()
     {
         return $this->fp_date ? Carbon::parse($this->fp_date)->format('d-m-Y') : null;
+    }
+
+    const PAYMENT_TYPES = [
+        'cash'     => 'เงินสด',
+        'fp_tisco' => 'FP Tisco',
+    ];
+
+    public function getPaymentTypeLabelAttribute()
+    {
+        return self::PAYMENT_TYPES[$this->payment_type] ?? '-';
     }
 }

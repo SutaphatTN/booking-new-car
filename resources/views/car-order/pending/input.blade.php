@@ -87,6 +87,17 @@
                   </select>
                 </div>
 
+                <div id="wrapPaymentType" class="col-md-4">
+                  <label for="payment_type" class="mf-label form-label">
+                    <i class="bx bx-wallet"></i> ประเภทการจ่าย
+                  </label>
+                  <select id="payment_type" name="payment_type" class="form-select" required>
+                    <option value="">-- เลือกประเภทการจ่าย --</option>
+                    <option value="cash">เงินสด</option>
+                    <option value="fp_tisco">FP Tisco</option>
+                  </select>
+                </div>
+
                 <input type="hidden" name="salecar_id" id="salecar_id">
                 <div class="col-12 mt-6">
                   <div id="fieldPurchase" class="row g-3 d-none">

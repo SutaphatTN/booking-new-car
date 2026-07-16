@@ -107,6 +107,13 @@
                   <input id="purchase_type" type="text" class="form-control form-control-plaintext-mf" value="{{ $waiting->purchaseType->name ?? '-' }}" disabled>
                 </div>
 
+                <div class="col-md-5">
+                  <label for="payment_type" class="mf-label form-label">
+                    <i class="bx bx-wallet"></i> ประเภทการจ่าย
+                  </label>
+                  <input id="payment_type" type="text" class="form-control form-control-plaintext-mf" value="{{ $waiting->payment_type_label }}" disabled>
+                </div>
+
               </div>
             </div>
           </div>

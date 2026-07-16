@@ -15,7 +15,11 @@
 
 **แบรนด์: {{ $brandName }}**
 
-รายการจองนี้ได้ **ส่งมอบรถให้ลูกค้าเรียบร้อยแล้ว** — กรุณาดำเนินการจบยอดที่ธนาคาร
+รายการจองนี้มี **ข้อมูลการส่งมอบ** แล้ว — กรุณาดำเนินการจบยอดที่ธนาคาร
+
+@if (!empty($triggers))
+> **แจ้งเตือนจากข้อมูล:** {{ implode(', ', $triggers) }}
+@endif
 
 ---
 
@@ -39,7 +43,10 @@
 - **เลขเครื่องยนต์ :** {{ $co->engine_number ?? '-' }}
 
 ### การส่งมอบ
-- **วันที่ส่งมอบ :** {{ $sc->DeliveryDate ? \Illuminate\Support\Carbon::parse($sc->DeliveryDate)->format('d/m/Y') : '-' }}
+- **สถานะ :** {{ $sc->conStatus->name ?? '-' }}
+- **วันส่งมอบจริง (แจ้งประกัน) :** {{ $sc->DeliveryDate ? \Illuminate\Support\Carbon::parse($sc->DeliveryDate)->format('d/m/Y') : '-' }}
+- **วันส่งมอบของบริษัท (DMS) :** {{ $sc->DeliveryInDMSDate ? \Illuminate\Support\Carbon::parse($sc->DeliveryInDMSDate)->format('d/m/Y') : '-' }}
+- **วันส่งมอบของฝ่ายขาย (CK) :** {{ $sc->DeliveryInCKDate ? \Illuminate\Support\Carbon::parse($sc->DeliveryInCKDate)->format('d/m/Y') : '-' }}
 - **ฝ่ายขาย :** {{ $sc->saleUser->name ?? '-' }}
 - **สาขา :** {{ $sc->saleUser->branchInfo->name ?? '-' }}
 

@@ -1361,6 +1361,34 @@ class PurchaseOrderController extends Controller
                 ], 422);
             }
 
+            // บังคับกรอกวันส่งมอบให้ครบ เมื่อ:
+            //  - ผูกรถแล้ว (CarOrderID) + มีวันที่ PO (remaining_po_date) หรือ
+            //  - เปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5)
+            if (
+                ($request->filled('CarOrderID') && $request->filled('remaining_po_date'))
+                || (int) $request->con_status === 5
+            ) {
+                $requiredDeliveryDates = [
+                    'DeliveryDate'         => 'วันส่งมอบจริง (แจ้งประกัน)',
+                    'DeliveryInDMSDate'    => 'วันที่ส่งมอบของบริษัท',
+                    'DeliveryInCKDate'     => 'วันที่ส่งมอบของฝ่ายขาย',
+                    'DeliveryEstimateDate' => 'ประมาณการส่งมอบ',
+                ];
+                $missingDates = [];
+                foreach ($requiredDeliveryDates as $field => $label) {
+                    if (!$request->filled($field)) {
+                        $missingDates[] = $label;
+                    }
+                }
+                if (!empty($missingDates)) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'ผูกรถแล้วและมีวันที่ PO แล้ว กรุณากรอกให้ครบ: ' . implode(', ', $missingDates),
+                    ], 422);
+                }
+            }
+
             $turnCarID = $saleCar->TurnCarID;
 
             if ($request->hasTurnCar === 'yes') {
@@ -1582,7 +1610,6 @@ class PurchaseOrderController extends Controller
             //  - ผูกรถได้เลยแม้ยังไม่อนุมัติ — บังคับอนุมัติเฉพาะตอนจะเข้าสองสถานะนี้
             //  - ดักเฉพาะ "การเปลี่ยนเข้าสถานะเป้าหมาย" (ของเดิมไม่ใช่สถานะที่กำลังจะเปลี่ยนไป) เพื่อไม่กวนการแก้ฟิลด์อื่นของรายการที่อยู่สถานะนั้นแล้ว
             // ── เปิดตอนปิดยอด: comment block นี้เพื่อปิด gate บังคับอนุมัติ ──
-            $deliveringNow = (int) $request->con_status === 5 && (int) $saleCar->con_status !== 5;
             // ต้องอนุมัติ/เซ็นให้ครบก่อน จึงจะเข้าสถานะ "ระหว่างแต่งรถ" (4) หรือ "ส่งมอบ" (5) ได้
             $enteringApprovalStage = in_array((int) $request->con_status, [4, 5], true)
                 && (int) $saleCar->con_status !== (int) $request->con_status;
@@ -2117,16 +2144,27 @@ class PurchaseOrderController extends Controller
 
             DB::commit();
 
-            // แจ้งอีเมลเมื่อ "ส่งมอบ" (เพิ่งเปลี่ยนเข้าเป็น con_status=5) — ส่งข้อมูลลูกค้า/รถ/VIN ไปให้จบยอดที่ธนาคาร
-            if ($deliveringNow) {
-                try {
-                    $saleCar->load([
-                        'customer.prefix', 'model', 'subModel', 'carOrder',
-                        'saleUser.branchInfo', 'gwmColor', 'interiorColor',
-                    ]);
-                    Mail::to('waliwan.mitsuchookiatkrabi@gmail.com')->send(new CarDeliveredMail($saleCar));
-                } catch (\Throwable $mailEx) {
-                    report($mailEx); // ส่งเมลล้มเหลวไม่ควรทำให้การบันทึกล้มเหลว
+            // แจ้งอีเมล "ส่งมอบ" — ยิง "ครั้งเดียว" เมื่อมีข้อมูลส่งมอบตัวใดตัวหนึ่ง
+            //  trigger: DeliveryDate / DeliveryInDMSDate / DeliveryInCKDate / con_status=5
+            //  ถ้าตัวถัดมามีข้อมูลตามมาทีหลังจะไม่ยิงซ้ำ (กันด้วย delivered_notified_at)
+            if (!$saleCar->delivered_notified_at) {
+                $deliveryTriggers = [];
+                if ((int) $saleCar->con_status === 5) $deliveryTriggers[] = 'สถานะ = ส่งมอบ';
+                if ($saleCar->DeliveryDate)           $deliveryTriggers[] = 'วันส่งมอบจริง (แจ้งประกัน)';
+                if ($saleCar->DeliveryInDMSDate)      $deliveryTriggers[] = 'วันส่งมอบของบริษัท (DMS)';
+                if ($saleCar->DeliveryInCKDate)       $deliveryTriggers[] = 'วันส่งมอบของฝ่ายขาย (CK)';
+
+                if (!empty($deliveryTriggers)) {
+                    try {
+                        $saleCar->load([
+                            'customer.prefix', 'model', 'subModel', 'carOrder',
+                            'saleUser.branchInfo', 'gwmColor', 'interiorColor', 'conStatus',
+                        ]);
+                        Mail::to('waliwan.mitsuchookiatkrabi@gmail.com')->send(new CarDeliveredMail($saleCar, $deliveryTriggers));
+                        $saleCar->update(['delivered_notified_at' => now()]); // มาร์คว่าแจ้งแล้ว (ยิงครั้งเดียว)
+                    } catch (\Throwable $mailEx) {
+                        report($mailEx); // ส่งเมลล้มเหลวไม่ควรทำให้การบันทึกล้มเหลว (จะลองใหม่รอบหน้า)
+                    }
                 }
             }
 
