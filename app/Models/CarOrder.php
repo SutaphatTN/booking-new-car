@@ -44,6 +44,7 @@ class CarOrder extends Model
         'order_status',
         'order_invoice_date',
         'fp_date',
+        'fp_close_date',
         'order_stock_date',
         'cancel_date',
         'car_DNP',
@@ -231,6 +232,16 @@ class CarOrder extends Model
     public function getFormatFpDateAttribute()
     {
         return $this->fp_date ? Carbon::parse($this->fp_date)->format('d-m-Y') : null;
+    }
+
+    public function getFpCloseDateAttribute($value)
+    {
+        return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+    }
+
+    public function getFormatFpCloseDateAttribute()
+    {
+        return $this->fp_close_date ? Carbon::parse($this->fp_close_date)->format('d-m-Y') : null;
     }
 
     const PAYMENT_TYPES = [

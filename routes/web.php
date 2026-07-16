@@ -14,6 +14,7 @@ use App\Http\Controllers\car_order\WsImportController;
 use App\Http\Controllers\color\ColorController;
 use App\Http\Controllers\customer\CustomerController;
 use App\Http\Controllers\finance\FinanceController;
+use App\Http\Controllers\floor_plan\FloorPlanController;
 use App\Http\Controllers\forecast\ForecastController;
 use App\Http\Controllers\dbar\DbarController;
 use App\Http\Controllers\home\HomeController;
@@ -317,8 +318,14 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     // รับทราบรายการไม่อนุมัติ (soft delete ออกจากหน้าผลการอนุมัติ)
     Route::delete('car-order/acknowledge-reject/{id}', [CarOrderController::class, 'acknowledgeReject'])->name('car-order.acknowledgeReject');
     Route::delete('car-order/acknowledge-reject-waiting/{id}', [CarOrderController::class, 'acknowledgeRejectWaiting'])->name('car-order.acknowledgeRejectWaiting');
-    //condition select ca model 
+    //condition select ca model
     Route::get('/api/car-order/models-by-customer', [CarOrderController::class, 'getModelsByCustomer']);
+
+    // Floor Plan (เห็นเฉพาะ admin, audit_lead — ตรวจสิทธิ์ใน controller)
+    Route::get('floor-plan/interest-rate', [FloorPlanController::class, 'interestRate'])->name('floor-plan.interest-rate');
+    Route::put('floor-plan/interest-rate', [FloorPlanController::class, 'updateInterestRate'])->name('floor-plan.interest-rate.update');
+    Route::get('floor-plan/fp', [FloorPlanController::class, 'fpList'])->name('floor-plan.fp');
+    Route::put('floor-plan/fp/{id}/close-date', [FloorPlanController::class, 'updateFpCloseDate'])->name('floor-plan.fp.close-date');
 
     //color
     Route::get('color/list', [ColorController::class, 'listColor']);

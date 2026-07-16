@@ -151,6 +151,23 @@
       ]
     },
     {
+      "name": "Floor Plan",
+      "icon": "menu-icon icon-base bx bx-dollar-circle",
+      "slug": ["floor-plan"],
+      "submenu": [
+        {
+          "url": "floor-plan/interest-rate",
+          "name": "อัตราดอกเบี้ยวงเงิน",
+          "slug": "floor-plan.interest-rate"
+        },
+        {
+          "url": "floor-plan/fp",
+          "name": "รายการ FP",
+          "slug": "floor-plan.fp"
+        }
+      ]
+    },
+    {
       "name": "การตั้งค่า",
       "icon": "menu-icon icon-base bx bx-cog",
       "slug": [

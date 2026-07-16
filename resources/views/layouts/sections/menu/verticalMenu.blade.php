@@ -80,6 +80,11 @@
         $croAllowed   = ['pre-delivery-inspection', 'ssi'];
       @endphp
 
+      {{-- เมนู Floor Plan เห็นเฉพาะ role admin, audit_lead --}}
+      @if (!empty(array_intersect($menuSlugs, ['floor-plan'])) && !in_array($userRole, ['admin', 'audit_lead']))
+        @continue
+      @endif
+
       {{-- role sale ไม่เห็นเมนู ลูกค้าสัมพันธ์ (pre-delivery-inspection/ssi) และ การตลาด (source) --}}
       @if ($userRole === 'sale' && !empty(array_intersect($menuSlugs, ['pre-delivery-inspection', 'ssi', 'source'])))
         @continue

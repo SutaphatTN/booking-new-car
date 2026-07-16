@@ -597,13 +597,12 @@ $(document).ready(function () {
 //input : get sub mode
 $(document).on('change', '#model_id', function () {
   const modelId = $('#model_id').val();
-  const type = $('#type').val();
   const $subModel = $('#subModel_id');
 
   $subModel.prop('disabled', true).empty().append('<option value="">-- เลือกรุ่นรถย่อย --</option>');
   $('#interior_color').prop('disabled', true).empty().append('<option value="">-- เลือกสี --</option>');
 
-  if (!modelId || !type) return;
+  if (!modelId) return;
 
   const $interiorColor = $('#interior_color');
   if ($interiorColor.length) {
@@ -615,15 +614,10 @@ $(document).on('change', '#model_id', function () {
     });
   }
 
-  let typeCarOrder = null;
-  if (type === 'stock') typeCarOrder = 1;
-  if (type === 'customer') typeCarOrder = 2;
-
   $.ajax({
     url: '/api/car-order/sub-model',
     data: {
-      model_id: modelId,
-      type_carOrder: typeCarOrder
+      model_id: modelId
     },
     success: function (data) {
       if (data.length) {

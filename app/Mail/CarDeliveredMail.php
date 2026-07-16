@@ -24,9 +24,14 @@ class CarDeliveredMail extends Mailable
 
     public function build()
     {
-        $vin = $this->saleCar->carOrder->vin_number ?? '';
+        $vin       = $this->saleCar->carOrder->vin_number ?? '';
+        $brandName = config("brand.names.{$this->saleCar->brand}") ?? '';
 
-        return $this->subject('แจ้งส่งมอบรถ — จบยอดที่ธนาคาร' . ($vin ? " (VIN {$vin})" : ''))
-            ->markdown('emails.car-delivered');
+        return $this->subject(
+            'แจ้งส่งมอบรถ'
+                . ($brandName ? " {$brandName}" : '')
+                . ' — จบยอดที่ธนาคาร'
+                . ($vin ? " (VIN {$vin})" : '')
+        )->markdown('emails.car-delivered');
     }
 }
