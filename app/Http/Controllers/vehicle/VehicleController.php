@@ -192,21 +192,48 @@ class VehicleController extends Controller
             $branch = Auth::user()->branch ?? null;
 
             $data = $request->except(['_token', '_method']);
-            $data['withdrawal_total'] = $request->withdrawal_total
-                ? str_replace(',', '', $request->withdrawal_total)
-                : null;
-            $data['receipt_total'] = $request->receipt_total
-                ? str_replace(',', '', $request->receipt_total)
-                : null;
 
-            $vl = VehicleLicense::firstOrNew([
-                'SaleID' => $id,
-                'userZone' => $userZone,
-                'brand' => $brand,
-                'branch' => $branch,
-            ]);
+            // ล้าง comma ช่องเงินทั้งหมด (breakdown + ยอดรวม)
+            $moneyFields = [
+                'withdrawal_check', 'withdrawal_channel', 'withdrawal_bill', 'withdrawal_total',
+                'receipt_check', 'receipt_channel', 'receipt_bill', 'receipt_total',
+            ];
+            foreach ($moneyFields as $f) {
+                if (array_key_exists($f, $data)) {
+                    $data[$f] = ($data[$f] !== null && $data[$f] !== '')
+                        ? str_replace(',', '', $data[$f])
+                        : null;
+                }
+            }
 
+            // คิดยอดรวมใหม่จาก breakdown ให้ตรงกับ PDF เสมอ (ตรวจ + ช่อง + ใบเสร็จ)
+            if (array_key_exists('withdrawal_check', $data) || array_key_exists('withdrawal_channel', $data) || array_key_exists('withdrawal_bill', $data)) {
+                $data['withdrawal_total'] = (float) ($data['withdrawal_check'] ?? 0)
+                    + (float) ($data['withdrawal_channel'] ?? 0)
+                    + (float) ($data['withdrawal_bill'] ?? 0);
+            }
+            if (array_key_exists('receipt_check', $data) || array_key_exists('receipt_channel', $data) || array_key_exists('receipt_bill', $data)) {
+                $data['receipt_total'] = (float) ($data['receipt_check'] ?? 0)
+                    + (float) ($data['receipt_channel'] ?? 0)
+                    + (float) ($data['receipt_bill'] ?? 0);
+            }
+
+            // key ด้วย SaleID อย่างเดียว (กันสร้างแถวซ้ำเวลาคนแก้อยู่คนละ zone/brand/branch)
+            $vl = VehicleLicense::firstOrNew(['SaleID' => $id]);
             $vl->fill($data);
+
+            // เติม scope เฉพาะแถวที่สร้างใหม่ — ไม่ทับ scope เดิมของแถวที่มีอยู่
+            if (!$vl->exists) {
+                $vl->userZone = $userZone;
+                $vl->brand = $brand;
+                $vl->branch = $branch;
+            }
+
+            // ส่วนต่าง = เบิก − เคลียร์ (ให้ตรงกับ confirmClear) — อัปเดตเฉพาะรายการที่เคลียร์แล้ว
+            if ($vl->backup_clear_date) {
+                $vl->diff = (float) ($vl->withdrawal_total ?? 0) - (float) ($vl->receipt_total ?? 0);
+            }
+
             $vl->save();
 
             return response()->json([
@@ -262,6 +289,10 @@ class VehicleController extends Controller
         $brand = Auth::user()->brand ?? null;
         $branch = Auth::user()->branch ?? null;
 
+        // เลขชุดเบิก 1 ค่า ประทับทุกรายการในการกดครั้งเดียว + เวลาเดียว (ใช้ re-export ทั้งชุด)
+        $now = now();
+        $batch = (int) (VehicleLicense::withoutGlobalScopes()->max('withdrawal_batch') ?? 0) + 1;
+
         foreach ($request->items as $item) {
 
             VehicleLicense::updateOrCreate(
@@ -269,7 +300,8 @@ class VehicleController extends Controller
                     'SaleID' => $item['id'],
                 ],
                 [
-                    'withdrawal_date' => now(),
+                    'withdrawal_date' => $now,
+                    'withdrawal_batch' => $batch,
                     'withdrawal_check' => $item['check'] ? str_replace(',', '', $item['check']) : null,
                     'withdrawal_channel' => $item['channel'] ? str_replace(',', '', $item['channel']) : null,
                     'withdrawal_bill' => $item['receipt'] ? str_replace(',', '', $item['receipt']) : null,
@@ -286,11 +318,16 @@ class VehicleController extends Controller
 
     public function exportPdf(Request $request)
     {
-        $ids = explode(',', $request->ids);
+        $query = VehicleLicense::with(['saleCar.customer', 'saleCar.carOrder', 'saleCar.provinces']);
 
-        $data = VehicleLicense::with(['saleCar.customer', 'saleCar.carOrder', 'saleCar.provinces'])
-            ->whereIn('SaleID', $ids)
-            ->get();
+        // re-export ทั้งชุด (batch) — ดึงตามข้อมูลปัจจุบันใน DB ; ถ้าไม่มี batch ใช้ ids (ตอนกดยืนยันครั้งแรก)
+        if ($request->filled('batch')) {
+            $query->where('withdrawal_batch', $request->batch);
+        } else {
+            $query->whereIn('SaleID', explode(',', $request->ids));
+        }
+
+        $data = $query->get();
 
         $pdf = Pdf::loadView('number_register.vehicle.pdf-withdrawal', compact('data'))
             ->setPaper('a4', 'landscape');
@@ -301,6 +338,10 @@ class VehicleController extends Controller
     //clear
     public function confirmClear(Request $request)
     {
+        // เลขชุดเคลียร์ 1 ค่า ประทับทุกรายการในการกดครั้งเดียว + เวลาเดียว (ใช้ re-export ทั้งชุด)
+        $now = now();
+        $batch = (int) (VehicleLicense::withoutGlobalScopes()->max('clear_batch') ?? 0) + 1;
+
         foreach ($request->items as $item) {
 
             $vehicle = VehicleLicense::where('SaleID', $item['id'])->first();
@@ -317,7 +358,8 @@ class VehicleController extends Controller
             // $diff = abs(($withdrawalTotal ?? 0) - ($receiptTotal ?? 0));
 
             $vehicle->update([
-                'backup_clear_date' => now(),
+                'backup_clear_date' => $now,
+                'clear_batch'     => $batch,
                 'receipt_check'   => str_replace(',', '', $item['check']) ?? null,
                 'receipt_channel' => str_replace(',', '', $item['channel']) ?? null,
                 'receipt_bill'    => str_replace(',', '', $item['receipt']) ?? null,
@@ -331,16 +373,53 @@ class VehicleController extends Controller
 
     public function exportClearPdf(Request $request)
     {
-        $ids = explode(',', $request->ids);
+        $query = VehicleLicense::with(['saleCar.customer', 'saleCar.carOrder', 'saleCar.provinces']);
 
-        $data = VehicleLicense::with(['saleCar.customer', 'saleCar.carOrder', 'saleCar.provinces'])
-            ->whereIn('SaleID', $ids)
-            ->get();
+        // re-export ทั้งชุด (batch) — ดึงตามข้อมูลปัจจุบันใน DB ; ถ้าไม่มี batch ใช้ ids (ตอนกดยืนยันครั้งแรก)
+        if ($request->filled('batch')) {
+            $query->where('clear_batch', $request->batch);
+        } else {
+            $query->whereIn('SaleID', explode(',', $request->ids));
+        }
+
+        $data = $query->get();
 
         $pdf = Pdf::loadView('number_register.vehicle.pdf-receipt', compact('data'))
             ->setPaper('a4', 'landscape');
 
         return $pdf->stream('clear.pdf');
+    }
+
+    // ประวัติส่งเบิก / เคลียร์ (รายชุด) — re-export PDF ทั้งชุดได้ (เฉพาะ admin, registration)
+    public function history(Request $request)
+    {
+        if (!in_array(Auth::user()->role, ['admin', 'registration'])) {
+            abort(403);
+        }
+
+        // กรองรายเดือน (default = เดือนปัจจุบัน) — DataTables แบ่งหน้า 10 รายการฝั่ง client
+        $wMonth = $request->input('w_month') ?: now()->format('Y-m');
+        $cMonth = $request->input('c_month') ?: now()->format('Y-m');
+        [$wYear, $wMon] = array_pad(explode('-', $wMonth), 2, null);
+        [$cYear, $cMon] = array_pad(explode('-', $cMonth), 2, null);
+
+        $withdrawalBatches = VehicleLicense::query()
+            ->whereNotNull('withdrawal_batch')
+            ->when($wYear && $wMon, fn($q) => $q->whereYear('withdrawal_date', (int) $wYear)->whereMonth('withdrawal_date', (int) $wMon))
+            ->selectRaw('withdrawal_batch, COUNT(*) as cnt, SUM(withdrawal_total) as total, MIN(withdrawal_date) as batch_date')
+            ->groupBy('withdrawal_batch')
+            ->orderByDesc('withdrawal_batch')
+            ->get();
+
+        $clearBatches = VehicleLicense::query()
+            ->whereNotNull('clear_batch')
+            ->when($cYear && $cMon, fn($q) => $q->whereYear('backup_clear_date', (int) $cYear)->whereMonth('backup_clear_date', (int) $cMon))
+            ->selectRaw('clear_batch, COUNT(*) as cnt, SUM(receipt_total) as total, MIN(backup_clear_date) as batch_date')
+            ->groupBy('clear_batch')
+            ->orderByDesc('clear_batch')
+            ->get();
+
+        return view('number_register.vehicle.history', compact('withdrawalBatches', 'clearBatches', 'wMonth', 'cMonth'));
     }
 
     public function viewExportVehicle()

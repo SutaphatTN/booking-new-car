@@ -17,7 +17,9 @@ class VehicleLicense extends Model
 	protected $fillable = [
 		'SaleID',
 		'withdrawal_date',
+		'withdrawal_batch',
 		'backup_clear_date',
+		'clear_batch',
 		'registration_date',
 		'license_name',
 		'license_number',

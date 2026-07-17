@@ -352,6 +352,8 @@ Route::middleware(['auth', 'notsale'])->group(function () {
 
     Route::post('/vehicle/confirm-clear', [VehicleController::class, 'confirmClear']);
     Route::get('/vehicle/export-clear-pdf', [VehicleController::class, 'exportClearPdf']);
+    // ประวัติส่งเบิก/เคลียร์ (รายชุด) — re-export ทั้งชุด (เฉพาะ admin, registration)
+    Route::get('vehicle/history', [VehicleController::class, 'history'])->name('vehicle.history')->middleware('role:admin,registration');
     //export vehicle
     Route::get('vehicle/view-export-vehicle', [VehicleController::class, 'viewExportVehicle'])->name('vehicle.view-export-vehicle');
     Route::get('/vehicle/vehicle-export', [VehicleController::class, 'exportVehicle'])->name('vehicle.vehicle-export');

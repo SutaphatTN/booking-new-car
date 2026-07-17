@@ -70,33 +70,97 @@
               <span class="mf-section-title">ข้อมูลการเงิน</span>
             </div>
             <div class="mf-section-body">
-              <div class="row g-3">
 
-                <div class="col-md-4">
+              {{-- ── ยอดตั้งเบิก (ตรวจ + ช่อง + ใบเสร็จ) ── --}}
+              <div class="mb-2 fw-semibold text-muted small">
+                <i class="bx bx-upload me-1"></i> ยอดตั้งเบิก
+              </div>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="mf-label form-label">ตรวจ</label>
+                  <div class="input-group">
+                    <span class="input-group-text ig-amber">฿</span>
+                    <input name="withdrawal_check" type="text"
+                      class="form-control text-end money-input veh-wd-check"
+                      value="{{ number_format($veh->vehicleLicense?->withdrawal_check ?? 0, 2) }}">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="mf-label form-label">ช่อง</label>
+                  <div class="input-group">
+                    <span class="input-group-text ig-amber">฿</span>
+                    <input name="withdrawal_channel" type="text"
+                      class="form-control text-end money-input veh-wd-channel"
+                      value="{{ number_format($veh->vehicleLicense?->withdrawal_channel ?? 0, 2) }}">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="mf-label form-label">ใบเสร็จ</label>
+                  <div class="input-group">
+                    <span class="input-group-text ig-amber">฿</span>
+                    <input name="withdrawal_bill" type="text"
+                      class="form-control text-end money-input veh-wd-bill"
+                      value="{{ number_format($veh->vehicleLicense?->withdrawal_bill ?? 0, 2) }}">
+                  </div>
+                </div>
+                <div class="col-md-3">
                   <label for="edit_veh_withdrawal_total" class="mf-label form-label">
-                    <i class="bx bx-wallet ci-amber"></i> ยอดตั้งเบิก
+                    <i class="bx bx-wallet ci-amber"></i> รวมเบิก
                   </label>
                   <div class="input-group">
                     <span class="input-group-text ig-amber">฿</span>
                     <input id="edit_veh_withdrawal_total" name="withdrawal_total" type="text"
-                      class="form-control text-end money-input"
+                      class="form-control text-end fw-semibold veh-wd-total" readonly
                       value="{{ number_format($veh->vehicleLicense?->withdrawal_total ?? 0, 2) }}">
                   </div>
                 </div>
+              </div>
 
-                <div class="col-md-4">
+              {{-- ── ยอดเคลียร์ (ตรวจ + ช่อง + ใบเสร็จ) ── --}}
+              <div class="mb-2 mt-3 fw-semibold text-muted small">
+                <i class="bx bx-check-circle me-1"></i> ยอดเคลียร์
+              </div>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="mf-label form-label">ตรวจ</label>
+                  <div class="input-group">
+                    <span class="input-group-text ig-amber">฿</span>
+                    <input name="receipt_check" type="text"
+                      class="form-control text-end money-input veh-rc-check"
+                      value="{{ number_format($veh->vehicleLicense?->receipt_check ?? 0, 2) }}">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="mf-label form-label">ช่อง</label>
+                  <div class="input-group">
+                    <span class="input-group-text ig-amber">฿</span>
+                    <input name="receipt_channel" type="text"
+                      class="form-control text-end money-input veh-rc-channel"
+                      value="{{ number_format($veh->vehicleLicense?->receipt_channel ?? 0, 2) }}">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="mf-label form-label">ใบเสร็จ</label>
+                  <div class="input-group">
+                    <span class="input-group-text ig-amber">฿</span>
+                    <input name="receipt_bill" type="text"
+                      class="form-control text-end money-input veh-rc-bill"
+                      value="{{ number_format($veh->vehicleLicense?->receipt_bill ?? 0, 2) }}">
+                  </div>
+                </div>
+                <div class="col-md-3">
                   <label for="edit_veh_receipt_total" class="mf-label form-label">
-                    <i class="bx bx-check-circle ci-amber"></i> ยอดเคลียร์
+                    <i class="bx bx-check-circle ci-amber"></i> รวมเคลียร์
                   </label>
                   <div class="input-group">
                     <span class="input-group-text ig-amber">฿</span>
                     <input id="edit_veh_receipt_total" name="receipt_total" type="text"
-                      class="form-control text-end money-input"
+                      class="form-control text-end fw-semibold veh-rc-total" readonly
                       value="{{ number_format($veh->vehicleLicense?->receipt_total ?? 0, 2) }}">
                   </div>
                 </div>
-
               </div>
+
             </div>
           </div>
 
@@ -238,3 +302,28 @@
     </div>
   </div>
 </div>
+
+<script>
+  // คำนวณยอดรวม = ตรวจ + ช่อง + ใบเสร็จ (ทั้งเบิกและเคลียร์) แบบสด
+  (function () {
+    const modal = document.querySelector('.editVehicle');
+    if (!modal) return;
+
+    const num = el => parseFloat((el?.value || '').replace(/,/g, '')) || 0;
+    const fmt = n => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function bind(prefix) {
+      const check   = modal.querySelector('.veh-' + prefix + '-check');
+      const channel = modal.querySelector('.veh-' + prefix + '-channel');
+      const bill    = modal.querySelector('.veh-' + prefix + '-bill');
+      const total   = modal.querySelector('.veh-' + prefix + '-total');
+      if (!total) return;
+      [check, channel, bill].forEach(el => el && el.addEventListener('input', function () {
+        total.value = fmt(num(check) + num(channel) + num(bill));
+      }));
+    }
+
+    bind('wd');
+    bind('rc');
+  })();
+</script>

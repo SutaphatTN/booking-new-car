@@ -490,7 +490,7 @@ class Salecar extends Model
 	 *  normal     = งบปกติ
 	 *  b1_manager = brand1/3 เกิน ≤ over_budget → manager (จบ)
 	 *  b1_md      = brand1/3 เกิน > over_budget → manager กรอกหัก → md
-	 *  b2_gm      = brand2 เกินงบ → gm/md
+	 *  b2_gm      = brand2/4 เกินงบ → gm/md (brand 4 คิดคอมงบเหลือแบบ brand 2)
 	 */
 	public function approvalCase(): string
 	{
@@ -498,7 +498,8 @@ class Salecar extends Model
 		if ($balance >= 0) {
 			return 'normal';
 		}
-		if ((int) $this->brand === 2) {
+		// brand 4 : คอมงบเหลือคิดแบบ brand 2 → เกินงบวิ่งเข้าสาย GM เหมือนกัน (ไม่มีเพดาน over_budget)
+		if (in_array((int) $this->brand, [2, 4], true)) {
 			return 'b2_gm';
 		}
 		// เทียบ "ยอดเต็ม" (balanceCampaign เก็บค่าที่หาร 2 แล้ว → คูณกลับ ×2) กับเพดาน over_budget
@@ -511,7 +512,7 @@ class Salecar extends Model
 	 *  - งบเหลือ (balance ≥ 0): ได้งบเหลือ เพดาน 2500
 	 *  - เกินงบไม่เกินเพดาน (b1_manager): สูตรอัตโนมัติ balance × 2 × per_budget%
 	 *  - เกิน over_budget ที่ MD/GM อนุมัติ และ manager กรอกยอด D แล้ว:
-	 *      · brand 2 (b2_gm)    → ใช้ −D (หักเงิน แบบเดิม)
+	 *      · brand 2, 4 (b2_gm) → ใช้ −D (หักเงิน)
 	 *      · แบรนด์อื่น (b1_md) → ใช้ +D ("ให้ค่าคอมฝ่ายขายเท่านี้แทน")
 	 * ต้อง eager load relation 'model' เพื่อความแม่นของเคส
 	 */
@@ -520,14 +521,15 @@ class Salecar extends Model
 		$balance = (float) ($this->balanceCampaign ?? 0);
 		$case = $this->approvalCase();
 
+		// brand 2 และ 4 : เกินงบใช้ −D (หักเงิน) ; brand 1/3 : ใช้ +D (ให้ค่าคอมเท่านี้แทน)
 		if (in_array($case, ['b1_md', 'b2_gm'], true) && $this->approval_commission_deduct !== null) {
 			$d = (float) $this->approval_commission_deduct;
-			return (int) $this->brand === 2 ? -1 * $d : $d;
+			return in_array((int) $this->brand, [2, 4], true) ? -1 * $d : $d;
 		}
 
 		if ($balance >= 0) {
-			// brand 2 : งบเหลือไม่คิดเป็นค่าคอมเซลล์ → 0 (จะได้คอมจากส่วนนี้เฉพาะตอนเกินงบ = −D ที่ GM อนุมัติ)
-			if ((int) $this->brand === 2) {
+			// brand 2, 4 : งบเหลือไม่คิดเป็นค่าคอมเซลล์ → 0 (จะได้คอมจากส่วนนี้เฉพาะตอนเกินงบ = −D ที่ GM อนุมัติ)
+			if (in_array((int) $this->brand, [2, 4], true)) {
 				return 0.0;
 			}
 			// เคสงบปกติ: หัก "เก็บงบเพิ่มเติม" (running deduction) จากงบเต็มก่อน แล้วค่อยหาร 2 + เพดาน 2500
