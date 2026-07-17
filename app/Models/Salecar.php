@@ -6,6 +6,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\LogsActivity;
 use App\Models\Traits\PreApprovalScope;
 use App\Models\Traits\TracksUserActions;
 use App\Models\Traits\UserAccessScope;
@@ -84,6 +85,7 @@ class Salecar extends Model
 	use UserAccessScope;
 	use PreApprovalScope;
 	use TracksUserActions;
+	use LogsActivity;
 
 	protected $table = 'salecars';
 

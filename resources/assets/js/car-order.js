@@ -166,9 +166,37 @@ function toggleOrderStatusFields($modal) {
   }
 }
 
+// วันที่จ่าย FP โชว์เมื่อประเภทการจ่าย = FP Tisco (ค้างไว้ทุกสถานะ)
+function toggleFpField($modal) {
+  const isFp = $modal.find('#payment_type').val() === 'fp_tisco';
+  $modal.find('#fieldFp').toggleClass('d-none', !isFp);
+}
+
+// FP Tisco + สถานะ Invoice/Stock → ต้องกรอกวันที่จ่าย FP (คืน false = ไม่ผ่าน)
+function validateFpDateRequired($modal) {
+  const isFp = $modal.find('#payment_type').val() === 'fp_tisco';
+  const statusName = $modal.find('#order_status option:selected').data('name');
+
+  if (isFp && (statusName === 'Invoice' || statusName === 'Stock') && !$modal.find('#fp_date').val()) {
+    toggleFpField($modal); // ให้ช่องโผล่แน่ ๆ
+    Swal.fire({
+      icon: 'warning',
+      title: 'กรุณากรอกวันที่จ่าย FP',
+      text: 'ประเภทการจ่ายเป็น FP Tisco และสถานะเป็น ' + statusName + ' ต้องระบุวันที่จ่าย FP ก่อนบันทึก'
+    }).then(() => $modal.find('#fp_date').focus());
+    return false;
+  }
+  return true;
+}
+
 $(document).on('change', '#order_status', function () {
   const $modal = $(this).closest('.modal');
   toggleOrderStatusFields($modal);
+});
+
+$(document).on('change', '#payment_type', function () {
+  const $modal = $(this).closest('.modal');
+  toggleFpField($modal);
 });
 
 // blur focus editCarOrder
@@ -193,6 +221,7 @@ $(document).on('click', '.btnEditCarOrder', function () {
 
     setTimeout(() => {
       toggleOrderStatusFields($modal);
+      toggleFpField($modal);
     }, 50);
 
     $modal
@@ -200,6 +229,9 @@ $(document).on('click', '.btnEditCarOrder', function () {
       .off('click')
       .on('click', function (e) {
         e.preventDefault();
+
+        // FP Tisco + สถานะ Invoice/Stock ต้องกรอกวันที่จ่าย FP ก่อน
+        if (!validateFpDateRequired($modal)) return;
 
         const form = $modal.find('form')[0];
         const formData = new FormData(form);
@@ -761,6 +793,7 @@ $(document).on('click', '.btnPendingOrder', function () {
 
     setTimeout(() => {
       toggleOrderStatusFields($modal);
+      toggleFpField($modal);
     }, 50);
 
     $modal
@@ -1692,6 +1725,7 @@ $(document).on('click', '.btnApproveCarOrder', function () {
 
     setTimeout(() => {
       toggleOrderStatusFields($modal);
+      toggleFpField($modal);
     }, 50);
 
     $modal

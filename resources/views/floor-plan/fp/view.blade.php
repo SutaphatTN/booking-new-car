@@ -23,158 +23,90 @@
           </div>
         </div>
 
-        <div class="card-body pt-3 fp-list">
+        <div class="card-body pt-3">
 
-          {{-- ── ฟิลเตอร์ สถานะ + เดือน (รอบ 16-15 ตาม Billing date) ── --}}
+          {{-- ── แถบเครื่องมือ : ฟิลเตอร์ สถานะ + เดือน (Billing) ── --}}
           <form method="GET" action="{{ route('floor-plan.fp') }}" id="fpFilterForm">
-            <div class="fp-filter mb-2">
-              <div class="d-flex align-items-center gap-2 flex-wrap">
-                <span class="fp-chip fp-chip--period"><i class="bx bx-calendar-event"></i> งวด : {{ $periodLabel }}</span>
-              </div>
+            <div class="po-filter-bar d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
               <div class="d-flex align-items-center gap-3 flex-wrap">
                 <div class="d-flex align-items-center gap-2">
-                  <label for="status" class="fw-semibold text-muted mb-0 small text-nowrap">สถานะ</label>
-                  <select id="status" name="status" class="form-select form-select-sm" style="max-width:150px;">
+                  <label class="po-label mb-0" for="status"><i class="bx bx-filter-alt me-1"></i> สถานะ</label>
+                  <select id="status" name="status" class="form-select form-select-sm" style="width:auto;">
                     <option value="all" {{ $status === 'all' ? 'selected' : '' }}>ทั้งหมด</option>
                     <option value="closed" {{ $status === 'closed' ? 'selected' : '' }}>ปิดแล้ว</option>
                     <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>รอปิด FP</option>
                   </select>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                  <label for="month" class="fw-semibold text-muted mb-0 small text-nowrap">เดือน (Billing)</label>
+                  <label class="po-label mb-0" for="month"><i class="bx bx-calendar me-1"></i> เดือน (Billing)</label>
                   <input type="month" id="month" name="month" class="form-control form-control-sm"
-                    style="max-width:170px;" value="{{ $month }}" {{ $status === 'pending' ? 'disabled' : '' }}>
+                    style="width:auto;" value="{{ $month }}" {{ $status === 'pending' ? 'disabled' : '' }}>
                 </div>
               </div>
-            </div>
-            <div class="text-muted small mb-3">
-              <i class="bx bx-info-circle"></i>
-              กรอง "ปิดแล้ว" ตามงวด Billing date (รอบ 16–15) — <b>รอปิด FP แสดงเสมอ</b> (ยกเว้นเลือกสถานะ "ปิดแล้ว")
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge bg-label-secondary"><i class="bx bx-calendar-event me-1"></i> งวด {{ $periodLabel }}</span>
+                <span class="badge bg-label-success"><i class="bx bx-money me-1"></i> รวมดอกเบี้ย {{ number_format($grandTotal, 2) }} ฿</span>
+                <a href="{{ route('floor-plan.fp.export', ['month' => $month, 'status' => $status]) }}"
+                   class="btn btn-success btn-sm" title="ออกรายงานตามงวด Billing date ที่เลือก">
+                  <i class="bx bx-download me-1"></i> ออกรายงาน Excel
+                </a>
+              </div>
             </div>
           </form>
-
-          <div class="d-flex align-items-center gap-2 flex-wrap mb-3">
-            <span class="fp-chip fp-chip--period"><i class="bx bx-car"></i> {{ count($rows) }} คัน</span>
-            <span class="fp-chip fp-chip--total ms-auto">
-              <i class="bx bx-money"></i> รวมดอกเบี้ยที่ต้องจ่าย : {{ number_format($grandTotal, 2) }} ฿
-            </span>
+          <div class="text-muted small mb-3">
+            <i class="bx bx-info-circle"></i>
+            กรอง "ปิดแล้ว" ตามงวด Billing date (รอบ 16–15) &nbsp;•&nbsp; <b>รอปิด FP แสดงเสมอ</b> (ยกเว้นเลือกสถานะ "ปิดแล้ว")
           </div>
 
           <div class="table-responsive">
-            <table class="table table-bordered fp-table align-middle mb-0">
+            <table class="table table-bordered tbl-table tbl-styled fpTable w-100" id="fpTable">
               <thead>
                 <tr>
-                  <th rowspan="2" class="fp-th-no">No.</th>
-                  <th rowspan="2">รุ่นหลัก</th>
-                  <th rowspan="2">รุ่นย่อย</th>
-                  <th rowspan="2">VIN Number</th>
-                  <th rowspan="2">Billing date</th>
-                  <th rowspan="2">ปี</th>
-                  @if ($showOption)
-                    <th rowspan="2">Option</th>
-                  @endif
-                  <th rowspan="2">สี</th>
-                  @if ($showInterior)
-                    <th rowspan="2">สีภายใน</th>
-                  @endif
-                  <th rowspan="2">เลขเครื่อง</th>
-                  <th rowspan="2">J Number</th>
-                  <th rowspan="2" class="text-end">ราคาทุน</th>
-                  <th rowspan="2" style="min-width:160px;">วันที่ปิด FP</th>
-                  <th rowspan="2">สถานะ</th>
-                  <th colspan="6" class="text-center fp-th-calc">การคิดดอกเบี้ย (แยกตามงวด)</th>
-                  <th rowspan="2" class="text-end">รวมดอกเบี้ย</th>
-                </tr>
-                <tr>
-                  <th class="fp-th-calc">งวด (ช่วงวันที่)</th>
-                  <th class="fp-th-calc text-center">จำนวนวัน</th>
-                  <th class="fp-th-calc text-end">MOR</th>
-                  <th class="fp-th-calc text-end">MLR</th>
-                  <th class="fp-th-calc text-end">Rate</th>
-                  <th class="fp-th-calc text-end">ดอกที่ต้องจ่าย</th>
+                  <th class="tbl-th-no">No.</th>
+                  <th>VIN Number</th>
+                  <th>เลขเครื่อง</th>
+                  <th>J Number</th>
+                  <th>ราคาทุน</th>
+                  <th>Billing date</th>
+                  <th>สถานะ</th>
+                  <th style="width:110px;">Action</th>
                 </tr>
               </thead>
               <tbody>
                 @forelse ($rows as $i => $r)
-                  @php $rowspan = max(1, count($r['segments'])); @endphp
-
-                  @if ($r['isClosed'] && count($r['segments']))
-                    @foreach ($r['segments'] as $si => $seg)
-                      <tr>
-                        @if ($si === 0)
-                          <td rowspan="{{ $rowspan }}">{{ $i + 1 }}</td>
-                          <td rowspan="{{ $rowspan }}">{{ $r['modelName'] }}</td>
-                          <td rowspan="{{ $rowspan }}">{{ $r['subModelName'] }}</td>
-                          <td rowspan="{{ $rowspan }}">{{ $r['vin'] }}</td>
-                          <td rowspan="{{ $rowspan }}">{{ $r['billingText'] }}</td>
-                          <td rowspan="{{ $rowspan }}">{{ $r['year'] }}</td>
-                          @if ($showOption)
-                            <td rowspan="{{ $rowspan }}">{{ $r['option'] }}</td>
-                          @endif
-                          <td rowspan="{{ $rowspan }}">{{ $r['color'] }}</td>
-                          @if ($showInterior)
-                            <td rowspan="{{ $rowspan }}">{{ $r['interior'] }}</td>
-                          @endif
-                          <td rowspan="{{ $rowspan }}">{{ $r['engine'] }}</td>
-                          <td rowspan="{{ $rowspan }}">{{ $r['jNumber'] }}</td>
-                          <td rowspan="{{ $rowspan }}" class="text-end">{{ number_format($r['cost'], 2) }}</td>
-                          <td rowspan="{{ $rowspan }}">
-                            <input type="date" class="form-control form-control-sm fp-close-input"
-                              data-id="{{ $r['id'] }}" value="{{ $r['closeDate'] }}">
-                          </td>
-                          <td rowspan="{{ $rowspan }}">
-                            <span class="fp-status fp-status--closed"><i class="bx bx-check-circle"></i> ปิดแล้ว</span>
-                          </td>
-                        @endif
-
-                        {{-- segment cells --}}
-                        <td class="fp-cell-calc">{{ $seg['startText'] }} – {{ $seg['endText'] }}</td>
-                        <td class="fp-cell-calc text-center">{{ $seg['days'] }}</td>
-                        <td class="fp-cell-calc text-end">{{ number_format($seg['mor'], 2) }}</td>
-                        <td class="fp-cell-calc text-end">{{ number_format($seg['mlr'], 2) }}</td>
-                        <td class="fp-cell-calc text-end fw-semibold">{{ number_format($seg['rate'], 2) }}</td>
-                        <td class="fp-cell-calc text-end">{{ number_format($seg['interest'], 2) }}</td>
-
-                        @if ($si === 0)
-                          <td rowspan="{{ $rowspan }}" class="text-end fw-bold fp-total-cell">
-                            {{ number_format($r['totalInterest'], 2) }}
-                          </td>
-                        @endif
-                      </tr>
-                    @endforeach
-                  @else
-                    {{-- ยังไม่ปิด FP — เว้นว่างส่วนคิดดอกเบี้ย --}}
-                    <tr>
-                      <td>{{ $i + 1 }}</td>
-                      <td>{{ $r['modelName'] }}</td>
-                      <td>{{ $r['subModelName'] }}</td>
-                      <td>{{ $r['vin'] }}</td>
-                      <td>{{ $r['billingText'] }}</td>
-                      <td>{{ $r['year'] }}</td>
-                      @if ($showOption)
-                        <td>{{ $r['option'] }}</td>
+                  <tr>
+                    <td class="text-center">{{ $i + 1 }}</td>
+                    <td>{{ $r['vin'] }}</td>
+                    <td>{{ $r['engine'] }}</td>
+                    <td>{{ $r['jNumber'] }}</td>
+                    <td class="text-end">{{ number_format($r['cost'], 2) }}</td>
+                    <td class="text-center">{{ $r['billingText'] }}</td>
+                    <td class="text-center">
+                      @if ($r['isClosed'])
+                        <span class="badge bg-label-success">ปิดแล้ว</span>
+                      @else
+                        <span class="badge bg-label-warning">รอปิด FP</span>
                       @endif
-                      <td>{{ $r['color'] }}</td>
-                      @if ($showInterior)
-                        <td>{{ $r['interior'] }}</td>
-                      @endif
-                      <td>{{ $r['engine'] }}</td>
-                      <td>{{ $r['jNumber'] }}</td>
-                      <td class="text-end">{{ number_format($r['cost'], 2) }}</td>
-                      <td>
-                        <input type="date" class="form-control form-control-sm fp-close-input"
-                          data-id="{{ $r['id'] }}" value="{{ $r['closeDate'] }}">
-                      </td>
-                      <td>
-                        <span class="fp-status fp-status--pending"><i class="bx bx-time"></i> รอปิด FP</span>
-                      </td>
-                      <td class="fp-cell-calc text-muted text-center" colspan="6">—</td>
-                      <td class="text-end text-muted">—</td>
-                    </tr>
-                  @endif
+                    </td>
+                    <td class="text-center text-nowrap">
+                      <button type="button" class="btn btn-sm btn-icon btn-info text-white fp-btn-view"
+                        data-id="{{ $r['id'] }}" title="ดูข้อมูล">
+                        <i class="bx bx-show"></i>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-icon btn-warning text-white fp-btn-edit"
+                        data-id="{{ $r['id'] }}"
+                        data-vin="{{ $r['vin'] }}"
+                        data-model="{{ $r['modelName'] }}"
+                        data-billing="{{ $r['billingText'] }}"
+                        data-close="{{ $r['closeDate'] }}"
+                        title="แก้ไขวันที่ปิด FP">
+                        <i class="bx bx-edit"></i>
+                      </button>
+                    </td>
+                  </tr>
                 @empty
                   <tr>
-                    <td colspan="{{ 20 + ($showOption ? 1 : 0) + ($showInterior ? 1 : 0) }}" class="text-center text-muted py-4">
+                    <td colspan="8" class="text-center text-muted py-4">
                       ไม่มีรายการ FP (car_order ที่ประเภทการจ่าย = FP Tisco)
                     </td>
                   </tr>
@@ -183,12 +115,181 @@
             </table>
           </div>
 
-          <div class="text-muted small mt-2">
-            <i class="bx bx-info-circle"></i>
-            ดอกเบี้ย = ราคาทุน × (Rate ÷ 100) × (จำนวนวัน ÷ 365) &nbsp;•&nbsp; Rate = MOR − MLR &nbsp;•&nbsp;
-            งวดข้ามเดือนตัดที่วันที่ 15/16 (MOR/Rate แต่ละงวดอาจต่างกัน)
-          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  {{-- ── Detail templates (ซ่อนไว้ ใช้ยัดเข้า modal ดูข้อมูล) ── --}}
+  <div id="fpDetailTemplates" class="d-none">
+    @foreach ($rows as $r)
+      <div data-detail="{{ $r['id'] }}">
+        {{-- ข้อมูลรถ --}}
+        <div class="mf-section">
+          <div class="mf-section-hd">
+            <div class="mf-section-icon amber"><i class="bx bx-car"></i></div>
+            <span class="mf-section-title">ข้อมูลรถ</span>
+          </div>
+          <div class="mf-section-body">
+            <div class="row g-3">
+              <div class="col-md-4"><span class="fp-info-label">รุ่นหลัก</span><div class="fp-info-val">{{ $r['modelName'] }}</div></div>
+              <div class="col-md-4"><span class="fp-info-label">รุ่นย่อย</span><div class="fp-info-val">{{ $r['subModelName'] }}</div></div>
+              <div class="col-md-4"><span class="fp-info-label">ปี</span><div class="fp-info-val">{{ $r['year'] }}</div></div>
+              <div class="col-md-4"><span class="fp-info-label">VIN Number</span><div class="fp-info-val">{{ $r['vin'] }}</div></div>
+              <div class="col-md-4"><span class="fp-info-label">เลขเครื่อง</span><div class="fp-info-val">{{ $r['engine'] }}</div></div>
+              <div class="col-md-4"><span class="fp-info-label">J Number</span><div class="fp-info-val">{{ $r['jNumber'] }}</div></div>
+              @if ($showOption)
+                <div class="col-md-4"><span class="fp-info-label">Option</span><div class="fp-info-val">{{ $r['option'] }}</div></div>
+              @endif
+              <div class="col-md-4"><span class="fp-info-label">สี</span><div class="fp-info-val">{{ $r['color'] }}</div></div>
+              @if ($showInterior)
+                <div class="col-md-4"><span class="fp-info-label">สีภายใน</span><div class="fp-info-val">{{ $r['interior'] }}</div></div>
+              @endif
+              <div class="col-md-4"><span class="fp-info-label">ราคาทุน</span><div class="fp-info-val">{{ number_format($r['cost'], 2) }}</div></div>
+              <div class="col-md-4"><span class="fp-info-label">Billing date</span><div class="fp-info-val">{{ $r['billingText'] }}</div></div>
+              <div class="col-md-4"><span class="fp-info-label">วันที่ปิด FP</span><div class="fp-info-val">{{ $r['closeText'] }}</div></div>
+              <div class="col-md-4">
+                <span class="fp-info-label">สถานะ</span>
+                <div class="fp-info-val">
+                  @if ($r['isClosed'])
+                    <span class="badge bg-label-success">ปิดแล้ว</span>
+                  @else
+                    <span class="badge bg-label-warning">รอปิด FP</span>
+                  @endif
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {{-- การคิดดอกเบี้ย --}}
+        <div class="mf-section">
+          <div class="mf-section-hd">
+            <div class="mf-section-icon amber"><i class="bx bx-calculator"></i></div>
+            <span class="mf-section-title">การคิดดอกเบี้ย</span>
+          </div>
+          <div class="mf-section-body">
+            @if ($r['isClosed'] && count($r['segments']))
+              <div class="table-responsive">
+                <table class="table table-bordered tbl-table tbl-styled w-100 mb-0">
+                  <thead>
+                    <tr>
+                      <th>งวด (ช่วงวันที่)</th>
+                      <th>จำนวนวัน</th>
+                      <th>MOR</th>
+                      <th>MLR</th>
+                      <th>Rate</th>
+                      <th>ดอกที่ต้องจ่าย</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @foreach ($r['segments'] as $seg)
+                      <tr>
+                        <td class="text-center">{{ $seg['startText'] }} – {{ $seg['endText'] }}</td>
+                        <td class="text-center">{{ $seg['days'] }}</td>
+                        <td class="text-end">{{ number_format($seg['mor'], 2) }}</td>
+                        <td class="text-end">{{ number_format($seg['mlr'], 2) }}</td>
+                        <td class="text-end fw-semibold">{{ number_format($seg['rate'], 2) }}</td>
+                        <td class="text-end">{{ number_format($seg['interest'], 2) }}</td>
+                      </tr>
+                    @endforeach
+                    <tr>
+                      <td colspan="5" class="text-end fw-bold">รวมดอกเบี้ยที่ต้องจ่าย</td>
+                      <td class="text-end fw-bold text-success">{{ number_format($r['totalInterest'], 2) }} ฿</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            @else
+              <div class="text-center text-muted py-3">
+                <i class="bx bx-time-five fs-4 d-block mb-1"></i>
+                ยังไม่ปิด FP — กรอกวันที่ปิด FP เพื่อคำนวณดอกเบี้ย
+              </div>
+            @endif
+          </div>
+        </div>
+      </div>
+    @endforeach
+  </div>
+
+  {{-- ── Modal : ดูข้อมูล ── --}}
+  <div class="modal fade" id="fpDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+      <div class="modal-content border-0 shadow mf-content mf-content--edit">
+        <div class="modal-header mf-header mf-header--edit px-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="mf-hd-icon"><i class="bx bx-show fs-5 text-white"></i></div>
+            <div>
+              <h6 class="mb-0 fw-bold text-white mf-hd-title">รายละเอียด FP</h6>
+              <small class="text-white mf-hd-sub">Floor Plan — FP Detail</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body mf-body" id="fpDetailBody"></div>
+      </div>
+    </div>
+  </div>
+
+  {{-- ── Modal : แก้ไขวันที่ปิด FP ── --}}
+  <div class="modal fade" id="fpEditModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content border-0 shadow mf-content mf-content--edit">
+        <div class="modal-header mf-header mf-header--edit px-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="mf-hd-icon"><i class="bx bx-edit fs-5 text-white"></i></div>
+            <div>
+              <h6 class="mb-0 fw-bold text-white mf-hd-title">แก้ไขวันที่ปิด FP</h6>
+              <small class="text-white mf-hd-sub">Floor Plan — Edit FP Close Date</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body mf-body">
+          <form id="fpEditForm" autocomplete="off">
+            <input type="hidden" id="fpEditId">
+
+            {{-- Section : ข้อมูลรถ (อ่านอย่างเดียว) --}}
+            <div class="mf-section">
+              <div class="mf-section-hd">
+                <div class="mf-section-icon amber"><i class="bx bx-car"></i></div>
+                <span class="mf-section-title">ข้อมูลรถ</span>
+              </div>
+              <div class="mf-section-body">
+                <div class="row g-3">
+                  <div class="col-md-6"><span class="fp-info-label">รุ่น / VIN</span><div id="fpEditInfo" class="fp-info-val">-</div></div>
+                  <div class="col-md-6"><span class="fp-info-label">Billing date</span><div id="fpEditBilling" class="fp-info-val">-</div></div>
+                </div>
+              </div>
+            </div>
+
+            {{-- Section : วันที่ปิด FP (แก้ไขได้) --}}
+            <div class="mf-section">
+              <div class="mf-section-hd">
+                <div class="mf-section-icon amber"><i class="bx bx-calendar-check"></i></div>
+                <span class="mf-section-title">วันที่ปิด FP</span>
+              </div>
+              <div class="mf-section-body">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label for="fpEditCloseDate" class="mf-label form-label"><i class="bx bx-calendar-check"></i> วันที่ปิด FP</label>
+                    <input type="date" id="fpEditCloseDate" class="form-control">
+                    <div class="form-text">เว้นว่าง = กลับเป็น "รอปิด FP" / ต้องไม่ก่อน Billing date</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {{-- Actions --}}
+            <div class="d-flex justify-content-end gap-2 pt-1">
+              <button type="button" class="btn btn-danger px-4" data-bs-dismiss="modal">
+                <i class="bx bx-x me-1"></i>ยกเลิก
+              </button>
+              <button type="submit" class="btn btn-primary px-5">
+                <i class="bx bx-save me-1"></i>บันทึก
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -202,40 +303,22 @@
   </div>
 
   <style>
-    .fp-list .fp-filter {
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: .75rem;
-      background: #f7f7fb; border: 1px solid #ececf4;
-      border-radius: .75rem; padding: .7rem 1rem;
-    }
-    .fp-list .fp-chip {
-      display: inline-flex; align-items: center; gap: .4rem;
-      font-weight: 600; font-size: .9rem; padding: .4rem .8rem;
-      border-radius: 2rem; line-height: 1;
-    }
-    .fp-list .fp-chip--brand  { color: #5a3ff0; background: #ece8fe; }
-    .fp-list .fp-chip--period { color: #475569; background: #e7edf5; }
-    .fp-list .fp-chip--total  { color: #047857; background: #d1fae5; }
+    #fpDetailModal .fp-info-label,
+    #fpEditModal .fp-info-label { font-size: .78rem; color: #8a8aa3; display: block; }
+    #fpDetailModal .fp-info-val,
+    #fpEditModal .fp-info-val { font-weight: 600; color: #3a3a55; }
 
-    .fp-list .fp-table { font-size: .85rem; white-space: nowrap; }
-    .fp-list .fp-table thead th {
-      background: #f4f5fb; color: #4b4b6a; font-weight: 700;
-      vertical-align: middle; text-align: center;
+    /* ตัวโหลด — สไตล์เดียวกับหน้าอื่น (มาตรฐาน tables.css) ไม่เบลอพื้นหลัง
+       (id นี้ไม่ได้อยู่ใน list ของ tables.css จึงต้องประกาศเอง แต่ให้ค่าตรงกัน) */
+    #fpLoadingOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
     }
-    .fp-list .fp-table th.fp-th-calc { background: #eef2ff; color: #4338ca; }
-    .fp-list .fp-table td.fp-cell-calc { background: #fafbff; }
-    .fp-list .fp-table .fp-th-no { width: 46px; }
-    .fp-list .fp-table td, .fp-list .fp-table th { padding: .5rem .6rem; }
-
-    .fp-list .fp-status {
-      display: inline-flex; align-items: center; gap: .3rem;
-      font-weight: 600; font-size: .8rem; padding: .28rem .6rem; border-radius: 2rem;
-    }
-    .fp-list .fp-status--closed  { color: #047857; background: #d1fae5; }
-    .fp-list .fp-status--pending { color: #b45309; background: #fef3c7; }
-
-    .fp-list .fp-total-cell { background: #f0fdf4; color: #047857; }
-    .fp-list .fp-close-input { min-width: 150px; }
   </style>
 @endsection
 
@@ -243,9 +326,28 @@
   <script>
     $(function () {
       const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      const fpDetailModal = new bootstrap.Modal(document.getElementById('fpDetailModal'));
+      const fpEditModal = new bootstrap.Modal(document.getElementById('fpEditModal'));
 
       window.addEventListener('pageshow', function () {
         $('#fpLoadingOverlay').css('display', 'none');
+      });
+
+      // DataTable client-side 10 แถว/หน้า
+      $('#fpTable').DataTable({
+        ordering: false,
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100],
+        columnDefs: [{ targets: -1, orderable: false, searchable: false }],
+        language: {
+          lengthMenu: 'แสดง _MENU_ แถว',
+          zeroRecords: 'ไม่พบข้อมูล',
+          info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
+          infoEmpty: 'ไม่มีข้อมูล',
+          infoFiltered: '(กรองจาก _MAX_ รายการ)',
+          search: 'ค้นหา:',
+          paginate: { next: 'ถัดไป', previous: 'ก่อนหน้า' },
+        },
       });
 
       // เปลี่ยนฟิลเตอร์ (สถานะ/เดือน) -> โหลดหน้าใหม่
@@ -254,10 +356,30 @@
         document.getElementById('fpFilterForm').submit();
       });
 
-      // แก้ "วันที่ปิด FP" -> บันทึกแล้วรีโหลดหน้า (คำนวณดอกใหม่)
-      $(document).on('change', '.fp-close-input', function () {
+      // ดูข้อมูล -> ยัด detail template เข้า modal
+      $(document).on('click', '.fp-btn-view', function () {
         const id = $(this).data('id');
-        const val = $(this).val();
+        const html = $('#fpDetailTemplates [data-detail="' + id + '"]').html()
+          || '<div class="text-muted text-center py-3">ไม่พบข้อมูล</div>';
+        $('#fpDetailBody').html(html);
+        fpDetailModal.show();
+      });
+
+      // แก้ไขวันที่ปิด FP
+      $(document).on('click', '.fp-btn-edit', function () {
+        const d = $(this).data();
+        $('#fpEditId').val(d.id);
+        $('#fpEditInfo').text((d.model || '-') + ' / ' + (d.vin || '-'));
+        $('#fpEditBilling').text(d.billing || '-');
+        $('#fpEditCloseDate').val(d.close || '');
+        fpEditModal.show();
+      });
+
+      // บันทึกวันที่ปิด FP
+      $('#fpEditForm').on('submit', function (e) {
+        e.preventDefault();
+        const id = $('#fpEditId').val();
+        const val = $('#fpEditCloseDate').val();
         $('#fpLoadingOverlay').css('display', 'flex');
 
         $.ajax({

@@ -338,7 +338,7 @@
                   value="{{ $order->orderStatus->name }}" disabled>
               </div>
 
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <label for="approver" class="mf-label form-label">
                   <i class="bx bx-user-check ci-emerald"></i> ผู้อนุมัติ
                 </label>
@@ -355,7 +355,7 @@
                     value="{{ $order->mileage_test ?? '' }}" disabled>
                 </div>
 
-                <div class="col-md-5">
+                <div class="col-md-3">
                   <label for="cam_testdrive" class="mf-label form-label">
                     <i class="bx bx-purchase-tag ci-emerald"></i> แคมเปญทดลองขับ
                   </label>

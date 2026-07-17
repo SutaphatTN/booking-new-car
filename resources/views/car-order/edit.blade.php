@@ -473,7 +473,7 @@
                   @enderror
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label for="approver" class="mf-label form-label">
                     <i class="bx bx-user-check ci-emerald"></i> ผู้อนุมัติ
                   </label>
@@ -489,7 +489,7 @@
                     value="{{ $order->mileage_test ?? '' }}">
                 </div>
 
-                <div class="col-md-5 fieldTestDrive d-none">
+                <div class="col-md-3 fieldTestDrive d-none">
                   <label for="cam_testdrive" class="mf-label form-label">
                     <i class="bx bx-purchase-tag ci-emerald"></i> แคมเปญทดลองขับ
                   </label>
@@ -561,24 +561,21 @@
                     value="{{ $order->estimated_stock_date }}">
                 </div>
 
-                <div id="fieldInvoice" class="col-md-8 d-none">
-                  <div class="row g-3">
-                    <div class="col-6">
-                      <label for="order_invoice_date" class="mf-label form-label">
-                        <i class="bx bx-receipt ci-rose"></i> วันที่ซื้อ (วันที่ออกใบกำกับ)
-                      </label>
-                      <input type="date" id="order_invoice_date" name="order_invoice_date" class="form-control"
-                        value="{{ $order->order_invoice_date }}">
-                    </div>
+                <div id="fieldInvoice" class="col-md-4 d-none">
+                  <label for="order_invoice_date" class="mf-label form-label">
+                    <i class="bx bx-receipt ci-rose"></i> วันที่ซื้อ (วันที่ออกใบกำกับ)
+                  </label>
+                  <input type="date" id="order_invoice_date" name="order_invoice_date" class="form-control"
+                    value="{{ $order->order_invoice_date }}">
+                </div>
 
-                    <div class="col-6">
-                      <label for="fp_date" class="mf-label form-label">
-                        <i class="bx bx-money ci-rose"></i> วันที่จ่าย FP
-                      </label>
-                      <input type="date" id="fp_date" name="fp_date" class="form-control"
-                        value="{{ $order->fp_date }}">
-                    </div>
-                  </div>
+                {{-- วันที่จ่าย FP โชว์เมื่อประเภทการจ่าย = FP Tisco (ไม่ผูกกับสถานะ Car Order) --}}
+                <div id="fieldFp" class="col-md-4 d-none">
+                  <label for="fp_date" class="mf-label form-label">
+                    <i class="bx bx-money ci-rose"></i> วันที่จ่าย FP
+                  </label>
+                  <input type="date" id="fp_date" name="fp_date" class="form-control"
+                    value="{{ $order->fp_date }}">
                 </div>
 
                 <div id="fieldStock" class="col-md-4 d-none">
