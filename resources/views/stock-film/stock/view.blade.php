@@ -26,7 +26,10 @@
 
       <div class="card-body pt-3">
 
-        <div class="po-filter-bar d-flex align-items-center justify-content-end">
+        <div class="po-filter-bar d-flex align-items-center justify-content-end gap-2">
+          <button type="button" id="btnFilmStockReport" class="btn btn-success btn-sm">
+            <i class="bx bx-spreadsheet me-1"></i> รายงานดึง Stock ฟิล์ม
+          </button>
           <button class="btn btn-secondary btn-sm btnInputFilm">
             <i class="bx bx-plus me-1"></i> เพิ่มสต็อก
           </button>

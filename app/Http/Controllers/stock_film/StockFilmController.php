@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\stock_film;
 
 use App\Http\Controllers\Controller;
+use App\Exports\stock_film\FilmStockReport;
 use App\Traits\ConvertsThaiDate;
 use App\Models\FilmBrand;
 use App\Models\FilmStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StockFilmController extends Controller
 {
@@ -75,6 +77,12 @@ class StockFilmController extends Controller
         });
 
         return response()->json(['data' => $data]);
+    }
+
+    // รายงานดึง Stock ฟิล์ม — สแนปช็อตสต็อกฟิล์มที่ยังใช้งานอยู่ (brand-scope อัตโนมัติ)
+    public function exportReport()
+    {
+        return Excel::download(new FilmStockReport, 'ข้อมูล Stock ฟิล์ม.xlsx');
     }
 
     public function create()

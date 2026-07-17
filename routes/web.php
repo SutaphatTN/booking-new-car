@@ -436,6 +436,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
 
     // stock-film
     Route::get('stock-film/list', [StockFilmController::class, 'listStock']);
+    Route::get('stock-film/report-export', [StockFilmController::class, 'exportReport'])->name('stock-film.report-export');
     Route::post('stock-film/{id}/audit-complete', [StockFilmController::class, 'auditComplete'])->name('stock-film.auditComplete');
     Route::get('stock-film/preview-stock-no', [StockFilmController::class, 'previewStockNo']);
     Route::get('stock-film/{id}/view-more', [StockFilmController::class, 'viewMore'])->name('stock-film.viewMore');
