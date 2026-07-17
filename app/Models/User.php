@@ -74,6 +74,33 @@ class User extends Authenticatable
 
 	protected $dates = ['deleted_at'];
 
+	/**
+	 * กันบั๊ก: BrandSwitcher/BranchSwitcher เขียนทับ $user->brand/$user->branch ที่ runtime (จาก session สลับ)
+	 * แล้ว Laravel เผลอ save() ทั้ง model ตอน cycle remember-token (เช่นตอน logout / re-login ด้วย remember cookie)
+	 * ทำให้ brand/branch ที่สลับชั่วคราวถูกเขียนลง DB ถาวร ทั้งที่ไม่มีใครตั้งใจแก้
+	 *
+	 * ถ้ากำลัง save ระหว่างมี session สลับอยู่ ให้คืนค่า home (original) ก่อนเขียน แล้วคืนค่า effective ให้ request ที่เหลือ
+	 */
+	public function save(array $options = [])
+	{
+		$restore = [];
+
+		foreach (['brand' => 'brand_switch', 'branch' => 'branch_switch'] as $col => $sessionKey) {
+			if ($this->isDirty($col) && session()->has($sessionKey)) {
+				$restore[$col] = $this->attributes[$col];
+				$this->attributes[$col] = $this->getOriginal($col);
+			}
+		}
+
+		$result = parent::save($options);
+
+		foreach ($restore as $col => $effectiveValue) {
+			$this->attributes[$col] = $effectiveValue;
+		}
+
+		return $result;
+	}
+
 	public function getFormatCardIdAttribute()
 	{
 		$id = $this->cardID;
