@@ -20,7 +20,7 @@ class UserManage
     {
         $role = Auth::user()->role ?? null;
 
-        $allowed = $level === 'write' ? ['admin'] : ['admin', 'audit_lead'];
+        $allowed = $level === 'write' ? ['admin'] : ['admin', 'audit_lead', 'audit_dp'];
 
         if (!in_array($role, $allowed, true)) {
             abort(403);

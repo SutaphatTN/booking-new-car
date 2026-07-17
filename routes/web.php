@@ -55,7 +55,7 @@ Route::post('/logout', [LoginController::class, 'logout'])
     ->name('logout');
 
 // ลงทะเบียน (สร้าง user) — ต้อง login และเป็น role ที่มีสิทธิ์เท่านั้น
-Route::middleware(['auth', 'role:audit,audit_lead,gm,admin,manager'])->group(function () {
+Route::middleware(['auth', 'role:audit,audit_lead,audit_dp,gm,admin,manager'])->group(function () {
     Route::resource('register', RegisterController::class)->only(['index', 'store']);
 });
 Route::resource('forgot', ForgotController::class);
@@ -321,7 +321,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     //condition select ca model
     Route::get('/api/car-order/models-by-customer', [CarOrderController::class, 'getModelsByCustomer']);
 
-    // Floor Plan (เห็นเฉพาะ admin, audit_lead — ตรวจสิทธิ์ใน controller)
+    // Floor Plan (เห็นเฉพาะ admin, audit_internal — ตรวจสิทธิ์ใน controller)
     Route::get('floor-plan/interest-rate', [FloorPlanController::class, 'interestRate'])->name('floor-plan.interest-rate');
     Route::put('floor-plan/interest-rate', [FloorPlanController::class, 'updateInterestRate'])->name('floor-plan.interest-rate.update');
     Route::get('floor-plan/fp', [FloorPlanController::class, 'fpList'])->name('floor-plan.fp');
@@ -333,10 +333,14 @@ Route::middleware(['auth', 'notsale'])->group(function () {
 
     //license ป้ายแดง
     Route::get('license/list', [LicenseController::class, 'listLicense']);
+    Route::get('license/loan-options', [LicenseController::class, 'loanOptions']);
+    Route::post('license/loan', [LicenseController::class, 'storeLoan']);
+    Route::post('license/loan/{id}/return', [LicenseController::class, 'returnLoan']);
     Route::get('license/{id}/view-more', [LicenseController::class, 'viewMore'])->name('vehicle.license.viewMore');
     Route::post('/license/approve-finance', [LicenseController::class, 'approveFinance']);
 
     Route::get('/license/stock-export', [LicenseController::class, 'exportLicStock'])->name('license.stock-export');
+    Route::get('/license/loan-export', [LicenseController::class, 'exportLicLoan'])->name('license.loan-export');
     Route::get('license/view-export-license', [LicenseController::class, 'viewExportLicense'])->name('license.view-export-license');
     Route::get('/license/summary-export', [LicenseController::class, 'exportLicSummary'])->name('license.summary-export');
 
@@ -619,14 +623,14 @@ Route::group(['middleware' => 'auth'], function () {
     // ขออนุมัติเกินงบล่วงหน้า (ยังไม่เป็นการจอง)
     //  - ดูลิสต์: admin/audit_lead/manager/gm/md + sale/lead_sale (เห็นเฉพาะของตัวเอง)
     //  - สร้างการจอง: admin/audit_lead/manager/gm เท่านั้น
-    Route::middleware('role:admin,audit_lead,manager,gm,md,sale,lead_sale')->group(function () {
+    Route::middleware('role:admin,audit_lead,audit_dp,manager,gm,md,sale,lead_sale')->group(function () {
         Route::get('pre-approval', [PreApprovalController::class, 'index'])->name('pre-approval.index');
         Route::get('pre-approval/list', [PreApprovalController::class, 'list']);
         // ลบ: sale ลบได้เฉพาะของตัวเองที่ยังไม่ส่งขออนุมัติ (ตรวจจริงใน canDelete())
         Route::delete('pre-approval/{id}', [PreApprovalController::class, 'destroy'])->name('pre-approval.destroy');
     });
     Route::post('pre-approval/{id}/convert', [PreApprovalController::class, 'convert'])
-        ->middleware('role:admin,audit_lead,manager,gm')
+        ->middleware('role:admin,audit_lead,audit_dp,manager,gm')
         ->name('pre-approval.convert');
 
     //all resource

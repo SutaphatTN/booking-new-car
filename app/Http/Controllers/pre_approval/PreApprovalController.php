@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Auth;
 class PreApprovalController extends Controller
 {
     /** role ที่กด "สร้างการจอง" ได้ */
-    private const CONVERT_ROLES = ['admin', 'audit_lead', 'manager', 'gm'];
+    private const CONVERT_ROLES = ['admin', 'audit_lead', 'audit_dp', 'manager', 'gm'];
 
     /**
      * ลบคำขอได้ไหม

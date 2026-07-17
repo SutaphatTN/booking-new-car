@@ -12,8 +12,8 @@ use Illuminate\Support\Facades\Auth;
 
 class FloorPlanController extends Controller
 {
-    // เมนู Floor Plan เห็น/แก้ได้เฉพาะ admin, audit_lead
-    private const ALLOWED_ROLES = ['admin', 'audit_lead'];
+    // เมนู Floor Plan เห็น/แก้ได้เฉพาะ admin, audit_internal, md
+    private const ALLOWED_ROLES = ['admin', 'audit_internal', 'md'];
 
     private function authorizeAccess(): void
     {

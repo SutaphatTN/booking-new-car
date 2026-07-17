@@ -56,8 +56,20 @@
         @continue
       @endif
 
+      {{-- audit_internal: ในเมนูการจอง/ซื้อ เห็นเฉพาะ "ยอดเฟิร์มเงิน FN" (รายการอื่นถูกกรองด้วย gate รายเมนูด้านล่างอยู่แล้ว) --}}
+      @if (
+          $userRole === 'audit_internal' &&
+              in_array($submenu->slug, [
+                  'purchase-order.index',
+                  'purchase-order.create',
+                  'purchase-order.history',
+                  'purchase-order.cancellation',
+              ]))
+        @continue
+      @endif
+
       {{-- เมนู "ตั้งค่า GP" เห็นเฉพาะ role admin, audit และ account --}}
-      @if ($submenu->slug == 'purchase-order.gp-setting' && !in_array($userRole, ['admin', 'audit', 'audit_lead', 'gm', 'account']))
+      @if ($submenu->slug == 'purchase-order.gp-setting' && !in_array($userRole, ['admin', 'audit', 'audit_lead', 'audit_dp', 'gm', 'account']))
         @continue
       @endif
 
@@ -72,7 +84,7 @@
       @endif
 
       {{-- เมนู "รายงานเกินงบ" เห็นเฉพาะ role admin, md, account, gm, manager, audit --}}
-      @if ($submenu->slug == 'purchase-order.view-export-over-budget' && !in_array($userRole, ['admin', 'md', 'account', 'gm', 'manager', 'audit', 'audit_lead']))
+      @if ($submenu->slug == 'purchase-order.view-export-over-budget' && !in_array($userRole, ['admin', 'md', 'account', 'gm', 'manager', 'audit', 'audit_lead', 'audit_dp']))
         @continue
       @endif
 
@@ -82,17 +94,17 @@
       @endif
 
       {{-- เมนู "D/Bar" เห็นเฉพาะ role admin, audit, gm, manager, md --}}
-      @if ($submenu->slug == 'dbar.index' && !in_array($userRole, ['admin', 'audit', 'audit_lead', 'gm', 'manager', 'md']))
+      @if ($submenu->slug == 'dbar.index' && !in_array($userRole, ['admin', 'audit', 'audit_lead', 'audit_dp', 'gm', 'manager', 'md']))
         @continue
       @endif
 
       {{-- เมนู "ขออนุมัติเกินงบล่วงหน้า" เห็นเฉพาะ admin, audit_lead, manager, gm, md + sale/lead_sale (เห็นเฉพาะของตัวเอง) --}}
-      @if ($submenu->slug == 'pre-approval.index' && !in_array($userRole, ['admin', 'audit_lead', 'manager', 'gm', 'md', 'sale', 'lead_sale']))
+      @if ($submenu->slug == 'pre-approval.index' && !in_array($userRole, ['admin', 'audit_lead', 'audit_dp', 'manager', 'gm', 'md', 'sale', 'lead_sale']))
         @continue
       @endif
 
-      {{-- เมนู "ค่าคอมมิชชั่น" เห็นเฉพาะ role admin, manager, gm, md --}}
-      @if ($submenu->slug == 'purchase-order.viewCommission' && !in_array($userRole, ['admin', 'manager', 'gm', 'md']))
+      {{-- เมนู "ค่าคอมมิชชั่น" เห็นเฉพาะ role admin, manager, gm, md, audit_dp --}}
+      @if ($submenu->slug == 'purchase-order.viewCommission' && !in_array($userRole, ['admin', 'manager', 'gm', 'md', 'audit_dp']))
         @continue
       @endif
 

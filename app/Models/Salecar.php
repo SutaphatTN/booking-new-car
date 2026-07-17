@@ -357,7 +357,9 @@ class Salecar extends Model
 
 	public function licensePlateRed()
 	{
-		return $this->belongsTo(TbLicensePlate::class, 'red_license', 'id');
+		// ข้าม brand scope ของป้าย — งานขายอาจผูกป้ายที่ยืมมาแล้วคืนเจ้าของไปแล้ว (ใช้แสดงผลเท่านั้น)
+		return $this->belongsTo(TbLicensePlate::class, 'red_license', 'id')
+			->withoutGlobalScope('brandAccess');
 	}
 
 	public function type()

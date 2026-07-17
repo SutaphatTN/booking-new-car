@@ -41,7 +41,7 @@ trait UserAccessScope
       }
 
       // ไม่จำกัด zone — filter แค่ brand และ branch
-      if (in_array($user->role, ['account', 'audit', 'audit_lead', 'gm', 'registration'])) {
+      if (in_array($user->role, ['account', 'audit', 'audit_lead', 'audit_dp', 'gm', 'registration'])) {
         if ($user->brand) {
           $query->where($table . '.brand', $user->brand);
         }

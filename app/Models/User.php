@@ -56,6 +56,7 @@ class User extends Authenticatable
 		'username',
 		'email_verified_at',
 		'role',
+		'role_display',
 		'branch',
 		'brand',
 		'cardID',
@@ -121,7 +122,7 @@ class User extends Authenticatable
 	{
 		$all = array_map('intval', array_keys(config('brand.names', [])));
 
-		if (in_array($this->role, ['admin', 'gm', 'md', 'account', 'registration', 'adminPage', 'audit_lead'], true)) {
+		if (in_array($this->role, ['admin', 'gm', 'md', 'account', 'registration', 'adminPage', 'audit_lead', 'audit_dp', 'audit_internal'], true)) {
 			$base = $all;
 		} elseif (in_array($this->role, ['sale', 'audit', 'manager'], true)) {
 			$home = (int) $this->getOriginal('brand');

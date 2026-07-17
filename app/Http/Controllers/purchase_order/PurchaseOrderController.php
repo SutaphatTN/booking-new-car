@@ -1189,10 +1189,23 @@ class PurchaseOrderController extends Controller
         $finances = Finance::all();
         $subModels = TbSubcarmodel::where('model_id', $saleCar->model_id)->get();
         $conStatus = TbConStatus::all();
-        $licensePlateRed = TbLicensePlate::where(function ($q) use ($saleCar) {
+        // ป้ายที่ใช้ได้ = ป้ายของแบรนด์ที่ขาย (ไม่ติดให้แบรนด์อื่นยืม) + ป้ายที่ยืมมา (loan ค้าง)
+        // และต้องว่าง (is_used = 0) — คงใบที่งานนี้เลือกไว้แล้วเสมอ
+        $plateBrand = Auth::user()->brand ?: $saleCar->brand;
+        $licensePlateRed = TbLicensePlate::withoutGlobalScope('brandAccess')
+            ->where(function ($q) use ($saleCar, $plateBrand) {
+                $q->where(function ($qq) use ($plateBrand) {
+                    $qq->where('brand', $plateBrand)
+                        ->whereDoesntHave('loans', fn($l) => $l->whereNull('return_date'));
+                })
+                    ->orWhereHas('loans', fn($l) => $l->whereNull('return_date')->where('borrower_brand', $plateBrand))
+                    ->orWhere('id', $saleCar->red_license);
+            })
+            ->where(function ($q) use ($saleCar) {
                 $q->where('is_used', 0)
                     ->orWhere('id', $saleCar->red_license);
             })
+            ->orderBy('number')
             ->get();
         $provinces = TbProvinces::all();
         $type = TbSalecarType::all();
@@ -1728,13 +1741,16 @@ class PurchaseOrderController extends Controller
 
             if ($oldPlate != $newPlate) {
 
+                // ปลด/ผูก is_used ด้วย id ตรง ๆ — ข้าม brand scope กันเคสป้ายหลุดจากการมองเห็น
                 if ($oldPlate) {
-                    TbLicensePlate::where('id', $oldPlate)
+                    TbLicensePlate::withoutGlobalScope('brandAccess')
+                        ->where('id', $oldPlate)
                         ->update(['is_used' => 0]);
                 }
 
                 if ($newPlate) {
-                    TbLicensePlate::where('id', $newPlate)
+                    TbLicensePlate::withoutGlobalScope('brandAccess')
+                        ->where('id', $newPlate)
                         ->update(['is_used' => 1]);
 
                     LicensePlateHistory::create([
@@ -2853,7 +2869,7 @@ class PurchaseOrderController extends Controller
     //commission
     public function viewCommission()
     {
-        if (!in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md'])) {
+        if (!in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md', 'audit_dp'])) {
             abort(403);
         }
 
@@ -3312,7 +3328,7 @@ class PurchaseOrderController extends Controller
      */
     public function gpSetting(Request $request)
     {
-        abort_unless(in_array(Auth::user()->role, ['admin', 'audit', 'audit_lead', 'gm', 'account']), 403);
+        abort_unless(in_array(Auth::user()->role, ['admin', 'audit', 'audit_lead', 'audit_dp', 'gm', 'account']), 403);
 
         $month = $request->input('month') ?: now()->format('Y-m');
 
@@ -3327,7 +3343,7 @@ class PurchaseOrderController extends Controller
     {
         $role = Auth::user()->role;
         // admin, audit และ account แก้ไขได้ (audit/account แก้ได้ทุกอย่าง ยกเว้นราคาทุน/ราคาขาย ซึ่ง readonly)
-        abort_unless(in_array($role, ['admin', 'audit', 'audit_lead', 'gm', 'account']), 403);
+        abort_unless(in_array($role, ['admin', 'audit', 'audit_lead', 'audit_dp', 'gm', 'account']), 403);
 
         $validated = $request->validate([
             'gp_cost_price_override' => 'nullable|numeric|min:0',
@@ -3487,7 +3503,7 @@ class PurchaseOrderController extends Controller
     //  admin/md/account/gm เห็นทุก brand แยก sheet ; manager/audit เห็น brand ตัวเอง (1 → 1,3)
     public function viewExportOverBudget()
     {
-        abort_unless(in_array(Auth::user()->role, ['admin', 'md', 'account', 'gm', 'manager', 'audit', 'audit_lead']), 403);
+        abort_unless(in_array(Auth::user()->role, ['admin', 'md', 'account', 'gm', 'manager', 'audit', 'audit_lead', 'audit_dp']), 403);
 
         return view('purchase-order.report.over-budget.view');
     }
@@ -3495,7 +3511,7 @@ class PurchaseOrderController extends Controller
     public function exportOverBudget(Request $request)
     {
         $user = Auth::user();
-        abort_unless(in_array($user->role, ['admin', 'md', 'account', 'gm', 'manager', 'audit', 'audit_lead']), 403);
+        abort_unless(in_array($user->role, ['admin', 'md', 'account', 'gm', 'manager', 'audit', 'audit_lead', 'audit_dp']), 403);
 
         $fromDate = $request->from_date ?: now()->format('Y-m');
 
