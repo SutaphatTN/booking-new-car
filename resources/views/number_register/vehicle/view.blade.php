@@ -42,6 +42,11 @@
               <button class="btn btn-info btn-sm btnViewWithdrawal">
                 <i class="bx bx-transfer me-1"></i> ส่งเบิก/เคลียร์
               </button>
+              @if (in_array(auth()->user()->role, ['admin', 'registration']))
+                <a href="{{ route('vehicle.history') }}" class="btn btn-secondary btn-sm">
+                  <i class="bx bx-history me-1"></i> ประวัติส่งเบิก/เคลียร์
+                </a>
+              @endif
             </div>
             <div class="ms-auto d-flex align-items-center gap-2">
               <i class="bx bx-filter-alt text-muted"></i>

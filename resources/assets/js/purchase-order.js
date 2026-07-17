@@ -2729,9 +2729,12 @@ function calculateCommissionSale() {
   const extraDebtBefore = parseFloat(($('#extraDebtBefore').val() || '0').toString().replace(/,/g, '')) || 0;
   let extraAbsorbed = 0;
 
+  // brand 2 และ 4 : คอมงบเหลือคิดแบบเดียวกัน (งบเหลือ→0, เกินงบ→−D)
+  const isB2Style = saleBrand === 2 || saleBrand === 4;
+
   if (balanceCam >= 0) {
-    // brand 2 : งบเหลือไม่คิดเป็นค่าคอมเซลล์ → 0 (เกินงบถึงจะคิด: −D ที่ GM อนุมัติ ในบล็อก else)
-    if (saleBrand === 2) {
+    // brand 2/4 : งบเหลือไม่คิดเป็นค่าคอมเซลล์ → 0 (เกินงบถึงจะคิด: −D ที่ GM อนุมัติ ในบล็อก else)
+    if (isB2Style) {
       balanceCam = 0;
     } else {
       const full = balanceCam * 2;
@@ -2739,10 +2742,10 @@ function calculateCommissionSale() {
       balanceCam = Math.min(Math.max(0, full - extraAbsorbed) / 2, 2500);
     }
   } else {
-    // เกินเพดาน: เทียบ "ยอดเต็ม" (×2) กับ over_budget (brand 2 = เกินเสมอ) ; ถ้าเกิน+manager กรอกยอด → brand2 −D, อื่น +D
-    const isOverCeiling = saleBrand === 2 || Math.abs(balanceCam) * 2 > overBudget;
+    // เกินเพดาน: เทียบ "ยอดเต็ม" (×2) กับ over_budget (brand 2/4 = เกินเสมอ) ; ถ้าเกิน+manager กรอกยอด → brand2/4 −D, อื่น +D
+    const isOverCeiling = isB2Style || Math.abs(balanceCam) * 2 > overBudget;
     if (isOverCeiling && managerDeduct !== null && !isNaN(managerDeduct)) {
-      balanceCam = saleBrand === 2 ? -managerDeduct : managerDeduct;
+      balanceCam = isB2Style ? -managerDeduct : managerDeduct;
     } else {
       balanceCam = balanceCam * 2 * (perBudget / 100);
     }

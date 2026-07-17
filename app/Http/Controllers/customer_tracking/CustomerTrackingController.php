@@ -875,21 +875,27 @@ class CustomerTrackingController extends Controller
 
     public function cancelTracking(Request $request, $id)
     {
-        $request->validate([
-            'reason'      => 'required|in:ไม่ผ่านอนุมัติไฟแนนซ์,ออกรถแบรนด์อื่น,เคสชนกัน,อื่นๆ',
-            'reason_note' => 'required_if:reason,อื่นๆ|nullable|string|max:1000',
-        ], [
-            'reason.required'         => 'กรุณาเลือกเหตุผล',
-            'reason.in'               => 'เหตุผลไม่ถูกต้อง',
-            'reason_note.required_if' => 'กรุณากรอกเหตุผล',
-        ]);
+        // finished = "จบการติดตาม" (ไม่ต้องเลือกเหตุผล) | cancelled = "ยกเลิกการติดตาม" (บังคับเหตุผล)
+        $endType = $request->input('end_type') === 'finished' ? 'finished' : 'cancelled';
+
+        if ($endType === 'cancelled') {
+            $request->validate([
+                'reason'      => 'required|in:ไม่ผ่านอนุมัติไฟแนนซ์,ออกรถแบรนด์อื่น,เคสชนกัน,อื่นๆ',
+                'reason_note' => 'required_if:reason,อื่นๆ|nullable|string|max:1000',
+            ], [
+                'reason.required'         => 'กรุณาเลือกเหตุผล',
+                'reason.in'               => 'เหตุผลไม่ถูกต้อง',
+                'reason_note.required_if' => 'กรุณากรอกเหตุผล',
+            ]);
+        }
 
         $tracking = CustomerTracking::findOrFail($id);
         $tracking->update([
             'cancelled_at'       => now(),
             'CancelledBy'        => Auth::id(),
-            'cancel_reason'      => $request->reason,
-            'cancel_reason_note' => $request->reason === 'อื่นๆ' ? trim($request->reason_note) : null,
+            'end_type'           => $endType,
+            'cancel_reason'      => $endType === 'cancelled' ? $request->reason : null,
+            'cancel_reason_note' => ($endType === 'cancelled' && $request->reason === 'อื่นๆ') ? trim($request->reason_note) : null,
         ]);
         return response()->json(['success' => true]);
     }

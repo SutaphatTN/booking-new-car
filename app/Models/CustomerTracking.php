@@ -44,6 +44,7 @@ class CustomerTracking extends Model
         'booked_at',
         'cancelled_at',
         'CancelledBy',
+        'end_type',
         'cancel_reason',
         'cancel_reason_note',
         'delivery_timeline_scoring',
