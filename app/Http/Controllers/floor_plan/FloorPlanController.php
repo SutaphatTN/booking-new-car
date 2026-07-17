@@ -3,17 +3,32 @@
 namespace App\Http\Controllers\floor_plan;
 
 use App\Http\Controllers\Controller;
+use App\Exports\dispose\DisposeReportExport;
 use App\Models\CarOrder;
+use App\Models\Salecar;
 use App\Models\FpMorRate;
 use App\Models\FpInterestRate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class FloorPlanController extends Controller
 {
     // เมนู Floor Plan เห็น/แก้ได้เฉพาะ admin, audit_internal, md
     private const ALLOWED_ROLES = ['admin', 'audit_internal', 'md'];
+
+    // ชุดแจ้งจำหน่าย (key => label) — key เก็บลง salecars.dispose_set
+    public const DISPOSE_SETS = [
+        'tracking'     => 'ระหว่างติดตาม',
+        'sent_reg'     => 'ส่งฝ่าย ทบ.',
+        'before_doc'   => 'ก่อนคุมเอกสาร',
+        'registered'   => 'จด ทบ. แล้ว',
+        'with_ia'      => 'อยู่กับ IA',
+        'return_mmth'  => 'คืน MMTH ลักษณะผิด',
+        'sent_account' => 'ส่งบัญชี',
+    ];
 
     private function authorizeAccess(): void
     {
@@ -296,5 +311,139 @@ class FloorPlanController extends Controller
             'success' => true,
             'message' => 'บันทึกวันที่ปิด FP เรียบร้อยแล้ว',
         ]);
+    }
+
+    /**
+     * หน้า "แจ้งจำหน่าย" — รถจาก salecars (auto brand-scoped) ยกเว้น con_status 7,8,9
+     * - ข้อมูลรถ/ราคาทุน/วันที่ปิด FP ดึงจาก carOrder ที่ผูก (CarOrderID)
+     * - ฟิลด์แก้ไขได้: ชุดแจ้งจำหน่าย / วันที่รับ / วันที่ ทบ.เบิก / หมายเหตุ (เก็บบน salecars)
+     * - ฟิลเตอร์: สถานะ (ยังไม่เบิก = ยังไม่มีวันที่ ทบ.เบิก / เบิกแล้ว) + เดือน (ตามวันที่รับ)
+     */
+    public function disposeList(Request $request)
+    {
+        $this->authorizeAccess();
+
+        $brand     = (int) Auth::user()->brand;
+        $brandName = config('brand.names')[$brand] ?? ('Brand ' . $brand);
+
+        $status = $request->input('status', 'pending');   // pending (ยังไม่เบิก) | withdrawn (เบิกแล้ว)
+        $month  = $request->input('month');                // YYYY-MM ของ "วันที่รับ" (ว่าง = ทุกเดือน)
+
+        $query = Salecar::with([
+                'carOrder' => fn ($q) => $q->with(['model', 'subModel', 'interiorColor', 'gwmColor']),
+                'customer', 'model', 'subModel', 'interiorColor', 'gwmColor',
+            ])
+            ->whereNotIn('con_status', [7, 8, 9]);
+
+        // สถานะ: ยังไม่เบิก = ยังไม่มีวันที่ ทบ.เบิก / เบิกแล้ว = มีแล้ว
+        if ($status === 'withdrawn') {
+            $query->whereNotNull('dispose_reg_withdraw_date');
+        } else {
+            $query->whereNull('dispose_reg_withdraw_date');
+        }
+
+        // เดือนตาม "วันที่รับ"
+        if ($month) {
+            [$y, $m] = array_pad(explode('-', $month), 2, null);
+            if ($y && $m) {
+                $query->whereYear('dispose_received_date', (int) $y)
+                    ->whereMonth('dispose_received_date', (int) $m);
+            }
+        }
+
+        $sales = $query->orderByDesc('dispose_received_date')
+            ->orderByDesc('BookingDate')
+            ->get();
+
+        $rows = $sales->map(function ($s) {
+            $co = $s->carOrder;
+
+            // ข้อมูลรถดึงจาก carOrder ที่ผูก (fallback = salecar ถ้าไม่มี carOrder)
+            $modelName = $co->model->Name_TH ?? $s->model->Name_TH ?? '-';
+            $subModel  = $co->subModel->name ?? $s->subModel->name ?? '-';
+            $year      = $co->year ?? $s->Year ?? '-';
+            $color     = $co ? $co->display_color : $s->display_color;
+            $option    = $co->option ?? $s->option ?? '-';
+            $interior  = $co->interiorColor->name ?? $s->interiorColor->name ?? '-';
+
+            $cus = $s->customer;
+            $cusName = $cus
+                ? trim(collect([$cus->FirstName, $cus->MiddleName, $cus->LastName])->filter()->implode(' '))
+                : '';
+
+            return [
+                'id'           => $s->id,
+                'vin'          => $co->vin_number ?? '-',
+                'engine'       => $co->engine_number ?? '-',
+                'modelName'    => $modelName,
+                'subModelName' => $subModel,
+                'year'         => $year ?: '-',
+                'color'        => $color ?: '-',
+                'option'       => $option ?: '-',
+                'interior'     => $interior ?: '-',
+                'cost'         => (float) ($co->car_DNP ?? 0),
+                'customer'     => $cusName !== '' ? $cusName : '-',
+                'fpCloseText'  => $co->format_fp_close_date ?? '-',
+                'disposeSet'   => $s->dispose_set,
+                'received'     => $s->dispose_received_date,          // Y-m-d สำหรับ input
+                'receivedText' => $s->format_dispose_received_date ?? '-',
+                'withdraw'     => $s->dispose_reg_withdraw_date,      // Y-m-d สำหรับ input
+                'withdrawText' => $s->format_dispose_reg_withdraw_date ?? '-',
+                'note'         => $s->dispose_note,
+            ];
+        });
+
+        return view('floor-plan.dispose.view', [
+            'rows'        => $rows,
+            'brand'       => $brand,
+            'brandName'   => $brandName,
+            'status'      => $status,
+            'month'       => $month,
+            'disposeSets' => self::DISPOSE_SETS,
+        ]);
+    }
+
+    /**
+     * บันทึกข้อมูลแจ้งจำหน่ายของ salecar (ชุดแจ้งจำหน่าย / วันที่รับ / วันที่ ทบ.เบิก / หมายเหตุ)
+     */
+    public function updateDispose(Request $request, $id)
+    {
+        $this->authorizeAccess();
+
+        $sale = Salecar::whereNotIn('con_status', [7, 8, 9])->findOrFail($id);
+
+        $validated = $request->validate([
+            'dispose_set'               => ['nullable', Rule::in(array_keys(self::DISPOSE_SETS))],
+            'dispose_received_date'     => 'nullable|date',
+            'dispose_reg_withdraw_date' => 'nullable|date',
+            'dispose_note'              => 'nullable|string|max:1000',
+        ]);
+
+        $sale->dispose_set               = $validated['dispose_set'] ?: null;
+        $sale->dispose_received_date     = $validated['dispose_received_date'] ?: null;
+        $sale->dispose_reg_withdraw_date = $validated['dispose_reg_withdraw_date'] ?: null;
+        $sale->dispose_note              = $validated['dispose_note'] ?: null;
+        $sale->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'บันทึกข้อมูลแจ้งจำหน่ายเรียบร้อยแล้ว',
+        ]);
+    }
+
+    /**
+     * ออกรายงานแจ้งจำหน่าย (Excel) ตามฟิลเตอร์ปัจจุบัน (สถานะ + เดือนวันที่รับ)
+     */
+    public function exportDispose(Request $request)
+    {
+        $this->authorizeAccess();
+
+        // รายงานยึด "เดือนของวันที่รับ" เท่านั้น (ไม่ยึดสถานะเบิก/ยังไม่เบิก)
+        $month = $request->input('month');
+
+        $suffix   = $month ? (' ' . $month) : '';
+        $filename = 'รายงานแจ้งจำหน่าย' . $suffix . '.xlsx';
+
+        return Excel::download(new DisposeReportExport($month), $filename);
     }
 }
