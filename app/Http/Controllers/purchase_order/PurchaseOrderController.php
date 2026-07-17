@@ -1632,6 +1632,17 @@ class PurchaseOrderController extends Controller
 
             $oldPlate = $saleCar->red_license;
 
+            // เปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5) ต้องมีป้ายแดงเสมอ
+            // ใช้ค่าที่จะบันทึกจริง (ถ้า role ไม่มีช่องป้ายแดงในฟอร์ม → ใช้ค่าเดิมของรายการ)
+            $effectiveRedLicense = $request->has('red_license') ? $request->red_license : $saleCar->red_license;
+            if ((int) $request->con_status === 5 && empty($effectiveRedLicense)) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ต้องระบุป้ายแดงก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"',
+                ], 422);
+            }
+
             $saleCar->update($data);
 
             // เช็คสิทธิ์ "หลัง" อัปเดตข้อมูล → ใช้ balanceCampaign/รุ่นรถ ค่าล่าสุดเสมอ

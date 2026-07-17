@@ -2086,6 +2086,22 @@ $(document).ready(function () {
   $(document).on('click', '#btnUpdatePurchase', function (e) {
     e.preventDefault();
 
+    // สถานะ "ส่งมอบ" (con_status = 5) ต้องเลือกป้ายแดงก่อน
+    if ($('#con_status').val() === '5' && $('#red_license').length && !$('#red_license').val()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณาเลือกป้ายแดง',
+        text: 'ต้องระบุป้ายแดงก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"'
+      });
+      // เปิดแท็บที่มีช่องป้ายแดงให้ผู้ใช้เห็น แล้ว focus
+      $('#red_license').closest('.tab-pane').each(function () {
+        const tabId = $(this).attr('id');
+        if (tabId) $(`[data-bs-target="#${tabId}"], [href="#${tabId}"]`).tab('show');
+      });
+      $('#red_license').select2('open');
+      return;
+    }
+
     const $btn = $(this);
     const $form = $('#purchaseForm');
     const actionUrl = $form.attr('action');

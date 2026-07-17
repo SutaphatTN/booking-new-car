@@ -273,6 +273,10 @@ class Salecar extends Model
 		'branch',
 		'tracking_id',
 		'original_tracking_id',
+		'dispose_set',
+		'dispose_received_date',
+		'dispose_reg_withdraw_date',
+		'dispose_note',
 	];
 
 	protected $dates = ['deleted_at'];
@@ -748,5 +752,26 @@ class Salecar extends Model
 	public function getFormatCancelGcipDateAttribute()
 	{
 		return $this->CancelGCIPDate ? Carbon::parse($this->CancelGCIPDate)->format('d-m-Y') : null;
+	}
+
+	// ── แจ้งจำหน่าย (Floor Plan) ──
+	public function getDisposeReceivedDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getFormatDisposeReceivedDateAttribute()
+	{
+		return $this->dispose_received_date ? Carbon::parse($this->dispose_received_date)->format('d-m-Y') : null;
+	}
+
+	public function getDisposeRegWithdrawDateAttribute($value)
+	{
+		return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+	}
+
+	public function getFormatDisposeRegWithdrawDateAttribute()
+	{
+		return $this->dispose_reg_withdraw_date ? Carbon::parse($this->dispose_reg_withdraw_date)->format('d-m-Y') : null;
 	}
 }

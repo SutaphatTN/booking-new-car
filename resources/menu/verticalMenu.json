@@ -164,6 +164,11 @@
           "url": "floor-plan/fp",
           "name": "รายการ FP",
           "slug": "floor-plan.fp"
+        },
+        {
+          "url": "floor-plan/dispose",
+          "name": "แจ้งจำหน่าย",
+          "slug": "floor-plan.dispose"
         }
       ]
     },
