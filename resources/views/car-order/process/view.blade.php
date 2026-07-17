@@ -31,9 +31,12 @@
           <button type="button" class="btn btn-success btn-sm btnRequestApproval">
             <i class="bx bx-mail-send me-1"></i> ขออนุมัติที่เลือก
           </button>
-          <button type="button" class="btn btn-primary btn-sm btnBulkApprove">
-            <i class="bx bx-check-double me-1"></i> อนุมัติที่เลือก
-          </button>
+          {{-- อนุมัติที่เลือก : เฉพาะ role md, admin --}}
+          @if (in_array(auth()->user()->role, ['md', 'admin']))
+            <button type="button" class="btn btn-primary btn-sm btnBulkApprove">
+              <i class="bx bx-check-double me-1"></i> อนุมัติที่เลือก
+            </button>
+          @endif
         </div>
 
         {{-- ── Table ── --}}

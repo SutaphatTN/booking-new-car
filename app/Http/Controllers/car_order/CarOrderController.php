@@ -1141,6 +1141,11 @@ class CarOrderController extends Controller
     // order ลูกค้า: อนุมัติตรงๆ | waiting: อนุมัติ "ตามจำนวนที่สั่ง" (received = count_order)
     public function bulkApprove(Request $request)
     {
+        // อนุมัติที่เลือก : เฉพาะ role md, admin (กันยิง endpoint ตรง)
+        if (!in_array(Auth::user()->role, ['md', 'admin'])) {
+            return response()->json(['success' => false, 'message' => 'คุณไม่มีสิทธิ์อนุมัติรายการ'], 403);
+        }
+
         $request->validate([
             'order_ids'   => ['array'],
             'waiting_ids' => ['array'],

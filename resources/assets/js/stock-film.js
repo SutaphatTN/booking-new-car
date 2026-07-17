@@ -101,6 +101,11 @@ $(document).on('click', '.btnViewFilm', function () {
   });
 });
 
+// ── รายงานดึง Stock ฟิล์ม ──────────────────────────────────
+$(document).on('click', '#btnFilmStockReport', function () {
+  window.location.href = '/stock-film/report-export';
+});
+
 // ── Open Input Modal ───────────────────────────────────────
 $(document).on('click', '.btnInputFilm', function () {
   $.get('/stock-film/create', function (html) {
