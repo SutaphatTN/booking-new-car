@@ -113,7 +113,8 @@ class SummaryLicExport implements FromView, WithTitle, WithStyles, WithEvents, S
     {
         $rows = LicensePlateHistory::with([
             'saleCarLic',
-            'licenseLic'
+            // ข้าม brand scope ของป้าย — ประวัติอาจอ้างป้ายที่ยืมมาแล้วคืนเจ้าของไปแล้ว
+            'licenseLic' => fn($q) => $q->withoutGlobalScope('brandAccess'),
         ])->where(function ($query) {
             $query->whereHas('saleCarLic', function ($q) {
                 $q->whereBetween('DeliveryDate', [
@@ -140,7 +141,7 @@ class SummaryLicExport implements FromView, WithTitle, WithStyles, WithEvents, S
                 'customer' => $customerName,
                 'phone' => $r->saleCarLic?->customer?->formatted_mobile ?? '-',
                 'sale_lic' => $nameSale,
-                'red_license' => $r->licenseLic->number,
+                'red_license' => $r->licenseLic?->number ?? '-',
                 'delivery_date' => $r?->saleCarLic?->format_delivery_date ?? '-',
                 'license_front' => $r->license_red_front ? '✅' : '❌',
                 'license_back'  => $r->license_red_back ? '✅' : '❌',

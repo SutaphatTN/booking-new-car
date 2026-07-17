@@ -22,7 +22,7 @@ class UserController extends Controller
         $authUser = Auth::user();
 
         // admin + audit_lead เห็นรายชื่อทุก brand (audit_lead ดูได้อย่างเดียว)
-        if (in_array($authUser->role, ['admin', 'audit_lead'], true)) {
+        if (in_array($authUser->role, ['admin', 'audit_lead', 'audit_dp'], true)) {
             $user = User::all();
         } else {
             $user = User::where('brand', $authUser->brand)->get();

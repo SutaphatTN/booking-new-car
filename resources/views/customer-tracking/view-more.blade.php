@@ -9,7 +9,7 @@
 
   @php
     $c = $tracking->customer;
-    $isSale = in_array(auth()->user()->role, ['sale', 'adminPage', 'audit', 'audit_lead', 'gm']);
+    $isSale = in_array(auth()->user()->role, ['sale', 'adminPage', 'audit', 'audit_lead', 'audit_dp', 'gm']);
     $saleDetails = $tracking->details->where('entry_type', 'sale')->sortBy([['contact_date', 'desc'], ['id', 'desc']]);
     $managerDetails = $tracking->details
         ->where('entry_type', 'manager')

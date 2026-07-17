@@ -80,8 +80,23 @@
         $croAllowed   = ['pre-delivery-inspection', 'ssi'];
       @endphp
 
-      {{-- เมนู Floor Plan เห็นเฉพาะ role admin, audit_lead --}}
-      @if (!empty(array_intersect($menuSlugs, ['floor-plan'])) && !in_array($userRole, ['admin', 'audit_lead']))
+      {{-- เมนู Floor Plan เห็นเฉพาะ role admin, audit_internal, md --}}
+      @if (!empty(array_intersect($menuSlugs, ['floor-plan'])) && !in_array($userRole, ['admin', 'audit_internal', 'md']))
+        @continue
+      @endif
+
+      {{-- role audit_internal เห็นแค่ ทะเบียน / การตั้งค่า / Film / การจอง-ซื้อ (เฉพาะยอดเฟิร์มเงิน FN) / รายงาน / Floor Plan --}}
+      @php
+        $auditInternalAllowed = [
+            'vehicle',                                                          // ทะเบียน
+            'model', 'model-car', 'gwm-incentive', 'car-order', 'campaign', 'finance', 'accessory', // การตั้งค่า
+            'stock-film', 'film-price-list', 'film-usage', 'film-settings',     // Film
+            'purchase-order',                                                   // การจอง/ซื้อ (submenu กรองเหลือยอดเฟิร์มเงิน FN)
+            'report',                                                           // รายงาน
+            'floor-plan',                                                       // Floor Plan
+        ];
+      @endphp
+      @if ($userRole === 'audit_internal' && empty(array_intersect($menuSlugs, $auditInternalAllowed)))
         @continue
       @endif
 

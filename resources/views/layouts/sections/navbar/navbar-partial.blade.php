@@ -63,7 +63,8 @@
                                   </div> -->
                 <div class="flex-grow-1">
                   <h6 class="mb-0">{{ Auth::user()->name }}</h6>
-                  <small class="text-muted text-uppercase">{{ Auth::user()->role }}</small>
+                  {{-- ชื่อ role สำหรับแสดง (role_display) — ถ้ายังไม่ตั้งค่า fallback เป็น role เดิม --}}
+                  <small class="text-muted text-uppercase">{{ Auth::user()->role_display ?: Auth::user()->role }}</small>
                 </div>
               </div>
             </a>
@@ -78,7 +79,7 @@
                               <i class="icon-base bx bx-cog icon-md me-3"></i><span>Settings</span>
                           </a>
                       </li> -->
-          @if (Auth::user()->role == 'audit' || Auth::user()->role == 'audit_lead' || Auth::user()->role == 'gm' || Auth::user()->role == 'admin' || Auth::user()->role == 'manager')
+          @if (Auth::user()->role == 'audit' || Auth::user()->role == 'audit_lead' || Auth::user()->role == 'audit_dp' || Auth::user()->role == 'gm' || Auth::user()->role == 'admin' || Auth::user()->role == 'manager')
             <li>
               <div class="dropdown-divider my-1"></div>
             </li>
@@ -88,7 +89,7 @@
               </a>
             </li>
             {{-- รายชื่อผู้ใช้งาน — เฉพาะ admin + audit_lead (audit_lead ดูได้อย่างเดียว) --}}
-            @if (in_array(Auth::user()->role, ['admin', 'audit_lead'], true))
+            @if (in_array(Auth::user()->role, ['admin', 'audit_lead', 'audit_dp'], true))
               <li>
                 <a class="dropdown-item" href="{{ route('user.index') }}">
                   <i class="icon-base bx bx-group icon-md me-3"></i><span>รายชื่อผู้ใช้งาน</span>

@@ -37,6 +37,9 @@ return [
         4 => 'Lepas',
     ],
 
+    // role ที่กดยืม/คืนป้ายแดงข้ามแบรนด์ได้ (audit_internal = role ใหม่ รอเพิ่มใน DB)
+    'plate_loan_roles' => ['admin', 'audit_internal'],
+
     /*
     |--------------------------------------------------------------------------
     | ขอบเขตการสลับ brand ของ sale / audit / manager

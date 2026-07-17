@@ -2,7 +2,7 @@
 
 namespace App\Exports\license;
 
-use App\Models\Salecar;
+use App\Models\LicensePlateHistory;
 use App\Models\TbLicensePlate;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
@@ -91,30 +91,28 @@ class StockLicExport implements FromView, WithTitle, WithStyles, WithEvents, Sho
 
     public function view(): View
     {
-        $rows = TbLicensePlate::with([
-            'currentHistory.saleCarLic.customer.prefix',
-            'currentHistory.saleCarLic.saleUser'
-        ])->get();
+        // scope = ป้ายของแบรนด์ตัวเอง + ป้ายที่ยืมมา (ดู TbLicensePlate::booted)
+        $rows = TbLicensePlate::with('activeLoan')->orderBy('number')->get();
+
+        // ประวัติที่ยังไม่ปิด — ข้าม brand scope เพราะป้ายอาจถูกอีกแบรนด์ยืมใช้อยู่
+        $histories = LicensePlateHistory::withoutGlobalScope('brandAccess')
+            ->whereIn('licenseID', $rows->pluck('id'))
+            ->whereNull('finance_approved')
+            ->with(['saleCarLic' => function ($q) {
+                $q->withoutGlobalScope('userAccess')->with(['customer.prefix', 'saleUser']);
+            }])
+            ->orderBy('id')
+            ->get()
+            ->groupBy('licenseID')
+            ->map(fn($group) => $group->last());
 
         $brandNames = config('brand.names', []);
 
-        // brand ของการขายที่ผูกป้ายแต่ละใบ (ข้าม scope) เพื่อ detect การใช้ข้ามแบรนด์ในกองเดียวกัน (brand 3/Wuling)
-        // โดยไม่เปิดเผยข้อมูลลูกค้าของอีกแบรนด์ในคอลัมน์อื่น
-        $saleIds = $rows->pluck('currentHistory.saleID')->filter()->unique()->values();
-        $occupantBrand = $saleIds->isNotEmpty()
-            ? Salecar::withoutGlobalScopes()->whereIn('id', $saleIds)->pluck('brand', 'id')
-            : collect();
+        $data = $rows->map(function ($r) use ($brandNames, $histories) {
+            $history = $histories->get($r->id);
+            $loan = $r->activeLoan;
 
-        // brand 2 (GWM) ใช้ stock คนละกอง แต่เลข number อาจซ้ำ — ถ้าเลขเดียวกันถูก GWM ใช้อยู่ = GWM ครองเลขนั้น
-        $gwmUsedNumbers = TbLicensePlate::withoutGlobalScopes()
-            ->where('brand', 2)
-            ->where('is_used', 1)
-            ->pluck('number')
-            ->flip();
-
-        $data = $rows->map(function ($r) use ($brandNames, $occupantBrand, $gwmUsedNumbers) {
-            $history = $r->currentHistory;
-            $customerName = $r->is_used
+            $customerName = ($r->is_used && $history)
                 ? trim(
                     ($history->saleCarLic?->customer?->prefix?->Name_TH ?? '') . ' ' .
                         ($history->saleCarLic?->customer?->FirstName ?? '') . ' ' .
@@ -123,18 +121,16 @@ class StockLicExport implements FromView, WithTitle, WithStyles, WithEvents, Sho
 
             $nameSale = $history?->saleCarLic?->saleUser?->name ?? '';
 
-            // flag เมื่อป้ายเลขนี้ถูกแบรนด์อื่นใช้อยู่
+            // สถานะข้ามแบรนด์ = การยืมที่ยังไม่คืน (+ แบรนด์ที่ผูกงานขายอยู่ ถ้าต่างจากเจ้าของ)
             $usedBy = [];
 
-            // 1) แบรนด์อื่นในกองเดียวกัน (Wuling/brand 3) ยืมใช้ป้ายใบนี้
-            $occBrand = $history ? ($occupantBrand[$history->saleID] ?? null) : null;
-            if ($r->is_used && $occBrand !== null && (int) $occBrand !== (int) $r->brand) {
-                $usedBy[] = ($brandNames[$occBrand] ?? 'แบรนด์อื่น') . ' ใช้อยู่';
+            if ($loan) {
+                $usedBy[] = ($brandNames[$loan->borrower_brand] ?? 'แบรนด์อื่น')
+                    . ' ยืมอยู่ (ยืม ' . $loan->format_borrow_date . ')';
             }
 
-            // 2) GWM (brand 2) กองแยก แต่เลขเดียวกันถูกใช้อยู่
-            if ((int) $r->brand !== 2 && $gwmUsedNumbers->has($r->number)) {
-                $usedBy[] = ($brandNames[2] ?? 'GWM') . ' ใช้อยู่';
+            if ($r->is_used && $history && (int) $history->brand !== (int) $r->brand && !$loan) {
+                $usedBy[] = ($brandNames[$history->brand] ?? 'แบรนด์อื่น') . ' ใช้อยู่';
             }
 
             $boundBrand = $usedBy ? implode(' / ', $usedBy) : '-';

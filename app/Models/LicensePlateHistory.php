@@ -45,7 +45,9 @@ class LicensePlateHistory extends Model
 
 	public function licenseLic()
 	{
-		return $this->belongsTo(TbLicensePlate::class, 'licenseID', 'id');
+		// ข้าม brand scope ของป้าย — ประวัติอาจอ้างป้ายที่ยืมมาแล้วคืนเจ้าของไปแล้ว
+		return $this->belongsTo(TbLicensePlate::class, 'licenseID', 'id')
+			->withoutGlobalScope('brandAccess');
 	}
 
 	public function financeUser()

@@ -149,7 +149,7 @@ class CarOrderController extends Controller
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'gm', 'md'])
+        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'audit_dp', 'gm', 'md'])
             ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
         $purchaseType = TbPurchaseType::all();
@@ -852,7 +852,7 @@ class CarOrderController extends Controller
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'gm', 'md'])
+        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'audit_dp', 'gm', 'md'])
             ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
         $purchaseType = TbPurchaseType::all();
@@ -1206,7 +1206,7 @@ class CarOrderController extends Controller
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'gm', 'md'])
+        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'audit_dp', 'gm', 'md'])
             ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
 
@@ -1345,7 +1345,7 @@ class CarOrderController extends Controller
         $model = TbCarmodel::all();
         $subModels = TbSubcarmodel::where('model_id', $order->model_id)->get();
         $orderStatus = TbOrderStatus::all();
-        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'gm', 'md'])
+        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'audit_dp', 'gm', 'md'])
             ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
 
@@ -1494,7 +1494,7 @@ class CarOrderController extends Controller
 
         $waiting = CarOrderWaiting::findOrFail($id);
         $purchaseType = TbPurchaseType::all();
-        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'gm', 'md'])
+        $approvers = User::whereIn('role', ['audit', 'audit_lead', 'audit_dp', 'gm', 'md'])
             ->where('brand', $authUser->brand == 2 ? 2 : 1)
             ->get();
         $gwmColor = $waiting->subModel
@@ -1589,7 +1589,7 @@ class CarOrderController extends Controller
 
     // รับทราบรายการที่ไม่อนุมัติ (rejected) — soft delete เพื่อเอาออกจากหน้าผลการอนุมัติ
     // เฉพาะ role: admin, audit, manager, md
-    private const ACK_REJECT_ROLES = ['admin', 'audit', 'audit_lead', 'gm', 'manager', 'md'];
+    private const ACK_REJECT_ROLES = ['admin', 'audit', 'audit_lead', 'audit_dp', 'gm', 'manager', 'md'];
 
     public function acknowledgeReject($id)
     {

@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Auth;
 class DbarController extends Controller
 {
     // เห็น/ใช้เมนูนี้ได้เฉพาะ role เหล่านี้
-    private const ALLOWED_ROLES = ['admin', 'audit', 'audit_lead', 'gm', 'manager', 'md'];
+    private const ALLOWED_ROLES = ['admin', 'audit', 'audit_lead', 'audit_dp', 'gm', 'manager', 'md'];
 
     public function index()
     {
