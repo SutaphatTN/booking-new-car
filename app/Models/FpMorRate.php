@@ -30,16 +30,35 @@ class FpMorRate extends Model
     // ค่าเริ่มต้น TISCO's MOR (ใช้เมื่อยังไม่เคยตั้งค่าเดือนใดเลย)
     const DEFAULT_MOR = 7.10;
 
+    // cache ทั้งตาราง (per-request) — กัน N+1 ตอนคำนวณดอกเบี้ยหลายคัน/หลาย segment
+    protected static ?array $morCache = null;
+
     /**
      * MOR ที่มีผลกับเดือน $period — ใช้ค่าเดือนล่าสุดที่ <= $period
      * ถ้าไม่มีเลย คืนค่า default
      */
     public static function effectiveForMonth(string $period): float
     {
-        $row = static::where('period', '<=', $period)
-            ->orderBy('period', 'desc')
-            ->first();
+        if (self::$morCache === null) {
+            // โหลดครั้งเดียวทั้งตาราง เรียงตาม period จากน้อยไปมาก
+            self::$morCache = static::orderBy('period')->pluck('mor', 'period')->all();
+        }
 
-        return $row ? (float) $row->mor : self::DEFAULT_MOR;
+        $best = null;
+        foreach (self::$morCache as $p => $mor) {
+            if ($p <= $period) {
+                $best = $mor;
+            } else {
+                break; // period เรียง asc — เจอตัวที่เกินแล้วหยุด
+            }
+        }
+
+        return $best !== null ? (float) $best : self::DEFAULT_MOR;
+    }
+
+    // ล้าง cache (เรียกหลังบันทึกค่าใหม่ ถ้าต้องอ่านซ้ำในคำขอเดียวกัน)
+    public static function clearCache(): void
+    {
+        self::$morCache = null;
     }
 }

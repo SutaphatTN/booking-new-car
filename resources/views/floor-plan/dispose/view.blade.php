@@ -226,34 +226,16 @@
   #dpModal .dp-info-label { font-size: .78rem; color: #8a8aa3; display: block; }
   #dpModal .dp-info-val { font-weight: 600; color: #3a3a55; }
 
-  /* ตัวโหลด (full-screen overlay + backdrop จัดกลาง) — self-contained ไม่พึ่ง bundle */
+  /* ตัวโหลด — สไตล์เดียวกับหน้าอื่น (มาตรฐาน tables.css) ไม่เบลอพื้นหลัง
+     (id นี้ไม่ได้อยู่ใน list ของ tables.css จึงต้องประกาศเอง แต่ให้ค่าตรงกัน) */
   #dpLoadingOverlay {
+    display: none;
     position: fixed;
     inset: 0;
+    background: rgba(0, 0, 0, 0.35);
     z-index: 9999;
-    background: rgba(17, 24, 39, 0.4);
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
-    align-items: center;      /* จะจัดกลางเมื่อ JS สลับเป็น display:flex */
-    justify-content: center;
-  }
-  #dpLoadingOverlay .ct-loading-box {
-    background: #fff;
-    border-radius: 14px;
-    padding: 26px 38px;
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 14px;
-    box-shadow: 0 12px 34px rgba(0, 0, 0, .22);
-    font-weight: 600;
-    color: #3a3a55;
-    animation: dpPop .18s ease-out;
-  }
-  #dpLoadingOverlay .spinner-border { width: 2rem !important; height: 2rem !important; }
-  @keyframes dpPop {
-    from { transform: scale(.9); opacity: 0; }
-    to   { transform: scale(1);  opacity: 1; }
+    justify-content: center;
   }
 </style>
 @endsection

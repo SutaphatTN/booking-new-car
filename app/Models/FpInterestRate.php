@@ -52,26 +52,47 @@ class FpInterestRate extends Model
         'spread_181_up'  => 0.95,
     ];
 
+    // cache spreads ราย brand (per-request) — กัน N+1 ตอนคำนวณดอกเบี้ยหลายคัน/หลาย segment
+    protected static array $spreadCache = [];
+
     /**
      * spreads ที่มีผลกับ brand + เดือน $period — ใช้ค่าเดือนล่าสุดที่ <= $period
      * ถ้าไม่มีเลย คืนค่า default
      */
     public static function effectiveForMonth(int $brand, string $period): array
     {
-        $row = static::where('brand', $brand)
-            ->where('period', '<=', $period)
-            ->orderBy('period', 'desc')
-            ->first();
+        if (!array_key_exists($brand, self::$spreadCache)) {
+            // โหลดครั้งเดียวต่อ brand เรียงตาม period จากน้อยไปมาก
+            self::$spreadCache[$brand] = static::where('brand', $brand)
+                ->orderBy('period')
+                ->get(['period', 'spread_1_60', 'spread_61_120', 'spread_121_180', 'spread_181_up'])
+                ->all();
+        }
 
-        if (!$row) {
+        $best = null;
+        foreach (self::$spreadCache[$brand] as $row) {
+            if ($row->period <= $period) {
+                $best = $row;
+            } else {
+                break; // period เรียง asc — เจอตัวที่เกินแล้วหยุด
+            }
+        }
+
+        if (!$best) {
             return self::DEFAULT_SPREADS;
         }
 
         return [
-            'spread_1_60'    => (float) $row->spread_1_60,
-            'spread_61_120'  => (float) $row->spread_61_120,
-            'spread_121_180' => (float) $row->spread_121_180,
-            'spread_181_up'  => (float) $row->spread_181_up,
+            'spread_1_60'    => (float) $best->spread_1_60,
+            'spread_61_120'  => (float) $best->spread_61_120,
+            'spread_121_180' => (float) $best->spread_121_180,
+            'spread_181_up'  => (float) $best->spread_181_up,
         ];
+    }
+
+    // ล้าง cache (เรียกหลังบันทึกค่าใหม่ ถ้าต้องอ่านซ้ำในคำขอเดียวกัน)
+    public static function clearCache(): void
+    {
+        self::$spreadCache = [];
     }
 }

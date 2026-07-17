@@ -4,6 +4,7 @@ namespace App\Http\Controllers\floor_plan;
 
 use App\Http\Controllers\Controller;
 use App\Exports\dispose\DisposeReportExport;
+use App\Exports\fp\FpReportExport;
 use App\Models\CarOrder;
 use App\Models\Salecar;
 use App\Models\FpMorRate;
@@ -215,34 +216,23 @@ class FloorPlanController extends Controller
     }
 
     /**
-     * หน้า "รายการ FP" — car_order ที่ประเภทการจ่าย = fp_tisco (auto brand-scoped)
+     * สร้างแถวข้อมูล FP (car_order ที่ payment_type = fp_tisco, auto brand-scoped)
+     * ใช้ร่วมกันทั้งหน้า list และรายงาน Excel
      */
-    public function fpList(Request $request)
+    private function fpRows(int $brand)
     {
-        $this->authorizeAccess();
-
-        $brand     = (int) Auth::user()->brand;
-        $brandName = config('brand.names')[$brand] ?? ('Brand ' . $brand);
-
-        // ── ฟิลเตอร์ ──
-        $month  = $request->input('month') ?: $this->currentPeriod();     // งวดของ Billing date (YYYY-MM)
-        $status = $request->input('status', 'all');                        // all | closed | pending
-
-        [$periodStart, $periodEnd] = $this->periodRange($month);
-        $periodLabel = $periodStart->format('d/m/Y') . ' – ' . $periodEnd->format('d/m/Y');
-
         $orders = CarOrder::with(['model', 'subModel', 'interiorColor', 'gwmColor'])
             ->where('payment_type', 'fp_tisco')
             ->orderByDesc('fp_date')
             ->get();
 
-        $rows = $orders->map(function ($o) use ($brand) {
+        return $orders->map(function ($o) use ($brand) {
             $billing = $o->fp_date ? Carbon::parse($o->fp_date) : null;
             $close   = $o->fp_close_date ? Carbon::parse($o->fp_close_date) : null;
             $cost    = (float) ($o->car_DNP ?? 0);
 
-            $isClosed  = $billing && $close && $close->gte($billing);
-            $calc      = $isClosed ? $this->buildFpSegments($billing, $close, $brand, $cost) : null;
+            $isClosed = $billing && $close && $close->gte($billing);
+            $calc     = $isClosed ? $this->buildFpSegments($billing, $close, $brand, $cost) : null;
 
             return [
                 'id'            => $o->id,
@@ -267,6 +257,26 @@ class FloorPlanController extends Controller
                 'totalInterest' => $calc['totalInterest'] ?? null,
             ];
         });
+    }
+
+    /**
+     * หน้า "รายการ FP" — car_order ที่ประเภทการจ่าย = fp_tisco (auto brand-scoped)
+     */
+    public function fpList(Request $request)
+    {
+        $this->authorizeAccess();
+
+        $brand     = (int) Auth::user()->brand;
+        $brandName = config('brand.names')[$brand] ?? ('Brand ' . $brand);
+
+        // ── ฟิลเตอร์ ──
+        $month  = $request->input('month') ?: $this->currentPeriod();     // งวดของ Billing date (YYYY-MM)
+        $status = $request->input('status', 'all');                        // all | closed | pending
+
+        [$periodStart, $periodEnd] = $this->periodRange($month);
+        $periodLabel = $periodStart->format('d/m/Y') . ' – ' . $periodEnd->format('d/m/Y');
+
+        $rows = $this->fpRows($brand);
 
         // กรอง: รอปิด FP แสดงเสมอ (ยกเว้นเลือกสถานะ "ปิดแล้ว") / ปิดแล้ว กรองตามงวด billing
         $rows = $rows->filter(function ($r) use ($month, $status) {
@@ -311,6 +321,28 @@ class FloorPlanController extends Controller
             'success' => true,
             'message' => 'บันทึกวันที่ปิด FP เรียบร้อยแล้ว',
         ]);
+    }
+
+    /**
+     * ออกรายงาน FP (Excel) — ยึดตามงวด Billing date (calendar month ของ fp_date)
+     * ถ้าไม่ระบุเดือน = ทุกงวด (ทุกคัน fp_tisco)
+     */
+    public function exportFp(Request $request)
+    {
+        $this->authorizeAccess();
+
+        $brand = (int) Auth::user()->brand;
+        $month = $request->input('month');   // YYYY-MM หรือว่าง
+
+        $rows = $this->fpRows($brand);
+        if ($month) {
+            $rows = $rows->filter(fn ($r) => $r['billingPeriod'] === $month);
+        }
+        $rows = $rows->values();
+
+        $filename = 'รายงาน FP' . ($month ? " {$month}" : '') . '.xlsx';
+
+        return Excel::download(new FpReportExport($rows->all(), $brand), $filename);
     }
 
     /**

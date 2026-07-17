@@ -163,6 +163,17 @@ class CarOrderController extends Controller
     {
         try {
             $order = CarOrder::findOrFail($id);
+
+            // FP Tisco + สถานะ Invoice(3)/Stock(4) ต้องกรอกวันที่จ่าย FP
+            if ($request->payment_type === 'fp_tisco'
+                && in_array((int) $request->order_status, [3, 4], true)
+                && !$request->filled('fp_date')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'กรุณากรอกวันที่จ่าย FP ก่อนเปลี่ยนสถานะเป็น Stock หรือ Invoice',
+                ], 422);
+            }
+
             $data = $request->except(['_token', '_method']);
 
             $data['car_DNP'] = $request->car_DNP

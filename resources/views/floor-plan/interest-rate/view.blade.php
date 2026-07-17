@@ -23,15 +23,12 @@
           <form method="GET" action="{{ route('floor-plan.interest-rate') }}">
             <div class="fp-filter">
               <div class="d-flex align-items-center gap-2 flex-wrap">
-                <span class="fp-chip fp-chip--brand">
-                  <i class="bx bx-store"></i> {{ $brandName }}
-                </span>
                 <span class="fp-chip fp-chip--period">
                   <i class="bx bx-calendar-event"></i> {{ $periodLabel }}
                 </span>
               </div>
-              <div class="d-flex align-items-center gap-2 flex-wrap">
-                <label for="month" class="fw-semibold text-muted mb-0 small">
+              <div class="d-flex align-items-center gap-2 flex-nowrap ms-auto">
+                <label for="month" class="fw-semibold text-muted mb-0 small text-nowrap">
                   <i class="bx bx-filter-alt"></i> เลือกงวด (เดือนที่เริ่ม)
                 </label>
                 <input type="month" id="month" name="month" class="form-control form-control-sm"
@@ -78,7 +75,6 @@
               <div class="col-lg-8">
                 <div class="fp-sec-title">
                   <i class="bx bx-line-chart"></i> อัตราดอกเบี้ยตามช่วง Aging
-                  <span class="text-muted fw-normal">— Brand {{ $brandName }}</span>
                 </div>
                 <div class="row g-3">
                   @php $accents = ['emerald', 'sky', 'amber', 'red']; $i = 0; @endphp
@@ -122,7 +118,7 @@
     </div>
   </div>
 
-  <div id="rateLoadingOverlay" style="display:none;">
+  <div id="rateLoadingOverlay">
     <div class="ct-loading-box">
       <div class="spinner-border text-primary" role="status" style="width:1.4rem;height:1.4rem;"></div>
       <span>กำลังโหลด...</span>
@@ -130,6 +126,17 @@
   </div>
 
   <style>
+    /* loader overlay — จัดกลางจอ (id นี้ไม่ได้อยู่ใน list ของ tables.css) */
+    #rateLoadingOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+
     /* ── ฟิลเตอร์ ── */
     .fp-rate .fp-filter {
       display: flex;

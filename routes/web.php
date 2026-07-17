@@ -325,6 +325,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('floor-plan/interest-rate', [FloorPlanController::class, 'interestRate'])->name('floor-plan.interest-rate');
     Route::put('floor-plan/interest-rate', [FloorPlanController::class, 'updateInterestRate'])->name('floor-plan.interest-rate.update');
     Route::get('floor-plan/fp', [FloorPlanController::class, 'fpList'])->name('floor-plan.fp');
+    Route::get('floor-plan/fp/export', [FloorPlanController::class, 'exportFp'])->name('floor-plan.fp.export');
     Route::put('floor-plan/fp/{id}/close-date', [FloorPlanController::class, 'updateFpCloseDate'])->name('floor-plan.fp.close-date');
     Route::get('floor-plan/dispose', [FloorPlanController::class, 'disposeList'])->name('floor-plan.dispose');
     Route::get('floor-plan/dispose/export', [FloorPlanController::class, 'exportDispose'])->name('floor-plan.dispose.export');
