@@ -71,6 +71,17 @@
 
       <button type="submit" id="btnSubmit">ยืนยัน — หักเงิน (จบที่ GM)</button>
     </form>
+
+    {{-- ตีกลับ — แจ้งผู้จัดการให้แก้ไข (ลายเซ็นทั้งหมดจะถูกรีเซ็ต) --}}
+    <hr style="margin:22px 0 14px;border:none;border-top:1px solid #e5e7eb;">
+    <form method="POST" action="{{ route('purchase-order.returnApproval', $token) }}" id="returnForm">
+      @csrf
+      <label class="field" for="return_reason">เหตุผลที่ตีกลับ <span style="color:#6b7280;font-weight:400;">(ไม่บังคับ)</span></label>
+      <textarea id="return_reason" name="return_reason" rows="2"
+        placeholder="เช่น ยอดไม่ถูกต้อง / ข้อมูลใบจองผิด..."
+        style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;font-size:.95rem;"></textarea>
+      <button type="submit" style="background:#dc2626;">ตีกลับให้ผู้จัดการ</button>
+    </form>
   </div>
 
   <script>
