@@ -485,6 +485,12 @@ class Salecar extends Model
 		return $this->pre_approval_at ? 'จองแล้ว (จากคำขอล่วงหน้า)' : 'จองแล้ว';
 	}
 
+	/** ประเภทการขาย = Normal (tb_sale_purchase_type.id) */
+	public const TYPE_SALE_NORMAL = 1;
+
+	/** ประเภทการขาย = Test Drive (tb_sale_purchase_type.id) */
+	public const TYPE_SALE_TEST_DRIVE = 2;
+
 	/** ประเภทการขาย = Dealer (tb_sale_purchase_type.id) → ไม่ต้องขออนุมัติงบ */
 	public const TYPE_SALE_DEALER = 3;
 

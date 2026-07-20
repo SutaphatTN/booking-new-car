@@ -125,6 +125,9 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     // sale car Estimated report
     Route::get('purchase-order/view-export-saleCar', [PurchaseOrderController::class, 'viewExportSaleCar'])->name('purchase-order.view-export-saleCar');
     Route::get('/purchase-order/saleCar-export', [PurchaseOrderController::class, 'exportSaleCar'])->name('purchase-order.saleCar-export');
+    // ประมาณการเซลล์ (กรองเดือนตาม DeliveryInCKDate, Normal + Test Drive)
+    Route::get('purchase-order/view-export-saleEstimate', [PurchaseOrderController::class, 'viewExportSaleEstimate'])->name('purchase-order.view-export-saleEstimate');
+    Route::get('/purchase-order/saleEstimate-export', [PurchaseOrderController::class, 'exportSaleEstimate'])->name('purchase-order.saleEstimate-export');
     //sale car booking report 
     Route::get('purchase-order/view-export-saleBooking', [PurchaseOrderController::class, 'viewExportSaleBooking'])->name('purchase-order.view-export-saleBooking');
     Route::get('/purchase-order/saleBooking-export', [PurchaseOrderController::class, 'exportSaleBooking'])->name('purchase-order.saleBooking-export');

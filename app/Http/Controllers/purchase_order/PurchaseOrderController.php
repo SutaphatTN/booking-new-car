@@ -1387,6 +1387,13 @@ class PurchaseOrderController extends Controller
                     'DeliveryInCKDate'     => 'วันที่ส่งมอบของฝ่ายขาย',
                     'DeliveryEstimateDate' => 'ประมาณการส่งมอบ',
                 ];
+
+                // ประเภทการขาย = Test Drive / Dealer → ไม่บังคับ "วันที่ส่งมอบของบริษัท" (DMS)
+                $typeSaleNow = (int) $request->input('type_sale', $saleCar->type_sale);
+                if (in_array($typeSaleNow, [Salecar::TYPE_SALE_TEST_DRIVE, Salecar::TYPE_SALE_DEALER], true)) {
+                    unset($requiredDeliveryDates['DeliveryInDMSDate']);
+                }
+
                 $missingDates = [];
                 foreach ($requiredDeliveryDates as $field => $label) {
                     if (!$request->filled($field)) {
@@ -3408,6 +3415,20 @@ class PurchaseOrderController extends Controller
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
 
         return Excel::download(new EstimatedExport($fromDate), 'ข้อมูลประมาณการ.xlsx');
+    }
+
+    // report ประมาณการเซลล์ — ข้อมูลเหมือนประมาณการ แต่กรองเดือนตาม DeliveryInCKDate
+    // และนับประเภทการขาย Normal + Test Drive (ไม่นับ Dealer) ; ประเภทการซื้อรถนับทั้งหมด
+    public function viewExportSaleEstimate()
+    {
+        return view('purchase-order.report.saleCar.saleEstimate.view');
+    }
+
+    public function exportSaleEstimate(Request $request)
+    {
+        $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
+
+        return Excel::download(new EstimatedExport($fromDate, 'sale'), 'ประมาณการเซลล์.xlsx');
     }
 
     //report gwm

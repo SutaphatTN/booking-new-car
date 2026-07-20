@@ -9,10 +9,13 @@ use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 class EstimatedExport implements WithMultipleSheets
 {
     protected $fromDate;
+    /** 'estimate' = ข้อมูลประมาณการ (DeliveryEstimateDate) | 'sale' = ประมาณการเซลล์ (DeliveryInCKDate) */
+    protected $mode;
 
-    public function __construct($fromDate = null)
+    public function __construct($fromDate = null, $mode = 'estimate')
     {
         $this->fromDate = $fromDate;
+        $this->mode     = $mode;
     }
 
     public function sheets(): array
@@ -22,10 +25,12 @@ class EstimatedExport implements WithMultipleSheets
         $month = $date->month;
         $year  = $date->year;
 
+        $dateCol = SaleBookingQuery::dateColumnFor($this->mode);
+
         // ดึง branch ที่มีข้อมูลจริง
-        $branches = SaleBookingQuery::base()
-            ->whereMonth('DeliveryEstimateDate', $month)
-            ->whereYear('DeliveryEstimateDate', $year)
+        $branches = SaleBookingQuery::forReport($this->mode)
+            ->whereMonth($dateCol, $month)
+            ->whereYear($dateCol, $year)
             ->whereNotIn('con_status', [7, 8, 9])
             ->select('branch')
             ->distinct()
@@ -36,13 +41,13 @@ class EstimatedExport implements WithMultipleSheets
         if ($branches->isEmpty()) {
 
             // sheet เปล่า
-            $sheets[] = new SaleCarEstimatedExport($this->fromDate, null);
-            $sheets[] = new SaleCarEstimatedSummaryExport($this->fromDate, null);
+            $sheets[] = new SaleCarEstimatedExport($this->fromDate, null, $this->mode);
+            $sheets[] = new SaleCarEstimatedSummaryExport($this->fromDate, null, $this->mode);
         } else {
 
             foreach ($branches as $branchId) {
-                $sheets[] = new SaleCarEstimatedExport($this->fromDate, $branchId);
-                $sheets[] = new SaleCarEstimatedSummaryExport($this->fromDate, $branchId);
+                $sheets[] = new SaleCarEstimatedExport($this->fromDate, $branchId, $this->mode);
+                $sheets[] = new SaleCarEstimatedSummaryExport($this->fromDate, $branchId, $this->mode);
             }
         }
 

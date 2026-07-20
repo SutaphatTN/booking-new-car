@@ -21,11 +21,14 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
 {
     protected $fromDate;
     protected $branchId;
+    /** 'estimate' = ข้อมูลประมาณการ (DeliveryEstimateDate) | 'sale' = ประมาณการเซลล์ (DeliveryInCKDate) */
+    protected $mode;
 
-    public function __construct($fromDate, $branchId)
+    public function __construct($fromDate, $branchId, $mode = 'estimate')
     {
         $this->fromDate = $fromDate;
         $this->branchId = $branchId;
+        $this->mode     = $mode;
     }
 
     public function title(): string
@@ -118,9 +121,11 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
         $month = $date->month;
         $year  = $date->year;
 
-        $query = SaleBookingQuery::base()
-            ->whereMonth('DeliveryEstimateDate', $month)
-            ->whereYear('DeliveryEstimateDate', $year)
+        $dateCol = SaleBookingQuery::dateColumnFor($this->mode);
+
+        $query = SaleBookingQuery::forReport($this->mode)
+            ->whereMonth($dateCol, $month)
+            ->whereYear($dateCol, $year)
             ->whereNotIn('con_status', [7, 8, 9]);
 
         if ($this->branchId) {
