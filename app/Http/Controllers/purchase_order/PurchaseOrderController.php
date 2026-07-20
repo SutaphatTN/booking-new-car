@@ -239,12 +239,18 @@ class PurchaseOrderController extends Controller
         ])->values();
 
         // 7. ส่วนลด
-        $discount = $saleCar->payment_mode === 'finance'
+        $isFinance = $saleCar->payment_mode === 'finance';
+        $discount = $isFinance
             ? (float) ($saleCar->discount ?? 0)
             : (float) ($saleCar->PaymentDiscount ?? 0);
 
-        // 8. ยอดที่เหลือ = ยอดรวมแคมเปญ − ของแถม − ส่วนลด
-        $remaining = $campaignTotal - $giftTotal - $discount;
+        // 7.1 ส่วนลดเงินดาวน์ — มีเฉพาะเคสจัดไฟแนนซ์ (เงินสดไม่มี) หักเหมือนส่วนลด
+        $downPaymentDiscount = $isFinance
+            ? (float) ($saleCar->DownPaymentDiscount ?? 0)
+            : 0.0;
+
+        // 8. ยอดที่เหลือ = ยอดรวมแคมเปญ − ของแถม − ส่วนลด − ส่วนลดเงินดาวน์
+        $remaining = $campaignTotal - $giftTotal - $discount - $downPaymentDiscount;
 
         return [
             'price_sub'        => $priceSub,
@@ -256,6 +262,8 @@ class PurchaseOrderController extends Controller
             'gift_total'       => $giftTotal,
             'gift_details'     => $giftDetails,
             'discount'         => $discount,
+            'is_finance'       => $isFinance,
+            'down_payment_discount' => $downPaymentDiscount,
             'remaining'        => $remaining,
         ];
     }
