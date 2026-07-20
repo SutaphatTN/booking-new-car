@@ -69,6 +69,10 @@
 - **Margin (2%) :** {{ number_format($data['margin'], 2) }}
 - **RI (cashSupport) :** {{ number_format($data['ri'], 2) }}
 - **Com Finance :** {{ number_format($data['com_fin'], 2) }}
+@if (!empty($data['is_finance']))
+- **บวกหัว (90%) :** {{ number_format($data['markup90'] ?? 0, 2) }}
+@endif
+- **ลูกค้าจ่ายเพิ่ม :** {{ number_format($data['customer_extra'] ?? 0, 2) }}
 - **ยอดรวมแคมเปญ :** **{{ number_format($data['campaign_total'], 2) }}**
 
 @if (!empty($data['campaign_details']) && count($data['campaign_details']))

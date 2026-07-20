@@ -210,6 +210,8 @@ class PurchaseOrderController extends Controller
         // 1. ราคาขาย จาก price_sub
         $priceSub = (float) ($saleCar->price_sub ?? 0);
 
+        $isFinance = $saleCar->payment_mode === 'finance';
+
         // 3. margin = ราคาขาย × 2%
         $margin = $priceSub * 0.02;
 
@@ -227,8 +229,16 @@ class PurchaseOrderController extends Controller
         // 4. com finance (port calculateComFin จากหน้า FN)
         $comFin = $this->calcComFinance($saleCar);
 
-        // 5. ยอดรวมแคมเปญ = ri + margin + com finance
-        $campaignTotal = $ri + $margin + $comFin;
+        // 4.1 บวกหัว (90%) — มีเฉพาะเคสจัดไฟแนนซ์
+        $markup90 = $isFinance ? (float) ($saleCar->Markup90 ?? 0) : 0.0;
+
+        // 4.2 ลูกค้าจ่ายเพิ่ม — มีทั้งเงินสด/ไฟแนนซ์ (คนละคอลัมน์)
+        $customerExtra = $isFinance
+            ? (float) ($saleCar->other_cost_fi ?? 0)
+            : (float) ($saleCar->other_cost ?? 0);
+
+        // 5. ยอดรวมแคมเปญ = ri + margin + com finance + บวกหัว(90%) + ลูกค้าจ่ายเพิ่ม
+        $campaignTotal = $ri + $margin + $comFin + $markup90 + $customerExtra;
 
         // 6. ของแถม = ราคาทุนอะไหล่ (cost_spare) ของของแถมทั้งหมด + รายละเอียด
         $giftAccessories = $saleCar->accessories->where('pivot.type', 'gift');
@@ -239,7 +249,6 @@ class PurchaseOrderController extends Controller
         ])->values();
 
         // 7. ส่วนลด
-        $isFinance = $saleCar->payment_mode === 'finance';
         $discount = $isFinance
             ? (float) ($saleCar->discount ?? 0)
             : (float) ($saleCar->PaymentDiscount ?? 0);
@@ -258,6 +267,8 @@ class PurchaseOrderController extends Controller
             'ri'               => $ri,
             'campaign_details' => $campaignDetails,
             'com_fin'          => $comFin,
+            'markup90'         => $markup90,
+            'customer_extra'   => $customerExtra,
             'campaign_total'   => $campaignTotal,
             'gift_total'       => $giftTotal,
             'gift_details'     => $giftDetails,
