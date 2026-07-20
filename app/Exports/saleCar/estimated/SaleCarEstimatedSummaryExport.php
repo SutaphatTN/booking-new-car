@@ -21,6 +21,8 @@ class SaleCarEstimatedSummaryExport implements FromView, WithTitle, WithEvents, 
 {
     protected $fromDate;
     protected $branchId;
+    /** 'estimate' = ข้อมูลประมาณการ (DeliveryEstimateDate) | 'sale' = ประมาณการเซลล์ (DeliveryInCKDate) */
+    protected $mode;
     protected $rowMeta = [];
 
     protected $saleColors = [
@@ -34,10 +36,11 @@ class SaleCarEstimatedSummaryExport implements FromView, WithTitle, WithEvents, 
         'FFCC99',
     ];
 
-    public function __construct($fromDate, $branchId = null)
+    public function __construct($fromDate, $branchId = null, $mode = 'estimate')
     {
         $this->fromDate = $fromDate;
         $this->branchId = $branchId;
+        $this->mode     = $mode;
     }
 
     public function title(): string
@@ -132,10 +135,12 @@ class SaleCarEstimatedSummaryExport implements FromView, WithTitle, WithEvents, 
         $month = $date->month;
         $year  = $date->year;
 
-        $query = SaleBookingQuery::base()
+        $dateCol = SaleBookingQuery::dateColumnFor($this->mode);
+
+        $query = SaleBookingQuery::forReport($this->mode)
             ->with(['saleUser', 'model', 'conStatus'])
-            ->whereMonth('DeliveryEstimateDate', $month)
-            ->whereYear('DeliveryEstimateDate', $year)
+            ->whereMonth($dateCol, $month)
+            ->whereYear($dateCol, $year)
             ->whereNotIn('con_status', [7, 8, 9]);
 
         if ($this->branchId) {

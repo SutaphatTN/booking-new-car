@@ -172,12 +172,13 @@ function toggleFpField($modal) {
   $modal.find('#fieldFp').toggleClass('d-none', !isFp);
 }
 
-// FP Tisco + สถานะ Invoice/Stock → ต้องกรอกวันที่จ่าย FP (คืน false = ไม่ผ่าน)
+// FP Tisco + สถานะ Stock → ต้องกรอกวันที่จ่าย FP (คืน false = ไม่ผ่าน)
+// (Invoice ไม่บังคับ เพราะบางครั้งออก Invoice แล้วยังไม่มีวันที่จ่าย FP)
 function validateFpDateRequired($modal) {
   const isFp = $modal.find('#payment_type').val() === 'fp_tisco';
   const statusName = $modal.find('#order_status option:selected').data('name');
 
-  if (isFp && (statusName === 'Invoice' || statusName === 'Stock') && !$modal.find('#fp_date').val()) {
+  if (isFp && statusName === 'Stock' && !$modal.find('#fp_date').val()) {
     toggleFpField($modal); // ให้ช่องโผล่แน่ ๆ
     Swal.fire({
       icon: 'warning',

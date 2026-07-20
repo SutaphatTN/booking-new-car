@@ -398,6 +398,11 @@
           "slug": "report.saleCar-export"
         },
         {
+          "url": "purchase-order/view-export-saleEstimate",
+          "name": "ประมาณการเซลล์",
+          "slug": "report.saleEstimate-export"
+        },
+        {
           "url": "purchase-order/view-export-saleBooking",
           "name": "ข้อมูลการจอง",
           "slug": "report.saleBooking-export"

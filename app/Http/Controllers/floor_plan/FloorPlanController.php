@@ -221,7 +221,11 @@ class FloorPlanController extends Controller
      */
     private function fpRows(int $brand)
     {
-        $orders = CarOrder::with(['model', 'subModel', 'interiorColor', 'gwmColor'])
+        $orders = CarOrder::with([
+                'model', 'subModel', 'interiorColor', 'gwmColor',
+                // ใบจองผูกผ่าน salecars.CarOrderID (car_order.salecar_id ไม่ถูกใช้)
+                'salecars' => fn ($q) => $q->with('remainingPayment.financeInfo'),
+            ])
             ->where('payment_type', 'fp_tisco')
             ->orderByDesc('fp_date')
             ->get();
@@ -230,6 +234,9 @@ class FloorPlanController extends Controller
             $billing = $o->fp_date ? Carbon::parse($o->fp_date) : null;
             $close   = $o->fp_close_date ? Carbon::parse($o->fp_close_date) : null;
             $cost    = (float) ($o->car_DNP ?? 0);
+
+            // ข้อมูลการเงินจากใบจอง (ถ้ามี)
+            $sale = $o->salecars->first();
 
             $isClosed = $billing && $close && $close->gte($billing);
             $calc     = $isClosed ? $this->buildFpSegments($billing, $close, $brand, $cost) : null;
@@ -249,6 +256,10 @@ class FloorPlanController extends Controller
                 'engine'        => $o->engine_number ?: '-',
                 'jNumber'       => $o->j_number ?: '-',
                 'cost'          => $cost,
+                // ── ข้อมูลการเงินจากใบจอง (salecars ผูกด้วย CarOrderID) ──
+                'downPayment'    => $sale && $sale->DownPayment !== null ? (float) $sale->DownPayment : null,
+                'balanceFinance' => $sale && $sale->balanceFinance !== null ? (float) $sale->balanceFinance : null,
+                'financeName'    => $sale->remainingPayment->financeInfo->FinanceCompany ?? '-',
                 'closeDate'     => $o->fp_close_date,          // Y-m-d สำหรับ input
                 'closeText'     => $o->format_fp_close_date ?? '-',
                 'isClosed'      => $isClosed,

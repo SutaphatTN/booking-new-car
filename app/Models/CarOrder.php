@@ -74,6 +74,9 @@ class CarOrder extends Model
 
     protected $dates = ['deleted_at'];
 
+    /** ประเภทการซื้อรถ = Retail (tb_purchase_type.id) */
+    const PURCHASE_TYPE_RETAIL = 2;
+
     const STATUS_PENDING = 'pending';
     const STATUS_PROCESSING = 'processing';
     const STATUS_APPROVED = 'approved';

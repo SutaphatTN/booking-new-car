@@ -124,10 +124,12 @@
   <div id="fpDetailTemplates" class="d-none">
     @foreach ($rows as $r)
       <div data-detail="{{ $r['id'] }}">
+        {{-- .fp-detail-info = ส่วนที่ใช้ซ้ำใน modal แก้ไขด้วย (ข้อมูลรถ + ข้อมูลการเงิน) --}}
+        <div class="fp-detail-info">
         {{-- ข้อมูลรถ --}}
         <div class="mf-section">
           <div class="mf-section-hd">
-            <div class="mf-section-icon amber"><i class="bx bx-car"></i></div>
+            <div class="mf-section-icon sky"><i class="bx bx-car"></i></div>
             <span class="mf-section-title">ข้อมูลรถ</span>
           </div>
           <div class="mf-section-body">
@@ -162,10 +164,36 @@
           </div>
         </div>
 
+        {{-- ข้อมูลการเงิน (จากใบจอง) --}}
+        <div class="mf-section">
+          <div class="mf-section-hd">
+            <div class="mf-section-icon sky"><i class="bx bx-buildings"></i></div>
+            <span class="mf-section-title">ข้อมูลการเงิน</span>
+          </div>
+          <div class="mf-section-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <span class="fp-info-label">เงินดาวน์</span>
+                <div class="fp-info-val">{{ $r['downPayment'] !== null ? number_format($r['downPayment'], 2) : '-' }}</div>
+              </div>
+              <div class="col-md-4">
+                <span class="fp-info-label">ยอดจัดไฟแนนซ์</span>
+                <div class="fp-info-val">{{ $r['balanceFinance'] !== null ? number_format($r['balanceFinance'], 2) : '-' }}</div>
+              </div>
+              <div class="col-md-4">
+                <span class="fp-info-label">ชื่อไฟแนนซ์</span>
+                <div class="fp-info-val">{{ $r['financeName'] }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        </div>{{-- /.fp-detail-info --}}
+
         {{-- การคิดดอกเบี้ย --}}
         <div class="mf-section">
           <div class="mf-section-hd">
-            <div class="mf-section-icon amber"><i class="bx bx-calculator"></i></div>
+            <div class="mf-section-icon sky"><i class="bx bx-calculator"></i></div>
             <span class="mf-section-title">การคิดดอกเบี้ย</span>
           </div>
           <div class="mf-section-body">
@@ -214,9 +242,9 @@
 
   {{-- ── Modal : ดูข้อมูล ── --}}
   <div class="modal fade" id="fpDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
-      <div class="modal-content border-0 shadow mf-content mf-content--edit">
-        <div class="modal-header mf-header mf-header--edit px-4">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content border-0 shadow mf-content mf-content--view">
+        <div class="modal-header mf-header mf-header--view px-4">
           <div class="d-flex align-items-center gap-3">
             <div class="mf-hd-icon"><i class="bx bx-show fs-5 text-white"></i></div>
             <div>
@@ -249,19 +277,8 @@
           <form id="fpEditForm" autocomplete="off">
             <input type="hidden" id="fpEditId">
 
-            {{-- Section : ข้อมูลรถ (อ่านอย่างเดียว) --}}
-            <div class="mf-section">
-              <div class="mf-section-hd">
-                <div class="mf-section-icon amber"><i class="bx bx-car"></i></div>
-                <span class="mf-section-title">ข้อมูลรถ</span>
-              </div>
-              <div class="mf-section-body">
-                <div class="row g-3">
-                  <div class="col-md-6"><span class="fp-info-label">รุ่น / VIN</span><div id="fpEditInfo" class="fp-info-val">-</div></div>
-                  <div class="col-md-6"><span class="fp-info-label">Billing date</span><div id="fpEditBilling" class="fp-info-val">-</div></div>
-                </div>
-              </div>
-            </div>
+            {{-- ข้อมูลรถ + ข้อมูลการเงิน (อ่านอย่างเดียว — ยัดจาก detail template ตัวเดียวกับ modal รายละเอียด) --}}
+            <div id="fpEditInfoBody"></div>
 
             {{-- Section : วันที่ปิด FP (แก้ไขได้) --}}
             <div class="mf-section">
@@ -271,7 +288,7 @@
               </div>
               <div class="mf-section-body">
                 <div class="row g-3">
-                  <div class="col-md-6">
+                  <div class="col-md-4">
                     <label for="fpEditCloseDate" class="mf-label form-label"><i class="bx bx-calendar-check"></i> วันที่ปิด FP</label>
                     <input type="date" id="fpEditCloseDate" class="form-control">
                     <div class="form-text">เว้นว่าง = กลับเป็น "รอปิด FP" / ต้องไม่ก่อน Billing date</div>
@@ -307,6 +324,11 @@
     #fpEditModal .fp-info-label { font-size: .78rem; color: #8a8aa3; display: block; }
     #fpDetailModal .fp-info-val,
     #fpEditModal .fp-info-val { font-weight: 600; color: #3a3a55; }
+
+    /* ไอคอนหัวข้อ section ให้ล้อสีตามธีมของ modal (template เดียวใช้ทั้ง 2 modal)
+       ดูข้อมูล = mf-header--view (ฟ้า) / แก้ไข = mf-header--edit (ส้ม) */
+    #fpDetailModal .mf-section-icon { background: #e0f2fe; color: #0284c7; }
+    #fpEditModal   .mf-section-icon { background: #fef3c7; color: #d97706; }
 
     /* ตัวโหลด — สไตล์เดียวกับหน้าอื่น (มาตรฐาน tables.css) ไม่เบลอพื้นหลัง
        (id นี้ไม่ได้อยู่ใน list ของ tables.css จึงต้องประกาศเอง แต่ให้ค่าตรงกัน) */
@@ -369,8 +391,9 @@
       $(document).on('click', '.fp-btn-edit', function () {
         const d = $(this).data();
         $('#fpEditId').val(d.id);
-        $('#fpEditInfo').text((d.model || '-') + ' / ' + (d.vin || '-'));
-        $('#fpEditBilling').text(d.billing || '-');
+        // ใช้ template เดียวกับ modal รายละเอียด (เฉพาะข้อมูลรถ + ข้อมูลการเงิน)
+        const info = $('#fpDetailTemplates [data-detail="' + d.id + '"] .fp-detail-info').html() || '';
+        $('#fpEditInfoBody').html(info);
         $('#fpEditCloseDate').val(d.close || '');
         fpEditModal.show();
       });
