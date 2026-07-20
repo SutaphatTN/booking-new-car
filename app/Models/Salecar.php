@@ -264,6 +264,8 @@ class Salecar extends Model
 		'approval_commission_deduct',
 		'approval_extra_budget',
 		'approval_md_note',
+		'approval_return_note',
+		'approval_returned_at',
 		'approval_remaining',
 		'approval_token',
 		'approval_files',

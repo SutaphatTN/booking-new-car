@@ -75,6 +75,20 @@
         <button type="submit" class="btn-approve">ยืนยันอนุมัติ ({{ $approverLabel }})</button>
       @endif
     </form>
+
+    {{-- ตีกลับ (ลายเซ็นทั้งหมดจะถูกรีเซ็ต)
+         b1_md ขั้น GM  → แจ้งแอดมิน + ฝ่ายขาย ให้แก้ใบจอง (คนละอย่างกับ "ส่งกลับให้ผู้จัดการแก้" ด้านบนที่แก้แค่ยอดหัก)
+         b2_gm ขั้น MD → ส่งกลับให้ GM ทบทวน --}}
+    <hr style="margin:22px 0 14px;border:none;border-top:1px solid #e5e7eb;">
+    <form method="POST" action="{{ route('purchase-order.returnApproval', $token) }}">
+      @csrf
+      <label for="return_reason">เหตุผลที่ตีกลับ <span style="color:#6b7280;font-weight:400;">(ไม่บังคับ)</span></label>
+      <textarea id="return_reason" name="return_reason" rows="2"
+        placeholder="เช่น ยอดผิด / ข้อมูลใบจองไม่ถูกต้อง..."></textarea>
+      <button type="submit" class="btn-return" style="background:#dc2626;">
+        {{ $allowRevise ? 'ตีกลับให้แก้ไขใบจอง' : 'ส่งกลับให้ GM' }}
+      </button>
+    </form>
   </div>
 
   <script>

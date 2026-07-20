@@ -72,6 +72,8 @@ Route::get('purchase-order/approval/{token}/summary', [PurchaseOrderController::
 Route::post('purchase-order/approval/{token}/manager', [PurchaseOrderController::class, 'managerApprove'])->name('purchase-order.managerApprove');
 Route::post('purchase-order/approval/{token}/gm-decide', [PurchaseOrderController::class, 'gmDecide'])->name('purchase-order.gmDecide');
 Route::post('purchase-order/approval/{token}/final', [PurchaseOrderController::class, 'finalApprove'])->name('purchase-order.finalApprove');
+// ตีกลับใบจอง (ทุกขั้น) — ปลายทางตามขั้นที่กด (admin+เซลล์ / ผู้จัดการ / GM)
+Route::post('purchase-order/approval/{token}/return', [PurchaseOrderController::class, 'returnApproval'])->name('purchase-order.returnApproval');
 
 // อนุมัติแคมเปญ CK ผ่านลิงก์ในเมล (ไม่ต้อง login — ใช้ token)
 Route::get('campaign-approval/{token}', [CampaignApprovalController::class, 'emailApprove'])->name('campaign.ckApproval.email');

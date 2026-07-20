@@ -34,6 +34,43 @@
           <i class="bx bx-arrow-back me-1"></i> ย้อนกลับ
         </a>
       </div>
+
+      {{-- แจ้งสถานะคำขออนุมัติ — กันผู้ใช้กรอกข้อมูลจนเสร็จแล้วบันทึกไม่ได้เพราะรออนุมัติอยู่ --}}
+      @php
+        $apPending = $saleCar->approval_requested_at && !$saleCar->isApprovedNow();
+        $apWaitingFor = null;
+        if ($apPending) {
+            $apWaitingFor = match ($saleCar->approvalCase()) {
+                'b1_md' => $saleCar->ApprovalSignature ? 'GM' : 'ผู้จัดการ',
+                'b2_gm' => $saleCar->ApprovalSignature ? 'MD' : 'GM',
+                default => 'ผู้จัดการ',
+            };
+        }
+      @endphp
+
+      @if ($apPending)
+        <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" role="alert">
+          <i class="bx bx-time-five fs-5"></i>
+          <div>
+            <strong>รายการนี้กำลังรออนุมัติ</strong> — รอ <strong>{{ $apWaitingFor }}</strong> พิจารณา
+            (ส่งคำขอเมื่อ {{ \Illuminate\Support\Carbon::parse($saleCar->approval_requested_at)->format('d/m/Y H:i') }} น.)
+            <br>
+            <small>ยังบันทึกการแก้ไขไม่ได้จนกว่าจะอนุมัติ — ถ้าต้องแก้ข้อมูลตอนนี้ ให้แอดมินกด “ดึงคำขอกลับ” ในหน้าตรวจสอบก่อน</small>
+          </div>
+        </div>
+      @elseif ($saleCar->approval_returned_at)
+        <div class="alert alert-danger d-flex align-items-start gap-2 mb-3" role="alert">
+          <i class="bx bx-undo fs-5"></i>
+          <div>
+            <strong>คำขออนุมัติถูกตีกลับ</strong>
+            (เมื่อ {{ \Illuminate\Support\Carbon::parse($saleCar->approval_returned_at)->format('d/m/Y H:i') }} น.)
+            @if ($saleCar->approval_return_note)
+              <br><span>เหตุผล : {{ $saleCar->approval_return_note }}</span>
+            @endif
+            <br><small>กรุณาแก้ไขข้อมูลให้ถูกต้อง แล้วส่งขออนุมัติใหม่อีกครั้ง</small>
+          </div>
+        </div>
+      @endif
       @if (!$isHistory)
         <form id="purchaseForm" action="{{ route('purchase-order.update', $saleCar->id) }}" method="POST"
           enctype="multipart/form-data">

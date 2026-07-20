@@ -58,6 +58,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Mail\Mailables\Attachment;
 use App\Mail\SaleApprovedMail;
 use App\Mail\CarDeliveredMail;
+use App\Mail\ApprovalReturnMail;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -665,6 +666,89 @@ class PurchaseOrderController extends Controller
             'msg'     => $mdEdited
                 ? "อนุมัติเรียบร้อย ({$approverLabel} — แก้ค่าคอมฝ่ายขายที่ได้ แจ้งผู้จัดการแล้ว)"
                 : "อนุมัติเรียบร้อย ({$approverLabel})",
+        ]);
+    }
+
+    /**
+     * ตีกลับใบจอง (ทุกขั้น) — ใช้เมื่อผู้อนุมัติเห็นว่ายอด/ข้อมูลผิด
+     *  ปลายทางตามขั้น:
+     *   - normal / b1_manager / b1_md(ผู้จัดการ) / b1_md(GM)  → audit (config) + ฝ่ายขาย  [จบรอบ ต้องขออนุมัติใหม่]
+     *   - b2_gm(GM)  → ผู้จัดการ                               [จบรอบ ต้องขออนุมัติใหม่]
+     *   - b2_gm(MD)  → GM                                      [อยู่ในรอบเดิม ลิงก์ GM กลับมาใช้ได้]
+     *  รีเซ็ตลายเซ็นทั้งหมดเสมอ
+     */
+    public function returnApproval(Request $request, $token)
+    {
+        ScopeBypass::$brand = true;
+
+        $saleCar = Salecar::withoutGlobalScopes()
+            ->with(['model', 'subModel', 'saleUser', 'customer.prefix'])
+            ->where('approval_token', $token)
+            ->firstOrFail();
+
+        $request->validate(['return_reason' => 'nullable|string|max:1000']);
+
+        $case = $this->approvalCase($saleCar);
+
+        // ขั้นปัจจุบัน — ดูจากลายเซ็น "ก่อน" รีเซ็ต
+        if ($case === 'b2_gm') {
+            $stage = $saleCar->ApprovalSignature ? 'md' : 'gm';
+        } elseif ($case === 'b1_md') {
+            $stage = $saleCar->ApprovalSignature ? 'gm' : 'manager';
+        } else {
+            $stage = 'manager';
+        }
+
+        // ปลายทาง + ผู้ตีกลับ + จบรอบหรือไม่
+        if ($case === 'b2_gm' && $stage === 'md') {
+            $mailTo     = $this->approverEmails($saleCar->brand, $saleCar->branch, 'gm');
+            $returnedBy = 'MD';
+            $endRound   = false; // GM ยังอยู่ในสาย → ลิงก์เดิมกลับไปหน้า GM
+        } elseif ($case === 'b2_gm' && $stage === 'gm') {
+            $mailTo     = $this->approverEmails($saleCar->brand, $saleCar->branch, 'manager');
+            $returnedBy = 'GM';
+            $endRound   = true;
+        } else {
+            $mailTo     = $this->approverEmails($saleCar->brand, $saleCar->branch, 'audit');
+            if ($saleCar->saleUser?->email) {
+                $mailTo[] = $saleCar->saleUser->email;
+            }
+            $returnedBy = $stage === 'gm' ? 'GM' : 'ผู้จัดการ';
+            $endRound   = true;
+        }
+
+        // รีเซ็ตลายเซ็นทั้งหมด + บันทึกเหตุผล
+        $update = [
+            'SMSignature'             => 0,
+            'SMCheckedDate'           => null,
+            'ApprovalSignature'       => 0,
+            'ApprovalSignatureDate'   => null,
+            'GMApprovalSignature'     => 0,
+            'GMApprovalSignatureDate' => null,
+            'approval_return_note'    => $request->return_reason,
+            'approval_returned_at'    => now(),
+        ];
+
+        // จบรอบ → เคลียร์คำขอ + ล้าง token (ลิงก์เมลเดิมใช้ไม่ได้) ต้องส่งขออนุมัติใหม่
+        if ($endRound) {
+            $update['approval_requested_at'] = null;
+            $update['approval_token']        = null;
+        }
+
+        $saleCar->update($update);
+
+        $actionUrl = $endRound ? null : route('purchase-order.emailApprove', ['token' => $token]);
+
+        try {
+            Mail::to(array_values(array_unique(array_filter($mailTo))))
+                ->send(new ApprovalReturnMail($saleCar->fresh(['model', 'subModel', 'saleUser', 'customer.prefix']), $request->return_reason, $returnedBy, $actionUrl));
+        } catch (\Throwable $e) {
+            report($e); // ส่งเมลล้มเหลวไม่ควรทำให้การตีกลับล้มเหลว
+        }
+
+        return view('purchase-order.approval-result', [
+            'saleCar' => $saleCar,
+            'msg'     => 'ตีกลับใบจองเรียบร้อยแล้ว — แจ้งอีเมลผู้เกี่ยวข้องแล้ว',
         ]);
     }
 

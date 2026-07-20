@@ -67,15 +67,28 @@
         <button type="submit">ยืนยันอนุมัติ</button>
       @endif
     </form>
+
+    {{-- ตีกลับ — แจ้ง audit (config) + ฝ่ายขาย ให้แก้ไขใบจอง (ลายเซ็นทั้งหมดจะถูกรีเซ็ต) --}}
+    <hr style="margin:22px 0 14px;border:none;border-top:1px solid #e5e7eb;">
+    <form method="POST" action="{{ route('purchase-order.returnApproval', $token) }}">
+      @csrf
+      <label for="return_reason">เหตุผลที่ตีกลับ <span style="color:#6b7280;font-weight:400;">(ไม่บังคับ)</span></label>
+      <textarea id="return_reason" name="return_reason" rows="2"
+        placeholder="เช่น ยอดหักไม่ถูกต้อง / ข้อมูลใบจองผิด..."
+        style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;font-size:.95rem;"></textarea>
+      <button type="submit" style="background:#dc2626;">ตีกลับให้แก้ไขใบจอง</button>
+    </form>
   </div>
 
   <script>
     // กดแล้วโชว์ loading (กันกดซ้ำ + ระหว่างส่งเมล/สร้าง PDF) + ตัดลูกน้ำก่อนส่ง
-    document.querySelector('form').addEventListener('submit', function () {
-      this.querySelectorAll('input[inputmode=decimal]').forEach(inp => inp.value = inp.value.replace(/,/g, ''));
-      const btn = this.querySelector('button[type=submit]');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> กำลังดำเนินการ...';
+    document.querySelectorAll('form').forEach(function (f) {
+      f.addEventListener('submit', function () {
+        this.querySelectorAll('input[inputmode=decimal]').forEach(inp => inp.value = inp.value.replace(/,/g, ''));
+        const btn = this.querySelector('button[type=submit]');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> กำลังดำเนินการ...';
+      });
     });
   </script>
 
