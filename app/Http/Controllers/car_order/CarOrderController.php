@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\car_order;
 
 use App\Exports\carOrder\CarOrderStockExport;
+use App\Exports\carOrder\CarOrderDataExport;
 use App\Http\Controllers\Controller;
 use App\Traits\ConvertsThaiDate;
 use App\Mail\ApproveCarOrderMail;
@@ -1656,5 +1657,14 @@ class CarOrderController extends Controller
         $toDate   = $request->to_date   ?: now()->format('Y-m-d');
 
         return Excel::download(new CarOrderStockExport($fromDate, $toDate), 'ข้อมูลรับรถเข้า Stock.xlsx');
+    }
+
+    /** รายงานข้อมูลรถ — ตัดสถานะรถ Delivered ออก, กรองตามรุ่นหลัก/ย่อยที่เลือก (ว่าง = ทั้งหมด) */
+    public function dataExport(Request $request)
+    {
+        return Excel::download(
+            new CarOrderDataExport($request->model_id, $request->sub_model_id),
+            'ข้อมูลรถ.xlsx'
+        );
     }
 }

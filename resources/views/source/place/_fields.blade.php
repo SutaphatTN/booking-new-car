@@ -56,40 +56,12 @@
           value="{{ $place->location ?? '' }}" placeholder="เช่น AL (2 June) KOL อบต.ทุ่งสูง">
       </div>
 
-      <div class="col-md-6">
-        <label for="{{ $pfx }}_expense_type" class="mf-label form-label"><i class="bx bx-receipt"></i> ประเภทค่าใช้จ่าย</label>
-        <select id="{{ $pfx }}_expense_type" name="expense_type" class="form-select">
-          <option value="">— เลือก —</option>
-          @foreach (config('source.expense_types', []) as $et)
-            <option value="{{ $et }}" {{ ($place->expense_type ?? '') === $et ? 'selected' : '' }}>
-              {{ $et }}</option>
-          @endforeach
-        </select>
-      </div>
-
-      <div class="col-md-4">
-        <label for="{{ $pfx }}_cost" class="mf-label form-label"><i class="bx bx-money"></i> ประมาณค่าใช้จ่าย</label>
-        <div class="input-group">
-          <span class="input-group-text">฿</span>
-          <input id="{{ $pfx }}_cost" type="text" class="form-control text-end money-input" name="cost" autocomplete="off"
-            value="{{ isset($place->cost) ? number_format($place->cost, 2) : '' }}" placeholder="0.00"
-            {{ $lockBudget ? 'readonly' : '' }}>
-        </div>
-      </div>
-
-      <div class="col-md-2">
+      <div class="col-md-3">
         <label for="{{ $pfx }}_target" class="mf-label form-label"><i class="bx bx-target-lock"></i> เป้า PP</label>
         <input id="{{ $pfx }}_target" type="number" min="0" step="1" class="form-control text-end" name="target" autocomplete="off"
           value="{{ isset($place->target) ? (int) $place->target : '' }}" placeholder="0"
           {{ $lockBudget ? 'readonly' : '' }}>
       </div>
-
-      @if ($lockBudget)
-        <div class="col-12">
-          <small class="text-muted"><i class="bx bx-lock-alt"></i>
-            ขออนุมัติแล้ว — ไม่สามารถแก้ไขประมาณค่าใช้จ่าย / เป้า PP ได้</small>
-        </div>
-      @endif
 
       <div class="col-md-4">
         <label for="{{ $pfx }}_start_date" class="mf-label form-label"><i class="bx bx-calendar ci-{{ $dateCi }}"></i> วันเริ่มงาน</label>
@@ -104,5 +76,105 @@
       </div>
 
     </div>
+  </div>
+</div>
+
+{{-- ── แจกแจงประมาณค่าใช้จ่าย (หลายประเภท) — ใช้ชุดประเภทเดียวกับตอนเคลียร์ เพื่อเทียบ ประมาณ vs จริง ได้ ── --}}
+@php
+  $budgetTypes = config('source.clear_types', []);
+  $budgetLines = empty($place) ? collect() : $place->budgetLines();
+@endphp
+<div class="mf-section mt-3">
+  <div class="mf-section-hd">
+    <div class="mf-section-icon {{ $dateCi }}">
+      <i class="bx bx-money"></i>
+    </div>
+    <span class="mf-section-title">ประมาณค่าใช้จ่าย (แจกแจงตามประเภท)</span>
+  </div>
+  <div class="mf-section-body">
+
+    @if ($lockBudget)
+      {{-- ขออนุมัติแล้ว = ดูอย่างเดียว --}}
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered align-middle mb-2">
+          <thead>
+            <tr>
+              <th>ประเภทค่าใช้จ่าย</th>
+              <th style="width:180px;" class="text-end">จำนวนเงิน</th>
+            </tr>
+          </thead>
+          <tbody>
+            @forelse ($budgetLines as $line)
+              <tr>
+                <td>{{ $line['type'] }}</td>
+                <td class="text-end">{{ number_format($line['amount'], 2) }}</td>
+              </tr>
+            @empty
+              <tr><td colspan="2" class="text-center text-muted">ไม่ได้ตั้งงบไว้</td></tr>
+            @endforelse
+          </tbody>
+          <tfoot>
+            <tr>
+              <td class="text-end fw-bold">รวม</td>
+              <td class="text-end fw-bold">{{ number_format($budgetLines->sum('amount'), 2) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <small class="text-muted"><i class="bx bx-lock-alt"></i>
+        ขออนุมัติแล้ว — ไม่สามารถแก้ไขประมาณค่าใช้จ่าย / เป้า PP ได้</small>
+
+    @else
+      <div class="table-responsive budget-items-wrap">
+        <table class="table table-sm table-bordered align-middle mb-2">
+          <thead>
+            <tr>
+              <th>ประเภทค่าใช้จ่าย</th>
+              <th style="width:180px;">จำนวนเงิน</th>
+              <th style="width:60px;"></th>
+            </tr>
+          </thead>
+          <tbody class="budget-items-body">
+            @foreach ($budgetLines->isEmpty() ? [['type' => '', 'amount' => '']] : $budgetLines as $i => $line)
+              <tr class="budget-item-row">
+                <td>
+                  <select name="budget_items[{{ $i }}][type]" class="form-select form-select-sm budget-type">
+                    <option value="">— เลือกประเภท —</option>
+                    @foreach ($budgetTypes as $t)
+                      <option value="{{ $t }}" {{ $line['type'] === $t ? 'selected' : '' }}>{{ $t }}</option>
+                    @endforeach
+                  </select>
+                </td>
+                <td>
+                  <input name="budget_items[{{ $i }}][amount]"
+                    class="form-control form-control-sm text-end money-input budget-amount"
+                    placeholder="0.00" autocomplete="off"
+                    value="{{ $line['amount'] === '' ? '' : number_format($line['amount'], 2) }}">
+                </td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-outline-danger btnRemoveBudgetItem"><i class="bx bx-trash"></i></button>
+                </td>
+              </tr>
+            @endforeach
+          </tbody>
+          <tfoot>
+            <tr>
+              <td class="text-end fw-bold">รวมประมาณค่าใช้จ่าย</td>
+              <td><input type="text" class="form-control form-control-sm text-end fw-bold budget-total" readonly></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+        <button type="button" class="btn btn-sm btn-outline-secondary btnAddBudgetItem">
+          <i class="bx bx-plus me-1"></i> เพิ่มรายการ
+        </button>
+      </div>
+
+      @if ($budgetLines->isNotEmpty() && (empty($place) ? false : $place->budgetItems->isEmpty()))
+        <small class="text-muted d-block mt-2"><i class="bx bx-info-circle"></i>
+          ข้อมูลเดิมยังไม่ได้แจกแจง — กรุณาเลือกประเภทให้ตรงกับยอดที่ตั้งไว้ ({{ $place->expense_type ?? '-' }})</small>
+      @endif
+    @endif
+
   </div>
 </div>

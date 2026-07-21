@@ -25,6 +25,7 @@ use App\Models\CarOrderHistory;
 use App\Models\Customer;
 use App\Models\Finance;
 use App\Models\FinancesConfirm;
+use App\Models\Insurance;
 use App\Models\LicensePlateHistory;
 use App\Models\PaymentType;
 use App\Models\Salecampaign;
@@ -1311,6 +1312,7 @@ class PurchaseOrderController extends Controller
             ->orderBy('number')
             ->get();
         $provinces = TbProvinces::all();
+        $insurances = Insurance::orderBy('name')->get();
         $type = TbSalecarType::all();
         $typeSale = TbSalePurchaseType::all();
         $payments = SaleCarPayment::where('SaleID', $id)->get();
@@ -1382,7 +1384,7 @@ class PurchaseOrderController extends Controller
             ];
         }
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet'));
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet'));
     }
 
     public function update(Request $request, $id)
@@ -1584,6 +1586,7 @@ class PurchaseOrderController extends Controller
                 'DeliveryInDMSDate' => $this->toGregorian($request->DeliveryInDMSDate),
                 'DeliveryInCKDate' => $this->toGregorian($request->DeliveryInCKDate),
                 'RegistrationProvince' => $request->RegistrationProvince,
+                'insurance_id' => $request->insurance_id ?: null,
                 'RedPlateReceived' => $request->RedPlateReceived,
                 'RedPlateAmount' => $request->RedPlateAmount,
                 'CarSalePrice' => $request->filled('CarSalePrice')

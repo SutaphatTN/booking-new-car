@@ -182,7 +182,8 @@
         "car-order",
         "campaign",
         "finance",
-        "accessory"
+        "accessory",
+        "insurance"
       ],
       "submenu": [
         {
@@ -329,6 +330,12 @@
               "slug": "finance.extra-com"
             }
           ]
+        },
+        {
+          "url": "insurance",
+          "name": "ประกัน",
+          "icon": "menu-icon icon-base bx bx-shield-quarter",
+          "slug": "insurance.index"
         }
       ]
     },

@@ -25,23 +25,31 @@
 
       <div class="card-body pt-3">
 
-        {{-- ── Action bar ── --}}
-        <div class="po-filter-bar d-flex align-items-center gap-3 flex-wrap">
-          <div class="d-flex align-items-center gap-2">
-            <label class="mb-0">รุ่นรถหลัก :</label>
-            <select id="filter_model" class="form-select form-select-sm" style="width:160px;">
-              <option value="">-- ทั้งหมด --</option>
-              @foreach($model as $model)
-              <option value="{{ $model->id }}">{{ $model->Name_TH }}</option>
-              @endforeach
-            </select>
+        {{-- ── Action bar : ปุ่มรายงาน (ซ้าย) | ฟิลเตอร์รุ่นหลัก-ย่อย (ขวา) ── --}}
+        <div class="po-filter-bar d-flex align-items-center justify-content-between gap-3 flex-wrap">
+
+          <button type="button" class="btn btn-success btn-sm btnCarOrderReport">
+            <i class="bx bx-download me-1"></i> รายงานข้อมูลรถ
+          </button>
+
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+              <label class="mb-0">รุ่นรถหลัก :</label>
+              <select id="filter_model" class="form-select form-select-sm" style="width:160px;">
+                <option value="">-- ทั้งหมด --</option>
+                @foreach($model as $model)
+                <option value="{{ $model->id }}">{{ $model->Name_TH }}</option>
+                @endforeach
+              </select>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <label class="mb-0">รุ่นรถย่อย :</label>
+              <select id="filter_subModel" class="form-select form-select-sm" style="width:200px;" disabled>
+                <option value="">-- ทั้งหมด --</option>
+              </select>
+            </div>
           </div>
-          <div class="d-flex align-items-center gap-2">
-            <label class="mb-0">รุ่นรถย่อย :</label>
-            <select id="filter_subModel" class="form-select form-select-sm" style="width:200px;" disabled>
-              <option value="">-- ทั้งหมด --</option>
-            </select>
-          </div>
+
         </div>
 
         {{-- ── Table ── --}}

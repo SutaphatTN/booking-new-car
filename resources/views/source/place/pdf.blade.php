@@ -73,8 +73,24 @@
                     <td class="center">{{ $fmtDate($p->end_date) }}</td>
                     <td>{{ $p->source->name ?? '' }}</td>
                     <td>{{ $p->location }}</td>
-                    <td>{{ $p->expense_type ?? '' }}</td>
-                    <td class="num">{{ $p->cost !== null ? number_format($p->cost, 2) : '' }}</td>
+                    @php $bl = $p->budgetLines(); @endphp
+                    <td>
+                        @foreach ($bl as $line)
+                            <div>{{ $line['type'] }}</div>
+                        @endforeach
+                        {{-- บรรทัด "รวม" ให้ตรงกับยอดรวมในคอลัมน์ถัดไป --}}
+                        @if ($bl->count() > 1)
+                            <div style="border-top:1px solid #999; font-weight:bold;">รวม</div>
+                        @endif
+                    </td>
+                    <td class="num">
+                        @foreach ($bl as $line)
+                            <div>{{ number_format($line['amount'], 2) }}</div>
+                        @endforeach
+                        @if ($bl->count() > 1)
+                            <div style="border-top:1px solid #999; font-weight:bold;">{{ number_format($p->cost ?? $bl->sum('amount'), 2) }}</div>
+                        @endif
+                    </td>
                     <td class="num">{{ $p->target !== null ? number_format($p->target, 0) : '' }}</td>
                 </tr>
             @endforeach

@@ -101,6 +101,17 @@ $(document).on('change', '#filter_subModel', function () {
   carOrderTable.ajax.reload();
 });
 
+// ปุ่มรายงานข้อมูลรถ — ดาวน์โหลด Excel ตามรุ่นหลัก/ย่อยที่เลือก (ว่าง = ทั้งหมด), ตัดสถานะ Delivered ออก
+$(document).on('click', '.btnCarOrderReport', function () {
+  const params = new URLSearchParams();
+  const modelId = $('#filter_model').val();
+  const subModelId = $('#filter_subModel').val();
+  if (modelId) params.set('model_id', modelId);
+  if (subModelId) params.set('sub_model_id', subModelId);
+  const qs = params.toString();
+  window.location = '/car-order/data-export' + (qs ? '?' + qs : '');
+});
+
 // blur focus viewCarOrder
 $(document).on('hide.bs.modal', '.viewCarOrder', function () {
   setTimeout(() => {
