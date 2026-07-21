@@ -86,6 +86,10 @@ class AccessoryController extends Controller
             $fullName = $row('bx-barcode', 'text-dark', 'รหัส', $a->accessory_id)
                       . $row('bx-label',   'text-primary',   'ชื่อ', $a->detail);
 
+            if ($a->allow_custom_price) {
+                $fullName .= '<div class="text-start mt-1"><span class="badge bg-label-success">ราคาไม่คงที่ — ระบุตอนจอง</span></div>';
+            }
+
             $costSpare = $a->cost_spare !== null ? number_format($a->cost_spare, 2) : '-';
             $cost = $a->cost !== null ? number_format($a->cost, 2) : '-';
             $sale = $a->sale !== null ? number_format($a->sale, 2) : '-';
@@ -179,9 +183,39 @@ class AccessoryController extends Controller
         ]);
     }
 
+    /**
+     * หารายการที่ซ้ำ — 1 รหัส + 1 รายละเอียด ต่อ 1 รุ่นรถ (query ถูก scope ตาม brand อยู่แล้ว)
+     * ต้องเทียบ detail ด้วย เพราะของที่ไม่มีรหัสใช้ 999999 ร่วมกันทั้งระบบ
+     * ราคาที่ต่างกันรายดีลให้ไป "ระบุเอง" ตอนทำใบจองแทนการสร้างแถวใหม่
+     */
+    private function findDuplicateAccessory(Request $request, $exceptId = null)
+    {
+        return AccessoryPrice::where('model_id', $request->model_id)
+            ->where('accessory_id', $request->accessory_id)
+            ->where('detail', trim((string) $request->detail))
+            ->when($exceptId, fn($q) => $q->where('id', '!=', $exceptId))
+            ->first();
+    }
+
+    private function duplicateResponse(AccessoryPrice $dup)
+    {
+        $status = $dup->active === 'active' ? 'เปิดใช้งานอยู่' : 'ปิดใช้งานอยู่';
+
+        return response()->json([
+            'success' => false,
+            'duplicate_id' => $dup->id,
+            'message' => "มีรายการนี้อยู่แล้ว (รหัส {$dup->accessory_id} - {$dup->detail}, {$status}) "
+                . 'ไม่ต้องสร้างซ้ำ ถ้าราคาต่างกันให้เลือก "ระบุเอง" ตอนทำใบจอง',
+        ], 422);
+    }
+
     function store(Request $request)
     {
         $this->validateCostSpare($request);
+
+        if ($dup = $this->findDuplicateAccessory($request)) {
+            return $this->duplicateResponse($dup);
+        }
 
         try {
             $active = 'active';
@@ -193,6 +227,7 @@ class AccessoryController extends Controller
                 'accessoryType_id' => $request->accessoryType_id,
                 'is_standard' => $request->boolean('is_standard'),
                 'is_registration' => $request->boolean('is_registration'),
+                'allow_custom_price' => $request->boolean('allow_custom_price'),
                 'accessoryPartner_id' => $request->accessoryPartner_id,
                 'cost_spare' => $request->cost_spare,
                 'cost' => $request->filled('cost')
@@ -257,6 +292,11 @@ class AccessoryController extends Controller
 
         // ค่าเดิมเป็น 0 (ตั้งจาก DB) → ยอมให้บันทึก 0 ซ้ำได้ | NULL หรือ > 0 → บังคับ > 0
         $this->validateCostSpare($request, $acc->cost_spare !== null && (float) $acc->cost_spare === 0.0);
+
+        // กันแก้ชื่อ/รหัสไปชนกับแถวอื่นที่มีอยู่แล้ว
+        if ($dup = $this->findDuplicateAccessory($request, $acc->id)) {
+            return $this->duplicateResponse($dup);
+        }
 
         try {
             $data = $request->except(['_token', '_method']);
@@ -445,7 +485,8 @@ class AccessoryController extends Controller
                 'customer' => $customerName,
                 'vin' => $r->saleCar?->carOrder?->vin_number ?? '-',
                 'accessory_name' => $accessoryNID,
-                'cost' => $r->accessory?->cost_spare ?? 0,
+                // ทุนอะไหล่ที่ตกลงกันตอนทำใบขาย — แถวเก่าที่ยังไม่ได้ snapshot ค่อย fallback ค่าปัจจุบันใน master
+                'cost' => (float) ($r->cost_spare ?? $r->accessory?->cost_spare ?? 0),
             ];
         });
 

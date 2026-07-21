@@ -1,5 +1,5 @@
 <div class="modal fade viewExtra" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog {{ ($canCustomAccPrice ?? false) ? 'modal-xl' : 'modal-lg' }}">
     <div class="modal-content">
       <div class="modal-header border-bottom">
         <h5 class="modal-title">เพิ่มรายการ</h5>
@@ -31,6 +31,9 @@
                 <th class="text-center">ราคาทุน</th>
                 <th class="text-center">ราคาพิเศษ</th>
                 <th class="text-center">ราคาขาย (ค่าคอม)</th>
+                @if ($canCustomAccPrice ?? false)
+                  <th class="text-center" style="width:150px;">ระบุเอง</th>
+                @endif
               </tr>
             </thead>
             <tbody></tbody>

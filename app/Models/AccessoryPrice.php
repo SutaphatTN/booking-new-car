@@ -47,6 +47,8 @@ class AccessoryPrice extends Model
 		'accessoryPartner_id' => 'int',
 		'is_standard' => 'boolean',
 		'is_registration' => 'boolean',
+		'is_red_plate' => 'boolean',
+		'allow_custom_price' => 'boolean',
 		'cost' => 'float',
 		'sale' => 'float',
 		'comSale' => 'float',
@@ -63,6 +65,7 @@ class AccessoryPrice extends Model
 		'accessoryType_id',
 		'is_standard',
 		'is_registration',
+		'allow_custom_price',
 		'accessoryPartner_id',
 		'cost_spare',
 		'cost',
@@ -78,6 +81,16 @@ class AccessoryPrice extends Model
 	];
 
 	protected $dates = ['deleted_at'];
+
+	/**
+	 * ตั้งค่าหลังบ้านเท่านั้น: is_red_plate ไม่อยู่ใน $fillable โดยตั้งใจ
+	 * (AccessoryController::update() ใช้ $request->except() แบบเหมา — ถ้าใส่ใน fillable จะโดนยิงแก้ผ่านฟอร์มได้)
+	 * ใช้ mark ว่ารายการประดับยนต์นี้คือ "ป้ายแดง" → หน้า PO จะบังคับเลือกป้ายแดงก่อนส่งมอบเฉพาะเมื่อมีรายการนี้
+	 */
+	public function scopeRedPlate($query)
+	{
+		return $query->where('is_red_plate', 1);
+	}
 
 	public function model()
 	{
@@ -102,8 +115,18 @@ class AccessoryPrice extends Model
 	public function salecars()
 	{
 		return $this->belongsToMany(Salecar::class, 'saleaccessory')
-			->withPivot(['price_type', 'price', 'commission'])
+			->withPivot(['price_type', 'price', 'commission', 'cost_spare'])
 			->withTimestamps();
+	}
+
+	/**
+	 * ราคาทุนอะไหล่ที่ใช้จริงของใบขายใบนั้น
+	 * อ่านจาก snapshot ใน pivot ก่อน (แถวใหม่) — ถ้าไม่มีค่อย fallback ค่าปัจจุบันใน master (แถวเก่าก่อนเพิ่มคอลัมน์)
+	 * ต้องเรียกจาก collection ที่โหลดผ่าน relation accessories() เท่านั้น
+	 */
+	public function usedCostSpare(): float
+	{
+		return (float) ($this->pivot->cost_spare ?? $this->cost_spare ?? 0);
 	}
 
 	public function getFormatStartDateAttribute()

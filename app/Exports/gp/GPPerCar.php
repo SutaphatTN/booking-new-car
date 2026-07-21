@@ -270,9 +270,10 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       $ReferrerAmount = $r->ReferrerAmount ?? 0;
 
       // ยอดของแถมทั้งหมด — คิดจากราคาทุนอะไหล่ (cost_spare) ของของแถม (gift) ทุกชิ้น ไม่ว่าจะเป็นของแถมมาตรฐานหรือปกติ
+      //   ใช้ค่าที่ snapshot ไว้ในใบขาย (pivot) ไม่ใช่ค่าปัจจุบันใน master — แก้ราคา master แล้ว GP ใบเก่าต้องไม่ขยับ
       $giftAccCostSpare = $r->accessories
         ->filter(fn($a) => $a->pivot->type === 'gift')
-        ->sum(fn($a) => (float) ($a->cost_spare ?? 0));
+        ->sum(fn($a) => $a->usedCostSpare());
 
       // ของเดิม (comment ไว้)
       // $totalTotalAccessoryGift = $r->TotalAccessoryGift ?? 0;

@@ -19,6 +19,7 @@ use App\Mail\SaleRequestMail;
 use App\Models\Address;
 use App\Models\TbCarmodel;
 use App\Models\AccessoryPrice;
+use App\Models\Saleaccessory;
 use App\Models\Campaign;
 use App\Models\CarOrder;
 use App\Models\CarOrderHistory;
@@ -71,6 +72,24 @@ use Maatwebsite\Excel\Facades\Excel;
 class PurchaseOrderController extends Controller
 {
     use ConvertsThaiDate;
+
+    /**
+     * ประเภทราคาประดับยนต์แบบ "ระบุเอง" — ใช้ตอนของชิ้นเดียวกันราคาไม่เท่ากันในแต่ละดีล
+     * (เช่น แถมน้ำมัน) จะได้ไม่ต้องสร้างแถวใหม่ใน master ทุกครั้ง
+     * ค่าที่เก็บใน saleaccessory.price_type เป็นข้อความไทยมาตั้งแต่ต้น จึงคงรูปแบบเดิมไว้
+     */
+    public const ACC_PRICE_TYPE_CUSTOM = 'ระบุเอง';
+
+    /**
+     * ระบุราคาประดับยนต์เองได้ไหม — sale/lead_sale ห้าม
+     * เพราะ cost_spare คือยอด "ของแถม" ที่ใช้คำนวณงบขออนุมัติและ GP
+     */
+    public static function canSetCustomAccessoryPrice(): bool
+    {
+        $role = Auth::user()->role ?? null;
+
+        return $role !== null && !in_array($role, ['sale', 'lead_sale'], true);
+    }
 
     public function index()
     {
@@ -189,6 +208,7 @@ class PurchaseOrderController extends Controller
                 'AccessorySalePrice' => $a->sale ?? null,
                 'AccessoryComSale' => $a->comSale ?? null,
                 'is_standard' => (bool) $a->is_standard,
+                'allow_custom_price' => (bool) $a->allow_custom_price, // เปิดช่อง "ระบุเอง" ให้เฉพาะรายการที่ราคาไม่คงที่
                 'cost_spare' => $a->cost_spare ?? null, // ราคาทุนอะไหล่ — ต้องมีถึงเลือกได้ (ใช้ตอนขออนุมัติ)
             ];
         });
@@ -242,11 +262,12 @@ class PurchaseOrderController extends Controller
         $campaignTotal = $ri + $margin + $comFin + $markup90 + $customerExtra;
 
         // 6. ของแถม = ราคาทุนอะไหล่ (cost_spare) ของของแถมทั้งหมด + รายละเอียด
+        //    ใช้ค่าที่ snapshot ไว้ในใบขาย ไม่ใช่ค่าปัจจุบันใน master — แก้ราคา master แล้วใบเก่าต้องไม่ขยับ
         $giftAccessories = $saleCar->accessories->where('pivot.type', 'gift');
-        $giftTotal = $giftAccessories->sum(fn($a) => (float) ($a->cost_spare ?? 0));
+        $giftTotal = $giftAccessories->sum(fn($a) => $a->usedCostSpare());
         $giftDetails = $giftAccessories->map(fn($a) => [
             'detail' => $a->detail,
-            'amount' => (float) ($a->cost_spare ?? 0),
+            'amount' => $a->usedCostSpare(),
         ])->values();
 
         // 7. ส่วนลด
@@ -1384,7 +1405,46 @@ class PurchaseOrderController extends Controller
             ];
         }
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet'));
+        // ระบุราคาประดับยนต์เองได้ไหม (sale/lead_sale ห้าม) — คุมทั้งการแสดงคอลัมน์และตอนบันทึก
+        $canCustomAccPrice = self::canSetCustomAccessoryPrice();
+
+        // id ประดับยนต์ที่เป็น "ป้ายแดง" (ตั้งค่าหลังบ้าน) — JS ใช้เช็คว่าต้องบังคับเลือกป้ายแดงก่อนส่งมอบไหม
+        $redPlateAccIds = self::redPlateAccessoryIds();
+
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet', 'canCustomAccPrice', 'redPlateAccIds'));
+    }
+
+    /** id ประดับยนต์ที่ถูก mark ว่าเป็น "ป้ายแดง" (ตั้งค่าหลังบ้าน — ข้ามทุก scope เพราะใช้เทียบ id ข้ามแบรนด์) */
+    private static function redPlateAccessoryIds(): array
+    {
+        return AccessoryPrice::withoutGlobalScope('brandAccess')
+            ->where('is_red_plate', 1)
+            ->pluck('id')
+            ->map(fn($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * ใบขายนี้มีประดับยนต์ "ป้ายแดง" อยู่ไหม
+     * ถ้าฟอร์มส่งรายการประดับยนต์มา ให้ยึดตามที่ส่งมา (ค่าที่กำลังจะบันทึก)
+     * ถ้าไม่ได้ส่ง (role ที่ไม่มีสิทธิ์แก้ประดับยนต์) ให้ยึดรายการที่บันทึกไว้เดิม
+     */
+    private function hasRedPlateAccessory(Request $request, Salecar $saleCar): bool
+    {
+        $redPlateIds = self::redPlateAccessoryIds();
+        if (empty($redPlateIds)) {
+            return false;
+        }
+
+        if ($request->filled('accessories')) {
+            $submitted = json_decode($request->input('accessories'), true);
+            if (is_array($submitted)) {
+                $ids = array_map('intval', array_column($submitted, 'id'));
+                return count(array_intersect($ids, $redPlateIds)) > 0;
+            }
+        }
+
+        return $saleCar->accessories()->whereIn('accessory_price.id', $redPlateIds)->exists();
     }
 
     public function update(Request $request, $id)
@@ -1745,10 +1805,11 @@ class PurchaseOrderController extends Controller
 
             $oldPlate = $saleCar->red_license;
 
-            // เปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5) ต้องมีป้ายแดงเสมอ
+            // เปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5) ต้องมีป้ายแดง
+            // — เฉพาะเมื่อใบขายนี้มีประดับยนต์ "ป้ายแดง" อยู่ (ลูกค้าที่ไม่เอาป้ายแดงส่งมอบได้เลย)
             // ใช้ค่าที่จะบันทึกจริง (ถ้า role ไม่มีช่องป้ายแดงในฟอร์ม → ใช้ค่าเดิมของรายการ)
             $effectiveRedLicense = $request->has('red_license') ? $request->red_license : $saleCar->red_license;
-            if ((int) $request->con_status === 5 && empty($effectiveRedLicense)) {
+            if ((int) $request->con_status === 5 && empty($effectiveRedLicense) && $this->hasRedPlateAccessory($request, $saleCar)) {
                 DB::rollBack();
                 return response()->json([
                     'success' => false,
@@ -1889,6 +1950,11 @@ class PurchaseOrderController extends Controller
                 }
             }
 
+            // เก็บ snapshot เดิมไว้ก่อน detach — แถวที่ไม่ได้แก้ต้องคงทุนอะไหล่เดิม ไม่ดึงราคาปัจจุบันจาก master มาทับ
+            $prevAcc = Saleaccessory::where('salecar_id', $saleCar->id)
+                ->get()
+                ->keyBy(fn($r) => $r->accessory_id . '|' . $r->type);
+
             $saleCar->accessories()->detach();
 
             if ($request->has('accessories')) {
@@ -1898,14 +1964,63 @@ class PurchaseOrderController extends Controller
                 }
 
                 if (is_array($accessories)) {
+                    $canCustomAcc = self::canSetCustomAccessoryPrice();
+                    // ปลด brand scope — อ่านแค่ทุนอะไหล่ของรายการที่ถูกเลือกไว้แล้ว และ id เป็นตัวชี้อยู่แล้ว
+                    $accMasters = AccessoryPrice::withoutGlobalScope('brandAccess')
+                        ->whereIn('id', array_column($accessories, 'id'))
+                        ->get()
+                        ->keyBy('id');
+
                     foreach ($accessories as $a) {
                         $price = isset($a['price']) ? floatval(str_replace(',', '', $a['price'])) : 0;
                         $commission = isset($a['commission']) ? floatval(str_replace(',', '', $a['commission'])) : 0;
+
+                        $isCustom = trim((string) ($a['price_type'] ?? '')) === self::ACC_PRICE_TYPE_CUSTOM;
+                        $prevRow = $prevAcc[$a['id'] . '|' . $a['type']] ?? null;
+                        $wasCustom = $prevRow && $prevRow->price_type === self::ACC_PRICE_TYPE_CUSTOM;
+
+                        $sentSpare = isset($a['cost_spare']) && $a['cost_spare'] !== '' && $a['cost_spare'] !== null
+                            ? floatval(str_replace(',', '', (string) $a['cost_spare']))
+                            : null;
+
+                        // ระบุราคาเอง: ต้องมีสิทธิ์ + รายการนั้นต้องติดธง "ราคาไม่คงที่" ไว้ใน master
+                        // เช็คเฉพาะตอน "สร้างใหม่หรือแก้ตัวเลข" — แถวเดิมที่ค่าไม่เปลี่ยนต้องบันทึกผ่านได้เสมอ
+                        // ไม่งั้นเซลล์จะบันทึกใบที่หัวหน้าตั้งราคาไว้ไม่ได้ และปิดธงทีหลังจะทำให้ใบเก่าเซฟไม่ผ่าน
+                        if ($isCustom) {
+                            $unchanged = $wasCustom
+                                && abs((float) $prevRow->price - $price) < 0.005
+                                && abs((float) $prevRow->cost_spare - (float) $sentSpare) < 0.005;
+
+                            $error = null;
+                            if (!$unchanged && !$canCustomAcc) {
+                                $error = 'สิทธิ์ของคุณไม่สามารถระบุราคาประดับยนต์เองได้';
+                            } elseif (!$unchanged && !($accMasters[$a['id']]->allow_custom_price ?? false)) {
+                                $error = 'รายการนี้ไม่ได้เปิดให้ระบุราคาเอง กรุณาเลือกราคาจากตาราง';
+                            }
+
+                            if ($error) {
+                                DB::rollBack();
+                                return response()->json(['success' => false, 'message' => $error], 422);
+                            }
+                        }
+
+                        // ทุนอะไหล่: snapshot ลงใบขายเสมอ เพื่อให้ GP/ใบขออนุมัติย้อนหลังไม่ขยับตาม master
+                        //  - ระบุเอง → ใช้ค่าที่กรอก
+                        //  - แถวเดิมที่ไม่ใช่ระบุเอง → คงค่าเดิมของใบนี้ไว้
+                        //  - แถวใหม่ / เพิ่งเปลี่ยนจากระบุเองมาเป็นราคาตาราง → ดึงจาก master
+                        if ($isCustom) {
+                            $costSpare = $sentSpare;
+                        } elseif (!$wasCustom && $prevRow && $prevRow->cost_spare !== null) {
+                            $costSpare = (float) $prevRow->cost_spare;
+                        } else {
+                            $costSpare = $accMasters[$a['id']]->cost_spare ?? null;
+                        }
 
                         $saleCar->accessories()->attach($a['id'], [
                             'price_type' => $a['price_type'],
                             'price' => $price,
                             'commission' => $commission,
+                            'cost_spare' => $costSpare,
                             'type' => $a['type'],
                         ]);
                     }

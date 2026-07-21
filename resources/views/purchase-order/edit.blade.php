@@ -1063,6 +1063,10 @@
                   <input type="hidden" id="total_gift_used" name="total_gift_used">
                   <input type="hidden" id="total_gift_com" name="AccessoryGiftCom">
 
+                  {{-- id ประดับยนต์ที่เป็น "ป้ายแดง" (ตั้งค่าหลังบ้าน) — JS ใช้ตัดสินว่าต้องบังคับเลือกป้ายแดงก่อนส่งมอบไหม
+                       ไม่ส่งไป server (ไม่มี name) เพราะ server เช็คจาก DB เองอยู่แล้ว --}}
+                  <input type="hidden" id="red_plate_acc_ids" value="{{ implode(',', $redPlateAccIds ?? []) }}">
+
                   <div class="table-responsive accessory-table-wrap">
                     <table class="accessory-table" id="giftTablePrice">
                       <thead>
@@ -1079,11 +1083,13 @@
                         @if ($saleCar->accessories->count() > 0)
                           @foreach ($saleCar->accessories->where('pivot.type', 'gift') as $a)
                             <tr data-id="{{ $a->id }}" data-price="{{ $a->pivot->price }}"
-                              data-com="{{ $a->pivot->commission }}">
+                              data-com="{{ $a->pivot->commission }}"
+                              data-spare-cost="{{ $a->pivot->cost_spare ?? $a->cost_spare }}">
                               <td class="text-center text-muted" style="font-size:.85rem;">{{ $loop->index + 1 }}</td>
                               <td style="font-size:.85rem; color:#374151;">{{ $a->accessory_id }}</td>
                               <td class="acc-detail">{{ $a->detail }}</td>
-                              <td style="font-size:.85rem; color:#374151;">{{ ucfirst($a->pivot->price_type) }}</td>
+                              {{-- ข้อความไทยตรงตามที่เก็บใน DB — JS อ่าน text ช่องนี้กลับไปเป็น price_type ตอนบันทึก --}}
+                              <td style="font-size:.85rem; color:#374151;">{{ $a->pivot->price_type }}</td>
                               <td class="text-end">
                                 <span class="acc-price">{{ number_format($a->pivot->price, 2) }} ฿</span>
                                 @if ($a->pivot->commission && $a->pivot->commission > 0)
@@ -1166,11 +1172,12 @@
                         @if ($saleCar->accessories->count() > 0)
                           @foreach ($saleCar->accessories->where('pivot.type', 'extra') as $a)
                             <tr data-id="{{ $a->id }}" data-price="{{ $a->pivot->price }}"
-                              data-com="{{ $a->pivot->commission }}">
+                              data-com="{{ $a->pivot->commission }}"
+                              data-spare-cost="{{ $a->pivot->cost_spare ?? $a->cost_spare }}">
                               <td class="text-center text-muted">{{ $loop->index + 1 }}</td>
                               <td>{{ $a->accessory_id }}</td>
                               <td>{{ $a->detail }}</td>
-                              <td>{{ ucfirst($a->pivot->price_type) }}</td>
+                              <td>{{ $a->pivot->price_type }}</td>
                               <td class="text-end">
                                 <span class="acc-price">{{ number_format($a->pivot->price, 2) }} ฿</span>
                                 @if ($a->pivot->commission && $a->pivot->commission > 0)
