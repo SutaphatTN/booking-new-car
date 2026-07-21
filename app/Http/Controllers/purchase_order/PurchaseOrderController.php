@@ -890,7 +890,17 @@ class PurchaseOrderController extends Controller
                 )
                 ->orWhereHas('carOrder', fn($q) =>
                     $q->where('order_code', 'like', "%{$search}%")
-                );
+                )
+                // รุ่นรถ — คอลัมน์ "รุ่นรถ" ในตารางแสดง รุ่นหลัก/รุ่นย่อย/รายละเอียด จึงต้องค้นได้ทั้งสามค่า
+                // ครอบ closure ซ้อนไว้ ไม่งั้น orWhere จะหลุดออกนอกเงื่อนไข join ของ whereHas
+                ->orWhereHas('model', fn($q) => $q->where(fn($w) =>
+                    $w->where('Name_TH', 'like', "%{$search}%")
+                      ->orWhere('Name_EN', 'like', "%{$search}%")
+                ))
+                ->orWhereHas('subModel', fn($q) => $q->where(fn($w) =>
+                    $w->where('name', 'like', "%{$search}%")
+                      ->orWhere('detail', 'like', "%{$search}%")
+                ));
             });
         }
 
