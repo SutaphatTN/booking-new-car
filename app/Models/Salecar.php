@@ -340,7 +340,7 @@ class Salecar extends Model
 	public function accessories()
 	{
 		return $this->belongsToMany(AccessoryPrice::class, 'saleaccessory', 'salecar_id', 'accessory_id')
-			->withPivot(['price_type', 'price', 'commission', 'type'])
+			->withPivot(['price_type', 'price', 'commission', 'cost_spare', 'type'])
 			->withTimestamps();
 	}
 

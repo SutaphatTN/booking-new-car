@@ -1673,12 +1673,21 @@ $(document).ready(function () {
     );
   }
 
+  // ป้ายชื่อประเภทราคา — ค่าที่เก็บลง saleaccessory.price_type เป็นข้อความไทยมาตั้งแต่ต้น
+  const PRICE_TYPE_LABEL = { cost: 'ราคาทุน', promo: 'ราคาพิเศษ', sale: 'ราคาขาย', custom: 'ระบุเอง' };
+
+  // ระบุราคาเองได้ไหม (sale/lead_sale ห้าม) — ฝั่ง server เช็คซ้ำอีกชั้นตอนบันทึก
+  const canCustomAccPrice = $('#can_custom_acc_price').val() == 1;
+
+  const toNumber = v => parseFloat(String(v ?? '').replace(/,/g, ''));
+
   // ฟังก์ชัน init accessory & gift
   function initAccessoryGift(options) {
     const $searchInput = $(options.searchInput);
     const $modal = $(options.modal);
     const $tableBody = $(options.tableBody);
     const $mainTable = $(options.mainTable);
+    const resultColspan = canCustomAccPrice ? 6 : 5;
 
     // เก็บรายการที่ติ๊กไว้ (ยังไม่กดบันทึก) แยกตาม instance — key = accessory id
     // ทำให้ค้นหาใหม่/พิมพ์ค้นหา แล้วของที่ติ๊กไว้ไม่หาย
@@ -1693,7 +1702,9 @@ $(document).ready(function () {
       const model_id = $('#model_id').val();
 
       if (!model_id) {
-        $tableBody.append(`<tr><td colspan="5" class="text-center text-danger">กรุณาเลือกรุ่นรถหลักก่อน</td></tr>`);
+        $tableBody.append(
+          `<tr><td colspan="${resultColspan}" class="text-center text-danger">กรุณาเลือกรุ่นรถหลักก่อน</td></tr>`
+        );
         return;
       }
 
@@ -1722,6 +1733,36 @@ $(document).ready(function () {
       searchItem($searchInput.val());
     });
 
+    // อ่านค่าที่เลือกจาก radio หนึ่งตัว — แถว "ระบุเอง" ดึงราคา/ทุนอะไหล่จาก input ข้างๆ แทน data-price
+    function readSelection($radio) {
+      const base = {
+        id: $radio.data('id'),
+        type: $radio.val(),
+        source: $radio.data('source'),
+        detail: $radio.data('detail'),
+        standard: $radio.data('standard')
+      };
+
+      if ($radio.val() !== 'custom') {
+        return {
+          ...base,
+          price: $radio.data('price'),
+          com: $radio.data('com'),
+          spare: $radio.data('spare'),
+          costSpare: null
+        };
+      }
+
+      const $cell = $radio.closest('td');
+      return {
+        ...base,
+        price: toNumber($cell.find('.acc-custom-price').val()),
+        com: 0, // ระบุราคาเอง = ไม่มีค่าคอมจากตารางราคา
+        spare: 1, // กรอกทุนอะไหล่เองแล้ว จึงไม่ติดเงื่อนไข "ไม่มีราคาทุนอะไหล่"
+        costSpare: toNumber($cell.find('.acc-custom-spare').val())
+      };
+    }
+
     // ติ๊กเลือก/ยกเลิก radio ในผลค้นหา → บันทึกลง selectedMap (กดซ้ำเพื่อยกเลิกได้)
     $tableBody
       .on('mousedown', 'input[type="radio"]', function () {
@@ -1734,18 +1775,32 @@ $(document).ready(function () {
           this.checked = false;
           delete selectedMap[id];
         } else {
-          selectedMap[id] = {
-            id,
-            type: $radio.val(),
-            source: $radio.data('source'),
-            detail: $radio.data('detail'),
-            price: $radio.data('price'),
-            com: $radio.data('com'),
-            spare: $radio.data('spare'),
-            standard: $radio.data('standard'),
-          };
+          selectedMap[id] = readSelection($radio);
         }
         this._wasChecked = this.checked;
+
+        // เปิด/ปิดช่องกรอกราคาของแถวนั้นตามสถานะ radio "ระบุเอง"
+        const $customRadio = $tableBody.find(`input[type="radio"][data-id="${id}"][value="custom"]`);
+        if ($customRadio.length) {
+          const on = $customRadio.prop('checked');
+          $customRadio.closest('td').find('.acc-custom-price, .acc-custom-spare').prop('disabled', !on);
+        }
+      })
+      // กรอกราคาเอง → อัปเดตค่าที่เลือกไว้ทันที (ทุนอะไหล่ตามราคาไปก่อนจนกว่าจะแก้เอง)
+      .on('input', '.acc-custom-price', function () {
+        const $cell = $(this).closest('td');
+        const $spare = $cell.find('.acc-custom-spare');
+        if (!$spare.data('touched')) $spare.val($(this).val());
+
+        const $radio = $cell.find('input[type="radio"][value="custom"]');
+        if ($radio.prop('checked')) selectedMap[$radio.data('id')] = readSelection($radio);
+      })
+      .on('input', '.acc-custom-spare', function () {
+        const $cell = $(this).closest('td');
+        $(this).data('touched', true);
+
+        const $radio = $cell.find('input[type="radio"][value="custom"]');
+        if ($radio.prop('checked')) selectedMap[$radio.data('id')] = readSelection($radio);
       });
 
     // ฟังก์ชัน search item
@@ -1765,7 +1820,7 @@ $(document).ready(function () {
           $tableBody.empty();
 
           if (res.length === 0) {
-            $tableBody.append(`<tr><td colspan="5" class="text-center">ไม่พบข้อมูล</td></tr>`);
+            $tableBody.append(`<tr><td colspan="${resultColspan}" class="text-center">ไม่พบข้อมูล</td></tr>`);
             return;
           }
 
@@ -1805,6 +1860,25 @@ $(document).ready(function () {
               ? `${a.AccessoryDetail ?? '-'}<br><small class="text-danger">* ไม่มีราคาทุนอะไหล่ เลือกไม่ได้</small>`
               : (a.AccessoryDetail ?? '-');
 
+            // ระบุราคาเอง — เปิดเฉพาะรายการที่ติดธง "ราคาไม่คงที่" ไว้ใน master (เช่น น้ำมัน)
+            // ไม่ติดเงื่อนไข cost_spare/ราคา 0 เพราะกรอกทั้งราคาและทุนอะไหล่เองอยู่แล้ว
+            const customCell = !canCustomAccPrice
+              ? ''
+              : !a.allow_custom_price
+                ? `<td class="text-center text-muted">-</td>`
+                : `<td class="text-center">
+                  <label class="d-block mb-1" style="cursor:pointer;">
+                    <input type="radio" name="priceType_${a.id}" value="custom"
+                      data-id="${a.id}" data-source="${a.AccessorySource}"
+                      data-detail="${a.AccessoryDetail}" data-standard="${a.is_standard ? 1 : 0}">
+                    <span class="ms-1">ระบุเอง</span>
+                  </label>
+                  <input type="text" class="form-control form-control-sm text-end mb-1 acc-custom-price"
+                    placeholder="ราคา" disabled>
+                  <input type="text" class="form-control form-control-sm text-end acc-custom-spare"
+                    placeholder="ทุนอะไหล่" disabled>
+                </td>`;
+
             $tableBody.append(`
               <tr>
                 <td class="text-center">${a.AccessorySource ?? '-'}</td>
@@ -1812,6 +1886,7 @@ $(document).ready(function () {
                 <td class="text-center">${costCell}</td>
                 <td class="text-center">${promoCell}</td>
                 <td class="text-center">${saleCell} (${formatNumber(a.AccessoryComSale ?? '-')})</td>
+                ${customCell}
               </tr>
             `);
           });
@@ -1824,6 +1899,13 @@ $(document).ready(function () {
             if ($r.length && !$r.prop('disabled')) {
               $r.prop('checked', true);
               $r[0]._wasChecked = true;
+
+              // แถว "ระบุเอง" ต้องคืนค่าที่พิมพ์ไว้ + เปิดช่องกรอกกลับด้วย
+              if (sel.type === 'custom') {
+                const $cell = $r.closest('td');
+                $cell.find('.acc-custom-price').val(sel.price).prop('disabled', false);
+                $cell.find('.acc-custom-spare').val(sel.costSpare).prop('disabled', false).data('touched', true);
+              }
             }
           });
         }
@@ -1908,17 +1990,28 @@ $(document).ready(function () {
         return;
       }
 
-      const existingSources = [];
+      // กันเพิ่มรายการเดิมซ้ำ — เทียบด้วย id ของ master ไม่ใช่รหัสสินค้า
+      // เพราะของที่ไม่มีรหัสจะใช้ 999999 ร่วมกันหลายรายการ ถ้าเทียบด้วยรหัสจะเพิ่มได้แค่ชิ้นเดียว
+      const existingIds = [];
       $mainTable.find(`tr:not(${options.noDataRowId})`).each(function () {
-        const source = $(this).find('td').eq(1).text().trim();
-        if (source) existingSources.push(source);
+        const id = $(this).data('id');
+        if (id) existingIds.push(String(id));
       });
 
-      const isDuplicate = items.some(it => existingSources.includes(it.source));
+      const isDuplicate = items.some(it => existingIds.includes(String(it.id)));
       if (isDuplicate) {
         Swal.fire({ icon: 'warning', title: 'คุณได้เพิ่มข้อมูลนี้ไปแล้ว', confirmButtonText: 'ตกลง' });
         $searchInput.val('');
         $tableBody.empty();
+        return;
+      }
+
+      // แถว "ระบุเอง" ต้องกรอกทั้งราคาและทุนอะไหล่ให้มากกว่า 0
+      const badCustom = items.some(
+        it => it.type === 'custom' && (!(it.price > 0) || !(it.costSpare > 0))
+      );
+      if (badCustom) {
+        Swal.fire({ icon: 'warning', title: 'กรุณากรอกราคาและทุนอะไหล่ให้มากกว่า 0', confirmButtonText: 'ตกลง' });
         return;
       }
 
@@ -1942,11 +2035,13 @@ $(document).ready(function () {
         const rawCom = it.com;
         const price = formatNumber(rawPrice);
         const comDisplay = rawCom && parseFloat(rawCom) > 0 ? formatNumber(rawCom) : '-';
-        const typeLabel = { cost: 'ราคาทุน', promo: 'ราคาพิเศษ', sale: 'ราคาขาย' }[it.type];
+        const typeLabel = PRICE_TYPE_LABEL[it.type];
+        // ระบุเอง = ใช้ทุนอะไหล่ที่กรอก, นอกนั้นปล่อยว่างให้ server ดึงจาก master ตอนบันทึก
+        const spareAttr = it.type === 'custom' ? ` data-spare-cost="${it.costSpare}"` : '';
 
         $mainTable.find(options.noDataRowId).remove();
         $mainTable.append(`
-        <tr data-id="${it.id}" data-price="${rawPrice}" data-com="${rawCom}">
+        <tr data-id="${it.id}" data-price="${rawPrice}" data-com="${rawCom}"${spareAttr}>
           <td></td>
           <td>${it.source}</td>
           <td>${it.detail}</td>
@@ -2082,12 +2177,33 @@ $(document).ready(function () {
   // เรียกตอนโหลดหน้า
   initGrandTotalOnLoad();
 
+  // ใบขายนี้มีประดับยนต์ที่ถูก mark ว่าเป็น "ป้ายแดง" อยู่ไหม
+  // id มาจากหลังบ้าน (accessory_price.is_red_plate) ส่งมาทาง #red_plate_acc_ids
+  // ถ้าไม่มีรายการป้ายแดง = ลูกค้าไม่เอาป้ายแดง → ไม่ต้องบังคับเลือกป้ายแดงตอนส่งมอบ
+  function hasRedPlateAccessory() {
+    const redIds = ($('#red_plate_acc_ids').val() || '')
+      .split(',')
+      .map(s => parseInt(s, 10))
+      .filter(n => !isNaN(n));
+    if (!redIds.length) return false;
+
+    let found = false;
+    $('#giftTablePrice tbody tr:not(#no-data-row), #extraTable tbody tr:not(#no-data-extra)').each(function () {
+      if (redIds.includes(parseInt($(this).data('id'), 10))) {
+        found = true;
+        return false; // break
+      }
+    });
+    return found;
+  }
+
   // บันทึกข้อมูล
   $(document).on('click', '#btnUpdatePurchase', function (e) {
     e.preventDefault();
 
     // สถานะ "ส่งมอบ" (con_status = 5) ต้องเลือกป้ายแดงก่อน
-    if ($('#con_status').val() === '5' && $('#red_license').length && !$('#red_license').val()) {
+    // — เฉพาะใบขายที่มีประดับยนต์ "ป้ายแดง" อยู่ (ลูกค้าที่ไม่เอาป้ายแดง ส่งมอบได้เลย)
+    if ($('#con_status').val() === '5' && $('#red_license').length && !$('#red_license').val() && hasRedPlateAccessory()) {
       Swal.fire({
         icon: 'warning',
         title: 'กรุณาเลือกป้ายแดง',
@@ -2108,26 +2224,25 @@ $(document).ready(function () {
     const formData = new FormData($form[0]);
     formData.append('action_type', $('#action_type').val());
 
+    // อ่านแถวประดับยนต์ 1 แถวเป็น payload — cost_spare ส่งไป snapshot ลงใบขาย
+    // (server จะเชื่อค่านี้เฉพาะแถว "ระบุเอง" นอกนั้นดึงจาก master เอง)
+    const readAccessoryRow = ($row, type) => ({
+      id: $row.data('id'),
+      price_type: $row.find('td').eq(3).text().trim(),
+      price: parseFloat($row.data('price')),
+      commission: parseFloat($row.data('com')),
+      cost_spare: $row.data('spare-cost') ?? null,
+      type
+    });
+
     const accessoriesGift = [];
     $('#giftTablePrice tbody tr:not(#no-data-row)').each(function () {
-      accessoriesGift.push({
-        id: $(this).data('id'),
-        price_type: $(this).find('td').eq(3).text().trim(),
-        price: parseFloat($(this).data('price')),
-        commission: parseFloat($(this).data('com')),
-        type: 'gift'
-      });
+      accessoriesGift.push(readAccessoryRow($(this), 'gift'));
     });
 
     const accessoriesExtra = [];
     $('#extraTable tbody tr:not(#no-data-extra)').each(function () {
-      accessoriesExtra.push({
-        id: $(this).data('id'),
-        price_type: $(this).find('td').eq(3).text().trim(),
-        price: parseFloat($(this).data('price')),
-        commission: parseFloat($(this).data('com')),
-        type: 'extra'
-      });
+      accessoriesExtra.push(readAccessoryRow($(this), 'extra'));
     });
 
     const accessories = [...accessoriesGift, ...accessoriesExtra];

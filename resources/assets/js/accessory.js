@@ -229,9 +229,8 @@ $(document).on('click', '.btnStoreAccessory', function (e) {
     data: formData,
     contentType: false,
     processData: false,
+    // ไม่ปิด modal ตอนยิง — ถ้าเจอรายการซ้ำ (422) ผู้ใช้จะได้ไม่เสียข้อมูลที่กรอกมา
     beforeSend: function () {
-      $('.inputAcc').modal('hide');
-
       Swal.fire({
         title: 'กำลังบันทึกข้อมูล...',
         text: 'กรุณารอสักครู่',
@@ -241,6 +240,8 @@ $(document).on('click', '.btnStoreAccessory', function (e) {
       $btn.prop('disabled', true);
     },
     success: function (res) {
+      $('.inputAcc').modal('hide');
+
       Swal.fire({
         icon: 'success',
         title: 'สำเร็จ',
@@ -307,9 +308,8 @@ $(document).on('click', '.btnEditAcc', function () {
           data: formData,
           processData: false,
           contentType: false,
+          // ไม่ปิด modal ตอนยิง — ถ้าเจอรายการซ้ำ (422) ผู้ใช้จะได้ไม่เสียข้อมูลที่กรอกมา
           beforeSend: function () {
-            $modal.modal('hide');
-
             Swal.fire({
               title: 'กำลังบันทึกข้อมูล...',
               text: 'กรุณารอสักครู่',
@@ -321,6 +321,8 @@ $(document).on('click', '.btnEditAcc', function () {
             $btn.prop('disabled', true);
           },
           success: function (res) {
+            $modal.modal('hide');
+
             Swal.fire({
               icon: 'success',
               title: 'สำเร็จ!',
@@ -332,7 +334,6 @@ $(document).on('click', '.btnEditAcc', function () {
             accessoryTable.ajax.reload(null, false);
           },
           error: function (xhr) {
-            $modal.modal('hide');
             Swal.fire({
               icon: 'error',
               title: 'เกิดข้อผิดพลาด!',

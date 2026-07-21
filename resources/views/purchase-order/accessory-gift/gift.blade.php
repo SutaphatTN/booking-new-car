@@ -1,6 +1,8 @@
 <div class="modal fade viewGift" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog {{ ($canCustomAccPrice ?? false) ? 'modal-xl' : 'modal-lg' }}">
     <div class="modal-content">
+      {{-- สิทธิ์ระบุราคาเอง — JS อ่านค่านี้เพื่อสร้าง/ซ่อนคอลัมน์ "ระบุเอง" (ฝั่ง server เช็คซ้ำอีกชั้นตอนบันทึก) --}}
+      <input type="hidden" id="can_custom_acc_price" value="{{ ($canCustomAccPrice ?? false) ? 1 : 0 }}">
       <div class="modal-header border-bottom">
         <h5 class="modal-title">เพิ่มของแถม</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -31,6 +33,9 @@
                 <th class="text-center">ราคาทุน</th>
                 <th class="text-center">ราคาพิเศษ</th>
                 <th class="text-center">ราคาขาย (ค่าคอม)</th>
+                @if ($canCustomAccPrice ?? false)
+                  <th class="text-center" style="width:150px;">ระบุเอง</th>
+                @endif
               </tr>
             </thead>
             <tbody></tbody>

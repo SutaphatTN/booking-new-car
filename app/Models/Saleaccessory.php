@@ -42,6 +42,7 @@ class Saleaccessory extends Model
 		'price_type',
 		'price',
 		'commission',
+		'cost_spare',
 		'type',
 		'userZone',
 		'brand',

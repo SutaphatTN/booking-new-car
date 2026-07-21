@@ -222,6 +222,26 @@
                   </label>
                 </div>
 
+                {{-- ราคาไม่คงที่ ระบุตอนจอง --}}
+                <div class="col-12">
+                  <input type="hidden" name="allow_custom_price" value="0">
+                  <label for="inp_acc_allow_custom_price"
+                    class="d-flex align-items-center gap-3 p-3 mb-0 rounded w-100"
+                    style="background:#eefaf3;border:1px solid #bfe8d3;cursor:pointer;">
+                    <span class="form-switch m-0 p-0" style="min-height:auto;">
+                      <input class="form-check-input m-0" type="checkbox" role="switch"
+                        id="inp_acc_allow_custom_price" name="allow_custom_price" value="1"
+                        {{ old('allow_custom_price') ? 'checked' : '' }}
+                        style="width:2.75em;height:1.5em;cursor:pointer;">
+                    </span>
+                    <span>
+                      <span class="fw-bold"><i class="bx bx-edit"></i> ราคาไม่คงที่ (ระบุตอนทำใบจอง)</span>
+                      <span class="text-muted small d-block">ถ้าเปิด รายการนี้จะมีช่อง "ระบุเอง" ให้กรอกราคา/ทุนอะไหล่ตอนทำใบจอง
+                        ไม่ต้องสร้างรายการซ้ำเมื่อราคาต่างกัน (เช่น น้ำมัน) — ราคาด้านบนใช้เป็นค่าตั้งต้น</span>
+                    </span>
+                  </label>
+                </div>
+
               </div>
             </div>
           </div>
