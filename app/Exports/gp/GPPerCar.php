@@ -3,6 +3,7 @@
 namespace App\Exports\gp;
 
 use App\Services\GPQuery;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -11,6 +12,7 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
@@ -87,54 +89,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         $sheet->getTabColor()->setRGB('6af59d');
 
         // format comma
-        $numberColumns = [
-          'Q',
-          'R',
-          'S',
-          'T',
-          'U',
-          'V',
-          'W',
-          'X',
-          'Y',
-          'Z',
-          'AA',
-          'AB',
-          'AC',
-          'AD',
-          'AE',
-          'AF',
-          // 'AG',
-          'AH',
-          // 'AI',
-          'AJ',
-          'AK',
-          'AL',
-          'AM',
-          'AN',
-          'AO',
-          'AP',
-          'AQ',
-          // 'AR',
-          // 'AS',
-          // 'AT',
-          'AU',
-          'AV',
-          'AW',
-          'AX',
-          'AY',
-          'AZ',
-          'BA',
-          'BB',
-          'BC',
-          'BD',
-          'BE',
-          'BF',
-          'BG',
-          'BH',
-        ];
-
-        foreach ($numberColumns as $col) {
+        foreach ($this->numberColumns() as $col) {
           $sheet->getStyle("{$col}2:{$col}{$highestRow}")
             ->getNumberFormat()
             ->setFormatCode('#,##0.00');
@@ -150,6 +105,107 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         // }
       },
     ];
+  }
+
+  /**
+   * ตัวอักษรคอลัมน์ที่ต้อง format ลูกน้ำ (#,##0.00)
+   *
+   * ห้าม hardcode ตัวอักษร เพราะ view per-car.blade.php ซ่อน/แสดงคอลัมน์ตาม brand
+   *   - "สีภายใน" โผล่เฉพาะ brand 2
+   *   - "Option" โผล่เฉพาะ brand ที่ไม่ใช่ 2/3/4
+   * brand 3/4 ไม่มีทั้งสองคอลัมน์ → ทั้งแถวเลื่อนซ้าย 1 ช่อง ตัวเลขเลยไม่ติดลูกน้ำ
+   *
+   * ลำดับใน $isNumber ต้องตรงกับลำดับ <td> ใน per-car.blade.php เป๊ะ ๆ
+   */
+  protected function numberColumns(): array
+  {
+    $brand = (int) (Auth::user()->brand ?? 0);
+
+    $isNumber = [
+      false, // A  No
+      false, //    วันที่แจ้งประกัน
+      false, //    วันที่ FirmCase
+      false, //    วันที่เงินเข้าบัญชี
+      false, //    ชื่อ - นามสกุล ลูกค้า
+      false, //    ชื่อ - นามสกุล ฝ่ายขาย
+      false, //    รุ่นรถหลัก
+      false, //    รุ่นรถย่อย
+      false, //    สี
+    ];
+
+    if ($brand === 2) {
+      $isNumber[] = false; // สีภายใน
+    }
+
+    $isNumber[] = false; // ปี
+
+    if (!in_array($brand, [2, 3, 4], true)) {
+      $isNumber[] = false; // Option
+    }
+
+    array_push(
+      $isNumber,
+      false, // Vin-Number
+      false, // เลขเครื่อง
+      false, // ไฟแนนซ์
+      false, // ประเภทการขาย
+      false, // สาขา
+      true,  // ราคาทุน
+      true,  // ราคาขาย
+      true,  // ส่วนลดราคารถ
+      true,  // ส่วนลดเงินดาวน์
+      true,  // ยอดเงินดาวน์
+      true,  // Net Price
+      true,  // ยอดบวกหัว
+      true,  // ราคาขายรวมบวกหัว (ไม่รวม VAT)
+      true,  // บวกหัก (Exc Vat)
+      true,  // ราคาทุน (ไม่รวม VAT)
+      true,  // GP
+      true,  // %GP
+      true,  // WS
+      true,  // RI
+      true,  // ลูกค้าจ่ายเพิ่ม
+      true,  // แคมเปญ
+      false, // ประเภทแคมเปญ
+      true,  // ยอดหักแคมเปญ
+      false, // ประเภทแคมเปญ On-Top
+      true,  // แคมเปญ On-Top
+      true,  // Total Revenue
+      true,  // ส่วนลดของแถมทั้งหมด
+      true,  // หลังหักส่วนลดของแถม
+      true,  // คอมขาย
+      true,  // ต้นทุนรวม
+      true,  // P/L
+      true,  // % ดอกเบี้ย
+      false, // % คอมดอกเบี้ย
+      false, // งวดผ่อน (เดือน)
+      false, // งวดผ่อน (ปี)
+      true,  // ยอดผ่อน/เดือน
+      true,  // ยอดจัด
+      true,  // เบี้ยประกัน
+      true,  // ค่างวด (งวดแรก)
+      true,  // ค่าคอมบริษัท
+      true,  // Com Finance
+      true,  // Com Finance รับจริง
+      true,  // Com Extra
+      true,  // Com Kickback
+      true,  // Com Subsidy
+      true,  // Com พิเศษ
+      true,  // ยอดรวมจาก FN
+      true,  // ยอดรับเข้าบัญชี
+      true,  // DIFF
+      false, // หมายเหตุ
+      false, // สถานะ
+    );
+
+    $letters = [];
+    foreach ($isNumber as $i => $number) {
+      if ($number) {
+        $letters[] = Coordinate::stringFromColumnIndex($i + 1);
+      }
+    }
+
+    return $letters;
   }
 
   public function view(): View
@@ -217,7 +273,10 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         : 0;
 
       //WS , RI
-      $ws = $r->carOrder?->WS ?? 0;
+      // WS คิดเฉพาะ brand 1 — brand อื่นไม่ใช้ ให้เป็น 0 (ไม่โชว์ในคอลัมน์ WS และไม่รวมใน Total Revenue)
+      $ws = (int) $r->brand === 1
+        ? ($r->carOrder?->WS ?? 0)
+        : 0;
       $ri = $r->carOrder?->RI ?? 0;
 
       //campaign
@@ -292,7 +351,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       $total_discount_re = $total_discount - $down_payDis - $carDiscount;
 
       //ต้นทุนรวม
-      // คอมขาย: ใช้ที่กรอกเอง (gp_commission_sale) ถ้ายังไม่กรอก fallback เป็น 4500
+      // คอมขาย: ใช้ที่กรอกเอง (gp_commission_sale จากหน้า "ตั้งค่า GP") ถ้ายังไม่กรอก fallback เป็น 3500
       $comSale = $r->gp_commission_sale ?? 3500;
       // $total_cost = ($totalCostFund + $down_payDis + $com_sale) - $total_discount;
       $total_cost = $totalCostFund + $down_payDis + $comSale + $total_discount_re;
@@ -386,7 +445,8 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         're_type_com' => $typeCom,
         're_period' => $r->remainingPayment?->period ?? '-',
         're_year' => $year,
-        're_alp' => $r->remainingPayment?->alp ?? '-',
+        // fallback เป็น 0 ไม่ใช่ '-' — ถ้าเป็นข้อความ Excel จะไม่ใส่ลูกน้ำให้ (number format ไม่มีผลกับ cell ที่เป็น text)
+        're_alp' => $r->remainingPayment?->alp ?? 0,
         'balance_fi' => $r->balanceFinance ?? 0,
         're_total_alp' => $totalAlp,
         'advance_installment' => $r->financeConfirm?->advance_installment ?? 0,

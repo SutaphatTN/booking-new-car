@@ -116,6 +116,11 @@
         @continue
       @endif
 
+      {{-- เมนู "นำเข้า WS" เห็นเฉพาะ brand 1 --}}
+      @if ($submenu->slug == 'car-order.import-ws' && $userBrand != 1)
+        @continue
+      @endif
+
       @if (
           $userRole == 'sale' &&
               in_array($submenu->slug, [
