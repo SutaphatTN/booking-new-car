@@ -531,3 +531,145 @@ table .fn-thead th {
   margin-top: 4px;
   line-height: 1.6;
 }
+
+/* ── การ์ดใบเคลียร์รายงวด (modal เคลียร์ค่าใช้จ่าย) ───────────────────────── */
+.clr-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.clr-card.is-paid {
+  border-color: #bbf0d0;
+}
+
+/* หัวการ์ด: งวด • วันที่ ......... สถานะ • ยอดรวม */
+.clr-hd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 9px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.clr-card.is-paid .clr-hd {
+  background: #f2fbf6;
+  border-bottom-color: #dcf3e6;
+}
+
+.clr-hd-spacer { flex: 1 1 auto; }
+
+.clr-seq {
+  font-size: .74rem;
+  font-weight: 700;
+  color: #475569;
+  background: #e9eef5;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.clr-date {
+  font-size: .8rem;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clr-total {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+/* ป้ายสถานะจ่าย */
+.clr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .74rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.clr-chip--paid   { color: #0a7a3d; background: #dcf3e6; }
+.clr-chip--unpaid { color: #92400e; background: #fdf0d5; }
+
+/* รายการย่อย — ยอดชิดขวาเป็นคอลัมน์เดียวกันทุกบรรทัด */
+.clr-items { padding: 4px 14px; }
+
+.clr-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: .84rem;
+  border-bottom: 1px dashed #eef2f7;
+}
+
+.clr-item:last-child { border-bottom: 0; }
+
+.clr-item-type { color: #475569; flex: 1 1 auto; }
+
+.clr-item-amt {
+  color: #1e293b;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  flex: 0 0 110px;
+}
+
+/* ท้ายการ์ด: ช่องอนุมัติจ่าย | ปุ่มจัดการ */
+.clr-ft {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 9px 14px;
+  background: #fcfdfe;
+  border-top: 1px solid #eef2f7;
+}
+
+.clr-ft-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.clr-pay-group { width: auto; max-width: 320px; }
+
+.clr-approver {
+  font-size: .78rem;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ไฮไลต์งวดที่เพิ่งบันทึก — วาบสั้น ๆ แล้วจางหาย */
+.clr-card.is-new {
+  animation: clrCardFlash 2.4s ease-out;
+}
+
+@keyframes clrCardFlash {
+  0%   { border-color: #6c5ffc; box-shadow: 0 0 0 4px rgba(108, 95, 252, .18); }
+  55%  { border-color: #6c5ffc; box-shadow: 0 0 0 4px rgba(108, 95, 252, .12); }
+  100% { border-color: #e2e8f0; box-shadow: 0 0 0 0 rgba(108, 95, 252, 0); }
+}
+
+/* ผู้ใช้ที่ตั้งค่าลดการเคลื่อนไหว — คงกรอบไฮไลต์ไว้เฉย ๆ ไม่ต้องวาบ */
+@media (prefers-reduced-motion: reduce) {
+  .clr-card.is-new {
+    animation: none;
+    border-color: #6c5ffc;
+  }
+}

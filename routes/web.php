@@ -31,6 +31,7 @@ use App\Http\Controllers\invoice\InvoiceController;
 use App\Http\Controllers\pricelist_car\PricelistCarController;
 use App\Http\Controllers\customer_tracking\CustomerTrackingController;
 use App\Http\Controllers\source\SourceController;
+use App\Http\Controllers\insurance\InsuranceController;
 use App\Http\Controllers\gwm_incentive\GwmIncentiveController;
 use App\Http\Controllers\stock_film\FilmPriceListController;
 use App\Http\Controllers\stock_film\FilmSettingController;
@@ -151,6 +152,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     // car order stock report
     Route::get('car-order/view-export-stock', [CarOrderController::class, 'viewExportStock'])->name('car-order.view-export-stock');
     Route::get('car-order/stock-export', [CarOrderController::class, 'exportStock'])->name('car-order.stock-export');
+    Route::get('car-order/data-export', [CarOrderController::class, 'dataExport'])->name('car-order.data-export');
 
     //accessory partner
     Route::get('accessory/partner', [AccessoryController::class, 'viewPartner'])->name('accessory.partner');
@@ -210,6 +212,15 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::post('source/request', [SourceController::class, 'storeRequest'])->name('source.request.store');
     // ขออนุมัติเพิ่ม (topup งบประมาณของสถานที่ที่อนุมัติแล้ว)
     Route::post('source/place/{id}/topup', [SourceController::class, 'storeTopupRequest'])->name('source.place.topup');
+
+    //insurance (ประกัน) — ตั้งค่า: เพิ่ม/แก้/ลบ เฉพาะ admin, role อื่นดูตารางได้
+    Route::get('insurance', [InsuranceController::class, 'index'])->name('insurance.index');
+    Route::get('insurance/list', [InsuranceController::class, 'list']);
+    Route::get('insurance/create', [InsuranceController::class, 'create']);
+    Route::post('insurance/store', [InsuranceController::class, 'store'])->name('insurance.store');
+    Route::get('insurance/edit/{id}', [InsuranceController::class, 'edit'])->name('insurance.edit');
+    Route::put('insurance/update/{id}', [InsuranceController::class, 'update'])->name('insurance.update');
+    Route::delete('insurance/destroy/{id}', [InsuranceController::class, 'destroy'])->name('insurance.destroy');
 
     //campaign
     Route::get('campaign/list', [CampaignController::class, 'listCampaign']);

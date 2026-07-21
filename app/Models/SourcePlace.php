@@ -66,6 +66,12 @@ class SourcePlace extends Model
         return $this->hasMany(SourcePlaceClear::class, 'place_id')->orderBy('id');
     }
 
+    /** รายการแจกแจงงบที่ตั้งไว้ (ประเภท + ยอด) — cost/expense_type เป็นยอดรวม/สรุปที่ derive จากตรงนี้ */
+    public function budgetItems()
+    {
+        return $this->hasMany(SourcePlaceBudgetItem::class, 'place_id')->orderBy('id');
+    }
+
     /** งบประมาณรวมที่เคลียร์ได้ = ประมาณค่าใช้จ่าย + งบเพิ่มที่อนุมัติแล้ว */
     public function effectiveBudget(): ?float
     {
@@ -86,6 +92,57 @@ class SourcePlace extends Model
     {
         $budget = $this->effectiveBudget();
         return $budget === null ? null : $budget - $this->clearedTotal();
+    }
+
+    /**
+     * รายการแจกแจงงบสำหรับ "แสดงผล" — คืน collection ของ ['type', 'amount']
+     * ข้อมูลเก่า (ก่อนมีการแจกแจง) ไม่มี budgetItems → ย้อนกลับไปใช้ expense_type/cost เป็นบรรทัดเดียว
+     */
+    public function budgetLines()
+    {
+        if ($this->budgetItems->isNotEmpty()) {
+            return $this->budgetItems->map(fn($it) => [
+                'type'   => $it->type,
+                'amount' => (float) $it->amount,
+            ])->values();
+        }
+
+        if ($this->expense_type === null && $this->cost === null) {
+            return collect();
+        }
+
+        return collect([[
+            'type'   => $this->expense_type ?? '-',
+            'amount' => (float) ($this->cost ?? 0),
+        ]]);
+    }
+
+    /**
+     * เทียบ "ประมาณ vs จริง" รายประเภท สำหรับรายงานรายเดือน
+     * คืน collection ของ ['type', 'estimate', 'actual'] โดย
+     * - ประเภทที่ตั้งงบไว้ → estimate มีค่า, actual = null ถ้ายังไม่ได้เคลียร์ประเภทนั้น
+     * - ประเภทที่เพิ่งโผล่ตอนเคลียร์ (ไม่ได้ตั้งงบไว้) → estimate = null, ต่อท้ายรายการ
+     */
+    public function expenseComparison()
+    {
+        $estimate = [];
+        foreach ($this->budgetItems as $it) {
+            $estimate[$it->type] = ($estimate[$it->type] ?? 0) + (float) $it->amount;
+        }
+
+        $actual = [];
+        foreach ($this->clears as $c) {
+            foreach ($c->items as $it) {
+                $actual[$it->type] = ($actual[$it->type] ?? 0) + (float) $it->amount;
+            }
+        }
+
+        // union: คีย์ของงบมาก่อนตามลำดับที่ตั้งไว้ แล้วค่อยต่อด้วยประเภทที่มีเฉพาะตอนเคลียร์
+        return collect(array_keys($estimate + $actual))->map(fn($t) => [
+            'type'     => $t,
+            'estimate' => $estimate[$t] ?? null,
+            'actual'   => $actual[$t] ?? null,
+        ]);
     }
 
     public function settledBy()

@@ -2191,6 +2191,26 @@
                                 </div>
                               </div>
 
+                              <div class="col-md-4">
+                                <div class="date-card">
+                                  <div class="date-card-icon amber">
+                                    <i class="bx bx-shield-quarter"></i>
+                                  </div>
+                                  <div class="date-card-body">
+                                    <label for="insurance_id" class="date-card-label">ประกัน</label>
+                                    <select id="insurance_id" name="insurance_id" class="form-select" {{ $disabled }}>
+                                      <option value="">-- เลือก --</option>
+                                      @foreach ($insurances as $ins)
+                                        <option value="{{ $ins->id }}"
+                                          {{ $saleCar->insurance_id == $ins->id ? 'selected' : '' }}>
+                                          {{ $ins->name }}
+                                        </option>
+                                      @endforeach
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+
                               @if ($userRole == 'admin' || $userRole == 'audit' || $userRole == 'audit_lead' || $userRole == 'audit_dp' || $userRole == 'gm' || $userRole == 'manager' || $userRole == 'md')
                                 <div class="col-md-4">
                                   <div class="date-card">

@@ -179,6 +179,7 @@ class Salecar extends Model
 		'RefundMotorDate',
 		'RefundDate',
 		'RegistrationProvince',
+		'insurance_id',
 		'RedPlateReceived',
 		'RedPlateAmount',
 		'CarSalePrice',
@@ -384,6 +385,12 @@ class Salecar extends Model
 	public function provinces()
 	{
 		return $this->belongsTo(TbProvinces::class, 'RegistrationProvince', 'id');
+	}
+
+	// withTrashed: ประกันที่ถูกลบไปแล้ว PO เดิมที่อ้างอิงยังต้องแสดงชื่อได้
+	public function insurance()
+	{
+		return $this->belongsTo(Insurance::class, 'insurance_id')->withTrashed();
 	}
 
 	public function reservationPayment()

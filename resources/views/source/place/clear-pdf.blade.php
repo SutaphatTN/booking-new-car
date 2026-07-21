@@ -43,6 +43,8 @@
         .sign { margin-top: 36px; width: 100%; }
         .sign td { border: none; text-align: center; padding-top: 28px; }
         .summary td { border: 1px solid #000; padding: 5px 8px; }
+        /* ตารางแจกแจงงบ — เต็มความกว้างให้ขอบตรงกับตารางสรุปงบ/ตารางเคลียร์ด้านล่าง */
+        .budget th:first-child { text-align: left; }
     </style>
 </head>
 <body>
@@ -57,13 +59,40 @@
         </tr>
         <tr>
             <td class="lbl">แหล่งที่มา</td><td>{{ $place->source->name ?? '-' }}</td>
-            <td class="lbl">ประเภทค่าใช้จ่าย</td><td>{{ $place->expense_type ?? '-' }}</td>
-        </tr>
-        <tr>
             <td class="lbl">ช่วงวันที่</td>
             <td>{{ $fmtDate($place->start_date) }} - {{ $fmtDate($place->end_date) }}</td>
-            <td class="lbl">เป้า PP</td><td>{{ $place->target !== null ? number_format($place->target, 0) : '-' }}</td>
         </tr>
+        <tr>
+            <td class="lbl">เป้า PP</td><td>{{ $place->target !== null ? number_format($place->target, 0) : '-' }}</td>
+            <td class="lbl"></td><td></td>
+        </tr>
+    </table>
+
+    {{-- ── ประมาณการค่าใช้จ่ายที่ตั้งไว้ (แจกแจงตามประเภท) — ตั้งคู่กับตารางเคลียร์จริงด้านล่าง ── --}}
+    @php $budgetLines = $place->budgetLines(); @endphp
+    <table class="data budget" style="margin-top:12px;">
+        <thead>
+            <tr>
+                <th>ประมาณการค่าใช้จ่ายที่ตั้งไว้ (แจกแจงตามประเภท)</th>
+                <th style="width:150px;">จำนวนเงิน</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse ($budgetLines as $line)
+                <tr>
+                    <td>{{ $line['type'] }}</td>
+                    <td class="num">{{ number_format($line['amount'], 2) }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="2" class="center">ไม่ได้ตั้งงบไว้</td></tr>
+            @endforelse
+        </tbody>
+        <tfoot>
+            <tr>
+                <td class="num">รวมประมาณการ</td>
+                <td class="num">{{ number_format($budgetLines->sum('amount'), 2) }}</td>
+            </tr>
+        </tfoot>
     </table>
 
     {{-- ── สรุปงบ ── --}}

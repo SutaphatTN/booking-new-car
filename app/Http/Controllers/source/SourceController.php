@@ -8,6 +8,7 @@ use App\Mail\SourcePlaceApprovedMail;
 use App\Mail\SourcePlaceRevisionMail;
 use App\Models\CustomerTracking;
 use App\Models\SourcePlace;
+use App\Models\SourcePlaceBudgetItem;
 use App\Models\SourcePlaceClear;
 use App\Models\SourcePlaceRequest;
 use App\Models\TbSalecarType;
@@ -138,7 +139,7 @@ class SourceController extends Controller
         $state    = $request->input('state', 'active'); // active | settled | all
         $month    = $request->input('month');           // Y-m (ใช้เฉพาะ settled/all)
 
-        $data = SourcePlace::with(['source', 'clears'])
+        $data = SourcePlace::with(['source', 'clears', 'budgetItems'])
             ->orderBy('id', 'desc')
             // สถานะ: กำลังใช้งาน = ยังไม่ปิดยอด / ปิดยอดแล้ว = ปิดยอด / ทั้งหมด = ไม่กรอง
             ->when($state === 'active', fn($q) => $q->whereNull('settled_at'))
@@ -191,6 +192,7 @@ class SourceController extends Controller
             $html .= ' <span class="badge bg-warning text-dark" title="งบเพิ่มที่รออนุมัติ">รออนุมัติ +' . number_format($p->pending_extra, 2) . '</span>';
         }
 
+        // ตารางแสดงแค่ยอดรวม — ดูแจกแจงรายประเภทได้ใน modal แก้ไข
         return $html;
     }
 
@@ -216,14 +218,17 @@ class SourceController extends Controller
     {
         try {
             $validated = $this->validatePlace($request);
+            $items     = $this->validateBudgetItems($request);
             $user      = Auth::user();
 
-            SourcePlace::create($validated + [
+            $place = SourcePlace::create($validated + $this->budgetTotals($items) + [
                 'brand'      => $user->brand ?? null,
                 'userZone'   => $user->userZone ?? null,
                 'branch'     => $user->branch ?? null,
                 'UserInsert' => $user->id ?? null,
             ]);
+
+            $this->syncBudgetItems($place, $items);
 
             return response()->json(['success' => true, 'message' => 'เพิ่มข้อมูลเรียบร้อยแล้ว']);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -235,7 +240,7 @@ class SourceController extends Controller
 
     public function editPlace($id)
     {
-        $place          = SourcePlace::with('request')->findOrFail($id);
+        $place          = SourcePlace::with(['request', 'budgetItems'])->findOrFail($id);
         $offlineSources = TbSalecarType::where('main_source', $this->placeMain())
             ->orderBy('name')->get();
         $approvers      = User::where('role', 'md')->orderBy('name')->get(['id', 'name', 'full_name']);
@@ -255,8 +260,26 @@ class SourceController extends Controller
             $validated = $this->validatePlace($request);
 
             // ขออนุมัติแล้ว (รออนุมัติ/อนุมัติแล้ว) ห้ามแก้ ประมาณค่าใช้จ่าย/เป้า PP — กันแก้ฝั่ง client
-            if (in_array($place->status, [SourcePlace::STATUS_PENDING, SourcePlace::STATUS_APPROVED])) {
-                unset($validated['cost'], $validated['target']);
+            $lockBudget = in_array($place->status, [SourcePlace::STATUS_PENDING, SourcePlace::STATUS_APPROVED]);
+
+            if ($lockBudget) {
+                unset($validated['target']);
+            } else {
+                $items   = $this->validateBudgetItems($request);
+                $totals  = $this->budgetTotals($items);
+
+                // กันลดงบต่ำกว่ายอดที่เคลียร์ไปแล้ว (งบรวม = ประมาณ + งบเพิ่มที่อนุมัติแล้ว)
+                $cleared = $place->clearedTotal();
+                $budget  = (float) ($totals['cost'] ?? 0) + (float) ($place->extra_cost ?? 0);
+                if ($cleared > 0 && $budget + 0.01 < $cleared) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'ประมาณค่าใช้จ่ายรวม (' . number_format($budget, 2) . ') ต่ำกว่ายอดที่เคลียร์ไปแล้ว (' . number_format($cleared, 2) . ')',
+                    ], 422);
+                }
+
+                $validated += $totals;
+                $this->syncBudgetItems($place, $items);
             }
 
             $place->update($validated);
@@ -428,8 +451,8 @@ class SourceController extends Controller
             });
 
             // ส่งเมลหาผู้อนุมัติ พร้อม PDF แนบ + ลิงก์อนุมัติ
-            $pdf = $this->buildApprovalPdf($req->fresh(['topupPlaces.source', 'requester', 'approver']));
-            Mail::to($approver->email)->send(new SourcePlaceApprovalMail($req->fresh(['topupPlaces.source', 'requester', 'approver']), $pdf->output()));
+            $pdf = $this->buildApprovalPdf($req->fresh(['topupPlaces.source', 'topupPlaces.budgetItems', 'requester', 'approver']));
+            Mail::to($approver->email)->send(new SourcePlaceApprovalMail($req->fresh(['topupPlaces.source', 'topupPlaces.budgetItems', 'requester', 'approver']), $pdf->output()));
 
             return response()->json(['success' => true, 'message' => 'ส่งคำขออนุมัติเพิ่มเรียบร้อยแล้ว']);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -442,7 +465,7 @@ class SourceController extends Controller
     /** สร้าง PDF ใบขออนุมัติ (dompdf + ฟอนต์ไทย Sarabun) */
     private function buildRequestPdf(SourcePlaceRequest $req)
     {
-        $req->loadMissing(['places.source', 'requester', 'approver']);
+        $req->loadMissing(['places.source', 'places.budgetItems', 'requester', 'approver']);
 
         return Pdf::loadView('source.place.pdf', ['req' => $req])
             ->setPaper('a4', 'landscape')
@@ -453,7 +476,7 @@ class SourceController extends Controller
     private function buildApprovalPdf(SourcePlaceRequest $req)
     {
         if ($req->is_topup) {
-            $req->loadMissing(['topupPlaces.source', 'requester', 'approver']);
+            $req->loadMissing(['topupPlaces.source', 'topupPlaces.budgetItems', 'requester', 'approver']);
 
             return Pdf::loadView('source.place.topup-pdf', ['req' => $req])
                 ->setPaper('a4', 'portrait')
@@ -473,7 +496,7 @@ class SourceController extends Controller
         }
 
         // สถานที่ทั้งหมดของเดือนนั้น (อ้างอิงจาก period ของใบขออนุมัติ)
-        $places = SourcePlace::with(['source', 'clears'])
+        $places = SourcePlace::with(['source', 'clears.items', 'budgetItems'])
             ->whereHas('request', fn($q) => $q->where('period', $period))
             ->orderBy('start_date')          // เรียงตามวันเริ่มงานเป็นหลัก
             ->orderBy('salecar_type_id')      // วันเดียวกัน → เรียงตามประเภทเป็นตัวรอง
@@ -497,7 +520,7 @@ class SourceController extends Controller
     // PDF สรุปการเคลียร์ค่าใช้จ่ายของสถานที่ (แนบรายการทำจ่าย — เห็นที่มาของค่าใช้จ่าย)
     public function clearPdf($id)
     {
-        $place = SourcePlace::with(['source', 'request', 'clears.items', 'clears.payApprover', 'settledBy'])
+        $place = SourcePlace::with(['source', 'request', 'budgetItems', 'clears.items', 'clears.payApprover', 'settledBy'])
             ->findOrFail($id);
 
         $pdf = Pdf::loadView('source.place.clear-pdf', ['place' => $place])
@@ -516,7 +539,7 @@ class SourceController extends Controller
 
     public function clearForm($id)
     {
-        $place      = SourcePlace::with(['source', 'clears.items', 'clears.payApprover', 'settledBy'])->findOrFail($id);
+        $place      = SourcePlace::with(['source', 'budgetItems', 'clears.items', 'clears.payApprover', 'settledBy'])->findOrFail($id);
         $clearTypes = config('source.clear_types', []);
         $canAccount = in_array(Auth::user()->role, $this->accountingRoles());
 
@@ -848,7 +871,6 @@ class SourceController extends Controller
     private function validatePlace(Request $request): array
     {
         $request->merge([
-            'cost'   => $request->filled('cost') ? str_replace(',', '', $request->cost) : null,
             'target' => $request->filled('target') ? str_replace(',', '', $request->target) : null,
         ]);
 
@@ -858,10 +880,66 @@ class SourceController extends Controller
             'las_number'      => 'nullable|string|max:255',
             'start_date'      => 'nullable|date',
             'end_date'        => 'nullable|date|after_or_equal:start_date',
-            'expense_type'    => ['nullable', Rule::in(config('source.expense_types', []))],
-            'cost'            => 'nullable|numeric|min:0',
             'target'          => 'nullable|integer|min:0',
         ]);
+    }
+
+    /**
+     * validate รายการแจกแจงประมาณค่าใช้จ่าย — คืน collection ของ ['type', 'amount']
+     * แถวที่ว่างทั้งคู่จะถูกตัดทิ้ง (ไม่ตั้งงบเลยก็ได้) แต่ถ้ากรอกมาครึ่งเดียวจะฟ้อง
+     */
+    private function validateBudgetItems(Request $request)
+    {
+        $items = collect($request->input('budget_items', []))
+            ->map(fn($it) => [
+                'type'   => $it['type'] ?? null,
+                'amount' => isset($it['amount']) && $it['amount'] !== '' ? str_replace(',', '', $it['amount']) : null,
+            ])
+            ->filter(fn($it) => !empty($it['type']) || $it['amount'] !== null)
+            ->values();
+
+        Validator::make(
+            ['items' => $items->toArray()],
+            [
+                'items.*.type'   => ['required', Rule::in(config('source.clear_types', []))],
+                'items.*.amount' => 'required|numeric|min:0',
+            ],
+            [
+                'items.*.type.required'   => 'กรุณาเลือกประเภทค่าใช้จ่ายให้ครบทุกรายการ',
+                'items.*.type.in'         => 'ประเภทค่าใช้จ่ายไม่ถูกต้อง',
+                'items.*.amount.required' => 'กรุณากรอกจำนวนเงินให้ครบทุกรายการ',
+                'items.*.amount.numeric'  => 'จำนวนเงินต้องเป็นตัวเลข',
+            ]
+        )->validate();
+
+        return $items;
+    }
+
+    /** ยอดรวม + สรุปประเภท ที่ derive จากรายการแจกแจง (เก็บลง cost/expense_type เพื่อให้รายงาน/สรุปงบเดิมใช้ได้ต่อ) */
+    private function budgetTotals($items): array
+    {
+        if ($items->isEmpty()) {
+            return ['cost' => null, 'expense_type' => null];
+        }
+
+        return [
+            'cost'         => $items->sum(fn($it) => (float) $it['amount']),
+            'expense_type' => $items->pluck('type')->unique()->implode(' + '),
+        ];
+    }
+
+    /** เขียนรายการแจกแจงใหม่ทั้งชุด (แทนของเดิม) */
+    private function syncBudgetItems(SourcePlace $place, $items): void
+    {
+        SourcePlaceBudgetItem::where('place_id', $place->id)->delete();
+
+        foreach ($items as $it) {
+            SourcePlaceBudgetItem::create([
+                'place_id' => $place->id,
+                'type'     => $it['type'],
+                'amount'   => $it['amount'],
+            ]);
+        }
     }
 
     /* ===================== API cascade ===================== */

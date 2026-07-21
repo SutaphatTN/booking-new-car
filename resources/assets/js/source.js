@@ -84,11 +84,30 @@ $(document).on('change', '#placeFilterMonth', function () {
   if (placeTable) placeTable.ajax.reload();
 });
 
-// จัดรูปแบบ comma ให้ช่องเงิน
+// ช่องเงิน: อนุญาตเฉพาะตัวเลข + จุดทศนิยม แล้วใส่ comma คั่นหลักพัน
 $(document).on('input', '.money-input', function () {
-  let val = this.value.replace(/,/g, '');
-  if (val === '' || isNaN(val)) return;
-  this.value = Number(val).toLocaleString();
+  // ตัดทุกอย่างที่ไม่ใช่ตัวเลข/จุด ออกก่อน (พิมพ์ตัวอักษร/อักขระอื่นจะถูกลบทันที)
+  let clean = this.value.replace(/[^\d.]/g, '');
+
+  // เหลือจุดทศนิยมได้จุดเดียว จุดที่เกินมาถูกตัดทิ้ง
+  const firstDot = clean.indexOf('.');
+  if (firstDot !== -1) {
+    clean = clean.slice(0, firstDot + 1) + clean.slice(firstDot + 1).replace(/\./g, '');
+  }
+
+  if (clean === '' || clean === '.') { this.value = clean; return; }
+
+  // ใส่ comma เฉพาะส่วนจำนวนเต็ม คงส่วนทศนิยมที่กำลังพิมพ์ไว้ (ไม่ปัด/ไม่เติม 0)
+  const [intPart, decPart] = clean.split('.');
+  let out = Number(intPart).toLocaleString('en-US');
+  if (clean.indexOf('.') !== -1) out += '.' + (decPart ?? '');
+  this.value = out;
+});
+
+// กันวาง(paste) ข้อความที่มีตัวอักษรปน — ล้างให้เหลือเฉพาะตัวเลข/จุด
+$(document).on('paste', '.money-input', function () {
+  const el = this;
+  setTimeout(() => $(el).trigger('input'), 0);
 });
 
 /* ---------- helper: ajax submit ฟอร์มใน modal ---------- */
@@ -166,6 +185,7 @@ $(document).on('click', '.btnInputPlace', function () {
   $.get('/source/place/create', function (html) {
     $('.inputPlaceModal').html(html);
     $('.inputPlace').modal('show');
+    $('.inputPlace .budget-items-wrap').each(function () { recalcBudgetTotal($(this)); });
   });
 });
 
@@ -174,12 +194,59 @@ $(document).on('click', '.btnStorePlace', function (e) {
   submitSourceForm($(this), $('.inputPlace'), placeTable);
 });
 
+/* ---------- แจกแจงประมาณค่าใช้จ่าย (หลายประเภท) ----------
+   scope ด้วย .budget-items-wrap ไม่ใช่ id เพราะ modal เพิ่ม/แก้ไข อยู่ใน DOM พร้อมกัน */
+
+// ไล่เลข name ใหม่ทุกแถว (PHP ต้องการ index ชัดเจน budget_items[i][...])
+function renumberBudgetRows($wrap) {
+  $wrap.find('.budget-item-row').each(function (i) {
+    $(this).find('.budget-type').attr('name', 'budget_items[' + i + '][type]');
+    $(this).find('.budget-amount').attr('name', 'budget_items[' + i + '][amount]');
+  });
+}
+
+function recalcBudgetTotal($wrap) {
+  let total = 0;
+  $wrap.find('.budget-amount').each(function () {
+    total += parseFloat(($(this).val() || '').replace(/,/g, '')) || 0;
+  });
+  $wrap.find('.budget-total').val(total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+}
+
+$(document).on('click', '.btnAddBudgetItem', function () {
+  const $wrap = $(this).closest('.budget-items-wrap');
+  const $row = $wrap.find('.budget-item-row').first().clone();
+  $row.find('.budget-type').val('');
+  $row.find('.budget-amount').val('');
+  $wrap.find('.budget-items-body').append($row);
+  renumberBudgetRows($wrap);
+});
+
+// ลบรายการ (เหลืออย่างน้อย 1 แถว — แถวสุดท้ายแค่ล้างค่า)
+$(document).on('click', '.btnRemoveBudgetItem', function () {
+  const $wrap = $(this).closest('.budget-items-wrap');
+  if ($wrap.find('.budget-item-row').length > 1) {
+    $(this).closest('.budget-item-row').remove();
+  } else {
+    const $row = $(this).closest('.budget-item-row');
+    $row.find('.budget-type').val('');
+    $row.find('.budget-amount').val('');
+  }
+  renumberBudgetRows($wrap);
+  recalcBudgetTotal($wrap);
+});
+
+$(document).on('input', '.budget-amount', function () {
+  recalcBudgetTotal($(this).closest('.budget-items-wrap'));
+});
+
 $(document).on('click', '.btnEditPlace', function () {
   const id = $(this).data('id');
   $.get('/source/place/edit/' + id, function (html) {
     $('.editPlaceModal').html(html);
     const $modal = $('.editPlace');
     $modal.modal('show');
+    $modal.find('.budget-items-wrap').each(function () { recalcBudgetTotal($(this)); });
     $modal.find('.btnUpdatePlace').off('click').on('click', function (e) {
       e.preventDefault();
       submitSourceForm($(this), $modal, placeTable);
@@ -339,28 +406,74 @@ function recalcClearTotal() {
   return total;
 }
 
+const fmtMoney = (n) => Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// สร้างแถวรายการจากแถวต้นแบบที่ซ่อนไว้ใน tbody
+// ph = ข้อความ placeholder จาก server (ยอดที่ตั้งงบไว้ / ยอดคงเหลือของประเภทนั้น)
+function makeClearRow(type, amount, ph) {
+  const $row = $('#clearItemsBody .clear-item-tmpl').first().clone()
+    .removeClass('clear-item-tmpl d-none').addClass('clear-item-row');
+  $row.find('.clear-type, .clear-amount').prop('disabled', false);
+  $row.find('.clear-type').val(type || '');
+  $row.find('.clear-amount').val(amount === undefined || amount === null || amount === '' ? '' : amount);
+  if (ph) $row.find('.clear-amount').attr('placeholder', ph);
+  return $row;
+}
+
+// PHP ต้องการ index ต่อเนื่อง items[i][...] — ไล่เลขใหม่ทุกครั้งที่เพิ่ม/ลบแถว
+function renumberClearRows() {
+  $('#clearItemsBody .clear-item-row').each(function (i) {
+    $(this).find('.clear-type').attr('name', 'items[' + i + '][type]');
+    $(this).find('.clear-amount').attr('name', 'items[' + i + '][amount]');
+  });
+}
+
+// แทนที่แถวทั้งหมดด้วยรายการที่ให้มา (ว่าง = แถวเปล่า 1 แถว)
+function setClearRows(list) {
+  const $body = $('#clearItemsBody');
+  $body.find('.clear-item-row').remove();
+  const rows = list && list.length ? list : [{}];
+  rows.forEach((it) => $body.append(makeClearRow(it.type, it.amount, it.ph)));
+  renumberClearRows();
+  recalcClearTotal();
+}
+
+// เลื่อนไปที่งวดที่เพิ่งบันทึก + ไฮไลต์สั้น ๆ ให้เห็นว่าบันทึกเข้าไปแล้วจริง
+// (ฟอร์มอยู่ล่างสุด งวดใหม่ไปโผล่ด้านบน ถ้าไม่เลื่อนให้จะไม่รู้ว่าบันทึกสำเร็จ)
+function highlightClearCard(clearId) {
+  const $cards = $('#clearModalInner .clr-card');
+  if (!$cards.length) return;
+  const $found = clearId ? $cards.filter('[data-clear-id="' + clearId + '"]') : $();
+  const $card = $found.length ? $found : $cards.last();
+
+  $card[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  $card.removeClass('is-new');
+  void $card[0].offsetWidth; // reflow — บังคับให้ animation เริ่มใหม่เมื่อบันทึกซ้ำการ์ดเดิม
+  $card.addClass('is-new');
+  setTimeout(() => $card.removeClass('is-new'), 2600);
+}
+
+// ประเภทที่ตั้งงบไว้ (จาก ประมาณค่าใช้จ่าย) — ใช้ตั้งต้นฟอร์มงวดใหม่ ยอดเว้นว่างให้กรอกเอง
+function clearPrefill() {
+  try { return JSON.parse($('#clearForm').attr('data-prefill') || '[]'); } catch (e) { return []; }
+}
+
 // รีเซ็ตฟอร์มกลับสู่โหมด "เพิ่มงวดใหม่"
 function resetClearForm() {
-  const $body = $('#clearItemsBody');
   $('#clearEditId').val('');
   $('#clearDate').val('');
   $('#clearForm').removeAttr('data-editing-total');
-  const $first = $body.find('.clear-item-row').first();
-  $body.find('.clear-item-row').not(':first').remove();
-  $first.find('.clear-type').attr('name', 'items[0][type]').val('');
-  $first.find('.clear-amount').attr('name', 'items[0][amount]').val('');
-  $body.attr('data-next-index', '1');
+  setClearRows(clearPrefill());
   $('#clearFormTitle').text('เพิ่มใบเคลียร์ (งวดใหม่)');
   $('.btnSaveClearLabel').text('บันทึกใบเคลียร์');
   $('.btnCancelEditClear').addClass('d-none');
-  recalcClearTotal();
 }
 
 // โหลดเนื้อหา modal ใหม่ (รายการงวด + สรุปงบ) โดยไม่ปิด modal
 function reloadClearInner(id) {
   return $.get('/source/place/' + id + '/clear', function (html) {
     $('#clearModalInner').html($(html).find('#clearModalInner').html());
-    recalcClearTotal();
+    resetClearForm();
   });
 }
 
@@ -370,19 +483,14 @@ $(document).on('click', '.btnClearPlace', function () {
   $.get('/source/place/' + id + '/clear', function (html) {
     $('.clearPlaceModal').html(html);
     $('.clearPlace').modal('show');
-    recalcClearTotal();
+    resetClearForm();
   });
 });
 
-// เพิ่มรายการ (clone แถวแรก)
+// เพิ่มรายการ (แถวเปล่า — เลือกประเภทอื่นนอกเหนือจากที่ตั้งงบไว้ได้)
 $(document).on('click', '.btnAddClearItem', function () {
-  const $body = $('#clearItemsBody');
-  let idx = parseInt($body.attr('data-next-index') || $body.find('.clear-item-row').length, 10);
-  const $row = $body.find('.clear-item-row').first().clone();
-  $row.find('.clear-type').attr('name', 'items[' + idx + '][type]').val('');
-  $row.find('.clear-amount').attr('name', 'items[' + idx + '][amount]').val('');
-  $body.append($row);
-  $body.attr('data-next-index', idx + 1);
+  $('#clearItemsBody').append(makeClearRow());
+  renumberClearRows();
 });
 
 // ลบรายการ (เหลืออย่างน้อย 1 แถว)
@@ -395,6 +503,7 @@ $(document).on('click', '.btnRemoveClearItem', function () {
     $row.find('.clear-type').val('');
     $row.find('.clear-amount').val('');
   }
+  renumberClearRows();
   recalcClearTotal();
 });
 
@@ -406,23 +515,13 @@ $(document).on('click', '.btnEditClear', function () {
   const clearDate = $(this).data('clear-date') || '';
   let items;
   try { items = JSON.parse($(this).attr('data-items') || '[]'); } catch (e) { items = []; }
-  if (!items.length) items = [{ type: '', amount: '' }];
-
-  const fmt = (n) => Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const $body = $('#clearItemsBody');
-  const $tmpl = $body.find('.clear-item-row').first().clone();
-  $body.empty();
 
   let editingTotal = 0;
-  items.forEach(function (it, i) {
-    const $row = $tmpl.clone();
-    $row.find('.clear-type').attr('name', 'items[' + i + '][type]').val(it.type || '');
+  setClearRows(items.map(function (it) {
     const amt = it.amount === '' || it.amount === null || it.amount === undefined ? '' : Number(it.amount);
-    $row.find('.clear-amount').attr('name', 'items[' + i + '][amount]').val(amt === '' ? '' : fmt(amt));
     editingTotal += parseFloat(amt) || 0;
-    $body.append($row);
-  });
-  $body.attr('data-next-index', items.length);
+    return { type: it.type || '', amount: amt === '' ? '' : fmtMoney(amt) };
+  }));
 
   $('#clearEditId').val(clearId);
   $('#clearDate').val(clearDate);
@@ -552,8 +651,12 @@ $(document).on('click', '.btnSaveClear', function () {
     },
     success: function (res) {
       Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 1500, showConfirmButton: true });
+      // อ่าน id ที่กำลังแก้ก่อน reset (reset จะล้างค่าทิ้ง) — ว่าง = เพิ่งเพิ่มงวดใหม่ ให้ไฮไลต์งวดล่าสุด
+      const editedId = $('#clearEditId').val();
       resetClearForm();
-      reloadClearInner(id);
+      reloadClearInner(id).done(function () {
+        highlightClearCard(editedId);
+      });
       placeTable.ajax.reload(null, false);
     },
     error: function (xhr) {
