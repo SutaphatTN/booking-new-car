@@ -1753,13 +1753,14 @@ $(document).ready(function () {
         };
       }
 
-      const $cell = $radio.closest('td');
+      // ของที่ราคาไม่คงที่ (เช่น น้ำมัน) ทุนอะไหล่เท่ากับราคาเสมอ จึงกรอกช่องเดียวแล้วใช้ค่าเดียวกันทั้งคู่
+      const price = toNumber($radio.closest('td').find('.acc-custom-price').val());
       return {
         ...base,
-        price: toNumber($cell.find('.acc-custom-price').val()),
+        price,
         com: 0, // ระบุราคาเอง = ไม่มีค่าคอมจากตารางราคา
-        spare: 1, // กรอกทุนอะไหล่เองแล้ว จึงไม่ติดเงื่อนไข "ไม่มีราคาทุนอะไหล่"
-        costSpare: toNumber($cell.find('.acc-custom-spare').val())
+        spare: 1, // ถือว่ามีทุนอะไหล่แล้ว จึงไม่ติดเงื่อนไข "ไม่มีราคาทุนอะไหล่"
+        costSpare: price
       };
     }
 
@@ -1783,23 +1784,12 @@ $(document).ready(function () {
         const $customRadio = $tableBody.find(`input[type="radio"][data-id="${id}"][value="custom"]`);
         if ($customRadio.length) {
           const on = $customRadio.prop('checked');
-          $customRadio.closest('td').find('.acc-custom-price, .acc-custom-spare').prop('disabled', !on);
+          $customRadio.closest('td').find('.acc-custom-price').prop('disabled', !on);
         }
       })
-      // กรอกราคาเอง → อัปเดตค่าที่เลือกไว้ทันที (ทุนอะไหล่ตามราคาไปก่อนจนกว่าจะแก้เอง)
+      // กรอกราคาเอง → อัปเดตค่าที่เลือกไว้ทันที
       .on('input', '.acc-custom-price', function () {
-        const $cell = $(this).closest('td');
-        const $spare = $cell.find('.acc-custom-spare');
-        if (!$spare.data('touched')) $spare.val($(this).val());
-
-        const $radio = $cell.find('input[type="radio"][value="custom"]');
-        if ($radio.prop('checked')) selectedMap[$radio.data('id')] = readSelection($radio);
-      })
-      .on('input', '.acc-custom-spare', function () {
-        const $cell = $(this).closest('td');
-        $(this).data('touched', true);
-
-        const $radio = $cell.find('input[type="radio"][value="custom"]');
+        const $radio = $(this).closest('td').find('input[type="radio"][value="custom"]');
         if ($radio.prop('checked')) selectedMap[$radio.data('id')] = readSelection($radio);
       });
 
@@ -1873,10 +1863,8 @@ $(document).ready(function () {
                       data-detail="${a.AccessoryDetail}" data-standard="${a.is_standard ? 1 : 0}">
                     <span class="ms-1">ระบุเอง</span>
                   </label>
-                  <input type="text" class="form-control form-control-sm text-end mb-1 acc-custom-price"
+                  <input type="text" class="form-control form-control-sm text-end acc-custom-price"
                     placeholder="ราคา" disabled>
-                  <input type="text" class="form-control form-control-sm text-end acc-custom-spare"
-                    placeholder="ทุนอะไหล่" disabled>
                 </td>`;
 
             $tableBody.append(`
@@ -1902,9 +1890,7 @@ $(document).ready(function () {
 
               // แถว "ระบุเอง" ต้องคืนค่าที่พิมพ์ไว้ + เปิดช่องกรอกกลับด้วย
               if (sel.type === 'custom') {
-                const $cell = $r.closest('td');
-                $cell.find('.acc-custom-price').val(sel.price).prop('disabled', false);
-                $cell.find('.acc-custom-spare').val(sel.costSpare).prop('disabled', false).data('touched', true);
+                $r.closest('td').find('.acc-custom-price').val(sel.price).prop('disabled', false);
               }
             }
           });
@@ -2006,12 +1992,10 @@ $(document).ready(function () {
         return;
       }
 
-      // แถว "ระบุเอง" ต้องกรอกทั้งราคาและทุนอะไหล่ให้มากกว่า 0
-      const badCustom = items.some(
-        it => it.type === 'custom' && (!(it.price > 0) || !(it.costSpare > 0))
-      );
+      // แถว "ระบุเอง" ต้องกรอกราคาให้มากกว่า 0
+      const badCustom = items.some(it => it.type === 'custom' && !(it.price > 0));
       if (badCustom) {
-        Swal.fire({ icon: 'warning', title: 'กรุณากรอกราคาและทุนอะไหล่ให้มากกว่า 0', confirmButtonText: 'ตกลง' });
+        Swal.fire({ icon: 'warning', title: 'กรุณากรอกราคาให้มากกว่า 0', confirmButtonText: 'ตกลง' });
         return;
       }
 
