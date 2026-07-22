@@ -91,6 +91,7 @@
 - **ส่วนลด :** {{ number_format($data['discount'], 2) }}
 @if (!empty($data['is_finance']))
 - **ส่วนลดเงินดาวน์ :** {{ number_format($data['down_payment_discount'] ?? 0, 2) }}
+- **Vat ของแถม :** {{ number_format($data['accessory_gift_vat'] ?? 0, 2) }}
 @endif
 
 @if (!empty($data['gift_details']) && count($data['gift_details']))
