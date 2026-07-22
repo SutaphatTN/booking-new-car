@@ -2425,6 +2425,7 @@ class PurchaseOrderController extends Controller
                         $saleCar->load([
                             'customer.prefix', 'model', 'subModel', 'carOrder',
                             'saleUser.branchInfo', 'gwmColor', 'interiorColor', 'conStatus',
+                            'remainingPayment.financeInfo', // ชื่อไฟแนนซ์ในเมล
                         ]);
                         Mail::to('waliwan.mitsuchookiatkrabi@gmail.com')->send(new CarDeliveredMail($saleCar, $deliveryTriggers));
                         $saleCar->update(['delivered_notified_at' => now()]); // มาร์คว่าแจ้งแล้ว (ยิงครั้งเดียว)
