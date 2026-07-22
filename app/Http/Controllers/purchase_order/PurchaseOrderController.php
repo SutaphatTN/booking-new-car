@@ -281,8 +281,13 @@ class PurchaseOrderController extends Controller
             ? (float) ($saleCar->DownPaymentDiscount ?? 0)
             : 0.0;
 
-        // 8. ยอดที่เหลือ = ยอดรวมแคมเปญ − ของแถม − ส่วนลด − ส่วนลดเงินดาวน์
-        $remaining = $campaignTotal - $giftTotal - $discount - $downPaymentDiscount;
+        // 7.2 Vat ของแถม — เคสจัดไฟแนนซ์เท่านั้น (ตรงกับสูตรยอดคงเหลือแคมเปญในหน้าใบจอง)
+        $accessoryGiftVat = $isFinance
+            ? (float) ($saleCar->AccessoryGiftVat ?? 0)
+            : 0.0;
+
+        // 8. ยอดที่เหลือ = ยอดรวมแคมเปญ − ของแถม − ส่วนลด − ส่วนลดเงินดาวน์ − Vat ของแถม
+        $remaining = $campaignTotal - $giftTotal - $discount - $downPaymentDiscount - $accessoryGiftVat;
 
         return [
             'price_sub'        => $priceSub,
@@ -298,6 +303,7 @@ class PurchaseOrderController extends Controller
             'discount'         => $discount,
             'is_finance'       => $isFinance,
             'down_payment_discount' => $downPaymentDiscount,
+            'accessory_gift_vat'    => $accessoryGiftVat,
             'remaining'        => $remaining,
         ];
     }
