@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class CarOrderController extends Controller
 {
@@ -1656,7 +1657,7 @@ class CarOrderController extends Controller
         $fromDate = $request->from_date ?: now()->startOfMonth()->format('Y-m-d');
         $toDate   = $request->to_date   ?: now()->format('Y-m-d');
 
-        return Excel::download(new CarOrderStockExport($fromDate, $toDate), 'ข้อมูลรับรถเข้า Stock.xlsx');
+        return Excel::download(new CarOrderStockExport($fromDate, $toDate), ExportFilename::withBrand('ข้อมูลรับรถเข้า Stock.xlsx'));
     }
 
     /** รายงานข้อมูลรถ — ตัดสถานะรถ Delivered ออก, กรองตามรุ่นหลัก/ย่อยที่เลือก (ว่าง = ทั้งหมด) */
@@ -1664,7 +1665,7 @@ class CarOrderController extends Controller
     {
         return Excel::download(
             new CarOrderDataExport($request->model_id, $request->sub_model_id),
-            'ข้อมูลรถ.xlsx'
+            ExportFilename::withBrand('ข้อมูลรถ.xlsx')
         );
     }
 }

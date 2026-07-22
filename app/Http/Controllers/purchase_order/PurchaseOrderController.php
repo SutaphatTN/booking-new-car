@@ -68,6 +68,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class PurchaseOrderController extends Controller
 {
@@ -3092,7 +3093,7 @@ class PurchaseOrderController extends Controller
 
     public function exportBooking(Request $request)
     {
-        return Excel::download(new BookingExport($request), 'booking.xlsx');
+        return Excel::download(new BookingExport($request), ExportFilename::withBrand('booking.xlsx'));
     }
 
     //search puschase
@@ -3559,7 +3560,7 @@ class PurchaseOrderController extends Controller
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
         $toDate   = $request->to_date   ?? now()->format('Y-m-d');
 
-        return Excel::download(new SaleCommissionExport(Auth::user(), $fromDate, $toDate), 'sale-commission.xlsx');
+        return Excel::download(new SaleCommissionExport(Auth::user(), $fromDate, $toDate), ExportFilename::withBrand('sale-commission.xlsx'));
     }
 
     // report gp
@@ -3632,7 +3633,7 @@ class PurchaseOrderController extends Controller
 
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
 
-        return Excel::download(new GPExport($fromDate), 'gp-report.xlsx');
+        return Excel::download(new GPExport($fromDate), ExportFilename::withBrand('gp-report.xlsx'));
     }
 
     // report sale Estimated
@@ -3645,7 +3646,7 @@ class PurchaseOrderController extends Controller
     {
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
 
-        return Excel::download(new EstimatedExport($fromDate), 'ข้อมูลประมาณการ.xlsx');
+        return Excel::download(new EstimatedExport($fromDate), ExportFilename::withBrand('ข้อมูลประมาณการ.xlsx'));
     }
 
     // report ประมาณการเซลล์ — ข้อมูลเหมือนประมาณการ แต่กรองเดือนตาม DeliveryInCKDate
@@ -3659,7 +3660,7 @@ class PurchaseOrderController extends Controller
     {
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
 
-        return Excel::download(new EstimatedExport($fromDate, 'sale'), 'ประมาณการเซลล์.xlsx');
+        return Excel::download(new EstimatedExport($fromDate, 'sale'), ExportFilename::withBrand('ประมาณการเซลล์.xlsx'));
     }
 
     //report gwm
@@ -3672,7 +3673,7 @@ class PurchaseOrderController extends Controller
     {
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m');
 
-        return Excel::download(new GwmExport($fromDate), 'ข้อมูลรถ GWM.xlsx');
+        return Excel::download(new GwmExport($fromDate), ExportFilename::withBrand('ข้อมูลรถ GWM.xlsx'));
     }
 
     // report sale Booking
@@ -3688,7 +3689,7 @@ class PurchaseOrderController extends Controller
         $toDate   = $request->to_date   ?: null;
         $status   = $request->con_status ?: null;
 
-        return Excel::download(new SaleCarBookingExport($fromDate, $toDate, $status), 'ข้อมูลการจอง.xlsx');
+        return Excel::download(new SaleCarBookingExport($fromDate, $toDate, $status), ExportFilename::withBrand('ข้อมูลการจอง.xlsx'));
     }
 
     // report ข้อมูลประกันภัย (เฉพาะ admin) — ดึงตามเดือน DeliveryDate ทุก brand แยก sheet
@@ -3705,7 +3706,7 @@ class PurchaseOrderController extends Controller
 
         $fromDate = $request->from_date ?: now()->startOfMonth()->format('Y-m');
 
-        return Excel::download(new InsuranceExport($fromDate), 'ข้อมูลประกันภัย.xlsx');
+        return Excel::download(new InsuranceExport($fromDate), ExportFilename::withBrand('ข้อมูลประกันภัย.xlsx'));
     }
 
     //lead online allocation report (จัดสรร Lead Online) — แยก sheet ตาม brand + sheet Master_Settings
@@ -3759,7 +3760,7 @@ class PurchaseOrderController extends Controller
 
         abort_if(empty($units), 404, 'ไม่มีข้อมูลเซลล์สำหรับรายงานนี้');
 
-        return Excel::download(new LeadOnlineAllocationExport($fromDate, $units), 'จัดสรร Lead Online.xlsx');
+        return Excel::download(new LeadOnlineAllocationExport($fromDate, $units), ExportFilename::withBrand('จัดสรร Lead Online.xlsx'));
     }
 
     // report เกินงบ (รายงานเกินงบ) — กรองตามเดือนที่ขอเกินงบ (approval_requested_at)
@@ -3803,7 +3804,7 @@ class PurchaseOrderController extends Controller
         $toDate     = $request->to_date ?? now()->startOfMonth()->format('Y-m');
         $dateType   = $request->date_type ?? 'dms';
 
-        return Excel::download(new MonthlyDeliveryExport($fromDate, $toDate, $dateType), 'ส่งมอบประจำเดือน.xlsx');
+        return Excel::download(new MonthlyDeliveryExport($fromDate, $toDate, $dateType), ExportFilename::withBrand('ส่งมอบประจำเดือน.xlsx'));
     }
 
     public function proxyAttachment(Request $request, $id, $filename = null)

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Traits\ConvertsThaiDate;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class SsiController extends Controller
 {
@@ -334,7 +335,7 @@ class SsiController extends Controller
     {
         $dateFrom = $request->input('date_from', now()->format('Y-m-d'));
         $dateTo   = $request->input('date_to',   now()->format('Y-m-d'));
-        $filename = 'SSI-หลังส่งมอบ-' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx';
+        $filename = ExportFilename::withBrand('SSI-หลังส่งมอบ-' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx');
 
         return Excel::download(new SsiReportExport($dateFrom, $dateTo), $filename);
     }

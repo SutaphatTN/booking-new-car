@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class FloorPlanController extends Controller
 {
@@ -351,7 +352,7 @@ class FloorPlanController extends Controller
         }
         $rows = $rows->values();
 
-        $filename = 'รายงาน FP' . ($month ? " {$month}" : '') . '.xlsx';
+        $filename = ExportFilename::withBrand('รายงาน FP' . ($month ? " {$month}" : '') . '.xlsx');
 
         return Excel::download(new FpReportExport($rows->all(), $brand), $filename);
     }
@@ -485,7 +486,7 @@ class FloorPlanController extends Controller
         $month = $request->input('month');
 
         $suffix   = $month ? (' ' . $month) : '';
-        $filename = 'รายงานแจ้งจำหน่าย' . $suffix . '.xlsx';
+        $filename = ExportFilename::withBrand('รายงานแจ้งจำหน่าย' . $suffix . '.xlsx');
 
         return Excel::download(new DisposeReportExport($month), $filename);
     }

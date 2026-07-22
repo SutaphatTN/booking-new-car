@@ -15,6 +15,7 @@ use App\Traits\ConvertsThaiDate;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class InvoiceController extends Controller
 {
@@ -366,6 +367,6 @@ class InvoiceController extends Controller
         $fromDate = $request->from_date ?: null;
         $toDate   = $request->to_date   ?: null;
 
-        return Excel::download(new InvoiceExport($fromDate, $toDate), 'ข้อมูลใบสั่งซื้อ.xlsx');
+        return Excel::download(new InvoiceExport($fromDate, $toDate), ExportFilename::withBrand('ข้อมูลใบสั่งซื้อ.xlsx'));
     }
 }

@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class FilmUsageController extends Controller
 {
@@ -76,7 +77,7 @@ class FilmUsageController extends Controller
     {
         $month = $request->input('month') ?: now()->format('Y-m');
 
-        return Excel::download(new FilmUsageReport($month), "ประวัติการใช้ฟิล์ม-{$month}.xlsx");
+        return Excel::download(new FilmUsageReport($month), ExportFilename::withBrand("ประวัติการใช้ฟิล์ม-{$month}.xlsx"));
     }
 
     public function create()

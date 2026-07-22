@@ -12,6 +12,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class VehicleController extends Controller
 {
@@ -432,11 +433,11 @@ class VehicleController extends Controller
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
         $toDate   = $request->to_date   ?? now()->format('Y-m-d');
 
-        return Excel::download(new VehicleExport($fromDate, $toDate), 'รายงานการส่งเบิก-เคลียร์.xlsx');
+        return Excel::download(new VehicleExport($fromDate, $toDate), ExportFilename::withBrand('รายงานการส่งเบิก-เคลียร์.xlsx'));
     }
 
     public function exportLicensePlate()
     {
-        return Excel::download(new VehicleLicensePlateExport(), 'รายงานป้ายทะเบียน.xlsx');
+        return Excel::download(new VehicleLicensePlateExport(), ExportFilename::withBrand('รายงานป้ายทะเบียน.xlsx'));
     }
 }

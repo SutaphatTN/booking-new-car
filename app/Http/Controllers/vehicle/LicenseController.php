@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class LicenseController extends Controller
 {
@@ -321,7 +322,7 @@ class LicenseController extends Controller
 
   public function exportLicStock(Request $request)
   {
-    return Excel::download(new StockLicExport($request), 'license-stock.xlsx');
+    return Excel::download(new StockLicExport($request), ExportFilename::withBrand('license-stock.xlsx'));
   }
 
   // ประวัติยืม-คืนป้ายแดงทั้งหมด แยก sheet ตามแบรนด์ — เฉพาะ admin/audit_internal
@@ -329,7 +330,7 @@ class LicenseController extends Controller
   {
     $this->ensureLoanRole();
 
-    return Excel::download(new LoanLicExport, 'license-loan-history.xlsx');
+    return Excel::download(new LoanLicExport, ExportFilename::withBrand('license-loan-history.xlsx'));
   }
 
   public function viewExportLicense()
@@ -342,6 +343,6 @@ class LicenseController extends Controller
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
         $toDate   = $request->to_date   ?? now()->format('Y-m-d');
 
-        return Excel::download(new SummaryLicExport($fromDate, $toDate), 'license-history.xlsx');
+        return Excel::download(new SummaryLicExport($fromDate, $toDate), ExportFilename::withBrand('license-history.xlsx'));
     }
 }

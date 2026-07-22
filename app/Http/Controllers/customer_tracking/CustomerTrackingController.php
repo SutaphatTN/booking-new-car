@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class CustomerTrackingController extends Controller
 {
@@ -799,7 +800,7 @@ class CustomerTrackingController extends Controller
 
     public function exportExcel()
     {
-        return Excel::download(new CustomerTrackingExport(), 'รายงานการติดตามลูกค้า.xlsx');
+        return Excel::download(new CustomerTrackingExport(), ExportFilename::withBrand('รายงานการติดตามลูกค้า.xlsx'));
     }
 
     public function exportExcelByDate(Request $request)
@@ -810,7 +811,7 @@ class CustomerTrackingController extends Controller
 
         $dateFrom = $request->date_from ?? now()->toDateString();
         $dateTo   = $request->date_to   ?? now()->toDateString();
-        $filename = 'รายงานการกรอกข้อมูล_' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx';
+        $filename = ExportFilename::withBrand('รายงานการกรอกข้อมูล_' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx');
 
         return Excel::download(new CustomerTrackingByDateExport($dateFrom, $dateTo), $filename);
     }
@@ -818,7 +819,7 @@ class CustomerTrackingController extends Controller
     public function exportDailyReport(Request $request)
     {
         $date     = $request->date ?? now()->toDateString();
-        $filename = 'รายงานประจำวัน_' . $date . '.xlsx';
+        $filename = ExportFilename::withBrand('รายงานประจำวัน_' . $date . '.xlsx');
 
         return Excel::download(new CustomerTrackingDailyExport($date), $filename);
     }
@@ -830,7 +831,7 @@ class CustomerTrackingController extends Controller
         }
 
         $month    = $request->month ?? now()->format('Y-m');
-        $filename = 'รายงานเลยกำหนดติดตามลูกค้า_' . $month . '.xlsx';
+        $filename = ExportFilename::withBrand('รายงานเลยกำหนดติดตามลูกค้า_' . $month . '.xlsx');
 
         return Excel::download(new CustomerTrackingOverdueReport($month), $filename);
     }
@@ -841,7 +842,7 @@ class CustomerTrackingController extends Controller
         $user     = Auth::user();
         $month    = $request->month ?? now()->format('Y-m');
         $saleId   = $user->role === 'sale' ? $user->id : null;
-        $filename = 'รายงานเลยกำหนดติดตามลูกค้า(เซลล์)_' . $month . '.xlsx';
+        $filename = ExportFilename::withBrand('รายงานเลยกำหนดติดตามลูกค้า(เซลล์)_' . $month . '.xlsx');
 
         return Excel::download(new CustomerTrackingOverdueReport($month, $saleId), $filename);
     }
