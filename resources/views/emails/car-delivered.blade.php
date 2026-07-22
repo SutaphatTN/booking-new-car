@@ -9,6 +9,10 @@
         ($sc->customer->LastName ?? '')
     );
     $color = in_array($brand, [2, 3, 4]) ? ($sc->gwmColor->name ?? '-') : ($sc->Color ?? '-');
+    // ชื่อไฟแนนซ์: non-finance = ซื้อสด, finance = ชื่อบริษัทไฟแนนซ์ (ถ้าไม่ได้เลือก = -)
+    $financeName = $sc->payment_mode === 'finance'
+        ? ($sc->remainingPayment?->financeInfo?->FinanceCompany ?? '-')
+        : 'ซื้อสด';
 @endphp
 @component('mail::message')
 # 🚗 แจ้งส่งมอบรถ
@@ -43,6 +47,7 @@
 - **เลขเครื่องยนต์ :** {{ $co->engine_number ?? '-' }}
 
 ### การส่งมอบ
+- **ไฟแนนซ์ :** {{ $financeName }}
 - **สถานะ :** {{ $sc->conStatus->name ?? '-' }}
 - **วันส่งมอบจริง (แจ้งประกัน) :** {{ $sc->DeliveryDate ? \Illuminate\Support\Carbon::parse($sc->DeliveryDate)->format('d/m/Y') : '-' }}
 - **วันส่งมอบของบริษัท (DMS) :** {{ $sc->DeliveryInDMSDate ? \Illuminate\Support\Carbon::parse($sc->DeliveryInDMSDate)->format('d/m/Y') : '-' }}
