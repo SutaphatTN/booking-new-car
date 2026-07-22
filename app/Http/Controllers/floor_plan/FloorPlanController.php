@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Support\ExportFilename;
 
@@ -20,6 +21,9 @@ class FloorPlanController extends Controller
 {
     // เมนู Floor Plan เห็น/แก้ได้เฉพาะ admin, audit_internal, md
     private const ALLOWED_ROLES = ['admin', 'audit_internal', 'md'];
+
+    // แก้ Billing date (car_order.fp_date) ได้เฉพาะ admin — บางคันไม่มีวันที่นี้
+    private const BILLING_DATE_ROLES = ['admin'];
 
     // ชุดแจ้งจำหน่าย (key => label) — key เก็บลง salecars.dispose_set
     public const DISPOSE_SETS = [
@@ -35,6 +39,11 @@ class FloorPlanController extends Controller
     private function authorizeAccess(): void
     {
         abort_unless(in_array(Auth::user()->role, self::ALLOWED_ROLES, true), 403);
+    }
+
+    private function canEditBillingDate(): bool
+    {
+        return in_array(Auth::user()->role, self::BILLING_DATE_ROLES, true);
     }
 
     /**
@@ -248,6 +257,7 @@ class FloorPlanController extends Controller
                 'subModelName'  => $o->subModel->name ?? '-',
                 'vin'           => $o->vin_number ?: '-',
                 'billingText'   => $o->format_fp_date ?? '-',
+                'billingDate'   => $billing ? $billing->format('Y-m-d') : null,   // Y-m-d สำหรับ input
                 // งวดของ Billing date = เดือนของ segment แรก (calendar month ของ billing)
                 'billingPeriod' => $billing ? $billing->format('Y-m') : null,
                 'year'          => $o->year ?: '-',
@@ -301,18 +311,22 @@ class FloorPlanController extends Controller
             return $isPending || $r['billingPeriod'] === $month;
         })->values();
 
+        $canEditBilling = $this->canEditBillingDate();
+
         return view('floor-plan.fp.view', compact(
             'rows',
             'brand',
             'brandName',
             'month',
             'status',
-            'periodLabel'
+            'periodLabel',
+            'canEditBilling'
         ));
     }
 
     /**
      * บันทึก "วันที่ปิด FP" (กรอกเอง) ลง car_order — เว้นว่างได้ (กลับเป็น รอปิด FP)
+     * - เฉพาะ admin แก้ Billing date (fp_date) ได้ด้วย เพราะบางคันไม่มีวันที่นี้
      */
     public function updateFpCloseDate(Request $request, $id)
     {
@@ -320,18 +334,34 @@ class FloorPlanController extends Controller
 
         $order = CarOrder::where('payment_type', 'fp_tisco')->findOrFail($id);
 
-        $validated = $request->validate([
-            'fp_close_date' => 'nullable|date|after_or_equal:' . ($order->fp_date ?? '1900-01-01'),
-        ], [
-            'fp_close_date.after_or_equal' => 'วันที่ปิด FP ต้องไม่ก่อน Billing date',
-        ]);
+        $canEditBilling = $this->canEditBillingDate();
 
+        $rules = ['fp_close_date' => 'nullable|date'];
+        if ($canEditBilling) {
+            $rules['fp_date'] = 'nullable|date';
+        }
+        $validated = $request->validate($rules);
+
+        // Billing date ที่จะใช้เทียบ = ค่าที่ส่งมา (ถ้าแก้ได้) มิฉะนั้นใช้ของเดิม
+        $editBilling = $canEditBilling && $request->has('fp_date');
+        $billing     = $editBilling ? ($validated['fp_date'] ?: null) : $order->fp_date;
+
+        if (!empty($validated['fp_close_date']) && $billing
+            && Carbon::parse($validated['fp_close_date'])->lt(Carbon::parse($billing))) {
+            throw ValidationException::withMessages([
+                'fp_close_date' => 'วันที่ปิด FP ต้องไม่ก่อน Billing date',
+            ]);
+        }
+
+        if ($editBilling) {
+            $order->fp_date = $billing;
+        }
         $order->fp_close_date = $validated['fp_close_date'] ?: null;
         $order->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'บันทึกวันที่ปิด FP เรียบร้อยแล้ว',
+            'message' => 'บันทึกข้อมูล FP เรียบร้อยแล้ว',
         ]);
     }
 
