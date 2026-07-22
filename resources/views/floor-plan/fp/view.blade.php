@@ -98,6 +98,7 @@
                         data-vin="{{ $r['vin'] }}"
                         data-model="{{ $r['modelName'] }}"
                         data-billing="{{ $r['billingText'] }}"
+                        data-billing-date="{{ $r['billingDate'] }}"
                         data-close="{{ $r['closeDate'] }}"
                         title="แก้ไขวันที่ปิด FP">
                         <i class="bx bx-edit"></i>
@@ -284,10 +285,17 @@
             <div class="mf-section">
               <div class="mf-section-hd">
                 <div class="mf-section-icon amber"><i class="bx bx-calendar-check"></i></div>
-                <span class="mf-section-title">วันที่ปิด FP</span>
+                <span class="mf-section-title">วันที่ FP</span>
               </div>
               <div class="mf-section-body">
                 <div class="row g-3">
+                  @if ($canEditBilling)
+                    <div class="col-md-4">
+                      <label for="fpEditBillingDate" class="mf-label form-label"><i class="bx bx-calendar"></i> Billing date</label>
+                      <input type="date" id="fpEditBillingDate" class="form-control">
+                      <div class="form-text">กรอกได้กรณีรถที่ยังไม่มี Billing date</div>
+                    </div>
+                  @endif
                   <div class="col-md-4">
                     <label for="fpEditCloseDate" class="mf-label form-label"><i class="bx bx-calendar-check"></i> วันที่ปิด FP</label>
                     <input type="date" id="fpEditCloseDate" class="form-control">
@@ -394,6 +402,7 @@
         // ใช้ template เดียวกับ modal รายละเอียด (เฉพาะข้อมูลรถ + ข้อมูลการเงิน)
         const info = $('#fpDetailTemplates [data-detail="' + d.id + '"] .fp-detail-info').html() || '';
         $('#fpEditInfoBody').html(info);
+        $('#fpEditBillingDate').val(d.billingDate || '');
         $('#fpEditCloseDate').val(d.close || '');
         fpEditModal.show();
       });
@@ -403,12 +412,16 @@
         e.preventDefault();
         const id = $('#fpEditId').val();
         const val = $('#fpEditCloseDate').val();
+        const payload = { _method: 'PUT', _token: csrf, fp_close_date: val };
+        @if ($canEditBilling)
+          payload.fp_date = $('#fpEditBillingDate').val();
+        @endif
         $('#fpLoadingOverlay').css('display', 'flex');
 
         $.ajax({
           url: `{{ url('floor-plan/fp') }}/${id}/close-date`,
           method: 'POST',
-          data: { _method: 'PUT', _token: csrf, fp_close_date: val },
+          data: payload,
           success: function () { location.reload(); },
           error: function (xhr) {
             $('#fpLoadingOverlay').css('display', 'none');
