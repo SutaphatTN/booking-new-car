@@ -10,6 +10,7 @@ use App\Models\FilmStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class StockFilmController extends Controller
 {
@@ -82,7 +83,7 @@ class StockFilmController extends Controller
     // รายงานดึง Stock ฟิล์ม — สแนปช็อตสต็อกฟิล์มที่ยังใช้งานอยู่ (brand-scope อัตโนมัติ)
     public function exportReport()
     {
-        return Excel::download(new FilmStockReport, 'ข้อมูล Stock ฟิล์ม.xlsx');
+        return Excel::download(new FilmStockReport, ExportFilename::withBrand('ข้อมูล Stock ฟิล์ม.xlsx'));
     }
 
     public function create()

@@ -13,6 +13,7 @@ use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class PreDeliveryInspectionController extends Controller
 {
@@ -25,7 +26,7 @@ class PreDeliveryInspectionController extends Controller
     {
         $dateFrom = $request->input('date_from', now()->format('Y-m-d'));
         $dateTo   = $request->input('date_to',   now()->format('Y-m-d'));
-        $filename = 'PDI-ตรวจรถก่อนส่งมอบ-' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx';
+        $filename = ExportFilename::withBrand('PDI-ตรวจรถก่อนส่งมอบ-' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx');
 
         return Excel::download(new PdiReportExport($dateFrom, $dateTo), $filename);
     }

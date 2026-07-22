@@ -11,6 +11,7 @@ use App\Exports\campaign\CampaignClaimExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class CampaignClaimController extends Controller
 {
@@ -133,7 +134,7 @@ class CampaignClaimController extends Controller
 
         return Excel::download(
             new CampaignClaimExport($fromDate, $toDate),
-            'campaign-claim-report.xlsx'
+            ExportFilename::withBrand('campaign-claim-report.xlsx')
         );
     }
 

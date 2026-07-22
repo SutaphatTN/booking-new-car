@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Support\ExportFilename;
 
 class FinanceController extends Controller
 {
@@ -554,6 +555,6 @@ class FinanceController extends Controller
         $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
         $toDate   = $request->to_date   ?? now()->format('Y-m-d');
 
-        return Excel::download(new FirmExport($fromDate, $toDate), 'firmFN-report.xlsx');
+        return Excel::download(new FirmExport($fromDate, $toDate), ExportFilename::withBrand('firmFN-report.xlsx'));
     }
 }
