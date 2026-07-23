@@ -336,6 +336,9 @@ $(document).on('click', '.btnReturnPlate', function () {
     text: 'ยืมเมื่อ ' + borrow + ' — กรอกวันที่คืนจริง',
     input: 'date',
     inputValue: new Date().toISOString().slice(0, 10),
+    // ช่องวันที่ถูก initDatePicker (app.js) แปลงเป็น flatpickr + กล่องไอคอน ซึ่งจะกินความกว้างเต็ม popup
+    // กำหนด width ที่ input ไว้ให้ initDatePicker ย้ายไปใส่กล่อง .input-group (จัดกึ่งกลางด้วย CSS ใน tables.css)
+    inputAttributes: { style: 'width: 200px' },
     showCancelButton: true,
     confirmButtonColor: '#6c5ffc',
     cancelButtonColor: '#d33',
@@ -369,7 +372,7 @@ $(document).on('click', '.btnEditPlateStatus', function () {
 
   Swal.fire({
     title: 'สถานะป้าย ' + number,
-    text: 'สูญหาย / ชำรุด / ระหว่างติดตาม จะยืมและเลือกใช้กับงานขายใหม่ไม่ได้',
+    text: 'สูญหาย / ชำรุด / ระหว่างติดตาม / ทดลองขับ จะยืมและเลือกใช้กับงานขายใหม่ไม่ได้ (ทดลองขับ = กันไว้ให้เลือกในหน้า Car Order)',
     input: 'select',
     inputOptions: options,
     inputValue: current,

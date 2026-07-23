@@ -482,6 +482,25 @@
                 </div>
 
                 <div class="col-md-3 fieldTestDrive d-none">
+                  <label for="license_plate_id" class="mf-label form-label">
+                    <i class="bx bx-id-card ci-emerald"></i> ป้ายทะเบียน (ทดลองขับ)
+                  </label>
+                  <select id="license_plate_id" name="license_plate_id" class="form-select">
+                    <option value="">-- เลือกป้ายทะเบียน --</option>
+                    @foreach ($testDrivePlates as $plate)
+                      <option value="{{ $plate->id }}"
+                        {{ $order->license_plate_id == $plate->id ? 'selected' : '' }}>
+                        {{ $plate->number }}
+                      </option>
+                    @endforeach
+                  </select>
+                  <div class="text-muted small mt-1">เฉพาะป้ายแดงที่ตั้งสถานะเป็น "ทดลองขับ"</div>
+                  @error('license_plate_id')
+                    <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
+                  @enderror
+                </div>
+
+                <div class="col-md-3 fieldTestDrive d-none">
                   <label for="mileage_test" class="mf-label form-label">
                     <i class="bx bx-tachometer ci-emerald"></i> เลขไมล์รถทดลองขับ
                   </label>

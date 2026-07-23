@@ -1052,12 +1052,24 @@ $(document).ready(function () {
         searchable: false,
         className: 'text-center',
         render: function (row) {
-          return `<input type="checkbox" class="form-check-input rowChk" data-id="${row.id}" data-type="${row.row_type}">`;
+          // ติ๊กได้เสมอ (ผู้อนุมัติต้องอนุมัติทีละหลายรายการ) แต่แถวที่ขอไปแล้วจะถูกข้ามตอน "ขออนุมัติที่เลือก"
+          const at = row.requested_at ? ` เมื่อ ${row.requested_at}` : '';
+          const tip = row.requested ? ` title="ขออนุมัติไปแล้ว${at}"` : '';
+          return `<input type="checkbox" class="form-check-input rowChk"
+            data-id="${row.id}" data-type="${row.row_type}"
+            data-requested="${row.requested ? 1 : 0}"${tip}>`;
         }
       },
       { data: 'No' },
       { data: 'date' },
-      { data: 'type' },
+      {
+        data: 'type',
+        render: function (type, t, row) {
+          if (!row.requested) return type;
+          const at = row.requested_at ? ` เมื่อ ${row.requested_at}` : '';
+          return `${type} <span class="badge bg-label-warning" title="ขออนุมัติไปแล้ว${at}">ขอแล้ว</span>`;
+        }
+      },
       { data: 'model_id' },
       { data: 'subModel_id' },
       { data: 'color' },
@@ -1101,15 +1113,31 @@ $(document).on('change', '.processOrderTable tbody .rowChk', function () {
 });
 
 // เก็บรายการที่เลือก แยกตาม type
+// new* = ยังไม่เคยขออนุมัติ (ใช้กับปุ่ม "ขออนุมัติที่เลือก") ; ชุดเต็มใช้กับ "อนุมัติที่เลือก"
 function getSelectedProcessRows() {
   const orderIds = [];
   const waitingIds = [];
+  const newOrderIds = [];
+  const newWaitingIds = [];
   $('.processOrderTable tbody .rowChk:checked').each(function () {
     const id = $(this).data('id');
-    if ($(this).data('type') === 'waiting') waitingIds.push(id);
-    else orderIds.push(id);
+    const requested = String($(this).data('requested')) === '1';
+    if ($(this).data('type') === 'waiting') {
+      waitingIds.push(id);
+      if (!requested) newWaitingIds.push(id);
+    } else {
+      orderIds.push(id);
+      if (!requested) newOrderIds.push(id);
+    }
   });
-  return { orderIds, waitingIds, total: orderIds.length + waitingIds.length };
+  return {
+    orderIds,
+    waitingIds,
+    total: orderIds.length + waitingIds.length,
+    newOrderIds,
+    newWaitingIds,
+    newTotal: newOrderIds.length + newWaitingIds.length
+  };
 }
 
 // เปิด modal ขออนุมัติ
@@ -1119,7 +1147,20 @@ $(document).on('click', '.btnRequestApproval', function () {
     Swal.fire({ icon: 'warning', title: 'กรุณาเลือกรายการอย่างน้อย 1 รายการ', confirmButtonText: 'ตกลง' });
     return;
   }
-  $('#processApproverCount').text(sel.total);
+  // แถวที่ขออนุมัติไปแล้ว ขอซ้ำไม่ได้ — ถ้าเลือกมาแต่แถวแบบนั้น ไม่ต้องเปิด modal
+  if (sel.newTotal === 0) {
+    Swal.fire({
+      icon: 'info',
+      title: 'รายการที่เลือกถูกขออนุมัติไปแล้วทั้งหมด',
+      text: 'กรุณาเลือกรายการที่ยังไม่ได้ขออนุมัติ',
+      confirmButtonText: 'ตกลง'
+    });
+    return;
+  }
+
+  const skipped = sel.total - sel.newTotal;
+  $('#processApproverCount').text(sel.newTotal);
+  $('#processApproverSkip').text(skipped > 0 ? `(ข้าม ${skipped} รายการที่ขออนุมัติไปแล้ว)` : '');
   $('#process_approver_id').val('');
   $('#processApproverModal').modal('show');
 });
@@ -1132,7 +1173,7 @@ $(document).on('click', '.btnConfirmRequestApproval', function () {
     return;
   }
   const sel = getSelectedProcessRows();
-  if (sel.total === 0) return;
+  if (sel.newTotal === 0) return;
 
   $.ajax({
     url: '/car-order/process/request-approval',
@@ -1140,8 +1181,8 @@ $(document).on('click', '.btnConfirmRequestApproval', function () {
     data: {
       _token: $('meta[name="csrf-token"]').attr('content'),
       approver_id: approverId,
-      order_ids: sel.orderIds,
-      waiting_ids: sel.waitingIds
+      order_ids: sel.newOrderIds,
+      waiting_ids: sel.newWaitingIds
     },
     beforeSend: function () {
       $('#processApproverModal').modal('hide');

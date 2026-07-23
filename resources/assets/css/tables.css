@@ -47,6 +47,13 @@ input[data-no-icon][type="month"]::-webkit-inner-spin-button {
   -webkit-appearance: none !important;
 }
 
+/* ช่องวันที่ใน SweetAlert — flatpickr ห่อเป็น .input-group ที่กว้างเต็ม popup
+   ความกว้างมาจาก inputAttributes ของ Swal (initDatePicker คัดลอกมาให้) ที่นี่แค่จัดกึ่งกลาง */
+.swal2-popup .input-group {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .date-icon-wrap {
   position: relative;
   width: 155px;

@@ -44,7 +44,8 @@
 
 ---
 
-@component('mail::button', ['url' => route('car-order.process')])
+{{-- พ่วง brand ของคำขอไปด้วย — ผู้อนุมัติที่กำลังอยู่คนละ brand จะถูกสลับให้ตรงก่อนเข้าหน้า --}}
+@component('mail::button', ['url' => route('car-order.process', array_filter(['brand' => $brand]))])
 ดูรายละเอียด
 @endcomponent
 

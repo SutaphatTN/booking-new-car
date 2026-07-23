@@ -348,6 +348,14 @@
 
               @if ($order->purchase_type == 1)
                 <div class="col-md-3">
+                  <label for="license_plate_id" class="mf-label form-label">
+                    <i class="bx bx-id-card ci-emerald"></i> ป้ายทะเบียน (ทดลองขับ)
+                  </label>
+                  <input type="text" id="license_plate_id" class="form-control"
+                    value="{{ $order->licensePlate->number ?? '-' }}" disabled>
+                </div>
+
+                <div class="col-md-3">
                   <label for="mileage_test" class="mf-label form-label">
                     <i class="bx bx-tachometer ci-emerald"></i> เลขไมล์รถทดลองขับ
                   </label>

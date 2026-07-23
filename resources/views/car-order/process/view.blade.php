@@ -83,7 +83,10 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4">
-        <p class="mb-3">รายการที่เลือก: <strong><span id="processApproverCount">0</span></strong> รายการ</p>
+        <p class="mb-3">
+          รายการที่เลือก: <strong><span id="processApproverCount">0</span></strong> รายการ
+          <small class="text-warning" id="processApproverSkip"></small>
+        </p>
         <label for="process_approver_id" class="mf-label form-label">
           <i class="bx bx-user-check"></i> ผู้อนุมัติ <span class="text-danger">*</span>
         </label>

@@ -42,6 +42,7 @@ class CarOrderWaiting extends Model
         'approver',
         'approved_by',
         'approved_at',
+        'approval_requested_at', // ส่งเมลขออนุมัติไปแล้วเมื่อไหร่ — มีค่า = ขอซ้ำไม่ได้
         'note',
         'reason',
         'system_date',
