@@ -1074,7 +1074,11 @@ class CarOrderController extends Controller
                     'qty'        => $r->count_order ?? 1,
                 ];
             };
-            $items = $orders->map($mapItem)->merge($waitings->map($mapItem))->values()->all();
+            // toBase() ก่อน merge — Eloquent\Collection ที่ว่างจะไม่ถูก downgrade เป็น base collection
+            // ทำให้ merge() ไปเรียก getKey() กับ array (เคสเลือกเฉพาะแถว waiting → $orders ว่าง)
+            $items = $orders->map($mapItem)->toBase()
+                ->merge($waitings->map($mapItem)->toBase())
+                ->values()->all();
 
             Mail::to($approver->email)->send(new BatchApproveCarOrderMail($items, $approver->name, Auth::user()->brand));
 

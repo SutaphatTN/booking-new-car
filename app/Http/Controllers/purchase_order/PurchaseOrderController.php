@@ -234,8 +234,9 @@ class PurchaseOrderController extends Controller
 
         $isFinance = $saleCar->payment_mode === 'finance';
 
-        // 3. margin = ราคาขาย × 2%
-        $margin = $priceSub * 0.02;
+        // 3. margin = ราคาขาย × 2% — brand 2 ไม่มี margin (ไม่คิดเข้ายอดรวมแคมเปญ)
+        $hasMargin = (int) $saleCar->brand !== 2;
+        $margin = $hasMargin ? $priceSub * 0.02 : 0.0;
 
         // 2. ri (cashSupport) จากแคมเปญที่ใช้ — นับเฉพาะ type = 1 (RI) และ type = 2 (On-Top)
         //    เช็คตาม type ของแคมเปญที่ใช้จริง (tb_campaign_type แยก brand อยู่แล้ว จึงไม่ต้อง hardcode ตาม brand)
@@ -292,6 +293,7 @@ class PurchaseOrderController extends Controller
         return [
             'price_sub'        => $priceSub,
             'margin'           => $margin,
+            'has_margin'       => $hasMargin,
             'ri'               => $ri,
             'campaign_details' => $campaignDetails,
             'com_fin'          => $comFin,

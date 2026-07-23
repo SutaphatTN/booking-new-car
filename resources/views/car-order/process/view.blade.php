@@ -90,7 +90,7 @@
         <select id="process_approver_id" class="form-select" required>
           <option value="">— เลือกผู้อนุมัติ —</option>
           @foreach ($approvers as $a)
-            <option value="{{ $a->id }}">{{ $a->name }}</option>
+            <option value="{{ $a->id }}">{{ $a->full_name ?: $a->name }}</option>
           @endforeach
         </select>
       </div>
