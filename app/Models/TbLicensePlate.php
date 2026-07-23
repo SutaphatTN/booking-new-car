@@ -25,15 +25,20 @@ class TbLicensePlate extends Model
 	 */
 	public const STATUS_NORMAL = 'normal';
 
+	/** ป้ายที่กันไว้ให้รถทดลองขับ — เลือกได้เฉพาะในหน้า Car Order ที่ประเภทการซื้อรถ = TestDrive */
+	public const STATUS_TEST_DRIVE = 'test_drive';
+
 	public const PLATE_STATUSES = [
-		'normal'   => 'ปกติ',
-		'lost'     => 'สูญหาย',
-		'damaged'  => 'ชำรุด',
-		'tracking' => 'ระหว่างติดตาม',
+		'normal'     => 'ปกติ',
+		'lost'       => 'สูญหาย',
+		'damaged'    => 'ชำรุด',
+		'tracking'   => 'ระหว่างติดตาม',
+		'test_drive' => 'ทดลองขับ',
 	];
 
 	// สถานะที่ทำให้ป้ายใช้ไม่ได้ — ยืมไม่ได้ และเลือกผูกงานขายใหม่ไม่ได้
-	public const BLOCKED_STATUSES = ['lost', 'damaged', 'tracking'];
+	// test_drive อยู่ในกลุ่มนี้ด้วย เพราะเป็นป้ายที่กันไว้ให้รถทดลองขับโดยเฉพาะ ไม่เอาไปใช้กับงานขายปกติ
+	public const BLOCKED_STATUSES = ['lost', 'damaged', 'tracking', 'test_drive'];
 
 	public function getPlateStatusValueAttribute(): string
 	{
@@ -57,6 +62,12 @@ class TbLicensePlate extends Model
 			$q->whereNull('plate_status')
 				->orWhereNotIn('plate_status', self::BLOCKED_STATUSES);
 		});
+	}
+
+	// เฉพาะป้ายที่กันไว้ให้รถทดลองขับ (ใช้กับ dropdown ในหน้า Car Order)
+	public function scopeTestDrive($query)
+	{
+		return $query->where('plate_status', self::STATUS_TEST_DRIVE);
 	}
 
 	// ป้ายแดงแยกกองตามแบรนด์ (เลิกแชร์ตามกลุ่ม) — แบรนด์อื่นใช้ได้ผ่านการกดยืมเท่านั้น

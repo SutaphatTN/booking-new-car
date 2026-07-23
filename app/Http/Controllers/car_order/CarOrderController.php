@@ -16,6 +16,7 @@ use App\Models\Salecar;
 use App\Models\TbCarmodel;
 use App\Models\TbBranch;
 use App\Models\TbInteriorColor;
+use App\Models\TbLicensePlate;
 use App\Models\TbOrderStatus;
 use App\Models\TbPurchaseType;
 use App\Models\TbPricelistCar;
@@ -158,7 +159,16 @@ class CarOrderController extends Controller
         $interiorColor = TbInteriorColor::all();
         $branches = TbBranch::all();
 
-        return view('car-order.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType', 'interiorColor', 'branches'));
+        // ป้ายแดงสำหรับรถทดลองขับ — เฉพาะป้ายสถานะ "ทดลองขับ"
+        // (บวกป้ายที่ใบนี้เลือกไว้แล้ว เผื่อสถานะถูกเปลี่ยนทีหลัง จะได้ไม่หายจาก dropdown)
+        $testDrivePlates = TbLicensePlate::where(function ($q) use ($order) {
+            $q->testDrive();
+            if ($order->license_plate_id) {
+                $q->orWhere('id', $order->license_plate_id);
+            }
+        })->orderBy('number')->get(['id', 'number']);
+
+        return view('car-order.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType', 'interiorColor', 'branches', 'testDrivePlates'));
     }
 
     public function update(Request $request, $id)
@@ -193,6 +203,12 @@ class CarOrderController extends Controller
 
             $data['WS'] = $request->WS
                 ? str_replace(',', '', $request->WS)
+                : null;
+
+            // ป้ายแดงทดลองขับ — เก็บเฉพาะเคส TestDrive ; เปลี่ยนประเภทการซื้อรถแล้วต้องเคลียร์ทิ้ง
+            // (ช่องนี้ซ่อนด้วย d-none ซึ่งยังถูกส่งมาอยู่ จึงต้องตัดที่ฝั่ง server)
+            $data['license_plate_id'] = (int) $request->purchase_type === CarOrder::PURCHASE_TYPE_TEST_DRIVE
+                ? ($request->license_plate_id ?: null)
                 : null;
 
             $order->update($data);
@@ -938,6 +954,17 @@ class CarOrderController extends Controller
     public function process(Request $request)
     {
         $authUser = Auth::user();
+
+        // ลิงก์จากอีเมลขออนุมัติจะพ่วง ?brand=N มาด้วย — สลับ brand ให้ตรงกับคำขอก่อน
+        // ต้อง redirect เพราะ BrandSwitcher middleware อ่าน session ไปแล้วตั้งแต่ก่อนเข้า controller
+        if ($request->filled('brand')) {
+            $target = (int) $request->query('brand');
+            if ($target !== (int) $authUser->brand && in_array($target, $authUser->switchableBrandIds(), true)) {
+                session(['brand_switch' => $target]);
+            }
+            return redirect()->route('car-order.process', $request->except('brand'));
+        }
+
         $process = CarOrder::all();
         $openId = $request->query('open_id');
 
@@ -991,6 +1018,10 @@ class CarOrderController extends Controller
                 'color'     => $p->display_color,
                 'stock'     => $stockMap[$stockKey($p)] ?? 0,
                 'order_qty' => 1,
+                'requested' => (bool) $p->approval_requested_at, // ขออนุมัติไปแล้ว → ติ๊กเลือกซ้ำไม่ได้
+                'requested_at' => $p->approval_requested_at
+                    ? Carbon::parse($p->approval_requested_at)->format('d-m-Y H:i')
+                    : null,
                 'Action'    => view('car-order.process.button', compact('p'))->render(),
             ]);
         }
@@ -1012,6 +1043,10 @@ class CarOrderController extends Controller
                 'color'     => $w->display_color,
                 'stock'     => $stockMap[$stockKey($w)] ?? 0,
                 'order_qty' => $w->count_order ?? 1,
+                'requested' => (bool) $w->approval_requested_at,
+                'requested_at' => $w->approval_requested_at
+                    ? Carbon::parse($w->approval_requested_at)->format('d-m-Y H:i')
+                    : null,
                 'Action'    => view('car-order.process.button-waiting', compact('w'))->render(),
             ]);
         }
@@ -1042,23 +1077,27 @@ class CarOrderController extends Controller
                 return response()->json(['success' => false, 'message' => 'ผู้อนุมัติยังไม่มีอีเมลในระบบ'], 422);
             }
 
+            // whereNull('approval_requested_at') — กันขอซ้ำ (ฝั่งหน้าเว็บติ๊กไม่ได้อยู่แล้ว แต่กันยิง endpoint ตรง)
             $orders = CarOrder::with(['model', 'subModel', 'gwmColor'])
                 ->whereIn('id', $request->input('order_ids', []))
                 ->where('status', CarOrder::STATUS_PENDING)
+                ->whereNull('approval_requested_at')
                 ->get();
 
             $waitings = CarOrderWaiting::with(['model', 'subModel', 'gwmColor'])
                 ->whereIn('id', $request->input('waiting_ids', []))
                 ->where('status', 'pending')
+                ->whereNull('approval_requested_at')
                 ->get();
 
             if ($orders->isEmpty() && $waitings->isEmpty()) {
-                return response()->json(['success' => false, 'message' => 'ไม่พบรายการที่ขออนุมัติได้'], 422);
+                return response()->json(['success' => false, 'message' => 'ไม่พบรายการที่ขออนุมัติได้ (อาจถูกขออนุมัติไปแล้ว)'], 422);
             }
 
-            // อัปเดตผู้อนุมัติของรายการที่เลือกให้ตรงกับคนที่เลือกตอนขออนุมัติ
-            CarOrder::whereIn('id', $orders->pluck('id'))->update(['approver' => $approver->id]);
-            CarOrderWaiting::whereIn('id', $waitings->pluck('id'))->update(['approver' => $approver->id]);
+            // อัปเดตผู้อนุมัติของรายการที่เลือกให้ตรงกับคนที่เลือกตอนขออนุมัติ + ปั๊มเวลาที่ขอ
+            $stamp = ['approver' => $approver->id, 'approval_requested_at' => now()];
+            CarOrder::whereIn('id', $orders->pluck('id'))->update($stamp);
+            CarOrderWaiting::whereIn('id', $waitings->pluck('id'))->update($stamp);
 
             // ประกอบรายการสำหรับเมล
             $mapItem = function ($r) {
@@ -1080,7 +1119,8 @@ class CarOrderController extends Controller
                 ->merge($waitings->map($mapItem)->toBase())
                 ->values()->all();
 
-            Mail::to($approver->email)->send(new BatchApproveCarOrderMail($items, $approver->name, Auth::user()->brand));
+            $approverName = $approver->full_name ?: $approver->name;
+            Mail::to($approver->email)->send(new BatchApproveCarOrderMail($items, $approverName, Auth::user()->brand));
 
             return response()->json([
                 'success' => true,

@@ -62,10 +62,12 @@ class CarOrder extends Model
         'approver',
         'approved_by',
         'approver_date',
+        'approval_requested_at', // ส่งเมลขออนุมัติไปแล้วเมื่อไหร่ — มีค่า = ขอซ้ำไม่ได้
         'note_accessory',
         'note',
         'cam_testdrive',
         'mileage_test',
+        'license_plate_id', // ป้ายแดงของรถทดลองขับ (เฉพาะ purchase_type = TestDrive)
         'status',
         'reason',
         'userZone',
@@ -79,7 +81,8 @@ class CarOrder extends Model
 
     protected $dates = ['deleted_at'];
 
-    /** ประเภทการซื้อรถ = Retail (tb_purchase_type.id) */
+    /** ประเภทการซื้อรถ = TestDrive / Retail (tb_purchase_type.id) */
+    const PURCHASE_TYPE_TEST_DRIVE = 1;
     const PURCHASE_TYPE_RETAIL = 2;
 
     const STATUS_PENDING = 'pending';
@@ -146,6 +149,13 @@ class CarOrder extends Model
     public function gwmColor()
     {
         return $this->belongsTo(TbColor::class, 'gwm_color');
+    }
+
+    // ป้ายแดงของรถทดลองขับ — ข้าม brand scope ของป้าย (ใช้แสดงผลเท่านั้น)
+    public function licensePlate()
+    {
+        return $this->belongsTo(TbLicensePlate::class, 'license_plate_id', 'id')
+            ->withoutGlobalScope('brandAccess');
     }
 
     public function getDisplayColorAttribute()

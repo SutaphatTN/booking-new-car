@@ -2,6 +2,7 @@
 
 namespace App\Exports\license;
 
+use App\Models\CarOrder;
 use App\Models\LicensePlateHistory;
 use App\Models\TbLicensePlate;
 use Illuminate\Contracts\View\View;
@@ -108,7 +109,16 @@ class StockLicExport implements FromView, WithTitle, WithStyles, WithEvents, Sho
 
         $brandNames = config('brand.names', []);
 
-        $data = $rows->map(function ($r) use ($brandNames, $histories) {
+        // Vin ของรถทดลองขับที่ผูกกับป้าย (ผูกจากหน้า Car Order เมื่อประเภทการซื้อรถ = TestDrive)
+        // ข้าม userAccess scope เพราะรถอาจถูกบันทึกโดยคนละสาขา/โซนกับคนที่ออกรายงาน
+        $testDriveVins = CarOrder::withoutGlobalScope('userAccess')
+            ->whereIn('license_plate_id', $rows->pluck('id'))
+            ->orderBy('id')
+            ->get(['license_plate_id', 'vin_number'])
+            ->groupBy('license_plate_id')
+            ->map(fn($group) => $group->pluck('vin_number')->filter()->unique()->implode(', '));
+
+        $data = $rows->map(function ($r) use ($brandNames, $histories, $testDriveVins) {
             $history = $histories->get($r->id);
             $loan = $r->activeLoan;
 
@@ -151,6 +161,8 @@ class StockLicExport implements FromView, WithTitle, WithStyles, WithEvents, Sho
                     : '-',
                 'red_license'     => $r->number,
                 'plate_status'    => $plateStatus,
+                // มีค่าเฉพาะป้ายทดลองขับที่ถูกผูกกับ Car Order ไว้
+                'vin_number'      => $testDriveVins->get($r->id) ?: '-',
                 'delivery_date'       => $r->is_used
                     ? ($history?->saleCarLic?->format_delivery_date ?? '-')
                     : '-',

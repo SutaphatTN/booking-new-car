@@ -58,9 +58,11 @@ class LicenseController extends Controller
       $nameSale = $history?->saleCarLic?->saleUser?->name ?? '';
 
       // ── สถานะ ──
-      // สถานะของตัวป้าย (สูญหาย/ชำรุด/ระหว่างติดตาม) มาก่อนเสมอ — ป้ายพวกนี้หยิบมาใช้ไม่ได้
+      // สถานะของตัวป้าย (สูญหาย/ชำรุด/ระหว่างติดตาม/ทดลองขับ) มาก่อนเสมอ — ป้ายพวกนี้หยิบมาใช้กับงานขายไม่ได้
+      // ทดลองขับแยกสีไว้ เพราะไม่ใช่ป้ายมีปัญหา แต่เป็นป้ายที่กันไว้ให้รถทดลองขับ
       if ($p->isBlocked()) {
-        $status = '<span class="badge bg-dark">' . e($p->plate_status_label) . '</span>';
+        $badge = $p->plate_status_value === TbLicensePlate::STATUS_TEST_DRIVE ? 'bg-primary' : 'bg-dark';
+        $status = '<span class="badge ' . $badge . '">' . e($p->plate_status_label) . '</span>';
       } elseif ($loan) {
         $isBorrower = $userBrand && $loan->borrower_brand == $userBrand;
         $status = $isBorrower
