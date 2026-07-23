@@ -9,6 +9,11 @@
   <div class="viewMoreLicenseModel"></div>
   <div class="editLicenseModel"></div>
   <div class="viewExportLicenseAllModel"></div>
+
+  {{-- ตัวเลือกสถานะป้าย (admin เท่านั้น) — ให้ JS อ่านไปสร้าง dropdown ตอนกดแก้สถานะ --}}
+  @if (auth()->user()->role === 'admin')
+    <div id="plateStatusOptions" class="d-none" data-options='@json(\App\Models\TbLicensePlate::PLATE_STATUSES)'></div>
+  @endif
   <div class="row">
     <div class="col-12">
       <div class="card tbl-card">

@@ -6,6 +6,7 @@
       <th>เบอร์ลูกค้า</th>
       <th>ฝ่ายขาย</th>
       <th>ป้ายแดง</th>
+      <th>สถานะป้าย</th>
       <th>ใช้ข้ามแบรนด์</th>
       <th>วันที่ส่งมอบ</th>
     </tr>
@@ -18,12 +19,13 @@
       <td>{{ $s['phone'] }}</td>
       <td>{{ $s['sale_lic'] }}</td>
       <td>{{ $s['red_license'] }}</td>
+      <td>{{ $s['plate_status'] }}</td>
       <td>{{ $s['bound_brand'] }}</td>
       <td>{{ $s['delivery_date'] }}</td>
     </tr>
     @empty
     <tr>
-      <td colspan="7" align="center">
+      <td colspan="8" align="center">
         ไม่มีข้อมูล
       </td>
     </tr>

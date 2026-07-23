@@ -360,6 +360,47 @@ $(document).on('click', '.btnReturnPlate', function () {
   });
 });
 
+// ── แก้สถานะป้าย (admin เท่านั้น) — สูญหาย/ชำรุด/ระหว่างติดตาม จะยืมและเลือกใช้กับงานขายไม่ได้ ──
+$(document).on('click', '.btnEditPlateStatus', function () {
+  const id = $(this).data('id');
+  const number = $(this).data('number');
+  const current = $(this).data('status') || 'normal';
+  const options = $('#plateStatusOptions').data('options') || { normal: 'ปกติ' };
+
+  Swal.fire({
+    title: 'สถานะป้าย ' + number,
+    text: 'สูญหาย / ชำรุด / ระหว่างติดตาม จะยืมและเลือกใช้กับงานขายใหม่ไม่ได้',
+    input: 'select',
+    inputOptions: options,
+    inputValue: current,
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'บันทึก',
+    cancelButtonText: 'ยกเลิก',
+    inputValidator: value => (!value ? 'กรุณาเลือกสถานะ' : undefined)
+  }).then(result => {
+    if (!result.isConfirmed || result.value === current) return;
+
+    $.ajax({
+      url: '/license/' + id + '/status',
+      type: 'POST',
+      data: { _method: 'PUT', plate_status: result.value },
+      success: function (res) {
+        Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: res.message, timer: 2000, showConfirmButton: true });
+        licenseTable.ajax.reload(null, false);
+      },
+      error: function (xhr) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: xhr.responseJSON?.message || 'ไม่สามารถเปลี่ยนสถานะได้'
+        });
+      }
+    });
+  });
+});
+
 $(document).on('click', '.btnExportLicenseAll', function () {
   $.get('/license/view-export-license', function (html) {
     $('.viewExportLicenseAllModel').html(html);

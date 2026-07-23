@@ -1347,6 +1347,12 @@ class PurchaseOrderController extends Controller
                 $q->where('is_used', 0)
                     ->orWhere('id', $saleCar->red_license);
             })
+            // ป้ายสูญหาย/ชำรุด/ระหว่างติดตาม เลือกใหม่ไม่ได้ (ใบที่เลือกไว้แล้วยังคงอยู่)
+            ->where(function ($q) use ($saleCar) {
+                $q->whereNull('plate_status')
+                    ->orWhereNotIn('plate_status', TbLicensePlate::BLOCKED_STATUSES)
+                    ->orWhere('id', $saleCar->red_license);
+            })
             ->orderBy('number')
             ->get();
         $provinces = TbProvinces::all();

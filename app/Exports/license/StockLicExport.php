@@ -135,6 +135,11 @@ class StockLicExport implements FromView, WithTitle, WithStyles, WithEvents, Sho
 
             $boundBrand = $usedBy ? implode(' / ', $usedBy) : '-';
 
+            // สถานะของตัวป้าย — สูญหาย/ชำรุด/ระหว่างติดตาม มาก่อน ว่าง/ใช้งาน (ป้ายพวกนี้หยิบมาใช้ไม่ได้)
+            $plateStatus = $r->isBlocked()
+                ? $r->plate_status_label
+                : ($r->is_used ? 'ใช้งาน' : 'ว่าง');
+
             return [
                 'customer' => $customerName,
                 'bound_brand' => $boundBrand,
@@ -145,6 +150,7 @@ class StockLicExport implements FromView, WithTitle, WithStyles, WithEvents, Sho
                     ? $nameSale
                     : '-',
                 'red_license'     => $r->number,
+                'plate_status'    => $plateStatus,
                 'delivery_date'       => $r->is_used
                     ? ($history?->saleCarLic?->format_delivery_date ?? '-')
                     : '-',
