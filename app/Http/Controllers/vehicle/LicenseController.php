@@ -12,6 +12,7 @@ use App\Models\TbLicensePlate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Support\ExportFilename;
 
@@ -44,9 +45,10 @@ class LicenseController extends Controller
     $user = Auth::user();
     $userBrand = $user->brand;
     $canLoan = in_array($user->role, config('brand.plate_loan_roles', []));
+    $isAdmin = $user->role === 'admin';
     $brandNames = config('brand.names', []);
 
-    $data = $plates->values()->map(function ($p, $index) use ($histories, $userBrand, $canLoan, $brandNames) {
+    $data = $plates->values()->map(function ($p, $index) use ($histories, $userBrand, $canLoan, $isAdmin, $brandNames) {
       $history = $histories->get($p->id);
       $loan = $p->activeLoan;
 
@@ -55,8 +57,11 @@ class LicenseController extends Controller
       $last   = $history?->saleCarLic?->customer?->LastName ?? '';
       $nameSale = $history?->saleCarLic?->saleUser?->name ?? '';
 
-      // ── สถานะยืม/ใช้งาน ──
-      if ($loan) {
+      // ── สถานะ ──
+      // สถานะของตัวป้าย (สูญหาย/ชำรุด/ระหว่างติดตาม) มาก่อนเสมอ — ป้ายพวกนี้หยิบมาใช้ไม่ได้
+      if ($p->isBlocked()) {
+        $status = '<span class="badge bg-dark">' . e($p->plate_status_label) . '</span>';
+      } elseif ($loan) {
         $isBorrower = $userBrand && $loan->borrower_brand == $userBrand;
         $status = $isBorrower
           ? '<span class="badge bg-info">ยืมจาก ' . e($brandNames[$loan->owner_brand] ?? 'แบรนด์อื่น') . ' (ยืม ' . $loan->format_borrow_date . ')</span>'
@@ -86,6 +91,15 @@ class LicenseController extends Controller
           . '" data-number="' . e($p->number) . '" data-borrow="' . $loan->format_borrow_date
           . '" data-inuse="' . ($p->is_used ? 1 : 0)
           . '" title="คืนป้าย"><i class="bx bx-undo"></i></button> '
+          . ($action === '-' ? '' : $action);
+      }
+
+      // ปุ่มแก้สถานะป้าย — admin เท่านั้น และต้องมีทุกแถว (รวมป้ายว่าง)
+      // เพราะใช้ mark สูญหาย/ชำรุด/ระหว่างติดตาม ซึ่งเกิดกับป้ายที่ไม่ได้ผูกงานขายก็ได้
+      if ($isAdmin) {
+        $action = '<button class="btn btn-icon btn-secondary btnEditPlateStatus" data-id="' . $p->id
+          . '" data-number="' . e($p->number) . '" data-status="' . e($p->plate_status_value)
+          . '" title="แก้ไขสถานะป้าย"><i class="bx bx-edit-alt"></i></button> '
           . ($action === '-' ? '' : $action);
       }
 
@@ -149,6 +163,52 @@ class LicenseController extends Controller
     return response()->json(['success' => true, 'message' => "เพิ่มป้ายแดง {$number} เรียบร้อยแล้ว"]);
   }
 
+  /**
+   * แก้สถานะของตัวป้าย (ปกติ / สูญหาย / ชำรุด / ระหว่างติดตาม) — admin เท่านั้น
+   * 3 สถานะหลังทำให้ป้ายถูกยืมหรือเลือกผูกงานขายใหม่ไม่ได้
+   */
+  public function updateStatus(Request $request, $id)
+  {
+    abort_unless(Auth::user()->role === 'admin', 403);
+
+    $request->validate([
+      'plate_status' => ['required', 'string', Rule::in(array_keys(TbLicensePlate::PLATE_STATUSES))],
+    ]);
+
+    // ข้าม brand scope — admin ไม่มีแบรนด์ประจำ และต้องแก้ป้ายที่แบรนด์อื่นยืมอยู่ได้ด้วย
+    $plate = TbLicensePlate::withoutGlobalScope('brandAccess')->find($id);
+    if (!$plate) {
+      return response()->json(['success' => false, 'message' => 'ไม่พบป้ายแดง'], 404);
+    }
+
+    $newStatus = $request->plate_status;
+    $isBlocking = in_array($newStatus, TbLicensePlate::BLOCKED_STATUSES, true);
+
+    // ป้ายที่ยังผูกงานขายอยู่ ห้าม mark สูญหาย/ชำรุด/ระหว่างติดตาม
+    // — ต้องปลดออกจากงานขายก่อน ไม่งั้นงานขายจะค้างกับป้ายที่ใช้ไม่ได้
+    if ($isBlocking && $plate->is_used) {
+      return response()->json([
+        'success' => false,
+        'message' => 'ป้ายนี้ยังผูกกับงานขายอยู่ ต้องกดยืนยันการจ่ายเงินจริงเพื่อปลดป้ายก่อน',
+      ], 422);
+    }
+
+    // ป้ายที่แบรนด์อื่นยืมค้างอยู่ ต้องคืนก่อน — ไม่งั้นฝั่งที่ยืมจะถือป้ายที่ใช้ไม่ได้ไว้
+    if ($isBlocking && $plate->loans()->whereNull('return_date')->exists()) {
+      return response()->json([
+        'success' => false,
+        'message' => 'ป้ายนี้ถูกยืมค้างอยู่ ต้องคืนป้ายก่อนจึงจะเปลี่ยนสถานะได้',
+      ], 422);
+    }
+
+    $plate->update(['plate_status' => $newStatus]);
+
+    return response()->json([
+      'success' => true,
+      'message' => 'เปลี่ยนสถานะป้าย ' . $plate->number . ' เป็น "' . $plate->plate_status_label . '" เรียบร้อยแล้ว',
+    ]);
+  }
+
   // ── ยืม-คืนป้ายแดงข้ามแบรนด์ ──
 
   private function ensureLoanRole()
@@ -164,6 +224,7 @@ class LicenseController extends Controller
     $plates = TbLicensePlate::withoutGlobalScope('brandAccess')
       ->where('brand', (int) $request->brand)
       ->where('is_used', 0)
+      ->usable()   // ตัดป้ายสูญหาย/ชำรุด/ระหว่างติดตามออก
       ->whereDoesntHave('loans', fn($q) => $q->whereNull('return_date'))
       ->orderBy('number')
       ->get(['id', 'number']);
@@ -196,6 +257,12 @@ class LicenseController extends Controller
     }
     if ($plate->is_used) {
       return response()->json(['success' => false, 'message' => 'ป้ายนี้ถูกใช้งานอยู่'], 422);
+    }
+    if ($plate->isBlocked()) {
+      return response()->json([
+        'success' => false,
+        'message' => 'ป้ายนี้อยู่ในสถานะ "' . $plate->plate_status_label . '" ไม่สามารถยืมได้',
+      ], 422);
     }
     if ($plate->loans()->whereNull('return_date')->exists()) {
       return response()->json(['success' => false, 'message' => 'ป้ายนี้ถูกยืมอยู่แล้ว'], 422);

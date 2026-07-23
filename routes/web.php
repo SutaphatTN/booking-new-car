@@ -356,6 +356,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('license/loan-options', [LicenseController::class, 'loanOptions']);
     Route::post('license/loan', [LicenseController::class, 'storeLoan']);
     Route::post('license/loan/{id}/return', [LicenseController::class, 'returnLoan']);
+    Route::put('license/{id}/status', [LicenseController::class, 'updateStatus'])->name('license.update-status');
     Route::get('license/{id}/view-more', [LicenseController::class, 'viewMore'])->name('vehicle.license.viewMore');
     Route::post('/license/approve-finance', [LicenseController::class, 'approveFinance']);
 
