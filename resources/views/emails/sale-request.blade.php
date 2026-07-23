@@ -66,7 +66,9 @@
 
 ### สรุปยอดแคมเปญ
 - **ราคาขาย :** {{ number_format($data['price_sub'], 2) }}
+@if ($data['has_margin'] ?? true)
 - **Margin (2%) :** {{ number_format($data['margin'], 2) }}
+@endif
 - **RI (cashSupport) :** {{ number_format($data['ri'], 2) }}
 - **Com Finance :** {{ number_format($data['com_fin'], 2) }}
 @if (!empty($data['is_finance']))
