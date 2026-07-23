@@ -3,7 +3,7 @@
 namespace App\Exports\dispose;
 
 use App\Http\Controllers\floor_plan\FloorPlanController;
-use App\Models\Salecar;
+use App\Models\CarOrder;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -98,11 +98,11 @@ class DisposeReportExport implements FromView, WithTitle, WithStyles, WithEvents
     public function view(): View
     {
         // รายงานยึด "เดือนของวันที่รับ" — ไม่ยึดสถานะเบิก/ยังไม่เบิก และเอาเฉพาะรถที่มีวันที่รับ
-        $query = Salecar::with([
-                'carOrder' => fn ($q) => $q->with(['model', 'subModel', 'interiorColor', 'gwmColor']),
-                'customer', 'model', 'subModel', 'interiorColor', 'gwmColor',
+        // ยึดจาก car_order (1 คัน = 1 แถว) เพราะเอกสารแจ้งจำหน่ายผูกกับรถ ไม่ใช่ใบจอง
+        $query = CarOrder::with([
+                'model', 'subModel', 'interiorColor', 'gwmColor',
+                'salecars' => fn ($q) => $q->whereNotIn('con_status', [7, 8, 9])->with('customer'),
             ])
-            ->whereNotIn('con_status', [7, 8, 9])
             ->whereNotNull('dispose_received_date');
 
         // เดือนตาม "วันที่รับ" (เฉพาะเดือนที่เลือก)
@@ -115,7 +115,8 @@ class DisposeReportExport implements FromView, WithTitle, WithStyles, WithEvents
         }
 
         $rows = $query->orderBy('dispose_received_date')
-            ->orderByDesc('BookingDate')
+            ->orderByDesc('order_date')
+            ->orderByDesc('id')
             ->get();
 
         return view('floor-plan.dispose.report', [

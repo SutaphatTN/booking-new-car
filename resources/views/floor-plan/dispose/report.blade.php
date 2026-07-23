@@ -4,8 +4,8 @@
   //  - สีภายใน: เฉพาะ brand 2
   $brand = auth()->user()->brand;
 
-  // นับคอลัมน์ไว้ทำ colspan ของแถว "ไม่มีข้อมูล" (15 ฐาน + option + interior)
-  $colCount = 15 + ($brand == 1 ? 1 : 0) + ($brand == 2 ? 1 : 0);
+  // นับคอลัมน์ไว้ทำ colspan ของแถว "ไม่มีข้อมูล" (16 ฐาน + option + interior)
+  $colCount = 16 + ($brand == 1 ? 1 : 0) + ($brand == 2 ? 1 : 0);
 @endphp
 <table>
   <thead>
@@ -13,6 +13,7 @@
       <th>No</th>
       <th>VIN Number</th>
       <th>เลขเครื่อง</th>
+      <th>J Number</th>
       <th>รุ่นรถหลัก</th>
       <th>รุ่นย่อย</th>
       <th>ปี</th>
@@ -33,39 +34,35 @@
     </tr>
   </thead>
   <tbody>
-    @forelse ($rows as $s)
+    @forelse ($rows as $co)
       @php
-        $co = $s->carOrder;
-        $modelName = $co->model->Name_TH ?? $s->model->Name_TH ?? '-';
-        $subModel  = $co->subModel->name ?? $s->subModel->name ?? '-';
-        $year      = $co->year ?? $s->Year ?? '-';
-        $color     = $co ? $co->display_color : $s->display_color;
-        $option    = $co->option ?? $s->option ?? '-';
-        $interior  = $co->interiorColor->name ?? $s->interiorColor->name ?? '-';
-        $cus       = $s->customer;
-        $cusName   = $cus ? trim(collect([$cus->FirstName, $cus->MiddleName, $cus->LastName])->filter()->implode(' ')) : '';
+        // ใบจองที่ยังไม่ถอน (ถ้ามี) — ใช้แค่ชื่อลูกค้า ข้อมูลรถยึดจาก car_order ทั้งหมด
+        $sale    = $co->salecars->last();
+        $cus     = $sale?->customer;
+        $cusName = $cus ? trim(collect([$cus->FirstName, $cus->MiddleName, $cus->LastName])->filter()->implode(' ')) : '';
       @endphp
       <tr>
         <td>{{ $loop->iteration }}</td>
-        <td>{{ $co->vin_number ?? '-' }}</td>
-        <td>{{ $co->engine_number ?? '-' }}</td>
-        <td>{{ $modelName }}</td>
-        <td>{{ $subModel }}</td>
-        <td>{{ $year ?: '-' }}</td>
-        <td>{{ $color ?: '-' }}</td>
+        <td>{{ $co->vin_number ?: '-' }}</td>
+        <td>{{ $co->engine_number ?: '-' }}</td>
+        <td>{{ $co->j_number ?: '-' }}</td>
+        <td>{{ $co->model->Name_TH ?? '-' }}</td>
+        <td>{{ $co->subModel->name ?? '-' }}</td>
+        <td>{{ $co->year ?: '-' }}</td>
+        <td>{{ $co->display_color ?: '-' }}</td>
         @if ($brand == 1)
-          <td>{{ $option ?: '-' }}</td>
+          <td>{{ $co->option ?: '-' }}</td>
         @endif
         @if ($brand == 2)
-          <td>{{ $interior ?: '-' }}</td>
+          <td>{{ $co->interiorColor->name ?? '-' }}</td>
         @endif
         <td>{{ $co->car_DNP ?? 0 }}</td>
         <td>{{ $cusName !== '' ? $cusName : '-' }}</td>
         <td>{{ $co->format_fp_close_date ?? '-' }}</td>
-        <td>{{ $s->dispose_set ? ($disposeSets[$s->dispose_set] ?? '-') : '-' }}</td>
-        <td>{{ $s->format_dispose_received_date ?? '-' }}</td>
-        <td>{{ $s->format_dispose_reg_withdraw_date ?? '-' }}</td>
-        <td>{{ $s->dispose_note ?: '-' }}</td>
+        <td>{{ $co->dispose_set ? ($disposeSets[$co->dispose_set] ?? '-') : '-' }}</td>
+        <td>{{ $co->format_dispose_received_date ?? '-' }}</td>
+        <td>{{ $co->format_dispose_reg_withdraw_date ?? '-' }}</td>
+        <td>{{ $co->dispose_note ?: '-' }}</td>
       </tr>
     @empty
       <tr>

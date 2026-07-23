@@ -6,6 +6,14 @@
 @endsection
 
 @section('content')
+  {{-- ไอคอนในปุ่ม Action เป็นสีขาว — ต้องอยู่ระดับหน้า ไม่ใช่ใน partial ของแถว
+       (DataTables ถอดแถวที่ไม่ตรงคำค้นออกจาก DOM style ที่ฝังในแถวจะหายไปด้วย) --}}
+  <style>
+    .licenseTable .btn-icon i {
+      color: #fff;
+    }
+  </style>
+
   <div class="viewMoreLicenseModel"></div>
   <div class="editLicenseModel"></div>
   <div class="viewExportLicenseAllModel"></div>
