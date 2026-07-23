@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Exports\dispose\DisposeReportExport;
 use App\Exports\fp\FpReportExport;
 use App\Models\CarOrder;
-use App\Models\Salecar;
 use App\Models\FpMorRate;
 use App\Models\FpInterestRate;
 use Illuminate\Http\Request;
@@ -388,9 +387,11 @@ class FloorPlanController extends Controller
     }
 
     /**
-     * หน้า "แจ้งจำหน่าย" — รถจาก salecars (auto brand-scoped) ยกเว้น con_status 7,8,9
-     * - ข้อมูลรถ/ราคาทุน/วันที่ปิด FP ดึงจาก carOrder ที่ผูก (CarOrderID)
-     * - ฟิลด์แก้ไขได้: ชุดแจ้งจำหน่าย / วันที่รับ / วันที่ ทบ.เบิก / หมายเหตุ (เก็บบน salecars)
+     * หน้า "แจ้งจำหน่าย" — ยึดจาก car_order ทุกคัน (auto brand-scoped)
+     * เอกสารแจ้งจำหน่ายผูกกับ "คัน" ไม่ใช่ใบจอง เพราะใบจองสลับรถได้
+     * (ของเดิมยิงจาก salecars ทำให้รถที่ยังไม่มีใบจอง/ถูกสลับออกหายไปจากหน้านี้)
+     * - ฟิลด์แก้ไขได้: ชุดแจ้งจำหน่าย / วันที่รับ / วันที่ ทบ.เบิก / หมายเหตุ (เก็บบน car_order)
+     * - ชื่อลูกค้าดึงจากใบจองที่ยังไม่ถอน (con_status 7,8,9 = ถอน) ถ้าไม่มีใบจองก็เว้นไว้
      * - ฟิลเตอร์: สถานะ (ยังไม่เบิก = ยังไม่มีวันที่ ทบ.เบิก / เบิกแล้ว) + เดือน (ตามวันที่รับ)
      */
     public function disposeList(Request $request)
@@ -403,11 +404,7 @@ class FloorPlanController extends Controller
         $status = $request->input('status', 'pending');   // pending (ยังไม่เบิก) | withdrawn (เบิกแล้ว)
         $month  = $request->input('month');                // YYYY-MM ของ "วันที่รับ" (ว่าง = ทุกเดือน)
 
-        $query = Salecar::with([
-                'carOrder' => fn ($q) => $q->with(['model', 'subModel', 'interiorColor', 'gwmColor']),
-                'customer', 'model', 'subModel', 'interiorColor', 'gwmColor',
-            ])
-            ->whereNotIn('con_status', [7, 8, 9]);
+        $query = CarOrder::with(['model', 'subModel', 'interiorColor', 'gwmColor']);
 
         // สถานะ: ยังไม่เบิก = ยังไม่มีวันที่ ทบ.เบิก / เบิกแล้ว = มีแล้ว
         if ($status === 'withdrawn') {
@@ -425,45 +422,31 @@ class FloorPlanController extends Controller
             }
         }
 
-        $sales = $query->orderByDesc('dispose_received_date')
-            ->orderByDesc('BookingDate')
+        $orders = $query->orderByDesc('dispose_received_date')
+            ->orderByDesc('order_date')
+            ->orderByDesc('id')
             ->get();
 
-        $rows = $sales->map(function ($s) {
-            $co = $s->carOrder;
-
-            // ข้อมูลรถดึงจาก carOrder ที่ผูก (fallback = salecar ถ้าไม่มี carOrder)
-            $modelName = $co->model->Name_TH ?? $s->model->Name_TH ?? '-';
-            $subModel  = $co->subModel->name ?? $s->subModel->name ?? '-';
-            $year      = $co->year ?? $s->Year ?? '-';
-            $color     = $co ? $co->display_color : $s->display_color;
-            $option    = $co->option ?? $s->option ?? '-';
-            $interior  = $co->interiorColor->name ?? $s->interiorColor->name ?? '-';
-
-            $cus = $s->customer;
-            $cusName = $cus
-                ? trim(collect([$cus->FirstName, $cus->MiddleName, $cus->LastName])->filter()->implode(' '))
-                : '';
-
+        $rows = $orders->map(function ($co) {
             return [
-                'id'           => $s->id,
-                'vin'          => $co->vin_number ?? '-',
-                'engine'       => $co->engine_number ?? '-',
-                'modelName'    => $modelName,
-                'subModelName' => $subModel,
-                'year'         => $year ?: '-',
-                'color'        => $color ?: '-',
-                'option'       => $option ?: '-',
-                'interior'     => $interior ?: '-',
+                'id'           => $co->id,
+                'vin'          => $co->vin_number ?: '-',
+                'engine'       => $co->engine_number ?: '-',
+                'jNumber'      => $co->j_number ?: '-',
+                'modelName'    => $co->model->Name_TH ?? '-',
+                'subModelName' => $co->subModel->name ?? '-',
+                'year'         => $co->year ?: '-',
+                'color'        => $co->display_color ?: '-',
+                'option'       => $co->option ?: '-',
+                'interior'     => $co->interiorColor->name ?? '-',
                 'cost'         => (float) ($co->car_DNP ?? 0),
-                'customer'     => $cusName !== '' ? $cusName : '-',
                 'fpCloseText'  => $co->format_fp_close_date ?? '-',
-                'disposeSet'   => $s->dispose_set,
-                'received'     => $s->dispose_received_date,          // Y-m-d สำหรับ input
-                'receivedText' => $s->format_dispose_received_date ?? '-',
-                'withdraw'     => $s->dispose_reg_withdraw_date,      // Y-m-d สำหรับ input
-                'withdrawText' => $s->format_dispose_reg_withdraw_date ?? '-',
-                'note'         => $s->dispose_note,
+                'disposeSet'   => $co->dispose_set,
+                'received'     => $co->dispose_received_date,          // Y-m-d สำหรับ input
+                'receivedText' => $co->format_dispose_received_date ?? '-',
+                'withdraw'     => $co->dispose_reg_withdraw_date,      // Y-m-d สำหรับ input
+                'withdrawText' => $co->format_dispose_reg_withdraw_date ?? '-',
+                'note'         => $co->dispose_note,
             ];
         });
 
@@ -478,13 +461,14 @@ class FloorPlanController extends Controller
     }
 
     /**
-     * บันทึกข้อมูลแจ้งจำหน่ายของ salecar (ชุดแจ้งจำหน่าย / วันที่รับ / วันที่ ทบ.เบิก / หมายเหตุ)
+     * บันทึกข้อมูลแจ้งจำหน่ายของรถ 1 คัน (ชุดแจ้งจำหน่าย / วันที่รับ / วันที่ ทบ.เบิก / หมายเหตุ)
+     * $id = car_order.id (ของเดิมเป็น salecars.id)
      */
     public function updateDispose(Request $request, $id)
     {
         $this->authorizeAccess();
 
-        $sale = Salecar::whereNotIn('con_status', [7, 8, 9])->findOrFail($id);
+        $order = CarOrder::findOrFail($id);
 
         $validated = $request->validate([
             'dispose_set'               => ['nullable', Rule::in(array_keys(self::DISPOSE_SETS))],
@@ -493,11 +477,11 @@ class FloorPlanController extends Controller
             'dispose_note'              => 'nullable|string|max:1000',
         ]);
 
-        $sale->dispose_set               = $validated['dispose_set'] ?: null;
-        $sale->dispose_received_date     = $validated['dispose_received_date'] ?: null;
-        $sale->dispose_reg_withdraw_date = $validated['dispose_reg_withdraw_date'] ?: null;
-        $sale->dispose_note              = $validated['dispose_note'] ?: null;
-        $sale->save();
+        $order->dispose_set               = $validated['dispose_set'] ?: null;
+        $order->dispose_received_date     = $validated['dispose_received_date'] ?: null;
+        $order->dispose_reg_withdraw_date = $validated['dispose_reg_withdraw_date'] ?: null;
+        $order->dispose_note              = $validated['dispose_note'] ?: null;
+        $order->save();
 
         return response()->json([
             'success' => true,

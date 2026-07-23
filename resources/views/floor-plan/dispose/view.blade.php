@@ -56,6 +56,7 @@
         <div class="text-muted small mb-3">
           <i class="bx bx-info-circle"></i>
           "ยังไม่เบิก" = ยังไม่มีวันที่ ทบ.เบิก &nbsp;•&nbsp; ตัวกรองเดือนใช้เป็นรายงานตาม "วันที่รับ"
+          &nbsp;•&nbsp; <b>แสดงรถทุกคัน</b> รถที่ยังไม่มีใบจองจะไม่มีชื่อลูกค้า
         </div>
 
         <div class="table-responsive">
@@ -65,7 +66,7 @@
                 <th class="tbl-th-no">No.</th>
                 <th>VIN Number</th>
                 <th>เลขเครื่อง</th>
-                <th>ชื่อลูกค้า</th>
+                <th>J Number</th>
                 <th style="width:130px;">วันที่ปิด FP</th>
                 <th style="width:100px;">Action</th>
               </tr>
@@ -76,7 +77,7 @@
                   <td class="text-center">{{ $i + 1 }}</td>
                   <td>{{ $r['vin'] }}</td>
                   <td>{{ $r['engine'] }}</td>
-                  <td>{{ $r['customer'] }}</td>
+                  <td>{{ $r['jNumber'] }}</td>
                   <td class="text-center">{{ $r['fpCloseText'] }}</td>
                   <td class="text-center">
                     <button type="button" class="btn btn-sm btn-icon btn-warning text-white dp-edit-btn"
@@ -94,7 +95,7 @@
                       data-option="{{ $r['option'] }}"
                       data-interior="{{ $r['interior'] }}"
                       data-cost="{{ number_format($r['cost'], 2) }}"
-                      data-customer="{{ $r['customer'] }}"
+                      data-jnumber="{{ $r['jNumber'] }}"
                       data-fpclose="{{ $r['fpCloseText'] }}"
                       title="แก้ไข">
                       <i class="bx bx-edit"></i>
@@ -146,7 +147,7 @@
               <div class="row g-3">
                 <div class="col-md-4"><span class="dp-info-label">VIN Number</span><div id="dp_vin" class="dp-info-val">-</div></div>
                 <div class="col-md-4"><span class="dp-info-label">เลขเครื่อง</span><div id="dp_engine" class="dp-info-val">-</div></div>
-                <div class="col-md-4"><span class="dp-info-label">ชื่อลูกค้า</span><div id="dp_customer" class="dp-info-val">-</div></div>
+                <div class="col-md-4"><span class="dp-info-label">J Number</span><div id="dp_jnumber" class="dp-info-val">-</div></div>
                 <div class="col-md-4"><span class="dp-info-label">รุ่นหลัก</span><div id="dp_model" class="dp-info-val">-</div></div>
                 <div class="col-md-4"><span class="dp-info-label">รุ่นย่อย</span><div id="dp_submodel" class="dp-info-val">-</div></div>
                 <div class="col-md-4"><span class="dp-info-label">ปี</span><div id="dp_year" class="dp-info-val">-</div></div>
@@ -281,7 +282,7 @@
       // ข้อมูลรถ (อ่านอย่างเดียว)
       $('#dp_vin').text($b.data('vin') || '-');
       $('#dp_engine').text($b.data('engine') || '-');
-      $('#dp_customer').text($b.data('customer') || '-');
+      $('#dp_jnumber').text($b.data('jnumber') || '-');
       $('#dp_model').text($b.data('model') || '-');
       $('#dp_submodel').text($b.data('submodel') || '-');
       $('#dp_year').text($b.data('year') || '-');

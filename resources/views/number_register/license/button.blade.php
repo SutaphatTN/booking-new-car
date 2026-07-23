@@ -29,8 +29,6 @@
     <i class="bx bx-trash"></i>
 </button> --}}
 
-<style>
-  .btn-icon i {
-    color: white;
-  }
-</style>
+{{-- สีไอคอนย้ายไปประกาศที่ view.blade.php แล้ว — ห้ามใส่ <style> ในไฟล์นี้
+     เพราะ partial นี้ถูก render เป็น HTML ของ "แถว" DataTables พอค้นหา/เปลี่ยนหน้า
+     แถวที่ไม่ตรงจะถูกถอดออกจาก DOM ทำให้ style หายไปทั้งตาราง --}}

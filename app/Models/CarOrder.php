@@ -45,6 +45,11 @@ class CarOrder extends Model
         'order_invoice_date',
         'fp_date',
         'fp_close_date',
+        // แจ้งจำหน่าย — ผูกกับ "คัน" ไม่ใช่ใบจอง (ใบจองสลับรถได้ เอกสารต้องอยู่กับรถ)
+        'dispose_set',
+        'dispose_received_date',
+        'dispose_reg_withdraw_date',
+        'dispose_note',
         'order_stock_date',
         'cancel_date',
         'car_DNP',
@@ -245,6 +250,26 @@ class CarOrder extends Model
     public function getFormatFpCloseDateAttribute()
     {
         return $this->fp_close_date ? Carbon::parse($this->fp_close_date)->format('d-m-Y') : null;
+    }
+
+    public function getDisposeReceivedDateAttribute($value)
+    {
+        return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+    }
+
+    public function getFormatDisposeReceivedDateAttribute()
+    {
+        return $this->dispose_received_date ? Carbon::parse($this->dispose_received_date)->format('d-m-Y') : null;
+    }
+
+    public function getDisposeRegWithdrawDateAttribute($value)
+    {
+        return $value ? Carbon::parse($value)->format('Y-m-d') : null;
+    }
+
+    public function getFormatDisposeRegWithdrawDateAttribute()
+    {
+        return $this->dispose_reg_withdraw_date ? Carbon::parse($this->dispose_reg_withdraw_date)->format('d-m-Y') : null;
     }
 
     const PAYMENT_TYPES = [
