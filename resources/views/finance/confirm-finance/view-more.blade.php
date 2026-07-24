@@ -153,7 +153,8 @@
                     <div class="input-group">
                       <span class="input-group-text ig-sky">฿</span>
                       <input id="CarSalePriceFinal" type="text" class="form-control text-end money-input"
-                        value="{{ $sale->CarSalePriceFinal ?? '-' }}" style="background:#f8fafc;color:#64748b;"
+                        value="{{ $sale->CarSalePriceFinal !== null ? number_format($sale->CarSalePriceFinal, 2) : '-' }}"
+                        style="background:#f8fafc;color:#64748b;"
                         disabled>
                     </div>
                   </div>
@@ -165,7 +166,8 @@
                     <div class="input-group">
                       <span class="input-group-text ig-sky">฿</span>
                       <input id="DownPayment" type="text" class="form-control text-end money-input"
-                        value="{{ $sale->DownPayment ?? '-' }}" style="background:#f8fafc;color:#64748b;" disabled>
+                        value="{{ $sale->DownPayment !== null ? number_format($sale->DownPayment, 2) : '-' }}"
+                        style="background:#f8fafc;color:#64748b;" disabled>
                     </div>
                   </div>
 
@@ -239,7 +241,7 @@
                     <div class="input-group">
                       <span class="input-group-text ig-indigo">฿</span>
                       <input id="view_including_alp" type="text" class="form-control text-end money-input"
-                        value="{{ $sale->remainingPayment->including_alp ?? '-' }}"
+                        value="{{ $sale->remainingPayment?->including_alp !== null ? number_format($sale->remainingPayment->including_alp, 2) : '-' }}"
                         style="background:#f8fafc;color:#64748b;" disabled>
                     </div>
                   </div>
@@ -251,7 +253,7 @@
                     <div class="input-group">
                       <span class="input-group-text ig-indigo">฿</span>
                       <input id="view_alp" type="text" class="form-control text-end money-input"
-                        value="{{ $sale->remainingPayment->total_alp ?? '-' }}"
+                        value="{{ $sale->remainingPayment?->total_alp !== null ? number_format($sale->remainingPayment->total_alp, 2) : '-' }}"
                         style="background:#f8fafc;color:#64748b;" disabled>
                     </div>
                   </div>
