@@ -1898,8 +1898,19 @@ class PurchaseOrderController extends Controller
             //ยกเลิกการจอง
             if (in_array($request->con_status, [7, 8, 9])) {
                 if ($saleCar->CarOrderID) {
-                    CarOrder::where('id', $saleCar->CarOrderID)
-                        ->update(['car_status' => 'Available']);
+                    $carOrderId = $saleCar->CarOrderID;
+                    $saleCar->CarOrderID = null; // ปลดใบที่ถอนออกจากรถ กัน CarOrderID ค้าง
+                    $saleCar->save();
+
+                    // คืนรถเป็น Available เฉพาะเมื่อไม่มีใบจอง active อื่นผูกรถคันนี้อยู่
+                    $stillActive = Salecar::where('CarOrderID', $carOrderId)
+                        ->where('id', '!=', $saleCar->id)
+                        ->whereNotIn('con_status', [7, 8, 9])
+                        ->exists();
+                    if (!$stillActive) {
+                        CarOrder::where('id', $carOrderId)
+                            ->update(['car_status' => 'Available']);
+                    }
                 }
 
                 $saleCar->carOrderHistories()->delete();
@@ -1919,7 +1930,14 @@ class PurchaseOrderController extends Controller
                 ]);
 
                 if ($oldCarOrderID) {
-                    CarOrder::where('id', $oldCarOrderID)->update(['car_status' => 'Available']);
+                    // คืนรถเก่าเป็น Available เฉพาะเมื่อไม่มีใบจอง active อื่นผูกอยู่
+                    $oldStillActive = Salecar::where('CarOrderID', $oldCarOrderID)
+                        ->where('id', '!=', $saleCar->id)
+                        ->whereNotIn('con_status', [7, 8, 9])
+                        ->exists();
+                    if (!$oldStillActive) {
+                        CarOrder::where('id', $oldCarOrderID)->update(['car_status' => 'Available']);
+                    }
                 }
                 CarOrder::where('id', $newCarOrderID)->update(['car_status' => 'Booked']);
             }
@@ -2488,11 +2506,19 @@ class PurchaseOrderController extends Controller
 
             $sale->carOrderHistories()->delete();
 
+            $carOrderId = $sale->CarOrderID;
             $sale->CarOrderID = null;
             $sale->save();
 
-            $carOrder->car_status = 'Available';
-            $carOrder->save();
+            // คืนรถเป็น Available เฉพาะเมื่อไม่มีใบจอง active อื่นผูกรถคันนี้อยู่
+            $stillActive = Salecar::where('CarOrderID', $carOrderId)
+                ->where('id', '!=', $sale->id)
+                ->whereNotIn('con_status', [7, 8, 9])
+                ->exists();
+            if (!$stillActive) {
+                $carOrder->car_status = 'Available';
+                $carOrder->save();
+            }
         });
 
         return response()->json([
@@ -2507,7 +2533,18 @@ class PurchaseOrderController extends Controller
             $saleCar = Salecar::findOrFail($id);
 
             if ($saleCar->CarOrderID) {
-                CarOrder::where('id', $saleCar->CarOrderID)->update(['car_status' => 'Available']);
+                $carOrderId = $saleCar->CarOrderID;
+                $saleCar->CarOrderID = null; // ปลดใบที่ถอนออกจากรถ กัน CarOrderID ค้าง
+
+                // คืนรถเป็น Available เฉพาะเมื่อไม่มีใบจอง active อื่นผูกรถคันนี้อยู่
+                $stillActive = Salecar::where('CarOrderID', $carOrderId)
+                    ->where('id', '!=', $saleCar->id)
+                    ->whereNotIn('con_status', [7, 8, 9])
+                    ->exists();
+                if (!$stillActive) {
+                    CarOrder::where('id', $carOrderId)->update(['car_status' => 'Available']);
+                }
+
                 $saleCar->carOrderHistories()->delete();
             }
 
