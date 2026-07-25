@@ -241,7 +241,9 @@ class FilmUsageController extends Controller
         }
 
         $carOrders = CarOrder::where('vin_number', 'LIKE', "%{$q}%")
-            ->where('car_status', '!=', 'Available')
+            ->whereHas('salecars', function ($q) {
+                $q->whereNotIn('con_status', [7, 8, 9]); // ต้องมีการจองที่ยัง active (ไม่พึ่ง car_status ที่อาจไม่ sync)
+            })
             ->limit(8)
             ->get(['id', 'vin_number']);
 

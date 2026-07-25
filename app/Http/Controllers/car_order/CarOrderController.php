@@ -615,10 +615,16 @@ class CarOrderController extends Controller
                         'branch' => Auth::user()->branch ?? null,
                     ]);
 
-                    // คืนสถานะ order เก่า (ถ้ามี)
+                    // คืนสถานะ order เก่า (ถ้ามี) — เฉพาะเมื่อไม่มีใบจอง active อื่นผูกอยู่
                     if ($oldCarOrderID) {
-                        CarOrder::where('id', $oldCarOrderID)
-                            ->update(['car_status' => 'Available']);
+                        $oldStillActive = SaleCar::where('CarOrderID', $oldCarOrderID)
+                            ->where('id', '!=', $saleCar->id)
+                            ->whereNotIn('con_status', [7, 8, 9])
+                            ->exists();
+                        if (!$oldStillActive) {
+                            CarOrder::where('id', $oldCarOrderID)
+                                ->update(['car_status' => 'Available']);
+                        }
                     }
 
                     // ตั้งสถานะ order ใหม่
