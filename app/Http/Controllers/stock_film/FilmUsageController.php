@@ -249,6 +249,7 @@ class FilmUsageController extends Controller
         foreach ($carOrders as $carOrder) {
             $salecar = Salecar::with(['customer', 'model'])
                 ->where('CarOrderID', $carOrder->id)
+                ->whereNotIn('con_status', [7, 8, 9]) // ตัดใบที่ถอน/ยกเลิกออก เอาเฉพาะการจองที่ยัง active
                 ->latest()
                 ->first();
 
