@@ -525,11 +525,23 @@ class FinanceController extends Controller
         }
     }
 
+    // ลบยอดเฟิร์มเงิน FN — เฉพาะ role = admin, ลบถาวร (hard delete)
+    // $id = SaleID (salecar id) ที่ส่งมาจากปุ่มในตาราง
     function destroyFN($id)
     {
         try {
-            $fnCon = FinancesConfirm::findOrFail($id);
-            $fnCon->delete();
+            if (Auth::user()->role !== 'admin') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'คุณไม่มีสิทธิ์ลบข้อมูลนี้'
+                ], 403);
+            }
+
+            // ลบถาวรทุก record ของ SaleID นี้ รวม soft-deleted ที่ค้างอยู่
+            // เพื่อให้บันทึกครั้งถัดไปเริ่มจาก record ใหม่สะอาด ไม่ดึงค่าเก่า (เช่น Com Extra) กลับมา
+            FinancesConfirm::withoutGlobalScopes()
+                ->where('SaleID', $id)
+                ->forceDelete();
 
             return response()->json([
                 'success' => true,

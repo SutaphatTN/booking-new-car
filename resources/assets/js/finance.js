@@ -627,6 +627,55 @@ $(document).on('click', '.btnViewFNConfirm', function () {
   });
 });
 
+//delete : fin confirm (admin only, hard delete)
+$(document).on('click', '.btnDeleteFN', function () {
+  const id = $(this).data('id');
+
+  Swal.fire({
+    icon: 'warning',
+    title: 'ยืนยันการลบ?',
+    text: 'ข้อมูลยอดเฟิร์มเงิน FN นี้จะถูกลบถาวร ไม่สามารถกู้คืนได้',
+    showCancelButton: true,
+    confirmButtonText: 'ลบถาวร',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#dc3545'
+  }).then(function (result) {
+    if (!result.isConfirmed) return;
+
+    $.ajax({
+      url: '/purchase-order/destroy-fn/' + id,
+      type: 'DELETE',
+      beforeSend: function () {
+        Swal.fire({
+          title: 'กำลังลบข้อมูล...',
+          text: 'กรุณารอสักครู่',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+      },
+      success: function (res) {
+        Swal.fire({
+          icon: 'success',
+          title: 'สำเร็จ!',
+          text: res.message,
+          timer: 2000,
+          showConfirmButton: true
+        });
+        confirmFNTable.ajax.reload(null, false);
+      },
+      error: function (xhr) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด!',
+          text: xhr.responseJSON?.message || 'ไม่สามารถลบข้อมูลได้'
+        });
+      }
+    });
+  });
+});
+
 // blur focus editFinConfirm
 $(document).on('hide.bs.modal', '.editFinConfirm', function () {
   setTimeout(() => {

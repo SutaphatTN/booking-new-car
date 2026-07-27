@@ -4,9 +4,11 @@
 <button class="btn btn-icon btn-warning btnEditFNConfirm" data-id="{{ $s->id }}" title="แก้ไข">
     <i class="bx bx-edit"></i>
 </button>
-<!-- <button class="btn btn-icon btn-danger btnDeleteFN" data-id="{{ $s->id }}" title="ลบ">
+@if (auth()->user()?->role === 'admin')
+<button class="btn btn-icon btn-danger btnDeleteFN" data-id="{{ $s->id }}" title="ลบ">
     <i class="bx bx-trash"></i>
-</button> -->
+</button>
+@endif
 
 <style>
   .btn-icon i {
