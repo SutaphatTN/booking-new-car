@@ -975,9 +975,8 @@ class CarOrderController extends Controller
         $openId = $request->query('open_id');
 
         // ผู้อนุมัติ (role md) สำหรับ modal "ขออนุมัติที่เลือก"
-        $approvers = User::where('role', 'md')
-            ->where('brand', $authUser->brand == 2 ? 2 : 1)
-            ->get();
+        // เช็คแค่ role = md ไม่กรอง brand — md เห็นได้ทุก brand อยู่แล้ว และ requestApproval ก็ validate แค่ role=md
+        $approvers = User::where('role', 'md')->get();
 
         return view('car-order.process.view', compact('process', 'openId', 'approvers'));
     }
