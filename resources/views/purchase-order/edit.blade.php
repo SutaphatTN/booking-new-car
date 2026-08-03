@@ -71,6 +71,41 @@
           </div>
         </div>
       @endif
+
+      {{-- ราคารถในใบจอง ≠ ราคาขายของรถที่ผูก
+           วางบนสุดคู่กับ alert อนุมัติ เพราะช่องราคาอยู่ลึกในแท็บ ผู้ใช้ไม่เลื่อนลงก็ไม่เห็น
+           render สถานะเริ่มต้นจากฝั่ง server เลย กันแวบตอน JS ยังไม่ทำงาน แล้ว JS ค่อยรับช่วงต่อ
+           หมายเหตุ: d-none ต้องอยู่บน wrapper ชั้นนอก ไม่ใช่ตัวเดียวกับ d-flex (Bootstrap ให้ d-flex ชนะ) --}}
+      @php
+          $boundMsrp = $saleCar->carOrder?->car_MSRP;
+          $canSyncPrice = $canEditCarPrice && !$isHistory;
+          $priceMismatch =
+              $saleCar->CarOrderID &&
+              $boundMsrp !== null &&
+              $saleCar->price_sub !== null &&
+              (float) $boundMsrp !== (float) $saleCar->price_sub;
+      @endphp
+      <div id="carPriceMismatchAlert" class="{{ $priceMismatch ? '' : 'd-none' }}">
+        <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
+          <i class="bx bx-error-circle fs-5"></i>
+          <div class="flex-grow-1" id="carPriceMismatchText">
+            @if ($priceMismatch)
+              <strong>ราคาไม่ตรงกัน</strong> — ราคารถในใบจอง
+              <strong>{{ number_format($saleCar->price_sub, 2) }}</strong> ฿
+              แต่ราคาขายของรถที่ผูก <strong>{{ number_format($boundMsrp, 2) }}</strong> ฿
+              (ต่างกัน {{ number_format(abs($boundMsrp - $saleCar->price_sub), 2) }} ฿)
+              @unless ($canSyncPrice)
+                <br><small>กรุณาแจ้งผู้มีสิทธิ์แก้ไขราคารถ</small>
+              @endunless
+            @endif
+          </div>
+          <button type="button" class="btn btn-sm btn-warning flex-shrink-0 {{ $canSyncPrice ? '' : 'd-none' }}"
+            id="btnSyncCarPrice">
+            <i class="bx bx-sync me-1"></i> อัปเดตราคารถ
+          </button>
+        </div>
+      </div>
+
       @if (!$isHistory)
         <form id="purchaseForm" action="{{ route('purchase-order.update', $saleCar->id) }}" method="POST"
           enctype="multipart/form-data">
@@ -895,6 +930,7 @@
                             <span class="money-suffix">฿</span>
                           </div>
                         </div>
+
                       </div>
                     </div>
                   </div>
