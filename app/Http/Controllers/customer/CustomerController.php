@@ -30,10 +30,12 @@ class CustomerController extends Controller
 
         $currentAddress = Address::where('customer_id', $id)
             ->where('type', 'current')
+            ->orderByDesc('id')
             ->first();
 
         $docAddress = Address::where('customer_id', $id)
             ->where('type', 'document')
+            ->orderByDesc('id')
             ->first();
 
         return view('customer.view-more', compact('customers', 'currentAddress', 'docAddress'));
@@ -220,10 +222,12 @@ class CustomerController extends Controller
 
         $currentAddress = Address::where('customer_id', $id)
             ->where('type', 'current')
+            ->orderByDesc('id')
             ->first();
 
         $docAddress = Address::where('customer_id', $id)
             ->where('type', 'document')
+            ->orderByDesc('id')
             ->first();
 
         $provinces = TbThailand::select('Province_pro')
@@ -325,6 +329,7 @@ class CustomerController extends Controller
 
             $currentAddress = Address::where('customer_id', $id)
                 ->where('type', 'current')
+                ->orderByDesc('id')
                 ->first();
 
             if ($currentAddress) {
@@ -344,6 +349,7 @@ class CustomerController extends Controller
 
             $docAddress = Address::where('customer_id', $id)
                 ->where('type', 'document')
+                ->orderByDesc('id')
                 ->first();
 
             if ($docAddress) {

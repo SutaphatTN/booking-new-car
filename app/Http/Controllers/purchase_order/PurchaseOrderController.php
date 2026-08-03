@@ -1436,7 +1436,16 @@ class PurchaseOrderController extends Controller
         // id ประดับยนต์ที่เป็น "ป้ายแดง" (ตั้งค่าหลังบ้าน) — JS ใช้เช็คว่าต้องบังคับเลือกป้ายแดงก่อนส่งมอบไหม
         $redPlateAccIds = self::redPlateAccessoryIds();
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet', 'canCustomAccPrice', 'redPlateAccIds'));
+        // ย้ายลูกค้าไปให้เซลล์คนอื่นได้ไหม — โหลดรายชื่อเฉพาะ role ที่มีสิทธิ์ ไม่งั้นเปลือง query
+        $canReassignSale = Auth::user()->canReassignSale();
+        $saleUser = $canReassignSale
+            ? User::salePoolForBrand((int) $saleCar->brand, (int) $saleCar->SaleID)
+            : collect();
+
+        // แก้ราคารถได้ไหม
+        $canEditCarPrice = Auth::user()->canEditCarPrice();
+
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet', 'canCustomAccPrice', 'redPlateAccIds', 'canReassignSale', 'saleUser', 'canEditCarPrice'));
     }
 
     /** id ประดับยนต์ที่ถูก mark ว่าเป็น "ป้ายแดง" (ตั้งค่าหลังบ้าน — ข้ามทุก scope เพราะใช้เทียบ id ข้ามแบรนด์) */
@@ -1643,13 +1652,16 @@ class PurchaseOrderController extends Controller
 
 
             $data = [
-                'SaleID' => $request->SaleID,
+                // ผู้ขาย: ย้ายได้เฉพาะ role ที่มีสิทธิ์ — role อื่นบังคับใช้ค่าเดิมเสมอ (กันแก้ผ่าน devtools)
+                'SaleID' => Auth::user()->canReassignSale()
+                    ? ($request->filled('SaleID') ? (int) $request->SaleID : $saleCar->SaleID)
+                    : $saleCar->SaleID,
                 'type' => $request->type,
                 'type_sale' => $request->type_sale,
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
-                // ราคารถ: แก้ได้เฉพาะ admin — role อื่นบังคับใช้ค่าเดิมเสมอ (กันแก้ผ่าน devtools)
-                'price_sub' => Auth::user()->role === 'admin'
+                // ราคารถ: แก้ได้เฉพาะ role ใน EDIT_CAR_PRICE_ROLES — role อื่นบังคับใช้ค่าเดิมเสมอ (กันแก้ผ่าน devtools)
+                'price_sub' => Auth::user()->canEditCarPrice()
                     ? ($request->filled('price_sub') ? str_replace(',', '', $request->price_sub) : null)
                     : $saleCar->price_sub,
                 'Color' => $request->Color ?? null,
@@ -1840,6 +1852,34 @@ class PurchaseOrderController extends Controller
                     'success' => false,
                     'message' => 'ต้องระบุป้ายแดงก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"',
                 ], 422);
+            }
+
+            // ── ราคารถเปลี่ยน → รีเซ็ตการอนุมัติ ต้องขอใหม่ ──
+            // ฐานที่ผู้อนุมัติเห็นตอนเซ็นไม่ใช่ตัวเดิมแล้ว และการแก้ราคาจะล้าง "บวกหัว" ไปด้วย
+            // → Markup90 หลุดจาก balanceCampaign → เคสอนุมัติพลิกจากงบปกติเป็นเกินงบได้
+            // ไม่มี threshold: ยอดที่คร่อมเส้นแบ่งเคสอยู่ ต่างกันไม่กี่บาทก็พลิกได้
+            $priceChanged = (float) ($saleCar->price_sub ?? 0) !== (float) ($data['price_sub'] ?? 0);
+            $hasApprovalState = $saleCar->SMSignature
+                || $saleCar->ApprovalSignature
+                || $saleCar->GMApprovalSignature
+                || $saleCar->approval_requested_at;
+
+            if ($priceChanged && $hasApprovalState) {
+                $data = array_merge($data, [
+                    'SMSignature'                => 0,
+                    'SMCheckedDate'              => null,
+                    'ApprovalSignature'          => 0,
+                    'ApprovalSignatureDate'      => null,
+                    'GMApprovalSignature'        => 0,
+                    'GMApprovalSignatureDate'    => null,
+                    'approval_requested_at'      => null,
+                    'approval_token'             => null,   // ลิงก์อนุมัติในเมลเดิมใช้ไม่ได้
+                    'approval_case'              => null,
+                    'approval_type'              => null,
+                    'approval_remaining'         => null,
+                    // ยอดหักที่ผู้จัดการ/GM กรอกไว้ ตัดสินจากฐานเก่า → ต้องกรอกใหม่ตอนอนุมัติรอบใหม่
+                    'approval_commission_deduct' => null,
+                ]);
             }
 
             $saleCar->update($data);
@@ -2906,6 +2946,7 @@ class PurchaseOrderController extends Controller
 
         $addr = Address::where('customer_id', $customer->id)
             ->where('type', 'current')
+            ->orderByDesc('id')
             ->first();
 
         $missing = [];
@@ -2928,6 +2969,7 @@ class PurchaseOrderController extends Controller
 
         $addr = Address::where('customer_id', $customer->id)
             ->where('type', 'current')
+            ->orderByDesc('id')
             ->first();
 
         $missing = $this->customerProfileMissing($customer);
@@ -3016,10 +3058,17 @@ class PurchaseOrderController extends Controller
                 'branch'       => $customer->branch ?? $authUser->branch,
             ];
 
-            Address::updateOrCreate(
-                ['customer_id' => $customer->id, 'type' => 'current'],
-                $addrData
-            );
+            // ไม่ใช้ updateOrCreate เพราะถ้ามีที่อยู่ซ้ำหลายแถวมันจะหยิบแถวไหนก็ได้ ต้องล็อกแถวล่าสุด
+            $currentAddress = Address::where('customer_id', $customer->id)
+                ->where('type', 'current')
+                ->orderByDesc('id')
+                ->first();
+
+            if ($currentAddress) {
+                $currentAddress->update($addrData);
+            } else {
+                Address::create(['customer_id' => $customer->id, 'type' => 'current'] + $addrData);
+            }
 
             // ถ้ายังไม่มีที่อยู่เอกสาร ให้สร้างตามที่อยู่ปัจจุบัน (รายงาน เช่น ประกันภัย อ่านจาก document)
             // ไม่ทับของเดิมถ้ามีอยู่แล้ว เพราะที่อยู่เอกสารอาจตั้งใจให้ต่างจากปัจจุบัน
