@@ -395,31 +395,43 @@ class CustomerController extends Controller
 
     function destroy($id)
     {
+        // ลบลูกค้า: admin เท่านั้น
+        abort_unless(Auth::user()->role === 'admin', 403);
+
         try {
 
             DB::beginTransaction();
 
             $customer = Customer::findOrFail($id);
 
-            $hasTracking = CustomerTracking::where('customer_id', $customer->id)
-                ->whereNull('cancelled_at')
+            // ── ด่านกันลบ ──
+            // ปลด scope แบบระบุชื่อ ไม่ใช้ withoutGlobalScopes() เปล่า ๆ เพราะอันนั้นปลด
+            // SoftDeletingScope ไปด้วย → จะไปนับแถวที่ลบทิ้งแล้วมาบล็อกโดยไม่จำเป็น
+            //   userAccess  : ถ้าไม่ปลด จะมองไม่เห็นรายการของแบรนด์/สาขาอื่น แล้วปล่อยให้ลบทะลุ
+            //   preApproval : คำขออนุมัติล่วงหน้าก็อ้างชื่อลูกค้า ต้องนับด้วย
+            //
+            // กันทุกสถานะ ไม่เว้นส่งมอบ/ถอนจอง/ยกเลิกติดตาม เพราะใบจองกับประวัติติดตาม
+            // ต้องอ้างชื่อลูกค้าได้ตลอดไป — เคยมีเคสลบลูกค้าที่ใบจองถอนจองแล้ว (con_status 9)
+            // ทำให้ใบจองนั้นไม่มีชื่อลูกค้าโผล่มา
+            $hasTracking = CustomerTracking::withoutGlobalScope('userAccess')
+                ->where('customer_id', $customer->id)
                 ->exists();
 
             if ($hasTracking) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ไม่สามารถลบลูกค้าได้ เนื่องจากยังมีข้อมูลการติดตามอยู่ในระบบ'
+                    'message' => 'ไม่สามารถลบลูกค้าได้ เนื่องจากมีข้อมูลการติดตามอ้างถึงอยู่'
                 ], 422);
             }
 
-            $hasBooking = Salecar::where('CusID', $customer->id)
-                ->whereNotIn('con_status', [5, 7, 8, 9])
+            $hasBooking = Salecar::withoutGlobalScopes(['userAccess', 'preApproval'])
+                ->where('CusID', $customer->id)
                 ->exists();
 
             if ($hasBooking) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ไม่สามารถลบลูกค้าได้ เนื่องจากยังมีข้อมูลการจองอยู่ในระบบ'
+                    'message' => 'ไม่สามารถลบลูกค้าได้ เนื่องจากมีใบจองอ้างถึงอยู่'
                 ], 422);
             }
 
