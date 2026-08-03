@@ -1597,6 +1597,77 @@ function checkCarOrderPriceMismatch(carOrderSale) {
   });
 }
 
+/** เซ็ตราคารถให้ตรงกับรถที่ผูก แล้วล้าง+คำนวณค่าที่ผูกกับราคาใหม่ */
+function syncCarPriceToCarOrder(carSale) {
+  $('#price_sub').val(
+    Number(carSale).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  );
+  clearPriceDependentFields();
+  updateSummary();
+  calculateCommission();
+}
+
+/**
+ * เตือนราคาไม่ตรง — กล่องอยู่บนสุดของหน้า (นอกฟอร์ม) เพราะช่องราคาอยู่ลึกในแท็บสรุปยอด
+ * ดักเคสที่ popup ตอนผูกรถจับไม่ได้:
+ *   1) ผูกรถไว้ก่อนมีระบบเตือน (ใบเก่า)
+ *   2) มีคนไปแก้ "ราคาขาย" ในโมดูลสั่งรถ หลังจากผูกไปแล้ว
+ * blade render สถานะเริ่มต้นมาให้แล้ว ฟังก์ชันนี้แค่อัปเดตตามค่าที่เปลี่ยนสดในหน้า
+ */
+function renderCarPriceMismatchAlert() {
+  const $box = $('#carPriceMismatchAlert');
+  if (!$box.length) return;
+
+  const $price = $('#price_sub');
+  const carSale = parseFloat(String($('#carOrderSale').val() || '').replace(/,/g, ''));
+  const priceSub = parseFloat(String($price.val() || '').replace(/,/g, ''));
+
+  const bound = !!$('#CarOrderID').val();
+  const mismatch = bound && carSale && !isNaN(carSale) && !isNaN(priceSub) && carSale !== priceSub;
+
+  // ไฮไลต์ช่องราคาทั้งสองฝั่งด้วย เผื่อผู้ใช้เลื่อนลงไปดูโดยไม่ทันอ่าน alert ข้างบน
+  $price.toggleClass('border-warning border-2', !!mismatch);
+  $('#carOrderSale').toggleClass('border-warning border-2', !!mismatch);
+
+  if (!mismatch) {
+    $box.addClass('d-none');
+    return;
+  }
+
+  const fmt = n => Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  $('#carPriceMismatchText').html(
+    `<strong>ราคาไม่ตรงกัน</strong> — ราคารถในใบจอง <strong>${fmt(priceSub)}</strong> ฿ ` +
+      `แต่ราคาขายของรถที่ผูก <strong>${fmt(carSale)}</strong> ฿ (ต่างกัน ${fmt(Math.abs(carSale - priceSub))} ฿)` +
+      ($('#canEditCarPrice').val() === '1' ? '' : '<br><small>กรุณาแจ้งผู้มีสิทธิ์แก้ไขราคารถ</small>')
+  );
+  $('#btnSyncCarPrice').toggleClass('d-none', $('#canEditCarPrice').val() !== '1');
+  $box.removeClass('d-none');
+}
+
+$(document).on('click', '#btnSyncCarPrice', function () {
+  const carSale = parseFloat(String($('#carOrderSale').val() || '').replace(/,/g, ''));
+  if (!carSale || isNaN(carSale)) return;
+
+  Swal.fire({
+    icon: 'question',
+    title: 'อัปเดตราคารถ',
+    html:
+      `ตั้งราคารถเป็น <b>${Number(carSale).toLocaleString(undefined, { minimumFractionDigits: 2 })}</b> ฿ ` +
+      'ตามรถที่ผูกไว้<br><small class="text-muted">บวกหัว / ดอกเบี้ย / งวดผ่อน / เงินดาวน์ จะถูกล้าง</small>',
+    showCancelButton: true,
+    confirmButtonText: 'อัปเดต',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+    syncCarPriceToCarOrder(carSale);
+    renderCarPriceMismatchAlert();
+  });
+});
+
+// ตรวจตอนเปิดหน้า + ทุกครั้งที่ราคารถถูกแก้ (alert จะหายเองเมื่อราคาตรงกันแล้ว)
+$(document).ready(renderCarPriceMismatchAlert);
+$(document).on('input', '#price_sub', renderCarPriceMismatchAlert);
+
 //edit : ยกเลิกการผูกรถ
 $(document).on('click', '#btnCancelCarOrder', function () {
   const saleId = $(this).data('sale-id');
