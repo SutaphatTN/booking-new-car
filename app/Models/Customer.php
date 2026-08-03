@@ -212,14 +212,19 @@ class Customer extends Model
 		return $this->hasMany(Address::class, 'customer_id', 'id');
 	}
 
+	// orderByDesc('id') กันกรณีมีที่อยู่ซ้ำหลายแถว ให้หยิบแถวล่าสุดเสมอ ไม่ปล่อยให้ DB เลือกเอง
 	public function currentAddress()
 	{
-		return $this->hasOne(Address::class, 'customer_id', 'id')->where('type', 'current');
+		return $this->hasOne(Address::class, 'customer_id', 'id')
+			->where('type', 'current')
+			->orderByDesc('id');
 	}
 
 	public function documentAddress()
 	{
-		return $this->hasOne(Address::class, 'customer_id', 'id')->where('type', 'document');
+		return $this->hasOne(Address::class, 'customer_id', 'id')
+			->where('type', 'document')
+			->orderByDesc('id');
 	}
 
 	public function getGenderThAttribute()

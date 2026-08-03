@@ -1350,4 +1350,47 @@ $(document).ready(function () {
       }
     });
   });
+
+  // ── ย้ายผู้ขาย (view-more) — ปุ่มจะกดได้ต่อเมื่อเลือกคนใหม่จริง ๆ
+  $('#vmSaleId').on('change', function () {
+    $('#btnSaveSale').prop('disabled', $(this).val() === String($(this).data('current')));
+  });
+
+  $('#btnSaveSale').on('click', function () {
+    const $btn = $(this);
+    const $select = $('#vmSaleId');
+    const trackingId = $btn.data('tracking-id');
+    const saleId = $select.val();
+    const saleName = $select.find('option:selected').text().trim();
+
+    Swal.fire({
+      icon: 'question',
+      title: 'ยืนยันย้ายผู้ขาย',
+      html: `ย้ายลูกค้ารายนี้ไปให้ <b>${saleName}</b> ใช่หรือไม่?`,
+      showCancelButton: true,
+      confirmButtonText: 'ยืนยัน',
+      cancelButtonText: 'ยกเลิก'
+    }).then(result => {
+      if (!result.isConfirmed) return;
+
+      $btn.prop('disabled', true);
+      $.ajax({
+        url: `/customer-tracking/${trackingId}/sale`,
+        type: 'POST',
+        data: { sale_id: saleId },
+        success: function () {
+          $select.data('current', saleId);
+          Swal.fire({ icon: 'success', title: 'ย้ายผู้ขายสำเร็จ', timer: 1500, showConfirmButton: true });
+        },
+        error: function (xhr) {
+          $btn.prop('disabled', false);
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: xhr.responseJSON?.message || 'ไม่สามารถย้ายผู้ขายได้'
+          });
+        }
+      });
+    });
+  });
 });

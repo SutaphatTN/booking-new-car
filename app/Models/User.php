@@ -179,4 +179,51 @@ class User extends Authenticatable
 		}
 		return $ids;
 	}
+
+	/** role ที่ย้ายลูกค้าไปให้เซลล์คนอื่นได้ (แก้ผู้ขายบนใบจอง + บนการติดตาม) */
+	public const REASSIGN_SALE_ROLES = ['admin', 'manager', 'audit', 'audit_lead', 'audit_dp', 'gm'];
+
+	public function canReassignSale(): bool
+	{
+		return in_array($this->role, self::REASSIGN_SALE_ROLES, true);
+	}
+
+	/**
+	 * role ที่แก้ "ราคารถ" (price_sub) ในหน้าใบจองได้
+	 * แยก const จาก REASSIGN_SALE_ROLES แม้รายชื่อจะตรงกัน เพราะเป็นคนละสิทธิ์
+	 * แก้อันนึงต้องไม่ลากอีกอันไปด้วย
+	 */
+	public const EDIT_CAR_PRICE_ROLES = ['admin', 'manager', 'audit', 'audit_lead', 'audit_dp', 'gm'];
+
+	public function canEditCarPrice(): bool
+	{
+		return in_array($this->role, self::EDIT_CAR_PRICE_ROLES, true);
+	}
+
+	/**
+	 * เซลล์ที่เลือกได้ของ brand นี้ (sale_pool ระดับ brand + สิทธิ์ขายราย user)
+	 * $includeId = เซลล์เจ้าของงานเดิม ให้ติดมาด้วยเสมอ กันหลุดจาก dropdown
+	 * ตอนเจ้าตัวย้ายแบรนด์หรือเปลี่ยน role ไปแล้ว
+	 */
+	public static function salePoolForBrand(int $brand, ?int $includeId = null)
+	{
+		$saleBrands   = config("brand.sale_pool.$brand", [$brand]);
+		$extraSaleIds = self::extraSaleUserIdsForBrand($brand);
+
+		return self::where(function ($q) use ($saleBrands, $extraSaleIds, $includeId) {
+			$q->where(function ($qq) use ($saleBrands, $extraSaleIds) {
+				$qq->whereIn('role', ['sale', 'lead_sale'])
+					->where(function ($qqq) use ($saleBrands, $extraSaleIds) {
+						$qqq->whereIn('brand', $saleBrands)
+							->orWhereIn('id', $extraSaleIds);
+					});
+			});
+
+			if ($includeId) {
+				$q->orWhere('id', $includeId);
+			}
+		})
+			->orderBy('name')
+			->get();
+	}
 }

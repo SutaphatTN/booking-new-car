@@ -85,6 +85,8 @@
         <input type="hidden" id="userRole" value="{{ $userRole }}">
         <input type="hidden" id="userBrand" value="{{ auth()->user()->brand }}">
         <input type="hidden" id="saleBrand" value="{{ $saleCar->brand }}">
+        {{-- JS ใช้เช็คว่าเสนออัปเดตราคารถได้ไหม ตอนผูกรถแล้วราคาไม่ตรง --}}
+        <input type="hidden" id="canEditCarPrice" value="{{ $canEditCarPrice && !$isHistory ? 1 : 0 }}">
         {{-- ค่าคอมที่ manager/gm กรอก (เคสเกิน over_budget → คอมงบเหลือ: brand2 ใช้ −D, แบรนด์อื่น +D) --}}
         <input type="hidden" id="approvalCommissionDeduct" value="{{ $saleCar->approval_commission_deduct }}">
         {{-- เก็บงบเพิ่มเติม: หนี้คงเหลือก่อนถึงคันนี้ (เคสงบปกติหักจากงบเต็มก่อนหาร 2) --}}
@@ -131,7 +133,10 @@
           <div class="tab-pane fade show active" id="tab-detail" role="tabpanel">
 
             {{-- hidden fields --}}
-            <input type="hidden" name="SaleID" value="{{ $saleCar->SaleID }}">
+            @php $canEditSale = $canReassignSale && !$isHistory; @endphp
+            @unless ($canEditSale)
+              <input type="hidden" name="SaleID" value="{{ $saleCar->SaleID }}">
+            @endunless
             <input type="hidden" id="CusID" name="CusID" value="{{ $saleCar->CusID }}">
             <input type="hidden" id="CusCurrentAddress"
               value="{{ $saleCar->customer->currentAddress->full_address ?? '-' }}">
@@ -158,9 +163,19 @@
               <div class="po-section-body-edit">
                 <div class="row g-3">
                   <div class="col-md-3">
-                    <label for="sale_name" class="po-label"><i class="bx bx-user-pin"></i> ชื่อ - นามสกุล ผู้ขาย</label>
-                    <input id="sale_name" class="form-control" type="text"
-                      value="{{ $saleCar->saleUser->name ?? '-' }}" readonly>
+                    @if ($canEditSale)
+                      {{-- ย้ายลูกค้าไปให้เซลล์คนอื่น (admin/manager/audit/audit_lead/audit_dp/gm) --}}
+                      <label for="SaleID" class="po-label"><i class="bx bx-user-pin"></i> ชื่อ - นามสกุล ผู้ขาย</label>
+                      <select id="SaleID" name="SaleID" class="form-select" required>
+                        @foreach ($saleUser as $s)
+                          <option value="{{ $s->id }}" @selected($s->id == $saleCar->SaleID)>{{ $s->name }}</option>
+                        @endforeach
+                      </select>
+                    @else
+                      <label for="sale_name" class="po-label"><i class="bx bx-user-pin"></i> ชื่อ - นามสกุล ผู้ขาย</label>
+                      <input id="sale_name" class="form-control" type="text"
+                        value="{{ $saleCar->saleUser->name ?? '-' }}" readonly>
+                    @endif
                   </div>
 
                   <div class="col-md-4">
@@ -1281,10 +1296,11 @@
                     <div class="col-md-3">
                       <div class="summary-stat-card highlight">
                         <div class="summary-stat-label"><i class="bx bx-car me-1"></i> ราคารถ</div>
-                        {{-- ราคารถ: แก้ได้เฉพาะ role = admin (คนอื่น read only) --}}
+                        {{-- ราคารถ: แก้ได้เฉพาะ admin/manager/audit/audit_lead/audit_dp/gm (คนอื่น read only)
+                             แก้แล้ว JS จะล้างค่าที่ผูกกับราคาให้ — ดู clearPriceDependentFields() --}}
                         <input id="price_sub" name="price_sub" class="form-control text-end money-input mt-1"
                           value="{{ $saleCar->price_sub ?? '' }}" required
-                          {{ $userRole === 'admin' && !$isHistory ? '' : 'readonly' }}>
+                          {{ $canEditCarPrice && !$isHistory ? '' : 'readonly' }}>
                       </div>
                     </div>
                   </div>

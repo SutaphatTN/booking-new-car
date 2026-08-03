@@ -1033,6 +1033,10 @@ function clearPricelistFields() {
   $('#car_MSRP').val('');
   $('#RI').val('');
   $('#price_sub').val('');
+
+  // เปลี่ยนรุ่น = ราคาคนละตัว บวกหัว/ดอกเบี้ย/งวดผ่อน ของรุ่นเดิมใช้ต่อไม่ได้
+  // (loadPricelistData() เติมราคาใหม่ด้วย .val() ซึ่งไม่ยิง event ตัวล้างที่ผูกกับ #price_sub จึงไม่ทำงาน)
+  clearPriceDependentFields();
 }
 
 // แสดงสถานะกำลังโหลดบน dropdown (disable + ข้อความ "กำลังโหลด...")
@@ -1532,8 +1536,66 @@ $(document).ready(function () {
     $searchInput.val('');
 
     updateSummary();
+
+    checkCarOrderPriceMismatch(data.sale);
   });
 });
+
+/**
+ * ผูกรถแล้วเทียบ "ราคาขาย" ของรถคันนั้น (car_order.car_MSRP) กับ "ราคารถ" ในใบจอง (price_sub)
+ * ไม่ตรง = ใบจองคิดจากราคาคนละตัวกับรถที่ผูกจริง ต้องให้คนตัดสินใจ ไม่เงียบ ๆ ทับให้
+ */
+function checkCarOrderPriceMismatch(carOrderSale) {
+  const $price = $('#price_sub');
+  if (!$price.length) return;
+
+  const carSale = parseFloat(String(carOrderSale ?? '').replace(/,/g, ''));
+  const priceSub = parseFloat(String($price.val() || '').replace(/,/g, ''));
+
+  if (!carSale || isNaN(carSale) || isNaN(priceSub) || carSale === priceSub) return;
+
+  const fmt = n => Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const rows = `
+    <div class="text-start mt-2">
+      <div>ราคารถในใบจอง : <b>${fmt(priceSub)}</b> ฿</div>
+      <div>ราคาขายของรถคันนี้ : <b>${fmt(carSale)}</b> ฿</div>
+      <div class="text-danger mt-1">ต่างกัน ${fmt(Math.abs(carSale - priceSub))} ฿</div>
+    </div>`;
+
+  // role ที่แก้ราคาไม่ได้ → แจ้งอย่างเดียว ให้ไปตามคนที่มีสิทธิ์มาแก้
+  if ($('#canEditCarPrice').val() !== '1') {
+    Swal.fire({
+      icon: 'warning',
+      title: 'ราคาไม่ตรงกัน',
+      html: rows + '<div class="mt-2">กรุณาแจ้งผู้มีสิทธิ์แก้ไขราคารถ</div>'
+    });
+    return;
+  }
+
+  Swal.fire({
+    icon: 'warning',
+    title: 'ราคาไม่ตรงกัน',
+    html: rows + '<div class="mt-2">ต้องการอัปเดตราคารถให้ตรงกับรถคันนี้ไหม?</div>',
+    showCancelButton: true,
+    confirmButtonText: 'อัปเดตราคารถ',
+    cancelButtonText: 'คงราคาเดิมไว้'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+
+    $price.val(fmt(carSale));
+    clearPriceDependentFields();
+    updateSummary();
+    calculateCommission();
+
+    Swal.fire({
+      icon: 'success',
+      title: 'อัปเดตราคารถแล้ว',
+      text: 'บวกหัว / ดอกเบี้ย / งวดผ่อน / เงินดาวน์ ถูกล้าง กรุณากรอกใหม่',
+      timer: 2500,
+      showConfirmButton: true
+    });
+  });
+}
 
 //edit : ยกเลิกการผูกรถ
 $(document).on('click', '#btnCancelCarOrder', function () {
@@ -2594,8 +2656,9 @@ function calculateCarPrice(e) {
       document.activeElement === markupInput ||
       document.activeElement === discountInput)
   ) {
-    downPaymentInput.value = '';
-    downPaymentPercentInput.value = '';
+    // หน้าสร้างใบจองไม่มีช่องเงินดาวน์ ต้องเช็ค null ไม่งั้น throw แล้วคำนวณตัวถัดไปไม่ทำงาน
+    if (downPaymentInput) downPaymentInput.value = '';
+    if (downPaymentPercentInput) downPaymentPercentInput.value = '';
 
     if (totalPaymentAtDeliveryInput) {
       totalPaymentAtDeliveryInput.value = '';
@@ -2972,6 +3035,68 @@ $(document).on(
   calculateCommissionSale
 );
 
+/**
+ * ล้างค่าที่ผูกกับ "ราคารถ" เมื่อมีการแก้ราคาด้วยมือ
+ * ราคาเปลี่ยน = ดีลเปลี่ยน ตัวเลขที่ตกลงไว้กับราคาเดิมใช้ต่อไม่ได้ ต้องกรอกใหม่
+ * ไม่ล้าง "ส่วนลดราคารถ" / "ส่วนลด (เงินสด)" เพราะเป็นยอดที่ต่อรองแยก ไม่ได้ผูกกับราคาโดยตรง
+ */
+function clearPriceDependentFields() {
+  // บวกหัว — 90% คำนวณตามให้อัตโนมัติใน calculateCarPrice()
+  $('#MarkupPrice').val('');
+  $('#Markup90').val('');
+
+  // ชุดจัดไฟแนนซ์: ดอกเบี้ย/งวดผ่อน/ดอกเบี้ยคอม + ค่าที่คำนวณต่อจากนี้
+  // (calculateInstallment จะ return ทันทีเมื่อไม่มีงวดผ่อน จึงต้องล้างค่างวดเองไม่งั้นค้างค่าเก่า)
+  $('#remaining_interest').val('');
+  $('#remaining_period').val('');
+  $('#remaining_type_com').val('');
+  $('#remaining_alp').val('');
+  $('#remaining_total_com').val('');
+
+  // เงินดาวน์ + ค่าใช้จ่ายวันออกรถ — calculateCarPrice() ล้างให้เฉพาะตอนโฟกัสอยู่ที่ช่องราคา
+  // ล้างซ้ำตรงนี้กันพลาดตอนถูกเรียกจากทางอื่น
+  $('#DownPayment').val('');
+  $('#DownPaymentPercentage').val('');
+  $('#TotalPaymentatDelivery').val('');
+  $('#TotalPaymentatDeliveryCar').val('');
+}
+
+/**
+ * ใบนี้มีสถานะอนุมัติค้างอยู่ไหม (เซ็นแล้ว หรือยื่นคำขอแล้วรอผล)
+ * ต้องตรงกับ $hasApprovalState ฝั่ง PurchaseOrderController::update()
+ */
+function hasApprovalState() {
+  return (
+    document.getElementById('smSignature')?.value === '1' ||
+    document.getElementById('approvalSignature')?.value === '1' ||
+    document.getElementById('gmApprovalSignature')?.value === '1' ||
+    document.getElementById('approvalRequested')?.value === '1'
+  );
+}
+
+// เตือนครั้งเดียวตอนแตะราคาครั้งแรก — backend รีเซ็ตให้อยู่แล้ว ตรงนี้แค่ไม่ให้เซอร์ไพรส์
+let approvalResetWarned = false;
+
+// bind แบบ delegate เพื่อให้ทำงานหลัง handler ตรงของ #price_sub (updateSummary/calculateBalance)
+// แล้วค่อยสั่งคำนวณใหม่ทั้งชุด — ค่าสุดท้ายบนหน้าจอจะตรงกับราคาใหม่เสมอ
+$(document).on('input', '#price_sub', function () {
+  clearPriceDependentFields();
+  updateSummary();
+  calculateCommission();
+
+  if (!approvalResetWarned && hasApprovalState()) {
+    approvalResetWarned = true;
+    Swal.fire({
+      icon: 'warning',
+      title: 'ใบนี้ผ่านการอนุมัติแล้ว',
+      html:
+        '<div class="text-start">แก้ราคารถแล้วบันทึก ระบบจะ<b>ล้างลายเซ็นอนุมัติทั้งหมด</b> ' +
+        'และยอดหักที่ผู้จัดการ/GM กรอกไว้ ต้อง<b>ส่งขออนุมัติใหม่</b><br>' +
+        '<small class="text-muted">ลิงก์อนุมัติในอีเมลฉบับเดิมจะใช้ไม่ได้</small></div>'
+    });
+  }
+});
+
 $(document).ready(function () {
   $('#carOrderSubModel, #cost_turn, #com_turn, #CashDeposit, #price_sub').on('input change', updateSummary);
   $(
@@ -3258,7 +3383,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const currentAddress = document.getElementById('CusCurrentAddress')?.value || '-';
     const documentAddress = document.getElementById('CusDocumentAddress')?.value || '-';
     const customerMobile = document.getElementById('CusMobile')?.value || '-';
-    const customerSale = document.getElementById('sale_name')?.value || '-';
+    // ผู้ขาย: role ที่ย้ายลูกค้าได้จะเห็นเป็น select (#SaleID) แทน input readonly (#sale_name)
+    const saleNameEl = document.getElementById('sale_name');
+    const customerSale =
+      (saleNameEl
+        ? saleNameEl.value
+        : document.querySelector('#SaleID option:checked')?.textContent.trim()) || '-';
     let BookingDate = formatThaiDate('BookingDate');
 
     //ข้อมูลการขาย

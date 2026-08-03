@@ -128,8 +128,24 @@
               <div class="po-section-body mb-2">
                 <div class="row g-4">
                   <div class="col-md-4">
-                    <div class="po-label">ผู้ขาย</div>
-                    <div class="info-pill fw-semibold">{{ $tracking->sale->name ?? '-' }}</div>
+                    @if ($canReassignSale)
+                      {{-- ย้ายลูกค้าไปให้เซลล์คนอื่น (admin/manager/audit/audit_lead/audit_dp/gm) --}}
+                      <label class="po-label" for="vmSaleId">ผู้ขาย</label>
+                      <div class="d-flex gap-2">
+                        <select id="vmSaleId" class="form-select" data-current="{{ $tracking->sale_id }}">
+                          @foreach ($saleUser as $s)
+                            <option value="{{ $s->id }}" @selected($s->id == $tracking->sale_id)>{{ $s->name }}</option>
+                          @endforeach
+                        </select>
+                        <button type="button" class="btn btn-primary flex-shrink-0" id="btnSaveSale"
+                          data-tracking-id="{{ $tracking->id }}" disabled>
+                          <i class="bx bx-save"></i>
+                        </button>
+                      </div>
+                    @else
+                      <div class="po-label">ผู้ขาย</div>
+                      <div class="info-pill fw-semibold">{{ $tracking->sale->name ?? '-' }}</div>
+                    @endif
                   </div>
                   <div class="col-md-2">
                     <div class="po-label">แหล่งที่มาหลัก</div>

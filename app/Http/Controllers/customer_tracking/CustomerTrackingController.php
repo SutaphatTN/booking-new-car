@@ -663,7 +663,44 @@ class CustomerTrackingController extends Controller
 
         $decisions = TbDecision::all();
 
-        return view('customer-tracking.view-more', compact('tracking', 'decisions'));
+        // ย้ายลูกค้าไปให้เซลล์คนอื่นได้ไหม — โหลดรายชื่อเฉพาะ role ที่มีสิทธิ์ ไม่งั้นเปลือง query
+        $canReassignSale = Auth::user()->canReassignSale();
+        $saleUser = $canReassignSale
+            ? User::salePoolForBrand((int) ($tracking->brand ?: Auth::user()->brand), (int) $tracking->sale_id)
+            : collect();
+
+        return view('customer-tracking.view-more', compact('tracking', 'decisions', 'canReassignSale', 'saleUser'));
+    }
+
+    /** ย้ายผู้ขายของการติดตามนี้ไปให้เซลล์อีกคน */
+    public function updateSale(Request $request, $id)
+    {
+        abort_unless(Auth::user()->canReassignSale(), 403);
+
+        $tracking = CustomerTracking::findOrFail($id);
+
+        $validated = $request->validate([
+            'sale_id' => 'required|exists:users,id',
+        ], [
+            'sale_id.required' => 'กรุณาเลือกผู้ขาย',
+            'sale_id.exists'   => 'ไม่พบผู้ขายที่เลือก',
+        ]);
+
+        // เลือกได้เฉพาะเซลล์ที่อยู่ใน pool ของ brand นี้ (กันยิง id มั่วผ่าน devtools)
+        $allowedIds = User::salePoolForBrand((int) ($tracking->brand ?: Auth::user()->brand), (int) $tracking->sale_id)
+            ->pluck('id')
+            ->all();
+
+        if (!in_array((int) $validated['sale_id'], array_map('intval', $allowedIds), true)) {
+            return response()->json(['success' => false, 'message' => 'ผู้ขายที่เลือกไม่อยู่ในแบรนด์นี้'], 422);
+        }
+
+        $tracking->update(['sale_id' => (int) $validated['sale_id']]);
+
+        return response()->json([
+            'success'   => true,
+            'sale_name' => $tracking->fresh('sale')->sale->name ?? '-',
+        ]);
     }
 
     public function addDetail(Request $request, $id)
