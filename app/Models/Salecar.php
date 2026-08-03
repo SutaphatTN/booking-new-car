@@ -291,9 +291,11 @@ class Salecar extends Model
 		return $this->belongsTo(TurnCar::class, 'TurnCarID', 'id');
 	}
 
+	// withTrashed: ลูกค้าถูกลบแล้วใบจองต้องยังขึ้นชื่อได้ ไม่ใช่ว่างเปล่า
+	// (เดิมเคยมีเคสลบลูกค้าที่มีใบจองถอนจอง แล้วใบจองนั้นไม่มีชื่อลูกค้า)
 	public function customer()
 	{
-		return $this->belongsTo(Customer::class, 'CusID', 'id');
+		return $this->belongsTo(Customer::class, 'CusID', 'id')->withTrashed();
 	}
 
 	public function originalCustomer()
@@ -308,7 +310,7 @@ class Salecar extends Model
 
 	public function customerReferrer()
 	{
-		return $this->belongsTo(Customer::class, 'ReferrerID', 'id');
+		return $this->belongsTo(Customer::class, 'ReferrerID', 'id')->withTrashed();
 	}
 
 	public function carOrder()

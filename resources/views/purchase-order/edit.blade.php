@@ -179,7 +179,15 @@
                   </div>
 
                   <div class="col-md-4">
-                    <label for="CusFullName" class="po-label"><i class="bx bx-user"></i> ชื่อ - นามสกุล ผู้จอง</label>
+                    <label for="CusFullName" class="po-label"><i class="bx bx-user"></i> ชื่อ - นามสกุล ผู้จอง
+                      {{-- ลูกค้าถูกลบไปแล้ว แต่ยังโชว์ชื่อได้ (relation customer() ใช้ withTrashed) --}}
+                      @if ($saleCar->customer?->trashed())
+                        <span class="badge bg-label-danger ms-1" style="font-size:.7rem;"
+                          title="ลูกค้ารายนี้ถูกลบออกจากรายชื่อลูกค้าแล้ว">
+                          <i class="bx bx-trash me-1"></i>ถูกลบแล้ว
+                        </span>
+                      @endif
+                    </label>
                     <input type="text" id="CusFullName" class="form-control"
                       value="{{ $saleCar->customer->prefix->Name_TH ?? '' }} {{ $saleCar->customer->FirstName ?? '' }} {{ $saleCar->customer->LastName ?? '' }}"
                       readonly>
