@@ -3106,6 +3106,12 @@ $(document).on(
   calculateCommissionSale
 );
 
+// admin แก้ "ค่าคอมฝ่ายขายที่ได้" (เคสเกินเพดาน) → sync เข้า hidden ที่ calculateCommissionSale อ่าน แล้วคิดใหม่
+$(document).on('input change', '#approval_commission_deduct', function () {
+  $('#approvalCommissionDeduct').val(this.value);
+  calculateCommissionSale();
+});
+
 /**
  * ล้างค่าที่ผูกกับ "ราคารถ" เมื่อมีการแก้ราคาด้วยมือ
  * ราคาเปลี่ยน = ดีลเปลี่ยน ตัวเลขที่ตกลงไว้กับราคาเดิมใช้ต่อไม่ได้ ต้องกรอกใหม่

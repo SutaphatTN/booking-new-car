@@ -1796,9 +1796,6 @@ class PurchaseOrderController extends Controller
                 'CheckerCheckedDate' => $this->toGregorian($request->CheckerCheckedDate),
                 'GMApprovalSignature' => $request->GMApprovalSignature,
                 'GMApprovalSignatureDate' => $this->toGregorian($request->GMApprovalSignatureDate),
-                'approval_commission_deduct' => $request->filled('approval_commission_deduct')
-                    ? str_replace(',', '', $request->approval_commission_deduct)
-                    : null,
                 'DeliveryEstimateDate' => $this->toGregorian($request->DeliveryEstimateDate),
                 'Note' => $request->Note,
                 'red_license' => $request->red_license,
@@ -1816,6 +1813,15 @@ class PurchaseOrderController extends Controller
                 'delivery_location' => $request->delivery_location,
                 'delivery_province' => $request->delivery_province,
             ];
+
+            // ค่าคอมฝ่ายขายที่ผู้จัดการ/GM กรอกตอนอนุมัติเกินเพดาน — แตะเฉพาะเมื่อฟอร์มส่งฟิลด์นี้มาจริง
+            // (ช่องกรอกในหน้า edit ถูกปิดไว้ → ถ้าเขียนทับทุกครั้ง ยอดที่อนุมัติแล้วจะโดนล้างเป็น null
+            //  แล้วคอมงบเหลือจะตกไปใช้สูตร auto: balance × 2 × per_budget%)
+            if ($request->has('approval_commission_deduct')) {
+                $data['approval_commission_deduct'] = $request->filled('approval_commission_deduct')
+                    ? str_replace(',', '', $request->approval_commission_deduct)
+                    : null;
+            }
 
             if (in_array(Auth::user()->brand, [2, 3, 4])) {
                 $data['gwm_color'] = $request->gwm_color;

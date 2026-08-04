@@ -2667,40 +2667,50 @@
                             </div>
                           </div>
 
-                          {{-- ผู้จัดการกรอกค่าคอมฝ่ายขายที่ได้ + แสดงยอดที่เหลือ --}}
-                          {{-- <div class="col-12">
-                            <div class="approval-card">
-                              <div class="approval-card-header">
-                                <div class="approval-icon amber"><i class="bx bx-calculator"></i></div>
-                                <div class="approval-title">{{ (int) $saleCar->brand === 2 ? 'ยอดหักค่าคอมฝ่ายขาย' : 'ค่าคอมฝ่ายขายที่ได้' }} (ผู้จัดการกรอก)</div>
-                              </div>
-                              <div class="approval-card-body">
-                                <div class="row g-3">
-                                  <div class="col-md-6">
-                                    <label for="approval_commission_deduct" class="more-field-label mb-1">
-                                      {{ (int) $saleCar->brand === 2 ? 'ยอดหักค่าคอมฝ่ายขาย' : 'ค่าคอมฝ่ายขายที่ได้' }}
-                                    </label>
-                                    <div class="input-group">
-                                      <span class="input-group-text">฿</span>
-                                      <input class="form-control text-end money-input"
-                                        id="approval_commission_deduct" name="approval_commission_deduct"
-                                        value="{{ $saleCar->approval_commission_deduct !== null ? number_format($saleCar->approval_commission_deduct, 2) : '' }}"
-                                        placeholder="0.00">
+                          {{-- ค่าคอมฝ่ายขายที่ผู้จัดการ/GM กรอกตอนอนุมัติ (เคสเกินเพดาน) + ยอดที่เหลือ
+                               แก้ได้เฉพาะ admin — role อื่นไม่เห็นช่องนี้ ฟอร์มจึงไม่ส่งฟิลด์มา
+                               และ update() จะไม่แตะค่าเดิม (ดู $request->has ใน PurchaseOrderController) --}}
+                          @php $usesDeduct = in_array($saleCar->approvalCase(), ['b1_md', 'b2_gm'], true); @endphp
+                          @if ($userRole === 'admin' && $usesDeduct)
+                            @php $deductLabel = (int) $saleCar->brand === 2 ? 'ยอดหักค่าคอมฝ่ายขาย' : 'ค่าคอมฝ่ายขายที่ได้'; @endphp
+                            <div class="col-12">
+                              <div class="approval-card">
+                                <div class="approval-card-header">
+                                  <div class="approval-icon amber"><i class="bx bx-calculator"></i></div>
+                                  <div class="approval-title">{{ $deductLabel }} (ผู้จัดการกรอก)</div>
+                                </div>
+                                <div class="approval-card-body">
+                                  <div class="row g-3">
+                                    <div class="col-md-6">
+                                      <label for="approval_commission_deduct" class="more-field-label mb-1">
+                                        {{ $deductLabel }}
+                                      </label>
+                                      <div class="input-group">
+                                        <span class="input-group-text">฿</span>
+                                        <input class="form-control text-end money-input"
+                                          id="approval_commission_deduct" name="approval_commission_deduct"
+                                          value="{{ $saleCar->approval_commission_deduct !== null ? number_format($saleCar->approval_commission_deduct, 2) : '' }}"
+                                          placeholder="0.00" {{ $readonly }}>
+                                      </div>
+                                      <div class="text-muted" style="font-size:.75rem;margin-top:4px;">
+                                        ยอดที่ผู้จัดการ/GM อนุมัติ — ใช้แทนสูตรอัตโนมัติในช่อง "คอมงบเหลือ"
+                                        (ปล่อยว่าง = กลับไปใช้สูตรอัตโนมัติ)
+                                      </div>
                                     </div>
-                                  </div>
-                                  <div class="col-md-6">
-                                    <label class="more-field-label mb-1">ยอดที่เหลือ (จากใบขออนุมัติ)</label>
-                                    <div class="input-group">
-                                      <span class="input-group-text">฿</span>
-                                      <input class="form-control text-end" type="text" readonly
-                                        value="{{ $saleCar->approval_remaining !== null ? number_format($saleCar->approval_remaining, 2) : '-' }}"
-                                        style="background:#f8fafc;color:#64748b;">
+                                    <div class="col-md-6">
+                                      <label class="more-field-label mb-1">ยอดที่เหลือ (จากใบขออนุมัติ)</label>
+                                      <div class="input-group">
+                                        <span class="input-group-text">฿</span>
+                                        <input class="form-control text-end" type="text" readonly
+                                          value="{{ $saleCar->approval_remaining !== null ? number_format($saleCar->approval_remaining, 2) : '-' }}"
+                                          style="background:#f8fafc;color:#64748b;">
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
-                          </div> --}}
+                          @endif
 
                         </div>
                       </div>
