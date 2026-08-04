@@ -1883,8 +1883,11 @@ class PurchaseOrderController extends Controller
                     'approval_case'              => null,
                     'approval_type'              => null,
                     'approval_remaining'         => null,
-                    // ยอดหักที่ผู้จัดการ/GM กรอกไว้ ตัดสินจากฐานเก่า → ต้องกรอกใหม่ตอนอนุมัติรอบใหม่
+                    // ยอดที่ผู้จัดการ/GM กรอกไว้ ตัดสินจากฐานเก่า → ต้องกรอกใหม่ตอนอนุมัติรอบใหม่
+                    // extra_budget ด้วย: เป็นหนี้ที่วิ่งไปหักคอมคันอื่นของเซลล์คนเดียวกัน
+                    // (ExtraBudgetLedger) ถ้าค้างไว้ = หนี้จากรอบอนุมัติที่ยกเลิกแล้วยังกัดคันอื่นอยู่
                     'approval_commission_deduct' => null,
+                    'approval_extra_budget'      => null,
                 ]);
             }
 
