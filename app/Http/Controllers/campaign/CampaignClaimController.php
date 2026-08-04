@@ -9,6 +9,7 @@ use App\Models\CampaignClaim;
 use App\Models\TbCampaignClaimStatus;
 use App\Exports\campaign\CampaignClaimExport;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Support\ExportFilename;
@@ -39,9 +40,45 @@ class CampaignClaimController extends Controller
             // เฉพาะรถที่ส่งมอบแล้ว (con_status = 5)
             ->whereHas('saleCar', fn($q) => $q->where('con_status', 5));
 
+        // ฟิลเตอร์เดือนส่งมอบ (YYYY-MM) — เว้นว่าง = ทุกเดือน
+        // คนละแกนกับสถานะ จึงเป็นเงื่อนไข AND เพิ่มอีกชั้น
+        //
+        // แถวที่ con_status = 5 แต่ DeliveryDate เป็น NULL แสดงเสมอไม่ว่าเลือกเดือนไหน
+        // (ข้อมูลหลุดมาจากการย้ายระบบ ~17% ของใบที่ส่งมอบ) ถ้ากรองออกจะไม่มีใครเห็นและไม่มีใครแก้
+        $month = (string) $request->input('delivery_month', '');
+        if (preg_match('/^\d{4}-\d{2}$/', $month)) {
+            $monthStart = Carbon::createFromFormat('Y-m-d', $month . '-01')->startOfMonth();
+            $monthEnd   = $monthStart->copy()->endOfMonth();
+            $base->whereHas('saleCar', fn($q) => $q->where(
+                fn($w) => $w
+                    ->whereBetween('DeliveryDate', [$monthStart->toDateString(), $monthEnd->toDateString()])
+                    ->orWhereNull('DeliveryDate')
+            ));
+        }
+
         // ฟิลเตอร์สถานะ (สรุปผลการตรวจสอบ)
-        // ค่าว่าง = แสดงเฉพาะรายการที่ยังไม่มีสถานะ, มีค่า = กรองตามสถานะนั้น
-        if ($statusFilter !== '' && $statusFilter !== null) {
+        //  ''    = ยังไม่ตรวจสอบ (ค่าเริ่มต้น) → เฉพาะรายการที่ยังไม่มีสถานะ
+        //  'all' = ทั้งหมด → ไม่กรองเลย รวม "รับเงินเรียบร้อย" ที่ไม่มีในตัวเลือกรายสถานะ
+        //  ตัวเลข = กรองตามสถานะนั้น
+        if ($statusFilter === 'all') {
+            // ฟิลเตอร์คอลัมน์ "สรุปผลการตรวจสอบ" (เลือกได้หลายสถานะ) — ใช้ได้เฉพาะตอน "ทั้งหมด"
+            // 'none' = รายการที่ยังไม่มี status_id
+            $statusIds = json_decode((string) $request->input('status_ids', ''), true);
+            if (is_array($statusIds) && count($statusIds)) {
+                $wantNone = in_array('none', $statusIds, true);
+                $ids = array_values(array_filter($statusIds, fn($v) => $v !== 'none'));
+
+                $base->where(function ($q) use ($ids, $wantNone) {
+                    if ($ids) {
+                        $q->whereHas('claim', fn($c) => $c->whereIn('status_id', $ids));
+                    }
+                    if ($wantNone) {
+                        // orWhere... ตัวแรกของ closure ทำงานเหมือน where ปกติ จึงใช้ได้แม้ $ids ว่าง
+                        $q->orWhereDoesntHave('claim', fn($c) => $c->whereNotNull('status_id'));
+                    }
+                });
+            }
+        } elseif ($statusFilter !== '' && $statusFilter !== null) {
             $base->whereHas('claim', fn($q) => $q->where('status_id', $statusFilter));
         } else {
             $base->whereDoesntHave('claim', fn($q) => $q->whereNotNull('status_id'));
@@ -63,6 +100,11 @@ class CampaignClaimController extends Controller
         }
 
         $recordsFiltered = (clone $base)->count();
+
+        // จำนวนแถวที่ยังไม่ได้กรอกวันส่งมอบ (ในชุดที่กำลังแสดง) — เอาไปขึ้นป้ายเตือนบนแถบฟิลเตอร์
+        $nullDeliveryCount = (clone $base)
+            ->whereHas('saleCar', fn($q) => $q->whereNull('DeliveryDate'))
+            ->count();
 
         $rows = $base
             ->with([
@@ -108,7 +150,11 @@ class CampaignClaimController extends Controller
                 // 'model' => $model,
                 'vin_number' => $vinNumber,
                 'campaignType' => $typeName,
-                'delivery_date' => $sc->saleCar?->format_delivery_date ?? '-',
+                // ส่งมอบแล้วแต่ไม่มีวันที่ = ข้อมูลไม่ครบ ต้องเห็นชัดว่าเป็นแถวที่ต้องตามแก้
+                'delivery_date' => $sc->saleCar?->DeliveryDate
+                    ? ($sc->saleCar->format_delivery_date ?? '-')
+                    : '<span class="badge bg-label-warning" title="ใบจองสถานะส่งมอบแล้ว แต่ยังไม่ได้กรอกวันที่ส่งมอบ">'
+                        . '<i class="bx bx-error-circle me-1"></i>ไม่มีวันส่งมอบ</span>',
                 'used' => number_format($used, 2),
                 'claim_amount' => $claimAmount !== null ? number_format($claimAmount, 2) : '-',
                 'diff' => $diff !== null ? number_format($diff, 2) : '-',
@@ -120,10 +166,11 @@ class CampaignClaimController extends Controller
         });
 
         return response()->json([
-            'draw'            => $draw,
-            'recordsTotal'    => $recordsTotal,
-            'recordsFiltered' => $recordsFiltered,
-            'data'            => $data->values(),
+            'draw'              => $draw,
+            'recordsTotal'      => $recordsTotal,
+            'recordsFiltered'   => $recordsFiltered,
+            'nullDeliveryCount' => $nullDeliveryCount,
+            'data'              => $data->values(),
         ]);
     }
 
