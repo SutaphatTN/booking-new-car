@@ -73,7 +73,10 @@
                 </tr>
               </thead>
               <tbody>
-                @forelse ($rows as $i => $r)
+                {{-- ห้ามใส่แถว "ไม่มีข้อมูล" แบบ colspan เอง — DataTables client-side ต้องการให้ทุกแถว
+                     มีจำนวน <td> เท่าหัวตาราง ไม่งั้นจะ throw "Requested unknown parameter"
+                     กรณีไม่มีข้อมูลใช้ข้อความจาก language.zeroRecords ด้านล่างแทน --}}
+                @foreach ($rows as $i => $r)
                   <tr>
                     <td class="text-center">{{ $i + 1 }}</td>
                     <td>{{ $r['vin'] }}</td>
@@ -105,13 +108,7 @@
                       @endif
                     </td>
                   </tr>
-                @empty
-                  <tr>
-                    <td colspan="8" class="text-center text-muted py-4">
-                      ไม่มีรายการ FP (car_order ที่ประเภทการจ่าย = FP Tisco)
-                    </td>
-                  </tr>
-                @endforelse
+                @endforeach
               </tbody>
             </table>
           </div>
@@ -440,7 +437,9 @@
         columnDefs: [{ targets: -1, orderable: false, searchable: false }],
         language: {
           lengthMenu: 'แสดง _MENU_ แถว',
-          zeroRecords: 'ไม่พบข้อมูล',
+          // ตารางว่างจริง ๆ (ไม่มีแถวเลย) vs ค้นหาแล้วไม่เจอ
+          emptyTable: 'ไม่มีรายการ FP (car_order ที่ประเภทการจ่าย = FP Tisco)',
+          zeroRecords: 'ไม่พบข้อมูลที่ค้นหา',
           info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
           infoEmpty: 'ไม่มีข้อมูล',
           infoFiltered: '(กรองจาก _MAX_ รายการ)',
