@@ -92,6 +92,18 @@ class PurchaseOrderController extends Controller
         return $role !== null && !in_array($role, ['sale', 'lead_sale'], true);
     }
 
+    /**
+     * ถอนจอง (ปุ่มลบในหน้ารายการจอง) ได้ไหม — sale/lead_sale ห้าม
+     * ถอนจองคือการปิดใบจอง (con_status = 9) + ปลดรถกลับเป็น Available
+     * ฝ่ายขายกดเองไม่ได้ ต้องให้ระดับที่ดูแลใบจองเป็นคนตัดสิน
+     */
+    public static function canWithdrawBooking(): bool
+    {
+        $role = Auth::user()->role ?? null;
+
+        return $role !== null && !in_array($role, ['sale', 'lead_sale'], true);
+    }
+
     public function index()
     {
         $saleCar = Salecar::all();
@@ -923,7 +935,9 @@ class PurchaseOrderController extends Controller
             ->get();
 
         $rowNum = $start + 1;
-        $data = $saleCars->map(function ($s) use (&$rowNum) {
+        $canWithdraw = self::canWithdrawBooking(); // sale/lead_sale ไม่เห็นปุ่มถอนจอง
+
+        $data = $saleCars->map(function ($s) use (&$rowNum, $canWithdraw) {
             $model        = $s->model ? $s->model->Name_TH : '';
             $subModelSale = $s->subModel ? $s->subModel->name : '';
             $subDetail    = $s->subModel ? $s->subModel->detail : '';
@@ -966,11 +980,15 @@ class PurchaseOrderController extends Controller
                 ? "<a href=\"{$summaryUrl}\" target=\"_blank\" class=\"btn btn-icon btn-primary text-white\" title=\"สรุปค่าใช้จ่าย\"><i class=\"bx bx-printer\"></i></a>"
                 : "<a href=\"javascript:void(0)\" class=\"btn btn-icon btn-primary text-white\" style=\"opacity:.45;pointer-events:none;cursor:not-allowed;\" title=\"ยังไม่มีข้อมูลค่างวด\"><i class=\"bx bx-printer\"></i></a>";
 
+            $deleteBtn = $canWithdraw
+                ? "<button class=\"btn btn-icon btn-danger text-white btnDeleteSale\" data-id=\"{$salecarId}\" title=\"ลบ\"><i class=\"bx bx-trash\"></i></button>"
+                : '';
+
             $action = "<div class=\"d-flex justify-content-center gap-1\">"
                 . "<a href=\"{$editUrl}\" class=\"btn btn-icon btn-warning text-white\" title=\"แก้ไข\"><i class=\"bx bx-edit\"></i></a>"
                 . "<a href=\"{$bookingUrl}\" target=\"_blank\" class=\"btn btn-icon btn-success text-white\" title=\"ใบจอง\"><i class=\"bx bx-receipt\"></i></a>"
                 . $summaryBtn
-                . "<button class=\"btn btn-icon btn-danger text-white btnDeleteSale\" data-id=\"{$salecarId}\" title=\"ลบ\"><i class=\"bx bx-trash\"></i></button>"
+                . $deleteBtn
                 . "</div>";
 
             return [
@@ -2578,6 +2596,14 @@ class PurchaseOrderController extends Controller
 
     function destroy(Request $request, $id)
     {
+        // ซ่อนปุ่มอย่างเดียวไม่พอ — endpoint นี้ยิงตรงได้ ต้องกันที่ server ด้วย
+        if (!self::canWithdrawBooking()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีสิทธิ์ถอนจอง',
+            ], 403);
+        }
+
         try {
             $saleCar = Salecar::findOrFail($id);
 

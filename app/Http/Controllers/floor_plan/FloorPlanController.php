@@ -21,8 +21,8 @@ class FloorPlanController extends Controller
     // เมนู Floor Plan เห็น/แก้ได้เฉพาะ admin, audit_internal, md
     private const ALLOWED_ROLES = ['admin', 'audit_internal', 'md'];
 
-    // แก้ Billing date (car_order.fp_date) ได้เฉพาะ admin — บางคันไม่มีวันที่นี้
-    private const BILLING_DATE_ROLES = ['admin'];
+    // แก้ข้อมูล FP ในโมดัล (Billing date / วันที่ปิด FP / Net Amount)
+    private const FP_EDIT_ROLES = ['admin', 'audit_internal', 'md'];
 
     // ชุดแจ้งจำหน่าย (key => label) — key เก็บลง salecars.dispose_set
     public const DISPOSE_SETS = [
@@ -40,9 +40,9 @@ class FloorPlanController extends Controller
         abort_unless(in_array(Auth::user()->role, self::ALLOWED_ROLES, true), 403);
     }
 
-    private function canEditBillingDate(): bool
+    private function canEditFp(): bool
     {
-        return in_array(Auth::user()->role, self::BILLING_DATE_ROLES, true);
+        return in_array(Auth::user()->role, self::FP_EDIT_ROLES, true);
     }
 
     /**
@@ -172,10 +172,15 @@ class FloorPlanController extends Controller
      * - งวดแรกเริ่มที่ billing date (แม้ก่อนวันที่ 16) นับถึง 15 ของเดือนถัดไป
      * - งวดถัดไป 16 → 15 ของเดือนถัดไป งวดสุดท้ายตัดที่วันปิด FP
      * - spread (MLR) ใช้ช่วง aging เดียวจากจำนวนวันรวม แต่ค่า MOR/MLR อ่านตามเดือนของ segment
+     * - ปิด FP วันเดียวกับ Billing date → นับเป็น 1 วัน (ไม่ใช่ 0)
+     *
+     * @param float $netAmount ยอดที่ใช้คิดดอกเบี้ย (fp_net_amount ถ้ากรอกไว้ ไม่งั้นใช้ car_DNP)
      */
-    private function buildFpSegments(Carbon $billing, Carbon $close, int $brand, float $cost): array
+    private function buildFpSegments(Carbon $billing, Carbon $close, int $brand, float $netAmount): array
     {
-        $totalDays = $billing->diffInDays($close);           // นับส่วนต่าง (exclusive)
+        // ปิดวันเดียวกับ billing → คิด 1 วัน (diffInDays จะได้ 0 ซึ่งทำให้ดอกเบี้ยเป็น 0)
+        $sameDay   = $billing->isSameDay($close);
+        $totalDays = $sameDay ? 1 : (int) $billing->diffInDays($close);   // นับส่วนต่าง (exclusive)
         $bucketCol = $this->spreadBucketColumn($totalDays);
 
         $segments      = [];
@@ -195,9 +200,14 @@ class FloorPlanController extends Controller
 
             $isLast  = $close->lt($nextBoundary);
             $segEnd  = $isLast ? $close->copy() : $nextBoundary->copy()->subDay(); // งวดสุดท้าย = วันปิด / อื่น ๆ = วันที่ 15
-            $days    = $isLast ? $segStart->diffInDays($close) : $segStart->diffInDays($nextBoundary);
+            $days    = (int) ($isLast ? $segStart->diffInDays($close) : $segStart->diffInDays($nextBoundary));
 
-            $interest = $cost * ($rate / 100) * ($days / 365);
+            // ปิดวันเดียวกับ billing → มี segment เดียวเสมอ นับ 1 วัน
+            if ($sameDay) {
+                $days = 1;
+            }
+
+            $interest = $netAmount * ($rate / 100) * ($days / 365);
             $totalInterest += $interest;
 
             $segments[] = [
@@ -244,11 +254,14 @@ class FloorPlanController extends Controller
             $close   = $o->fp_close_date ? Carbon::parse($o->fp_close_date) : null;
             $cost    = (float) ($o->car_DNP ?? 0);
 
+            // ยอดที่ใช้คิดดอกเบี้ย — ตั้งต้นจากราคาทุน แต่แก้ทับได้ (ค่าประดับยนต์ทำให้บางคันไม่ตรง)
+            $netAmount = $o->fp_net_amount !== null ? (float) $o->fp_net_amount : $cost;
+
             // ข้อมูลการเงินจากใบจอง (ถ้ามี)
             $sale = $o->salecars->first();
 
             $isClosed = $billing && $close && $close->gte($billing);
-            $calc     = $isClosed ? $this->buildFpSegments($billing, $close, $brand, $cost) : null;
+            $calc     = $isClosed ? $this->buildFpSegments($billing, $close, $brand, $netAmount) : null;
 
             return [
                 'id'            => $o->id,
@@ -266,6 +279,9 @@ class FloorPlanController extends Controller
                 'engine'        => $o->engine_number ?: '-',
                 'jNumber'       => $o->j_number ?: '-',
                 'cost'          => $cost,
+                'netAmount'     => $netAmount,
+                // กรอกยอดเองไว้หรือยัง (ใช้บอกในหน้าจอว่าค่านี้มาจากราคาทุนหรือคนกรอก)
+                'netIsCustom'   => $o->fp_net_amount !== null,
                 // ── ข้อมูลการเงินจากใบจอง (salecars ผูกด้วย CarOrderID) ──
                 'downPayment'    => $sale && $sale->DownPayment !== null ? (float) $sale->DownPayment : null,
                 'balanceFinance' => $sale && $sale->balanceFinance !== null ? (float) $sale->balanceFinance : null,
@@ -310,7 +326,7 @@ class FloorPlanController extends Controller
             return $isPending || $r['billingPeriod'] === $month;
         })->values();
 
-        $canEditBilling = $this->canEditBillingDate();
+        $canEditFp = $this->canEditFp();
 
         return view('floor-plan.fp.view', compact(
             'rows',
@@ -319,30 +335,42 @@ class FloorPlanController extends Controller
             'month',
             'status',
             'periodLabel',
-            'canEditBilling'
+            'canEditFp'
         ));
     }
 
     /**
-     * บันทึก "วันที่ปิด FP" (กรอกเอง) ลง car_order — เว้นว่างได้ (กลับเป็น รอปิด FP)
-     * - เฉพาะ admin แก้ Billing date (fp_date) ได้ด้วย เพราะบางคันไม่มีวันที่นี้
+     * บันทึกข้อมูล FP ที่แก้ในโมดัล ลง car_order — admin / audit_internal / md
+     *  - fp_date        Billing date (บางคันยังไม่มี ต้องกรอกเอง)
+     *  - fp_close_date  วันที่ปิด FP (เว้นว่างได้ = กลับเป็น "รอปิด FP")
+     *  - fp_net_amount  ยอดที่ใช้คิดดอกเบี้ย — บันทึกทุกครั้งที่ส่งมา ไม่ว่าจะแก้หรือใช้ยอดเดิม
+     *                   (ก่อนหน้านี้คิดจาก car_DNP ตรง ๆ ซึ่งไม่ตรงเมื่อมีค่าประดับยนต์)
      */
     public function updateFpCloseDate(Request $request, $id)
     {
         $this->authorizeAccess();
 
+        if (!$this->canEditFp()) {
+            abort(403);
+        }
+
         $order = CarOrder::where('payment_type', 'fp_tisco')->findOrFail($id);
 
-        $canEditBilling = $this->canEditBillingDate();
-
-        $rules = ['fp_close_date' => 'nullable|date'];
-        if ($canEditBilling) {
-            $rules['fp_date'] = 'nullable|date';
+        // ช่องกรอกใส่ลูกน้ำให้อ่านง่าย (905,509.84) — ตัดออกก่อน validate
+        if ($request->has('fp_net_amount')) {
+            $request->merge([
+                'fp_net_amount' => str_replace(',', '', (string) $request->fp_net_amount),
+            ]);
         }
-        $validated = $request->validate($rules);
 
-        // Billing date ที่จะใช้เทียบ = ค่าที่ส่งมา (ถ้าแก้ได้) มิฉะนั้นใช้ของเดิม
-        $editBilling = $canEditBilling && $request->has('fp_date');
+        $validated = $request->validate([
+            'fp_close_date' => 'nullable|date',
+            'fp_date'       => 'nullable|date',
+            'fp_net_amount' => 'nullable|numeric|min:0',
+        ]);
+
+        // Billing date ที่จะใช้เทียบ = ค่าที่ส่งมา (ถ้าฟอร์มส่งมา) มิฉะนั้นใช้ของเดิม
+        $editBilling = $request->has('fp_date');
         $billing     = $editBilling ? ($validated['fp_date'] ?: null) : $order->fp_date;
 
         if (!empty($validated['fp_close_date']) && $billing
@@ -354,6 +382,12 @@ class FloorPlanController extends Controller
 
         if ($editBilling) {
             $order->fp_date = $billing;
+        }
+        if ($request->has('fp_net_amount')) {
+            // เว้นว่าง = กลับไปใช้ราคาทุน (car_DNP)
+            $order->fp_net_amount = $validated['fp_net_amount'] !== null && $validated['fp_net_amount'] !== ''
+                ? $validated['fp_net_amount']
+                : null;
         }
         $order->fp_close_date = $validated['fp_close_date'] ?: null;
         $order->save();
