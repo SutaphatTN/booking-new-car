@@ -81,12 +81,12 @@ class FpReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sho
                 $sheet->freezePane('A2');
                 $sheet->getTabColor()->setRGB('c6efce');
 
-                // จัดรูปแบบเงิน คอลัมน์ "ราคาทุน" และ "รวมดอกเบี้ย"
+                // จัดรูปแบบเงิน คอลัมน์ "ราคาทุน" / "Net Amount" / "รวมดอกเบี้ย"
                 $lastColIndex = Coordinate::columnIndexFromString($highestCol);
                 for ($i = 1; $i <= $lastColIndex; $i++) {
                     $letter = Coordinate::stringFromColumnIndex($i);
                     $header = $sheet->getCell("{$letter}1")->getValue();
-                    if (in_array($header, ['ราคาทุน', 'รวมดอกเบี้ย'], true)) {
+                    if (in_array($header, ['ราคาทุน', 'Net Amount', 'รวมดอกเบี้ย'], true)) {
                         $sheet->getStyle("{$letter}2:{$letter}{$highestRow}")
                             ->getNumberFormat()
                             ->setFormatCode('#,##0.00');

@@ -2,7 +2,7 @@
   // brand-scope อยู่แล้ว (UserAccessScope) → Option เฉพาะ brand 1, สีภายใน เฉพาะ brand 2
   $showOption   = $brand == 1;
   $showInterior = $brand == 2;
-  $colCount     = 15 + ($showOption ? 1 : 0) + ($showInterior ? 1 : 0);
+  $colCount     = 16 + ($showOption ? 1 : 0) + ($showInterior ? 1 : 0);
 @endphp
 <table>
   <thead>
@@ -22,6 +22,7 @@
         <th>สีภายใน</th>
       @endif
       <th>ราคาทุน</th>
+      <th>Net Amount</th>
       <th>Billing date</th>
       <th>วันที่ปิด FP</th>
       <th>สถานะ</th>
@@ -47,6 +48,7 @@
           <td>{{ $r['interior'] }}</td>
         @endif
         <td>{{ $r['cost'] }}</td>
+        <td>{{ $r['netAmount'] }}</td>
         <td>{{ $r['billingText'] }}</td>
         <td>{{ $r['closeText'] }}</td>
         <td>{{ $r['isClosed'] ? 'ปิดแล้ว' : 'รอปิด FP' }}</td>

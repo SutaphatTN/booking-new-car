@@ -93,16 +93,16 @@
                         data-id="{{ $r['id'] }}" title="ดูข้อมูล">
                         <i class="bx bx-show"></i>
                       </button>
-                      <button type="button" class="btn btn-sm btn-icon btn-warning text-white fp-btn-edit"
-                        data-id="{{ $r['id'] }}"
-                        data-vin="{{ $r['vin'] }}"
-                        data-model="{{ $r['modelName'] }}"
-                        data-billing="{{ $r['billingText'] }}"
-                        data-billing-date="{{ $r['billingDate'] }}"
-                        data-close="{{ $r['closeDate'] }}"
-                        title="แก้ไขวันที่ปิด FP">
-                        <i class="bx bx-edit"></i>
-                      </button>
+                      @if ($canEditFp)
+                        <button type="button" class="btn btn-sm btn-icon btn-warning text-white fp-btn-edit"
+                          data-id="{{ $r['id'] }}"
+                          data-net="{{ number_format($r['netAmount'], 2) }}"
+                          data-billing-date="{{ $r['billingDate'] }}"
+                          data-close-date="{{ $r['closeDate'] }}"
+                          title="แก้ไขข้อมูล FP">
+                          <i class="bx bx-edit"></i>
+                        </button>
+                      @endif
                     </td>
                   </tr>
                 @empty
@@ -149,8 +149,6 @@
                 <div class="col-md-4"><span class="fp-info-label">สีภายใน</span><div class="fp-info-val">{{ $r['interior'] }}</div></div>
               @endif
               <div class="col-md-4"><span class="fp-info-label">ราคาทุน</span><div class="fp-info-val">{{ number_format($r['cost'], 2) }}</div></div>
-              <div class="col-md-4"><span class="fp-info-label">Billing date</span><div class="fp-info-val">{{ $r['billingText'] }}</div></div>
-              <div class="col-md-4"><span class="fp-info-label">วันที่ปิด FP</span><div class="fp-info-val">{{ $r['closeText'] }}</div></div>
               <div class="col-md-4">
                 <span class="fp-info-label">สถานะ</span>
                 <div class="fp-info-val">
@@ -191,6 +189,35 @@
 
         </div>{{-- /.fp-detail-info --}}
 
+        {{-- ข้อมูล FP (อ่านอย่างเดียว) — โมดัลแก้ไขมี section เดียวกันแต่เป็นช่องกรอก จึงไม่อยู่ใน .fp-detail-info --}}
+        <div class="mf-section">
+          <div class="mf-section-hd">
+            <div class="mf-section-icon sky"><i class="bx bx-calendar-check"></i></div>
+            <span class="mf-section-title">ข้อมูล FP</span>
+          </div>
+          <div class="mf-section-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <span class="fp-info-label">Net Amount <small class="text-muted">(ใช้คิดดอกเบี้ย)</small></span>
+                <div class="fp-info-val">
+                  {{ number_format($r['netAmount'], 2) }}
+                  @if ($r['netIsCustom'])
+                    <small class="text-warning">(กรอกเอง)</small>
+                  @endif
+                </div>
+              </div>
+              <div class="col-md-4">
+                <span class="fp-info-label">Billing date</span>
+                <div class="fp-info-val">{{ $r['billingText'] }}</div>
+              </div>
+              <div class="col-md-4">
+                <span class="fp-info-label">วันที่ปิด FP</span>
+                <div class="fp-info-val">{{ $r['closeText'] }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {{-- การคิดดอกเบี้ย --}}
         <div class="mf-section">
           <div class="mf-section-hd">
@@ -228,6 +255,16 @@
                     </tr>
                   </tbody>
                 </table>
+              </div>
+              <div class="text-muted small mt-2">
+                <i class="bx bx-info-circle"></i>
+                คิดจาก Net Amount <b>{{ number_format($r['netAmount'], 2) }}</b>
+                @if ($r['netIsCustom'])
+                  (กรอกเอง — ราคาทุน {{ number_format($r['cost'], 2) }})
+                @else
+                  (= ราคาทุน)
+                @endif
+                &nbsp;×&nbsp; Rate ÷ 100 &nbsp;×&nbsp; จำนวนวัน ÷ 365 &nbsp;ต่องวด
               </div>
             @else
               <div class="text-center text-muted py-3">
@@ -268,8 +305,8 @@
           <div class="d-flex align-items-center gap-3">
             <div class="mf-hd-icon"><i class="bx bx-edit fs-5 text-white"></i></div>
             <div>
-              <h6 class="mb-0 fw-bold text-white mf-hd-title">แก้ไขวันที่ปิด FP</h6>
-              <small class="text-white mf-hd-sub">Floor Plan — Edit FP Close Date</small>
+              <h6 class="mb-0 fw-bold text-white mf-hd-title">แก้ไขข้อมูล FP</h6>
+              <small class="text-white mf-hd-sub">Floor Plan — Edit FP</small>
             </div>
           </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -278,28 +315,40 @@
           <form id="fpEditForm" autocomplete="off">
             <input type="hidden" id="fpEditId">
 
-            {{-- ข้อมูลรถ + ข้อมูลการเงิน (อ่านอย่างเดียว — ยัดจาก detail template ตัวเดียวกับ modal รายละเอียด) --}}
+            {{-- ข้อมูลรถ + ข้อมูลการเงิน (อ่านอย่างเดียว — template เดียวกับ modal รายละเอียด) --}}
             <div id="fpEditInfoBody"></div>
 
-            {{-- Section : วันที่ปิด FP (แก้ไขได้) --}}
+            {{-- ข้อมูล FP — section เดียวกับ modal รายละเอียด แต่เป็นช่องกรอก
+                 ต้องเป็น element จริงตัวเดียว ห้ามก๊อปจาก template เพราะ flatpickr
+                 (auto-init ใน app.js) เก็บค่าที่แสดงไว้ใน property ไม่ใช่ attribute
+                 → ก๊อป HTML ไปแล้วค่าหาย --}}
             <div class="mf-section">
               <div class="mf-section-hd">
                 <div class="mf-section-icon amber"><i class="bx bx-calendar-check"></i></div>
-                <span class="mf-section-title">วันที่ FP</span>
+                <span class="mf-section-title">ข้อมูล FP</span>
               </div>
               <div class="mf-section-body">
                 <div class="row g-3">
-                  @if ($canEditBilling)
-                    <div class="col-md-4">
-                      <label for="fpEditBillingDate" class="mf-label form-label"><i class="bx bx-calendar"></i> Billing date</label>
-                      <input type="date" id="fpEditBillingDate" class="form-control">
-                      <div class="form-text">กรอกได้กรณีรถที่ยังไม่มี Billing date</div>
-                    </div>
-                  @endif
                   <div class="col-md-4">
-                    <label for="fpEditCloseDate" class="mf-label form-label"><i class="bx bx-calendar-check"></i> วันที่ปิด FP</label>
+                    <label for="fpEditNet" class="mf-label form-label">
+                      Net Amount <small class="text-muted">(ใช้คิดดอกเบี้ย)</small>
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text">฿</span>
+                      <input type="text" inputmode="decimal" id="fpEditNet" class="form-control text-end"
+                        placeholder="0.00">
+                    </div>
+                    <div class="form-text">เว้นว่าง = ใช้ราคาทุน</div>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="fpEditBillingDate" class="mf-label form-label">Billing date</label>
+                    <input type="date" id="fpEditBillingDate" class="form-control">
+                    <div class="form-text">กรอกได้กรณีรถที่ยังไม่มี Billing date</div>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="fpEditCloseDate" class="mf-label form-label">วันที่ปิด FP</label>
                     <input type="date" id="fpEditCloseDate" class="form-control">
-                    <div class="form-text">เว้นว่าง = กลับเป็น "รอปิด FP" / ต้องไม่ก่อน Billing date</div>
+                    <div class="form-text">เว้นว่าง = กลับเป็น "รอปิด FP"</div>
                   </div>
                 </div>
               </div>
@@ -332,6 +381,26 @@
     #fpEditModal .fp-info-label { font-size: .78rem; color: #8a8aa3; display: block; }
     #fpDetailModal .fp-info-val,
     #fpEditModal .fp-info-val { font-weight: 600; color: #3a3a55; }
+
+    #fpEditModal .input-group-text {
+      background: #f7f7fa;
+      color: #8a8aa3;
+      border-color: #dbdbe8;
+      min-width: 2.6rem;
+      justify-content: center;
+    }
+
+    /* min-height กันข้อความช่วยเหลือความยาวไม่เท่ากันดันช่องเหลื่อมกัน */
+    #fpEditModal .form-text {
+      font-size: .72rem;
+      margin-top: .35rem;
+      min-height: 2.1rem;
+      line-height: 1.35;
+    }
+
+    /* flatpickr ห่อ input ด้วย .input-group เอง — บังคับให้เต็มคอลัมน์ */
+    #fpEditModal .flatpickr-input + .input-group,
+    #fpEditModal .mf-section-body .input-group { width: 100%; }
 
     /* ไอคอนหัวข้อ section ให้ล้อสีตามธีมของ modal (template เดียวใช้ทั้ง 2 modal)
        ดูข้อมูล = mf-header--view (ฟ้า) / แก้ไข = mf-header--edit (ส้ม) */
@@ -395,27 +464,59 @@
         fpDetailModal.show();
       });
 
-      // แก้ไขวันที่ปิด FP
+      // app.js แปลง input[type=date] เป็น flatpickr (input เดิมถูกซ่อน + สร้าง altInput มาแสดงแทน)
+      // → เซ็ตค่าด้วย .val() จะไม่ขึ้นบนหน้าจอ ต้องสั่งผ่าน API ของ flatpickr
+      function setDateValue(el, val) {
+        if (el._flatpickr) {
+          el._flatpickr.setDate(val || null, false);
+        } else {
+          el.value = val || '';
+        }
+      }
+
+      // ── Net Amount : ใส่ลูกน้ำระหว่างพิมพ์ แล้วเติมทศนิยม 2 ตำแหน่งตอนออกจากช่อง ──
+      $(document).on('input', '#fpEditNet', function () {
+        let v = this.value.replace(/[^\d.]/g, '');
+        const dot = v.indexOf('.');
+        if (dot !== -1) v = v.slice(0, dot + 1) + v.slice(dot + 1).replace(/\./g, ''); // จุดได้ตัวเดียว
+        let [intp, dec] = v.split('.');
+        intp = (intp || '').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        this.value = dec !== undefined ? intp + '.' + dec.slice(0, 2) : intp;
+      });
+
+      $(document).on('blur', '#fpEditNet', function () {
+        const n = parseFloat(this.value.replace(/,/g, ''));
+        this.value = isNaN(n)
+          ? '' // เว้นว่าง = กลับไปใช้ราคาทุน
+          : n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      });
+
+      // แก้ไขข้อมูล FP — ข้อมูลรถ/การเงิน ยัดจาก template ส่วนช่องกรอกเป็น element จริงในฟอร์ม
       $(document).on('click', '.fp-btn-edit', function () {
         const d = $(this).data();
         $('#fpEditId').val(d.id);
-        // ใช้ template เดียวกับ modal รายละเอียด (เฉพาะข้อมูลรถ + ข้อมูลการเงิน)
         const info = $('#fpDetailTemplates [data-detail="' + d.id + '"] .fp-detail-info').html() || '';
         $('#fpEditInfoBody').html(info);
-        $('#fpEditBillingDate').val(d.billingDate || '');
-        $('#fpEditCloseDate').val(d.close || '');
+
+        $('#fpEditNet').val(d.net || '');
+        setDateValue(document.getElementById('fpEditBillingDate'), d.billingDate);
+        setDateValue(document.getElementById('fpEditCloseDate'), d.closeDate);
+
         fpEditModal.show();
       });
 
-      // บันทึกวันที่ปิด FP
+      // บันทึกข้อมูล FP
       $('#fpEditForm').on('submit', function (e) {
         e.preventDefault();
         const id = $('#fpEditId').val();
-        const val = $('#fpEditCloseDate').val();
-        const payload = { _method: 'PUT', _token: csrf, fp_close_date: val };
-        @if ($canEditBilling)
-          payload.fp_date = $('#fpEditBillingDate').val();
-        @endif
+        const payload = {
+          _method: 'PUT',
+          _token: csrf,
+          // flatpickr เก็บค่าใน input เดิมเป็น Y-m-d อยู่แล้ว (dateFormat: 'Y-m-d')
+          fp_date: $('#fpEditBillingDate').val() || '',
+          fp_close_date: $('#fpEditCloseDate').val() || '',
+          fp_net_amount: ($('#fpEditNet').val() || '').replace(/,/g, ''),
+        };
         $('#fpLoadingOverlay').css('display', 'flex');
 
         $.ajax({

@@ -45,6 +45,8 @@ class CarOrder extends Model
         'order_invoice_date',
         'fp_date',
         'fp_close_date',
+        // ยอดที่ใช้คิดดอกเบี้ย FP — ตั้งต้นจาก car_DNP แต่แก้ได้ (บางคันมีค่าประดับยนต์ทำให้ยอดไม่ตรง)
+        'fp_net_amount',
         // แจ้งจำหน่าย — ผูกกับ "คัน" ไม่ใช่ใบจอง (ใบจองสลับรถได้ เอกสารต้องอยู่กับรถ)
         'dispose_set',
         'dispose_received_date',
