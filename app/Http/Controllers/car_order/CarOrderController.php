@@ -993,12 +993,17 @@ class CarOrderController extends Controller
 
         // จำนวนใน stock — นับ CarOrder ที่ status = approved/finished จัดกลุ่มตาม รุ่น + ปี + สี (auto brand-scope)
         // ไม่นับคันที่ car_status = Delivered (ส่งมอบ = ขายไปแล้ว ไม่ใช่สต็อก)
+        // ไม่นับรถทดลองขับ (purchase_type = TestDrive) — ไม่ใช่รถขาย
         // สี: brand 2/3 ใช้ gwm_color (id), อื่นๆ ใช้ฟิลด์ color
         $stockKey = fn($o) => $o->model_id . '|' . ($o->year ?? '-')
             . '|' . (in_array($o->brand, [2, 3, 4]) ? 'g:' . $o->gwm_color : 'c:' . $o->color);
         $stockMap = CarOrder::whereIn('status', [CarOrder::STATUS_APPROVED, CarOrder::STATUS_FINISHED])
             ->where(function ($q) {
                 $q->where('car_status', '!=', 'Delivered')->orWhereNull('car_status');
+            })
+            ->where(function ($q) {
+                $q->where('purchase_type', '!=', CarOrder::PURCHASE_TYPE_TEST_DRIVE)
+                    ->orWhereNull('purchase_type');
             })
             ->get()
             ->groupBy($stockKey)
@@ -1512,11 +1517,16 @@ class CarOrderController extends Controller
 
         // สรุปสต็อกคงเหลือของรุ่นหลักเดียวกัน — แจกแจงตามรุ่นย่อย → สี (auto brand-scope)
         // ไม่นับสถานะ rejected และไม่นับคันที่ car_status = Delivered (ส่งมอบ = ขายไปแล้ว ไม่ใช่สต็อก)
+        // ไม่นับรถทดลองขับ (purchase_type = TestDrive) — ไม่ใช่รถขาย
         $modelOrders = CarOrder::with(['subModel', 'gwmColor'])
             ->where('model_id', $waiting->model_id)
             ->where('status', '!=', CarOrder::STATUS_REJECTED)
             ->where(function ($q) {
                 $q->where('car_status', '!=', 'Delivered')->orWhereNull('car_status');
+            })
+            ->where(function ($q) {
+                $q->where('purchase_type', '!=', CarOrder::PURCHASE_TYPE_TEST_DRIVE)
+                    ->orWhereNull('purchase_type');
             })
             ->get();
 
