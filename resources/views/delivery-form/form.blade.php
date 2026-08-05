@@ -242,11 +242,11 @@
 
     {{-- Company header --}}
     <div class="company-header">
-      <img src="{{ asset('assets/img/Wuling_logo.png') }}" class="company-logo" alt="Logo">
+      <img src="{{ asset($company['logo']) }}" class="company-logo" alt="Logo">
       <div class="company-info">
-        <div class="company-name">บริษัท ซูเกียรติ อีวี จำกัด สำนักงานใหญ่</div>
-        <div>129 หมู่ที่ 11 ถนน เพชรเกษม ต. กระบี่น้อย อ. เมือง จ. กระบี่ 81000</div>
-        <div>โทร. 064-0515561</div>
+        <div class="company-name">{{ $company['name'] }}</div>
+        <div>{{ $company['address'] }}</div>
+        <div>โทร. {{ $company['phone'] }}</div>
       </div>
     </div>
 

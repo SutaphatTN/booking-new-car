@@ -78,6 +78,12 @@ class DeliveryFormController extends Controller
           ->whereNotNull('DeliveryDate')
           ->findOrFail($id);
 
-        return view('delivery-form.form', compact('saleCar'));
+        // หัวบริษัท + โลโก้ตาม brand (default + override รายแบรนด์)
+        $company = array_merge(
+            config('company.default', []),
+            config('company.brands.' . $saleCar->brand, [])
+        );
+
+        return view('delivery-form.form', compact('saleCar', 'company'));
     }
 }
