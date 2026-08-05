@@ -2707,7 +2707,7 @@ function setMarkup90Manual(on) {
 
   flag.value = on ? '1' : '0';
   const badge = document.getElementById('markup90ManualBadge');
-  const reset = document.getElementById('markup90AutoReset');
+  const reset = document.getElementById('markup90AutoResetWrap');
   if (badge) badge.style.display = on ? '' : 'none';
   if (reset) reset.style.display = on ? '' : 'none';
 }
