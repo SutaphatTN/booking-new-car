@@ -2695,15 +2695,32 @@ function getNumber(el) {
   return parseFloat(el.value.replace(/,/g, '')) || 0;
 }
 
+// บวกหัว (90%) — โหมดกรอกเอง : บางรุ่นใช้บวกหัวเต็ม ไม่ใช่ 90%
+// ถ้า user พิมพ์ในช่องนี้เอง = ล็อกค่าไว้ ห้ามคำนวณ 90% ทับ (ทั้งตอนพิมพ์ต่อและตอนเปิดใบมาแก้รอบหน้า)
+function isMarkup90Manual() {
+  return document.getElementById('markup90_manual')?.value === '1';
+}
+
+function setMarkup90Manual(on) {
+  const flag = document.getElementById('markup90_manual');
+  if (!flag) return;
+
+  flag.value = on ? '1' : '0';
+  const badge = document.getElementById('markup90ManualBadge');
+  const reset = document.getElementById('markup90AutoReset');
+  if (badge) badge.style.display = on ? '' : 'none';
+  if (reset) reset.style.display = on ? '' : 'none';
+}
+
 function calculateCarPrice(e) {
   const salePrice = getNumber(salePriceInput);
   const markup = getNumber(markupInput);
   const discount = getNumber(discountInput);
 
-  // บวกหัว 90%
+  // บวกหัว 90% — ข้ามถ้าเป็นค่าที่กรอกเอง
   const markup90 = markup * 0.9;
 
-  if (markup90Input) {
+  if (markup90Input && !isMarkup90Manual()) {
     markup90Input.value = markup90.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
@@ -2795,6 +2812,21 @@ document.addEventListener('DOMContentLoaded', function () {
   if (salePriceInput) salePriceInput.addEventListener('input', calculateCarPrice);
   if (markupInput) markupInput.addEventListener('input', calculateCarPrice);
   if (discountInput) discountInput.addEventListener('input', calculateCarPrice);
+
+  // พิมพ์เองในช่องบวกหัว (90%) → ล็อกค่า ; ลบจนว่าง → กลับไปคำนวณ 90% อัตโนมัติ
+  if (markup90Input) {
+    // calculateBalanceCampaign มี event 'input #Markup90' ผูกไว้แล้ว ที่นี่จัดการแค่ธงกรอกเอง
+    markup90Input.addEventListener('input', function () {
+      setMarkup90Manual(this.value.trim() !== '');
+      if (!isMarkup90Manual()) calculateCarPrice();
+    });
+  }
+
+  // กลับไปใช้ 90% อัตโนมัติ — เซ็ตค่าเองด้วยโค้ด ไม่มี event input ต้องสั่งคำนวณยอดแคมเปญเอง
+  $(document).on('click', '#markup90AutoReset', function () {
+    setMarkup90Manual(false);
+    calculateCarPrice();
+  });
 
   if (downPaymentInput) downPaymentInput.addEventListener('input', calculateDownPayment);
   if (downPaymentPercentInput) downPaymentPercentInput.addEventListener('input', calculateDownPayment);
@@ -3119,8 +3151,10 @@ $(document).on('input change', '#approval_commission_deduct', function () {
  */
 function clearPriceDependentFields() {
   // บวกหัว — 90% คำนวณตามให้อัตโนมัติใน calculateCarPrice()
+  // ราคาเปลี่ยน = ยอดบวกหัวที่กรอกเองใช้ต่อไม่ได้ ปลดล็อกกลับไปคำนวณอัตโนมัติด้วย
   $('#MarkupPrice').val('');
   $('#Markup90').val('');
+  setMarkup90Manual?.(false);
 
   // ชุดจัดไฟแนนซ์: ดอกเบี้ย/งวดผ่อน/ดอกเบี้ยคอม + ค่าที่คำนวณต่อจากนี้
   // (calculateInstallment จะ return ทันทีเมื่อไม่มีงวดผ่อน จึงต้องล้างค่างวดเองไม่งั้นค้างค่าเก่า)

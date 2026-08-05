@@ -1713,6 +1713,10 @@ class PurchaseOrderController extends Controller
                 'Markup90' => $request->filled('Markup90')
                     ? str_replace(',', '', $request->Markup90)
                     : null,
+                // กรอกบวกหัว (90%) เอง = ล็อกยอดไว้ เปิดใบมาแก้รอบหน้า JS จะไม่คำนวณ 90% ทับ
+                // (บางรุ่นใช้บวกหัวเต็ม เช่น Single Cab 2.4 Pro 4WD - LC2TEJUJCRU)
+                'markup90_manual' => $request->filled('Markup90')
+                    && $request->boolean('markup90_manual'),
                 'CarSalePriceFinal' => $request->filled('CarSalePriceFinal')
                     ? str_replace(',', '', $request->CarSalePriceFinal)
                     : null,

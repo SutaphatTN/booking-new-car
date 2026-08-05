@@ -1607,12 +1607,24 @@
                                           </div>
                                         </div>
                                         <div class="col-12">
-                                          <label for="Markup90" class="po-label">บวกหัว (90%)</label>
+                                          <label for="Markup90" class="po-label d-flex align-items-center gap-2">
+                                            <span>บวกหัว (90%)</span>
+                                            {{-- กรอกเอง = ล็อกค่าไว้ ไม่ให้ JS คำนวณ 90% ทับ (บางรุ่นใช้บวกหัวเต็ม) --}}
+                                            <span class="badge bg-label-warning" id="markup90ManualBadge"
+                                              style="{{ $saleCar->markup90_manual ? '' : 'display:none;' }}">กรอกเอง</span>
+                                            <a href="javascript:void(0)" class="small text-primary ms-auto"
+                                              id="markup90AutoReset"
+                                              style="{{ $saleCar->markup90_manual ? '' : 'display:none;' }}">
+                                              <i class="bx bx-refresh"></i> คำนวณ 90% อัตโนมัติ
+                                            </a>
+                                          </label>
                                           <div class="money-wrap">
                                             <input class="form-control text-end money-input" type="text"
                                               id="Markup90" name="Markup90" value="{{ $saleCar->Markup90 }}" />
                                             <span class="money-suffix">฿</span>
                                           </div>
+                                          <input type="hidden" name="markup90_manual" id="markup90_manual"
+                                            value="{{ $saleCar->markup90_manual ? 1 : 0 }}">
                                         </div>
                                         <div class="col-12">
                                           <label for="discount" class="po-label">ส่วนลดราคารถ</label>
