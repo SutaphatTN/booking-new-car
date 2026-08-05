@@ -200,6 +200,33 @@ class User extends Authenticatable
 		return in_array($this->role, self::EDIT_CAR_PRICE_ROLES, true);
 	}
 
+	/** role ที่กำหนด "ป้ายแดง" ให้ใบจองได้ (ทั้งในหน้าใบจอง และหน้าประวัติที่ส่งมอบแล้ว) */
+	public const RED_PLATE_ROLES = ['admin', 'audit', 'audit_lead', 'audit_dp', 'gm', 'manager', 'md'];
+
+	public function canManageRedPlate(): bool
+	{
+		return in_array($this->role, self::RED_PLATE_ROLES, true);
+	}
+
+	/**
+	 * role ที่ผูก/ปลดรถ (CarOrderID) บนใบจองของ brand 2 ได้
+	 * brand 2 คุมการจ่ายรถจากส่วนกลาง — role อื่นเห็นข้อมูลรถได้แต่แตะไม่ได้
+	 */
+	public const BIND_CAR_ORDER_ROLES_BRAND2 = ['md', 'gm', 'admin'];
+
+	/**
+	 * ผูก/ปลดรถบนใบจองของ brand นี้ได้ไหม
+	 * brand อื่นใช้เกณฑ์เดิม — ทุก role ที่เห็น section ยกเว้น sale
+	 */
+	public function canBindCarOrder(int $brand): bool
+	{
+		if ($brand === 2) {
+			return in_array($this->role, self::BIND_CAR_ORDER_ROLES_BRAND2, true);
+		}
+
+		return $this->role !== 'sale';
+	}
+
 	/**
 	 * เซลล์ที่เลือกได้ของ brand นี้ (sale_pool ระดับ brand + สิทธิ์ขายราย user)
 	 * $includeId = เซลล์เจ้าของงานเดิม ให้ติดมาด้วยเสมอ กันหลุดจาก dropdown

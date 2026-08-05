@@ -103,7 +103,7 @@ class CarOrderDataExport implements FromView, WithTitle, WithStyles, WithEvents,
 
     public function view(): View
     {
-        $rows = CarOrder::with(['model', 'subModel', 'purchaseType', 'orderStatus', 'gwmColor', 'interiorColor'])
+        $rows = CarOrder::with(['model', 'subModel', 'purchaseType', 'orderStatus', 'gwmColor', 'interiorColor', 'dealerProvince'])
             ->where('status', 'finished')
             // ตัดรถที่ส่งมอบแล้วออก (null-safe: รถที่ car_status ยังว่างต้องไม่หลุด)
             ->where(fn($q) => $q->where('car_status', '!=', 'Delivered')->orWhereNull('car_status'))

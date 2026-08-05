@@ -474,6 +474,69 @@ $(document).on('change', '#purchase_type', function () {
   $('#modelError').addClass('d-none').text('');
 });
 
+// input/edit : ดีลเลอร์ต้นทาง — โผล่เฉพาะแหล่งที่มา OTHDealer
+// จังหวัดบังคับกรอก ส่วนชื่อดีลเลอร์ไม่บังคับ (บางเคสยังไม่รู้ชื่อร้านตอนสั่ง)
+function toggleDealerFields($modal) {
+  const isDealer = $modal.find('#purchase_source').val() === 'OTHDealer';
+  const $province = $modal.find('#wrapDealerProvince');
+  const $name = $modal.find('#wrapDealerName');
+
+  $province.add($name).toggleClass('d-none', !isDealer);
+  $province.find('#dealer_province_id').prop('required', isDealer);
+
+  // เปลี่ยนไปแหล่งที่มาอื่น = ข้อมูลดีลเลอร์เดิมใช้ต่อไม่ได้ (server ก็เคลียร์ให้อีกชั้น)
+  if (!isDealer) {
+    $province.find('#dealer_province_id').val('');
+    $name.find('#dealer_name').val('');
+  }
+
+  applyOrderRowLayout($modal);
+}
+
+/**
+ * input : จัดความกว้างคอลัมน์ให้แต่ละแถวเต็ม 12 พอดี
+ * จำนวนช่องไม่คงที่ — "จำนวนที่สั่ง" โผล่เมื่อเป็น stock/auction,
+ * "จังหวัด + ชื่อดีลเลอร์" โผล่เมื่อเป็น OTHDealer
+ *   4 ช่อง → 3+3+3+3        5 ช่อง → 4+4+4 / 6+6
+ *   6 ช่อง → 4+4+4 / 4+4+4  7 ช่อง → 3+3+3+3 / 4+4+4
+ */
+function applyOrderRowLayout($modal) {
+  const $source = $modal.find('#wrapPurchaseSource');
+  if (!$source.length) return; // มีเฉพาะ modal เพิ่มข้อมูล — modal แก้ไขใช้ col คงที่อยู่แล้ว
+
+  const type = $modal.find('#type').val();
+  const isWaiting = type === 'stock' || type === 'auction';
+  const isDealer = $modal.find('#purchase_source').val() === 'OTHDealer';
+
+  // เรียงตามลำดับที่วางในฟอร์ม — เอาเฉพาะช่องที่แสดงอยู่
+  const fields = [
+    '#wrapType',
+    isWaiting ? '#fieldCountOrder' : null,
+    '#wrapPurchaseSource',
+    isDealer ? '#wrapDealerProvince' : null,
+    isDealer ? '#wrapDealerName' : null,
+    '#wrapPurchaseType',
+    '#wrapPaymentType'
+  ].filter(Boolean);
+
+  // แบ่งเป็นแถวละไม่เกิน 4 ช่อง ให้จำนวนช่องแต่ละแถวใกล้เคียงกัน
+  const SPLIT = { 4: [4], 5: [3, 2], 6: [3, 3], 7: [4, 3] };
+  const rows = SPLIT[fields.length] || [fields.length];
+
+  const COLS = 'col-md-3 col-md-4 col-md-5 col-md-6';
+  let i = 0;
+
+  rows.forEach(count => {
+    const cls = 'col-md-' + 12 / count;
+    fields.slice(i, i + count).forEach(sel => $modal.find(sel).removeClass(COLS).addClass(cls));
+    i += count;
+  });
+}
+
+$(document).on('change', '#purchase_source', function () {
+  toggleDealerFields($(this).closest('.modal'));
+});
+
 //input : hide select customer
 function togglePurchaseFields($modal) {
   const selected = $modal.find('#type').val();
@@ -483,16 +546,14 @@ function togglePurchaseFields($modal) {
   $modal.find('#fieldCountOrder').addClass('d-none');
   $modal.find('#count_order').removeAttr('required');
 
-  // ปรับ col ของแหล่งที่มา และประเภทการซื้อ
-  $modal.find('#wrapPurchaseSource').toggleClass('col-md-5', !isWaiting).toggleClass('col-md-3', isWaiting);
-  $modal.find('#wrapPurchaseType').toggleClass('col-md-4', !isWaiting).toggleClass('col-md-3', isWaiting);
-
   if (selected === 'customer') {
     $modal.find('#fieldPurchase').removeClass('d-none');
   } else if (isWaiting) {
     $modal.find('#fieldCountOrder').removeClass('d-none');
     $modal.find('#count_order').attr('required', true);
   }
+
+  applyOrderRowLayout($modal);
 }
 
 $(document).on('change', '#type', function () {
@@ -511,6 +572,7 @@ $(document).on('shown.bs.modal', '.modal', function () {
   const $modal = $(this);
   togglePurchaseFields($modal);
   toggleTestDriveFields($modal);
+  toggleDealerFields($modal);
 });
 
 function loadModelByCustomer(saleCarId) {
@@ -1063,11 +1125,12 @@ $(document).ready(function () {
       { data: 'No' },
       { data: 'date' },
       {
+        // type เป็น HTML ที่ประกอบมาจาก server แล้ว (ประเภท + แหล่งที่มา + ดีลเลอร์) — ที่นี่ต่อแค่ป้าย "ขอแล้ว"
         data: 'type',
         render: function (type, t, row) {
           if (!row.requested) return type;
           const at = row.requested_at ? ` เมื่อ ${row.requested_at}` : '';
-          return `${type} <span class="badge bg-label-warning" title="ขออนุมัติไปแล้ว${at}">ขอแล้ว</span>`;
+          return `${type}<div class="text-start mt-1"><span class="badge bg-label-warning" title="ขออนุมัติไปแล้ว${at}">ขอแล้ว</span></div>`;
         }
       },
       { data: 'model_id' },
@@ -1095,6 +1158,11 @@ $(document).ready(function () {
         previous: 'ก่อนหน้า'
       }
     }
+  });
+
+  // ไอคอนในช่อง "ประเภท" ใช้ tooltip ของ bootstrap — ต้อง init ใหม่ทุกครั้งที่วาดตาราง
+  processOrderTable.on('draw', function () {
+    $('.processOrderTable [data-bs-toggle="tooltip"]').tooltip();
   });
 });
 

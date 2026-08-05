@@ -52,6 +52,25 @@
                   disabled>
               </div>
 
+              {{-- ดีลเลอร์ต้นทาง — มีเฉพาะแหล่งที่มา OTHDealer --}}
+              @if ($waiting->purchase_source === 'OTHDealer')
+                <div class="col-md-3">
+                  <label for="dealer_province" class="mf-label form-label">
+                    <i class="bx bx-map ci-indigo"></i> จังหวัดของดีลเลอร์
+                  </label>
+                  <input id="dealer_province" type="text" class="form-control"
+                    value="{{ $waiting->dealerProvince?->name ?? '-' }}" disabled>
+                </div>
+
+                <div class="col-md-3">
+                  <label for="dealer_name" class="mf-label form-label">
+                    <i class="bx bx-store-alt ci-indigo"></i> ชื่อดีลเลอร์
+                  </label>
+                  <input id="dealer_name" type="text" class="form-control" value="{{ $waiting->dealer_name ?: '-' }}"
+                    disabled>
+                </div>
+              @endif
+
               <div class="col-md-3">
                 <label for="purchase_type" class="mf-label form-label">
                   <i class="bx bx-transfer ci-indigo"></i> ประเภทการซื้อรถ

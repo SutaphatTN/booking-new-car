@@ -51,11 +51,31 @@
                     style="background:#f8fafc;color:#64748b;" disabled>
                 </div>
 
+                {{-- ดีลเลอร์ต้นทาง — มีเฉพาะแหล่งที่มา OTHDealer --}}
+                @if ($order->purchase_source === 'OTHDealer')
+                  <div class="col-md-3">
+                    <label for="dealer_province" class="mf-label form-label">
+                      <i class="bx bx-map ci-indigo"></i> จังหวัดของดีลเลอร์
+                    </label>
+                    <input id="dealer_province" type="text" class="form-control"
+                      value="{{ $order->dealerProvince?->name ?? '-' }}"
+                      style="background:#f8fafc;color:#64748b;" disabled>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label for="dealer_name" class="mf-label form-label">
+                      <i class="bx bx-store-alt ci-indigo"></i> ชื่อดีลเลอร์
+                    </label>
+                    <input id="dealer_name" type="text" class="form-control" value="{{ $order->dealer_name ?: '-' }}"
+                      style="background:#f8fafc;color:#64748b;" disabled>
+                  </div>
+                @endif
+
                 <div class="col-md-3">
                   <label for="purchase_type" class="mf-label form-label">
                     <i class="bx bx-transfer ci-indigo"></i> ประเภทการซื้อรถ
                   </label>
-                  <input id="purchase_type" type="text" class="form-control" value="{{ $order->purchaseType->name }}"
+                  <input id="purchase_type" type="text" class="form-control" value="{{ $order->purchaseType?->name ?? '-' }}"
                     style="background:#f8fafc;color:#64748b;" disabled>
                 </div>
 
@@ -107,7 +127,7 @@
                   <label for="model_id" class="mf-label form-label">
                     <i class="bx bx-car ci-sky"></i> รุ่นรถหลัก
                   </label>
-                  <input id="model_id" type="text" class="form-control" value="{{ $order->model->Name_TH }}"
+                  <input id="model_id" type="text" class="form-control" value="{{ $order->model?->Name_TH ?? '-' }}"
                     style="background:#f8fafc;color:#64748b;" disabled>
                 </div>
 

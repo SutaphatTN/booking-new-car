@@ -50,7 +50,7 @@
                   <label for="model_id" class="mf-label form-label">
                     <i class="bx bx-car ci-sky"></i> รุ่นรถหลัก
                   </label>
-                  <input id="model_id" type="text" class="form-control" value="{{ $order->model->Name_TH }}"
+                  <input id="model_id" type="text" class="form-control" value="{{ $order->model?->Name_TH ?? '-' }}"
                     disabled>
                 </div>
 
@@ -404,6 +404,29 @@
                   @error('purchase_source')
                     <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
                   @enderror
+                </div>
+
+                {{-- ดีลเลอร์ต้นทาง — เฉพาะแหล่งที่มา OTHDealer (toggle ใน car-order.js) --}}
+                <div id="wrapDealerProvince" class="col-md-3 {{ $order->purchase_source === 'OTHDealer' ? '' : 'd-none' }}">
+                  <label for="dealer_province_id" class="mf-label form-label">
+                    <i class="bx bx-map ci-emerald"></i> จังหวัดของดีลเลอร์
+                  </label>
+                  <select id="dealer_province_id" name="dealer_province_id" class="form-select">
+                    <option value="">-- เลือกจังหวัด --</option>
+                    @foreach ($provinces as $p)
+                      <option value="{{ $p->id }}" {{ $order->dealer_province_id == $p->id ? 'selected' : '' }}>
+                        {{ $p->name }}
+                      </option>
+                    @endforeach
+                  </select>
+                </div>
+
+                <div id="wrapDealerName" class="col-md-3 {{ $order->purchase_source === 'OTHDealer' ? '' : 'd-none' }}">
+                  <label for="dealer_name" class="mf-label form-label">
+                    <i class="bx bx-store-alt ci-emerald"></i> ชื่อดีลเลอร์
+                  </label>
+                  <input id="dealer_name" type="text" class="form-control" name="dealer_name"
+                    value="{{ $order->dealer_name }}" placeholder="ระบุชื่อดีลเลอร์" maxlength="255">
                 </div>
 
                 <div class="col-md-3">

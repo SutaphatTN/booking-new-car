@@ -20,6 +20,7 @@ use App\Models\TbLicensePlate;
 use App\Models\TbOrderStatus;
 use App\Models\TbPurchaseType;
 use App\Models\TbPricelistCar;
+use App\Models\TbProvinces;
 use App\Models\TbSubcarmodel;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -158,6 +159,7 @@ class CarOrderController extends Controller
         $purchaseType = TbPurchaseType::all();
         $interiorColor = TbInteriorColor::all();
         $branches = TbBranch::all();
+        $provinces = TbProvinces::orderBy('name')->get();
 
         // ป้ายแดงสำหรับรถทดลองขับ — เฉพาะป้ายสถานะ "ทดลองขับ"
         // (บวกป้ายที่ใบนี้เลือกไว้แล้ว เผื่อสถานะถูกเปลี่ยนทีหลัง จะได้ไม่หายจาก dropdown)
@@ -168,7 +170,21 @@ class CarOrderController extends Controller
             }
         })->orderBy('number')->get(['id', 'number']);
 
-        return view('car-order.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType', 'interiorColor', 'branches', 'testDrivePlates'));
+        return view('car-order.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType', 'interiorColor', 'branches', 'testDrivePlates', 'provinces'));
+    }
+
+    /**
+     * ข้อมูลดีลเลอร์ต้นทาง (จังหวัด + ชื่อร้าน) — เก็บเฉพาะเคส purchase_source = OTHDealer
+     * ช่องพวกนี้ซ่อนด้วย d-none ซึ่งยังถูกส่งมาอยู่ เปลี่ยนแหล่งที่มาแล้วต้องเคลียร์ทิ้งที่ฝั่ง server
+     */
+    private function dealerFields(Request $request): array
+    {
+        $isDealer = $request->purchase_source === CarOrder::SOURCE_DEALER;
+
+        return [
+            'dealer_province_id' => $isDealer ? ($request->dealer_province_id ?: null) : null,
+            'dealer_name'        => $isDealer ? (trim($request->dealer_name ?? '') ?: null) : null,
+        ];
     }
 
     public function update(Request $request, $id)
@@ -210,6 +226,8 @@ class CarOrderController extends Controller
             $data['license_plate_id'] = (int) $request->purchase_type === CarOrder::PURCHASE_TYPE_TEST_DRIVE
                 ? ($request->license_plate_id ?: null)
                 : null;
+
+            $data = array_merge($data, $this->dealerFields($request));
 
             $order->update($data);
 
@@ -491,8 +509,9 @@ class CarOrderController extends Controller
             ->get();
         $purchaseType = TbPurchaseType::all();
         $interiorColor = TbInteriorColor::all();
+        $provinces = TbProvinces::orderBy('name')->get();
 
-        return view('car-order.pending.input', compact('order', 'model', 'orderStatus', 'approvers', 'purchaseType', 'interiorColor'));
+        return view('car-order.pending.input', compact('order', 'model', 'orderStatus', 'approvers', 'purchaseType', 'interiorColor', 'provinces'));
     }
 
     function store(Request $request)
@@ -546,6 +565,7 @@ class CarOrderController extends Controller
                 'salecar_id' => $request->salecar_id,
                 'option' => $request->option,
                 'purchase_source' => $request->purchase_source,
+                ...$this->dealerFields($request),
                 'order_code' => $order_code,
                 'type' => $request->type,
                 'order_date' => $this->toGregorian($request->order_date),
@@ -687,6 +707,7 @@ class CarOrderController extends Controller
                 'subModel_id'    => $request->subModel_id,
                 'option'         => $request->option,
                 'purchase_source' => $request->purchase_source,
+                ...$this->dealerFields($request),
                 'order_code'     => $order_code,
                 'type'           => $request->type,
                 'order_date'     => $this->toGregorian($request->order_date),
@@ -896,8 +917,9 @@ class CarOrderController extends Controller
             ? $order->subModel->colors
             : collect();
         $interiorColor = TbInteriorColor::all();
+        $provinces = TbProvinces::orderBy('name')->get();
 
-        return view('car-order.pending.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType', 'gwmColor', 'interiorColor'));
+        return view('car-order.pending.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType', 'gwmColor', 'interiorColor', 'provinces'));
     }
 
     public function updatePending(Request $request, $id)
@@ -921,6 +943,8 @@ class CarOrderController extends Controller
             $data['WS'] = $request->WS
                 ? str_replace(',', '', $request->WS)
                 : null;
+
+            $data = array_merge($data, $this->dealerFields($request));
 
             $order->update($data);
 
@@ -983,11 +1007,11 @@ class CarOrderController extends Controller
 
     public function listProcess()
     {
-        $orders = CarOrder::with('model', 'subModel')
+        $orders = CarOrder::with('model', 'subModel', 'dealerProvince')
             ->where('status', 'pending')
             ->get();
 
-        $waitings = CarOrderWaiting::with('model', 'subModel')
+        $waitings = CarOrderWaiting::with('model', 'subModel', 'dealerProvince')
             ->where('status', 'pending')
             ->get();
 
@@ -1011,6 +1035,27 @@ class CarOrderController extends Controller
 
         $data = collect();
 
+        // ช่อง "ประเภท" — ไอคอนมีสี + tooltip บอกว่าแต่ละบรรทัดคืออะไร (สไตล์เดียวกับช่องรุ่นรถหน้า pending)
+        $row = fn($icon, $class, $tip, $text) =>
+            "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;" . e($text) . "</div>";
+
+        // แหล่งที่มา + ดีลเลอร์ต้นทาง (จังหวัด/ชื่อร้าน แยกบรรทัด มีเฉพาะเคส OTHDealer)
+        $typeDisplay = function ($r) use ($row) {
+            $html = $row('bx-category', 'text-primary', 'ประเภทการสั่งรถ', $r->type ?: '-')
+                . $row('bx-store', 'text-info', 'แหล่งที่มา', $r->purchase_source ?: '-');
+
+            if ($r->purchase_source === CarOrder::SOURCE_DEALER) {
+                if ($r->dealerProvince) {
+                    $html .= $row('bx-map', 'text-danger', 'จังหวัดของดีลเลอร์', $r->dealerProvince->name);
+                }
+                if ($r->dealer_name) {
+                    $html .= $row('bx-store-alt', 'text-success', 'ชื่อดีลเลอร์', $r->dealer_name);
+                }
+            }
+
+            return $html;
+        };
+
         foreach ($orders as $p) {
             $modelOrder = $p->model ? $p->model->Name_TH : '';
             $subModelOrder = $p->subModel ? $p->subModel->name : '';
@@ -1022,7 +1067,7 @@ class CarOrderController extends Controller
                 'row_type'  => 'order',
                 'No'        => 0,
                 'date'      => $p->format_order_date,
-                'type'      => $p->type,
+                'type'      => $typeDisplay($p),
                 'model_id'  => $modelOrder,
                 'subModel_id' => $subModelFull,
                 'color'     => $p->display_color,
@@ -1047,7 +1092,7 @@ class CarOrderController extends Controller
                 'row_type'  => 'waiting',
                 'No'        => 0,
                 'date'      => $w->format_order_date,
-                'type'      => $w->type,
+                'type'      => $typeDisplay($w),
                 'model_id'  => $modelOrder,
                 'subModel_id' => $subModelFull,
                 'color'     => $w->display_color,
@@ -1088,13 +1133,13 @@ class CarOrderController extends Controller
             }
 
             // whereNull('approval_requested_at') — กันขอซ้ำ (ฝั่งหน้าเว็บติ๊กไม่ได้อยู่แล้ว แต่กันยิง endpoint ตรง)
-            $orders = CarOrder::with(['model', 'subModel', 'gwmColor'])
+            $orders = CarOrder::with(['model', 'subModel', 'gwmColor', 'dealerProvince'])
                 ->whereIn('id', $request->input('order_ids', []))
                 ->where('status', CarOrder::STATUS_PENDING)
                 ->whereNull('approval_requested_at')
                 ->get();
 
-            $waitings = CarOrderWaiting::with(['model', 'subModel', 'gwmColor'])
+            $waitings = CarOrderWaiting::with(['model', 'subModel', 'gwmColor', 'dealerProvince'])
                 ->whereIn('id', $request->input('waiting_ids', []))
                 ->where('status', 'pending')
                 ->whereNull('approval_requested_at')
@@ -1116,6 +1161,8 @@ class CarOrderController extends Controller
                 return [
                     'order_code' => $r->order_code,
                     'type'       => $r->type,
+                    'source'     => $r->purchase_source ?: '-',
+                    'dealer'     => $r->dealer_detail, // "จังหวัด · ชื่อร้าน" — มีเฉพาะเคส OTHDealer
                     'model'      => $r->model->Name_TH ?? '-',
                     'subModel'   => $subDetail ? "{$subDetail} - {$subName}" : $subName,
                     'color'      => $r->display_color,
@@ -1168,6 +1215,8 @@ class CarOrderController extends Controller
                 'subModel_id'    => $waiting->subModel_id,
                 'option'         => $waiting->option,
                 'purchase_source' => $waiting->purchase_source,
+                'dealer_province_id' => $waiting->dealer_province_id,
+                'dealer_name'    => $waiting->dealer_name,
                 'order_code'     => $order_code,
                 'type'           => $waiting->type,
                 'order_date'     => $waiting->order_date ?? now(),
@@ -1574,8 +1623,9 @@ class CarOrderController extends Controller
             ? $waiting->subModel->colors
             : collect();
         $interiorColor = TbInteriorColor::all();
+        $provinces = TbProvinces::orderBy('name')->get();
 
-        return view('car-order.pending.edit-waiting', compact('waiting', 'purchaseType', 'approvers', 'gwmColor', 'interiorColor'));
+        return view('car-order.pending.edit-waiting', compact('waiting', 'purchaseType', 'approvers', 'gwmColor', 'interiorColor', 'provinces'));
     }
 
     public function updateWaiting(Request $request, $id)
@@ -1589,6 +1639,8 @@ class CarOrderController extends Controller
             $data['car_MSRP'] = $request->filled('car_MSRP') ? str_replace(',', '', $request->car_MSRP) : null;
             $data['RI']       = $request->filled('RI')  ? str_replace(',', '', $request->RI)  : null;
             $data['WS']       = $request->filled('WS')  ? str_replace(',', '', $request->WS)  : null;
+
+            $data = array_merge($data, $this->dealerFields($request));
 
             $waiting->update($data);
 

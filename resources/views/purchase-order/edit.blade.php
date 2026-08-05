@@ -801,33 +801,45 @@
                       <span class="badge bg-label-indigo" style="font-size:.78rem;">
                         <i class="bx bx-link-alt me-1"></i>ผูกรถแล้ว
                       </span>
-                      <button type="button" class="btn btn-outline-danger btn-sm" id="btnCancelCarOrder"
-                        data-sale-id="{{ $saleCar->id }}" data-carorder-id="{{ $saleCar->CarOrderID }}"
-                        @disabled($isHistory)>
-                        <i class="bx bx-unlink me-1"></i>ยกเลิกการผูกรถ
-                      </button>
+                      @if ($canBindCarOrder)
+                        <button type="button" class="btn btn-outline-danger btn-sm" id="btnCancelCarOrder"
+                          data-sale-id="{{ $saleCar->id }}" data-carorder-id="{{ $saleCar->CarOrderID }}"
+                          @disabled($isHistory)>
+                          <i class="bx bx-unlink me-1"></i>ยกเลิกการผูกรถ
+                        </button>
+                      @endif
                     </div>
                   @endif
                 </div>
                 <div class="po-section-body-edit">
-                  <input type="hidden" id="CarOrderID" name="CarOrderID" value="{{ $saleCar->CarOrderID ?? '' }}">
+                  {{-- role ที่ผูกรถไม่ได้ → disabled = ไม่ถูกส่งกลับมาตอนบันทึก แต่ JS ยังอ่านค่าไปเช็ค "ผูกรถแล้ว" ได้ --}}
+                  <input type="hidden" id="CarOrderID" name="CarOrderID" value="{{ $saleCar->CarOrderID ?? '' }}"
+                    @disabled(!$canBindCarOrder)>
 
-                  {{-- แถวค้นหา --}}
-                  <div class="row g-3 mb-3">
-                    <div class="col-md-4">
-                      <label for="carOrderSearch" class="po-label"><i class="bx bx-search-alt"></i> ค้นหา Car Order
-                        ID</label>
-                      <div class="input-group">
-                        <input id="carOrderSearch" type="text" class="form-control" name="carOrderSearch"
-                          placeholder="พิมพ์ Vin-Number / รุ่นรถ" @disabled($isHistory)>
-                        <button type="button" class="btn btnSearchCarOrder border px-3"
-                          style="background:#ede9fe; color:#6366f1; border-color:#c4b5fd !important; cursor:pointer;"
-                          @disabled($isHistory)>
-                          <i class="bx bx-search me-1"></i> ค้นหา
-                        </button>
+                  @if ($canBindCarOrder)
+                    {{-- แถวค้นหา --}}
+                    <div class="row g-3 mb-3">
+                      <div class="col-md-4">
+                        <label for="carOrderSearch" class="po-label"><i class="bx bx-search-alt"></i> ค้นหา Car Order
+                          ID</label>
+                        <div class="input-group">
+                          <input id="carOrderSearch" type="text" class="form-control" name="carOrderSearch"
+                            placeholder="พิมพ์ Vin-Number / รุ่นรถ" @disabled($isHistory)>
+                          <button type="button" class="btn btnSearchCarOrder border px-3"
+                            style="background:#ede9fe; color:#6366f1; border-color:#c4b5fd !important; cursor:pointer;"
+                            @disabled($isHistory)>
+                            <i class="bx bx-search me-1"></i> ค้นหา
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  @else
+                    <div class="alert alert-secondary d-flex align-items-center gap-2 py-2 mb-3"
+                      style="font-size:.85rem;">
+                      <i class="bx bx-lock-alt"></i>
+                      <span>ดูข้อมูลได้อย่างเดียว — การผูก/ยกเลิกการผูกรถของแบรนด์นี้ทำได้เฉพาะ MD, GM และ Admin</span>
+                    </div>
+                  @endif
 
                   {{-- รายละเอียดรถ --}}
                   <div class="car-order-detail-card">

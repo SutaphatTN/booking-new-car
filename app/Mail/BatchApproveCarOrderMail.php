@@ -30,6 +30,10 @@ class BatchApproveCarOrderMail extends Mailable
     {
         $brandName = config("brand.names.{$this->brand}") ?? ('Brand ' . ($this->brand ?? '-'));
 
+        // theme wide — ตารางรายการมี 9 คอลัมน์ ความกว้าง 570px ของ theme default บีบจนอ่านยาก
+        // (Laravel 12 ใช้ property ไม่ใช่ method theme())
+        $this->theme = 'wide';
+
         return $this->subject("[{$brandName}] มีคำขออนุมัติสั่งซื้อรถ")
             ->markdown('emails.batch-approve-order');
     }

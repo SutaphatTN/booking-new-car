@@ -21,10 +21,11 @@
 
           {{-- Section 1 : รุ่นรถ & ตร.ฟุต --}}
           <div class="mf-section mb-3">
-            <div class="mf-section-hd">
+            {{-- flex-wrap : จอแคบให้สวิตช์ตกลงบรรทัดใหม่ ไม่ไปบีบชื่อ section จนตัดคำ --}}
+            <div class="mf-section-hd flex-wrap">
               <div class="mf-section-icon indigo"><i class="bx bx-car"></i></div>
               <span class="mf-section-title">ข้อมูลรถ</span>
-              <div class="ms-auto d-flex align-items-center gap-3">
+              <div class="ms-auto d-flex align-items-center flex-wrap gap-3">
                 <div class="form-check form-switch mb-0">
                   <input class="form-check-input" type="checkbox" role="switch"
                     id="fp_has_door_rear2" name="has_door_rear2" value="1">
@@ -75,32 +76,32 @@
                     <i class="bx bx-grid-alt ci-indigo"></i> ตร.ฟุตแต่ละตำแหน่ง
                   </div>
                   <div class="row g-2">
-                    <div class="col">
+                    <div class="col-6 col-sm-4 col-lg-2">
                       <label for="fp_sqft_around" class="form-label small text-muted mb-1">รอบคัน</label>
                       <input id="fp_sqft_around" type="number" name="sqft_around" class="form-control form-control-sm text-end"
                         min="0" step="0.01" placeholder="0.00">
                     </div>
-                    <div class="col">
+                    <div class="col-6 col-sm-4 col-lg-2">
                       <label for="fp_sqft_windshield" class="form-label small text-muted mb-1">บานหน้า</label>
                       <input id="fp_sqft_windshield" type="number" name="sqft_windshield" class="form-control form-control-sm text-end"
                         min="0" step="0.01" placeholder="0.00">
                     </div>
-                    <div class="col">
+                    <div class="col-6 col-sm-4 col-lg-2">
                       <label for="fp_sqft_rear" class="form-label small text-muted mb-1">บานหลัง</label>
                       <input id="fp_sqft_rear" type="number" name="sqft_rear" class="form-control form-control-sm text-end"
                         min="0" step="0.01" placeholder="0.00">
                     </div>
-                    <div class="col">
+                    <div class="col-6 col-sm-4 col-lg-2">
                       <label for="fp_sqft_door_front" class="form-label small text-muted mb-1">ประตูคู่หน้า</label>
                       <input id="fp_sqft_door_front" type="number" name="sqft_door_front" class="form-control form-control-sm text-end"
                         min="0" step="0.01" placeholder="0.00">
                     </div>
-                    <div class="col">
+                    <div class="col-6 col-sm-4 col-lg-2">
                       <label for="fp_sqft_door_rear1" class="form-label small text-muted mb-1">ประตูคู่หลัง 1</label>
                       <input id="fp_sqft_door_rear1" type="number" name="sqft_door_rear1" class="form-control form-control-sm text-end"
                         min="0" step="0.01" placeholder="0.00">
                     </div>
-                    <div class="col">
+                    <div class="col-6 col-sm-4 col-lg-2">
                       <label for="fp_sqft_quarter" class="form-label small text-muted mb-1">หูช้าง</label>
                       <input id="fp_sqft_quarter" type="number" name="sqft_quarter" class="form-control form-control-sm text-end"
                         min="0" step="0.01" placeholder="0.00">
@@ -109,13 +110,13 @@
                 </div>
 
                 {{-- ตร.ฟุต ตามตัวเลือกเปิด --}}
-                <div id="fp_door_rear2_fields" class="col-md-3 d-none">
+                <div id="fp_door_rear2_fields" class="col-6 col-md-3 d-none">
                   <label for="fp_sqft_door_rear2" class="form-label small text-muted mb-1">ตร.ฟุต ประตูคู่หลัง 2</label>
                   <input id="fp_sqft_door_rear2" type="number" name="sqft_door_rear2" class="form-control form-control-sm text-end"
                     min="0" step="0.01" placeholder="0.00">
                 </div>
 
-                <div id="fp_sunroof_fields" class="col-md-3 d-none">
+                <div id="fp_sunroof_fields" class="col-6 col-md-3 d-none">
                   <label for="fp_sqft_sunroof" class="form-label small text-muted mb-1">
                     <i class="bx bx-sun ci-amber me-1"></i>ตร.ฟุต ซันรูฟ
                   </label>
@@ -123,7 +124,7 @@
                     min="0" step="0.01" placeholder="0.00">
                 </div>
 
-                <div id="fp_3window_fields" class="col-md-3 d-none">
+                <div id="fp_3window_fields" class="col-6 col-md-3 d-none">
                   <label for="fp_sqft_3window" class="form-label small text-muted mb-1">ตร.ฟุต แพ็กเกจ 3 บาน</label>
                   <input id="fp_sqft_3window" type="number" name="sqft_3window" class="form-control form-control-sm text-end"
                     min="0" step="0.01" placeholder="0.00">
@@ -135,12 +136,12 @@
 
           {{-- Section 2 : ราคาตามยี่ห้อฟิล์ม --}}
           <div class="mf-section mb-3">
-            <div class="mf-section-hd">
+            <div class="mf-section-hd flex-wrap">
               <div class="mf-section-icon sky">
                 <i class="bx bx-layer"></i>
               </div>
               <span class="mf-section-title">ราคาตามยี่ห้อฟิล์ม</span>
-              <button type="button" class="btn btn-sm btn-outline-primary ms-auto btnAddBrandRow">
+              <button type="button" class="btn btn-sm btn-outline-primary ms-auto text-nowrap btnAddBrandRow">
                 <i class="bx bx-plus me-1"></i> เพิ่มยี่ห้อ
               </button>
             </div>

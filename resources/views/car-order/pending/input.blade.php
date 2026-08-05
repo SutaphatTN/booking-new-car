@@ -33,7 +33,7 @@
             <div class="mf-section-body">
               <div class="row g-3">
 
-                <div class="col-md-3">
+                <div id="wrapType" class="col-md-3">
                   <label for="type" class="mf-label form-label">
                     <i class="bx bx-category"></i> ประเภทการสั่งรถ
                   </label>
@@ -73,6 +73,27 @@
                     @endif
                     <option value="OTHDealer">OTHDealer</option>
                   </select>
+                </div>
+
+                {{-- ดีลเลอร์ต้นทาง — เฉพาะแหล่งที่มา OTHDealer (toggle ใน car-order.js) --}}
+                <div id="wrapDealerProvince" class="col-md-3 d-none">
+                  <label for="dealer_province_id" class="mf-label form-label">
+                    <i class="bx bx-map"></i> จังหวัดของดีลเลอร์
+                  </label>
+                  <select id="dealer_province_id" name="dealer_province_id" class="form-select">
+                    <option value="">-- เลือกจังหวัด --</option>
+                    @foreach ($provinces as $p)
+                      <option value="{{ $p->id }}">{{ $p->name }}</option>
+                    @endforeach
+                  </select>
+                </div>
+
+                <div id="wrapDealerName" class="col-md-3 d-none">
+                  <label for="dealer_name" class="mf-label form-label">
+                    <i class="bx bx-store-alt"></i> ชื่อดีลเลอร์
+                  </label>
+                  <input id="dealer_name" type="text" class="form-control" name="dealer_name"
+                    placeholder="ระบุชื่อดีลเลอร์" maxlength="255">
                 </div>
 
                 <div id="wrapPurchaseType" class="col-md-4">

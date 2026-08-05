@@ -74,6 +74,31 @@
                   </select>
                 </div>
 
+                {{-- ดีลเลอร์ต้นทาง — เฉพาะแหล่งที่มา OTHDealer (toggle ใน car-order.js) --}}
+                <div id="wrapDealerProvince"
+                  class="col-md-3 {{ $waiting->purchase_source === 'OTHDealer' ? '' : 'd-none' }}">
+                  <label for="dealer_province_id" class="mf-label form-label">
+                    <i class="bx bx-map ci-indigo"></i> จังหวัดของดีลเลอร์
+                  </label>
+                  <select id="dealer_province_id" name="dealer_province_id" class="form-select">
+                    <option value="">-- เลือกจังหวัด --</option>
+                    @foreach ($provinces as $p)
+                      <option value="{{ $p->id }}" {{ $waiting->dealer_province_id == $p->id ? 'selected' : '' }}>
+                        {{ $p->name }}
+                      </option>
+                    @endforeach
+                  </select>
+                </div>
+
+                <div id="wrapDealerName"
+                  class="col-md-3 {{ $waiting->purchase_source === 'OTHDealer' ? '' : 'd-none' }}">
+                  <label for="dealer_name" class="mf-label form-label">
+                    <i class="bx bx-store-alt ci-indigo"></i> ชื่อดีลเลอร์
+                  </label>
+                  <input id="dealer_name" type="text" class="form-control" name="dealer_name"
+                    value="{{ $waiting->dealer_name }}" placeholder="ระบุชื่อดีลเลอร์" maxlength="255">
+                </div>
+
                 <div class="col-md-3">
                   <label for="purchase_type" class="mf-label form-label">
                     <i class="bx bx-transfer ci-indigo"></i> ประเภทการซื้อรถ

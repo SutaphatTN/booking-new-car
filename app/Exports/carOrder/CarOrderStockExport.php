@@ -99,7 +99,7 @@ class CarOrderStockExport implements FromView, WithTitle, WithStyles, WithEvents
 
     public function view(): View
     {
-        $rows = CarOrder::with(['model', 'subModel', 'purchaseType', 'orderStatus', 'gwmColor', 'interiorColor'])
+        $rows = CarOrder::with(['model', 'subModel', 'purchaseType', 'orderStatus', 'gwmColor', 'interiorColor', 'dealerProvince'])
             ->whereNotNull('system_date')
             ->whereBetween('system_date', [$this->fromDate, $this->toDate])
             ->orderBy('system_date')

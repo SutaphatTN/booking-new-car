@@ -225,7 +225,9 @@
 
 <style>
   #dpModal .dp-info-label { font-size: .78rem; color: #8a8aa3; display: block; }
-  #dpModal .dp-info-val { font-weight: 600; color: #3a3a55; }
+  /* overflow-wrap: anywhere — เลขเครื่อง/VIN บางคันยาว 30+ ตัวติดกันไม่มีเว้นวรรค
+     ถ้าไม่สั่งตัดคำ จะล้นออกนอก col ไปทับข้อมูลคอลัมน์ถัดไป */
+  #dpModal .dp-info-val { font-weight: 600; color: #3a3a55; overflow-wrap: anywhere; }
 
   /* ตัวโหลด — สไตล์เดียวกับหน้าอื่น (มาตรฐาน tables.css) ไม่เบลอพื้นหลัง
      (id นี้ไม่ได้อยู่ใน list ของ tables.css จึงต้องประกาศเอง แต่ให้ค่าตรงกัน) */

@@ -24,6 +24,9 @@ class CarOrderWaiting extends Model
         'type',
         'option',
         'purchase_source',
+        // ดีลเลอร์ต้นทาง (เฉพาะ purchase_source = OTHDealer) — จังหวัดเดียวกันมีได้หลายดีลเลอร์ จึงเก็บชื่อคู่กัน
+        'dealer_province_id',
+        'dealer_name',
         'order_code',
         'order_date',
         'color',
@@ -84,6 +87,24 @@ class CarOrderWaiting extends Model
     public function gwmColor()
     {
         return $this->belongsTo(TbColor::class, 'gwm_color');
+    }
+
+    // จังหวัดของดีลเลอร์ที่ซื้อรถมา (เฉพาะ purchase_source = OTHDealer)
+    public function dealerProvince()
+    {
+        return $this->belongsTo(TbProvinces::class, 'dealer_province_id', 'id');
+    }
+
+    // รายละเอียดดีลเลอร์ต้นทาง "จังหวัด · ชื่อร้าน" — null เมื่อไม่ใช่เคส OTHDealer หรือยังไม่ได้กรอก
+    public function getDealerDetailAttribute(): ?string
+    {
+        if ($this->purchase_source !== CarOrder::SOURCE_DEALER) {
+            return null;
+        }
+
+        $parts = array_filter([$this->dealerProvince?->name, $this->dealer_name]);
+
+        return $parts ? implode(' · ', $parts) : null;
     }
 
     public function getDisplayColorAttribute()

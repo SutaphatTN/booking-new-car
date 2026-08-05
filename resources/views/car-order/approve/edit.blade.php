@@ -69,9 +69,14 @@
               <span class="mf-section-title">ข้อมูลการสั่งซื้อ</span>
             </div>
             <div class="mf-section-body">
+              @php
+                // เคส OTHDealer มี 6 ช่อง → 4+4+4 สองแถวพอดี ; เคสอื่น 4 ช่อง → 3+3+3+3 แถวเดียว
+                $isDealer = $order->purchase_source === 'OTHDealer';
+                $srcCol = $isDealer ? 'col-md-4' : 'col-md-3';
+              @endphp
               <div class="row g-3">
 
-                <div class="col-md-3">
+                <div class="{{ $srcCol }}">
                   <label for="type" class="mf-label form-label">
                     <i class="bx bx-category"></i> ประเภทการสั่งรถ
                   </label>
@@ -79,7 +84,7 @@
                     style="background:#f8fafc;color:#64748b;" disabled>
                 </div>
 
-                <div class="col-md-4">
+                <div class="{{ $srcCol }}">
                   <label for="purchase_source" class="mf-label form-label">
                     <i class="bx bx-store"></i> แหล่งที่มา
                   </label>
@@ -87,15 +92,35 @@
                     style="background:#f8fafc;color:#64748b;" disabled>
                 </div>
 
-                <div class="col-md-5">
+                {{-- ดีลเลอร์ต้นทาง — มีเฉพาะแหล่งที่มา OTHDealer --}}
+                @if ($isDealer)
+                  <div class="{{ $srcCol }}">
+                    <label for="dealer_province" class="mf-label form-label">
+                      <i class="bx bx-map"></i> จังหวัดของดีลเลอร์
+                    </label>
+                    <input id="dealer_province" type="text" class="form-control"
+                      value="{{ $order->dealerProvince?->name ?? '-' }}"
+                      style="background:#f8fafc;color:#64748b;" disabled>
+                  </div>
+
+                  <div class="{{ $srcCol }}">
+                    <label for="dealer_name" class="mf-label form-label">
+                      <i class="bx bx-store-alt"></i> ชื่อดีลเลอร์
+                    </label>
+                    <input id="dealer_name" type="text" class="form-control" value="{{ $order->dealer_name ?: '-' }}"
+                      style="background:#f8fafc;color:#64748b;" disabled>
+                  </div>
+                @endif
+
+                <div class="{{ $srcCol }}">
                   <label for="purchase_type" class="mf-label form-label">
                     <i class="bx bx-transfer"></i> ประเภทการซื้อรถ
                   </label>
                   <input id="purchase_type" type="text" class="form-control"
-                    value="{{ $order->purchaseType->name }}" style="background:#f8fafc;color:#64748b;" disabled>
+                    value="{{ $order->purchaseType?->name ?? '-' }}" style="background:#f8fafc;color:#64748b;" disabled>
                 </div>
 
-                <div class="col-md-4">
+                <div class="{{ $srcCol }}">
                   <label for="payment_type" class="mf-label form-label">
                     <i class="bx bx-wallet"></i> ประเภทการจ่าย
                   </label>
@@ -136,7 +161,7 @@
                   <label for="model_id" class="mf-label form-label">
                     <i class="bx bx-car ci-sky"></i> รุ่นรถหลัก
                   </label>
-                  <input id="model_id" type="text" class="form-control" value="{{ $order->model->Name_TH }}"
+                  <input id="model_id" type="text" class="form-control" value="{{ $order->model?->Name_TH ?? '-' }}"
                     style="background:#f8fafc;color:#64748b;" disabled>
                 </div>
 
