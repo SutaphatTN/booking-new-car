@@ -39,6 +39,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property float|null $CarSalePrice
  * @property float|null $MarkupPrice
  * @property float|null $Markup90
+ * @property bool $markup90_manual
  * @property float|null $CarSalePriceFinal
  * @property float|null $DownPayment
  * @property float|null $DownPaymentPercentage
@@ -112,6 +113,7 @@ class Salecar extends Model
 		'CarSalePrice' => 'float',
 		'MarkupPrice' => 'float',
 		'Markup90' => 'float',
+		'markup90_manual' => 'bool',
 		'CarSalePriceFinal' => 'float',
 		'gp_cost_price_override' => 'float',
 		'gp_accessory_cost' => 'float',
@@ -185,6 +187,7 @@ class Salecar extends Model
 		'CarSalePrice',
 		'MarkupPrice',
 		'Markup90',
+		'markup90_manual',
 		'CarSalePriceFinal',
 		'gp_cost_price_override',
 		'gp_accessory_cost',
