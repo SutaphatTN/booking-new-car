@@ -569,6 +569,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::put('purchase-order/gp-setting/{id}', [PurchaseOrderController::class, 'updateGpSetting'])->name('purchase-order.gp-setting.update');
     Route::get('purchase-order/view-more-history/{id}', [PurchaseOrderController::class, 'viewMoreHistory']);
     Route::post('/purchase-order/{id}/cancel-car-order', [PurchaseOrderController::class, 'cancelCarOrder']);
+    // ใส่ป้ายแดงย้อนหลังจากหน้าประวัติ (เคสได้ป้ายมาหลังส่งมอบ) — เช็ค role ใน controller
+    Route::get('purchase-order/{id}/red-plate', [PurchaseOrderController::class, 'redPlateForm'])->name('purchase-order.red-plate');
+    Route::put('purchase-order/{id}/red-plate', [PurchaseOrderController::class, 'updateRedPlate'])->name('purchase-order.red-plate.update');
     Route::post('purchase-order/{id}/change-status', [PurchaseOrderController::class, 'changeStatus'])->name('purchase-order.change-status');
     // ดึงคำขออนุมัติกลับ (เฉพาะ admin — เช็คใน controller) : เคลียร์คำขอ + หมุน token กันลิงก์เมลเดิม
     Route::post('purchase-order/{id}/withdraw-approval', [PurchaseOrderController::class, 'withdrawApproval'])->name('purchase-order.withdrawApproval');

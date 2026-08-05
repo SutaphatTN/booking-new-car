@@ -7,6 +7,7 @@
 
 @section('content')
 <div class="viewMoreHistory"></div>
+<div class="redPlateHolder"></div>
 <div class="row">
   <div class="col-12">
     <div class="card tbl-card">
@@ -31,7 +32,8 @@
                 <th>ชื่อ - นามสกุล ลูกค้า</th>
                 {{-- <th>รหัส Car Order</th> --}}
                 <th>เลข Vin</th>
-                <th class="tbl-th-action" style="width:150px;">Action</th>
+                <th class="text-center">ป้ายแดง</th>
+                <th class="tbl-th-action" style="width:190px;">Action</th>
               </tr>
             </thead>
           </table>

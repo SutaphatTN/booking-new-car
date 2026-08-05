@@ -69,7 +69,7 @@
       @endif
       <td>{{ $row->car_MSRP ?? '-' }}</td>
       <td>{{ $row->purchaseType->name ?? '-' }}</td>
-      <td>{{ $row->purchase_source ?? '-' }}</td>
+      <td>{{ $row->purchase_source_label }}</td>
       <td>{{ $row->orderStatus->name ?? '-' }}</td>
       <td>{{ $row->car_status ?? '-' }}</td>
     </tr>

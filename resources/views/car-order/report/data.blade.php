@@ -68,7 +68,7 @@
         <td>{{ $row->RI ?? '-' }}</td>
         <td>{{ $row->WS ?? '-' }}</td>
       @endif
-      <td>{{ $row->purchase_source ?? '-' }}</td>
+      <td>{{ $row->purchase_source_label }}</td>
       <td>{{ $row->purchaseType->name ?? '-' }}</td>
       <td>{{ $row->payment_type_label }}</td>
       <td>{{ $row->orderStatus->name ?? '-' }}</td>

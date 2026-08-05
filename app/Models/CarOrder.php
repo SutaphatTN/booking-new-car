@@ -32,6 +32,9 @@ class CarOrder extends Model
         'engine_number',
         'option',
         'purchase_source',
+        // ดีลเลอร์ต้นทาง (เฉพาะ purchase_source = OTHDealer) — จังหวัดเดียวกันมีได้หลายดีลเลอร์ จึงเก็บชื่อคู่กัน
+        'dealer_province_id',
+        'dealer_name',
         'order_code',
         'order_date',
         'color',
@@ -82,6 +85,9 @@ class CarOrder extends Model
     ];
 
     protected $dates = ['deleted_at'];
+
+    /** แหล่งที่มา = ซื้อจากดีลเลอร์อื่น — เคสเดียวที่ต้องระบุจังหวัดของดีลเลอร์ */
+    const SOURCE_DEALER = 'OTHDealer';
 
     /** ประเภทการซื้อรถ = TestDrive / Retail (tb_purchase_type.id) */
     const PURCHASE_TYPE_TEST_DRIVE = 1;
@@ -153,11 +159,41 @@ class CarOrder extends Model
         return $this->belongsTo(TbColor::class, 'gwm_color');
     }
 
+    // จังหวัดของดีลเลอร์ที่ซื้อรถมา (เฉพาะ purchase_source = OTHDealer)
+    public function dealerProvince()
+    {
+        return $this->belongsTo(TbProvinces::class, 'dealer_province_id', 'id');
+    }
+
     // ป้ายแดงของรถทดลองขับ — ข้าม brand scope ของป้าย (ใช้แสดงผลเท่านั้น)
     public function licensePlate()
     {
         return $this->belongsTo(TbLicensePlate::class, 'license_plate_id', 'id')
             ->withoutGlobalScope('brandAccess');
+    }
+
+    // รายละเอียดดีลเลอร์ต้นทาง "จังหวัด · ชื่อร้าน" — null เมื่อไม่ใช่เคส OTHDealer หรือยังไม่ได้กรอก
+    public function getDealerDetailAttribute(): ?string
+    {
+        if ($this->purchase_source !== self::SOURCE_DEALER) {
+            return null;
+        }
+
+        $parts = array_filter([$this->dealerProvince?->name, $this->dealer_name]);
+
+        return $parts ? implode(' · ', $parts) : null;
+    }
+
+    // แหล่งที่มาแบบเต็ม — เคส OTHDealer พ่วงจังหวัด/ชื่อดีลเลอร์ต่อท้าย (ใช้ในรายงาน)
+    public function getPurchaseSourceLabelAttribute()
+    {
+        if (!$this->purchase_source) {
+            return '-';
+        }
+
+        return $this->dealer_detail
+            ? $this->purchase_source . ' (' . $this->dealer_detail . ')'
+            : $this->purchase_source;
     }
 
     public function getDisplayColorAttribute()

@@ -47,7 +47,7 @@
                 <label for="model_id" class="mf-label form-label">
                   <i class="bx bx-car ci-sky"></i> รุ่นรถหลัก
                 </label>
-                <input id="model_id" class="form-control" type="text" value="{{ $order->model->Name_TH }}" disabled>
+                <input id="model_id" class="form-control" type="text" value="{{ $order->model?->Name_TH ?? '-' }}" disabled>
               </div>
 
               <div class="col-md-5">
@@ -306,12 +306,31 @@
                   value="{{ $order->purchase_source }}" disabled>
               </div>
 
+              {{-- ดีลเลอร์ต้นทาง — มีเฉพาะแหล่งที่มา OTHDealer --}}
+              @if ($order->purchase_source === 'OTHDealer')
+                <div class="col-md-3">
+                  <label for="dealer_province" class="mf-label form-label">
+                    <i class="bx bx-map ci-emerald"></i> จังหวัดของดีลเลอร์
+                  </label>
+                  <input id="dealer_province" class="form-control" type="text"
+                    value="{{ $order->dealerProvince?->name ?? '-' }}" disabled>
+                </div>
+
+                <div class="col-md-3">
+                  <label for="dealer_name" class="mf-label form-label">
+                    <i class="bx bx-store-alt ci-emerald"></i> ชื่อดีลเลอร์
+                  </label>
+                  <input id="dealer_name" class="form-control" type="text"
+                    value="{{ $order->dealer_name ?: '-' }}" disabled>
+                </div>
+              @endif
+
               <div class="col-md-3">
                 <label for="purchase_type" class="mf-label form-label">
                   <i class="bx bx-transfer ci-emerald"></i> ประเภทการซื้อรถ
                 </label>
                 <input id="purchase_type" class="form-control" type="text"
-                  value="{{ $order->purchaseType->name }}" disabled>
+                  value="{{ $order->purchaseType?->name ?? '-' }}" disabled>
               </div>
 
               <div class="col-md-3">
@@ -335,14 +354,14 @@
                   <i class="bx bx-list-check ci-emerald"></i> สถานะ Car Order
                 </label>
                 <input id="order_status" class="form-control" type="text"
-                  value="{{ $order->orderStatus->name }}" disabled>
+                  value="{{ $order->orderStatus?->name ?? '-' }}" disabled>
               </div>
 
               <div class="col-md-3">
                 <label for="approver" class="mf-label form-label">
                   <i class="bx bx-user-check ci-emerald"></i> ผู้อนุมัติ
                 </label>
-                <input id="approver" class="form-control" type="text" value="{{ $order->approvers->name }}"
+                <input id="approver" class="form-control" type="text" value="{{ $order->approvers?->name ?? '-' }}"
                   disabled>
               </div>
 

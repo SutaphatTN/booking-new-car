@@ -98,6 +98,16 @@
   background: #fafbfc;
 }
 
+/* หัว section ที่มีสวิตช์/ปุ่มพ่วงท้าย (ใส่ .flex-wrap ไว้ที่ .mf-section-hd)
+   จอมือถือ: ดันของพ่วงลงบรรทัดใหม่เต็มความกว้าง ไม่ให้ไปบีบชื่อ section จนตัดคำเป็นแนวตั้ง */
+@media (max-width: 767.98px) {
+  .mf-section-hd.flex-wrap > .ms-auto {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-top: 6px;
+  }
+}
+
 /* ── Section icon ── */
 
 .mf-section-icon {

@@ -4296,6 +4296,7 @@ $(document).ready(function () {
       { data: 'FullName', orderable: false },
       // { data: 'code', orderable: false },
       { data: 'vin_number', orderable: false },
+      { data: 'red_plate', orderable: false, searchable: false, className: 'text-center' },
       { data: 'Action', orderable: false, searchable: false }
     ],
     paging: true,
@@ -4394,6 +4395,56 @@ $(document).on('click', '.btnChangeStatus', function () {
         });
       }
     });
+  });
+});
+
+//history : ใส่/เปลี่ยนป้ายแดงย้อนหลัง (เคสได้ป้ายมาหลังส่งมอบ)
+$(document).on('click', '.btnRedPlate', function () {
+  const id = $(this).data('id');
+
+  $.get(`/purchase-order/${id}/red-plate`, function (html) {
+    $('.redPlateHolder').html(html);
+    $('.redPlateModal').modal('show');
+  }).fail(function (xhr) {
+    Swal.fire({
+      icon: 'error',
+      title: 'เกิดข้อผิดพลาด',
+      text: xhr.status === 403 ? 'คุณไม่มีสิทธิ์แก้ไขป้ายแดง' : 'ไม่สามารถเปิดข้อมูลป้ายแดงได้'
+    });
+  });
+});
+
+$(document).on('click', '.btnSaveRedPlate', function () {
+  const $btn = $(this);
+  const id = $('#rp_sale_id').val();
+
+  $btn.prop('disabled', true);
+
+  $.ajax({
+    url: `/purchase-order/${id}/red-plate`,
+    type: 'PUT',
+    data: { red_license: $('#rp_red_license').val() || '' },
+    success: function (res) {
+      $('.redPlateModal').modal('hide');
+      Swal.fire({
+        icon: 'success',
+        title: 'สำเร็จ',
+        text: res.message ?? 'บันทึกป้ายแดงเรียบร้อยแล้ว',
+        timer: 1800,
+        showConfirmButton: true
+      });
+      historyFinalTable.ajax.reload(null, false);
+    },
+    error: function (xhr) {
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: xhr.responseJSON?.message ?? 'ไม่สามารถบันทึกป้ายแดงได้'
+      });
+    },
+    complete: function () {
+      $btn.prop('disabled', false);
+    }
   });
 });
 

@@ -19,6 +19,14 @@ $hasRemaining = !empty($s->remainingPayment);
   <i class="bx bx-printer"></i>
 </a>
 
+{{-- ใส่ป้ายแดงย้อนหลัง — บางคันได้ป้ายมาหลังส่งมอบแล้ว --}}
+@if (auth()->user()->canManageRedPlate())
+  <button class="btn btn-icon btn-danger btnRedPlate" data-id="{{ $s->id }}"
+    title="{{ $s->licensePlateRed ? 'เปลี่ยนป้ายแดง (' . $s->licensePlateRed->number . ')' : 'ใส่ป้ายแดง' }}">
+    <i class="bx bx-purchase-tag"></i>
+  </button>
+@endif
+
 @if (auth()->user()->role === 'admin')
   <button class="btn btn-icon btn-warning btnChangeStatus" data-id="{{ $s->id }}"
     data-status="{{ $s->con_status }}" title="ดึงกลับ / เปลี่ยนสถานะ">

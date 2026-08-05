@@ -63,6 +63,7 @@ use App\Mail\CarDeliveredMail;
 use App\Mail\ApprovalReturnMail;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -1351,30 +1352,7 @@ class PurchaseOrderController extends Controller
         $finances = Finance::all();
         $subModels = TbSubcarmodel::where('model_id', $saleCar->model_id)->get();
         $conStatus = TbConStatus::all();
-        // ป้ายที่ใช้ได้ = ป้ายของแบรนด์ที่ขาย (ไม่ติดให้แบรนด์อื่นยืม) + ป้ายที่ยืมมา (loan ค้าง)
-        // และต้องว่าง (is_used = 0) — คงใบที่งานนี้เลือกไว้แล้วเสมอ
-        $plateBrand = Auth::user()->brand ?: $saleCar->brand;
-        $licensePlateRed = TbLicensePlate::withoutGlobalScope('brandAccess')
-            ->where(function ($q) use ($saleCar, $plateBrand) {
-                $q->where(function ($qq) use ($plateBrand) {
-                    $qq->where('brand', $plateBrand)
-                        ->whereDoesntHave('loans', fn($l) => $l->whereNull('return_date'));
-                })
-                    ->orWhereHas('loans', fn($l) => $l->whereNull('return_date')->where('borrower_brand', $plateBrand))
-                    ->orWhere('id', $saleCar->red_license);
-            })
-            ->where(function ($q) use ($saleCar) {
-                $q->where('is_used', 0)
-                    ->orWhere('id', $saleCar->red_license);
-            })
-            // ป้ายสูญหาย/ชำรุด/ระหว่างติดตาม เลือกใหม่ไม่ได้ (ใบที่เลือกไว้แล้วยังคงอยู่)
-            ->where(function ($q) use ($saleCar) {
-                $q->whereNull('plate_status')
-                    ->orWhereNotIn('plate_status', TbLicensePlate::BLOCKED_STATUSES)
-                    ->orWhere('id', $saleCar->red_license);
-            })
-            ->orderBy('number')
-            ->get();
+        $licensePlateRed = $this->availableRedPlates($saleCar);
         $provinces = TbProvinces::all();
         $insurances = Insurance::orderBy('name')->get();
         $type = TbSalecarType::all();
@@ -1463,7 +1441,10 @@ class PurchaseOrderController extends Controller
         // แก้ราคารถได้ไหม
         $canEditCarPrice = Auth::user()->canEditCarPrice();
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet', 'canCustomAccPrice', 'redPlateAccIds', 'canReassignSale', 'saleUser', 'canEditCarPrice'));
+        // ผูก/ปลดรถได้ไหม — อิง brand ของใบจอง ไม่ใช่ brand ที่ user กำลังสลับอยู่
+        $canBindCarOrder = Auth::user()->canBindCarOrder((int) $saleCar->brand);
+
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet', 'canCustomAccPrice', 'redPlateAccIds', 'canReassignSale', 'saleUser', 'canEditCarPrice', 'canBindCarOrder'));
     }
 
     /** id ประดับยนต์ที่ถูก mark ว่าเป็น "ป้ายแดง" (ตั้งค่าหลังบ้าน — ข้ามทุก scope เพราะใช้เทียบ id ข้ามแบรนด์) */
@@ -1594,8 +1575,9 @@ class PurchaseOrderController extends Controller
             // บังคับกรอกวันส่งมอบให้ครบ เมื่อ:
             //  - ผูกรถแล้ว (CarOrderID) + มีวันที่ PO (remaining_po_date) หรือ
             //  - เปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5)
+            // (role ที่ผูกรถไม่ได้จะไม่ส่ง CarOrderID มา — ต้อง fallback เป็นค่าเดิมของใบจอง ไม่งั้นเงื่อนไขนี้หลุด)
             if (
-                ($request->filled('CarOrderID') && $request->filled('remaining_po_date'))
+                ($request->input('CarOrderID', $saleCar->CarOrderID) && $request->filled('remaining_po_date'))
                 || (int) $request->con_status === 5
             ) {
                 $requiredDeliveryDates = [
@@ -1684,7 +1666,10 @@ class PurchaseOrderController extends Controller
                     : $saleCar->price_sub,
                 'Color' => $request->Color ?? null,
                 'Year' => $request->Year,
-                'CarOrderID' => $request->CarOrderID,
+                // ผูกรถ: brand 2 ทำได้เฉพาะ md/gm/admin — role อื่นบังคับใช้ค่าเดิมเสมอ (กันแก้ผ่าน devtools)
+                'CarOrderID' => Auth::user()->canBindCarOrder((int) $saleCar->brand)
+                    ? $request->CarOrderID
+                    : $saleCar->CarOrderID,
                 'option' => $request->option ?? null,
                 'type_color' => $request->type_color ?? null,
                 'payment_mode' => $request->payment_mode,
@@ -1853,9 +1838,10 @@ class PurchaseOrderController extends Controller
                 $data['interior_color'] = $request->interior_color;
             }
 
-            //ดึง id
+            //ดึง id — ใช้ค่าที่ผ่าน gate สิทธิ์แล้ว ไม่ใช่ค่าดิบจาก request
+            // (role ที่ผูกรถไม่ได้ ต้องไม่ไปพลิก car_status ของรถคันไหนทั้งนั้น)
             $oldCarOrderID = $saleCar->CarOrderID;
-            $newCarOrderID = $request->CarOrderID;
+            $newCarOrderID = $data['CarOrderID'];
 
             // gate: เปลี่ยนสถานะเป็น "ระหว่างแต่งรถ" (con_status = 4) หรือ "ส่งมอบ" (con_status = 5) ได้ต่อเมื่ออนุมัติแล้ว (ยกเว้น admin)
             //  - ผูกรถได้เลยแม้ยังไม่อนุมัติ — บังคับอนุมัติเฉพาะตอนจะเข้าสองสถานะนี้
@@ -2036,33 +2022,7 @@ class PurchaseOrderController extends Controller
             }
 
             //ป้ายแดง
-            $newPlate = $request->red_license;
-
-            if ($oldPlate != $newPlate) {
-
-                // ปลด/ผูก is_used ด้วย id ตรง ๆ — ข้าม brand scope กันเคสป้ายหลุดจากการมองเห็น
-                if ($oldPlate) {
-                    TbLicensePlate::withoutGlobalScope('brandAccess')
-                        ->where('id', $oldPlate)
-                        ->update(['is_used' => 0]);
-                }
-
-                if ($newPlate) {
-                    TbLicensePlate::withoutGlobalScope('brandAccess')
-                        ->where('id', $newPlate)
-                        ->update(['is_used' => 1]);
-
-                    LicensePlateHistory::create([
-                        'saleID' => $saleCar->id,
-                        'licenseID' => $newPlate,
-                        'date' => now(),
-                        'UserInsert' => Auth::id(),
-                        'userZone' => Auth::user()->userZone ?? null,
-                        'brand' => Auth::user()->brand ?? null,
-                        'branch' => Auth::user()->branch ?? null,
-                    ]);
-                }
-            }
+            $this->syncRedPlate($saleCar, $oldPlate, $request->red_license);
 
             // เก็บ snapshot เดิมไว้ก่อน detach — แถวที่ไม่ได้แก้ต้องคงทุนอะไหล่เดิม ไม่ดึงราคาปัจจุบันจาก master มาทับ
             $prevAcc = Saleaccessory::where('salecar_id', $saleCar->id)
@@ -2561,9 +2521,144 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    /**
+     * ป้ายแดงที่เลือกได้สำหรับใบจองนี้
+     * = ป้ายของแบรนด์ที่ขาย (ไม่ติดให้แบรนด์อื่นยืม) + ป้ายที่ยืมมา (loan ค้าง)
+     * และต้องว่าง (is_used = 0) ไม่ใช่ป้ายสูญหาย/ชำรุด/ระหว่างติดตาม
+     * — ป้ายที่ใบนี้เลือกไว้แล้วต้องติดมาเสมอ ไม่งั้นหลุดจาก dropdown
+     */
+    private function availableRedPlates(Salecar $saleCar)
+    {
+        $plateBrand = Auth::user()->brand ?: $saleCar->brand;
+
+        return TbLicensePlate::withoutGlobalScope('brandAccess')
+            ->where(function ($q) use ($saleCar, $plateBrand) {
+                $q->where(function ($qq) use ($plateBrand) {
+                    $qq->where('brand', $plateBrand)
+                        ->whereDoesntHave('loans', fn($l) => $l->whereNull('return_date'));
+                })
+                    ->orWhereHas('loans', fn($l) => $l->whereNull('return_date')->where('borrower_brand', $plateBrand))
+                    ->orWhere('id', $saleCar->red_license);
+            })
+            ->where(function ($q) use ($saleCar) {
+                $q->where('is_used', 0)
+                    ->orWhere('id', $saleCar->red_license);
+            })
+            ->where(function ($q) use ($saleCar) {
+                $q->whereNull('plate_status')
+                    ->orWhereNotIn('plate_status', TbLicensePlate::BLOCKED_STATUSES)
+                    ->orWhere('id', $saleCar->red_license);
+            })
+            ->orderBy('number')
+            ->get();
+    }
+
+    /**
+     * สลับป้ายแดงของใบจอง — ปลด is_used ป้ายเดิม, จอง is_used ป้ายใหม่ + ลง history
+     * ไม่แตะ salecars.red_license (คนเรียกเป็นคนเซ็ต) ; ต้องเรียกภายใน transaction
+     */
+    private function syncRedPlate(Salecar $saleCar, $oldPlate, $newPlate): void
+    {
+        if ($oldPlate == $newPlate) {
+            return;
+        }
+
+        // ปลด/ผูก is_used ด้วย id ตรง ๆ — ข้าม brand scope กันเคสป้ายหลุดจากการมองเห็น
+        if ($oldPlate) {
+            TbLicensePlate::withoutGlobalScope('brandAccess')
+                ->where('id', $oldPlate)
+                ->update(['is_used' => 0]);
+        }
+
+        if ($newPlate) {
+            TbLicensePlate::withoutGlobalScope('brandAccess')
+                ->where('id', $newPlate)
+                ->update(['is_used' => 1]);
+
+            LicensePlateHistory::create([
+                'saleID' => $saleCar->id,
+                'licenseID' => $newPlate,
+                'date' => now(),
+                'UserInsert' => Auth::id(),
+                'userZone' => Auth::user()->userZone ?? null,
+                'brand' => Auth::user()->brand ?? null,
+                'branch' => Auth::user()->branch ?? null,
+            ]);
+        }
+    }
+
+    /**
+     * ฟอร์มใส่ป้ายแดงจากหน้าประวัติ (ส่งมอบแล้ว)
+     * มีเคสได้ป้ายมาทีหลังวันส่งมอบ — เลยต้องแก้ได้โดยไม่ต้องดึงใบกลับมาแก้ทั้งใบ
+     */
+    public function redPlateForm($id)
+    {
+        if (!Auth::user()->canManageRedPlate()) {
+            abort(403);
+        }
+
+        $saleCar = Salecar::with(['customer.prefix', 'carOrder', 'licensePlateRed'])->findOrFail($id);
+        $licensePlateRed = $this->availableRedPlates($saleCar);
+
+        return view('purchase-order.history.red-plate', compact('saleCar', 'licensePlateRed'));
+    }
+
+    /** บันทึกป้ายแดงจากหน้าประวัติ — แตะเฉพาะ red_license ไม่ยุ่งกับฟิลด์อื่นของใบจอง */
+    public function updateRedPlate(Request $request, $id)
+    {
+        if (!Auth::user()->canManageRedPlate()) {
+            return response()->json(['success' => false, 'message' => 'คุณไม่มีสิทธิ์แก้ไขป้ายแดง'], 403);
+        }
+
+        $request->validate([
+            'red_license' => ['nullable', Rule::exists('tb_license_plate', 'id')],
+        ], [
+            'red_license.exists' => 'ไม่พบป้ายแดงที่เลือก',
+        ]);
+
+        try {
+            $saleCar = Salecar::findOrFail($id);
+            $newPlate = $request->red_license ?: null;
+            $oldPlate = $saleCar->red_license;
+
+            // ป้ายที่ถูกใบอื่นจองไปแล้ว / สถานะใช้ไม่ได้ — กันเคสสองคนเปิดหน้าค้างไว้แล้วกดพร้อมกัน
+            if ($newPlate && $newPlate != $oldPlate) {
+                $plate = TbLicensePlate::withoutGlobalScope('brandAccess')->find($newPlate);
+                if ($plate->is_used || in_array($plate->plate_status, TbLicensePlate::BLOCKED_STATUSES, true)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'ป้ายแดงนี้ถูกใช้งานอยู่แล้ว หรือมีสถานะที่ใช้ไม่ได้ กรุณาเลือกป้ายอื่น',
+                    ], 422);
+                }
+            }
+
+            DB::transaction(function () use ($saleCar, $oldPlate, $newPlate) {
+                $this->syncRedPlate($saleCar, $oldPlate, $newPlate);
+                $saleCar->red_license = $newPlate;
+                $saleCar->save();
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => $newPlate ? 'บันทึกป้ายแดงเรียบร้อยแล้ว' : 'นำป้ายแดงออกเรียบร้อยแล้ว',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
+        }
+    }
+
     //ยกเลิกการผูกรถ
     public function cancelCarOrder(Request $request, $id)
     {
+        // brand 2 ปลดรถได้เฉพาะ md/gm/admin (ปุ่มถูกซ่อนอยู่แล้ว ตรงนี้กันยิง endpoint ตรง)
+        $sale = Salecar::findOrFail($id);
+        if (!Auth::user()->canBindCarOrder((int) $sale->brand)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'คุณไม่มีสิทธิ์ยกเลิกการผูกรถของแบรนด์นี้',
+            ], 403);
+        }
+
         DB::transaction(function () use ($id, $request) {
 
             $sale = Salecar::findOrFail($id);
@@ -3140,7 +3235,7 @@ class PurchaseOrderController extends Controller
     {
         $user = Auth::user();
 
-        $query = Salecar::with(['customer.prefix', 'originalCustomer.prefix', 'carOrder'])
+        $query = Salecar::with(['customer.prefix', 'originalCustomer.prefix', 'carOrder', 'licensePlateRed'])
             ->where('con_status', '5');
 
         if (in_array($user->role, ['sale', 'lead_sale'])) {
@@ -3183,6 +3278,10 @@ class PurchaseOrderController extends Controller
                 'FullName' => $this->customerNameWithOriginal($s),
                 // 'code'   => $s->carOrder->order_code ?? '-',
                 'vin_number' => $s->carOrder->vin_number ?? '-',
+                // ป้ายแดง — คันที่ยังไม่มีจะขึ้นป้ายจาง ๆ ให้เห็นว่าต้องตามใส่
+                'red_plate' => $s->licensePlateRed
+                    ? '<span class="badge bg-label-danger">' . e($s->licensePlateRed->number) . '</span>'
+                    : '<span class="text-muted small">-</span>',
                 'Action' => view('purchase-order.history.button', compact('s'))->render(),
             ];
         });
