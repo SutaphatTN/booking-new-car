@@ -140,7 +140,7 @@
         @continue
       @endif
 
-      @if (auth()->user()->brand != 3 && in_array($menu->slug, ['delivery-form']))
+      @if (!in_array(auth()->user()->brand, [3, 4]) && in_array($menu->slug, ['delivery-form']))
         @continue
       @endif
 
