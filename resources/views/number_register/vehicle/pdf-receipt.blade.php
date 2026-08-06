@@ -46,7 +46,12 @@
 
 <body>
 
-  <h3 style="text-align:center;">เคลียร์ค่าจดทะเบียน</h3>
+  <h3 style="text-align:center; margin-bottom:4px;">เคลียร์ค่าจดทะเบียน</h3>
+
+  {{-- แบรนด์ + สาขา (สาขาเฉพาะ brand 2) --}}
+  <div style="text-align:center; margin-bottom:10px;">
+    {{ $brandName ?? '' }}@if (!empty($branchName)) &nbsp;—&nbsp; สาขา{{ $branchName }} @endif
+  </div>
 
   <table>
     <thead>

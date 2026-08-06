@@ -1805,7 +1805,8 @@ class PurchaseOrderController extends Controller
                 'GMApprovalSignatureDate' => $this->toGregorian($request->GMApprovalSignatureDate),
                 'DeliveryEstimateDate' => $this->toGregorian($request->DeliveryEstimateDate),
                 'Note' => $request->Note,
-                'red_license' => $request->red_license,
+                // ช่องป้ายแดงมีเฉพาะ role ใน RED_PLATE_ROLES — role อื่นไม่ส่งมา ต้องคงค่าเดิม ไม่งั้นบันทึกทีเดียวป้ายหลุด
+                'red_license' => $request->has('red_license') ? $request->red_license : $saleCar->red_license,
                 'ReferrerID' => $request->ReferrerID,
                 'ReferrerAmount' => $request->filled('ReferrerAmount')
                     ? str_replace(',', '', $request->ReferrerAmount)
@@ -2021,8 +2022,8 @@ class PurchaseOrderController extends Controller
                 }
             }
 
-            //ป้ายแดง
-            $this->syncRedPlate($saleCar, $oldPlate, $request->red_license);
+            //ป้ายแดง — ใช้ค่าที่จะบันทึกจริง (role ที่ไม่มีช่องนี้ = คงป้ายเดิม ไม่ต้องสลับอะไร)
+            $this->syncRedPlate($saleCar, $oldPlate, $data['red_license']);
 
             // เก็บ snapshot เดิมไว้ก่อน detach — แถวที่ไม่ได้แก้ต้องคงทุนอะไหล่เดิม ไม่ดึงราคาปัจจุบันจาก master มาทับ
             $prevAcc = Saleaccessory::where('salecar_id', $saleCar->id)

@@ -97,6 +97,11 @@
                       data-cost="{{ number_format($r['cost'], 2) }}"
                       data-jnumber="{{ $r['jNumber'] }}"
                       data-fpclose="{{ $r['fpCloseText'] }}"
+                      data-source="{{ $r['source'] }}"
+                      data-purchasetype="{{ $r['purchaseType'] }}"
+                      data-paymenttype="{{ $r['paymentType'] }}"
+                      data-dealerprovince="{{ $r['dealerProvince'] }}"
+                      data-dealername="{{ $r['dealerName'] }}"
                       title="แก้ไข">
                       <i class="bx bx-edit"></i>
                     </button>
@@ -160,6 +165,18 @@
                 @endif
                 <div class="col-md-4"><span class="dp-info-label">ราคาทุน</span><div id="dp_cost" class="dp-info-val">-</div></div>
                 <div class="col-md-4"><span class="dp-info-label">วันที่ปิด FP</span><div id="dp_fpclose" class="dp-info-val">-</div></div>
+                <div class="col-md-4"><span class="dp-info-label">แหล่งที่มา</span><div id="dp_source" class="dp-info-val">-</div></div>
+                <div class="col-md-4"><span class="dp-info-label">ประเภทการซื้อรถ</span><div id="dp_purchase_type" class="dp-info-val">-</div></div>
+                <div class="col-md-4"><span class="dp-info-label">ประเภทการจ่าย</span><div id="dp_payment_type" class="dp-info-val">-</div></div>
+                {{-- ดีลเลอร์ต้นทาง — โชว์เฉพาะคันที่ซื้อจากดีลเลอร์อื่นและมีข้อมูล --}}
+                <div class="col-md-4 d-none" id="dp_dealer_province_wrap">
+                  <span class="dp-info-label">จังหวัดของดีลเลอร์</span>
+                  <div id="dp_dealer_province" class="dp-info-val">-</div>
+                </div>
+                <div class="col-md-4 d-none" id="dp_dealer_name_wrap">
+                  <span class="dp-info-label">ชื่อดีลเลอร์</span>
+                  <div id="dp_dealer_name" class="dp-info-val">-</div>
+                </div>
               </div>
             </div>
           </div>
@@ -293,6 +310,17 @@
       $('#dp_interior').text($b.data('interior') || '-');
       $('#dp_cost').text($b.data('cost') || '-');
       $('#dp_fpclose').text($b.data('fpclose') || '-');
+      $('#dp_source').text($b.data('source') || '-');
+      $('#dp_purchase_type').text($b.data('purchasetype') || '-');
+      $('#dp_payment_type').text($b.data('paymenttype') || '-');
+
+      // ดีลเลอร์ต้นทาง — ซ่อนทั้งช่องถ้าไม่ใช่รถซื้อจากดีลเลอร์อื่น หรือยังไม่ได้กรอก
+      const province = $b.data('dealerprovince') || '';
+      const dealerName = $b.data('dealername') || '';
+      $('#dp_dealer_province').text(province);
+      $('#dp_dealer_name').text(dealerName);
+      $('#dp_dealer_province_wrap').toggleClass('d-none', !province);
+      $('#dp_dealer_name_wrap').toggleClass('d-none', !dealerName);
 
       // ฟิลด์แก้ไขได้
       $('#dp_set').val($b.data('set') || '');

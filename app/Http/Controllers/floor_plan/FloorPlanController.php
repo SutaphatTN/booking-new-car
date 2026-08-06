@@ -438,7 +438,7 @@ class FloorPlanController extends Controller
         $status = $request->input('status', 'pending');   // pending (ยังไม่เบิก) | withdrawn (เบิกแล้ว)
         $month  = $request->input('month');                // YYYY-MM ของ "วันที่รับ" (ว่าง = ทุกเดือน)
 
-        $query = CarOrder::with(['model', 'subModel', 'interiorColor', 'gwmColor']);
+        $query = CarOrder::with(['model', 'subModel', 'interiorColor', 'gwmColor', 'purchaseType', 'dealerProvince']);
 
         // สถานะ: ยังไม่เบิก = ยังไม่มีวันที่ ทบ.เบิก / เบิกแล้ว = มีแล้ว
         if ($status === 'withdrawn') {
@@ -474,6 +474,16 @@ class FloorPlanController extends Controller
                 'option'       => $co->option ?: '-',
                 'interior'     => $co->interiorColor->name ?? '-',
                 'cost'         => (float) ($co->car_DNP ?? 0),
+                // ข้อมูลการซื้อ — ใช้ดูประกอบตอนแจ้งจำหน่าย (โดยเฉพาะรถที่ซื้อมาจากดีลเลอร์อื่น)
+                'source'         => $co->purchase_source ?: '-',
+                'purchaseType'   => $co->purchaseType->name ?? '-',
+                'paymentType'    => $co->payment_type_label ?: '-',
+                'dealerProvince' => $co->purchase_source === CarOrder::SOURCE_DEALER
+                    ? ($co->dealerProvince->name ?? '')
+                    : '',
+                'dealerName'     => $co->purchase_source === CarOrder::SOURCE_DEALER
+                    ? ($co->dealer_name ?: '')
+                    : '',
                 'fpCloseText'  => $co->format_fp_close_date ?? '-',
                 'disposeSet'   => $co->dispose_set,
                 'received'     => $co->dispose_received_date,          // Y-m-d สำหรับ input
