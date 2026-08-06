@@ -15,6 +15,7 @@ class SsiRecord extends Model
 
     protected $fillable = [
         'salecar_id',
+        'form_version', // 1 = ฟอร์มเดิม (8 ข้อ/40) , 2 = ฟอร์มใหม่ brand 1 (ข้อ 9-13 /25)
         'userZone',
         'brand',
         'branch',
@@ -65,16 +66,40 @@ class SsiRecord extends Model
     /** เกณฑ์คะแนน SSI ที่ถือว่า "ผ่าน" (เปอร์เซ็นต์) */
     public const SSI_PASS_PERCENT = 90;
 
+    /** ฟอร์มประเมินเวอร์ชันใหม่ (13 ข้อ ให้คะแนนเฉพาะข้อ 9-13) */
+    public const FORM_VERSION_MIT_2026 = 2;
+
+    /** brand ที่ใช้ฟอร์มใหม่ — brand 2 (GWM) มีฟอร์มของตัวเองแยกต่างหาก */
+    public const MIT_FORM_BRANDS = [1, 3, 4];
+
+    /** ใบนี้ใช้ฟอร์มใหม่หรือไม่ (ใบเก่าที่ประเมินด้วยฟอร์มเดิมไปแล้วยังเป็น v1) */
+    public function usesMitFormV2(): bool
+    {
+        $this->loadMissing('salecar');
+
+        return $this->salecar
+            && in_array((int) $this->salecar->brand, self::MIT_FORM_BRANDS, true)
+            && (int) $this->form_version >= self::FORM_VERSION_MIT_2026;
+    }
+
     /**
-     * รายการช่องคะแนนที่ใช้คิด SSI + คะแนนเต็ม (ขึ้นกับ brand / สถานที่ส่งมอบ)
-     * @return array{0: array<string>, 1: int}
+     * รายการช่องคะแนนที่ใช้คิด SSI + คะแนนเต็ม + ต้องกรอกครบก่อนถึงจะมีคะแนนไหม
+     * (ขึ้นกับ brand / เวอร์ชันฟอร์ม / สถานที่ส่งมอบ)
+     * @return array{0: array<string>, 1: int, 2: bool}
      */
     public function ssiScoreFields(): array
     {
         $s = $this->salecar;
 
         if ($s && $s->brand == 2) {
-            return [['gwm_q1', 'gwm_q2', 'gwm_q3', 'gwm_q4', 'gwm_q5', 'gwm_q6', 'gwm_q7', 'gwm_q8'], 40];
+            return [['gwm_q1', 'gwm_q2', 'gwm_q3', 'gwm_q4', 'gwm_q5', 'gwm_q6', 'gwm_q7', 'gwm_q8'], 40, false];
+        }
+
+        // ฟอร์มใหม่ (brand 1/3/4) — คิดคะแนนเฉพาะข้อ 9-13 ข้อละ 1-5 เต็ม 25
+        // ไม่ตัดข้อไหนทิ้งแม้ส่งมอบนอกสถานที่ (ต่างจากฟอร์มเดิมที่ตัด Q11)
+        // และต้องกรอกครบ 5 ข้อก่อน ถึงจะนับเป็นคะแนน — กรอกค้างไว้ = ยังไม่มีคะแนน
+        if ($this->usesMitFormV2()) {
+            return [['mit_q9', 'mit_q10', 'mit_q11', 'mit_q12', 'mit_q13'], 25, true];
         }
 
         $isOffsite = $s && $s->delivery_location === 'Offsite';
@@ -87,7 +112,7 @@ class SsiRecord extends Model
             array_splice($fields, 1, 0, ['q11_facilities']);
         }
 
-        return [$fields, $isOffsite ? 35 : 40];
+        return [$fields, $isOffsite ? 35 : 40, false];
     }
 
     /**
@@ -104,12 +129,15 @@ class SsiRecord extends Model
             return ['score' => null, 'answered' => 0, 'total' => 0, 'complete' => false];
         }
 
-        [$fields, $maxScore] = $this->ssiScoreFields();
+        [$fields, $maxScore, $requireComplete] = $this->ssiScoreFields();
         $total    = count($fields);
         $answered = collect($fields)->filter(fn($f) => !is_null($ass->{$f}) && $ass->{$f} > 0);
         $count    = $answered->count();
+        $complete = $total > 0 && $count === $total;
 
-        $score = $count > 0
+        // หารด้วยคะแนนเต็มเสมอ — ฟอร์มที่ requireComplete จะไม่คืนคะแนนจนกว่าจะกรอกครบ
+        // (ไม่งั้นใบที่กรอกค้างจะได้ % ต่ำหลอกตา แล้วไหลไปกดค่าเฉลี่ยคอมด้วย)
+        $score = $count > 0 && (!$requireComplete || $complete)
             ? min(round(($answered->sum(fn($f) => (int) $ass->{$f}) / $maxScore) * 100, 2), 100)
             : null;
 
@@ -117,7 +145,7 @@ class SsiRecord extends Model
             'score'    => $score,
             'answered' => $count,
             'total'    => $total,
-            'complete' => $total > 0 && $count === $total,
+            'complete' => $complete,
         ];
     }
 

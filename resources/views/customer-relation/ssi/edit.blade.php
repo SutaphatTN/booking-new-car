@@ -101,6 +101,23 @@
         }
       });
 
+      // ── ฟอร์มใหม่ (brand 1/3/4) : เปิด/ปิดข้อที่ขึ้นกับคำตอบก่อนหน้า ──
+      // ข้อ 2-3 = เคส "ประทับใจ" , ข้อ 4 = เคส "ไม่ประทับใจ" , ข้อ 8 = เคส "เสนอ แต่ไม่ได้ทดลองขับ"
+      $(document).on('change', '.mit-q1-radio', function() {
+        const satisfied = $(this).val() === 'satisfied';
+        $('.mit-when-satisfied').toggle(satisfied);
+        $('.mit-when-unsatisfied').toggle(!satisfied);
+      });
+
+      $(document).on('change', '.mit-q7-radio', function() {
+        const notTested = $(this).val() === 'offered_not_tested';
+        $('.mit-when-not-tested').toggle(notTested);
+        if (!notTested) {
+          $('.mit-when-not-tested input[type=checkbox]').prop('checked', false);
+          $('#mit_q8_other').hide().val('');
+        }
+      });
+
       // ── GWM "Other" checkbox toggle ──
       $(document).on('change', '.gwm-other-cb', function() {
         const $input = $(this).closest('.gwm-other-wrap').find('.gwm-other-input');
@@ -453,6 +470,23 @@
             gwm_q7: $('#gwm_q7').val() || null,
             gwm_q8: $('#gwm_q8').val() || null,
           };
+        @elseif ($usesMitV2)
+          const assessmentData = {
+            mit_q1: $('input[name="mit_q1"]:checked').val() || null,
+            mit_q2: $('#mit_q2').val() || null,
+            mit_q3: $('#mit_q3').val(),
+            mit_q4: $('#mit_q4').val(),
+            mit_q5: $('input[name="mit_q5"]:checked').val() || null,
+            mit_q6: $('input[name="mit_q6"]:checked').val() ?? null,
+            mit_q7: $('input[name="mit_q7"]:checked').val() || null,
+            mit_q8_reasons: $('input[name="mit_q8_reasons[]"]:checked').map(function() { return $(this).val(); }).get(),
+            mit_q8_other: $('#mit_q8_other').val(),
+            mit_q9: $('#score_mit_q9').val() || null,
+            mit_q10: $('#score_mit_q10').val() || null,
+            mit_q11: $('#score_mit_q11').val() || null,
+            mit_q12: $('#score_mit_q12').val() || null,
+            mit_q13: $('#score_mit_q13').val() || null,
+          };
         @else
           const deliveryLocation = $('#deliveryLocation').val() || @json($info['delivery_location']);
           const assessmentData = {
@@ -711,7 +745,8 @@
           $resolution = $ssiRecord->resolution;
 
           $ssiInfo    = $ssiRecord->ssiScoreInfo();
-          $ssiScore   = $ssiInfo['score'];                       // null = ยังไม่ได้ประเมิน
+          $ssiScore   = $ssiInfo['score'];                       // null = ยังไม่ได้ประเมิน / กรอกไม่ครบ (ฟอร์ม v2)
+          // $usesMitV2 (ฟอร์มใหม่ brand 1/3/4) ส่งมาจาก controller — บล็อก script ด้านบนใช้ก่อนถึงตรงนี้
           $ssiIsLow   = $ssiScore !== null && $ssiScore < 90;
           $hasResDate = $resolution?->resolution_date !== null;
 
@@ -769,8 +804,11 @@
         @endphp
 
         {{-- ── Card 1: ผลประเมิน SSI ── --}}
-        @if ($info['brand'] != 2)
-          {{-- Brand 1 / 3 : คะแนน 1-10 --}}
+        @if ($usesMitV2)
+          {{-- Brand 1/3/4 ฟอร์มใหม่ (v2) : 13 ข้อ คิดคะแนนเฉพาะข้อ 9-13 --}}
+          @include('customer-relation.ssi._form-mit-v2')
+        @elseif ($info['brand'] != 2)
+          {{-- Brand 1 / 3 ฟอร์มเดิม (v1) : คะแนน 1-5 จำนวน 8 ข้อ --}}
           <div class="po-section-edit">
             <div class="po-section-header">
               <div class="po-section-icon amber"><i class="bx bx-star"></i></div>

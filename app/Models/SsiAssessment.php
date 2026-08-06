@@ -31,6 +31,10 @@ class SsiAssessment extends Model
         'gwm_q6', 'gwm_q6_reasons', 'gwm_q6_other',
         'gwm_q7',
         'gwm_q8',
+        // Mitsubishi (brand 1) ฟอร์มใหม่ v2 — ให้คะแนนเฉพาะ q9-q13
+        'mit_q1', 'mit_q2', 'mit_q3', 'mit_q4', 'mit_q5', 'mit_q6', 'mit_q7',
+        'mit_q8_reasons', 'mit_q8_other',
+        'mit_q9', 'mit_q10', 'mit_q11', 'mit_q12', 'mit_q13',
     ];
 
     public function ssiRecord()
