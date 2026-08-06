@@ -117,6 +117,8 @@ class SsiController extends Controller
         ])->firstOrCreate(
             ['salecar_id' => $salecarId],
             [
+                // ใบใหม่ใช้ฟอร์ม v2 ทุก brand ยกเว้น brand 2 (GWM) ที่มีฟอร์มของตัวเอง
+                'form_version' => Auth::user()->brand == 2 ? 1 : SsiRecord::FORM_VERSION_MIT_2026,
                 'userZone'   => Auth::user()->userZone,
                 'brand'      => Auth::user()->brand,
                 'branch'     => Auth::user()->branch,
@@ -147,7 +149,10 @@ class SsiController extends Controller
 
         $provinces = TbProvinces::orderBy('id')->get();
 
-        return view('customer-relation.ssi.edit', compact('ssiRecord', 'info', 'provinces'));
+        // ใช้ฟอร์มประเมินเวอร์ชันใหม่ไหม — ส่งจาก controller เพราะ blade ใช้ตั้งแต่บล็อก script ด้านบน
+        $usesMitV2 = $ssiRecord->usesMitFormV2();
+
+        return view('customer-relation.ssi.edit', compact('ssiRecord', 'info', 'provinces', 'usesMitV2'));
     }
 
     public function saveDeliveryInfo(Request $request, $salecarId)
@@ -192,6 +197,8 @@ class SsiController extends Controller
         $ssiRecord = SsiRecord::firstOrCreate(
             ['salecar_id' => $salecarId],
             [
+                // ใบใหม่ใช้ฟอร์ม v2 ทุก brand ยกเว้น brand 2 (GWM) ที่มีฟอร์มของตัวเอง
+                'form_version' => Auth::user()->brand == 2 ? 1 : SsiRecord::FORM_VERSION_MIT_2026,
                 'userZone'   => Auth::user()->userZone,
                 'brand'      => Auth::user()->brand,
                 'branch'     => Auth::user()->branch,
@@ -232,6 +239,8 @@ class SsiController extends Controller
         $ssiRecord = SsiRecord::firstOrCreate(
             ['salecar_id' => $salecarId],
             [
+                // ใบใหม่ใช้ฟอร์ม v2 ทุก brand ยกเว้น brand 2 (GWM) ที่มีฟอร์มของตัวเอง
+                'form_version' => Auth::user()->brand == 2 ? 1 : SsiRecord::FORM_VERSION_MIT_2026,
                 'userZone'   => Auth::user()->userZone,
                 'brand'      => Auth::user()->brand,
                 'branch'     => Auth::user()->branch,
@@ -265,6 +274,30 @@ class SsiController extends Controller
                     'gwm_q6_other'   => $request->gwm_q6_other,
                     'gwm_q7'         => $request->gwm_q7,
                     'gwm_q8'         => $request->gwm_q8,
+                ]
+            );
+        } elseif ($ssiRecord->usesMitFormV2()) {
+            // ฟอร์มใหม่ brand 1/3/4 — คิดคะแนนเฉพาะ q9-q13 ที่เหลือเก็บเป็นข้อมูลเชิงคุณภาพ
+            SsiAssessment::updateOrCreate(
+                ['ssi_record_id' => $ssiRecord->id],
+                [
+                    'mit_q1'         => $request->mit_q1,
+                    'mit_q2'         => $request->mit_q1 === 'satisfied' ? $request->mit_q2 : null,
+                    'mit_q3'         => $request->mit_q1 === 'satisfied' ? $request->mit_q3 : null,
+                    'mit_q4'         => $request->mit_q1 === 'unsatisfied' ? $request->mit_q4 : null,
+                    'mit_q5'         => $request->mit_q5,
+                    'mit_q6'         => $request->mit_q6,
+                    'mit_q7'         => $request->mit_q7,
+                    // ข้อ 8 ถามเฉพาะเคส "เสนอ แต่ไม่ได้ทดลองขับ" — เคสอื่นเคลียร์ทิ้ง
+                    'mit_q8_reasons' => $request->mit_q7 === 'offered_not_tested' && $request->mit_q8_reasons
+                        ? json_encode($request->mit_q8_reasons)
+                        : null,
+                    'mit_q8_other'   => $request->mit_q7 === 'offered_not_tested' ? $request->mit_q8_other : null,
+                    'mit_q9'         => $request->mit_q9,
+                    'mit_q10'        => $request->mit_q10,
+                    'mit_q11'        => $request->mit_q11,
+                    'mit_q12'        => $request->mit_q12,
+                    'mit_q13'        => $request->mit_q13,
                 ]
             );
         } else {

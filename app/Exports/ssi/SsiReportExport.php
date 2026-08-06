@@ -96,9 +96,9 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
 
         $provinces = TbProvinces::all()->keyBy('id');
 
-        // คอลัมน์คะแนน SSI รายข้อ (1-5) แยกตาม brand
+        // คอลัมน์คะแนน SSI รายข้อ (1-5) แยกตาม brand + เวอร์ชันฟอร์มที่พบในช่วงวันที่นี้
         $brand        = Auth::user()->brand ?? 1;
-        $scoreColumns = $this->scoreColumns($brand);
+        $scoreColumns = $this->scoreColumns($brand, $records);
 
         $no = 1;
         $rows = $records->map(function ($rec) use (&$no, $provinces, $scoreColumns) {
@@ -138,7 +138,9 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
                 return $cnt->interview_success ? 'ติดต่อได้ สัมภาษณ์เรียบร้อย' : 'ติดต่อได้ ไม่สะดวกคุย';
             })->implode("\n") ?: '-';
 
-            $ssiScore = $rec?->ssiScorePercent() ?? 0;
+            // ยังไม่ได้ประเมิน / ฟอร์มใหม่ที่กรอกไม่ครบ → "-" ไม่ใช่ 0
+            // (0 อ่านแล้วเหมือนได้ศูนย์คะแนนจริง และทำให้ค่าเฉลี่ยที่ลากในไฟล์เพี้ยน)
+            $ssiScore = $rec?->ssiScorePercent() ?? '-';
 
             // คะแนนรายข้อ (1-5) — ช่องที่ยังไม่ได้ให้คะแนนแสดง "-"
             $ass    = $rec->assessment;
@@ -188,8 +190,12 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
         ]);
     }
 
-    /** หัวข้อคะแนน SSI รายข้อ (1-5) แยกตาม brand */
-    private function scoreColumns(int $brand): array
+    /**
+     * หัวข้อคะแนน SSI รายข้อ (1-5) แยกตาม brand
+     * brand 1/3/4 มี 2 เวอร์ชันฟอร์ม — เลือกชุดคอลัมน์ตามใบที่มีจริงในช่วงวันที่
+     * ถ้าช่วงนั้นคาบเกี่ยว (มีทั้งฟอร์มเก่า/ใหม่) แสดงทั้งสองชุด ใบไหนไม่มีข้อนั้นจะขึ้น "-"
+     */
+    private function scoreColumns(int $brand, $records = null): array
     {
         if ($brand == 2) {
             return [
@@ -204,7 +210,7 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
             ];
         }
 
-        return [
+        $v1 = [
             'dw_website'                 => 'DW เว็บไซต์',
             'q11_facilities'             => 'Q11 สิ่งอำนวยความสะดวก',
             'q15_car_knowledge'          => 'Q15 ความรอบรู้เกี่ยวกับรถยนต์ของที่ปรึกษาการขาย',
@@ -214,5 +220,26 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
             'fu_followup'                => 'FU การติดตามหลังจากส่งมอบ',
             'recommend_showroom'         => 'แนวโน้มที่จะแนะนำโชว์รูม',
         ];
+
+        $v2 = [
+            'mit_q9'  => 'ข้อ 9 คุณภาพสิ่งอำนวยความสะดวกสำหรับรับรองลูกค้า',
+            'mit_q10' => 'ข้อ 10 ความรอบรู้/ความเชี่ยวชาญเกี่ยวกับรถยนต์ของที่ปรึกษาการขาย',
+            'mit_q11' => 'ข้อ 11 มารยาท ความกระตือรือร้นและความรับผิดชอบในการให้บริการ',
+            'mit_q12' => 'ข้อ 12 การชี้แจงรายละเอียดเงื่อนไขการขาย',
+            'mit_q13' => 'ข้อ 13 รถที่ส่งมอบอยู่ในสภาพเรียบร้อยสมบูรณ์',
+        ];
+
+        if (!$records || $records->isEmpty()) {
+            return $v1;
+        }
+
+        $hasV2 = $records->contains(fn($r) => $r->usesMitFormV2());
+        $hasV1 = $records->contains(fn($r) => !$r->usesMitFormV2());
+
+        if ($hasV2 && $hasV1) {
+            return array_merge($v2, $v1);
+        }
+
+        return $hasV2 ? $v2 : $v1;
     }
 }
