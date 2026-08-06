@@ -6,6 +6,7 @@ use App\Exports\vehicle\VehicleExport;
 use App\Exports\vehicle\VehicleLicensePlateExport;
 use App\Http\Controllers\Controller;
 use App\Models\Salecar;
+use App\Models\TbBranch;
 use App\Models\TbProvinces;
 use App\Models\VehicleLicense;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -329,8 +330,9 @@ class VehicleController extends Controller
         }
 
         $data = $query->get();
+        [$brandName, $branchName] = $this->pdfHeaderContext();
 
-        $pdf = Pdf::loadView('number_register.vehicle.pdf-withdrawal', compact('data'))
+        $pdf = Pdf::loadView('number_register.vehicle.pdf-withdrawal', compact('data', 'brandName', 'branchName'))
             ->setPaper('a4', 'landscape');
 
         return $pdf->stream('withdrawal.pdf');
@@ -384,11 +386,31 @@ class VehicleController extends Controller
         }
 
         $data = $query->get();
+        [$brandName, $branchName] = $this->pdfHeaderContext();
 
-        $pdf = Pdf::loadView('number_register.vehicle.pdf-receipt', compact('data'))
+        $pdf = Pdf::loadView('number_register.vehicle.pdf-receipt', compact('data', 'brandName', 'branchName'))
             ->setPaper('a4', 'landscape');
 
         return $pdf->stream('clear.pdf');
+    }
+
+    /**
+     * หัวเอกสาร PDF ส่งเบิก/เคลียร์ — [ชื่อแบรนด์, ชื่อสาขา]
+     * ยึด brand/branch ที่ user กำลังทำงานอยู่ ไม่ใช่ค่าที่ประทับไว้บนแถว
+     * เพราะแถวเก่าถูกเขียนทับ brand/branch ตอนแก้ข้อมูลทีหลังได้ (บาง batch เลยมีค่าปนกัน)
+     * สาขา: เฉพาะ brand 2 ที่แยกสาขาจริง (BranchSwitcher ก็สลับสาขาได้เฉพาะ brand นี้)
+     */
+    private function pdfHeaderContext(): array
+    {
+        $user = Auth::user();
+        $brand = (int) ($user->brand ?? 0);
+
+        $brandName = config("brand.names.{$brand}") ?? '';
+        $branchName = $brand === 2
+            ? (TbBranch::find($user->branch)->name ?? '')
+            : '';
+
+        return [$brandName, $branchName];
     }
 
     // ประวัติส่งเบิก / เคลียร์ (รายชุด) — re-export PDF ทั้งชุดได้ (เฉพาะ admin, registration)
