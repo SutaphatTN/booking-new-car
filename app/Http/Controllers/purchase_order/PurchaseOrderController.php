@@ -3151,11 +3151,19 @@ class PurchaseOrderController extends Controller
         ]);
 
         $authUser = Auth::user();
-        $idNumber = preg_replace('/\D/', '', $request->IDNumber);
+        $idNumber = Customer::normalizeIdNumber($request->IDNumber);
         $mobile   = preg_replace('/\D/', '', $request->Mobilephone1);
 
-        if (strlen($idNumber) !== 13) {
-            return response()->json(['success' => false, 'message' => 'เลขบัตรประชาชนต้องมี 13 หลัก'], 422);
+        // รับได้ 2 แบบ: บัตรประชาชนไทย 13 หลัก หรือพาสปอร์ตต่างชาติที่มีตัวอักษรปน
+        // (เดิมบังคับ 13 หลักอย่างเดียว ลูกค้าต่างชาติเลยออกใบจองไม่ได้)
+        $isThaiId   = (bool) preg_match('/^\d{13}$/', (string) $idNumber);
+        $isPassport = (bool) preg_match('/^(?=.*[A-Z])[A-Z0-9]{6,17}$/', (string) $idNumber);
+
+        if (!$isThaiId && !$isPassport) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เลขบัตรประชาชนต้องมี 13 หลัก หรือกรอกเลขพาสปอร์ต (ตัวอักษรผสมตัวเลข 6-17 ตัว)'
+            ], 422);
         }
 
         if (Customer::where('IDNumber', $idNumber)->where('id', '!=', $request->customer_id)->exists()) {

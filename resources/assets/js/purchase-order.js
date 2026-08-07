@@ -438,6 +438,11 @@ $(document).ready(function () {
   }
 
   function formatIDCardPO(v) {
+    // พาสปอร์ตต่างชาติ (มีตัวอักษร) ห้ามฟอร์แมต — ดู formatIDCard ใน customer.js
+    if (/[A-Za-z]/.test(v)) {
+      return v.replace(/[^A-Za-z0-9]/g, '').toUpperCase().substring(0, 17);
+    }
+
     const d = v.replace(/\D/g, '').substring(0, 13);
     const p = [];
     if (d.length > 0) p.push(d.substring(0, 1));
@@ -556,6 +561,11 @@ $(document).ready(function () {
     return p.join('-');
   }
   function fmtIDPO(v) {
+    // พาสปอร์ตต่างชาติ (มีตัวอักษร) ห้ามฟอร์แมต — ดู formatIDCard ใน customer.js
+    if (/[A-Za-z]/.test(v)) {
+      return v.replace(/[^A-Za-z0-9]/g, '').toUpperCase().substring(0, 17);
+    }
+
     const d = v.replace(/\D/g, '').substring(0, 13);
     const p = [];
     if (d.length > 0) p.push(d.substring(0, 1));

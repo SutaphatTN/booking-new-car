@@ -526,6 +526,12 @@ function bindCustomerFormEvents(container = document) {
 
 //view more and edit : format id number
 function formatIDCard(value) {
+  // มีตัวอักษรปน = พาสปอร์ตต่างชาติ → ไม่ฟอร์แมต ตัดแค่อักขระที่ใช้ไม่ได้
+  // (เดิม replace(/\D/g) กินตัวอักษรทิ้งหมด เลขพาสปอร์ตเลยเพี้ยนตั้งแต่ตอนพิมพ์)
+  if (/[A-Za-z]/.test(value)) {
+    return value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().substring(0, 17);
+  }
+
   const digits = value.replace(/\D/g, '').substring(0, 13);
   const parts = [];
   if (digits.length > 0) parts.push(digits.substring(0, 1));
