@@ -53,7 +53,7 @@ class CustomerController extends Controller
 
             DB::beginTransaction();
 
-            $idNumber = preg_replace('/\D/', '', $request->IDNumber);
+            $idNumber = Customer::normalizeIdNumber($request->IDNumber);
 
             if ($idNumber) {
                 $exists = Customer::where('IDNumber', $idNumber)->exists();
@@ -105,7 +105,7 @@ class CustomerController extends Controller
                 'PrefixName' => $request->PrefixName,
                 'FirstName' => $request->FirstName,
                 'LastName' => $request->LastName,
-                'IDNumber' => preg_replace('/\D/', '', $request->IDNumber),
+                'IDNumber' => $idNumber,
                 'NewCardDate' => $this->toGregorian($request->NewCardDate),
                 'ExpireCard' => $this->toGregorian($request->ExpireCard),
                 'Birthday' => $this->toGregorian($request->Birthday),
@@ -284,7 +284,7 @@ class CustomerController extends Controller
     {
         try {
             // กันข้อมูลซ้ำ (ยกเว้นตัวเอง) — เบอร์โทรมี unique index ใน DB, เลขบัตรเป็น business rule
-            $idNumber     = preg_replace('/\D/', '', $request->IDNumber);
+            $idNumber     = Customer::normalizeIdNumber($request->IDNumber);
             $mobilephone1 = preg_replace('/\D/', '', $request->Mobilephone1);
 
             if ($idNumber && Customer::where('IDNumber', $idNumber)->where('id', '!=', $id)->exists()) {
@@ -310,7 +310,7 @@ class CustomerController extends Controller
                 'FirstName' => $request->FirstName,
                 'LastName' => $request->LastName,
                 'OriginalName' => $request->OriginalName,
-                'IDNumber' => preg_replace('/\D/', '', $request->IDNumber),
+                'IDNumber' => $idNumber,
                 'NewCardDate' => $this->toGregorian($request->NewCardDate),
                 'ExpireCard' => $this->toGregorian($request->ExpireCard),
                 'Birthday' => $this->toGregorian($request->Birthday),

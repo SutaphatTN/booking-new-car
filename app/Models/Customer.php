@@ -149,9 +149,30 @@ class Customer extends Model
 		return $this->belongsTo(User::class, 'UserDelete', 'id');
 	}
 
+	/**
+	 * ล้างเลขบัตร/พาสปอร์ตให้เหลือแต่ตัวเลข-ตัวอักษร
+	 *
+	 * ห้ามใช้ preg_replace('/\D/') กับช่องนี้ — ลูกค้าต่างชาติใช้พาสปอร์ตที่มีตัวอักษรปน
+	 * (เช่น Z7581877) การตัดตัวอักษรทิ้งจะทำให้เลขเพี้ยนแบบเงียบๆ หาไม่เจอทีหลัง
+	 * ตัดได้แค่ขีด เว้นวรรค และ CR/LF ที่ติดมาตอน paste จาก Excel
+	 */
+	public static function normalizeIdNumber($raw): ?string
+	{
+		$clean = preg_replace('/[^A-Za-z0-9]/', '', (string) $raw);
+
+		return $clean === '' ? null : strtoupper($clean);
+	}
+
 	public function getFormattedIdNumberAttribute()
 	{
-		$id = $this->IDNumber;
+		$id = (string) $this->IDNumber;
+
+		// ฟอร์แมต x-xxxx-xxxxx-xx-x เฉพาะบัตรประชาชนไทย 13 หลัก
+		// พาสปอร์ต/เลขรูปแบบอื่นคืนค่าดิบ ไม่งั้นจะถูกหั่นเป็นท่อนมั่ว
+		if (!preg_match('/^\d{13}$/', $id)) {
+			return $id ?: '-';
+		}
+
 		return substr($id, 0, 1) . '-' . substr($id, 1, 4) . '-' . substr($id, 5, 5) . '-' . substr($id, 10, 2) . '-' . substr($id, 12, 1);
 	}
 

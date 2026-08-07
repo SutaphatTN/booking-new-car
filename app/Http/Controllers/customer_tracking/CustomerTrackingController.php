@@ -984,11 +984,10 @@ class CustomerTrackingController extends Controller
         ]);
 
         $authUser = Auth::user();
-        $idNumber = $request->IDNumber ? preg_replace('/\D/', '', $request->IDNumber) : null;
+        $idNumber = Customer::normalizeIdNumber($request->IDNumber);
         $mobile   = $request->Mobilephone1 ? preg_replace('/\D/', '', $request->Mobilephone1) : null;
         // เก็บค่าว่างเป็น null ไม่ใช่ '' — ไม่งั้นค่าว่างจะกองรวมกันในคอลัมน์แล้วชนกันเอง
         // ตอนเช็คซ้ำรอบหน้า (เคสเดียวกับที่ทำให้เด้งชื่อลูกค้าคนเดิมตลอด)
-        $idNumber = $idNumber ?: null;
         $mobile   = $mobile ?: null;
         $lineId   = trim((string) $request->LineID) ?: null;
         $facebook = trim((string) $request->FacebookName) ?: null;
