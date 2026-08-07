@@ -932,15 +932,53 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
 
+    const smallText = 'font-size:.85rem;';
+
+    // บริบทของลูกค้าที่เจอ — ให้เซลแยกออกว่า "คนละคน (พิมพ์เบอร์ผิด)" หรือ "ลูกค้าเก่าจริง"
+    function contextHtml(res, { restoreHint = false } = {}) {
+      let html = '';
+      if (res.created_at) {
+        const added = new Date(res.created_at).toLocaleDateString('th-TH');
+        const by = res.added_by ? ` โดย ${res.added_by}` : '';
+        html += `<p class="text-muted mb-1" style="${smallText}">เพิ่มเข้าระบบ ${added}${by}</p>`;
+      }
+      // ลูกค้าที่ถูกลบยังค้นเจอ (withTrashed) และการกดยืนยันจะดึงกลับมาให้ — ต้องบอกก่อน
+      if (restoreHint && res.is_deleted) {
+        html += `<p class="mb-1" style="${smallText}">
+                   <i class="bx bx-info-circle me-1"></i>ข้อมูลลูกค้ารายนี้เคยถูกนำออกจากระบบ — กดยืนยันเพื่อนำกลับมาติดตามต่อ
+                 </p>`;
+      }
+      return html;
+    }
+
     // เช็คแบบ chain: ถ้าไม่ซ้ำค่อยไปเช็คตัวถัดไป จนสุดท้ายถึง onCreate
-    function handleCheckResult(res, labelHtml, onNotFound) {
+    function handleCheckResult(res, check, onNotFound) {
+      const { labelHtml, soft } = check;
+      // ทุกกล่องต้องบอกว่าชนที่ช่องไหน ไม่งั้นเซลเปลี่ยนเบอร์แล้วยังเจอคนเดิม
+      // จะนึกว่าเบอร์ชน ทั้งที่จริงไปชนที่ LineID/Facebook
+      const matched = `<p class="text-muted mb-1" style="${smallText}">ตรงกันที่ ${labelHtml}</p>`;
+
+      // ช่องที่ยืนยันตัวตนไม่ได้ (Facebook = ชื่อที่ตั้งเอง ซ้ำกันได้) → ให้ทางออกไปสร้างใหม่
+      const denyOpts = soft
+        ? { showDenyButton: true, denyButtonText: 'ไม่ใช่คนเดียวกัน สร้างใหม่', denyButtonColor: '#0ea5e9' }
+        : {};
+
       if (res.has_booking) {
         Swal.fire({
           icon: 'error',
           title: 'ไม่สามารถเพิ่มการติดตามได้',
-          html: `<p><b>${res.name}</b> มีข้อมูลการจองอยู่แล้ว ไม่สามารถเพิ่มการติดตามได้</p>`,
+          html: `${matched}
+                 <p class="mb-1"><b>${res.name}</b> มีข้อมูลการจองอยู่แล้ว ไม่สามารถเพิ่มการติดตามได้</p>
+                 ${contextHtml(res)}`,
+          showConfirmButton: !soft,
           confirmButtonText: 'ตกลง',
-          confirmButtonColor: '#6c5ffc'
+          confirmButtonColor: '#6c5ffc',
+          showCancelButton: !!soft,
+          cancelButtonText: 'ยกเลิก',
+          cancelButtonColor: '#6c757d',
+          ...denyOpts
+        }).then(result => {
+          if (result.isDenied) onNotFound();
         });
         return;
       }
@@ -949,14 +987,19 @@ document.addEventListener('DOMContentLoaded', function () {
         Swal.fire({
           icon: 'warning',
           title: 'ลูกค้ามีการติดตามอยู่แล้ว',
-          html: `<p><b>${res.name}</b> มีการติดตามในระบบอยู่แล้ว</p>`,
+          html: `${matched}
+                 <p class="mb-1"><b>${res.name}</b> มีการติดตามในระบบอยู่แล้ว</p>
+                 ${res.tracking_sale ? `<p class="mb-1">กำลังติดตามโดย: <b>${res.tracking_sale}</b></p>` : ''}
+                 ${contextHtml(res)}`,
           showCancelButton: true,
           confirmButtonText: 'ไปยังหน้าการติดตาม',
           cancelButtonText: 'ยกเลิก',
           confirmButtonColor: '#6c5ffc',
-          cancelButtonColor: '#6c757d'
+          cancelButtonColor: '#6c757d',
+          ...denyOpts
         }).then(result => {
           if (result.isConfirmed) window.location.href = '/customer-tracking/' + res.tracking_id;
+          else if (result.isDenied) onNotFound();
         });
         return;
       }
@@ -965,18 +1008,23 @@ document.addEventListener('DOMContentLoaded', function () {
         Swal.fire({
           icon: 'question',
           title: 'พบข้อมูลในฐานข้อมูล',
-          html: `<p>${labelHtml} มีข้อมูลในฐานข้อมูลแล้ว</p>
-                 <p>ชื่อ: <b>${res.name}</b></p>
-                 <p>ต้องการเพิ่มการติดตามให้ลูกค้าคนนี้ไหม?</p>`,
+          html: `<p class="mb-1">${labelHtml} มีข้อมูลในฐานข้อมูลแล้ว</p>
+                 <p class="mb-1">ชื่อ: <b>${res.name}</b></p>
+                 ${contextHtml(res, { restoreHint: true })}
+                 <p class="mb-1">ต้องการเพิ่มการติดตามให้ลูกค้าคนนี้ไหม?</p>`,
           showCancelButton: true,
           confirmButtonText: 'ใช่, เพิ่มการติดตาม',
           cancelButtonText: 'ยกเลิก',
           confirmButtonColor: '#6c5ffc',
-          cancelButtonColor: '#6c757d'
+          cancelButtonColor: '#6c757d',
+          ...denyOpts
         }).then(result => {
-          if (!result.isConfirmed) return;
-          $('#CusID').val(res.customer_id);
-          submitTrackingForm($btn, form);
+          if (result.isConfirmed) {
+            $('#CusID').val(res.customer_id);
+            submitTrackingForm($btn, form);
+          } else if (result.isDenied) {
+            onNotFound();
+          }
         });
         return;
       }
@@ -989,9 +1037,9 @@ document.addEventListener('DOMContentLoaded', function () {
         onCreate();
         return;
       }
-      const { params, labelHtml } = checks[idx];
-      $.get('/customer-tracking/check-phone', params)
-        .done(res => handleCheckResult(res, labelHtml, () => runChecks(checks, idx + 1, onCreate)))
+      const check = checks[idx];
+      $.get('/customer-tracking/check-phone', check.params)
+        .done(res => handleCheckResult(res, check, () => runChecks(checks, idx + 1, onCreate)))
         .fail(() =>
           Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถตรวจสอบข้อมูลได้ กรุณาลองใหม่' })
         );
@@ -1016,8 +1064,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const checks = [];
     if (phone) checks.push({ params: { phone }, labelHtml: `เบอร์ : <b>${phone}</b>` });
     if (lineId) checks.push({ params: { field: 'line_id', value: lineId }, labelHtml: `Line ID : <b>${lineId}</b>` });
+    // soft = ชนแล้วยังไปต่อได้ (Facebook เป็นชื่อที่ตั้งเอง คนละคนซ้ำกันได้)
     if (facebook)
-      checks.push({ params: { field: 'facebook', value: facebook }, labelHtml: `Facebook : <b>${facebook}</b>` });
+      checks.push({
+        params: { field: 'facebook', value: facebook },
+        labelHtml: `Facebook : <b>${facebook}</b>`,
+        soft: true
+      });
 
     Swal.fire({ title: 'กำลังตรวจสอบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     runChecks(checks, 0, createNewCustomer);

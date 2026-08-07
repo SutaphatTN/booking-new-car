@@ -440,12 +440,25 @@ class CustomerTrackingController extends Controller
 
     public function checkDuplicate(Request $request)
     {
-        $exists = CustomerTracking::where('customer_id', $request->customer_id)
-            ->where('brand', Auth::user()->brand)
-            ->whereNull('cancelled_at')
-            ->exists();
+        $exists = self::activeTrackingQuery($request->customer_id, Auth::user()->brand)->exists();
 
         return response()->json(['exists' => $exists]);
+    }
+
+    /**
+     * ด่านกันติดตามซ้ำ — ต้องเห็นเท่ากันทุก role ทุกสาขา
+     *
+     * userAccess scope กรองตาม zone/branch ต่างกันในแต่ละ role (sale เข้มสุด, admin หลวมสุด)
+     * ถ้าปล่อยให้ติดมาด้วย ความเข้มของด่านจะขึ้นกับว่าใครเป็นคนกดปุ่ม และเซลจะมองไม่เห็น
+     * การติดตามของสาขาอื่นแล้วเพิ่มซ้ำได้ — ถอดทิ้งแล้วล็อกที่ brand อย่างเดียว
+     * (เท่ากับที่ฝั่งเช็คใบจองใช้อยู่) คนละ brand ถือเป็นคนละกอง ไม่ต้องเตือนข้ามกัน
+     */
+    private static function activeTrackingQuery($customerId, $brand)
+    {
+        return CustomerTracking::withoutGlobalScope('userAccess')
+            ->where('customer_id', $customerId)
+            ->where('brand', $brand)
+            ->whereNull('cancelled_at');
     }
 
     public function checkPhone(Request $request)
@@ -454,13 +467,22 @@ class CustomerTrackingController extends Controller
         $field    = $request->field ?? 'phone';
 
         if ($field === 'line_id') {
-            $customer = Customer::withTrashed()->where('LineID', $request->value)->first();
+            $column = 'LineID';
+            $value  = trim((string) $request->value);
         } elseif ($field === 'facebook') {
-            $customer = Customer::withTrashed()->where('FacebookName', $request->value)->first();
+            $column = 'FacebookName';
+            $value  = trim((string) $request->value);
         } else {
-            $phone    = preg_replace('/\D/', '', $request->phone);
-            $customer = Customer::withTrashed()->where('Mobilephone1', $phone)->first();
+            $column = 'Mobilephone1';
+            $value  = preg_replace('/\D/', '', (string) $request->phone);
         }
+
+        // ค่าค้นหาว่างห้ามยิง query — where(col, '') จะไปแมตช์แถวที่เก็บค่าว่างไว้
+        // แล้วเด้งชื่อลูกค้าคนเดิมกลับมาทุกครั้งไม่ว่ากรอกอะไรมา
+        // orderBy('id') กันผลแกว่งเวลาค่าซ้ำ (LineID/FacebookName ไม่มี unique index)
+        $customer = $value === ''
+            ? null
+            : Customer::withTrashed()->where($column, $value)->orderBy('id')->first();
 
         if (!$customer) {
             return response()->json(['found' => false, 'has_tracking' => false, 'has_booking' => false]);
@@ -473,9 +495,9 @@ class CustomerTrackingController extends Controller
             ->whereNotIn('con_status', [5, 7, 8, 9])
             ->exists();
 
-        $tracking = CustomerTracking::where('customer_id', $customer->id)
-            ->where('brand', $brand)
-            ->whereNull('cancelled_at')
+        $tracking = self::activeTrackingQuery($customer->id, $brand)
+            ->with('sale:id,name')
+            ->orderByDesc('id')
             ->first();
 
         $prefix = $customer->prefix?->Name_TH ?? '';
@@ -488,6 +510,11 @@ class CustomerTrackingController extends Controller
             'has_booking' => $hasBooking,
             'has_tracking' => $tracking !== null,
             'tracking_id' => $tracking?->id,
+            // บริบทให้เซลแยกออกว่า "คนละคน = พิมพ์เบอร์ผิด" หรือ "ลูกค้าเก่าจริง"
+            'tracking_sale' => $tracking?->sale?->name,
+            'is_deleted'    => $customer->trashed(),
+            'created_at'    => $customer->created_at?->toIso8601String(),
+            'added_by'      => $customer->userInsert?->name,
         ]);
     }
 
@@ -534,11 +561,14 @@ class CustomerTrackingController extends Controller
             $authUser = Auth::user();
 
             // ถ้าลูกค้าถูก soft-delete ไว้ → restore กลับมาก่อน เพราะมีการติดตามใหม่
+            // ดึง model มา restore ทีละตัวแทน restore() บน query builder เพราะตัวหลังเป็น
+            // mass update ที่ไม่ยิง model event → TracksUserActions ไม่ได้ stamp UserUpdate
+            // แล้วจะสืบไม่ได้เลยว่าใครเป็นคนนำลูกค้าที่ถูกลบกลับมา
             if ($request->customer_id) {
-                Customer::withTrashed()
-                    ->where('id', $request->customer_id)
-                    ->whereNotNull('deleted_at')
-                    ->restore();
+                $trashedCustomer = Customer::withTrashed()->find($request->customer_id);
+                if ($trashedCustomer?->trashed()) {
+                    $trashedCustomer->restore();
+                }
             }
 
             $hasBooking = Salecar::withoutGlobalScope('userAccess')
@@ -554,10 +584,7 @@ class CustomerTrackingController extends Controller
                 ], 422);
             }
 
-            $alreadyTracked = CustomerTracking::where('customer_id', $request->customer_id)
-                ->where('brand', $authUser->brand)
-                ->whereNull('cancelled_at')
-                ->exists();
+            $alreadyTracked = self::activeTrackingQuery($request->customer_id, $authUser->brand)->exists();
 
             if ($alreadyTracked) {
                 return response()->json([
@@ -959,6 +986,12 @@ class CustomerTrackingController extends Controller
         $authUser = Auth::user();
         $idNumber = $request->IDNumber ? preg_replace('/\D/', '', $request->IDNumber) : null;
         $mobile   = $request->Mobilephone1 ? preg_replace('/\D/', '', $request->Mobilephone1) : null;
+        // เก็บค่าว่างเป็น null ไม่ใช่ '' — ไม่งั้นค่าว่างจะกองรวมกันในคอลัมน์แล้วชนกันเอง
+        // ตอนเช็คซ้ำรอบหน้า (เคสเดียวกับที่ทำให้เด้งชื่อลูกค้าคนเดิมตลอด)
+        $idNumber = $idNumber ?: null;
+        $mobile   = $mobile ?: null;
+        $lineId   = trim((string) $request->LineID) ?: null;
+        $facebook = trim((string) $request->FacebookName) ?: null;
 
         if ($idNumber) {
             $idExists = Customer::where('IDNumber', $idNumber)->exists();
@@ -974,19 +1007,16 @@ class CustomerTrackingController extends Controller
             }
         }
 
-        if ($request->LineID) {
-            $lineExists = Customer::withTrashed()->where('LineID', $request->LineID)->exists();
+        if ($lineId) {
+            $lineExists = Customer::withTrashed()->where('LineID', $lineId)->exists();
             if ($lineExists) {
                 return response()->json(['success' => false, 'message' => 'Line ID นี้มีอยู่ในระบบแล้ว'], 422);
             }
         }
 
-        if ($request->FacebookName) {
-            $fbExists = Customer::withTrashed()->where('FacebookName', $request->FacebookName)->exists();
-            if ($fbExists) {
-                return response()->json(['success' => false, 'message' => 'Facebook นี้มีอยู่ในระบบแล้ว'], 422);
-            }
-        }
+        // FacebookName ไม่บล็อกซ้ำ — มันคือชื่อที่ตั้งเอง คนละคนซ้ำกันได้เป็นเรื่องปกติ
+        // ฝั่งหน้าเว็บจะเตือนให้ดูก่อนแล้วให้เลือกเองว่า "คนเดียวกัน" หรือ "สร้างใหม่"
+        // ถ้าบล็อกตรงนี้ด้วย ปุ่มสร้างใหม่จะกดไม่ผ่าน
 
         $prefixName   = $request->PrefixName ? TbPrefixname::find($request->PrefixName)?->Name_TH : null;
         $originalName = trim(implode(' ', array_filter([
@@ -1002,8 +1032,8 @@ class CustomerTrackingController extends Controller
             'OriginalName' => $originalName,
             'Mobilephone1' => $mobile,
             'IDNumber'     => $idNumber,
-            'LineID'       => $request->LineID,
-            'FacebookName' => $request->FacebookName,
+            'LineID'       => $lineId,
+            'FacebookName' => $facebook,
             'userZone'     => $authUser->userZone,
             'brand'        => $authUser->brand,
             'branch'       => $authUser->branch,
