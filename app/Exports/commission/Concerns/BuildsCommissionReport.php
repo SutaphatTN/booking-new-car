@@ -13,6 +13,17 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
  */
 trait BuildsCommissionReport
 {
+    /**
+     * ป้ายชื่อคอลัมน์ "ยอดที่ผู้จัดการ/GM กรอกตอนอนุมัติเกินเพดาน" (Salecar::approvedCommission)
+     * brand 2/4 = ยอดหัก (ติดลบ) ; แบรนด์อื่น = ค่าคอมที่ให้แทน
+     */
+    protected function approvedComLabel(): string
+    {
+        return in_array($this->brand(), [2, 4], true)
+            ? 'ยอดหักค่าคอม (เกินเพดาน)'
+            : 'คอมที่ได้ (เกินเพดาน)';
+    }
+
     /** ตัวอักษรคอลัมน์ (A, B, ...) ของคอลัมน์ที่เป็นเงิน — ใช้ set number format */
     protected function moneyColumnLetters(array $columns): array
     {

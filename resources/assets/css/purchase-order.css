@@ -1307,6 +1307,21 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
 }
 
+/* ช่อง "คอมที่ได้ / ยอดหักค่าคอม" (ยอดที่ผู้จัดการอนุมัติเคสเกินเพดาน) — ซ่อนเมื่อไม่ใช่เคสนี้
+   ใช้ !important เพราะอยู่ใน tab-pane ของ Bootstrap (display ถูก override) */
+.com-stat-cell.com-cell-hidden {
+  display: none !important;
+}
+
+.com-stat-cell.com-approved-cell {
+  background: #fffbeb;
+}
+
+.com-stat-cell.com-approved-cell .com-lbl,
+.com-stat-cell.com-approved-cell .com-readonly-val {
+  color: #b45309;
+}
+
 .com-stat-cell.com-total-cell {
   flex: 0 0 140px;
   border-right: none;

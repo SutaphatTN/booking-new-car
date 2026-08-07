@@ -43,7 +43,8 @@
       // ยอดหักคอมแนะนำ = สูตรเดียวกับ displayBalanceCamHalf ในหน้า summary
       // (balanceCampaign * 2 * per_budget%) — ใช้ค่าสัมบูรณ์เพราะช่องนี้รับค่าบวก
       $balCam = $saleCar->balanceCampaign ?? null;
-      $perBudget = $saleCar->model->per_budget ?? 0;
+      // % หักคอม : รุ่นย่อย (AT) ทับรุ่นหลักได้
+      $perBudget = $saleCar->effectivePerBudget();
       $suggestDeduct = (is_numeric($balCam) && $balCam < 0)
           ? abs($balCam * 2 * ($perBudget / 100))
           : 0;

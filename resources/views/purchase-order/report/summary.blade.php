@@ -561,7 +561,8 @@
                   $discountBalance = $DownPaymentDiscount + $TotalAccessoryGift + $refA + $vatGift + $disC;
                   $balanceCam2 = $saleCar->balanceCampaign * 2;
                   $balanceCamHalf = $saleCar->balanceCampaign ?? null;
-                  $perBudgetHalf = $saleCar->model->per_budget ?? 0;
+                  // % หักคอม : รุ่นย่อย (AT) ทับรุ่นหลักได้
+                  $perBudgetHalf = $saleCar->effectivePerBudget();
                   $isNegativeHalf = is_numeric($balanceCamHalf) && $balanceCamHalf < 0;
                   $displayBalanceCamHalf = $isNegativeHalf
                       ? $balanceCamHalf * 2 * ($perBudgetHalf / 100)
@@ -631,7 +632,8 @@
                   $discountBalance = $PaymentDiscount + $TotalAccessoryGift;
                   $balanceCash = $saleCar->balanceCampaign * 2;
                   $balanceCamHalf2 = $saleCar->balanceCampaign ?? null;
-                  $perBudgetHalf2 = $saleCar->model->per_budget ?? 0;
+                  // % หักคอม : รุ่นย่อย (AT) ทับรุ่นหลักได้
+                  $perBudgetHalf2 = $saleCar->effectivePerBudget();
                   $isNegativeHalf2 = is_numeric($balanceCamHalf2) && $balanceCamHalf2 < 0;
                   $displayBalanceCamHalf2 = $isNegativeHalf2
                       ? $balanceCamHalf2 * 2 * ($perBudgetHalf2 / 100)

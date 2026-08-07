@@ -1294,7 +1294,7 @@ class PurchaseOrderController extends Controller
     public function getSubModelPurchase($model_id)
     {
         $subModels = TbSubcarmodel::where('model_id', $model_id)
-            ->select('id', 'name', 'detail')
+            ->select('id', 'name', 'detail', 'per_budget') // per_budget : % หักคอมเกินงบเฉพาะรุ่นย่อย (เช่น Triton AT = 40)
             ->orderBy('name')
             ->get();
 
@@ -3367,7 +3367,7 @@ class PurchaseOrderController extends Controller
     //commission
     public function viewCommission()
     {
-        if (!in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md', 'audit_dp'])) {
+        if (!in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md', 'audit_dp', 'audit_lead'])) {
             abort(403);
         }
 
@@ -3511,7 +3511,10 @@ class PurchaseOrderController extends Controller
      */
     public function commissionSaleDetail(Request $request, $saleId)
     {
-        abort_unless(in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md']), 403);
+        // audit_lead / audit_dp เปิดดูได้อย่างเดียว (ห้ามแก้ — endpoint บันทึกยังล็อกไว้ตามเดิม)
+        $role = Auth::user()->role;
+        abort_unless(in_array($role, ['admin', 'manager', 'gm', 'md', 'audit_lead', 'audit_dp']), 403);
+        $canEditCommission = in_array($role, ['admin', 'manager', 'gm', 'md']);
 
         // ช่องเดือน = เดือน CK (เดือนที่ตัดยอด/ขาย)
         [$year, $month] = $this->resolveCommissionMonth($request->input('month'));
@@ -3545,8 +3548,9 @@ class PurchaseOrderController extends Controller
             $sub = $r->carOrder->subModel->name ?? '-';
             $detailModel = $r->carOrder->subModel->detail ?? null;
 
-            // คอมงบเหลือคิดสด (รองรับเคสเกิน over_budget ที่ใช้ยอดหักของ manager = −D)
-            $balanceCampaign = $r->effectiveBalanceCommission();
+            // คอมงบเหลือคิดสด (สูตรอัตโนมัติล้วน ๆ) + ยอดที่ผู้จัดการกรอกเคสเกินเพดาน แยกกันคนละช่อง
+            $balanceCampaign = $r->autoBalanceCommission();
+            $approvedCom     = $r->approvedCommission();
             // เกินงบ → ไม่คิดคอมประดับยนต์
             $accessoryCom = $r->effectiveAccessoryCommission();
             // คอมอื่นๆ — ใช้ค่า default ตามรุ่นถ้ายังไม่กรอก
@@ -3554,9 +3558,9 @@ class PurchaseOrderController extends Controller
             $interestCom  = $r->remainingPayment->total_com ?? 0;
             $turnCarCom   = $r->turnCar->com_turn ?? 0;
 
-            // ค่าคอมรายคัน C ของคันนี้ (สำหรับคิดคอมกั๊ก brand 1)
+            // ค่าคอมรายคัน C ของคันนี้ (สำหรับคิดคอมกั๊ก brand 1) — เกินงบทะลุเพดาน = ไม่ได้คอมตัวรถ
             $C = 0.0;
-            if ($carEntry) {
+            if ($carEntry && !$r->isOverBudgetCeiling()) {
                 $C = $carMode === 'model'
                     ? CarCommissionQuery::modelRate((int) $r->brand, $r->model_id !== null ? (int) $r->model_id : null)
                     : $carRate;
@@ -3583,6 +3587,7 @@ class PurchaseOrderController extends Controller
                 'heldPayday'      => $p['held_payday']?->format('Y-m-d'),
                 'mainPayDate'     => $p['main_payday']?->format('Y-m-d'),
                 'balanceCampaign' => $balanceCampaign,
+                'approvedCom'     => $approvedCom,   // ยอดที่ผู้จัดการ/GM กรอก (เกินเพดาน) — brand2/4 ติดลบ
                 'extraDeduct'     => ExtraBudgetLedger::absorbedFor($r),
                 'accessoryCom'    => $accessoryCom,
                 'specialCom'      => $specialCom,
@@ -3621,12 +3626,14 @@ class PurchaseOrderController extends Controller
 
         // คอมตัวรถรายคัน (รายเดือน) — ใช้ $carEntry ที่คิดไว้ด้านบน
         $carData = [
-            'active'   => $car['active'] && $carEntry !== null,
-            'mode'     => $carEntry['mode'] ?? 'volume',
-            'count'    => $carEntry['count'] ?? 0,
-            'rate'     => $carEntry['rate'] ?? 0,
-            'achieved' => $carEntry['achieved'] ?? false,
-            'amount'   => (float) ($carEntry['amount'] ?? 0),
+            'active'    => $car['active'] && $carEntry !== null,
+            'mode'      => $carEntry['mode'] ?? 'volume',
+            'count'     => $carEntry['count'] ?? 0,
+            // จำนวนคันที่ได้คอมจริง (ตัดคันที่เกินงบทะลุเพดานออก)
+            'paidCount' => $carEntry['paidCount'] ?? ($carEntry['count'] ?? 0),
+            'rate'      => $carEntry['rate'] ?? 0,
+            'achieved'  => $carEntry['achieved'] ?? false,
+            'amount'    => (float) ($carEntry['amount'] ?? 0),
         ];
 
         // ── ยอดสุทธิ = คอมเต็มของ CK เดือนนี้ (กั๊กเป็นแค่ "เวลาจ่าย" ไม่กระทบยอดรวม) ──
@@ -3686,6 +3693,7 @@ class PurchaseOrderController extends Controller
         ];
 
         return view('purchase-order.commission.sale-detail', [
+            'canEdit'        => $canEditCommission,
             'saleUser'       => $saleUser,
             'cars'           => $cars,
             'baseCommission' => $baseCommission,

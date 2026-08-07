@@ -365,7 +365,9 @@
                         style="{{ $carLockedStyle }}">
                         <option value="">— เลือกรุ่นรถย่อย —</option>
                         @foreach ($subModels as $s)
-                          <option value="{{ $s->id }}" {{ $saleCar->subModel_id == $s->id ? 'selected' : '' }}>
+                          {{-- data-perbudget : % หักคอมเกินงบเฉพาะรุ่นย่อย (ว่าง = ใช้ของรุ่นหลัก) --}}
+                          <option value="{{ $s->id }}" data-perbudget="{{ $s->per_budget }}"
+                            {{ $saleCar->subModel_id == $s->id ? 'selected' : '' }}>
                             {{ $s->name }}
                           </option>
                         @endforeach
@@ -426,7 +428,9 @@
                         style="{{ $carLockedStyle }}">
                         <option value="">— เลือกรุ่นรถย่อย —</option>
                         @foreach ($subModels as $s)
-                          <option value="{{ $s->id }}" {{ $saleCar->subModel_id == $s->id ? 'selected' : '' }}>
+                          {{-- data-perbudget : % หักคอมเกินงบเฉพาะรุ่นย่อย (ว่าง = ใช้ของรุ่นหลัก) --}}
+                          <option value="{{ $s->id }}" data-perbudget="{{ $s->per_budget }}"
+                            {{ $saleCar->subModel_id == $s->id ? 'selected' : '' }}>
                             {{ $s->name }}
                           </option>
                         @endforeach
@@ -473,7 +477,9 @@
                         style="{{ $carLockedStyle }}">
                         <option value="">— เลือกรุ่นรถย่อย —</option>
                         @foreach ($subModels as $s)
-                          <option value="{{ $s->id }}" {{ $saleCar->subModel_id == $s->id ? 'selected' : '' }}>
+                          {{-- data-perbudget : % หักคอมเกินงบเฉพาะรุ่นย่อย (ว่าง = ใช้ของรุ่นหลัก) --}}
+                          <option value="{{ $s->id }}" data-perbudget="{{ $s->per_budget }}"
+                            {{ $saleCar->subModel_id == $s->id ? 'selected' : '' }}>
                             {{ $s->detail }} - {{ $s->name }}
                           </option>
                         @endforeach
@@ -2360,6 +2366,16 @@
                                     title="ถูกหักเพื่อชดเก็บงบเพิ่มเติมของคันที่เกินงบก่อนหน้า">
                                     − หักเก็บงบเพิ่มเติม <span id="extraDeductVal">{{ number_format($extraAbsorbed ?? 0, 2) }}</span>
                                   </div>
+                                </div>
+
+                                {{-- ค่าคอมที่ผู้จัดการ/GM กรอกตอนอนุมัติเกินเพดาน — โชว์เฉพาะเคสที่ใช้ยอดนี้ (JS toggle)
+                                     brand 2/4 = ยอดหัก (ติดลบ) ; brand อื่น = ค่าคอมที่ได้ --}}
+                                @php $approvedComLabel = in_array((int) $saleCar->brand, [2, 4], true) ? 'ยอดหักค่าคอม' : 'คอมที่ได้'; @endphp
+                                <div class="com-stat-cell com-approved-cell com-cell-hidden" id="approvedComCell"
+                                  title="ยอดที่ผู้จัดการ/GM อนุมัติ (เคสเกินงบทะลุเพดาน) — ใช้แทนคอมงบเหลือ">
+                                  <span class="com-lbl">{{ $approvedComLabel }}</span>
+                                  <input type="text" class="com-readonly-val money-input"
+                                    id="ApprovedCommissionDisplay" readonly>
                                 </div>
 
                                 <div class="com-stat-cell">

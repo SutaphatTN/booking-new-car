@@ -68,6 +68,8 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       ['label' => 'ยอดแบ่งงบเหลือ', 'key' => 'balanceCampaign', 'role' => 'recv', 'money' => true],
       // info เท่านั้น — ยอดนี้ถูกหักออกจาก "ยอดแบ่งงบเหลือ" ไปแล้ว (โชว์ให้รู้ว่าโดนหักอะไร ไม่หักซ้ำ)
       ['label' => 'หักเก็บงบเพิ่มเติม', 'key' => 'extraDeduct', 'role' => 'info', 'money' => true, 'num' => true],
+      // เคสเกินงบทะลุเพดาน : ใช้ยอดที่ผู้จัดการ/GM กรอกแทนสูตร → "ยอดแบ่งงบเหลือ" เป็น 0 แล้วมาโชว์ช่องนี้
+      ['label' => $this->approvedComLabel(), 'key' => 'approvedCom', 'role' => 'recv', 'money' => true],
       ['label' => 'คอมประดับยนต์',  'key' => 'accessoryCom',    'role' => 'recv', 'money' => true],
       ['label' => 'คอมอื่นๆ',       'key' => 'specialCom',      'role' => 'recv', 'money' => true],
       ['label' => 'คอมดอกเบี้ย',    'key' => 'interestCom',     'role' => 'recv', 'money' => true],
@@ -168,11 +170,13 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       $detailModel = $r->carOrder->subModel->detail ?? null;
 
       // ค่าคอมรถ (คอมรายคันรถปกติ) รายคัน — นับเฉพาะ Retail + Normal + ไม่ใช่ dealer (ตรงกับ CarCommissionQuery)
+      // และคันที่เกินงบทะลุเพดาน ไม่ได้คอมตัวรถ (นับจำนวนคันแต่ไม่ได้ยอด)
       $entry = CarCommissionQuery::entry($carCom, $saleId, (int) $r->brand);
       $src = optional($r->carOrder)->purchase_source;
       $isCounted = ((int) $r->type_sale === CarCommissionQuery::SALE_TYPE_NORMAL)
         && ((int) optional($r->carOrder)->purchase_type === CarCommissionQuery::PURCHASE_TYPE_RETAIL)
-        && ($src !== CarCommissionQuery::SOURCE_DEALER);
+        && ($src !== CarCommissionQuery::SOURCE_DEALER)
+        && !$r->isOverBudgetCeiling();
       $carCommission = 0.0;
       if ($entry && $isCounted) {
         $carCommission = ($entry['mode'] ?? 'volume') === 'model'
@@ -193,8 +197,9 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
         'subModel' => $detailModel ? "{$detailModel} - {$sub}" : $sub,
 
         'carCommission'   => $carCommission,
-        'balanceCampaign' => $r->effectiveBalanceCommission(),
+        'balanceCampaign' => $r->autoBalanceCommission(),   // สูตรอัตโนมัติล้วน ๆ
         'extraDeduct'     => ExtraBudgetLedger::absorbedFor($r) ?: null,
+        'approvedCom'     => $r->approvedCommission(),      // ยอดผู้จัดการ/GM (เกินเพดาน)
         'accessoryCom'    => $r->effectiveAccessoryCommission(),
         'specialCom'      => $r->effectiveSpecialCommission(),
         'interestCom'     => $r->remainingPayment->total_com ?? 0,

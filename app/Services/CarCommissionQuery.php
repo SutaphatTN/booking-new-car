@@ -12,7 +12,8 @@ use Illuminate\Support\Collection;
  *  - นับเฉพาะ Retail (purchase_type=2) + type_sale Normal (=1) ตาม DeliveryInCKDate ในเดือน
  *  - ตัดรถ dealer (purchase_source=OTHDealer) ออก ไม่คิดคอมตัวรถ
  *  - "บรรลุเป้า 120%" = ยอดรวมทั้ง brand ในเดือน >= เป้า × target_multiplier
- *  - ยอดต่อเซลล์ = เรต × จำนวนคันของเซลล์คนนั้น
+ *  - ยอดต่อเซลล์ = เรต × จำนวนคันที่ได้คอม (paidCount)
+ *  - คันที่ "เกินงบทะลุเพดาน" (MD/GM อนุมัติ) ไม่ได้คอมตัวรถ แต่ยังนับจำนวนคัน (เรต/เป้าเหมือนเดิม)
  */
 class CarCommissionQuery
 {
@@ -87,7 +88,9 @@ class CarCommissionQuery
         $from = Carbon::create($year, $month, 1)->startOfMonth();
         $to   = Carbon::create($year, $month, 1)->endOfMonth();
 
+        // with('model') + balanceCampaign : ใช้เช็ค "เกินงบทะลุเพดาน" (คันแบบนี้ไม่ได้คอมตัวรถ)
         $cars = Salecar::withoutGlobalScopes()
+            ->with('model')
             ->whereNotNull('DeliveryInCKDate')
             ->whereBetween('DeliveryInCKDate', [$from, $to])
             ->where('type_sale', self::SALE_TYPE_NORMAL)
@@ -95,7 +98,7 @@ class CarCommissionQuery
                 ->where('purchase_type', self::PURCHASE_TYPE_RETAIL)
                 ->where(fn($q) => $q->where('purchase_source', '!=', self::SOURCE_DEALER)
                     ->orWhereNull('purchase_source')))
-            ->get(['id', 'SaleID', 'brand', 'model_id']);
+            ->get(['id', 'SaleID', 'brand', 'model_id', 'balanceCampaign']);
 
         if ($cars->isEmpty()) {
             return array_merge($empty, ['active' => true]);
@@ -122,30 +125,36 @@ class CarCommissionQuery
                 $brand = (int) $bg->first()->brand;
                 $count = $bg->count();
 
+                // คันที่เกินงบทะลุเพดาน : ยังนับจำนวนคัน (เรต/เป้าเหมือนเดิม) แต่ไม่ได้ยอดคอมตัวรถ
+                $paidCars  = $bg->reject(fn($c) => $c->isOverBudgetCeiling());
+                $paidCount = $paidCars->count();
+
                 // brand ที่ไม่มีเป้า (เช่น brand 3) → คิดเรตตามรุ่นหลัก รวมทุกคัน
                 if (self::isModelBased($brand)) {
-                    $amount = (float) $bg->sum(fn($c) => self::modelRate($brand, $c->model_id !== null ? (int) $c->model_id : null));
+                    $amount = (float) $paidCars->sum(fn($c) => self::modelRate($brand, $c->model_id !== null ? (int) $c->model_id : null));
                     return [
-                        'brand'    => $brand,
-                        'mode'     => 'model',
-                        'count'    => $count,
-                        'achieved' => null,
-                        'rate'     => null,
-                        'amount'   => $amount,
+                        'brand'     => $brand,
+                        'mode'      => 'model',
+                        'count'     => $count,
+                        'paidCount' => $paidCount,
+                        'achieved'  => null,
+                        'rate'      => null,
+                        'amount'    => $amount,
                     ];
                 }
 
-                // brand ที่มีเป้า (1/2) → เรตตามจำนวนคัน × บรรลุเป้า
+                // brand ที่มีเป้า (1/2) → เรตตามจำนวนคัน × บรรลุเป้า (จ่ายเฉพาะคันที่ไม่ทะลุเพดาน)
                 $achieved = (bool) ($achievedByBrand[$brand] ?? false);
                 $rate     = self::rate($brand, $count, $achieved);
 
                 return [
-                    'brand'    => $brand,
-                    'mode'     => 'volume',
-                    'count'    => $count,
-                    'achieved' => $achieved,
-                    'rate'     => $rate,
-                    'amount'   => $rate * $count,
+                    'brand'     => $brand,
+                    'mode'      => 'volume',
+                    'count'     => $count,
+                    'paidCount' => $paidCount,
+                    'achieved'  => $achieved,
+                    'rate'      => $rate,
+                    'amount'    => $rate * $paidCount,
                 ];
             });
         });

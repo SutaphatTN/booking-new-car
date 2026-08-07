@@ -163,6 +163,34 @@ class Customer extends Model
 		return $clean === '' ? null : strtoupper($clean);
 	}
 
+	/**
+	 * ล้างค่าช่องติดต่อ (LineID / Facebook) — คืน null ถ้าเป็นค่าที่แปลว่า "ไม่มีข้อมูล"
+	 *
+	 * เซลชอบพิมพ์ '-' หรือ '.' แทนการเว้นว่าง ซึ่งอันตรายมากเพราะช่องพวกนี้ใช้เช็คลูกค้าซ้ำ
+	 * คนแรกที่พิมพ์ '-' จะ "จอง" ค่านั้นไว้ แล้วทุกคนหลังจากนั้นจะโดนเด้งว่าเป็นลูกค้าคนเดิม
+	 * ไม่ว่าจะกรอกเบอร์อะไรมาก็ตาม (เคสจริง: ลูกค้า id 7715 จอง '-' ไว้ 2026-08-06)
+	 *
+	 * เช็คเฉพาะค่าที่เป็นเครื่องหมายวรรคตอนล้วนๆ กับคำว่า "ไม่มี" แบบตรงตัวเท่านั้น
+	 * ชื่อ Facebook สั้นๆ อย่าง "U" / "Miso" / "ฐิตา" เป็นชื่อจริง ห้ามลบทิ้ง
+	 */
+	public static function normalizeContactValue($raw): ?string
+	{
+		$value = trim((string) $raw);
+
+		if ($value === '') {
+			return null;
+		}
+
+		// เครื่องหมายวรรคตอน/สัญลักษณ์ล้วน เช่น '-' '.' '--' '_' 'ฺ'
+		if (preg_match('/^[\p{P}\p{S}\p{Z}\p{M}]+$/u', $value)) {
+			return null;
+		}
+
+		$noValue = ['ไม่มี', 'ไม่ระบุ', 'ไม่ทราบ', 'n/a', 'na', 'none', 'null', 'no'];
+
+		return in_array(mb_strtolower($value), $noValue, true) ? null : $value;
+	}
+
 	public function getFormattedIdNumberAttribute()
 	{
 		$id = (string) $this->IDNumber;

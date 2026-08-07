@@ -895,9 +895,20 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
+    // '-' หรือ '.' ที่เซลใส่แทนช่องว่าง = ไม่มีข้อมูล ห้ามเอาไปเช็คซ้ำและห้ามบันทึก
+    // คนแรกที่พิมพ์ '-' จะจองค่านั้นไว้แล้วบล็อกทุกคนถัดไป (ดู Customer::normalizeContactValue)
+    // เช็คเฉพาะที่เป็นเครื่องหมายล้วน — ชื่อ Facebook สั้นๆ อย่าง "U" เป็นชื่อจริง
+    const NO_VALUE = ['ไม่มี', 'ไม่ระบุ', 'ไม่ทราบ', 'n/a', 'na', 'none', 'null', 'no'];
+    function cleanContact(raw) {
+      const v = (raw || '').trim();
+      if (!v) return '';
+      if (/^[\p{P}\p{S}\p{Z}\p{M}]+$/u.test(v)) return '';
+      return NO_VALUE.includes(v.toLowerCase()) ? '' : v;
+    }
+
     const phone = $('#ct_phone').val().trim();
-    const lineId = $('#ct_line_id').val().trim();
-    const facebook = $('#ct_facebook').val().trim();
+    const lineId = cleanContact($('#ct_line_id').val());
+    const facebook = cleanContact($('#ct_facebook').val());
     const firstName = $('#ct_first_name').val().trim();
     const prefix = $('#ct_prefix').val() || null;
     const last = $('#ct_last_name').val().trim() || null;
