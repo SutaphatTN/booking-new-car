@@ -21,6 +21,7 @@ class TbSubcarmodel extends Model
 		'year',
 		'active',
 		'over_budget',
+		'per_budget',   // % หักคอมเกินงบ เฉพาะรุ่นย่อย (ว่าง = ใช้ของรุ่นหลัก) เช่น Triton AT = 40
 		'type_carOrder',
 		'userZone',
 		'brand',

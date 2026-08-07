@@ -536,24 +536,71 @@ class Salecar extends Model
 	}
 
 	/**
-	 * "คอมงบเหลือ" (component เดียวของค่าคอม) — คิดสดจากสถานะปัจจุบัน
-	 *  - งบเหลือ (balance ≥ 0): ได้งบเหลือ เพดาน 2500
-	 *  - เกินงบไม่เกินเพดาน (b1_manager): สูตรอัตโนมัติ balance × 2 × per_budget%
-	 *  - เกิน over_budget ที่ MD/GM อนุมัติ และ manager กรอกยอด D แล้ว:
-	 *      · brand 2, 4 (b2_gm) → ใช้ −D (หักเงิน)
-	 *      · แบรนด์อื่น (b1_md) → ใช้ +D ("ให้ค่าคอมฝ่ายขายเท่านี้แทน")
+	 * % หักคอมเกินงบที่ใช้จริงของคันนี้ — รุ่นย่อย (tb_subcarmodels.per_budget) ทับรุ่นหลักได้
+	 * เช่น Triton (รุ่นหลัก 3/4/5) = 30% แต่รุ่นย่อยเกียร์ AT = 40%
+	 * ว่าง/NULL ที่รุ่นย่อย = ใช้ของรุ่นหลัก (tb_carmodels.per_budget)
+	 * ต้อง eager load 'subModel' (หรือ 'carOrder.subModel') + 'model' เพื่อกัน N+1
+	 */
+	public function effectivePerBudget(): float
+	{
+		$sub = $this->subModel ?? $this->carOrder?->subModel;
+		$subPer = $sub?->per_budget;
+
+		if ($subPer !== null && $subPer !== '' && is_numeric($subPer)) {
+			return (float) $subPer;
+		}
+		return (float) ($this->model?->per_budget ?? 0);
+	}
+
+	/**
+	 * เกินงบ "ทะลุเพดาน" (ต้องให้ MD/GM อนุมัติ แล้วผู้จัดการกรอกค่าคอมให้แทน)
+	 * ผลข้างเคียง: คันแบบนี้ไม่ได้ "คอมตัวรถรายคัน" (แต่ยังนับจำนวนคันตามปกติ)
 	 * ต้อง eager load relation 'model' เพื่อความแม่นของเคส
 	 */
-	public function effectiveBalanceCommission(): float
+	public function isOverBudgetCeiling(): bool
 	{
-		$balance = (float) ($this->balanceCampaign ?? 0);
-		$case = $this->approvalCase();
+		return in_array($this->approvalCase(), ['b1_md', 'b2_gm'], true);
+	}
 
-		// brand 2 และ 4 : เกินงบใช้ −D (หักเงิน) ; brand 1/3 : ใช้ +D (ให้ค่าคอมเท่านี้แทน)
-		if (in_array($case, ['b1_md', 'b2_gm'], true) && $this->approval_commission_deduct !== null) {
-			$d = (float) $this->approval_commission_deduct;
-			return in_array((int) $this->brand, [2, 4], true) ? -1 * $d : $d;
+	/**
+	 * คันนี้ใช้ "ยอดที่ผู้จัดการ/GM กรอก" แทนสูตรคอมงบเหลือหรือไม่
+	 * (เคสเกิน over_budget ที่ MD/GM อนุมัติ แล้ว manager กรอกยอด D มาแล้ว)
+	 */
+	public function usesApprovedCommission(): bool
+	{
+		return $this->approval_commission_deduct !== null
+			&& in_array($this->approvalCase(), ['b1_md', 'b2_gm'], true);
+	}
+
+	/**
+	 * "คอมที่ได้ / ยอดหักค่าคอม" — ยอด D ที่ผู้จัดการ/GM กรอกตอนอนุมัติเกินเพดาน
+	 *  · brand 2, 4 (b2_gm) → −D (หักเงิน)
+	 *  · แบรนด์อื่น (b1_md) → +D ("ให้ค่าคอมฝ่ายขายเท่านี้แทน")
+	 * เคสอื่น (ยังไม่กรอก / ไม่ใช่เคสเกินเพดาน) = 0 → ไปคิดจากสูตรใน autoBalanceCommission แทน
+	 */
+	public function approvedCommission(): float
+	{
+		if (!$this->usesApprovedCommission()) {
+			return 0.0;
 		}
+		$d = (float) $this->approval_commission_deduct;
+		return in_array((int) $this->brand, [2, 4], true) ? -1 * $d : $d;
+	}
+
+	/**
+	 * "คอมงบเหลือ" ล้วน ๆ (สูตรอัตโนมัติ) — ไม่รวมยอดที่ผู้จัดการกรอก (ดู approvedCommission)
+	 *  - งบเหลือ (balance ≥ 0): ได้งบเหลือ เพดาน 2500 (brand 2/4 = 0)
+	 *  - เกินงบไม่เกินเพดาน (b1_manager): สูตรอัตโนมัติ balance × 2 × per_budget% (ติดลบ)
+	 *  - เคสที่ใช้ยอดผู้จัดการแล้ว (b1_md / b2_gm) → 0 (ยอดไปอยู่ที่ approvedCommission)
+	 * ต้อง eager load relation 'model' เพื่อความแม่นของเคส
+	 */
+	public function autoBalanceCommission(): float
+	{
+		if ($this->usesApprovedCommission()) {
+			return 0.0;
+		}
+
+		$balance = (float) ($this->balanceCampaign ?? 0);
 
 		if ($balance >= 0) {
 			// brand 2, 4 : งบเหลือไม่คิดเป็นค่าคอมเซลล์ → 0 (จะได้คอมจากส่วนนี้เฉพาะตอนเกินงบ = −D ที่ GM อนุมัติ)
@@ -566,9 +613,17 @@ class Salecar extends Model
 			return min(max(0.0, $full - $absorbed) / 2, 2500);
 		}
 
-		// เกินงบ (balance < 0): brand 2 คูณ per_budget (30%) → เคสเกินงบ ส่งเมล GM แล้วใช้ −D ที่อนุมัติ (บล็อกบนสุด)
-		$perBudget = (float) ($this->model?->per_budget ?? 0);
-		return $balance * 2 * ($perBudget / 100);
+		// เกินงบ (balance < 0): คูณ per_budget (รุ่นย่อย AT ทับเป็น 40% ได้) → เคสเกินงบ ส่งเมล GM แล้วใช้ −D ที่อนุมัติ (approvedCommission)
+		return $balance * 2 * ($this->effectivePerBudget() / 100);
+	}
+
+	/**
+	 * คอมงบเหลือรวม (สูตรอัตโนมัติ + ยอดที่ผู้จัดการอนุมัติ) — ใช้กับรายงาน/ยอดรวมที่ยังนับเป็นก้อนเดียว
+	 * หน้าจอที่ต้องแยกช่อง ให้ใช้ autoBalanceCommission() + approvedCommission()
+	 */
+	public function effectiveBalanceCommission(): float
+	{
+		return $this->autoBalanceCommission() + $this->approvedCommission();
 	}
 
 	/**

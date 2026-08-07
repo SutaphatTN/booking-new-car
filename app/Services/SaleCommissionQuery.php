@@ -26,6 +26,7 @@ class SaleCommissionQuery
             'remainingPayment',
             'turnCar',
             'model', // ใช้คิดเคสอนุมัติ (over_budget/per_budget) ใน effectiveBalanceCommission()
+            'subModel', // per_budget ระดับรุ่นย่อย (เช่น Triton AT = 40%) ใน effectivePerBudget()
         ])
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')

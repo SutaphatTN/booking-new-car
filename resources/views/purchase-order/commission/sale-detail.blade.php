@@ -1,6 +1,12 @@
 @php
   $isBrand13 = in_array((int) $brand, [1, 3], true);
   $isBrand2  = (int) $brand === 2;
+  // brand 2/4 : ยอดที่ผู้จัดการกรอกเป็น "ยอดหัก" (ติดลบ) ; brand อื่น = "คอมที่ได้"
+  $approvedComLabel = in_array((int) $brand, [2, 4], true) ? 'ยอดหักค่าคอม' : 'คอมที่ได้';
+  // audit_lead / audit_dp = ดูอย่างเดียว (ไม่มีปุ่มบันทึก + ทุกช่องเป็น readonly/disabled)
+  $canEdit = $canEdit ?? true;
+  $roInput = $canEdit ? '' : 'readonly';
+  $roCheck = $canEdit ? '' : 'disabled';
   $ssiAmount = $ssi['active'] ? (float) $ssi['amount'] : 0.0;
   // $net = คอมพื้นฐาน(CK เดือน P−1) + SSI + ค่าคอมรถจ่ายจริงเดือน P (คิดมาจาก controller)
 @endphp
@@ -40,6 +46,7 @@
                 <th>ลูกค้า</th>
                 <th>รุ่นรถ</th>
                 <th class="text-end">งบเหลือ</th>
+                <th class="text-end" title="ยอดที่ผู้จัดการ/GM อนุมัติ กรณีเกินงบทะลุเพดาน">{{ $approvedComLabel }}</th>
                 <th class="text-end">ประดับยนต์</th>
                 <th class="text-end">คอมอื่นๆ</th>
                 <th class="text-end">ดอกเบี้ย</th>
@@ -73,13 +80,17 @@
                       </div>
                     @endif
                   </td>
+                  @php $ac = (float) ($c['approvedCom'] ?? 0); @endphp
+                  <td class="text-end {{ $ac == 0 ? 'text-muted' : ($ac < 0 ? 'fw-semibold text-danger' : 'fw-semibold text-success') }}">
+                    {{ number_format($ac, 2) }}
+                  </td>
                   <td class="text-end">{{ number_format($c['accessoryCom'], 2) }}</td>
                   <td class="text-end" style="min-width:120px;">
                     <input type="text" inputmode="decimal"
                       class="form-control form-control-sm text-end car-special-input"
                       data-id="{{ $c['id'] }}"
                       data-rowbase="{{ $c['commissionSale'] - $c['specialCom'] - $c['budgetDeduct'] }}"
-                      value="{{ $c['specialCom'] }}">
+                      value="{{ $c['specialCom'] }}" {{ $roInput }}>
                   </td>
                   <td class="text-end">{{ number_format($c['interestCom'], 2) }}</td>
                   <td class="text-end">{{ number_format($c['turnCarCom'], 2) }}</td>
@@ -88,25 +99,32 @@
                       <input type="text" inputmode="decimal"
                         class="form-control form-control-sm text-end car-budget-input"
                         data-id="{{ $c['id'] }}"
-                        value="{{ $c['budgetDeduct'] ?: '' }}" placeholder="0">
+                        value="{{ $c['budgetDeduct'] ?: '' }}" placeholder="0" {{ $roInput }}>
                     </td>
                   @endif
                   <td class="text-end fw-semibold car-row-total">{{ number_format($c['commissionSale'], 2) }}</td>
                 </tr>
               @empty
                 <tr>
-                  <td colspan="{{ $isBrand2 ? 10 : 9 }}" class="text-center py-4 text-muted">ไม่มีรายการส่งมอบในเดือนนี้</td>
+                  <td colspan="{{ $isBrand2 ? 11 : 10 }}" class="text-center py-4 text-muted">ไม่มีรายการส่งมอบในเดือนนี้</td>
                 </tr>
               @endforelse
             </tbody>
             <tfoot>
               <tr class="table-light fw-bold">
-                <td colspan="{{ $isBrand2 ? 9 : 8 }}" class="text-end">รวมค่าคอมรถทั้งหมด</td>
+                <td colspan="{{ $isBrand2 ? 10 : 9 }}" class="text-end">รวมค่าคอมรถทั้งหมด</td>
                 <td class="text-end" id="carsBaseTotal">{{ number_format($baseCommission, 2) }}</td>
               </tr>
             </tfoot>
           </table>
         </div>
+
+        @unless ($canEdit)
+          <div class="alert alert-secondary d-flex align-items-center gap-2 py-2 px-3 mb-3">
+            <i class="bx bx-lock-alt"></i>
+            <span class="small">โหมดดูอย่างเดียว — แก้ไข/บันทึกค่าคอมได้เฉพาะ admin, ผู้จัดการ, GM และ MD</span>
+          </div>
+        @endunless
 
         {{-- ── ฟอร์มค่าคอมเพิ่มเติม (ต่อเซลล์ ต่อเดือน) ── --}}
         <div class="fw-bold mb-2"><i class="bx bx-edit me-1"></i> ค่าคอมเพิ่มเติม (ประจำเดือน)</div>
@@ -125,12 +143,12 @@
                 <div class="d-flex gap-4 mt-1">
                   <div class="form-check">
                     <input class="form-check-input" type="radio" name="discipline_failed" id="disc_pass"
-                      value="0" {{ !$adjustment->discipline_failed ? 'checked' : '' }}>
+                      value="0" {{ !$adjustment->discipline_failed ? 'checked' : '' }} {{ $roCheck }}>
                     <label class="form-check-label" for="disc_pass">ผ่าน</label>
                   </div>
                   <div class="form-check">
                     <input class="form-check-input" type="radio" name="discipline_failed" id="disc_fail"
-                      value="1" {{ $adjustment->discipline_failed ? 'checked' : '' }}>
+                      value="1" {{ $adjustment->discipline_failed ? 'checked' : '' }} {{ $roCheck }}>
                     <label class="form-check-label text-danger" for="disc_fail">ไม่ผ่าน (หัก 15%)</label>
                   </div>
                 </div>
@@ -140,7 +158,7 @@
                   <i class="bx bx-minus-circle text-danger"></i> ค่าขาด/ลา/มาสาย (หัก)
                 </label>
                 <input type="text" inputmode="decimal" class="form-control text-end cmoney" id="deduct_absence"
-                  name="deduct_absence" value="{{ $adjustment->deduct_absence ?? 0 }}">
+                  name="deduct_absence" value="{{ $adjustment->deduct_absence ?? 0 }}" {{ $roInput }}>
               </div>
             @else
               {{-- brand 2 : ตัวเงินทั้งหมด --}}
@@ -149,28 +167,28 @@
                   <i class="bx bx-medal text-success"></i> ค่าคอมวินัย
                 </label>
                 <input type="text" inputmode="decimal" class="form-control text-end cmoney" id="com_discipline"
-                  name="com_discipline" value="{{ $adjustment->com_discipline ?? 0 }}">
+                  name="com_discipline" value="{{ $adjustment->com_discipline ?? 0 }}" {{ $roInput }}>
               </div>
               <div class="col-md-3 col-6">
                 <label for="deduct_absence" class="mf-label form-label">
                   <i class="bx bx-minus-circle text-danger"></i> ค่าขาด/ลา/มาสาย (หัก)
                 </label>
                 <input type="text" inputmode="decimal" class="form-control text-end cmoney" id="deduct_absence"
-                  name="deduct_absence" value="{{ $adjustment->deduct_absence ?? 0 }}">
+                  name="deduct_absence" value="{{ $adjustment->deduct_absence ?? 0 }}" {{ $roInput }}>
               </div>
               <div class="col-md-3 col-6">
                 <label for="com_lead" class="mf-label form-label">
                   <i class="bx bx-target-lock text-primary"></i> คอม Lead
                 </label>
                 <input type="text" inputmode="decimal" class="form-control text-end cmoney" id="com_lead" name="com_lead"
-                  value="{{ $adjustment->com_lead ?? 0 }}">
+                  value="{{ $adjustment->com_lead ?? 0 }}" {{ $roInput }}>
               </div>
               <div class="col-md-3 col-6">
                 <label for="com_clip" class="mf-label form-label">
                   <i class="bx bx-video text-info"></i> คอม Clip
                 </label>
                 <input type="text" inputmode="decimal" class="form-control text-end cmoney" id="com_clip" name="com_clip"
-                  value="{{ $adjustment->com_clip ?? 0 }}">
+                  value="{{ $adjustment->com_clip ?? 0 }}" {{ $roInput }}>
               </div>
             @endif
           </div>
@@ -223,18 +241,26 @@
 
           {{-- ── คอมตัวรถรายคัน (รายเดือน) — รวมเข้ายอดสุทธิ ── --}}
           @if ($car['active'])
+            @php $carSkipped = (int) $car['count'] - (int) $car['paidCount']; @endphp
             <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3">
               <div class="small">
                 <i class="bx bx-car me-1"></i>
                 <strong>คอมตัวรถรายคัน</strong>
                 @if ($car['mode'] === 'model')
-                  — คิดตามรุ่นรถ (ขาย {{ $car['count'] }} คัน)
+                  — คิดตามรุ่นรถ (ขาย {{ $car['count'] }} คัน — ได้คอม {{ $car['paidCount'] }} คัน)
                 @else
-                  — ขาย <strong>{{ $car['count'] }}</strong> คัน ×
+                  — ขาย <strong>{{ $car['count'] }}</strong> คัน
+                  (ได้คอม <strong>{{ $car['paidCount'] }}</strong> คัน) ×
                   เรต <strong>{{ number_format($car['rate'], 0) }}</strong>/คัน
                   <span class="badge {{ $car['achieved'] ? 'bg-success' : 'bg-secondary' }}">
                     {{ $car['achieved'] ? 'บรรลุเป้า 120%' : 'ไม่บรรลุเป้า' }}
                   </span>
+                @endif
+                @if ($carSkipped > 0)
+                  <div class="mt-1 text-danger">
+                    <i class="bx bx-error-circle"></i>
+                    เกินงบทะลุเพดาน <strong>{{ $carSkipped }}</strong> คัน — ไม่ได้คอมตัวรถ (แต่ยังนับจำนวนคัน)
+                  </div>
                 @endif
               </div>
               <div class="fw-bold text-info">= {{ number_format($car['amount'], 2) }} ฿</div>
@@ -288,9 +314,11 @@
               <button type="button" class="btn btn-danger px-4" data-bs-dismiss="modal">
                 <i class="bx bx-x me-1"></i>ปิด
               </button>
-              <button type="submit" class="btn btn-success px-4" id="btnSaveCommissionMonthly">
-                <i class="bx bx-save me-1"></i>บันทึก
-              </button>
+              @if ($canEdit)
+                <button type="submit" class="btn btn-success px-4" id="btnSaveCommissionMonthly">
+                  <i class="bx bx-save me-1"></i>บันทึก
+                </button>
+              @endif
             </div>
           </div>
         </form>

@@ -1012,8 +1012,10 @@ $(document).on('change', '#model_id', function () {
       if (data.length > 0) {
         data.forEach(function (sub) {
           let text = sub.detail ? `${sub.detail} - ${sub.name}` : sub.name;
+          // per_budget ระดับรุ่นย่อย (เช่น Triton AT = 40) — ว่าง = ใช้ของรุ่นหลัก
+          const perBudgetAttr = sub.per_budget == null ? '' : sub.per_budget;
 
-          $subModelSelect.append(`<option value="${sub.id}">${text}</option>`);
+          $subModelSelect.append(`<option value="${sub.id}" data-perbudget="${perBudgetAttr}">${text}</option>`);
         });
       } else {
         $subModelSelect.empty().append('<option value="">-- ไม่มีรุ่นย่อย --</option>');
@@ -3008,7 +3010,9 @@ function calculateCommissionSale() {
   const budgetDeduct = safeNumber('#budget_deduct'); // budget หัก (brand 2) — งบเดือนก่อนมากลบคันติดลบ
 
   const selectedModel = $('#model_id option:selected');
-  const perBudget = parseFloat(selectedModel.data('perbudget')) || 0;
+  // % หักคอมเกินงบ : รุ่นย่อยทับรุ่นหลักได้ (เช่น Triton AT = 40% แทน 30%) — ว่าง = ใช้ของรุ่นหลัก
+  const subPerBudget = parseFloat($('#subModel_id option:selected').attr('data-perbudget'));
+  const perBudget = !isNaN(subPerBudget) ? subPerBudget : (parseFloat(selectedModel.data('perbudget')) || 0);
   const overBudget = parseFloat(selectedModel.data('overbudget')) || 0;
   const saleBrand = parseInt($('#saleBrand').val()) || 0;
 
@@ -3023,6 +3027,10 @@ function calculateCommissionSale() {
   // brand 2 และ 4 : คอมงบเหลือคิดแบบเดียวกัน (งบเหลือ→0, เกินงบ→−D)
   const isB2Style = saleBrand === 2 || saleBrand === 4;
 
+  // "คอมที่ได้ / ยอดหักค่าคอม" — ยอดที่ผู้จัดการอนุมัติ แยกช่องออกจากคอมงบเหลือ (0 = ไม่ใช่เคสนี้)
+  let approvedCom = 0;
+  let usesApproved = false;
+
   if (balanceCam >= 0) {
     // brand 2/4 : งบเหลือไม่คิดเป็นค่าคอมเซลล์ → 0 (เกินงบถึงจะคิด: −D ที่ GM อนุมัติ ในบล็อก else)
     if (isB2Style) {
@@ -3036,13 +3044,16 @@ function calculateCommissionSale() {
     // เกินเพดาน: เทียบ "ยอดเต็ม" (×2) กับ over_budget (brand 2/4 = เกินเสมอ) ; ถ้าเกิน+manager กรอกยอด → brand2/4 −D, อื่น +D
     const isOverCeiling = isB2Style || Math.abs(balanceCam) * 2 > overBudget;
     if (isOverCeiling && managerDeduct !== null && !isNaN(managerDeduct)) {
-      balanceCam = isB2Style ? -managerDeduct : managerDeduct;
+      // ใช้ยอดผู้จัดการแทนสูตร → คอมงบเหลือเป็น 0 แล้วไปโชว์ที่ช่อง "คอมที่ได้"
+      usesApproved = true;
+      approvedCom = isB2Style ? -managerDeduct : managerDeduct;
+      balanceCam = 0;
     } else {
       balanceCam = balanceCam * 2 * (perBudget / 100);
     }
   }
 
-  const totalCommission = balanceCam + giftCom + extraCom + fiCom + turnCom + comSpecial + budgetDeduct;
+  const totalCommission = balanceCam + approvedCom + giftCom + extraCom + fiCom + turnCom + comSpecial + budgetDeduct;
 
   // budget หัก (brand 2): โชว์ budget คงเหลือหลังหักคันนี้สด
   const $budgetEl = $('#budget_deduct');
@@ -3066,6 +3077,16 @@ function calculateCommissionSale() {
   $('#TotalbalanceCampaign').val(
     balanceCam.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   );
+
+  // ช่อง "คอมที่ได้ / ยอดหักค่าคอม" — โชว์เฉพาะเคสเกินเพดานที่ผู้จัดการกรอกยอดมาแล้ว
+  const approvedCell = document.getElementById('approvedComCell');
+  if (approvedCell) {
+    approvedCell.classList.toggle('com-cell-hidden', !usesApproved);
+    const approvedInput = document.getElementById('ApprovedCommissionDisplay');
+    if (approvedInput) {
+      approvedInput.value = approvedCom.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+  }
 
   // แสดง/ซ่อนข้อความ "หักเก็บงบเพิ่มเติม"
   const extraNote = document.getElementById('extraDeductNote');
@@ -3144,7 +3165,7 @@ $(document).on('input', '#budget_deduct', function () {
 
 $(document).on(
   'input change',
-  '#remaining_total_com, #com_turn, #CommissionSpecial, #model_id, #budget_deduct',
+  '#remaining_total_com, #com_turn, #CommissionSpecial, #model_id, #subModel_id, #budget_deduct',
   calculateCommissionSale
 );
 

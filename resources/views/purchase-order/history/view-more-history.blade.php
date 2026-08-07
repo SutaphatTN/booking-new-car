@@ -399,12 +399,13 @@
               $downPay     = $saleCar->DownPaymentDiscount;
               $disC        = $saleCar->discount;
               $totalUseFi  = $downPay + $gift + $refA + $vatGift + $disC;
-              $totalBalanceFi  = $totalCamMark - $totalUseFi;
-              $totalBalanceFi2 = $totalBalanceFi * 2;
+              // $totalBalanceFi2 = คงเหลือเต็มจำนวน ; $totalBalanceFi = แบ่ง 2 ส่วน (หาร 2 ตรงกับ balanceCampaign)
+              $totalBalanceFi2 = $totalCamMark - $totalUseFi;
+              $totalBalanceFi  = $totalBalanceFi2 / 2;
               $discount        = $saleCar->PaymentDiscount;
               $totalUseCash    = $discount + $gift + $refA;
-              $totalBalanceCash  = $totalCam - $totalUseCash;
-              $totalBalanceCash2 = $totalBalanceCash * 2;
+              $totalBalanceCash2 = $totalCam - $totalUseCash;
+              $totalBalanceCash  = $totalBalanceCash2 / 2;
             @endphp
             <div class="mf-section mb-0">
               <div class="mf-section-hd">

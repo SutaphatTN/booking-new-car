@@ -103,8 +103,8 @@
         @continue
       @endif
 
-      {{-- เมนู "ค่าคอมมิชชั่น" เห็นเฉพาะ role admin, manager, gm, md, audit_dp --}}
-      @if ($submenu->slug == 'purchase-order.viewCommission' && !in_array($userRole, ['admin', 'manager', 'gm', 'md', 'audit_dp']))
+      {{-- เมนู "ค่าคอมมิชชั่น" เห็นเฉพาะ role admin, manager, gm, md, audit_dp, audit_lead --}}
+      @if ($submenu->slug == 'purchase-order.viewCommission' && !in_array($userRole, ['admin', 'manager', 'gm', 'md', 'audit_dp', 'audit_lead']))
         @continue
       @endif
 

@@ -102,12 +102,13 @@ class HeldCommissionQuery
         $perSale = CarCommissionQuery::forMonth($year, $month)['perSale'];
 
         return Salecar::withoutGlobalScopes()
+            ->with('model')   // ใช้เช็คเคส "เกินงบทะลุเพดาน" (คันนั้นไม่ได้คอมตัวรถ → ไม่มีคอมกั๊ก)
             ->where('brand', self::BRAND)
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
             ->salesQualifying()
             ->whereBetween('DeliveryInCKDate', [$from, $to])
-            ->get(['id', 'SaleID', 'DeliveryInCKDate', 'DeliveryDate', 'model_id', 'brand'])
+            ->get(['id', 'SaleID', 'DeliveryInCKDate', 'DeliveryDate', 'model_id', 'brand', 'balanceCampaign'])
             ->map(function ($r) use ($perSale) {
                 $saleId = (int) $r->SaleID;
                 // entry ของ (SaleID + brand ของรถคันนี้) — เซลล์ที่ขายหลาย brand จะไม่ปนกัน
@@ -149,6 +150,7 @@ class HeldCommissionQuery
         $ddFrom = $mStart->copy()->subMonthNoOverflow()->startOfMonth();
 
         $cars = Salecar::withoutGlobalScopes()
+            ->with('model')   // ใช้เช็คเคส "เกินงบทะลุเพดาน" (คันนั้นไม่ได้คอมตัวรถ → ไม่มีคอมกั๊ก)
             ->where('brand', self::BRAND)
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
@@ -157,7 +159,7 @@ class HeldCommissionQuery
                 $q->whereBetween('DeliveryInCKDate', [$ckFrom, $mEnd])
                     ->orWhereBetween('DeliveryDate', [$ddFrom, $mEnd]);
             })
-            ->get(['id', 'SaleID', 'DeliveryInCKDate', 'DeliveryDate', 'model_id', 'brand']);
+            ->get(['id', 'SaleID', 'DeliveryInCKDate', 'DeliveryDate', 'model_id', 'brand', 'balanceCampaign']);
 
         $ckCache = [];
         $payments = collect();
@@ -197,10 +199,13 @@ class HeldCommissionQuery
         return $payments;
     }
 
-    /** ค่าคอมรายคัน C ของรถคันหนึ่ง จาก perSale ของเดือน CK ของมัน */
+    /**
+     * ค่าคอมรายคัน C ของรถคันหนึ่ง จาก perSale ของเดือน CK ของมัน
+     * เกินงบทะลุเพดาน (MD/GM อนุมัติ) → ไม่ได้คอมตัวรถ → C = 0 (ไม่มีคอมกั๊กด้วย)
+     */
     private static function carCommissionOf($r, ?array $entry): float
     {
-        if (!$entry) {
+        if (!$entry || $r->isOverBudgetCeiling()) {
             return 0.0;
         }
         return ($entry['mode'] ?? 'volume') === 'model'
@@ -224,6 +229,7 @@ class HeldCommissionQuery
         $ckEnd  = Carbon::create($year, $month, 1)->startOfMonth(); // CK ต้องก่อนเดือน M
 
         $cars = Salecar::withoutGlobalScopes()
+            ->with('model')   // ใช้เช็คเคส "เกินงบทะลุเพดาน" (คันนั้นไม่ได้คอมตัวรถ → ไม่มีคอมกั๊ก)
             ->where('brand', self::BRAND)
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
@@ -231,7 +237,7 @@ class HeldCommissionQuery
             ->salesQualifying()
             ->where('DeliveryInCKDate', '<', $ckEnd)
             ->whereBetween('DeliveryDate', [$ddFrom, $ddTo])
-            ->get(['id', 'SaleID', 'DeliveryInCKDate', 'DeliveryDate', 'model_id', 'brand']);
+            ->get(['id', 'SaleID', 'DeliveryInCKDate', 'DeliveryDate', 'model_id', 'brand', 'balanceCampaign']);
 
         $ckCache = [];
         return $cars->map(function ($r) use (&$ckCache, $pay20) {

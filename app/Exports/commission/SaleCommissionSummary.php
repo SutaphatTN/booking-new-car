@@ -70,6 +70,8 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
             ['label' => 'ยอดแบ่งงบเหลือ',   'key' => 'balanceCampaign', 'role' => 'recv', 'money' => true],
             // info เท่านั้น — ยอดนี้ถูกหักออกจาก "ยอดแบ่งงบเหลือ" ไปแล้ว (โชว์ให้รู้ว่าโดนหักอะไร ไม่หักซ้ำ)
             ['label' => 'หักเก็บงบเพิ่มเติม', 'key' => 'extraDeduct', 'role' => 'info', 'money' => true, 'num' => true],
+            // เคสเกินงบทะลุเพดาน : ใช้ยอดที่ผู้จัดการ/GM กรอกแทนสูตร → "ยอดแบ่งงบเหลือ" เป็น 0 แล้วมาโชว์ช่องนี้
+            ['label' => $this->approvedComLabel(), 'key' => 'approvedCom', 'role' => 'recv', 'money' => true],
             ['label' => 'คอมประดับยนต์',    'key' => 'accessoryCom',    'role' => 'recv', 'money' => true],
             ['label' => 'คอมอื่นๆ',         'key' => 'specialCom',      'role' => 'recv', 'money' => true],
             ['label' => 'คอมดอกเบี้ย',      'key' => 'interestCom',     'role' => 'recv', 'money' => true],
@@ -167,8 +169,9 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
                 'testDrive' => $rows->where('carOrder.purchase_type', 1)->count(),
 
                 'carCommission'   => (float) (CarCommissionQuery::entry($carCom, (int) $saleId, $brand)['amount'] ?? 0),
-                'balanceCampaign' => $rows->sum(fn($r) => $r->effectiveBalanceCommission()),
+                'balanceCampaign' => $rows->sum(fn($r) => $r->autoBalanceCommission()),   // สูตรอัตโนมัติล้วน ๆ
                 'extraDeduct'     => $rows->sum(fn($r) => ExtraBudgetLedger::absorbedFor($r)) ?: null,
+                'approvedCom'     => $rows->sum(fn($r) => $r->approvedCommission()),      // ยอดผู้จัดการ/GM (เกินเพดาน)
                 'accessoryCom'    => $rows->sum(fn($r) => $r->effectiveAccessoryCommission()),
                 'specialCom'      => $rows->sum(fn($r) => $r->effectiveSpecialCommission()),
                 'interestCom'     => $rows->sum(fn($r) => $r->remainingPayment->total_com ?? 0),

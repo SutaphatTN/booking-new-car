@@ -440,38 +440,53 @@ class CustomerTrackingController extends Controller
 
     public function checkDuplicate(Request $request)
     {
-        $exists = self::activeTrackingQuery($request->customer_id, Auth::user()->brand)->exists();
+        $authUser = Auth::user();
+        $exists   = self::activeTrackingQuery($request->customer_id, $authUser->brand, $authUser->branch)->exists();
 
         return response()->json(['exists' => $exists]);
     }
 
     /**
-     * ด่านกันติดตามซ้ำ — ต้องเห็นเท่ากันทุก role ทุกสาขา
+     * ด่านกันติดตามซ้ำ (มติ GM 2026-08-07)
      *
-     * userAccess scope กรองตาม zone/branch ต่างกันในแต่ละ role (sale เข้มสุด, admin หลวมสุด)
-     * ถ้าปล่อยให้ติดมาด้วย ความเข้มของด่านจะขึ้นกับว่าใครเป็นคนกดปุ่ม และเซลจะมองไม่เห็น
-     * การติดตามของสาขาอื่นแล้วเพิ่มซ้ำได้ — ถอดทิ้งแล้วล็อกที่ brand อย่างเดียว
-     * (เท่ากับที่ฝั่งเช็คใบจองใช้อยู่) คนละ brand ถือเป็นคนละกอง ไม่ต้องเตือนข้ามกัน
+     * ขอบเขตขึ้นกับ brand — ดู config/brand.php > tracking_split_by_branch
+     *  - brand ที่แยกสาขา (GWM)  : กันซ้ำเฉพาะในสาขาเดียวกัน ข้ามสาขาตามคนเดียวกันได้
+     *                              เพราะแต่ละสาขาจัดโปรไม่เหมือนกัน
+     *  - brand ที่ไม่แยก (1/3/4) : กันซ้ำทั้ง brand เพราะอยู่ในชื่อบริษัทเดียวกัน
+     *  - admin                    : เห็นภาพรวมทั้ง brand เสมอ ไม่ติดเงื่อนไขสาขา
+     *
+     * เขียนเงื่อนไขเองแทนการปล่อยให้ userAccess scope ทำ เพราะ scope นั้นมีไว้คุมสิทธิ์การ
+     * มองเห็นข้อมูล ไม่ใช่กติกาธุรกิจ ถ้าวันหลังมีคนไปแก้ scope ด้วยเหตุผลอื่น ด่านนี้จะเปลี่ยน
+     * ตามไปเงียบๆ (ผลลัพธ์ตอนนี้เท่ากับของเดิมทุก role — user ทุกคนอยู่ zone เดียวกันหมด)
      */
-    private static function activeTrackingQuery($customerId, $brand)
+    private static function activeTrackingQuery($customerId, $brand, $branch)
     {
-        return CustomerTracking::withoutGlobalScope('userAccess')
+        $query = CustomerTracking::withoutGlobalScope('userAccess')
             ->where('customer_id', $customerId)
             ->where('brand', $brand)
             ->whereNull('cancelled_at');
+
+        $splitByBranch = in_array((int) $brand, config('brand.tracking_split_by_branch', []), true);
+
+        if ($splitByBranch && Auth::user()?->role !== 'admin') {
+            $query->where('branch', $branch);
+        }
+
+        return $query;
     }
 
     public function checkPhone(Request $request)
     {
-        $brand    = Auth::user()->brand;
+        $authUser = Auth::user();
+        $brand    = $authUser->brand;
         $field    = $request->field ?? 'phone';
 
         if ($field === 'line_id') {
             $column = 'LineID';
-            $value  = trim((string) $request->value);
+            $value  = Customer::normalizeContactValue($request->value) ?? '';
         } elseif ($field === 'facebook') {
             $column = 'FacebookName';
-            $value  = trim((string) $request->value);
+            $value  = Customer::normalizeContactValue($request->value) ?? '';
         } else {
             $column = 'Mobilephone1';
             $value  = preg_replace('/\D/', '', (string) $request->phone);
@@ -479,6 +494,7 @@ class CustomerTrackingController extends Controller
 
         // ค่าค้นหาว่างห้ามยิง query — where(col, '') จะไปแมตช์แถวที่เก็บค่าว่างไว้
         // แล้วเด้งชื่อลูกค้าคนเดิมกลับมาทุกครั้งไม่ว่ากรอกอะไรมา
+        // (normalizeContactValue ตัด '-' / '.' ทิ้งด้วย — ไม่งั้นมันกลายเป็นค่าที่ชนกันได้)
         // orderBy('id') กันผลแกว่งเวลาค่าซ้ำ (LineID/FacebookName ไม่มี unique index)
         $customer = $value === ''
             ? null
@@ -495,7 +511,7 @@ class CustomerTrackingController extends Controller
             ->whereNotIn('con_status', [5, 7, 8, 9])
             ->exists();
 
-        $tracking = self::activeTrackingQuery($customer->id, $brand)
+        $tracking = self::activeTrackingQuery($customer->id, $brand, $authUser->branch)
             ->with('sale:id,name')
             ->orderByDesc('id')
             ->first();
@@ -584,7 +600,7 @@ class CustomerTrackingController extends Controller
                 ], 422);
             }
 
-            $alreadyTracked = self::activeTrackingQuery($request->customer_id, $authUser->brand)->exists();
+            $alreadyTracked = self::activeTrackingQuery($request->customer_id, $authUser->brand, $authUser->branch)->exists();
 
             if ($alreadyTracked) {
                 return response()->json([
@@ -989,8 +1005,10 @@ class CustomerTrackingController extends Controller
         // เก็บค่าว่างเป็น null ไม่ใช่ '' — ไม่งั้นค่าว่างจะกองรวมกันในคอลัมน์แล้วชนกันเอง
         // ตอนเช็คซ้ำรอบหน้า (เคสเดียวกับที่ทำให้เด้งชื่อลูกค้าคนเดิมตลอด)
         $mobile   = $mobile ?: null;
-        $lineId   = trim((string) $request->LineID) ?: null;
-        $facebook = trim((string) $request->FacebookName) ?: null;
+        // '-' / '.' ที่เซลใส่แทนช่องว่าง ต้องเก็บเป็น null ไม่งั้นมันจะไป "จอง" ค่านั้น
+        // แล้วบล็อกลูกค้าคนถัดไปที่พิมพ์เหมือนกัน
+        $lineId   = Customer::normalizeContactValue($request->LineID);
+        $facebook = Customer::normalizeContactValue($request->FacebookName);
 
         if ($idNumber) {
             $idExists = Customer::where('IDNumber', $idNumber)->exists();
