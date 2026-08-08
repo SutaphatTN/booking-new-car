@@ -696,22 +696,62 @@ $(document).on('input', '#edit_pl_dnp', function () {
   calcPricelistWs('#edit_pl_dnp', '#edit_pl_ws');
 });
 
-//input : save pricelist-car
-$(document).on('click', '.btnStorePricelistCar', function (e) {
-  e.preventDefault();
+// escape ข้อความจากเซิร์ฟเวอร์ก่อนยัดลง Swal (ใช้ html เพื่อทำตารางเทียบค่า)
+function escapeHtml(text) {
+  return $('<div>').text(text == null ? '' : text).html();
+}
 
-  const $btn = $(this);
-  const form = $btn.closest('form')[0];
-  if (!form.checkValidity()) {
-    form.reportValidity();
-    return;
+// ถามยืนยันเมื่อข้อมูลราคารถซ้ำ — โชว์ค่าเดิมเทียบค่าใหม่ ให้เลือกว่าจะทับของเดิมไหม
+function confirmOverwritePricelistCar(res, onConfirm, onCancel) {
+  const info = res.info || {};
+  const rows = (res.compare || [])
+    .map(
+      r => `<tr${r.changed ? ' style="background:#fff8e1"' : ''}>
+              <td class="text-start">${escapeHtml(r.label)}</td>
+              <td class="text-end text-muted">${escapeHtml(r.old)}</td>
+              <td class="text-end fw-bold${r.changed ? ' text-danger' : ''}">${escapeHtml(r.new)}</td>
+            </tr>`
+    )
+    .join('');
+
+  Swal.fire({
+    icon: 'warning',
+    title: 'ข้อมูลนี้มีอยู่แล้ว',
+    html: `
+      <div class="text-start mb-2">
+        <div>รุ่นหลัก : <b>${escapeHtml(info.model)}</b></div>
+        <div>รุ่นย่อย : <b>${escapeHtml(info.subModel)}</b></div>
+        <div>ปี : <b>${escapeHtml(info.year)}</b>${info.color ? ` &nbsp; ประเภทสี : <b>${escapeHtml(info.color)}</b>` : ''}</div>
+      </div>
+      <table class="table table-sm table-bordered mb-2">
+        <thead><tr><th class="text-start">รายการ</th><th class="text-end">ค่าเดิม</th><th class="text-end">ค่าใหม่</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="text-start small text-muted">กด "ทับข้อมูลเดิม" เพื่อแก้ไขรายการเดิมด้วยค่าใหม่ (ไม่สร้างรายการซ้ำ)</div>
+    `,
+    width: 600,
+    showCancelButton: true,
+    confirmButtonText: 'ทับข้อมูลเดิม',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33'
+  }).then(result => {
+    if (result.isConfirmed) {
+      onConfirm();
+    } else {
+      onCancel();
+    }
+  });
+}
+
+function submitPricelistCar($btn, form, confirmOverwrite) {
+  const formData = new FormData(form);
+  if (confirmOverwrite) {
+    formData.append('confirm_overwrite', 1);
   }
 
-  const url = $(form).attr('action');
-  const formData = new FormData(form);
-
   $.ajax({
-    url: url,
+    url: $(form).attr('action'),
     type: 'POST',
     data: formData,
     contentType: false,
@@ -739,6 +779,16 @@ $(document).on('click', '.btnStorePricelistCar', function (e) {
       pricelistCarTable.ajax.reload(null, false);
     },
     error: function (xhr) {
+      // ซ้ำกับข้อมูลเดิม — ถามก่อนว่าจะทับไหม ถ้ายกเลิกให้กลับไปที่ฟอร์มเดิม (ค่าที่กรอกไว้ยังอยู่)
+      if (xhr.status === 409 && xhr.responseJSON && xhr.responseJSON.duplicate) {
+        confirmOverwritePricelistCar(
+          xhr.responseJSON,
+          () => submitPricelistCar($btn, form, true),
+          () => $('.inputPricelistCar').modal('show')
+        );
+        return;
+      }
+
       let errMsg = 'ไม่สามารถบันทึกข้อมูลได้';
       if (xhr.responseJSON && xhr.responseJSON.message) {
         errMsg = xhr.responseJSON.message;
@@ -753,6 +803,20 @@ $(document).on('click', '.btnStorePricelistCar', function (e) {
       $btn.prop('disabled', false);
     }
   });
+}
+
+//input : save pricelist-car
+$(document).on('click', '.btnStorePricelistCar', function (e) {
+  e.preventDefault();
+
+  const $btn = $(this);
+  const form = $btn.closest('form')[0];
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+
+  submitPricelistCar($btn, form, false);
 });
 
 // blur focus editPricelistCar
