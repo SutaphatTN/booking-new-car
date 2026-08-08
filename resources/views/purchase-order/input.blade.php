@@ -93,6 +93,8 @@
               </div>
             </div>
 
+            {{-- มาจากหน้าการติดตามใบไหน — ใช้ผูก tracking_id ให้ตรงใบ (ลูกค้าคนเดียวมีการติดตามเปิดอยู่ได้หลายใบ) --}}
+            <input type="hidden" id="fromTracking" name="from_tracking" value="{{ $prefill['tracking_id'] ?? '' }}">
             <input type="hidden" id="CusID" name="CusID" value="{{ $prefill['customer_id'] ?? '' }}">
             <input id="customerName" type="hidden">
             <input id="customerID" type="hidden">
