@@ -152,6 +152,7 @@ class PurchaseOrderController extends Controller
             if ($tracking && $tracking->customer) {
                 $c = $tracking->customer;
                 $prefill = [
+                    'tracking_id'        => $tracking->id,
                     'customer_id'        => $c->id,
                     'customer_name'      => trim(($c->prefix->Name_TH ?? '') . ' ' . $c->FirstName . ' ' . $c->LastName),
                     'customer_id_number' => $c->formatted_id_number ?? $c->IDNumber,
@@ -1126,10 +1127,17 @@ class PurchaseOrderController extends Controller
                 $turnCarID = $turnCar->id;
             }
 
-            $trackingId = CustomerTracking::where('customer_id', $request->CusID)
+            // ผูกกับใบติดตามที่ผู้ใช้กดเข้ามาจริง (from_tracking) — ลูกค้าคนเดียวเปิดการติดตามค้างไว้ได้หลายใบ
+            // ถ้าไม่ได้มาจากหน้าติดตาม หรือใบที่ส่งมาไม่ใช่ของลูกค้ารายนี้ ค่อยหาใบล่าสุดที่ยังเปิดอยู่แทน
+            $trackingQuery = fn() => CustomerTracking::where('customer_id', $request->CusID)
                 ->where('brand', Auth::user()->brand)
-                ->whereNull('cancelled_at')
-                ->value('id');
+                ->whereNull('cancelled_at');
+
+            $trackingId = $request->filled('from_tracking')
+                ? $trackingQuery()->whereKey($request->from_tracking)->value('id')
+                : null;
+
+            $trackingId ??= $trackingQuery()->orderByDesc('created_at')->value('id');
 
             // สร้างจากโมดูล "ขออนุมัติเกินงบล่วงหน้า" → ยังไม่เป็นการจอง (global scope ซ่อนไว้)
             $isPreApproval = $request->boolean('is_pre_approval');
@@ -1167,7 +1175,8 @@ class PurchaseOrderController extends Controller
             ]);
 
             // เก็บว่าใครกดสร้างการจองจาก tracking นี้
-            if ($trackingId) {
+            // คำขออนุมัติล่วงหน้ายังไม่ถือว่าจอง → ยังไม่ประทับ ไปประทับตอน PreApprovalController::convert()
+            if ($trackingId && !$isPreApproval) {
                 CustomerTracking::whereKey($trackingId)->update([
                     'BookedBy'  => Auth::id(),
                     'booked_at' => now(),

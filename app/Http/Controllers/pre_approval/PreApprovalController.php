@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\pre_approval;
 
 use App\Http\Controllers\Controller;
+use App\Models\CustomerTracking;
 use App\Models\Salecar;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -139,6 +140,14 @@ class PreApprovalController extends Controller
             'con_status'             => 1,
             'BookingDate'            => now()->toDateString(), // วันที่กดสร้างการจอง (แก้ได้ในหน้าจอง)
         ]);
+
+        // ถึงตรงนี้ถึงจะนับว่า "จองจริง" — ประทับผู้กดลงใบติดตาม (ตอนสร้างคำขอยังไม่ประทับ)
+        if ($saleCar->tracking_id) {
+            CustomerTracking::whereKey($saleCar->tracking_id)->update([
+                'BookedBy'  => Auth::id(),
+                'booked_at' => now(),
+            ]);
+        }
 
         return response()->json(['success' => true, 'message' => 'สร้างการจองเรียบร้อยแล้ว']);
     }

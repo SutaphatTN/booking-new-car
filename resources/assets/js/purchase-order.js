@@ -826,6 +826,11 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
     $(idInput).val(data.idnumber);
     $(hiddenId).val(data.id);
 
+    // เปลี่ยนตัวลูกค้าเองจากช่องค้นหา → ใบติดตามที่พามาไม่ใช่ของคนนี้แล้ว ต้องล้างทิ้ง
+    if (hiddenId === '#CusID') {
+      $('#fromTracking').val('');
+    }
+
     // Update display divs
     const setDisplay = (id, val) => {
       const el = document.getElementById(id);
@@ -896,13 +901,16 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
           return;
         }
 
-        // ยังอยู่ในลิสต์ติดตาม → ให้ไปจองผ่านหน้าการติดตาม
+        // ยังอยู่ในลิสต์ติดตาม → ให้ไปเริ่มรายการจากหน้าการติดตาม (หน้านั้นมีทั้งปุ่มจองและปุ่มขออนุมัติเกินงบ)
         if (res.status === 'open_tracking') {
+          const isPreApproval = $('#isPreApproval').val() === '1';
           $modal.modal('hide');
           Swal.fire({
             icon: 'warning',
             title: 'มีรายการในหน้าการติดตาม',
-            html: 'ลูกค้ารายนี้มีรายการอยู่ในหน้าการติดตาม<br>กรุณาทำรายการจองผ่านหน้าการติดตาม',
+            html: isPreApproval
+              ? 'ลูกค้ารายนี้มีรายการอยู่ในหน้าการติดตาม<br>กรุณากดปุ่ม <b>“ขออนุมัติล่วงหน้า”</b> ในหน้าการติดตาม'
+              : 'ลูกค้ารายนี้มีรายการอยู่ในหน้าการติดตาม<br>กรุณาทำรายการจองผ่านหน้าการติดตาม',
             showCancelButton: true,
             confirmButtonColor: '#6c5ffc',
             confirmButtonText: 'ไปที่การติดตาม',

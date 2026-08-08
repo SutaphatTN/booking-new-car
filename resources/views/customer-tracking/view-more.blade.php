@@ -34,8 +34,12 @@
       <a href="{{ route('customer-tracking.index') }}" class="btn btn-outline-danger">
         <i class="bx bx-arrow-back me-1"></i> ย้อนกลับ
       </a>
-      <a href="{{ route('purchase-order.create', ['from_tracking' => $tracking->id]) }}"
-        class="btn btn-secondary ms-auto">
+      {{-- เกินงบทะลุเพดาน → ขออนุมัติก่อน (ยังไม่เป็นการจอง) แล้วค่อยกด "สร้างการจอง" ที่หน้าคำขออนุมัติ --}}
+      <a href="{{ route('purchase-order.create', ['from_tracking' => $tracking->id, 'pre_approval' => 1]) }}"
+        class="btn btn-outline-primary ms-auto">
+        <i class="bx bx-file-find me-1"></i> ขออนุมัติล่วงหน้า
+      </a>
+      <a href="{{ route('purchase-order.create', ['from_tracking' => $tracking->id]) }}" class="btn btn-secondary">
         <i class="bx bx-file me-1"></i> สร้างการจอง
       </a>
     </div>
