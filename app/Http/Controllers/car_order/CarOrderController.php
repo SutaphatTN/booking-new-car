@@ -886,7 +886,8 @@ class CarOrderController extends Controller
             $query->where('color', $request->color);
         }
 
-        $row = $query->first();
+        // เผื่อมีข้อมูลซ้ำหลงเหลืออยู่ ให้ยึดแถวที่เพิ่มล่าสุดเสมอ (เดิม first() จะได้แถวเก่าสุด)
+        $row = $query->orderByDesc('id')->first();
 
         if (!$row) {
             return response()->json(null);

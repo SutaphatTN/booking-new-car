@@ -88,7 +88,7 @@ class PricelistCarController extends Controller
             $data = [
                 'model_id'    => $request->model_id,
                 'subModel_id' => $request->subModel_id,
-                'year'        => $request->year,
+                'year'        => $this->clean($request->year),
                 'dnp'         => $dnp,
                 'msrp'        => $request->filled('msrp') ? str_replace(',', '', $request->msrp) : null,
                 'brand'       => $brand,
@@ -98,12 +98,29 @@ class PricelistCarController extends Controller
             ];
 
             if ($brand == 1) {
-                $data['option'] = $request->option;
-                $data['color']  = $request->color;
+                $data['option'] = $this->clean($request->option);
+                $data['color']  = $this->clean($request->color);
                 $data['dm']     = $request->filled('dm') ? str_replace(',', '', $request->dm) : null;
                 $data['ri']     = $request->filled('ri') ? str_replace(',', '', $request->ri) : null;
                 // WS: ใช้ค่าที่กรอก (JS คำนวณเติมให้อัตโนมัติ แต่แก้ไขได้) ถ้าเว้นว่างค่อยคำนวณจากราคาทุน (DNP)
                 $data['ws']     = $request->filled('ws') ? (float) str_replace(',', '', $request->ws) : $this->calcWs($dnp);
+            }
+
+            // กันข้อมูลซ้ำ : รุ่นย่อย + ปี + ประเภทสี (ในแบรนด์เดียวกัน) ต้องมีได้แถวเดียว
+            // ถ้าซ้ำจะยังไม่บันทึก แต่ส่งค่าเดิม-ค่าใหม่กลับไปให้ผู้ใช้ยืนยันว่าจะทับของเดิมหรือไม่
+            $duplicate = $this->findDuplicate($data);
+
+            if ($duplicate) {
+                if (!$request->boolean('confirm_overwrite')) {
+                    return response()->json($this->duplicatePayload($duplicate, $data, $brand), 409);
+                }
+
+                $duplicate->update($data);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'ทับข้อมูลเดิมเรียบร้อยแล้ว',
+                ]);
             }
 
             TbPricelistCar::create($data);
@@ -144,18 +161,26 @@ class PricelistCarController extends Controller
             $data = [
                 'model_id'    => $request->model_id,
                 'subModel_id' => $request->subModel_id,
-                'year'        => $request->year,
+                'year'        => $this->clean($request->year),
                 'dnp'         => $dnp,
                 'msrp'        => $request->filled('msrp') ? str_replace(',', '', $request->msrp) : null,
             ];
 
             if ($brand == 1) {
-                $data['option'] = $request->option;
-                $data['color']  = $request->color;
+                $data['option'] = $this->clean($request->option);
+                $data['color']  = $this->clean($request->color);
                 $data['dm']     = $request->filled('dm') ? str_replace(',', '', $request->dm) : null;
                 $data['ri']     = $request->filled('ri') ? str_replace(',', '', $request->ri) : null;
                 // WS: ใช้ค่าที่กรอก (JS คำนวณเติมให้อัตโนมัติ แต่แก้ไขได้) ถ้าเว้นว่างค่อยคำนวณจากราคาทุน (DNP)
                 $data['ws']     = $request->filled('ws') ? (float) str_replace(',', '', $request->ws) : $this->calcWs($dnp);
+            }
+
+            // แก้ไขแล้วไปชนกับแถวอื่นที่มีอยู่ — ไม่ให้บันทึก (ทับให้ไม่ได้ เพราะจะเหลือข้อมูลกำพร้าอีกแถว)
+            if ($this->findDuplicate($data, $price->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'มีข้อมูลราคาของรุ่นย่อย / ปี / ประเภทสี นี้อยู่แล้วในอีกรายการหนึ่ง กรุณาไปแก้ไขที่รายการเดิม',
+                ], 409);
             }
 
             $price->update($data);
@@ -170,6 +195,87 @@ class PricelistCarController extends Controller
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน',
             ], 500);
         }
+    }
+
+    /** ตัดช่องว่างหัวท้าย และมองค่าว่างเป็น null เพื่อให้เทียบซ้ำได้ตรงกัน */
+    private function clean($value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
+    }
+
+    /**
+     * หาแถวที่ซ้ำกับข้อมูลที่กำลังจะบันทึก
+     * คีย์ซ้ำ = รุ่นย่อย + ปี + ประเภทสี (brand ถูกกรองโดย BrandScope อยู่แล้ว)
+     * — ไม่นับ option เป็นคีย์ เพราะตอนดึงราคาไปใช้ในใบจอง/PO ค้นด้วยรุ่นย่อย+ปี+สี เท่านั้น
+     */
+    private function findDuplicate(array $data, $ignoreId = null): ?TbPricelistCar
+    {
+        $query = TbPricelistCar::where('subModel_id', $data['subModel_id'])
+            ->where('year', $data['year']);
+
+        $color = $data['color'] ?? null;
+
+        if ($color === null) {
+            $query->where(fn($q) => $q->whereNull('color')->orWhere('color', ''));
+        } else {
+            $query->where('color', $color);
+        }
+
+        if ($ignoreId) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        return $query->orderBy('id')->first();
+    }
+
+    /** ข้อมูลเปรียบเทียบค่าเดิม–ค่าใหม่ ส่งให้หน้าเว็บถามยืนยันก่อนทับ */
+    private function duplicatePayload(TbPricelistCar $existing, array $data, $brand): array
+    {
+        $fields = ['dnp' => 'ราคาทุน (DNP)', 'msrp' => 'ราคาขาย (MSRP)'];
+
+        if ($brand == 1) {
+            $fields += ['dm' => 'DM', 'ri' => 'RI', 'ws' => 'WS'];
+        }
+
+        $money = fn($v) => $v === null || $v === '' ? '-' : number_format((float) $v, 2);
+
+        $compare = [];
+        foreach ($fields as $key => $label) {
+            $compare[] = [
+                'label'   => $label,
+                'old'     => $money($existing->{$key}),
+                'new'     => $money($data[$key] ?? null),
+                'changed' => (float) $existing->{$key} !== (float) ($data[$key] ?? 0),
+            ];
+        }
+
+        if ($brand == 1) {
+            $compare[] = [
+                'label'   => 'Option',
+                'old'     => $existing->option ?: '-',
+                'new'     => $data['option'] ?: '-',
+                'changed' => $existing->option !== $data['option'],
+            ];
+        }
+
+        $model    = TbCarmodel::find($data['model_id']);
+        $subModel = TbSubcarmodel::find($data['subModel_id']);
+
+        return [
+            'success'     => false,
+            'duplicate'   => true,
+            'message'     => 'มีข้อมูลราคาของรุ่นย่อย / ปี / ประเภทสี นี้อยู่แล้ว',
+            'existing_id' => $existing->id,
+            'info'        => [
+                'model'    => $model->Name_TH ?? '-',
+                'subModel' => $subModel->name ?? '-',
+                'year'     => $data['year'] ?? '-',
+                'color'    => $data['color'] ?? null,
+            ],
+            'compare'     => $compare,
+        ];
     }
 
     /**
