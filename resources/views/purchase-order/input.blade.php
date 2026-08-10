@@ -35,6 +35,8 @@
     @csrf
     {{-- โหมด "ขออนุมัติเกินงบล่วงหน้า" → บันทึกเป็นคำขอ ยังไม่เข้าระบบจอง (JS อ่าน #isPreApproval ด้วย) --}}
     <input type="hidden" id="isPreApproval" name="is_pre_approval" value="{{ !empty($isPreApproval) ? 1 : 0 }}">
+    {{-- ประเภทการขาย = Dealer → ไม่ต้องขออนุมัติ + ไม่ต้องระบุฝ่ายขาย (JS เทียบกับค่าที่เลือกใน #type_sale) --}}
+    <input type="hidden" id="dealerTypeSaleId" value="{{ \App\Models\Salecar::TYPE_SALE_DEALER }}">
 
     @php
       // ข้อมูลการจอง (วันที่จอง/เงินจอง/การจ่ายเงินจอง) — หน้าจองบังคับกรอก
@@ -152,10 +154,10 @@
 
               {{-- ผู้ขาย --}}
               @if (in_array(auth()->user()->role, ['sale', 'lead_sale']))
-                <input type="hidden" name="SaleID" value="{{ Auth::user()->id }}">
+                <input type="hidden" id="SaleID" name="SaleID" value="{{ Auth::user()->id }}">
                 <div class="col-md-6">
                   <div class="po-label"><i class='bx bx-user'></i> ชื่อ - นามสกุล ผู้ขาย</div>
-                  <div class="info-pill">
+                  <div class="info-pill" id="saleOwnerPill">
                     <i class="bx bx-check-circle me-2" style="color:#10b981;"></i>
                     {{ Auth::user()->name }}
                   </div>
@@ -184,6 +186,15 @@
                     <option value="{{ $item->id }}">{{ $item->name }}</option>
                   @endforeach
                 </select>
+              </div>
+
+              {{-- ขาย Dealer → ไม่ผูกฝ่ายขาย (JS toggle ตาม #type_sale) --}}
+              <div class="col-12 d-none" id="dealerSaleHint">
+                <div class="alert alert-warning py-2 px-3 mb-0" style="font-size:.82rem;">
+                  <i class="bx bx-info-circle me-1"></i>
+                  ประเภทการขาย <strong>Dealer</strong> — ไม่ต้องระบุฝ่ายขาย
+                  รายการนี้ไม่นับยอดขายและไม่คิดค่าคอมมิชชั่น
+                </div>
               </div>
 
               {{-- แหล่งที่มา --}}

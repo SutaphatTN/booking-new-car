@@ -170,7 +170,7 @@
             {{-- hidden fields --}}
             @php $canEditSale = $canReassignSale && !$isHistory; @endphp
             @unless ($canEditSale)
-              <input type="hidden" name="SaleID" value="{{ $saleCar->SaleID }}">
+              <input type="hidden" id="SaleID" name="SaleID" value="{{ $saleCar->SaleID }}">
             @endunless
             <input type="hidden" id="CusID" name="CusID" value="{{ $saleCar->CusID }}">
             <input type="hidden" id="CusCurrentAddress"
@@ -202,6 +202,9 @@
                       {{-- ย้ายลูกค้าไปให้เซลล์คนอื่น (admin/manager/audit/audit_lead/audit_dp/gm) --}}
                       <label for="SaleID" class="po-label"><i class="bx bx-user-pin"></i> ชื่อ - นามสกุล ผู้ขาย</label>
                       <select id="SaleID" name="SaleID" class="form-select" required>
+                        {{-- ใบขาย Dealer ไม่ผูกฝ่ายขาย (SaleID = NULL) → ต้องมีตัวเลือกว่าง
+                             ไม่งั้น browser จะเลือก option แรกให้เอง แล้วบันทึกทับเป็นเซลล์คนนั้น --}}
+                        <option value="">— เลือกผู้ขาย —</option>
                         @foreach ($saleUser as $s)
                           <option value="{{ $s->id }}" @selected($s->id == $saleCar->SaleID)>{{ $s->name }}</option>
                         @endforeach
@@ -278,6 +281,15 @@
                         </option>
                       @endforeach
                     </select>
+                  </div>
+
+                  {{-- ขาย Dealer → ไม่ผูกฝ่ายขาย (JS toggle ตาม #type_sale) --}}
+                  <div class="col-12 d-none" id="dealerSaleHint">
+                    <div class="alert alert-warning py-2 px-3 mb-0" style="font-size:.82rem;">
+                      <i class="bx bx-info-circle me-1"></i>
+                      ประเภทการขาย <strong>Dealer</strong> — ไม่ต้องระบุฝ่ายขาย
+                      รายการนี้ไม่นับยอดขายและไม่คิดค่าคอมมิชชั่น
+                    </div>
                   </div>
 
                   <div class="col-md-3">
