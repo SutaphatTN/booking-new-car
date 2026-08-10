@@ -1645,6 +1645,30 @@
   color: #94a3b8;
 }
 
+/* ผู้บันทึก — มุมขวาบนของการ์ด ตัวเล็ก ไม่แย่งสายตาจากวันที่/สถานะ */
+.tracking-detail-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 11rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tracking-detail-author i {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 575.98px) {
+  .tracking-detail-author {
+    max-width: 7rem;
+  }
+}
+
 /* ── tracking-detail-card accent variants ── */
 .tracking-detail-card.accent-indigo {
   border-left-color: #6366f1;

@@ -2,6 +2,8 @@
   $accent = $accentColor ?? 'amber';
   $showEdit = $showEdit ?? false;
   $accentClass = $accent === 'indigo' ? 'accent-indigo' : '';
+  // ผู้บันทึก — บันทึกเก่าบางใบอาจไม่มี UserInsert หรือ user ถูกลบไปแล้ว
+  $recordedBy = $detail->insertedBy->name ?? null;
 @endphp
 <div class="tracking-detail-card {{ $accentClass }} mb-3">
   {{-- Header: date + contact badge + edit button --}}
@@ -22,18 +24,25 @@
         </span>
       @endif
     </div>
-    @if ($showEdit)
-      <button type="button" class="btn btn-icon btn-sm btn-warning btnEditDetail flex-shrink-0"
-        data-id="{{ $detail->id }}"
-        data-contact-date="{{ $detail->format_contact_date }}"
-        data-decision="{{ $detail->decision->name ?? '-' }}"
-        data-contact-status="{{ $detail->contact_status }}"
-        data-comment="{{ $detail->comment_sale ?? '' }}"
-        data-is-checkpoint="{{ $detail->is_checkpoint ? '1' : '0' }}"
-        title="แก้ไข">
-        <i class="bx bx-edit-alt"></i>
-      </button>
-    @endif
+    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+      @if ($recordedBy)
+        <span class="tracking-detail-author" title="ผู้บันทึก : {{ $recordedBy }}">
+          <i class="bx bx-user-voice"></i>{{ $recordedBy }}
+        </span>
+      @endif
+      @if ($showEdit)
+        <button type="button" class="btn btn-icon btn-sm btn-warning btnEditDetail flex-shrink-0"
+          data-id="{{ $detail->id }}"
+          data-contact-date="{{ $detail->format_contact_date }}"
+          data-decision="{{ $detail->decision->name ?? '-' }}"
+          data-contact-status="{{ $detail->contact_status }}"
+          data-comment="{{ $detail->comment_sale ?? '' }}"
+          data-is-checkpoint="{{ $detail->is_checkpoint ? '1' : '0' }}"
+          title="แก้ไข">
+          <i class="bx bx-edit-alt"></i>
+        </button>
+      @endif
+    </div>
   </div>
 
   {{-- Decision status: inline on desktop, stacked on mobile --}}

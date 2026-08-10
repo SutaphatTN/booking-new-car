@@ -3534,11 +3534,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const documentAddress = document.getElementById('CusDocumentAddress')?.value || '-';
     const customerMobile = document.getElementById('CusMobile')?.value || '-';
     // ผู้ขาย: role ที่ย้ายลูกค้าได้จะเห็นเป็น select (#SaleID) แทน input readonly (#sale_name)
+    // ขาย Dealer ไม่ผูกฝ่ายขาย → แสดง "-" เสมอ
     const saleNameEl = document.getElementById('sale_name');
-    const customerSale =
-      (saleNameEl
-        ? saleNameEl.value
-        : document.querySelector('#SaleID option:checked')?.textContent.trim()) || '-';
+    const customerSale = isDealerTypeSaleSelected()
+      ? '-'
+      : (saleNameEl
+          ? saleNameEl.value
+          : document.querySelector('#SaleID option:checked')?.textContent.trim()) || '-';
     let BookingDate = formatThaiDate('BookingDate');
 
     //ข้อมูลการขาย
@@ -4139,9 +4141,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ประเภทการขาย = Dealer → ไม่ต้องขออนุมัติ (อ่านค่าที่เลือกอยู่สดๆ เผื่อเพิ่งเปลี่ยนยังไม่บันทึก)
-    const dealerTypeId = parseInt(document.getElementById('dealerTypeSaleId')?.value, 10) || 0;
-    const typeSaleVal = parseInt(document.getElementById('type_sale')?.value, 10) || 0;
-    if (dealerTypeId > 0 && typeSaleVal === dealerTypeId) {
+    if (isDealerTypeSaleSelected()) {
       btnSave.classList.remove('d-none');
       content.innerHTML = html;
       modal.show();
@@ -4485,6 +4485,54 @@ $(document).on('click', '.btnSaveRedPlate', function () {
       $btn.prop('disabled', false);
     }
   });
+});
+
+// ── ประเภทการขาย = Dealer ──────────────────────────────────────────────
+// ใบขาย Dealer ไม่นับยอด/ไม่คิดคอม (ดู Salecar::scopeSalesQualifying) จึงไม่ผูกฝ่ายขาย
+// อ่านค่า #type_sale สด ๆ เผื่อผู้ใช้เพิ่งเปลี่ยนแต่ยังไม่บันทึก
+function isDealerTypeSaleSelected() {
+  const dealerId = parseInt(document.getElementById('dealerTypeSaleId')?.value, 10) || 0;
+  const current = parseInt(document.getElementById('type_sale')?.value, 10) || 0;
+  return dealerId > 0 && current === dealerId;
+}
+
+// เลือก Dealer → เคลียร์ + ล็อกช่องฝ่ายขาย (backend force null อีกชั้น กันยิง request ตรง)
+// เปลี่ยนกลับเป็นประเภทอื่น → คืนค่าที่เลือกไว้ก่อนหน้า
+function applyDealerSaleOwnerRule() {
+  const isDealer = isDealerTypeSaleSelected();
+
+  // .d-none = display:none !important → ใช้ได้แม้อยู่ใน tab-pane ของ bootstrap
+  document.getElementById('dealerSaleHint')?.classList.toggle('d-none', !isDealer);
+  document.getElementById('saleOwnerPill')?.classList.toggle('text-muted', isDealer);
+
+  const saleEl = document.getElementById('SaleID');
+  if (!saleEl) return;
+
+  if (isDealer) {
+    if (saleEl.dataset.prevValue === undefined) {
+      saleEl.dataset.prevValue = saleEl.value;
+    }
+    saleEl.value = '';
+    saleEl.required = false;
+    saleEl.disabled = true;
+    return;
+  }
+
+  saleEl.disabled = false;
+  if (saleEl.dataset.prevValue !== undefined) {
+    saleEl.value = saleEl.dataset.prevValue;
+    delete saleEl.dataset.prevValue;
+  }
+  // hidden input ไม่ต้องบังคับ required (ค่ามาจาก server อยู่แล้ว)
+  if (saleEl.tagName === 'SELECT') saleEl.required = true;
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const typeSaleEl = document.getElementById('type_sale');
+  if (!typeSaleEl) return;
+
+  typeSaleEl.addEventListener('change', applyDealerSaleOwnerRule);
+  applyDealerSaleOwnerRule(); // ใบเก่าที่เป็น Dealer อยู่แล้ว → ล็อกตั้งแต่เปิดหน้า
 });
 
 //history ส่งมอบ แสดง campaign

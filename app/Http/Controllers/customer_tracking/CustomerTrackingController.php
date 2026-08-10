@@ -702,6 +702,7 @@ class CustomerTrackingController extends Controller
             'model',
             'subModel',
             'details.decision',
+            'details.insertedBy', // ชื่อผู้บันทึกบนการ์ดแต่ละใบ
         ])->findOrFail($id);
 
         $decisions = TbDecision::all();

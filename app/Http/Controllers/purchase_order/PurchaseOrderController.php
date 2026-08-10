@@ -1013,7 +1013,8 @@ class PurchaseOrderController extends Controller
                          . $row('bx-pen',        'text-success', 'วันที่เซ็นสัญญา', $contract)
                          . $row('bx-file-blank', 'text-warning', 'วันที่ PO',        $po);
                 })(),
-                'sale'   => $s->saleUser?->name,
+                // ใบขาย Dealer ไม่ผูกฝ่ายขาย (SaleID = NULL)
+                'sale'   => $s->saleUser?->name ?? '-',
                 'statusSale'    => $status,
                 'Action'        => $action,
             ];
@@ -1142,10 +1143,14 @@ class PurchaseOrderController extends Controller
             // สร้างจากโมดูล "ขออนุมัติเกินงบล่วงหน้า" → ยังไม่เป็นการจอง (global scope ซ่อนไว้)
             $isPreApproval = $request->boolean('is_pre_approval');
 
+            // ขาย Dealer ไม่นับยอด/ไม่คิดคอม (ดู Salecar::scopeSalesQualifying) จึงไม่ผูกฝ่ายขาย
+            // ฟอร์มล็อกช่องไว้แล้ว บังคับซ้ำตรงนี้กันยิง request ตรง — คนคีย์เก็บที่ UserInsert อยู่แล้ว
+            $isDealerSale = (int) $request->type_sale === Salecar::TYPE_SALE_DEALER;
+
             $salecar = Salecar::create([
                 'is_pre_approval' => $isPreApproval,
                 'pre_approval_at' => $isPreApproval ? now() : null,
-                'SaleID' => $request->SaleID,
+                'SaleID' => $isDealerSale ? null : $request->SaleID,
                 'type' => $request->type,
                 'type_sale' => $request->type_sale,
                 'model_id' => $request->model_id,
@@ -1444,7 +1449,8 @@ class PurchaseOrderController extends Controller
         // ย้ายลูกค้าไปให้เซลล์คนอื่นได้ไหม — โหลดรายชื่อเฉพาะ role ที่มีสิทธิ์ ไม่งั้นเปลือง query
         $canReassignSale = Auth::user()->canReassignSale();
         $saleUser = $canReassignSale
-            ? User::salePoolForBrand((int) $saleCar->brand, (int) $saleCar->SaleID)
+            // SaleID เป็น null ได้ (ใบขาย Dealer) — อย่า cast เป็น int ไม่งั้นกลายเป็น 0
+            ? User::salePoolForBrand((int) $saleCar->brand, $saleCar->SaleID !== null ? (int) $saleCar->SaleID : null)
             : collect();
 
         // แก้ราคารถได้ไหม
@@ -1660,11 +1666,18 @@ class PurchaseOrderController extends Controller
             }
 
 
+            // ประเภทการขาย = Dealer → ไม่ต้องขออนุมัติ + ไม่ผูกฝ่ายขาย
+            // (เช็คค่าที่กำลังบันทึก เผื่อเพิ่งเปลี่ยนเป็น Dealer)
+            $isDealerSale = (int) $request->input('type_sale', $saleCar->type_sale) === Salecar::TYPE_SALE_DEALER;
+
             $data = [
                 // ผู้ขาย: ย้ายได้เฉพาะ role ที่มีสิทธิ์ — role อื่นบังคับใช้ค่าเดิมเสมอ (กันแก้ผ่าน devtools)
-                'SaleID' => Auth::user()->canReassignSale()
-                    ? ($request->filled('SaleID') ? (int) $request->SaleID : $saleCar->SaleID)
-                    : $saleCar->SaleID,
+                // ขาย Dealer ไม่นับยอด/ไม่คิดคอม → ล้าง SaleID ทิ้งเสมอ (ฟอร์มปิดช่อง จึงไม่ถูกส่งมา)
+                'SaleID' => $isDealerSale
+                    ? null
+                    : (Auth::user()->canReassignSale()
+                        ? ($request->filled('SaleID') ? (int) $request->SaleID : $saleCar->SaleID)
+                        : $saleCar->SaleID),
                 'type' => $request->type,
                 'type_sale' => $request->type_sale,
                 'model_id' => $request->model_id,
@@ -1860,8 +1873,7 @@ class PurchaseOrderController extends Controller
             // ต้องอนุมัติ/เซ็นให้ครบก่อน จึงจะเข้าสถานะ "ระหว่างแต่งรถ" (4) หรือ "ส่งมอบ" (5) ได้
             $enteringApprovalStage = in_array((int) $request->con_status, [4, 5], true)
                 && (int) $saleCar->con_status !== (int) $request->con_status;
-            // ประเภทการขาย = Dealer → ไม่ต้องขออนุมัติ (เช็คค่าที่กำลังบันทึก เผื่อเพิ่งเปลี่ยนเป็น Dealer)
-            $isDealerSale = (int) $request->input('type_sale', $saleCar->type_sale) === Salecar::TYPE_SALE_DEALER;
+            // $isDealerSale ประกาศไว้ก่อนสร้าง $data (ใช้ล้าง SaleID ด้วย)
             $prevApprovalType = $saleCar->approval_type;
 
             $oldPlate = $saleCar->red_license;
