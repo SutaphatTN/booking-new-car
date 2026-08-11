@@ -4015,11 +4015,14 @@ class PurchaseOrderController extends Controller
         }
 
         // แตกเป็น unit = (brand × สาขาที่มีเซลล์จริง) — brand 3 รวมเซลล์ brand 4 (Lepas ขายรถ Wuling)
+        // whereNull('deleted_at') ต้องใส่เอง เพราะ withoutGlobalScopes() ปิด SoftDeletingScope ด้วย
+        // (ถ้าไม่ใส่ สาขาที่เซลล์ถูกลบหมดแล้วจะยังสร้าง sheet เปล่าขึ้นมา)
         $branchNames = TbBranch::pluck('name', 'id')->all();
         $units = [];
         foreach ($brands as $brand) {
             $rosterBrands = $brand === 3 ? [3, 4] : [$brand];
             $q = User::withoutGlobalScopes()
+                ->whereNull('deleted_at')
                 ->whereIn('role', ['sale', 'lead_sale'])
                 ->whereIn('brand', $rosterBrands)
                 ->whereNotNull('branch');

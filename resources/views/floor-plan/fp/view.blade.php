@@ -471,7 +471,7 @@
       // ช่วงเดือนของรายงาน: กันเลือกเดือนสิ้นสุดย้อนกว่าเดือนเริ่ม (ฝั่ง server สลับให้อยู่แล้ว อันนี้กันพลาดหน้าจอ)
       $(document).on('change', '#month_from', function () {
         const to = document.getElementById('month_to');
-        to.min = this.value;
+        to.min =  this.value;
         if (to.value && to.value < this.value) to.value = this.value;
       });
       $(document).on('change', '#month_to', function () {
