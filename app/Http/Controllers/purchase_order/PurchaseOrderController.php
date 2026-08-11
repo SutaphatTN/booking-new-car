@@ -149,6 +149,15 @@ class PurchaseOrderController extends Controller
                 'subModel',
             ])->find($request->from_tracking);
 
+            // lead จากเพจที่เซลล์ยังไม่ได้บันทึกตอบกลับ ห้ามข้ามไปทำใบจอง
+            // (กันเปิด URL ตรง ๆ — หน้ารายละเอียดการติดตามปิดปุ่มไว้อยู่แล้ว)
+            // ยกเว้นขออนุมัติล่วงหน้า ซึ่งยังไม่ใช่การจอง
+            if ($tracking && !$request->boolean('pre_approval') && $tracking->awaitingSaleReply()) {
+                return redirect()
+                    ->route('customer-tracking.show', $tracking->id)
+                    ->with('error', 'ยังสร้างการจองไม่ได้ — เซลล์ยังไม่ได้บันทึกตอบกลับลูกค้ารายนี้ กรุณาเพิ่มบันทึกเซลล์ที่แท็บ "ประวัติการติดตาม" ก่อน');
+            }
+
             if ($tracking && $tracking->customer) {
                 $c = $tracking->customer;
                 $prefill = [

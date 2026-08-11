@@ -127,6 +127,49 @@ class CustomerTracking extends Model
         return $this->hasMany(CustomerTrackingDetail::class, 'tracking_id');
     }
 
+    /**
+     * lead จากเพจ = บันทึกใบแรกที่ "คนเพิ่ม" (UserInsert) เป็นคนดูแลเพจ (role adminPage)
+     * ใบติดตามที่เซลล์หาลูกค้าเองจะไม่มีใบนี้
+     *
+     * withTrashed เพราะดูว่า "ใครเป็นคนกรอก" ของข้อมูลย้อนหลัง
+     * ถ้าคนดูแลเพจคนเก่าถูกลบ ใบที่เขาเคยกรอกก็ยังต้องนับ
+     */
+    public function firstPageLeadDetail(): ?CustomerTrackingDetail
+    {
+        return $this->details()
+            ->whereHas('insertedBy', fn($q) => $q->withTrashed()->where('role', 'adminPage'))
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
+     * ยังรอเซลล์ตอบกลับอยู่หรือไม่ — ใช้กติกาเดียวกับ view_performance_sale
+     *   รอ = มีบันทึกจากเพจ (adminPage) แล้ว แต่ยังไม่มีบันทึกจาก role sale/lead_sale ตามหลังใบนั้น
+     *
+     * ใบติดตามที่ไม่มีบันทึกจากเพจเลย ถือว่าไม่ต้องรอ (ไม่ใช่ lead ที่เพจจ่ายมา)
+     * ตรงกับ view เป๊ะ ๆ ตรงที่เทียบด้วย created_at ไม่ใช่ contact_date (contact_date กรอกย้อนหลังได้)
+     */
+    public function awaitingSaleReply(): bool
+    {
+        $pageLead = $this->firstPageLeadDetail();
+
+        if (!$pageLead) {
+            return false;
+        }
+
+        // ข้อมูลเก่าบางแถว created_at เป็น NULL — เทียบ "> NULL" ใน SQL ได้ NULL จึงไม่มีวันเจอคู่
+        // view_performance_sale ก็ให้ sale_followed_up = 0 ในเคสนี้ ยึดผลเดียวกันไว้
+        if ($pageLead->created_at === null) {
+            return true;
+        }
+
+        return !$this->details()
+            ->where('created_at', '>', $pageLead->created_at)
+            ->whereHas('insertedBy', fn($q) => $q->withTrashed()->whereIn('role', ['sale', 'lead_sale']))
+            ->exists();
+    }
+
     public function latestDetail()
     {
         return $this->hasOne(CustomerTrackingDetail::class, 'tracking_id')->latestOfMany();

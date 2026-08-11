@@ -17,7 +17,17 @@
     $fullName = trim(($c->prefix->Name_TH ?? '') . ' ' . ($c->FirstName ?? '') . ' ' . ($c->LastName ?? ''));
     $totalDetails = $tracking->details->count();
     $hasLockedManagerDecision = $managerDetails->whereIn('decision_id', [1, 2])->isNotEmpty();
+    // lead จากเพจที่เซลล์ยังไม่บันทึกตอบกลับ → ห้ามสร้างการจอง (ขออนุมัติล่วงหน้ายังทำได้)
+    $awaitingSaleReply = $tracking->awaitingSaleReply();
   @endphp
+
+  @if (session('error'))
+    <div class="alert alert-danger alert-dismissible d-flex align-items-center gap-2" role="alert">
+      <i class="bx bx-error-circle fs-5"></i>
+      <div>{{ session('error') }}</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  @endif
 
   {{-- Page Title --}}
   <div class="pur-page-title mb-3 justify-content-between flex-wrap gap-2">
@@ -39,9 +49,17 @@
         class="btn btn-outline-primary ms-auto">
         <i class="bx bx-file-find me-1"></i> ขออนุมัติล่วงหน้า
       </a>
-      <a href="{{ route('purchase-order.create', ['from_tracking' => $tracking->id]) }}" class="btn btn-secondary">
-        <i class="bx bx-file me-1"></i> สร้างการจอง
-      </a>
+      @if ($awaitingSaleReply)
+        {{-- ใช้ปุ่มแทนลิงก์ เพื่อให้กดแล้วอธิบายได้ว่าติดตรงไหน (ลิงก์ที่ disabled กดไม่ได้ก็ไม่มีข้อความบอก) --}}
+        <button type="button" class="btn btn-secondary" id="btnBookingNeedsSaleReply"
+          title="เซลล์ยังไม่ได้บันทึกตอบกลับ lead นี้">
+          <i class="bx bx-lock-alt me-1"></i> สร้างการจอง
+        </button>
+      @else
+        <a href="{{ route('purchase-order.create', ['from_tracking' => $tracking->id]) }}" class="btn btn-secondary">
+          <i class="bx bx-file me-1"></i> สร้างการจอง
+        </a>
+      @endif
     </div>
   </div>
 

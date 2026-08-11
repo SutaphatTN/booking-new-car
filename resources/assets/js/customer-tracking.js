@@ -1088,6 +1088,35 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+// VIEW-MORE — กันสร้างการจอง ถ้าเซลล์ยังไม่ได้บันทึกตอบกลับ lead จากเพจ
+// ปุ่มนี้จะถูก render แทนลิงก์ "สร้างการจอง" เฉพาะตอนที่ยังรอตอบกลับ (ดู view-more.blade.php)
+// ฝั่ง server ก็กันซ้ำไว้ที่ PurchaseOrderController::create() กันเปิด URL ตรง
+$(document).on('click', '#btnBookingNeedsSaleReply', function () {
+  // ปุ่ม "เพิ่มบันทึก" ฝั่งเซลล์มีเฉพาะบาง role — ถ้าไม่มีก็แค่พาไปที่แท็บประวัติ
+  const $addSaleNote = $('.btnOpenAddDetail[data-entry-type="sale"]');
+
+  Swal.fire({
+    icon: 'warning',
+    title: 'ยังสร้างการจองไม่ได้',
+    html:
+      'lead นี้มาจากเพจ แต่<b>เซลล์ยังไม่ได้บันทึกตอบกลับ</b><br>' +
+      'กรุณาเพิ่มบันทึกเซลล์ที่แท็บ "ประวัติการติดตาม" ก่อน',
+    showCancelButton: true,
+    confirmButtonText: $addSaleNote.length ? 'ไปเพิ่มบันทึก' : 'ไปดูประวัติการติดตาม',
+    cancelButtonText: 'ปิด'
+  }).then(function (res) {
+    if (!res.isConfirmed) return;
+
+    $('#viewMoreTabs [data-bs-target="#tab-history"]').trigger('click');
+    $('#sub-sale').closest('.tab-content').find('[data-bs-target="#sub-sale"]').trigger('click');
+
+    // รอ tab เปลี่ยนเสร็จก่อนค่อยเปิด modal ไม่งั้น modal ซ้อนกับ transition ของ tab
+    if ($addSaleNote.length) {
+      setTimeout(() => $addSaleNote.trigger('click'), 300);
+    }
+  });
+});
+
 // VIEW-MORE — เพิ่มการติดตาม (modal)
 $(document).ready(function () {
   // เปิด modal + ตั้งค่า entry_type + เปลี่ยน title
