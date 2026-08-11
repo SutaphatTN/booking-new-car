@@ -2,6 +2,7 @@
 
 namespace App\Exports\fp;
 
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -17,13 +18,18 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 
 class FpReportExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
+    /** สีพื้นแถว "ประมาณการ" (ยังไม่ปิด FP) */
+    private const ESTIMATE_FILL = 'fff2cc';
+
     protected array $rows;
     protected int $brand;
+    protected ?Carbon $estimateTo;
 
-    public function __construct(array $rows, int $brand)
+    public function __construct(array $rows, int $brand, ?Carbon $estimateTo = null)
     {
-        $this->rows  = $rows;
-        $this->brand = $brand;
+        $this->rows       = $rows;
+        $this->brand      = $brand;
+        $this->estimateTo = $estimateTo;
     }
 
     public function title(): string
@@ -81,16 +87,54 @@ class FpReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sho
                 $sheet->freezePane('A2');
                 $sheet->getTabColor()->setRGB('c6efce');
 
-                // จัดรูปแบบเงิน คอลัมน์ "ราคาทุน" / "Net Amount" / "รวมดอกเบี้ย"
+                // จัดรูปแบบตัวเลขตาม "ชื่อหัวคอลัมน์" ไม่ใช่ตัวอักษรคอลัมน์ตายตัว
+                $formats = [
+                    'Net Amount' => '#,##0.00',
+                    'Amount Due' => '#,##0.00',
+                    'Rate'       => '0.00',
+                    'No_Day'     => '#,##0',
+                ];
                 $lastColIndex = Coordinate::columnIndexFromString($highestCol);
                 for ($i = 1; $i <= $lastColIndex; $i++) {
                     $letter = Coordinate::stringFromColumnIndex($i);
                     $header = $sheet->getCell("{$letter}1")->getValue();
-                    if (in_array($header, ['ราคาทุน', 'Net Amount', 'รวมดอกเบี้ย'], true)) {
+                    if (isset($formats[$header])) {
                         $sheet->getStyle("{$letter}2:{$letter}{$highestRow}")
                             ->getNumberFormat()
-                            ->setFormatCode('#,##0.00');
+                            ->setFormatCode($formats[$header]);
                     }
+                }
+
+                // ── แถว "ประมาณการ" (ยังไม่ปิด FP) : พื้นเหลือง + ตัวเอียง ──
+                // ลำดับ $this->rows ตรงกับลำดับแถวใน view → แถว Excel = index + 2 (แถว 1 เป็นหัวตาราง)
+                $estimatedRows = [];
+                foreach ($this->rows as $i => $r) {
+                    if (!empty($r['isEstimated'])) {
+                        $estimatedRows[] = $i + 2;
+                    }
+                }
+
+                foreach ($estimatedRows as $rowNo) {
+                    $range = "A{$rowNo}:{$highestCol}{$rowNo}";
+                    $sheet->getStyle($range)->getFill()
+                        ->setFillType('solid')
+                        ->getStartColor()->setRGB(self::ESTIMATE_FILL);
+                    $sheet->getStyle($range)->getFont()->setItalic(true);
+                }
+
+                // คำอธิบายสัญลักษณ์ ใต้ตาราง (เว้น 1 บรรทัด) — ใส่หลังตีกรอบแล้วจะได้ไม่มีเส้นล้อม
+                if ($estimatedRows) {
+                    $noteRow = $highestRow + 2;
+                    $sheet->setCellValue(
+                        "A{$noteRow}",
+                        '* แถวพื้นสีเหลือง = ยังไม่ปิด FP — ประมาณการดอกเบี้ยถึงวันสิ้นงวด'
+                            . ($this->estimateTo ? ' ' . $this->estimateTo->format('d-m-Y') : '')
+                    );
+                    $sheet->getStyle("A{$noteRow}")->getFont()
+                        ->setName('Angsana New')->setSize(14)->setItalic(true);
+                    $sheet->getStyle("A{$noteRow}")->getFill()
+                        ->setFillType('solid')
+                        ->getStartColor()->setRGB(self::ESTIMATE_FILL);
                 }
             },
         ];

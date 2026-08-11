@@ -237,8 +237,12 @@ class FloorPlanController extends Controller
     /**
      * สร้างแถวข้อมูล FP (car_order ที่ payment_type = fp_tisco, auto brand-scoped)
      * ใช้ร่วมกันทั้งหน้า list และรายงาน Excel
+     *
+     * @param Carbon|null $estimateTo วันตัด "ประมาณการ" สำหรับคันที่ยังไม่ปิด FP (ใช้เฉพาะรายงาน Excel)
+     *        ถ้าส่งมา คันที่ยังไม่มีวันที่ปิดจะถูกคิดดอกเบี้ยถึงวันนี้แทน แล้วติดธง isEstimated
+     *        หน้า list ไม่ส่ง → พฤติกรรมเดิมทุกอย่าง (รอปิด FP = ไม่มีดอกเบี้ย)
      */
-    private function fpRows(int $brand)
+    private function fpRows(int $brand, ?Carbon $estimateTo = null)
     {
         $orders = CarOrder::with([
                 'model', 'subModel', 'interiorColor', 'gwmColor',
@@ -249,7 +253,7 @@ class FloorPlanController extends Controller
             ->orderByDesc('fp_date')
             ->get();
 
-        return $orders->map(function ($o) use ($brand) {
+        return $orders->map(function ($o) use ($brand, $estimateTo) {
             $billing = $o->fp_date ? Carbon::parse($o->fp_date) : null;
             $close   = $o->fp_close_date ? Carbon::parse($o->fp_close_date) : null;
             $cost    = (float) ($o->car_DNP ?? 0);
@@ -262,6 +266,19 @@ class FloorPlanController extends Controller
 
             $isClosed = $billing && $close && $close->gte($billing);
             $calc     = $isClosed ? $this->buildFpSegments($billing, $close, $brand, $netAmount) : null;
+
+            // ยังไม่ปิด FP + มีวันตัดประมาณการ → คิดดอกเบี้ยถึงวันตัดนั้นแทน (billing ต้องไม่เลยวันตัดไปแล้ว)
+            $isEstimated = !$isClosed && $estimateTo && $billing && $billing->lte($estimateTo);
+            if ($isEstimated) {
+                $calc = $this->buildFpSegments($billing, $estimateTo->copy(), $brand, $netAmount);
+            }
+
+            // Rate ที่แสดงในรายงาน = อัตราเฉลี่ยถ่วงน้ำหนักด้วยจำนวนวันของทุก segment
+            // (คันที่คร่อมหลายงวดมี MOR/MLR คนละค่า) — ถ้ามี segment เดียวจะเท่ากับ rate ของงวดนั้นพอดี
+            $totalDays = $calc['totalDays'] ?? 0;
+            $rate = $calc && $netAmount > 0 && $totalDays > 0
+                ? $calc['totalInterest'] / ($netAmount * $totalDays / 365) * 100
+                : null;
 
             return [
                 'id'            => $o->id,
@@ -287,10 +304,16 @@ class FloorPlanController extends Controller
                 'balanceFinance' => $sale && $sale->balanceFinance !== null ? (float) $sale->balanceFinance : null,
                 'financeName'    => $sale->remainingPayment->financeInfo->FinanceCompany ?? '-',
                 'closeDate'     => $o->fp_close_date,          // Y-m-d สำหรับ input
-                'closeText'     => $o->format_fp_close_date ?? '-',
+                // ประมาณการ → แสดงวันตัด (วันที่ 15 สิ้นงวด) แทนช่องว่าง
+                // ใช้ d-m-Y ให้ตรงกับ accessor format_fp_date / format_fp_close_date
+                'closeText'     => $isEstimated
+                    ? $estimateTo->format('d-m-Y')
+                    : ($o->format_fp_close_date ?? '-'),
                 'isClosed'      => $isClosed,
+                'isEstimated'   => $isEstimated,
                 'segments'      => $calc['segments'] ?? [],
                 'totalDays'     => $calc['totalDays'] ?? null,
+                'rate'          => $rate,
                 'totalInterest' => $calc['totalInterest'] ?? null,
             ];
         });
@@ -400,24 +423,54 @@ class FloorPlanController extends Controller
 
     /**
      * ออกรายงาน FP (Excel) — ยึดตามงวด Billing date (calendar month ของ fp_date)
-     * ถ้าไม่ระบุเดือน = ทุกงวด (ทุกคัน fp_tisco)
+     * เลือกได้เป็น "ช่วงเดือน" (month_from – month_to) เพื่อดูหลายงวดรวมกัน
+     * ไม่ระบุเลย = ทุกงวด (ทุกคัน fp_tisco)
+     *
+     * คันที่ยังไม่ปิด FP จะถูกประมาณการดอกเบี้ยถึง "วันที่ 15 สิ้นงวดของเดือนสุดท้ายที่เลือก"
+     * แล้วทำสีเหลือง + ใส่ * ในรายงาน (ดู FpReportExport)
      */
     public function exportFp(Request $request)
     {
         $this->authorizeAccess();
 
         $brand = (int) Auth::user()->brand;
-        $month = $request->input('month');   // YYYY-MM หรือว่าง
 
-        $rows = $this->fpRows($brand);
-        if ($month) {
-            $rows = $rows->filter(fn ($r) => $r['billingPeriod'] === $month);
+        $from = $request->input('month_from');
+        $to   = $request->input('month_to');
+
+        // ลิงก์เดิมส่ง month มาตัวเดียว — ยังรองรับไว้
+        if (!$from && !$to) {
+            $from = $to = $request->input('month');
+        }
+        // เลือกมาข้างเดียว = เดือนเดียว
+        $from = $from ?: $to;
+        $to   = $to   ?: $from;
+
+        // กรอกกลับด้าน → สลับให้ (YYYY-MM เทียบเป็น string ได้ตรงตามลำดับเวลา)
+        if ($from && $to && $to < $from) {
+            [$from, $to] = [$to, $from];
+        }
+
+        // วันตัดประมาณการ = วันสิ้นงวดของเดือนสุดท้ายที่เลือก (วันที่ 15 ของเดือนถัดไป)
+        $estimateTo = $to ? $this->periodRange($to)[1] : null;
+
+        $rows = $this->fpRows($brand, $estimateTo);
+
+        if ($from) {
+            $rows = $rows->filter(
+                fn ($r) => $r['billingPeriod'] !== null
+                    && $r['billingPeriod'] >= $from
+                    && $r['billingPeriod'] <= $to
+            );
         }
         $rows = $rows->values();
 
-        $filename = ExportFilename::withBrand('รายงาน FP' . ($month ? " {$month}" : '') . '.xlsx');
+        $rangeLabel = $from
+            ? ($from === $to ? " {$from}" : " {$from} ถึง {$to}")
+            : '';
+        $filename = ExportFilename::withBrand('รายงาน FP' . $rangeLabel . '.xlsx');
 
-        return Excel::download(new FpReportExport($rows->all(), $brand), $filename);
+        return Excel::download(new FpReportExport($rows->all(), $brand, $estimateTo), $filename);
     }
 
     /**
