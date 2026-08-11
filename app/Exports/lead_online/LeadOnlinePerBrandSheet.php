@@ -56,6 +56,13 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
   protected int $lastDataRow  = 2;   // = firstDataRow - 1 เมื่อไม่มีข้อมูล
   protected int $totalRow     = 3;
 
+  /** ช่วงแถว "หมายเหตุ" ใต้ตาราง (บอกวิธีนับ + PP รายเดือน) — 0 = ไม่มี */
+  protected int $noteFirstRow = 0;
+  protected int $noteLastRow  = 0;
+
+  /** cache รายชื่อเซลล์ ใช้ทั้งตอนสร้างแถวและตอนคิด PP รายเดือน */
+  protected ?array $salesCache = null;
+
   public function __construct($brand, $branch = null, $branchName = '', $fromDate = null, array $onlineSourceIds = [], array $settingRows = [])
   {
     $this->brand           = (int) $brand;
@@ -158,7 +165,81 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
       ];
     }
 
+    // ── หมายเหตุใต้ตาราง : เฉพาะยี่ห้อที่นับรายไตรมาส (2 GWM, 4 Lepas) ──
+    // ยี่ห้อรายเดือน (1 Mitsubishi, 3 Wuling) ไม่ต้องมี เพราะตัวเลขในตารางคือยอดของเดือนนั้นอยู่แล้ว
+    // เดือนอยู่คอลัมน์ B (ใต้ Salesperson) ตัวเลขอยู่คอลัมน์ C (ใต้ PP) จะได้อ่านตรงคอลัมน์เดียวกัน
+    if (in_array($this->brand, [2, 4], true)) {
+      // ต้องเป็น [''] ไม่ใช่ [] — fromArray ข้ามแถวที่เป็น array ว่าง ทำให้เลขแถวเลื่อนไม่ตรงกับที่คำนวณไว้
+      $rows[] = [''];                               // เว้น 1 บรรทัดจากตาราง
+      $this->noteFirstRow = count($rows) + 1;
+
+      $rows[] = ['* ยี่ห้อนี้นับแบบ "รายไตรมาส" — ตัวเลขในตารางคือยอดรวมทั้งไตรมาส ' . $this->monthLabel];
+      $rows[] = ['', 'PP แยกรายเดือน', ''];
+
+      foreach ($this->ppMonthlyTotals() as $label => $count) {
+        $rows[] = ['', $label, $count];
+      }
+
+      $this->noteLastRow = count($rows);
+    }
+
     return $rows;
+  }
+
+  /**
+   * PP รวมของ "สาขานี้" แยกรายเดือนภายในช่วงเวลาของ sheet — ใช้โชว์ใต้ตาราง
+   * เงื่อนไขเดียวกับ ppCounts() ทุกอย่าง ต่างแค่ group ตามเดือนแทน sale_id
+   * เดือนที่ไม่มีข้อมูลก็แสดงเป็น 0 (ไล่เดือนจาก start ถึง end)
+   *
+   * @return array<string,int> ['Jul 2026' => 43, ...]
+   */
+  protected function ppMonthlyTotals(): array
+  {
+    $saleIds = array_column($this->salespeople(), 'id');
+
+    // ไล่ทุกเดือนในช่วงไว้ก่อน เพื่อให้เดือนที่ยอด 0 ยังโชว์
+    $totals = [];
+    $cursor = $this->start->copy()->startOfMonth();
+    while ($cursor->lte($this->end)) {
+      $totals[$cursor->format('Y-m')] = 0;
+      $cursor->addMonthNoOverflow();
+    }
+
+    if ($saleIds) {
+      $firstContact = DB::table('customer_tracking_details')
+        ->select('tracking_id', DB::raw('MIN(contact_date) as first_contact'))
+        ->whereNull('deleted_at')
+        ->whereNotNull('contact_date')
+        ->groupBy('tracking_id');
+
+      $counts = DB::table('customer_trackings as ct')
+        ->joinSub($firstContact, 'fc', 'fc.tracking_id', '=', 'ct.id')
+        ->whereNull('ct.deleted_at')
+        ->where('ct.brand', $this->brand)
+        ->whereIn('ct.source_id', $this->onlineSourceIds)
+        ->whereIn('ct.UserInsert', $this->adminPageUserIds())
+        ->whereIn('ct.sale_id', $saleIds)
+        ->whereBetween('fc.first_contact', [
+          $this->start->format('Y-m-d 00:00:00'),
+          $this->end->format('Y-m-d 23:59:59'),
+        ])
+        ->groupBy(DB::raw("DATE_FORMAT(fc.first_contact, '%Y-%m')"))
+        ->selectRaw("DATE_FORMAT(fc.first_contact, '%Y-%m') as ym, COUNT(*) as cnt")
+        ->pluck('cnt', 'ym')
+        ->all();
+
+      foreach ($counts as $ym => $cnt) {
+        $totals[$ym] = (int) $cnt;
+      }
+    }
+
+    // เปลี่ยน key เป็นป้ายอ่านง่าย (Jul 2026) ให้ตรงรูปแบบคอลัมน์ Month
+    $labelled = [];
+    foreach ($totals as $ym => $cnt) {
+      $labelled[Carbon::parse($ym . '-01')->format('M Y')] = $cnt;
+    }
+
+    return $labelled;
   }
 
   /**
@@ -172,7 +253,7 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
   {
     $rosterBrands = $this->brand === 3 ? [3, 4] : [$this->brand];
 
-    return User::withoutGlobalScopes()
+    return $this->salesCache ??= User::withoutGlobalScopes()
       ->whereNull('deleted_at')
       ->whereIn('role', ['sale', 'lead_sale'])
       ->whereIn('brand', $rosterBrands)
@@ -184,9 +265,30 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
   }
 
   /**
+   * id ของ "คนดูแลเพจ" (role adminPage) = คนที่รับ lead ออนไลน์เข้าระบบแล้วจ่ายให้เซลล์
+   *
+   * ไม่กรอง deleted_at ออก เพราะใช้ตัดสิน "ใครเป็นคนกรอก" ของข้อมูลย้อนหลัง
+   * ถ้าคนดูแลเพจคนเก่าถูกลบ lead ที่เขาเคยกรอกไว้ต้องยังนับอยู่
+   * ไม่ scope ตาม brand เพราะคนดูแลเพจคนเดียวกรอกให้ทุก brand
+   */
+  protected function adminPageUserIds(): array
+  {
+    static $ids = null;
+
+    return $ids ??= User::withoutGlobalScopes()
+      ->where('role', 'adminPage')
+      ->pluck('id')
+      ->map(fn($id) => (int) $id)
+      ->all();
+  }
+
+  /**
    * PP = จำนวน customer_trackings ที่ "contact_date ตัวแรก" (detail แรกสุด) ตกอยู่ในช่วงเวลา
    *      นับต่อ tracking แค่ครั้งเดียว จัดกลุ่มตาม sale_id ของ tracking
    * (ใช้ contact_date ตัวแรกแทนวันที่สร้าง เพราะกรอกย้อนหลังได้)
+   *
+   * นับเฉพาะ lead ที่ "คนเพิ่ม" (UserInsert) เป็นคนดูแลเพจ — คือ lead ที่เพจรับมาแล้วจ่ายให้เซลล์จริง ๆ
+   * ตัด tracking ที่เซลล์กรอกเองออก แม้จะติดแหล่งที่มาเป็น Online ก็ตาม
    */
   protected function ppCounts(): array
   {
@@ -202,6 +304,8 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
       ->where('ct.brand', $this->brand)
       // นับเฉพาะแหล่งที่มา Online (ยกเว้น id 7,20) — รวม tracking ที่ยกเลิก (cancelled_at) ด้วย
       ->whereIn('ct.source_id', $this->onlineSourceIds)
+      // เฉพาะ lead ที่คนดูแลเพจเป็นคนกรอก (ไม่ใช่เซลล์กรอกเอง)
+      ->whereIn('ct.UserInsert', $this->adminPageUserIds())
       ->whereBetween('fc.first_contact', [
         $this->start->format('Y-m-d 00:00:00'),
         $this->end->format('Y-m-d 23:59:59'),
@@ -285,9 +389,38 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
             ->setFillType('solid')->getStartColor()->setRGB('d9e1f2');
         }
 
-        // เส้นกรอบทั้งตาราง
-        $sheet->getStyle("A1:{$lastCol}{$highestRow}")->getBorders()->getAllBorders()
+        // เส้นกรอบเฉพาะ "ตาราง" — ไม่คลุมบล็อกหมายเหตุใต้ตาราง
+        $tableLastRow = $hasData ? $this->totalRow : 2;
+        $sheet->getStyle("A1:{$lastCol}{$tableLastRow}")->getBorders()->getAllBorders()
           ->setBorderStyle(Border::BORDER_THIN)->setColor(new Color(Color::COLOR_BLACK));
+
+        // ── บล็อกหมายเหตุ : บอกวิธีนับ (รายเดือน/รายไตรมาส) + PP แยกรายเดือน ──
+        if ($this->noteFirstRow > 0) {
+          $labelRow  = $this->noteFirstRow;        // บรรทัด "* ยี่ห้อนี้นับแบบ ..."
+          $headerRow = $labelRow + 1;              // บรรทัด "PP แยกรายเดือน"
+
+          $sheet->mergeCells("A{$labelRow}:{$lastCol}{$labelRow}");
+          $sheet->getStyle("A{$labelRow}")->getFont()->setBold(true)->setItalic(true);
+          $sheet->getStyle("A{$labelRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+
+          $sheet->getStyle("B{$headerRow}")->getFont()->setBold(true);
+
+          // ตารางย่อยเดือน/ยอด อยู่คอลัมน์ B–C ตีกรอบเฉพาะช่วงนั้น
+          $sheet->getStyle("B{$headerRow}:C{$this->noteLastRow}")->getBorders()->getAllBorders()
+            ->setBorderStyle(Border::BORDER_THIN)->setColor(new Color(Color::COLOR_BLACK));
+          $sheet->getStyle("B{$headerRow}:C{$headerRow}")->getFill()
+            ->setFillType('solid')->getStartColor()->setRGB('d9e1f2');
+          $sheet->getStyle("C" . ($headerRow + 1) . ":C{$this->noteLastRow}")->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+          // fromArray ข้ามค่า 0 (เทียบกับ nullValue แบบหลวม) เดือนที่ไม่มี lead เลยกลายเป็นช่องว่าง
+          // เขียน 0 กลับเข้าไปเอง จะได้ไม่ถูกอ่านว่า "ไม่มีข้อมูล"
+          for ($r = $headerRow + 1; $r <= $this->noteLastRow; $r++) {
+            if ($sheet->getCell("C{$r}")->getValue() === null) {
+              $sheet->setCellValue("C{$r}", 0);
+            }
+          }
+        }
 
         // ความสูงแถว
         $sheet->getRowDimension(1)->setRowHeight(28);
