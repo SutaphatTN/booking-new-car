@@ -125,7 +125,8 @@
                     <span class="input-group-text ig-amber">฿</span>
                     <input id="inp_acc_cost_spare" type="text"
                       class="form-control text-end money-input @error('cost_spare') is-invalid @enderror"
-                      name="cost_spare" placeholder="ต้องมากกว่า 0" required>
+                      name="cost_spare" placeholder="ต้องมากกว่า 0" required
+                      {{-- allow-zero ปลดโดย JS ตอนติ๊กสวิตช์ "ทุนอะไหล่เป็น 0 จริง" --}}>
                   </div>
                   @error('cost_spare')
                     <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
@@ -238,6 +239,27 @@
                       <span class="fw-bold"><i class="bx bx-edit"></i> ราคาไม่คงที่ (ระบุตอนทำใบจอง)</span>
                       <span class="text-muted small d-block">ถ้าเปิด รายการนี้จะมีช่อง "ระบุเอง" ให้กรอกราคาตอนทำใบจอง
                         ไม่ต้องสร้างรายการซ้ำเมื่อราคาต่างกัน (เช่น น้ำมัน) — ราคาที่กรอกจะใช้เป็นทั้งราคาและทุนอะไหล่</span>
+                    </span>
+                  </label>
+                </div>
+
+                {{-- ทุนอะไหล่เป็น 0 จริง --}}
+                <div class="col-12">
+                  <input type="hidden" name="is_zero_cost" value="0">
+                  <label for="inp_acc_is_zero_cost"
+                    class="d-flex align-items-center gap-3 p-3 mb-0 rounded w-100"
+                    style="background:#fdeef0;border:1px solid #f5c2cb;cursor:pointer;">
+                    <span class="form-switch m-0 p-0" style="min-height:auto;">
+                      <input class="form-check-input m-0 acc-zero-cost-toggle" type="checkbox" role="switch"
+                        id="inp_acc_is_zero_cost" name="is_zero_cost" value="1"
+                        {{ old('is_zero_cost') ? 'checked' : '' }}
+                        style="width:2.75em;height:1.5em;cursor:pointer;">
+                    </span>
+                    <span>
+                      <span class="fw-bold"><i class="bx bx-check-double"></i> ทุนอะไหล่เป็น 0 จริง (ยืนยันแล้ว)</span>
+                      <span class="text-muted small d-block">เปิดเมื่อรายการนี้ไม่มีต้นทุนอะไหล่จริง ๆ เช่น ของที่ค่ายแถมฟรี
+                        หรือรายการที่ไม่ใช่อะไหล่ (ประกัน, พ.ร.บ., ค่าจดทะเบียน) — จะกรอกราคาทุนอะไหล่เป็น 0
+                        และเลือกในใบจองได้ โดยไม่ต้องติ๊ก "ประดับยนต์มาตรฐาน"</span>
                     </span>
                   </label>
                 </div>

@@ -87,11 +87,14 @@ $(document).on('blur', '.money-input', function () {
 });
 
 // ราคาทุนอะไหล่ต้อง > 0 (checkValidity ดัก required ได้ แต่ไม่ดัก 0)
-// ยกเว้นแถวที่ค่าเดิมใน DB เป็น 0 อยู่แล้ว (data-allow-zero) → บันทึก 0 ซ้ำได้
+// ยกเว้น 2 กรณี → บันทึก 0 ได้
+//   1. ติ๊กสวิตช์ "ทุนอะไหล่เป็น 0 จริง" (is_zero_cost) — เช็คสดจาก checkbox ในฟอร์มเดียวกัน
+//   2. แถวที่ค่าเดิมใน DB เป็น 0 อยู่แล้วแต่ยังไม่ติดธง (data-allow-zero จาก blade)
 // เช็คก่อนยิง ajax เพื่อให้ modal ยังเปิดอยู่ ผู้ใช้ไม่เสียข้อมูลที่กรอกมา
 function costSpareIsValid(form) {
   const $input = $(form).find('[name="cost_spare"]');
-  const allowZero = $input.data('allow-zero') == 1;
+  const zeroConfirmed = $(form).find('input[type="checkbox"][name="is_zero_cost"]').is(':checked');
+  const allowZero = zeroConfirmed || $input.data('allow-zero') == 1;
   const value = parseFloat(String($input.val()).replace(/,/g, ''));
 
   const ok = allowZero ? value >= 0 : value > 0;
@@ -99,12 +102,30 @@ function costSpareIsValid(form) {
     Swal.fire({
       icon: 'error',
       title: 'ข้อมูลไม่ถูกต้อง',
-      text: allowZero ? 'กรุณากรอกราคาทุนอะไหล่' : 'ราคาทุนอะไหล่ต้องมากกว่า 0'
+      text: allowZero
+        ? 'กรุณากรอกราคาทุนอะไหล่'
+        : 'ราคาทุนอะไหล่ต้องมากกว่า 0 — ถ้าเป็น 0 จริง ให้เปิดสวิตช์ "ทุนอะไหล่เป็น 0 จริง"'
     }).then(() => $input.trigger('focus'));
     return false;
   }
   return true;
 }
+
+// ติ๊กสวิตช์ "ทุนอะไหล่เป็น 0 จริง" → เติม 0.00 ให้เลย / ติ๊กออก → ล้างค่า 0 ทิ้งเพื่อบังคับกรอกใหม่
+// ใช้ delegated event เพราะโมดัลแก้ไขถูกโหลดเข้ามาทีหลังด้วย ajax
+$(document).on('change', '.acc-zero-cost-toggle', function () {
+  const $form = $(this).closest('form');
+  const $input = $form.find('[name="cost_spare"]');
+  const value = parseFloat(String($input.val()).replace(/,/g, ''));
+
+  if (this.checked) {
+    if (!$input.val() || value === 0) $input.val('0.00');
+    $input.attr('placeholder', '0.00');
+  } else {
+    if (value === 0) $input.val('');
+    $input.attr('placeholder', 'ต้องมากกว่า 0');
+  }
+});
 
 //view : toggle
 $(document).on('change', '.status-acc', function () {

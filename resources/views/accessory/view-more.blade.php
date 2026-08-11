@@ -166,6 +166,22 @@
                 </div>
               </div>
 
+              {{-- ทุนอะไหล่เป็น 0 จริง --}}
+              <div class="col-12">
+                <div class="d-flex align-items-center gap-3 p-3 mb-0 rounded w-100"
+                  style="background:#fdeef0;border:1px solid #f5c2cb;">
+                  <span class="form-switch m-0 p-0" style="min-height:auto;">
+                    <input class="form-check-input m-0" type="checkbox" role="switch"
+                      {{ $acc->is_zero_cost ? 'checked' : '' }} disabled
+                      style="width:2.75em;height:1.5em;">
+                  </span>
+                  <span>
+                    <span class="fw-bold"><i class="bx bx-check-double"></i> ทุนอะไหล่เป็น 0 จริง (ยืนยันแล้ว)</span>
+                    <span class="text-muted small d-block">{{ $acc->is_zero_cost ? 'ใช่ — ไม่มีต้นทุนอะไหล่จริง' : 'ไม่ใช่ — ต้องมีราคาทุนอะไหล่มากกว่า 0' }}</span>
+                  </span>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
