@@ -164,12 +164,16 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
   /**
    * เซลล์ของ brand นี้ "เฉพาะสาขานี้" (role sale/lead_sale) เรียงตามชื่อ — รวมคนที่ยังไม่มีข้อมูล
    * brand 3 (Wuling) รวมเซลล์ brand 4 (Lepas) ด้วย เพราะ Lepas ขายรถ Wuling (record brand=3)
+   *
+   * ต้อง whereNull('deleted_at') เอง — withoutGlobalScopes() ปิด SoftDeletingScope ไปด้วย
+   * ทำให้เซลล์ที่ลบไปแล้วโผล่ในรายงาน (ใส่ไว้เพื่อข้ามขอบเขต brand ของ user ที่กดออกรายงาน)
    */
   protected function salespeople(): array
   {
     $rosterBrands = $this->brand === 3 ? [3, 4] : [$this->brand];
 
     return User::withoutGlobalScopes()
+      ->whereNull('deleted_at')
       ->whereIn('role', ['sale', 'lead_sale'])
       ->whereIn('brand', $rosterBrands)
       ->where('branch', $this->branch)
