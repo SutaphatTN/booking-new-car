@@ -1969,15 +1969,16 @@ $(document).ready(function () {
 
           res.forEach(a => {
             // ต้องมีราคาทุนอะไหล่ (cost_spare) มากกว่า 0 ถึงจะเลือกได้ — ใช้ตอนขออนุมัติ
-            // ยกเว้น "ของแถมมาตรฐาน" (is_standard) อนุญาตให้ cost_spare = 0 ได้ (บางตัวมาตรฐานแต่ทุนอะไหล่เป็น 0)
-            const noSpareCost = !a.is_standard && !(parseFloat(a.cost_spare) > 0);
+            // ยกเว้นรายการที่ยืนยันแล้วว่าทุนอะไหล่เป็น 0 จริง (is_zero_cost) เช่น ของที่ค่ายแถมฟรี / ประกัน / ค่าจดทะเบียน
+            // อย่าใช้ is_standard ตรงนี้ — คนละความหมาย (มาตรฐานของรุ่น ≠ ไม่มีทุนอะไหล่) เคยปนกันจนคนติ๊ก is_standard เพื่อปลดล็อก
+            const noSpareCost = !a.is_zero_cost && !(parseFloat(a.cost_spare) > 0);
             // ปิดเงื่อนไขชั่วคราว (วันปิดยอด): const noSpareCost = false;
 
-            // ราคา 0 บาท เลือกได้เฉพาะของแถมมาตรฐาน (is_standard) เท่านั้น
+            // ราคา 0 บาท เลือกได้เฉพาะของแถมมาตรฐาน (is_standard) หรือของที่ทุนอะไหล่เป็น 0 จริง (is_zero_cost)
             const buildPriceCell = (type, price, comAttr = '') => {
               if (price === null || price === undefined) return `<span>-</span>`;
 
-              const blockZero = parseFloat(price) === 0 && !a.is_standard;
+              const blockZero = parseFloat(price) === 0 && !a.is_standard && !a.is_zero_cost;
               // ปิดเงื่อนไขชั่วคราว (วันปิดยอด): const blockZero = false;
               const block = noSpareCost || blockZero;
               const title = noSpareCost

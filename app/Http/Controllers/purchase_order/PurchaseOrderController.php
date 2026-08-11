@@ -224,6 +224,7 @@ class PurchaseOrderController extends Controller
                 'AccessoryComSale' => $a->comSale ?? null,
                 'is_standard' => (bool) $a->is_standard,
                 'allow_custom_price' => (bool) $a->allow_custom_price, // เปิดช่อง "ระบุเอง" ให้เฉพาะรายการที่ราคาไม่คงที่
+                'is_zero_cost' => (bool) $a->is_zero_cost, // ยืนยันแล้วว่าทุนอะไหล่ = 0 จริง → เลือกได้ทั้งที่ cost_spare เป็น 0
                 'cost_spare' => $a->cost_spare ?? null, // ราคาทุนอะไหล่ — ต้องมีถึงเลือกได้ (ใช้ตอนขออนุมัติ)
             ];
         });

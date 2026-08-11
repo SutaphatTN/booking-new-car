@@ -156,10 +156,12 @@ class AccessoryController extends Controller
 
     /**
      * ราคาทุนอะไหล่ (cost_spare) ใช้เป็นยอด "ของแถม" ตอนขออนุมัติเกินงบ
-     * ถ้าเป็น 0 ยอดที่เหลือในอีเมลจะสูงกว่าความจริง → ห้ามกรอก 0 ผ่านฟอร์ม
+     * ถ้าเป็น 0 เพราะ "ยังไม่ได้กรอก" ยอดที่เหลือในอีเมลจะสูงกว่าความจริง → ปกติห้ามกรอก 0
      *
-     * $allowZero = true เฉพาะตอนแก้ไขแถวที่ค่าเดิมใน DB เป็น 0 อยู่แล้ว (ตั้งไว้เองจากฐานข้อมูล)
-     * เพื่อให้ยังแก้ชื่อ/วันที่ของแถวนั้นได้โดยไม่ถูกบังคับทับ 0 ทิ้ง
+     * ยอมให้กรอก 0 ได้ 2 กรณี:
+     *   1. ติ๊กธง is_zero_cost = ยืนยันว่าทุนอะไหล่เป็น 0 จริง (ของที่ค่ายแถมฟรี / ไม่ใช่อะไหล่ เช่น ประกัน ค่าจดทะเบียน)
+     *   2. $allowZero — แถวที่ค่าเดิมใน DB เป็น 0 อยู่แล้วแต่ยังไม่ได้ติดธง (ข้อมูลเก่า/ตั้งจาก SQL)
+     *      เพื่อให้ยังแก้ชื่อ/วันที่ของแถวนั้นได้โดยไม่ถูกบังคับทับ 0 ทิ้ง
      *
      * ต้องเรียก "นอก" try/catch เพราะ ValidationException เป็นลูกของ \Exception
      */
@@ -171,6 +173,8 @@ class AccessoryController extends Controller
                 : null,
         ]);
 
+        $allowZero = $allowZero || $request->boolean('is_zero_cost');
+
         $request->validate([
             'cost_spare' => $allowZero
                 ? 'required|numeric|min:0'
@@ -178,7 +182,7 @@ class AccessoryController extends Controller
         ], [
             'cost_spare.required' => 'กรุณากรอกราคาทุนอะไหล่',
             'cost_spare.numeric'  => 'ราคาทุนอะไหล่ต้องเป็นตัวเลข',
-            'cost_spare.gt'       => 'ราคาทุนอะไหล่ต้องมากกว่า 0',
+            'cost_spare.gt'       => 'ราคาทุนอะไหล่ต้องมากกว่า 0 — ถ้าเป็น 0 จริง ให้เปิดสวิตช์ "ทุนอะไหล่เป็น 0 จริง"',
             'cost_spare.min'      => 'ราคาทุนอะไหล่ต้องไม่ติดลบ',
         ]);
     }
@@ -228,6 +232,7 @@ class AccessoryController extends Controller
                 'is_standard' => $request->boolean('is_standard'),
                 'is_registration' => $request->boolean('is_registration'),
                 'allow_custom_price' => $request->boolean('allow_custom_price'),
+                'is_zero_cost' => $request->boolean('is_zero_cost'),
                 'accessoryPartner_id' => $request->accessoryPartner_id,
                 'cost_spare' => $request->cost_spare,
                 'cost' => $request->filled('cost')
@@ -290,7 +295,7 @@ class AccessoryController extends Controller
     {
         $acc = AccessoryPrice::findOrFail($id);
 
-        // ค่าเดิมเป็น 0 (ตั้งจาก DB) → ยอมให้บันทึก 0 ซ้ำได้ | NULL หรือ > 0 → บังคับ > 0
+        // ค่าเดิมเป็น 0 (ตั้งจาก DB) → ยอมให้บันทึก 0 ซ้ำได้ | NULL หรือ > 0 → บังคับ > 0 เว้นแต่ติ๊กธง is_zero_cost
         $this->validateCostSpare($request, $acc->cost_spare !== null && (float) $acc->cost_spare === 0.0);
 
         // กันแก้ชื่อ/รหัสไปชนกับแถวอื่นที่มีอยู่แล้ว
@@ -302,6 +307,7 @@ class AccessoryController extends Controller
             $data = $request->except(['_token', '_method']);
 
             $data['cost_spare'] = $request->cost_spare;
+            $data['is_zero_cost'] = $request->boolean('is_zero_cost');
 
             $data['cost'] = $request->cost
                 ? str_replace(',', '', $request->cost)
