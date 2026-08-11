@@ -25,37 +25,50 @@
 
         <div class="card-body pt-3">
 
-          {{-- ── แถบเครื่องมือ : ฟิลเตอร์ สถานะ + เดือน (Billing) ── --}}
-          <form method="GET" action="{{ route('floor-plan.fp') }}" id="fpFilterForm">
-            <div class="po-filter-bar d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-              <div class="d-flex align-items-center gap-3 flex-wrap">
-                <div class="d-flex align-items-center gap-2">
-                  <label class="po-label mb-0" for="status"><i class="bx bx-filter-alt me-1"></i> สถานะ</label>
-                  <select id="status" name="status" class="form-select form-select-sm" style="width:auto;">
-                    <option value="all" {{ $status === 'all' ? 'selected' : '' }}>ทั้งหมด</option>
-                    <option value="closed" {{ $status === 'closed' ? 'selected' : '' }}>ปิดแล้ว</option>
-                    <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>รอปิด FP</option>
-                  </select>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                  <label class="po-label mb-0" for="month"><i class="bx bx-calendar me-1"></i> เดือน (Billing)</label>
-                  <input type="month" id="month" name="month" class="form-control form-control-sm"
-                    style="width:auto;" value="{{ $month }}" {{ $status === 'pending' ? 'disabled' : '' }}>
-                </div>
+          {{-- ── แถบเครื่องมือ : ฟิลเตอร์ (ซ้าย) + ออกรายงาน (ขวา) ──
+               แยกเป็น 2 ฟอร์มเพราะฟอร์มซ้อนกันไม่ได้ — ตัว .po-filter-bar เป็น div ครอบไว้เพื่อคุมเลย์เอาต์ --}}
+          <div class="po-filter-bar d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+            <form method="GET" action="{{ route('floor-plan.fp') }}" id="fpFilterForm"
+              class="d-flex align-items-center gap-3 flex-wrap">
+              <div class="d-flex align-items-center gap-2">
+                <label class="po-label mb-0" for="status"><i class="bx bx-filter-alt me-1"></i> สถานะ</label>
+                <select id="status" name="status" class="form-select form-select-sm" style="width:auto;">
+                  <option value="all" {{ $status === 'all' ? 'selected' : '' }}>ทั้งหมด</option>
+                  <option value="closed" {{ $status === 'closed' ? 'selected' : '' }}>ปิดแล้ว</option>
+                  <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>รอปิด FP</option>
+                </select>
               </div>
-              <div class="d-flex align-items-center gap-2 flex-wrap">
-                <span class="badge bg-label-secondary"><i class="bx bx-calendar-event me-1"></i> งวด {{ $periodLabel }}</span>
-                <span class="badge bg-label-success"><i class="bx bx-money me-1"></i> รวมดอกเบี้ย {{ number_format($grandTotal, 2) }} ฿</span>
-                <a href="{{ route('floor-plan.fp.export', ['month' => $month, 'status' => $status]) }}"
-                   class="btn btn-success btn-sm" title="ออกรายงานตามงวด Billing date ที่เลือก">
-                  <i class="bx bx-download me-1"></i> ออกรายงาน Excel
-                </a>
+              <div class="d-flex align-items-center gap-2">
+                <label class="po-label mb-0" for="month"><i class="bx bx-calendar me-1"></i> เดือน (Billing)</label>
+                <input type="month" id="month" name="month" class="form-control form-control-sm"
+                  style="width:auto;" value="{{ $month }}" {{ $status === 'pending' ? 'disabled' : '' }}>
               </div>
+            </form>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="badge bg-label-secondary"><i class="bx bx-calendar-event me-1"></i> งวด {{ $periodLabel }}</span>
+              <span class="badge bg-label-success"><i class="bx bx-money me-1"></i> รวมดอกเบี้ย {{ number_format($grandTotal, 2) }} ฿</span>
+
+              {{-- ออกรายงาน : เลือกได้เป็นช่วงเดือน (ดูหลายงวดรวมกัน) --}}
+              <form method="GET" action="{{ route('floor-plan.fp.export') }}" id="fpExportForm"
+                class="d-flex align-items-center gap-2 flex-wrap">
+                <label class="po-label mb-0" for="month_from"><i class="bx bx-download me-1"></i> ออกรายงาน</label>
+                <input type="month" id="month_from" name="month_from" class="form-control form-control-sm"
+                  style="width:auto;" value="{{ $month }}" required>
+                <span class="text-muted small">ถึง</span>
+                <input type="month" id="month_to" name="month_to" class="form-control form-control-sm"
+                  style="width:auto;" value="{{ $month }}" required>
+                <button type="submit" class="btn btn-success btn-sm"
+                  title="ออกรายงานตามช่วงงวด Billing date ที่เลือก">
+                  <i class="bx bx-spreadsheet me-1"></i> Excel
+                </button>
+              </form>
             </div>
-          </form>
+          </div>
           <div class="text-muted small mb-3">
             <i class="bx bx-info-circle"></i>
             กรอง "ปิดแล้ว" ตามงวด Billing date (รอบ 16–15) &nbsp;•&nbsp; <b>รอปิด FP แสดงเสมอ</b> (ยกเว้นเลือกสถานะ "ปิดแล้ว")
+            &nbsp;•&nbsp; รายงาน Excel เลือกได้หลายเดือน — คันที่ยังไม่ปิด FP จะ<b>ประมาณการดอกเบี้ย</b>ถึงวันที่ 15 สิ้นงวดของเดือนสุดท้าย (แถวสีเหลือง)
           </div>
 
           <div class="table-responsive">
@@ -449,9 +462,21 @@
       });
 
       // เปลี่ยนฟิลเตอร์ (สถานะ/เดือน) -> โหลดหน้าใหม่
+      // ระวัง: อย่าใส่ #month_from/#month_to ที่นี่ — สองช่องนั้นเป็นของฟอร์มออกรายงาน ไม่ต้องรีโหลดหน้า
       $(document).on('change', '#status, #month', function () {
         $('#fpLoadingOverlay').css('display', 'flex');
         document.getElementById('fpFilterForm').submit();
+      });
+
+      // ช่วงเดือนของรายงาน: กันเลือกเดือนสิ้นสุดย้อนกว่าเดือนเริ่ม (ฝั่ง server สลับให้อยู่แล้ว อันนี้กันพลาดหน้าจอ)
+      $(document).on('change', '#month_from', function () {
+        const to = document.getElementById('month_to');
+        to.min = this.value;
+        if (to.value && to.value < this.value) to.value = this.value;
+      });
+      $(document).on('change', '#month_to', function () {
+        const from = document.getElementById('month_from');
+        if (from.value && this.value && this.value < from.value) this.value = from.value;
       });
 
       // ดูข้อมูล -> ยัด detail template เข้า modal
