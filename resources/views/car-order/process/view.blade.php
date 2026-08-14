@@ -31,8 +31,8 @@
           <button type="button" class="btn btn-success btn-sm btnRequestApproval">
             <i class="bx bx-mail-send me-1"></i> ขออนุมัติที่เลือก
           </button>
-          {{-- อนุมัติที่เลือก : เฉพาะ role md, admin --}}
-          @if (in_array(auth()->user()->role, ['md', 'admin']))
+          {{-- อนุมัติที่เลือก : เฉพาะ role md, gm, admin --}}
+          @if (in_array(auth()->user()->role, ['md', 'gm', 'admin']))
             <button type="button" class="btn btn-primary btn-sm btnBulkApprove">
               <i class="bx bx-check-double me-1"></i> อนุมัติที่เลือก
             </button>
@@ -94,7 +94,8 @@
         <select id="process_approver_id" class="form-select" required>
           <option value="">— เลือกผู้อนุมัติ —</option>
           @foreach ($approvers as $a)
-            <option value="{{ $a->id }}">{{ $a->full_name ?: $a->name }}</option>
+            {{-- ต่อท้ายด้วยตำแหน่ง (MD/GM) กันชื่อซ้ำ/แยกไม่ออกว่าเป็นใคร --}}
+            <option value="{{ $a->id }}">{{ $a->full_name ?: $a->name }} ({{ strtoupper($a->role) }})</option>
           @endforeach
         </select>
       </div>
