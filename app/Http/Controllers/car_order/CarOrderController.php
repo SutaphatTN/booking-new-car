@@ -999,9 +999,9 @@ class CarOrderController extends Controller
         $process = CarOrder::all();
         $openId = $request->query('open_id');
 
-        // ผู้อนุมัติ (role md) สำหรับ modal "ขออนุมัติที่เลือก"
-        // เช็คแค่ role = md ไม่กรอง brand — md เห็นได้ทุก brand อยู่แล้ว และ requestApproval ก็ validate แค่ role=md
-        $approvers = User::where('role', 'md')->get();
+        // ผู้อนุมัติ (role md, gm) สำหรับ modal "ขออนุมัติที่เลือก"
+        // เช็คแค่ role ไม่กรอง brand — md/gm เห็นได้ทุก brand อยู่แล้ว และ requestApproval ก็ validate ด้วย role เดียวกัน
+        $approvers = User::whereIn('role', self::APPROVER_ROLES)->orderBy('role')->orderBy('name')->get();
 
         return view('car-order.process.view', compact('process', 'openId', 'approvers'));
     }
@@ -1115,11 +1115,14 @@ class CarOrderController extends Controller
         return response()->json(['data' => $data]);
     }
 
-    // ขออนุมัติที่เลือก — ส่งเมลรวมครั้งเดียวให้ผู้อนุมัติ (md) พร้อมรายการทั้งหมด + ลิงก์กลับหน้า process
+    // role ที่เลือกเป็น "ผู้อนุมัติ" ของคำขอสั่งรถได้ (modal ขออนุมัติที่เลือก)
+    private const APPROVER_ROLES = ['md', 'gm'];
+
+    // ขออนุมัติที่เลือก — ส่งเมลรวมครั้งเดียวให้ผู้อนุมัติ (md/gm) พร้อมรายการทั้งหมด + ลิงก์กลับหน้า process
     public function requestApproval(Request $request)
     {
         $request->validate([
-            'approver_id' => ['required', Rule::exists('users', 'id')->where('role', 'md')],
+            'approver_id' => ['required', Rule::exists('users', 'id')->whereIn('role', self::APPROVER_ROLES)],
             'order_ids'   => ['array'],
             'waiting_ids' => ['array'],
         ], [
@@ -1128,7 +1131,7 @@ class CarOrderController extends Controller
         ]);
 
         try {
-            $approver = User::where('role', 'md')->findOrFail($request->approver_id);
+            $approver = User::whereIn('role', self::APPROVER_ROLES)->findOrFail($request->approver_id);
             if (!$approver->email) {
                 return response()->json(['success' => false, 'message' => 'ผู้อนุมัติยังไม่มีอีเมลในระบบ'], 422);
             }
@@ -1259,8 +1262,8 @@ class CarOrderController extends Controller
     // order ลูกค้า: อนุมัติตรงๆ | waiting: อนุมัติ "ตามจำนวนที่สั่ง" (received = count_order)
     public function bulkApprove(Request $request)
     {
-        // อนุมัติที่เลือก : เฉพาะ role md, admin (กันยิง endpoint ตรง)
-        if (!in_array(Auth::user()->role, ['md', 'admin'])) {
+        // อนุมัติที่เลือก : เฉพาะ role md, gm, admin (กันยิง endpoint ตรง)
+        if (!in_array(Auth::user()->role, ['md', 'gm', 'admin'])) {
             return response()->json(['success' => false, 'message' => 'คุณไม่มีสิทธิ์อนุมัติรายการ'], 403);
         }
 
