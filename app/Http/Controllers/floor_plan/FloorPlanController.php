@@ -50,13 +50,19 @@ class FloorPlanController extends Controller
      * เช่น period '2026-06' = 16/06/2026 – 15/07/2026
      */
 
-    // งวดปัจจุบันตามวันนี้: ตั้งแต่วันที่ 16 = งวดของเดือนนี้ / ก่อนวันที่ 16 = งวดเดือนก่อน
+    // งวดที่วันที่หนึ่ง ๆ ตกอยู่: ตั้งแต่วันที่ 16 = งวดของเดือนนั้น / ก่อนวันที่ 16 = งวดเดือนก่อน
+    // เช่น 16/07 และ 15/08 อยู่งวดเดียวกัน = '2026-07' (16/07/2026 – 15/08/2026)
+    private function periodOf(Carbon $date): string
+    {
+        return $date->day >= 16
+            ? $date->format('Y-m')
+            : $date->copy()->subMonthNoOverflow()->format('Y-m');
+    }
+
+    // งวดปัจจุบันตามวันนี้
     private function currentPeriod(): string
     {
-        $today = now();
-        return $today->day >= 16
-            ? $today->format('Y-m')
-            : $today->copy()->subMonthNoOverflow()->format('Y-m');
+        return $this->periodOf(now());
     }
 
     // ช่วงวันที่ของงวด [เริ่ม, สิ้นสุด] จาก period (YYYY-MM ของเดือนที่เริ่ม)
@@ -287,8 +293,9 @@ class FloorPlanController extends Controller
                 'vin'           => $o->vin_number ?: '-',
                 'billingText'   => $o->format_fp_date ?? '-',
                 'billingDate'   => $billing ? $billing->format('Y-m-d') : null,   // Y-m-d สำหรับ input
-                // งวดของ Billing date = เดือนของ segment แรก (calendar month ของ billing)
-                'billingPeriod' => $billing ? $billing->format('Y-m') : null,
+                // งวดของ Billing date = งวด 16–15 ที่วันนั้นตกอยู่ (ไม่ใช่ calendar month)
+                // เช่น billing 03/08/2026 → งวด '2026-07' (16/07 – 15/08) ตรงกับ statement ของ Tisco
+                'billingPeriod' => $billing ? $this->periodOf($billing) : null,
                 'year'          => $o->year ?: '-',
                 'option'        => $o->option ?: '-',
                 'color'         => $o->display_color ?? '-',
