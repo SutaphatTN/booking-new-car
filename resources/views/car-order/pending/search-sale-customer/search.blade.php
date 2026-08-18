@@ -1,3 +1,9 @@
+@php
+  $brand = auth()->user()->brand;
+  // brand 1 = มี Option, brand 2 = มีสีภายใน, brand อื่น = คอลัมน์ปกติ
+  $extraCol = $brand == 1 ? 'option' : ($brand == 2 ? 'interior' : '');
+@endphp
+
 <div class="modal fade" id="modalSearchPurchaseCus" tabindex="-1" aria-labelledby="modalSearchPurchaseCusLabel" aria-hidden="true" role="dialog">
   <div class="modal-dialog modal-xl modal-dialog-centered">
     <div class="modal-content">
@@ -8,13 +14,17 @@
 
       <div class="modal-body">
         <div class="table-responsive">
-          <table class="table table-bordered" id="tableSelectPurchaseCus">
+          <table class="table table-bordered" id="tableSelectPurchaseCus" data-extra-col="{{ $extraCol }}">
             <thead>
               <tr>
                 <th>ชื่อ - นามสกุล</th>
                 <th>รุ่นรถหลัก</th>
                 <th>รุ่นรถย่อย</th>
-                <th>Option</th>
+                @if ($extraCol === 'option')
+                  <th>Option</th>
+                @elseif ($extraCol === 'interior')
+                  <th>สีภายใน</th>
+                @endif
                 <th>สี</th>
                 <th>ปี</th>
                 <th>Action</th>

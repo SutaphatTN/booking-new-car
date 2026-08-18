@@ -38,7 +38,7 @@ return [
     ],
 
     // role ที่กดยืม/คืนป้ายแดงข้ามแบรนด์ได้ (audit_internal = role ใหม่ รอเพิ่มใน DB)
-    'plate_loan_roles' => ['admin', 'audit_internal'],
+    'plate_loan_roles' => ['admin', 'audit_internal', 'audit_lead'],
 
     /*
     |--------------------------------------------------------------------------

@@ -808,8 +808,8 @@
               </div>
             </div>
 
-            {{-- Section 4 : ข้อมูล Car Order --}}
-            @if ($userRole !== 'sale')
+            {{-- Section 4 : ข้อมูล Car Order — sale/adminPage ไม่เห็น (ผูกรถไม่ได้ ดู canBindCarOrder()) --}}
+            @if (!in_array($userRole, ['sale', 'adminPage']))
               <div class="po-section-edit">
                 <div class="po-section-header">
                   <div class="po-section-icon indigo"><i class="bx bx-receipt"></i></div>
@@ -2456,7 +2456,8 @@
 
                   </div>
 
-                  @if ($userRole === 'sale')
+                  {{-- sale/adminPage ไม่เห็นแท็บ "ข้อมูลเพิ่มเติม" → ปุ่มตรวจสอบ (ทางเข้าโมดัลบันทึก) ต้องอยู่แท็บนี้ --}}
+                  @if (in_array($userRole, ['sale', 'adminPage']))
                     <div class="mt-6 d-flex justify-content-end gap-2">
                       <button id="prevExtra" class="btn btn-danger">ย้อนกลับ</button>
                       <button type="button" class="btn btn-info" id="btnPreviewCar">

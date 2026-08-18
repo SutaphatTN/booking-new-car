@@ -637,25 +637,36 @@ $(document).ready(function () {
       type: 'GET',
       data: { keyword },
       success: function (res) {
-        const $tableBody = $('#tableSelectPurchaseCus tbody');
+        const $table = $('#tableSelectPurchaseCus');
+        const $tableBody = $table.find('tbody');
+        // brand 1 = คอลัมน์ Option, brand 2 = คอลัมน์สีภายใน, brand อื่น = ไม่มีคอลัมน์เสริม
+        const extraCol = $table.data('extra-col') || '';
+        const colCount = $table.find('thead th').length;
         $tableBody.empty();
 
         if (!res.length) {
           $tableBody.append(`
           <tr>
-            <td colspan="7" class="text-center">ไม่พบข้อมูลการจองของลูกค้า</td>
+            <td colspan="${colCount}" class="text-center">ไม่พบข้อมูลการจองของลูกค้า</td>
           </tr>
         `);
         } else {
           res.forEach(c => {
             const fullName = `${c.customer?.prefix?.Name_TH ?? ''}${c.customer?.FirstName ?? ''} ${c.customer?.LastName ?? ''}`;
 
+            let extraTd = '';
+            if (extraCol === 'option') {
+              extraTd = `<td>${c.option ?? '-'}</td>`;
+            } else if (extraCol === 'interior') {
+              extraTd = `<td>${c.interior_color_name ?? '-'}</td>`;
+            }
+
             $tableBody.append(`
             <tr>
               <td>${fullName}</td>
               <td>${c.model?.Name_TH ?? '-'}</td>
               <td>${c.sub_model?.name ?? ''} ${c.sub_model?.detail ?? ''}</td>
-              <td>${c.option ?? '-'}</td>
+              ${extraTd}
               <td>${c.Color ?? '-'}</td>
               <td>${c.Year ?? '-'}</td>
               <td>
