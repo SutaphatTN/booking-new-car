@@ -3383,7 +3383,8 @@ class PurchaseOrderController extends Controller
         $saleCars = Salecar::with([
             'customer.prefix',
             'model',
-            'subModel'
+            'subModel',
+            'interiorColor'
         ])
             ->whereNull('CarOrderID')
             ->whereHas('customer', function ($q) use ($keyword) {
@@ -3391,6 +3392,11 @@ class PurchaseOrderController extends Controller
             })
             ->limit(10)
             ->get();
+
+        // แยกคีย์ชื่อสีภายในไว้ กัน relation interiorColor ทับ attribute interior_color (ที่เก็บเป็น id)
+        $saleCars->each(function ($s) {
+            $s->setAttribute('interior_color_name', $s->interiorColor->name ?? null);
+        });
 
         return response()->json($saleCars);
     }

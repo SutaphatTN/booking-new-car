@@ -216,7 +216,9 @@ class User extends Authenticatable
 
 	/**
 	 * ผูก/ปลดรถบนใบจองของ brand นี้ได้ไหม
-	 * brand อื่นใช้เกณฑ์เดิม — ทุก role ที่เห็น section ยกเว้น sale
+	 * brand อื่นใช้เกณฑ์เดิม — ทุก role ที่เห็น section ยกเว้น sale/adminPage
+	 * (sale/adminPage ไม่เห็น section ข้อมูล Car Order ในฟอร์ม → ไม่ส่ง CarOrderID กลับมา
+	 *  ต้อง false เพื่อให้ตอนบันทึกคงค่าเดิม ไม่งั้นรถที่ผูกไว้หลุด)
 	 */
 	public function canBindCarOrder(int $brand): bool
 	{
@@ -224,7 +226,7 @@ class User extends Authenticatable
 			return in_array($this->role, self::BIND_CAR_ORDER_ROLES_BRAND2, true);
 		}
 
-		return $this->role !== 'sale';
+		return !in_array($this->role, ['sale', 'adminPage'], true);
 	}
 
 	/**
