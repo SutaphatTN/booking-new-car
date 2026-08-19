@@ -600,12 +600,16 @@ class FloorPlanController extends Controller
     {
         $this->authorizeAccess();
 
-        // รายงานยึด "เดือนของวันที่รับ" เท่านั้น (ไม่ยึดสถานะเบิก/ยังไม่เบิก)
-        $month = $request->input('month');
+        // รายงานยึด "เดือนของวันที่รับ" + สถานะเบิกตามตัวกรองในหน้า
+        //  pending = ยังไม่เบิก | withdrawn = เบิกแล้ว | อื่น ๆ/ว่าง = ทุกสถานะ (ลิงก์เก่าที่ไม่ส่ง status)
+        $month  = $request->input('month');
+        $status = $request->input('status');
 
-        $suffix   = $month ? (' ' . $month) : '';
+        $statusLabel = ['pending' => ' (ยังไม่เบิก)', 'withdrawn' => ' (เบิกแล้ว)'][$status] ?? '';
+
+        $suffix   = $statusLabel . ($month ? (' ' . $month) : '');
         $filename = ExportFilename::withBrand('รายงานแจ้งจำหน่าย' . $suffix . '.xlsx');
 
-        return Excel::download(new DisposeReportExport($month), $filename);
+        return Excel::download(new DisposeReportExport($month, $status), $filename);
     }
 }
