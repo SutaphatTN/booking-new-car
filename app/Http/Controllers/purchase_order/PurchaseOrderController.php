@@ -469,6 +469,20 @@ class PurchaseOrderController extends Controller
         return array_values(array_diff($cc, $to));
     }
 
+    // อีเมลที่ CC ทุกเมลในสายอนุมัติของแบรนด์นั้น (คำขอทุกเคส รวมงบปกติ + เมลตีกลับ)
+    // ตั้งค่าที่ config/approval.php คีย์ 'request_cc'
+    //  - brand 1/3/4 : CC ให้ daw รับทราบ (brand 3 ใช้ config ของ brand 1 ผ่าน alias)
+    //  - กันซ้ำกับ To/CC ที่มีอยู่แล้ว
+    private function requestCc($brand, array $exclude = []): array
+    {
+        $alias         = config("approval.$brand");
+        $resolvedBrand = is_int($alias) ? $alias : (int) $brand;
+
+        $cc = array_values(array_filter((array) config("approval.$resolvedBrand.request_cc", [])));
+
+        return array_values(array_diff($cc, $exclude));
+    }
+
     // อีเมลขั้นถัดไป (ผู้อนุมัติขั้นสุดท้าย) พร้อมข้อมูล+ไฟล์ทั้งสอง
     //  - b1_md (brand 1/3) : ส่งต่อ GM (CC ให้ md รับทราบ)
     //  - b2_gm (brand 2)   : ส่งต่อ MD (CC ให้ ketsudap)
@@ -492,7 +506,10 @@ class PurchaseOrderController extends Controller
         }
         $files = $this->buildApprovalAttachments($saleCar);
 
-        Mail::to($mailTo)->cc($this->overBudgetCc($saleCar, (array) $mailTo))->send(new SaleRequestMail(
+        $mailCc = $this->overBudgetCc($saleCar, (array) $mailTo);
+        $mailCc = array_merge($mailCc, $this->requestCc($saleCar->brand, array_merge((array) $mailTo, $mailCc)));
+
+        Mail::to($mailTo)->cc($mailCc)->send(new SaleRequestMail(
             $saleCar->fresh(['model', 'saleUser', 'customer.prefix']),
             $finalRole === 'gm' ? 'gm_final' : 'md_final',
             $data,
@@ -813,8 +830,12 @@ class PurchaseOrderController extends Controller
 
         $actionUrl = $endRound ? null : route('purchase-order.emailApprove', ['token' => $token]);
 
+        $mailTo = array_values(array_unique(array_filter($mailTo)));
+        // CC ประจำแบรนด์ (brand 1/3/4 → daw) — รับทราบการตีกลับด้วย
+        $mailCc = $this->requestCc($saleCar->brand, $mailTo);
+
         try {
-            Mail::to(array_values(array_unique(array_filter($mailTo))))
+            Mail::to($mailTo)->cc($mailCc)
                 ->send(new ApprovalReturnMail($saleCar->fresh(['model', 'subModel', 'saleUser', 'customer.prefix']), $request->return_reason, $returnedBy, $actionUrl));
         } catch (\Throwable $e) {
             report($e); // ส่งเมลล้มเหลวไม่ควรทำให้การตีกลับล้มเหลว
@@ -839,7 +860,7 @@ class PurchaseOrderController extends Controller
         $data  = $this->buildApprovalData($saleCar);
         $files = $this->buildApprovalAttachments($saleCar);
 
-        Mail::to($mailTo)->send(new SaleRequestMail(
+        Mail::to($mailTo)->cc($this->requestCc($saleCar->brand, (array) $mailTo))->send(new SaleRequestMail(
             $saleCar->fresh(['model', 'saleUser', 'customer.prefix']),
             'manager_revise',
             $data,
@@ -2500,6 +2521,8 @@ class PurchaseOrderController extends Controller
                 $mailType = $case === 'normal' ? 'normal' : ($stageRole === 'gm' ? 'gm' : 'manager');
                 // CC เฉพาะคำขอที่วิ่งเข้า gm (b1_md → CC md | b2_gm → CC ketsudap+danut)
                 $mailCc = $stageRole === 'gm' ? $this->overBudgetCc($saleCar, (array) $mailTo) : [];
+                // CC ประจำแบรนด์ทุกคำขออนุมัติ (brand 1/3/4 → daw)
+                $mailCc = array_merge($mailCc, $this->requestCc($saleCar->brand, array_merge((array) $mailTo, $mailCc)));
                 Mail::to($mailTo)->cc($mailCc)->send(new SaleRequestMail($saleCar, $mailType, $approvalData, $approvalFiles));
             }
 

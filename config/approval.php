@@ -15,6 +15,7 @@ return [
         'gm'      => ['JirapornK@Chookiat.org'],  // เกินเพดาน (b1_md) → GM (คนเดียวกับ brand 2) อนุมัติจบ, CC ให้ md
         'md'      => ['ketsudap@chookiat.org'],
         'audit'   => ['daw.mitsuchookiatkrabi@gmail.com'],   // แจ้งเมื่ออนุมัติเสร็จ
+        'request_cc' => ['daw.mitsuchookiatkrabi@gmail.com'], // CC ทุกเมลสายอนุมัติ (คำขอทุกเคส + ตีกลับ)
     ],
 
     // ── brand 2 ──
@@ -33,7 +34,8 @@ return [
         'manager' => ['sm.chookiat@gmail.com'],
         'gm'      => ['JirapornK@Chookiat.org'],
         'md'      => ['ketsudap@chookiat.org'],
-        'audit'   => ['julalak181831@gmail.com'], 
+        'audit'   => ['julalak181831@gmail.com'],
+        'request_cc' => ['daw.mitsuchookiatkrabi@gmail.com'], // CC ทุกเมลสายอนุมัติ (คำขอทุกเคส + ตีกลับ)
     ],
 
 ];
