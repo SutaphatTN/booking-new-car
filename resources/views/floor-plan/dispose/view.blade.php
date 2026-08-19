@@ -47,8 +47,8 @@
                 @endif
               </div>
             </div>
-            <a href="{{ route('floor-plan.dispose.export', ['month' => $month]) }}"
-               class="btn btn-success btn-sm" title="ออกรายงานตามเดือนของวันที่รับ (ทุกสถานะ)">
+            <a href="{{ route('floor-plan.dispose.export', ['month' => $month, 'status' => $status]) }}"
+               class="btn btn-success btn-sm" title="ออกรายงานตามตัวกรองที่เลือก (สถานะ + เดือนของวันที่รับ)">
               <i class="bx bx-download me-1"></i> ออกรายงาน Excel
             </a>
           </div>

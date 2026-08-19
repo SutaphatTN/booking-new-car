@@ -21,9 +21,13 @@ class DisposeReportExport implements FromView, WithTitle, WithStyles, WithEvents
 {
     protected $month;
 
-    public function __construct($month = null)
+    /** pending = ยังไม่เบิก | withdrawn = เบิกแล้ว | null/อื่น ๆ = ทุกสถานะ */
+    protected $status;
+
+    public function __construct($month = null, $status = null)
     {
-        $this->month = $month;
+        $this->month  = $month;
+        $this->status = $status;
     }
 
     public function title(): string
@@ -97,25 +101,38 @@ class DisposeReportExport implements FromView, WithTitle, WithStyles, WithEvents
 
     public function view(): View
     {
-        // รายงานยึด "เดือนของวันที่รับ" — ไม่ยึดสถานะเบิก/ยังไม่เบิก และเอาเฉพาะรถที่มีวันที่รับ
+        // รายงาน = สิ่งที่เห็นในตารางหน้าจอ (สถานะ + เดือนของวันที่รับ)
         // ยึดจาก car_order (1 คัน = 1 แถว) เพราะเอกสารแจ้งจำหน่ายผูกกับรถ ไม่ใช่ใบจอง
         $query = CarOrder::with([
                 'model', 'subModel', 'interiorColor', 'gwmColor',
                 'salecars' => fn ($q) => $q->whereNotIn('con_status', [7, 8, 9])->with('customer'),
-            ])
-            ->whereNotNull('dispose_received_date');
+            ]);
 
-        // เดือนตาม "วันที่รับ" (เฉพาะเดือนที่เลือก)
+        // สถานะเบิก — ตรงกับตัวกรองในหน้าจอ (ไม่ส่งมา = ทุกสถานะ)
+        if ($this->status === 'pending') {
+            $query->whereNull('dispose_reg_withdraw_date');
+        } elseif ($this->status === 'withdrawn') {
+            $query->whereNotNull('dispose_reg_withdraw_date');
+        }
+
+        // เดือนตาม "วันที่รับ" — เลือกเดือน = ต้องมีวันที่รับและอยู่ในเดือนนั้น
+        // ไม่เลือกเดือน = ไม่บังคับว่าต้องกรอกวันที่รับแล้ว (รถค้างเบิกที่ยังไม่กรอกต้องเห็นด้วย)
+        $hasMonth = false;
         if ($this->month) {
             [$y, $m] = array_pad(explode('-', $this->month), 2, null);
             if ($y && $m) {
+                $hasMonth = true;
                 $query->whereYear('dispose_received_date', (int) $y)
                     ->whereMonth('dispose_received_date', (int) $m);
             }
         }
 
-        $rows = $query->orderBy('dispose_received_date')
-            ->orderByDesc('order_date')
+        // เลือกเดือน = ไล่วันที่รับจากต้นเดือนไปท้ายเดือน / ไม่เลือกเดือน = ใหม่ก่อน (คันที่ยังไม่กรอกวันที่รับตกท้ายตาราง)
+        $query = $hasMonth
+            ? $query->orderBy('dispose_received_date')
+            : $query->orderByDesc('dispose_received_date');
+
+        $rows = $query->orderByDesc('order_date')
             ->orderByDesc('id')
             ->get();
 
