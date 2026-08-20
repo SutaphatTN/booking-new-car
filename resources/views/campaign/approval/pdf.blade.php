@@ -54,7 +54,7 @@
     // รุ่นย่อย: brand 1 → detail (ชื่ออ่านง่าย), แบรนด์อื่น → name
     $subOf = function ($c) {
         $sub = $c->subModel ?? null;
-        if (!$sub) return '-';
+        if (!$sub) return is_null($c->subModel_id) ? 'ทุกรุ่นย่อย' : '-';
         $text = ((int) $c->brand === 1) ? $sub->detail : $sub->name;
         return $text ?: ($sub->name ?: ($sub->detail ?: '-'));
     };

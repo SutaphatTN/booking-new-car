@@ -88,7 +88,7 @@ class CampaignApprovalController extends Controller
             $ap = $c->approvals->first();
 
             $modelC   = $c->model->Name_TH ?? '';
-            $subModel = $c->subModel?->name ?? '-';
+            $subModel = $c->sub_model_label;
             $name     = $c->appellation?->name ?? '';
 
             return [
@@ -146,8 +146,8 @@ class CampaignApprovalController extends Controller
                     'id'         => $c->id,
                     'model_id'   => $c->model->id ?? 0,
                     'model_main' => $c->model->Name_TH ?? '-',           // รุ่นหลัก (ใช้จัดกลุ่ม/เลือกทั้งรุ่น)
-                    'sub'        => $c->subModel?->name ?? '-',           // รุ่นย่อย
-                    'model'      => trim(($c->model->Name_TH ?? '') . ' / ' . ($c->subModel?->name ?? '-')),
+                    'sub'        => $c->sub_model_label,                  // รุ่นย่อย (NULL = ทุกรุ่นย่อย)
+                    'model'      => trim(($c->model->Name_TH ?? '') . ' / ' . $c->sub_model_label),
                     'name'       => $c->appellation?->name ?? '-',
                     'type'       => $c->type?->name ?? '-',
                     'amount'     => (float) ($c->cashSupport_final ?? 0),

@@ -24,11 +24,24 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
     return 'Test Drive';
   }
 
+  /**
+   * brand 2 มีคอลัมน์ "สาขา" แทรกเป็นคอลัมน์แรก → ตัวอักษรคอลัมน์ที่เหลือขยับไป 1 ช่อง
+   * ต้องตรงกับลำดับใน blade test-drive.blade.php
+   */
+  private function col(string $base): string
+  {
+    if ((int) (auth()->user()->brand ?? 0) !== 2) {
+      return $base;
+    }
+
+    return chr(ord($base) + 1);
+  }
+
   public function columnFormats(): array
   {
     return [
-      'F' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
-      'E' => NumberFormat::FORMAT_TEXT,
+      $this->col('F') => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,   // ราคาขาย
+      $this->col('E') => NumberFormat::FORMAT_TEXT,                      // ปี
     ];
   }
 
@@ -122,6 +135,7 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
         : null;
 
       $data->push([
+        'branch'     => $order->branchInfo->name ?? '-',
         'model'      => $order->model->Name_TH ?? '-',
         'subModel' => $order->subModel
           ? ($order->subModel->detail

@@ -1372,8 +1372,9 @@ class PurchaseOrderController extends Controller
         // แคมเปญ CK (type = 4) ต้องได้รับอนุมัติของ "เดือนปัจจุบัน" ถึงจะเลือกได้
         $currentPeriod = $today->format('Y-m');
 
+        // forSubModel = แคมเปญของรุ่นย่อยนี้ + แคมเปญ "ทุกรุ่นย่อย" (subModel_id = NULL) ของรุ่นหลักเดียวกัน
         $campaigns = Campaign::with('appellation', 'type')
-            ->where('subModel_id', $request->subModel_id)
+            ->forSubModel($subModel_id)
             ->where('startYear', '<=', $year)
             ->where('endYear', '>=', $year)
             ->whereDate('startDate', '<=', $today)
@@ -1433,7 +1434,7 @@ class PurchaseOrderController extends Controller
         $campaigns = [];
         if ($subModel_id) {
             $campaigns = Campaign::with(['appellation', 'type'])
-                ->where('subModel_id', $subModel_id)
+                ->forSubModel($subModel_id, $saleCar->model_id)
                 ->where('active', 'active')
                 ->whereDate('startDate', '<=', $today)
                 ->whereDate('endDate', '>=', $today)

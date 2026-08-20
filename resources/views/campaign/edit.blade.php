@@ -52,10 +52,23 @@
                 </div>
 
                 <div class="col-md-7">
-                  <label for="edit_cam_subModel_id" class="mf-label form-label">
-                    <i class="bx bx-subdirectory-right ci-indigo"></i> รุ่นรถย่อย <span class="text-danger">*</span>
-                  </label>
-                  <select id="edit_cam_subModel_id" name="subModel_id" class="form-select" required>
+                  @php $isAllSub = is_null($cam->subModel_id); @endphp
+                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                    <label for="edit_cam_subModel_id" class="mf-label form-label mb-0">
+                      <i class="bx bx-subdirectory-right ci-indigo"></i> รุ่นรถย่อย <span class="text-danger">*</span>
+                    </label>
+                    {{-- ติ๊ก = บันทึก subModel_id เป็น NULL → ใช้กับทุกรุ่นย่อยของรุ่นหลักที่เลือก --}}
+                    <div class="form-check mb-0">
+                      <input class="form-check-input chkAllSubModels" type="checkbox" value="1" name="all_sub_models"
+                        id="edit_cam_all_sub_models" @checked($isAllSub)>
+                      <label class="form-check-label small text-primary" for="edit_cam_all_sub_models">
+                        ใช้กับทุกรุ่นย่อยในรุ่นนี้
+                      </label>
+                    </div>
+                  </div>
+                  <select id="edit_cam_subModel_id" name="subModel_id" class="form-select mt-1" required
+                    @disabled($isAllSub)>
+                    <option value="">— เลือกรุ่นรถย่อย —</option>
                     @foreach ($subModels as $s)
                       <option value="{{ $s->id }}" {{ $cam->subModel_id == $s->id ? 'selected' : '' }}>
                         {{ $s->name }}

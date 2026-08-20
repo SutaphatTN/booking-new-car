@@ -58,7 +58,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
     $showCost = auth()->user()->role !== 'manager';
 
     $next = 3; // A=รุ่นย่อย, B=สี
-    if ($brand == 2) $next++;                       // สีภายใน
+    if ($brand == 2) $next += 2;                    // สาขา (แทรกเป็นคอลัมน์แรก) + สีภายใน
     $next++;                                          // ปี
     $option = null;
     if (!in_array($brand, [2, 3, 4])) $option = $next++; // Option
@@ -253,6 +253,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         : null;
 
       $rows->push([
+        'branch'     => $order->branchInfo->name ?? '-',
         'subModel' => $order->subModel
           ? (trim($order->subModel->detail ?? '')
             ? $order->subModel->detail . ' - ' . $order->subModel->name
@@ -351,6 +352,8 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         : null;
 
       $rows->push([
+        // ท่อนใบจองที่ยังไม่ผูกรถ — สาขามาจากใบจอง ไม่ใช่รถ
+        'branch'     => $sale->branchInfo->name ?? '-',
         'subModel' => $sale->subModel
           ? (trim($sale->subModel->detail ?? '')
             ? $sale->subModel->detail . ' - ' . $sale->subModel->name

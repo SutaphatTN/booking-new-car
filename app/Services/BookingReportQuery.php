@@ -4,13 +4,30 @@ namespace App\Services;
 
 use App\Models\CarOrder;
 use App\Models\Salecar;
+use Illuminate\Support\Facades\Auth;
 
 class BookingReportQuery
 {
+  /**
+   * GWM(2) เป็นแบรนด์เดียวที่แยกสาขาจริง — รายงานนี้ต้องเห็นรถรวมทั้ง 2 สาขา
+   * (ชีทรายคันมีคอลัมน์ "สาขา" แยกให้แล้ว) จึงปลด scope สาขาทิ้งแล้วล็อก brand เองแทน
+   * brand อื่นสาขาเดียวอยู่แล้ว ปล่อยให้ scope เดิมทำงานตามปกติ
+   */
+  private static function scoped(string $model)
+  {
+    $user = Auth::user();
+
+    if ((int) ($user->brand ?? 0) === 2) {
+      return $model::withoutGlobalScope('userAccess')->where('brand', 2);
+    }
+
+    return $model::query();
+  }
+
   // base query
   public static function baseCarOrders()
   {
-    return CarOrder::query()
+    return self::scoped(CarOrder::class)
       ->with([
         'model',
         'subModel',
@@ -18,6 +35,7 @@ class BookingReportQuery
         'purchaseType',
         'gwmColor',
         'interiorColor',
+        'branchInfo',
         'salecars.customer.prefix',
         'salecars.saleUser',
         'salecars.carOrderHistories',
@@ -50,12 +68,14 @@ class BookingReportQuery
   // รถยังไม่ผูก
   public static function orphanSalesByModel($modelId)
   {
-    return Salecar::with([
+    return self::scoped(Salecar::class)
+      ->with([
       'customer.prefix',
       'saleUser',
       'conStatus',
       'subModel',
       'remainingPayment',
+      'branchInfo',
     ])
       ->whereNull('CarOrderID')
       ->where('model_id', $modelId)

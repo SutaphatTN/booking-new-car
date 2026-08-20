@@ -1,6 +1,9 @@
 <table>
   <thead>
     <tr>
+      @if (auth()->user()->brand == 2)
+        <th>สาขา</th>
+      @endif
       <th>รุ่นหลัก</th>
       <th>รุ่นย่อย</th>
       <th>สี</th>
@@ -26,6 +29,9 @@
   <tbody>
     @forelse ($testD as $t)
       <tr>
+        @if (auth()->user()->brand == 2)
+          <td>{{ $t['branch'] }}</td>
+        @endif
         <td>{{ $t['model'] }}</td>
         <td>{{ $t['subModel'] }}</td>
         <td>{{ $t['color'] }}</td>
@@ -49,7 +55,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="15" align="center">
+        <td colspan="{{ auth()->user()->brand == 2 ? 16 : 15 }}" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

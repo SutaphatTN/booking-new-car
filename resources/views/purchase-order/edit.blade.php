@@ -855,7 +855,7 @@
                     <div class="alert alert-secondary d-flex align-items-center gap-2 py-2 mb-3"
                       style="font-size:.85rem;">
                       <i class="bx bx-lock-alt"></i>
-                      <span>ดูข้อมูลได้อย่างเดียว — การผูก/ยกเลิกการผูกรถของแบรนด์นี้ทำได้เฉพาะ MD, GM และ Admin</span>
+                      <span>ดูข้อมูลได้อย่างเดียว — การผูก/ยกเลิกการผูกรถของแบรนด์นี้ทำได้เฉพาะ MD, GM, Admin, Audit และ Manager</span>
                     </div>
                   @endif
 
