@@ -48,11 +48,21 @@
                 </div>
 
                 <div class="col-md-7">
-                  <label for="inp_cam_subModel_id" class="mf-label form-label">
-                    <i class="bx bx-subdirectory-right"></i> รุ่นรถย่อย <span class="text-danger">*</span>
-                  </label>
+                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                    <label for="inp_cam_subModel_id" class="mf-label form-label mb-0">
+                      <i class="bx bx-subdirectory-right"></i> รุ่นรถย่อย <span class="text-danger">*</span>
+                    </label>
+                    {{-- ติ๊ก = บันทึก subModel_id เป็น NULL → ใช้กับทุกรุ่นย่อยของรุ่นหลักที่เลือก --}}
+                    <div class="form-check mb-0">
+                      <input class="form-check-input chkAllSubModels" type="checkbox" value="1" name="all_sub_models"
+                        id="inp_cam_all_sub_models">
+                      <label class="form-check-label small text-primary" for="inp_cam_all_sub_models">
+                        ใช้กับทุกรุ่นย่อยในรุ่นนี้
+                      </label>
+                    </div>
+                  </div>
                   <select id="inp_cam_subModel_id" name="subModel_id"
-                    class="form-select @error('subModel_id') is-invalid @enderror" required>
+                    class="form-select mt-1 @error('subModel_id') is-invalid @enderror" required>
                     <option value="">— เลือกรุ่นรถย่อย —</option>
                   </select>
                   @error('subModel_id')

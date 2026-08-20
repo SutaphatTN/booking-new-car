@@ -32,11 +32,24 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
         return 'สต็อกรถรวม';
     }
 
+    /**
+     * brand 2 มีคอลัมน์ "สาขา" แทรกเป็นคอลัมน์ B → ตัวอักษรคอลัมน์ที่เหลือขยับไป 1 ช่อง
+     * ต้องตรงกับลำดับใน blade booking.blade.php
+     */
+    private function col(string $base): string
+    {
+        if ((int) (auth()->user()->brand ?? 0) !== 2) {
+            return $base;
+        }
+
+        return chr(ord($base) + 1);
+    }
+
     public function columnFormats(): array
     {
         return [
-            'G' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
-            'F' => NumberFormat::FORMAT_TEXT,
+            $this->col('G') => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,   // ราคาทุน
+            $this->col('F') => NumberFormat::FORMAT_TEXT,                      // ปี
         ];
     }
 
@@ -102,7 +115,7 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
 
                 // format comma
                 $numberColumns = [
-                    'H'
+                    $this->col('H')   // ราคาขาย
                 ];
 
                 foreach ($numberColumns as $col) {
@@ -176,6 +189,7 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
             $data->push([
                 'No'         => $no++,
 
+                'branch'     => $order->branchInfo->name ?? '-',
                 'model'      => $order->model->Name_TH ?? '-',
                 'subModel' => $order->subModel
                     ? ($order->subModel->detail

@@ -41,7 +41,7 @@
                   <i class="bx bx-subdirectory-right ci-indigo"></i> รุ่นรถย่อย
                 </label>
                 <input id="subModel_id" class="form-control" type="text"
-                  value="{{ !empty($cam->subModel) ? ($cam->subModel->detail ? $cam->subModel->detail . ' - ' . $cam->subModel->name : $cam->subModel->name) : '' }}"
+                  value="{{ !empty($cam->subModel) ? ($cam->subModel->detail ? $cam->subModel->detail . ' - ' . $cam->subModel->name : $cam->subModel->name) : (is_null($cam->subModel_id) ? 'ทุกรุ่นย่อย' : '') }}"
                   disabled>
               </div>
 

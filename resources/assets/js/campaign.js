@@ -383,6 +383,16 @@ $(document).on('change', '#inp_cam_model_id, #edit_cam_model_id', function () {
   });
 });
 
+//input + edit : ติ๊ก "ใช้กับทุกรุ่นย่อย" → ปิด select รุ่นย่อย
+// disabled = ไม่ถูกส่งไปกับฟอร์ม และไม่ติด required ฝั่ง browser (server เก็บ subModel_id = NULL)
+$(document).on('change', '.chkAllSubModels', function () {
+  const $sub = $(this).closest('.col-md-7').find('[name="subModel_id"]');
+  const on = $(this).is(':checked');
+
+  $sub.prop('disabled', on).prop('required', !on);
+  if (on) $sub.val('');
+});
+
 // blur focus editCam
 $(document).on('hide.bs.modal', '.editCam', function () {
   setTimeout(() => {

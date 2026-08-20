@@ -95,11 +95,10 @@ class GPSummary implements FromView, WithTitle, WithStyles, WithEvents, ShouldAu
         $rows = GPQuery::base($this->fromDate)->get();
 
         $totalSalePrice = $rows->sum(fn($r) => $r->carOrder->car_MSRP ?? 0);
-        // ราคาทุน: ถ้ามีราคาทุนกรอกเอง (gp_cost_price_override เป็นค่าหลังถอด VAT) คูณ 1.07 กลับให้เป็นฐานรวม VAT
-        // เพื่อให้ตรงกับ carOrder->car_DNP (รวม VAT) ที่ใช้กับคันที่ไม่มี override
-        $totalCostPrice = $rows->sum(fn($r) => $r->gp_cost_price_override !== null
-            ? $r->gp_cost_price_override * 1.07
-            : ($r->carOrder->car_DNP ?? 0));
+        // ราคาทุน: ใช้ car_DNP (รวม VAT) ตรง ๆ เหมือนชีท "GP รายคัน"
+        // ราคาทุนกรอกเอง (gp_cost_price_override) เป็นฐานของ P/L คนละชุดกับ Gross/Net Profit
+        // จึงไม่เอามาปนตรงนี้ ไม่งั้นยอดสรุปจะไม่เท่ากับผลรวมรายคัน
+        $totalCostPrice = $rows->sum(fn($r) => $r->carOrder->car_DNP ?? 0);
         $grossProfit = $totalSalePrice - $totalCostPrice;
         // % กำไรขั้นต้น 
         $grossProfitPercent = $totalSalePrice > 0
@@ -123,10 +122,14 @@ class GPSummary implements FromView, WithTitle, WithStyles, WithEvents, ShouldAu
         $totalDiscount = $rows->sum(fn($r) => $r->discount ?? 0);
         $totalPaymentDiscount = $rows->sum(fn($r) => $r->PaymentDiscount ?? 0);
         $totalDownPaymentDiscount = $rows->sum(fn($r) => $r->DownPaymentDiscount ?? 0);
-        $totalTotalAccessoryGift = $rows->sum(fn($r) => $r->TotalAccessoryGift ?? 0);
+        // ยอดของแถม — คิดจากราคาทุนอะไหล่ (cost_spare) ที่ snapshot ไว้ในใบขาย ให้ตรงกับชีท "GP รายคัน"
+        // ไม่ใช้ salecars.TotalAccessoryGift (ราคาที่เลือกตอนทำใบจอง) ไม่งั้นยอดรวมสองชีทไม่ตรงกัน
+        $totalGiftAccCostSpare = $rows->sum(fn($r) => $r->accessories
+            ->filter(fn($a) => $a->pivot->type === 'gift')
+            ->sum(fn($a) => $a->usedCostSpare()));
         $totalCommissionSale = $rows->sum(fn($r) => $r->CommissionSale ?? 0);
 
-        $sellingExpense = $totalDiscount + $totalPaymentDiscount + $totalDownPaymentDiscount + $totalTotalAccessoryGift + $totalCommissionSale;
+        $sellingExpense = $totalDiscount + $totalPaymentDiscount + $totalDownPaymentDiscount + $totalGiftAccCostSpare + $totalCommissionSale;
 
         $netProfit = ($grossProfit + $otherIncome) - $sellingExpense;
 

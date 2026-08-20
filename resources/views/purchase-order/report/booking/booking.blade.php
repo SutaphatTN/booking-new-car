@@ -4,7 +4,7 @@
 
   // จำนวนคอลัมน์รวม (ปรับตาม brand + การซ่อนราคาทุน) สำหรับแถว "ไม่มีข้อมูล"
   $totalCols = 26;
-  if (auth()->user()->brand == 2) $totalCols++;            // สีภายใน
+  if (auth()->user()->brand == 2) $totalCols += 2;         // สาขา + สีภายใน
   if (in_array(auth()->user()->brand, [2, 3, 4])) $totalCols--; // ไม่มี Option
   if (!$showCost) $totalCols--;                             // ซ่อนราคาทุน
 @endphp
@@ -12,6 +12,9 @@
   <thead>
     <tr>
       <th>No</th>
+      @if (auth()->user()->brand == 2)
+        <th>สาขา</th>
+      @endif
       <th>รุ่นรถหลัก</th>
       <th>รุ่นย่อย</th>
       <th>สี</th>
@@ -50,6 +53,9 @@
     @forelse ($saleCar as $s)
       <tr>
         <td>{{ $s['No'] }}</td>
+        @if (auth()->user()->brand == 2)
+          <td>{{ $s['branch'] }}</td>
+        @endif
         <td>{{ $s['model'] }}</td>
         <td>{{ $s['subModel'] }}</td>
         <td>{{ $s['color'] }}</td>

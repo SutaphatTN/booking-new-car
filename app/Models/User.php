@@ -212,7 +212,7 @@ class User extends Authenticatable
 	 * role ที่ผูก/ปลดรถ (CarOrderID) บนใบจองของ brand 2 ได้
 	 * brand 2 คุมการจ่ายรถจากส่วนกลาง — role อื่นเห็นข้อมูลรถได้แต่แตะไม่ได้
 	 */
-	public const BIND_CAR_ORDER_ROLES_BRAND2 = ['md', 'gm', 'admin'];
+	public const BIND_CAR_ORDER_ROLES_BRAND2 = ['md', 'gm', 'admin', 'audit', 'manager'];
 
 	/**
 	 * ผูก/ปลดรถบนใบจองของ brand นี้ได้ไหม

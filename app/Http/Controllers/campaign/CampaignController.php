@@ -37,7 +37,8 @@ class CampaignController extends Controller
             $base->where('model_id', $request->filter_model_id);
         }
         if ($request->filled('filter_subModel_id')) {
-            $base->where('subModel_id', $request->filter_subModel_id);
+            // รวมแคมเปญ "ทุกรุ่นย่อย" (subModel_id = NULL) ของรุ่นหลักเดียวกันมาด้วย
+            $base->forSubModel($request->filter_subModel_id, $request->filter_model_id);
         }
         if ($request->filled('filter_campaign_type')) {
             $types = json_decode($request->filter_campaign_type, true);
@@ -73,7 +74,7 @@ class CampaignController extends Controller
             $index = $rowNum++ - 1;
             $name = $c->appellation ? $c->appellation->name : '';
             $modelC = $c->model ? $c->model->Name_TH : '';
-            $subModel = $c->subModel?->name ?? '-';
+            $subModel = $c->sub_model_label;
             $subDetail = $c->subModel ? $c->subModel->detail : '';
             $row = fn($icon, $class, $tip, $text) =>
                 "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
@@ -181,9 +182,19 @@ class CampaignController extends Controller
         try {
             $active = 'active';
 
+            // ติ๊ก "ใช้กับทุกรุ่นย่อย" → subModel_id = NULL (คลุมทุกรุ่นย่อยของ model_id นี้)
+            $allSubModels = $request->boolean('all_sub_models');
+
+            if (!$allSubModels && !$request->filled('subModel_id')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'กรุณาเลือกรุ่นรถย่อย หรือติ๊ก "ใช้กับทุกรุ่นย่อยในรุ่นนี้"'
+                ], 422);
+            }
+
             $data = [
                 'model_id' => $request->model_id,
-                'subModel_id' => $request->subModel_id,
+                'subModel_id' => $allSubModels ? null : $request->subModel_id,
                 'camName_id' => $request->camName_id,
                 'campaign_type' => $request->campaign_type,
                 'cashSupport' => $request->filled('cashSupport')
@@ -243,7 +254,20 @@ class CampaignController extends Controller
     {
         try {
             $cam = Campaign::findOrFail($id);
-            $data = $request->except(['_token', '_method']);
+            $data = $request->except(['_token', '_method', 'all_sub_models']);
+
+            // ติ๊ก "ใช้กับทุกรุ่นย่อย" → NULL | ไม่ติ๊ก → รุ่นย่อยที่เลือก
+            // (ตอนติ๊ก select ถูก disabled จึงไม่ส่ง subModel_id มา ต้องเซ็ตเองทุกครั้ง)
+            $allSubModels = $request->boolean('all_sub_models');
+
+            if (!$allSubModels && !$request->filled('subModel_id')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'กรุณาเลือกรุ่นรถย่อย หรือติ๊ก "ใช้กับทุกรุ่นย่อยในรุ่นนี้"'
+                ], 422);
+            }
+
+            $data['subModel_id'] = $allSubModels ? null : $request->subModel_id;
 
             // ยอดเงินแก้ได้เฉพาะ admin — role อื่นให้คงค่าเดิมไว้ (กันแก้ผ่าน request)
             if (Auth::user()->role === 'admin') {
