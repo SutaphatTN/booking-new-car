@@ -172,10 +172,12 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
     ];
   }
 
-  public function view(): View
+  /**
+   * เงื่อนไขแยก sheet ตามรุ่นย่อย
+   * ใช้ร่วมกันทั้งตอนเช็คว่ามีข้อมูลไหม (hasData) และตอนดึงข้อมูลจริง (view)
+   */
+  private function applySubModelFilter($query)
   {
-    $query = BookingReportQuery::carsByModel($this->model->id);
-
     if ($this->model->id == 3) {
 
       if ($this->filter == 'only9') {
@@ -197,6 +199,33 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         $query->whereIn('subModel_id', [53, 62]);
       }
     }
+
+    return $query;
+  }
+
+  /**
+   * ไม่มีทั้งรถและใบจองที่ยังไม่ผูกรถ = sheet เปล่า ไม่ต้องสร้าง
+   */
+  public function hasData(): bool
+  {
+    $hasCars = $this->applySubModelFilter(
+      BookingReportQuery::carsByModel($this->model->id)
+    )->exists();
+
+    if ($hasCars) {
+      return true;
+    }
+
+    return $this->applySubModelFilter(
+      BookingReportQuery::orphanSalesByModel($this->model->id)
+    )->exists();
+  }
+
+  public function view(): View
+  {
+    $query = $this->applySubModelFilter(
+      BookingReportQuery::carsByModel($this->model->id)
+    );
 
     $carOrders = $query->get()
       ->sortBy([
@@ -315,31 +344,9 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
     }
 
     //ยังไม่ผูกรถ
-    $orphanSales = BookingReportQuery::orphanSalesByModel($this->model->id);
-
-    if ($this->model->id == 3) {
-
-      if ($this->filter == 'only9') {
-        $orphanSales->where('subModel_id', 9);
-      }
-
-      if ($this->filter == 'exclude9') {
-        $orphanSales->where('subModel_id', '!=', 9);
-      }
-    }
-
-    if ($this->model->id == 9) {
-
-      if ($this->filter == 'sub_4041') {
-        $orphanSales->whereIn('subModel_id', [40, 41]);
-      }
-
-      if ($this->filter == 'sub_5362') {
-        $orphanSales->whereIn('subModel_id', [53, 62]);
-      }
-    }
-
-    $orphanSales = $orphanSales->get();
+    $orphanSales = $this->applySubModelFilter(
+      BookingReportQuery::orphanSalesByModel($this->model->id)
+    )->get();
 
     foreach ($orphanSales as $sale) {
 

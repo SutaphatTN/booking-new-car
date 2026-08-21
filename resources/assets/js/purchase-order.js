@@ -1888,12 +1888,16 @@ $(document).ready(function () {
 
     // อ่านค่าที่เลือกจาก radio หนึ่งตัว — แถว "ระบุเอง" ดึงราคา/ทุนอะไหล่จาก input ข้างๆ แทน data-price
     function readSelection($radio) {
+      const id = $radio.data('id');
       const base = {
-        id: $radio.data('id'),
+        id,
         type: $radio.val(),
         source: $radio.data('source'),
         detail: $radio.data('detail'),
-        standard: $radio.data('standard')
+        standard: $radio.data('standard'),
+        // ฟิล์ม — ต้องระบุรายละเอียด (ความเข้ม/ตำแหน่งที่ติด) ก่อนกดบันทึก
+        requireNote: Number($radio.data('require-note')) === 1,
+        note: String($tableBody.find(`.acc-note-input[data-id="${id}"]`).val() || '').trim()
       };
 
       if ($radio.val() !== 'custom') {
@@ -1944,6 +1948,12 @@ $(document).ready(function () {
       .on('input', '.acc-custom-price', function () {
         const $radio = $(this).closest('td').find('input[type="radio"][value="custom"]');
         if ($radio.prop('checked')) selectedMap[$radio.data('id')] = readSelection($radio);
+      })
+      // กรอกหมายเหตุ (ฟิล์ม) → เก็บลงรายการที่ติ๊กไว้ทันที
+      .on('input', '.acc-note-input', function () {
+        const id = $(this).data('id');
+        const sel = selectedMap[id];
+        if (sel) sel.note = String($(this).val() || '').trim();
       });
 
     // ฟังก์ชัน search item
@@ -1991,7 +2001,8 @@ $(document).ready(function () {
               return `<input type="radio" name="priceType_${a.id}" value="${type}"
                   data-id="${a.id}" data-source="${a.AccessorySource}"
                   data-detail="${a.AccessoryDetail}" data-price="${price ?? ''}"
-                  data-standard="${a.is_standard ? 1 : 0}" data-spare="${noSpareCost ? 0 : 1}" ${comAttr} ${disabledAttr}>
+                  data-standard="${a.is_standard ? 1 : 0}" data-spare="${noSpareCost ? 0 : 1}"
+                  data-require-note="${a.require_note ? 1 : 0}" ${comAttr} ${disabledAttr}>
                 <span class="ms-1${block ? ' text-muted' : ''}">${formatNumber(price)}</span>`;
             };
 
@@ -2000,9 +2011,16 @@ $(document).ready(function () {
             const saleCell = buildPriceCell('sale', a.AccessorySalePrice, `data-com="${a.AccessoryComSale ?? ''}"`);
 
             // note เล็กๆ ใต้รายละเอียด ถ้าไม่มีราคาทุนอะไหล่
-            const detailCell = noSpareCost
+            const detailText = noSpareCost
               ? `${a.AccessoryDetail ?? '-'}<br><small class="text-danger">* ไม่มีราคาทุนอะไหล่ เลือกไม่ได้</small>`
               : (a.AccessoryDetail ?? '-');
+
+            // ฟิล์ม — บังคับกรอกรายละเอียด (ความเข้ม/ตำแหน่งที่ติด) ก่อนกดบันทึก
+            const detailCell = a.require_note
+              ? `${detailText}
+                <input type="text" class="form-control form-control-sm mt-1 acc-note-input" data-id="${a.id}"
+                  maxlength="255" placeholder="ระบุรายละเอียดฟิล์ม เช่น ความเข้ม 40% รอบคัน / ซันรูฟ 80% *">`
+              : detailText;
 
             // ระบุราคาเอง — เปิดเฉพาะรายการที่ติดธง "ราคาไม่คงที่" ไว้ใน master (เช่น น้ำมัน)
             // ไม่ติดเงื่อนไข cost_spare/ราคา 0 เพราะกรอกทั้งราคาและทุนอะไหล่เองอยู่แล้ว
@@ -2014,7 +2032,8 @@ $(document).ready(function () {
                   <label class="d-block mb-1" style="cursor:pointer;">
                     <input type="radio" name="priceType_${a.id}" value="custom"
                       data-id="${a.id}" data-source="${a.AccessorySource}"
-                      data-detail="${a.AccessoryDetail}" data-standard="${a.is_standard ? 1 : 0}">
+                      data-detail="${a.AccessoryDetail}" data-standard="${a.is_standard ? 1 : 0}"
+                      data-require-note="${a.require_note ? 1 : 0}">
                     <span class="ms-1">ระบุเอง</span>
                   </label>
                   <input type="text" class="form-control form-control-sm text-end acc-custom-price"
@@ -2046,6 +2065,11 @@ $(document).ready(function () {
               if (sel.type === 'custom') {
                 $r.closest('td').find('.acc-custom-price').val(sel.price).prop('disabled', false);
               }
+            }
+
+            // หมายเหตุที่พิมพ์ค้างไว้ต้องไม่หายตอนค้นหาใหม่ (คืนให้แม้ radio ถูก disable)
+            if (sel.note) {
+              $tableBody.find(`.acc-note-input[data-id="${sel.id}"]`).val(sel.note);
             }
           });
         }
@@ -2146,6 +2170,19 @@ $(document).ready(function () {
         return;
       }
 
+      // ฟิล์มต้องระบุรายละเอียด (ความเข้ม/ตำแหน่งที่ติด) ก่อน
+      const missingNote = items.find(it => it.requireNote && !it.note);
+      if (missingNote) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'กรุณากรอกหมายเหตุของฟิล์ม',
+          text: `${missingNote.detail} — ระบุความเข้ม/ตำแหน่งที่ติด`,
+          confirmButtonText: 'ตกลง'
+        });
+        $tableBody.find(`.acc-note-input[data-id="${missingNote.id}"]`).trigger('focus');
+        return;
+      }
+
       // แถว "ระบุเอง" ต้องกรอกราคาให้มากกว่า 0
       const badCustom = items.some(it => it.type === 'custom' && !(it.price > 0));
       if (badCustom) {
@@ -2177,12 +2214,21 @@ $(document).ready(function () {
         // ระบุเอง = ใช้ทุนอะไหล่ที่กรอก, นอกนั้นปล่อยว่างให้ server ดึงจาก master ตอนบันทึก
         const spareAttr = it.type === 'custom' ? ` data-spare-cost="${it.costSpare}"` : '';
 
+        // data-new = แถวที่เพิ่งเพิ่มในหน้านี้ — ใช้บังคับกรอกหมายเหตุเฉพาะของใหม่ ของเก่าไม่บล็อก
+        const noteInput = it.requireNote
+          ? `<div class="acc-note-wrap mt-1">
+              <input type="text" class="form-control form-control-sm acc-row-note" maxlength="255"
+                placeholder="หมายเหตุฟิล์ม เช่น ความเข้ม 40% รอบคัน / ซันรูฟ 80%">
+            </div>`
+          : '';
+
         $mainTable.find(options.noDataRowId).remove();
         $mainTable.append(`
-        <tr data-id="${it.id}" data-price="${rawPrice}" data-com="${rawCom}"${spareAttr}>
+        <tr data-id="${it.id}" data-price="${rawPrice}" data-com="${rawCom}"${spareAttr}
+          data-require-note="${it.requireNote ? 1 : 0}" data-new="1">
           <td></td>
           <td>${it.source}</td>
-          <td>${it.detail}</td>
+          <td class="acc-detail">${it.detail}${noteInput}</td>
           <td>${typeLabel}</td>
           <td>${price} (${comDisplay})</td>
           <td>
@@ -2192,6 +2238,8 @@ $(document).ready(function () {
           </td>
         </tr>
       `);
+
+        if (it.requireNote) $mainTable.find('tr:last .acc-row-note').val(it.note || '');
       });
 
       selectedMap = {}; // เคลียร์รายการที่เลือกหลังบันทึกแล้ว
@@ -2356,6 +2404,28 @@ $(document).ready(function () {
       return;
     }
 
+    // ฟิล์มที่เพิ่งเพิ่มในหน้านี้ ต้องมีหมายเหตุ (ความเข้ม/ตำแหน่งที่ติด)
+    // แถวเก่าที่บันทึกไว้ก่อนมีฟีเจอร์นี้ไม่บล็อก — ไม่งั้นจะแก้ใบเดิมไม่ได้
+    const $missingNote = $(
+      '#giftTablePrice tbody tr[data-require-note="1"][data-new="1"], ' +
+        '#extraTable tbody tr[data-require-note="1"][data-new="1"]'
+    ).filter(function () {
+      return !String($(this).find('.acc-row-note').val() || '').trim();
+    });
+
+    if ($missingNote.length) {
+      const $first = $missingNote.first();
+      const tabId = $first.closest('.tab-pane').attr('id');
+      if (tabId) $(`[data-bs-target="#${tabId}"], [href="#${tabId}"]`).tab('show');
+
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณากรอกหมายเหตุของฟิล์ม',
+        text: 'รายการฟิล์มต้องระบุรายละเอียด เช่น ความเข้ม/ตำแหน่งที่ติด'
+      }).then(() => $first.find('.acc-row-note').trigger('focus'));
+      return;
+    }
+
     const $btn = $(this);
     const $form = $('#purchaseForm');
     const actionUrl = $form.attr('action');
@@ -2370,6 +2440,8 @@ $(document).ready(function () {
       price: parseFloat($row.data('price')),
       commission: parseFloat($row.data('com')),
       cost_spare: $row.data('spare-cost') ?? null,
+      // หมายเหตุ (ฟิล์ม) — มีเฉพาะแถวที่ประเภทบังคับให้กรอก
+      note: String($row.find('.acc-row-note').val() || '').trim() || null,
       type
     });
 

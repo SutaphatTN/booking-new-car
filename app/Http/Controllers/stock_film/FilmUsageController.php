@@ -39,6 +39,8 @@ class FilmUsageController extends Controller
                 $q->whereYear('order_date', (int) $year)
                     ->whereMonth('order_date', (int) $mon);
             })
+            ->orderByDesc('order_date')
+            ->orderByDesc('id')
             ->get();
 
         $data = $records->map(function ($r, $index) {

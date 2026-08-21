@@ -70,6 +70,45 @@
   border-radius: 8px;
 }
 
+/* ── ปุ่มล้างตัวกรอง : ไอคอนล้วน สูงเท่ากับ select ที่อยู่ข้างกัน ── */
+.po-filter-bar .btn-clear-filter {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+  color: #8592a3;
+  background: #fff;
+  border: 1px solid #d9dee3;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.po-filter-bar .btn-clear-filter i {
+  font-size: 1.05rem;
+}
+
+.po-filter-bar .btn-clear-filter:hover {
+  color: #fff;
+  background: #ff3e1d;
+  border-color: #ff3e1d;
+}
+
+/* ซ่อนแบบกันที่ไว้ ไม่ให้ตัวกรองขยับตอนปุ่มโผล่/หาย */
+.po-filter-bar .btn-clear-filter.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* select ที่กำลังกรองอยู่ — ไฮไลต์ให้เห็นว่าไม่ได้ดูข้อมูลทั้งหมด */
+.po-filter-bar select.is-filtered {
+  border-color: #6c5ffc !important;
+  background-color: #f5f4ff;
+  font-weight: 600;
+}
+
 /* ── Styled table (shared — add class tbl-styled to any table) ── */
 
 .tbl-styled thead tr {

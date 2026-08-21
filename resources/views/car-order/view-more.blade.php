@@ -477,7 +477,7 @@
 
               <div class="col-md-3">
                 <label for="fp_date" class="mf-label form-label">
-                  <i class="bx bx-money ci-rose"></i> วันที่จ่าย FP
+                  <i class="bx bx-money ci-rose"></i> วันที่ FP
                 </label>
                 <input id="fp_date" class="form-control" type="text" value="{{ $order->format_fp_date ?? '-' }}"
                   disabled>

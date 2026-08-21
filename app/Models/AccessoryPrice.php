@@ -126,6 +126,19 @@ class AccessoryPrice extends Model
 	 * อ่านจาก snapshot ใน pivot ก่อน (แถวใหม่) — ถ้าไม่มีค่อย fallback ค่าปัจจุบันใน master (แถวเก่าก่อนเพิ่มคอลัมน์)
 	 * ต้องเรียกจาก collection ที่โหลดผ่าน relation accessories() เท่านั้น
 	 */
+	/**
+	 * ต้องกรอกหมายเหตุตอนเพิ่มลงใบจองไหม (ตอนนี้คือประเภท "ฟิล์ม")
+	 * ดูรายการประเภทที่ config/accessory.php
+	 */
+	public function requiresNote(): bool
+	{
+		return in_array(
+			(int) $this->accessoryType_id,
+			config('accessory.note_required_type_ids', []),
+			true
+		);
+	}
+
 	public function usedCostSpare(): float
 	{
 		return (float) ($this->pivot->cost_spare ?? $this->cost_spare ?? 0);

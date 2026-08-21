@@ -21,7 +21,10 @@ class AccessoryController extends Controller
     public function index()
     {
         $acc = AccessoryPrice::all();
-        return view('accessory.view', compact('acc'));
+        // ตัวกรองรุ่นรถ — เอาเฉพาะรุ่นที่มีรายการประดับยนต์จริง (ทั้ง 2 ตารางถูก scope ตาม brand อยู่แล้ว)
+        $modelIds = AccessoryPrice::query()->distinct()->pluck('model_id')->filter()->all();
+        $model    = TbCarmodel::whereIn('id', $modelIds)->orderBy('Name_TH')->get();
+        return view('accessory.view', compact('acc', 'model'));
     }
 
     public function listAccessory(Request $request)
@@ -32,6 +35,11 @@ class AccessoryController extends Controller
         $search = trim($request->input('search.value', ''));
 
         $base = AccessoryPrice::query();
+
+        // ── ตัวกรอง : รุ่นรถ ──
+        if ($request->filled('filter_model_id')) {
+            $base->where('model_id', $request->filter_model_id);
+        }
 
         $recordsTotal = (clone $base)->count();
 
@@ -481,7 +489,9 @@ class AccessoryController extends Controller
 
             $accName = $r->accessory?->detail ?? '-';
             $accID = $r->accessory?->accessory_id ?? '-';
-            $accessoryNID = "{$accID}<br>{$accName}";
+            // หมายเหตุ (ฟิล์ม = ความเข้ม/ตำแหน่งที่ติด) ต้องโชว์คู่ชื่อรายการเสมอ
+            $accNote = filled($r->note) ? '<br><small>(' . e($r->note) . ')</small>' : '';
+            $accessoryNID = "{$accID}<br>{$accName}{$accNote}";
 
             return [
                 'partner_id'   => $r->accessory?->accessoryPartner_id,

@@ -27,8 +27,25 @@
       <div class="card-body pt-3">
 
         {{-- ── Action bar ── --}}
-        <div class="po-filter-bar d-flex align-items-center justify-content-end">
-          <button class="btn btn-secondary btn-sm btnInputAcc">
+        <div class="po-filter-bar d-flex align-items-end gap-2 flex-wrap">
+          <div>
+            <label for="filterAccModel" class="mb-1 text-muted small">รุ่นรถ</label>
+            <div class="d-flex align-items-center gap-1">
+              <select id="filterAccModel" class="form-select form-select-sm" style="min-width:180px;">
+                <option value="">ทั้งหมด</option>
+                @foreach ($model as $m)
+                  <option value="{{ $m->id }}">{{ $m->Name_TH }}</option>
+                @endforeach
+              </select>
+              {{-- โผล่เฉพาะตอนกรองอยู่ (ค่าเริ่มต้น = ทั้งหมด จึงซ่อนไว้ก่อน) --}}
+              <button id="btnClearAccFilter" type="button" class="btn btn-clear-filter is-hidden"
+                title="ล้างตัวกรอง">
+                <i class="bx bx-x"></i>
+              </button>
+            </div>
+          </div>
+
+          <button class="btn btn-secondary btn-sm btnInputAcc ms-auto">
             <i class="bx bx-plus me-1"></i> เพิ่ม
           </button>
         </div>
