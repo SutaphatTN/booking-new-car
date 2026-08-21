@@ -731,7 +731,12 @@
                 <tr>
                   <td style="text-align:center">{{ $loop->iteration }}</td>
                   <td style="text-align:center">{{ $giftAcc->accessory_id ?? '-' }}</td>
-                  <td>{{ $giftAcc->detail ?? '-' }}</td>
+                  <td>
+                    {{ $giftAcc->detail ?? '-' }}
+                    @if (filled($giftAcc->pivot->note))
+                      <div style="font-size:.85em; color:#555;">({{ $giftAcc->pivot->note }})</div>
+                    @endif
+                  </td>
                   <td style="text-align:right">{{ number_format($giftAcc->pivot->price, 2) }}</td>
                   <td style="text-align:right">{{ number_format($giftAcc->pivot->commission, 2) }}</td>
                 </tr>
@@ -770,7 +775,12 @@
                 <tr>
                   <td style="text-align:center">{{ $loop->iteration }}</td>
                   <td style="text-align:center">{{ $extraAcc->accessory_id ?? '-' }}</td>
-                  <td>{{ $extraAcc->detail ?? '-' }}</td>
+                  <td>
+                    {{ $extraAcc->detail ?? '-' }}
+                    @if (filled($extraAcc->pivot->note))
+                      <div style="font-size:.85em; color:#555;">({{ $extraAcc->pivot->note }})</div>
+                    @endif
+                  </td>
                   <td style="text-align:right">{{ number_format($extraAcc->pivot->price, 2) }}</td>
                   <td style="text-align:right">{{ number_format($extraAcc->pivot->commission, 2) }}</td>
                 </tr>

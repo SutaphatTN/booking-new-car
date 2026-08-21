@@ -235,6 +235,7 @@ class PurchaseOrderController extends Controller
                 'allow_custom_price' => (bool) $a->allow_custom_price, // เปิดช่อง "ระบุเอง" ให้เฉพาะรายการที่ราคาไม่คงที่
                 'is_zero_cost' => (bool) $a->is_zero_cost, // ยืนยันแล้วว่าทุนอะไหล่ = 0 จริง → เลือกได้ทั้งที่ cost_spare เป็น 0
                 'cost_spare' => $a->cost_spare ?? null, // ราคาทุนอะไหล่ — ต้องมีถึงเลือกได้ (ใช้ตอนขออนุมัติ)
+                'require_note' => $a->requiresNote(), // ฟิล์ม — ต้องระบุรายละเอียด (ความเข้ม/ตำแหน่งที่ติด)
             ];
         });
 
@@ -293,6 +294,7 @@ class PurchaseOrderController extends Controller
         $giftTotal = $giftAccessories->sum(fn($a) => $a->usedCostSpare());
         $giftDetails = $giftAccessories->map(fn($a) => [
             'detail' => $a->detail,
+            'note'   => $a->pivot->note, // ฟิล์ม: ความเข้ม/ตำแหน่งที่ติด
             'amount' => $a->usedCostSpare(),
         ])->values();
 
@@ -2144,12 +2146,25 @@ class PurchaseOrderController extends Controller
                             $costSpare = $accMasters[$a['id']]->cost_spare ?? null;
                         }
 
+                        // หมายเหตุประดับยนต์ (ฟิล์ม = ความเข้ม/ตำแหน่งที่ติด)
+                        // บังคับเฉพาะแถวที่เพิ่งเพิ่มใหม่ — แถวเดิมที่บันทึกไว้ก่อนมีฟีเจอร์นี้ต้องแก้ใบต่อได้
+                        $note = isset($a['note']) ? trim((string) $a['note']) : '';
+
+                        if ($note === '' && !$prevRow && ($accMasters[$a['id']] ?? null)?->requiresNote()) {
+                            DB::rollBack();
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'กรุณากรอกหมายเหตุของรายการฟิล์ม (เช่น ความเข้ม/ตำแหน่งที่ติด)',
+                            ], 422);
+                        }
+
                         $saleCar->accessories()->attach($a['id'], [
                             'price_type' => $a['price_type'],
                             'price' => $price,
                             'commission' => $commission,
                             'cost_spare' => $costSpare,
                             'type' => $a['type'],
+                            'note' => $note !== '' ? mb_substr($note, 0, 255) : null,
                         ]);
                     }
                 }

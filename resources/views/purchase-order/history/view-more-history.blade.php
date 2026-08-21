@@ -321,7 +321,14 @@
                           <tr>
                             <td class="text-center">{{ $index + 1 }}</td>
                             <td class="text-center">{{ $giftAccessories->accessory_id ?? '-' }}</td>
-                            <td>{{ $giftAccessories->detail ?? '-' }}</td>
+                            <td>
+                              {{ $giftAccessories->detail ?? '-' }}
+                              @if (filled($giftAccessories->pivot->note))
+                                <div class="text-muted" style="font-size:.75rem;">
+                                  <i class="bx bx-note"></i> {{ $giftAccessories->pivot->note }}
+                                </div>
+                              @endif
+                            </td>
                             <td class="text-center">{{ $giftAccessories->pivot->price_type ?? '-' }}</td>
                             <td class="text-end">{{ number_format($giftAccessories->pivot->price, 2) }}</td>
                             <td class="text-end">{{ number_format($giftAccessories->pivot->commission, 2) }}</td>
@@ -367,7 +374,14 @@
                           <tr>
                             <td class="text-center">{{ $index + 1 }}</td>
                             <td class="text-center">{{ $extraAccessories->accessory_id ?? '-' }}</td>
-                            <td>{{ $extraAccessories->detail ?? '-' }}</td>
+                            <td>
+                              {{ $extraAccessories->detail ?? '-' }}
+                              @if (filled($extraAccessories->pivot->note))
+                                <div class="text-muted" style="font-size:.75rem;">
+                                  <i class="bx bx-note"></i> {{ $extraAccessories->pivot->note }}
+                                </div>
+                              @endif
+                            </td>
                             <td class="text-center">{{ $extraAccessories->pivot->price_type ?? '-' }}</td>
                             <td class="text-end">{{ number_format($extraAccessories->pivot->price, 2) }}</td>
                             <td class="text-end">{{ number_format($extraAccessories->pivot->commission, 2) }}</td>

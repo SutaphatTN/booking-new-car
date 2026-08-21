@@ -619,11 +619,11 @@
                     value="{{ $order->order_stock_date }}">
                 </div>
 
-                {{-- วันที่จ่าย FP โชว์เมื่อประเภทการจ่าย = FP Tisco (ไม่ผูกกับสถานะ Car Order)
+                {{-- วันที่ FP โชว์เมื่อประเภทการจ่าย = FP Tisco (ไม่ผูกกับสถานะ Car Order)
                      วางไว้ท้ายสุดเสมอ เพื่อให้ตำแหน่งไม่ขยับเวลาสลับสถานะ (OnWeb/Invoice/Stock โชว์ทีละอัน) --}}
                 <div id="fieldFp" class="col-md-4 d-none">
                   <label for="fp_date" class="mf-label form-label">
-                    <i class="bx bx-money ci-rose"></i> วันที่จ่าย FP
+                    <i class="bx bx-money ci-rose"></i> วันที่ FP
                   </label>
                   <input type="date" id="fp_date" name="fp_date" class="form-control"
                     value="{{ $order->fp_date }}">

@@ -1173,10 +1173,19 @@
                           @foreach ($saleCar->accessories->where('pivot.type', 'gift') as $a)
                             <tr data-id="{{ $a->id }}" data-price="{{ $a->pivot->price }}"
                               data-com="{{ $a->pivot->commission }}"
+                              data-require-note="{{ $a->requiresNote() ? 1 : 0 }}"
                               data-spare-cost="{{ $a->pivot->cost_spare ?? $a->cost_spare }}">
                               <td class="text-center text-muted" style="font-size:.85rem;">{{ $loop->index + 1 }}</td>
                               <td style="font-size:.85rem; color:#374151;">{{ $a->accessory_id }}</td>
-                              <td class="acc-detail">{{ $a->detail }}</td>
+                              <td class="acc-detail">
+                                {{ $a->detail }}
+                                @if ($a->requiresNote())
+                                  @include('purchase-order.accessory-gift.note-input', [
+                                      'note' => $a->pivot->note,
+                                      'isHistory' => $isHistory,
+                                  ])
+                                @endif
+                              </td>
                               {{-- ข้อความไทยตรงตามที่เก็บใน DB — JS อ่าน text ช่องนี้กลับไปเป็น price_type ตอนบันทึก --}}
                               <td style="font-size:.85rem; color:#374151;">{{ $a->pivot->price_type }}</td>
                               <td class="text-end">
@@ -1262,10 +1271,19 @@
                           @foreach ($saleCar->accessories->where('pivot.type', 'extra') as $a)
                             <tr data-id="{{ $a->id }}" data-price="{{ $a->pivot->price }}"
                               data-com="{{ $a->pivot->commission }}"
+                              data-require-note="{{ $a->requiresNote() ? 1 : 0 }}"
                               data-spare-cost="{{ $a->pivot->cost_spare ?? $a->cost_spare }}">
                               <td class="text-center text-muted">{{ $loop->index + 1 }}</td>
                               <td>{{ $a->accessory_id }}</td>
-                              <td>{{ $a->detail }}</td>
+                              <td class="acc-detail">
+                                {{ $a->detail }}
+                                @if ($a->requiresNote())
+                                  @include('purchase-order.accessory-gift.note-input', [
+                                      'note' => $a->pivot->note,
+                                      'isHistory' => $isHistory,
+                                  ])
+                                @endif
+                              </td>
                               <td>{{ $a->pivot->price_type }}</td>
                               <td class="text-end">
                                 <span class="acc-price">{{ number_format($a->pivot->price, 2) }} ฿</span>

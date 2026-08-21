@@ -177,14 +177,14 @@ function toggleOrderStatusFields($modal) {
   }
 }
 
-// วันที่จ่าย FP โชว์เมื่อประเภทการจ่าย = FP Tisco (ค้างไว้ทุกสถานะ)
+// วันที่ FP โชว์เมื่อประเภทการจ่าย = FP Tisco (ค้างไว้ทุกสถานะ)
 function toggleFpField($modal) {
   const isFp = $modal.find('#payment_type').val() === 'fp_tisco';
   $modal.find('#fieldFp').toggleClass('d-none', !isFp);
 }
 
-// FP Tisco + สถานะ Stock → ต้องกรอกวันที่จ่าย FP (คืน false = ไม่ผ่าน)
-// (Invoice ไม่บังคับ เพราะบางครั้งออก Invoice แล้วยังไม่มีวันที่จ่าย FP)
+// FP Tisco + สถานะ Stock → ต้องกรอกวันที่ FP (คืน false = ไม่ผ่าน)
+// (Invoice ไม่บังคับ เพราะบางครั้งออก Invoice แล้วยังไม่มีวันที่ FP)
 function validateFpDateRequired($modal) {
   const isFp = $modal.find('#payment_type').val() === 'fp_tisco';
   const statusName = $modal.find('#order_status option:selected').data('name');
@@ -193,8 +193,8 @@ function validateFpDateRequired($modal) {
     toggleFpField($modal); // ให้ช่องโผล่แน่ ๆ
     Swal.fire({
       icon: 'warning',
-      title: 'กรุณากรอกวันที่จ่าย FP',
-      text: 'ประเภทการจ่ายเป็น FP Tisco และสถานะเป็น ' + statusName + ' ต้องระบุวันที่จ่าย FP ก่อนบันทึก'
+      title: 'กรุณากรอกวันที่ FP',
+      text: 'ประเภทการจ่ายเป็น FP Tisco และสถานะเป็น ' + statusName + ' ต้องระบุวันที่ FP ก่อนบันทึก'
     }).then(() => $modal.find('#fp_date').focus());
     return false;
   }
@@ -242,7 +242,7 @@ $(document).on('click', '.btnEditCarOrder', function () {
       .on('click', function (e) {
         e.preventDefault();
 
-        // FP Tisco + สถานะ Invoice/Stock ต้องกรอกวันที่จ่าย FP ก่อน
+        // FP Tisco + สถานะ Invoice/Stock ต้องกรอกวันที่ FP ก่อน
         if (!validateFpDateRequired($modal)) return;
 
         const form = $modal.find('form')[0];

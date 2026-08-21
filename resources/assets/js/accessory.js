@@ -16,7 +16,12 @@ $(document).ready(function () {
   accessoryTable = $('.accessoryTable').DataTable({
     serverSide: true,
     processing: false,
-    ajax: '/accessory/list',
+    ajax: {
+      url: '/accessory/list',
+      data: function (d) {
+        d.filter_model_id = $('#filterAccModel').val();
+      }
+    },
     columns: [
       { data: 'No', orderable: false },
       { data: 'accessoryPartner_id', orderable: false },
@@ -45,6 +50,25 @@ $(document).ready(function () {
         previous: 'ก่อนหน้า'
       }
     }
+  });
+
+  // ── ตัวกรอง : รุ่นรถ ──
+  // ปุ่มล้าง + ไฮไลต์ select จะโผล่เฉพาะตอนที่เลือกรุ่นอยู่จริง
+  function syncAccFilterUi() {
+    const active = !!$('#filterAccModel').val();
+    $('#filterAccModel').toggleClass('is-filtered', active);
+    $('#btnClearAccFilter').toggleClass('is-hidden', !active);
+  }
+
+  $('#filterAccModel').on('change', function () {
+    syncAccFilterUi();
+    accessoryTable.ajax.reload();
+  });
+
+  $('#btnClearAccFilter').on('click', function () {
+    $('#filterAccModel').val('');
+    syncAccFilterUi();
+    accessoryTable.ajax.reload();
   });
 
   accessoryTable.on('preXhr.dt', function () {

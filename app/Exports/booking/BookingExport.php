@@ -24,7 +24,16 @@ class BookingExport implements WithMultipleSheets
         //สต็อกรวม
         $sheets[] = new BookingSummarySheet($this->request);
 
-        //ข้อมูลรถรุ่นหลัก
+        //ข้อมูลรถรุ่นหลัก — ข้ามรุ่นที่ไม่มีข้อมูล จะได้ไม่มี sheet เปล่าเยอะ
+        $addModelSheet = function ($model, $filter = null) use (&$sheets) {
+
+            $sheet = new BookingByModelSheet($model, $filter);
+
+            if ($sheet->hasData()) {
+                $sheets[] = $sheet;
+            }
+        };
+
         $models = TbCarmodel::orderBy('Name_TH')->get();
         foreach ($models as $model) {
 
@@ -32,22 +41,22 @@ class BookingExport implements WithMultipleSheets
             if ($model->id == 3) {
 
                 // sheet สำหรับ submodel 5-8
-                $sheets[] = new BookingByModelSheet($model, 'exclude9');
+                $addModelSheet($model, 'exclude9');
 
                 // sheet สำหรับ submodel 9
-                $sheets[] = new BookingByModelSheet($model, 'only9');
+                $addModelSheet($model, 'only9');
 
             } elseif ($model->id == 9) {
 
                 // sheet สำหรับ submodel 40, 41
-                $sheets[] = new BookingByModelSheet($model, 'sub_4041');
+                $addModelSheet($model, 'sub_4041');
 
                 // sheet สำหรับ submodel 53, 62
-                $sheets[] = new BookingByModelSheet($model, 'sub_5362');
+                $addModelSheet($model, 'sub_5362');
 
             } else {
 
-                $sheets[] = new BookingByModelSheet($model);
+                $addModelSheet($model);
             }
         }
 

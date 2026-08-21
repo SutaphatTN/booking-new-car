@@ -192,14 +192,14 @@ class CarOrderController extends Controller
         try {
             $order = CarOrder::findOrFail($id);
 
-            // FP Tisco + สถานะ Stock(4) ต้องกรอกวันที่จ่าย FP
-            // (Invoice(3) ไม่บังคับ เพราะบางครั้งออก Invoice แล้วยังไม่มีวันที่จ่าย FP)
+            // FP Tisco + สถานะ Stock(4) ต้องกรอกวันที่ FP
+            // (Invoice(3) ไม่บังคับ เพราะบางครั้งออก Invoice แล้วยังไม่มีวันที่ FP)
             if ($request->payment_type === 'fp_tisco'
                 && (int) $request->order_status === 4
                 && !$request->filled('fp_date')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'กรุณากรอกวันที่จ่าย FP ก่อนเปลี่ยนสถานะเป็น Stock',
+                    'message' => 'กรุณากรอกวันที่ FP ก่อนเปลี่ยนสถานะเป็น Stock',
                 ], 422);
             }
 

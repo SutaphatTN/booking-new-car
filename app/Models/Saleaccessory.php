@@ -44,6 +44,7 @@ class Saleaccessory extends Model
 		'commission',
 		'cost_spare',
 		'type',
+		'note',
 		'userZone',
 		'brand',
 		'branch',

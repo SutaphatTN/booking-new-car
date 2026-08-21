@@ -102,7 +102,9 @@
 | รายการ | ราคาทุนอะไหล่ |
 | :----- | -----------: |
 @foreach ($data['gift_details'] as $g)
-| {{ str_replace('|', '/', $g['detail']) }} | {{ number_format($g['amount'], 2) }} |
+| {{ str_replace('|', '/', $g['detail']) }}{!! filled($g['note'] ?? null)
+    ? '<br><span style="color:#6b7280; font-size:12px;">หมายเหตุ: ' . e(str_replace('|', '/', $g['note'])) . '</span>'
+    : '' !!} | {{ number_format($g['amount'], 2) }} |
 @endforeach
 @endcomponent
 @endif
