@@ -2520,11 +2520,88 @@ function disablePreviewFooterButtons() {
     .forEach(btn => (btn.disabled = true));
 }
 
+// สถานะที่ต้อง "อนุมัติผ่านก่อน" ถึงจะเปลี่ยนเข้าได้ — 4 ระหว่างแต่งรถ / 5 ส่งมอบ
+const APPROVAL_LOCKED_STATUS = ['4', '5'];
+
+/**
+ * ดักสถานะก่อนส่งคำขออนุมัติ
+ * backend บล็อกการ "เปลี่ยนเข้า" สถานะ 4/5 ตอนที่ใบยังไม่อนุมัติ
+ * (mirror ของ $enteringApprovalStage ใน PurchaseOrderController::update)
+ * ถ้าปล่อยให้ไปโดนดักตอนบันทึก ผู้ใช้จะเสียเวลากรอกเหตุผล/แนบไฟล์ฟรี → ดักตั้งแต่กดปุ่มขออนุมัติ
+ * เรียก proceed() ต่อเมื่อสถานะปัจจุบันส่งคำขอได้จริง
+ */
+function guardApprovalConStatus(proceed) {
+  const $sel = $('#con_status');
+  const current = String($sel.val() ?? '');
+  const original = String(document.getElementById('originalConStatus')?.value ?? '');
+  const role = document.getElementById('userRole')?.value || '';
+
+  // admin ข้าม gate ฝั่ง server อยู่แล้ว → ไม่ต้องดัก ไม่งั้นจะบล็อกสิ่งที่บันทึกผ่านได้จริง
+  // ไม่ได้กำลังเปลี่ยน "เข้า" 4/5 (หรืออยู่สถานะนั้นมาแต่เดิม) → ส่งคำขอได้เลย
+  if (role === 'admin' || !APPROVAL_LOCKED_STATUS.includes(current) || current === original) {
+    proceed();
+    return;
+  }
+
+  const labelOf = v => $sel.find('option[value="' + v + '"]').first().text().trim();
+  const currentText = labelOf(current) || 'สถานะนี้';
+  const originalText = labelOf(original);
+
+  // พาไปแก้สถานะเอง — ปิด preview, เปิดแท็บที่มีช่องสถานะ แล้ว focus
+  const gotoConStatus = () => {
+    bootstrap.Modal.getInstance(document.getElementById('previewPurchase'))?.hide();
+    const tabId = $sel.closest('.tab-pane').attr('id');
+    if (tabId) $('[data-bs-target="#' + tabId + '"], [href="#' + tabId + '"]').tab('show');
+    $sel.trigger('focus');
+  };
+
+  // ไม่รู้สถานะเดิม (ค่าว่าง/ไม่มีใน dropdown) → เตือนอย่างเดียว ให้ผู้ใช้เลือกเอง
+  if (!original || !originalText) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'ต้องอนุมัติก่อนจึงใช้สถานะนี้ได้',
+      html:
+        'สถานะ <strong>' +
+        currentText +
+        '</strong> ต้องผ่านการอนุมัติก่อน<br>' +
+        '<small class="text-muted">กรุณาเปลี่ยนเป็นสถานะอื่นก่อนส่งคำขออนุมัติ</small>'
+    }).then(gotoConStatus);
+    return;
+  }
+
+  Swal.fire({
+    icon: 'warning',
+    title: 'ต้องอนุมัติก่อนจึงใช้สถานะนี้ได้',
+    html:
+      'สถานะ <strong>' +
+      currentText +
+      '</strong> ต้องผ่านการอนุมัติก่อน — ส่งคำขอทั้งอย่างนี้จะถูกตีกลับ<br>' +
+      '<small class="text-muted">ส่งคำขอโดยคงสถานะ <strong>' +
+      originalText +
+      '</strong> ไว้ก่อน แล้วค่อยกลับมาเปลี่ยนสถานะหลังอนุมัติผ่าน</small>',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'คงสถานะ "' + originalText + '" แล้วขออนุมัติต่อ',
+    cancelButtonText: 'กลับไปแก้สถานะเอง',
+    reverseButtons: true
+  }).then(result => {
+    if (!result.isConfirmed) {
+      gotoConStatus();
+      return;
+    }
+    $sel.val(original); // ส่งคำขอด้วยสถานะเดิม (ไม่มี change handler ผูกอยู่ จึงไม่ต้อง trigger)
+    proceed();
+  });
+}
+
 // ปุ่มขออนุมัติ (ยอดปกติ)
 $(document).on('click', '#btnRequestNormal', function () {
-  $('#action_type').val('request_normal');
-  $('#btnUpdatePurchase').trigger('click');
-  disablePreviewFooterButtons();
+  guardApprovalConStatus(() => {
+    $('#action_type').val('request_normal');
+    $('#btnUpdatePurchase').trigger('click');
+    disablePreviewFooterButtons();
+  });
 });
 
 // ปุ่มดึงคำขอกลับ (admin เท่านั้น — backend กันเคสที่อนุมัติไปแล้ว)
@@ -2555,9 +2632,14 @@ $(document).on('click', '#btnWithdrawApproval', function () {
   });
 });
 
-// ปุ่มขออนุมัติเกินงบ
+// ปุ่มขออนุมัติเกินงบ — ผ่านด่านสถานะก่อน ค่อยให้กรอกเหตุผล/แนบไฟล์
 $(document).on('click', '#btnRequestOverBudget', function () {
   const level = this.dataset.level || 'manager';
+  guardApprovalConStatus(() => openOverBudgetReasonDialog(level));
+});
+
+// กล่องกรอกเหตุผลเกินงบ (ปิด preview ก่อน กัน modal ซ้อน swal)
+function openOverBudgetReasonDialog(level) {
   const previewModalEl = document.getElementById('previewPurchase');
   const previewModal = bootstrap.Modal.getInstance(previewModalEl);
 
@@ -2605,7 +2687,7 @@ $(document).on('click', '#btnRequestOverBudget', function () {
     },
     { once: true }
   );
-});
+}
 
 //edit : campaign
 $(document).ready(function () {
@@ -4163,11 +4245,26 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentCase;
     if (balanceCam >= 0) {
       currentCase = 'normal';
-    } else if (saleBrand === 2) {
+    } else if (saleBrand === 2 || saleBrand === 4) {
+      // brand 4 (Lepas) คิดคอมงบเหลือแบบ brand 2 → เกินงบวิ่งเข้าสาย GM เหมือนกัน ไม่มีเพดาน over_budget
       currentCase = 'b2_gm';
     } else {
       currentCase = Math.abs(balanceCam) * 2 <= overBudgetVal ? 'b1_manager' : 'b1_md';
     }
+
+    // เปิดปุ่มขออนุมัติให้ตรงเคส — งบปกติใช้ปุ่มเดียว ส่วนเกินงบต้องบอกด้วยว่าวิ่งเข้าใคร (manager/GM)
+    //  - b1_manager (brand 1/3 เกินไม่ทะลุเพดาน) → ผู้จัดการอนุมัติจบ
+    //  - b1_md (ทะลุเพดาน) / b2_gm (brand 2) → เข้าสาย GM
+    const revealRequestButton = () => {
+      if (currentCase === 'normal') {
+        btnRequestNormal.classList.remove('d-none');
+        return;
+      }
+      const toGm = currentCase !== 'b1_manager';
+      btnRequestOverBudget.classList.remove('d-none');
+      btnRequestOverBudget.dataset.level = toGm ? 'gm' : 'manager';
+      btnRequestOverBudget.textContent = toGm ? 'ขออนุมัติเกินงบ (GM)' : 'ขออนุมัติเกินงบ';
+    };
 
     // คำขออนุมัติเกินงบล่วงหน้า — รับเฉพาะ b1_md (ทะลุเพดาน) / b2_gm (brand 2 เกินงบ)
     // เคสอื่นบล็อกตั้งแต่ Preview (server ก็ดักซ้ำอีกชั้นตอนกดขออนุมัติ)
@@ -4196,9 +4293,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // return;
     // ===== /ปิดการขออนุมัติชั่วคราว =====
 
-    // admin บันทึกได้ตรง ไม่ต้องขออนุมัติ
+    // admin บันทึกได้ตรง ไม่ต้องรออนุมัติ — แต่ยังต้องเห็นปุ่มขออนุมัติไว้ด้วย
+    // เผื่อ admin ต้องการยิงคำขอ/ส่งเมลหาผู้อนุมัติเอง (เช่น เซลล์ยิงไม่ได้ หรือต้องส่งเมลซ้ำ)
     if (userRole === 'admin') {
       btnSave.classList.remove('d-none');
+      // ประเภทการขาย = Dealer ไม่มีสายอนุมัติ (backend ข้ามการส่งเมล) → ไม่ต้องโชว์ปุ่มขอ กันกดแล้วเงียบ
+      if (!isDealerTypeSaleSelected()) {
+        revealRequestButton();
+      }
       // มีคำขอค้างและยังไม่อนุมัติ → admin ดึงคำขอกลับได้ (backend กันเคสอนุมัติแล้วอีกชั้น)
       const smSig = document.getElementById('smSignature')?.value === '1';
       const appSig = document.getElementById('approvalSignature')?.value === '1';
@@ -4261,25 +4363,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ยังไม่ขอ → บันทึก draft ได้ (ยังไม่ผูกรถ) + ปุ่มขออนุมัติ (ผูกรถต้องอนุมัติก่อน ดักที่ backend)
     btnSave.classList.remove('d-none');
-    if (balanceCam >= 0) {
-      btnRequestNormal.classList.remove('d-none');
-    } else {
-      btnRequestOverBudget.classList.remove('d-none');
-
-      // แยกเกินงบ 2 แบบ (mirror approvalCase):
-      //  - brand 2 → เกินงบส่ง GM เสมอ
-      //  - brand 1/3 เทียบ "ยอดเต็ม" (×2) กับ over_budget : เกิน > เพดาน → ส่ง GM (จบที่ GM, CC md) ; ≤ เพดาน → manager จบ
-      if (saleBrand === 2) {
-        btnRequestOverBudget.dataset.level = 'gm';
-        btnRequestOverBudget.textContent = 'ขออนุมัติเกินงบ (GM)';
-      } else if (Math.abs(balanceCam) * 2 > overBudgetVal) {
-        btnRequestOverBudget.dataset.level = 'gm';
-        btnRequestOverBudget.textContent = 'ขออนุมัติเกินงบ (GM)';
-      } else {
-        btnRequestOverBudget.dataset.level = 'manager';
-        btnRequestOverBudget.textContent = 'ขออนุมัติเกินงบ';
-      }
-    }
+    revealRequestButton();
 
     content.innerHTML = html;
     modal.show();

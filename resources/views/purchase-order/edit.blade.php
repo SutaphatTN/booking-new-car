@@ -2805,6 +2805,10 @@
                      คำขอเดิมใช้ไม่ได้ ต้องเปิดให้ขออนุมัติใหม่ --}}
                 <input type="hidden" id="approvalCase" value="{{ $saleCar->approval_case ?? '' }}">
 
+                {{-- สถานะ ณ ตอนเปิดหน้า — ใช้เทียบว่าผู้ใช้กำลัง "เปลี่ยนเข้า" สถานะ 4/5 ที่ต้องอนุมัติก่อนหรือไม่
+                     (ตรรกะเดียวกับ $enteringApprovalStage ฝั่ง PurchaseOrderController::update) --}}
+                <input type="hidden" id="originalConStatus" value="{{ (int) $saleCar->con_status }}">
+
                 @if (!$isHistory)
                   <div class="mt-6 d-flex justify-content-end gap-2">
                     <button id="prevCar" class="btn btn-danger">ย้อนกลับ</button>
