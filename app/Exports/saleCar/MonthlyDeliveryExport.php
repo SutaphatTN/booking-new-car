@@ -15,6 +15,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
@@ -32,6 +33,29 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
     public function title(): string
     {
         return 'รายงานส่งมอบประจำเดือน';
+    }
+
+    /**
+     * ตำแหน่งคอลัมน์ ราคาขาย / เงินจอง — ขยับตาม brand เพราะ Option กับ สีภายใน โผล่ไม่เท่ากัน
+     * ต้องตรงกับลำดับใน blade monthlyDelivery/summary.blade.php
+     */
+    private function moneyColumns(): array
+    {
+        $brand = auth()->user()->brand;
+
+        $next = 9; // A-H = No, ลูกค้า, ที่อยู่, ฝ่ายขาย, รุ่นหลัก, รุ่นย่อย, Vin, เลขเครื่อง
+        if (!in_array($brand, [2, 3, 4])) $next++; // Option
+        $next++;                                    // สี
+        if ($brand == 2) $next++;                   // สีภายใน
+        $next++;                                    // ปี
+        $msrp = $next++;                            // ราคาขาย
+        $next += 3;                                 // แหล่งที่มา + ประเภทการขาย + ประเภทการซื้อรถ
+        $deposit = $next++;                         // เงินจอง
+
+        return array_map(
+            fn($i) => Coordinate::stringFromColumnIndex($i),
+            ['msrp' => $msrp, 'deposit' => $deposit]
+        );
     }
 
     public function styles(Worksheet $sheet)
@@ -86,7 +110,7 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
 
                 $sheet->getTabColor()->setRGB('a2d4ff');
 
-                $numberColumns = ['L', 'N'];
+                $numberColumns = $this->moneyColumns();
                 foreach ($numberColumns as $col) {
                     $sheet->getStyle("{$col}2:{$col}{$highestRow}")
                         ->getNumberFormat()
@@ -109,6 +133,7 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
         $dateField = $this->dateType === 'ck' ? 'DeliveryInCKDate' : 'DeliveryInDMSDate';
 
         $rows = SaleBookingQuery::base()
+            ->with(['salePurType', 'carOrder.purchaseType'])
             ->whereBetween($dateField, [$start, $end])
             ->where('con_status', 5)
             ->get();
@@ -154,6 +179,10 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
                 'interior_color'      => $interiorColor,
                 'year'                => $r->Year ?? '-',
                 'car_MSRP'            => $r->carOrder?->car_MSRP ?? '-',
+                // ประเภทการขาย (salecars.type_sale) : Normal / Test Drive / Dealer
+                'type_sale'           => $r->salePurType?->name ?? '-',
+                // ประเภทการซื้อรถ (car_order.purchase_type) : Retail / TestDrive / ActivityCar / Company
+                'purchase_type'       => $r->carOrder?->purchaseType?->name ?? '-',
                 'reservation_cost'    => $r->CashDeposit ?? '-',
                 'bookingDate'         => $r?->format_booking_date ?? '-',
                 'name_fi'             => $financeName,
