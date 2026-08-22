@@ -4,10 +4,11 @@
   // สีไอคอนวันที่ให้ตามธีม modal (เพิ่ม=indigo / แก้ไข=amber) — getDateIconColor อ่าน ci-* จาก label ก่อน
   $dateCi = empty($place) ? 'indigo' : 'amber';
   // ล็อก ประมาณค่าใช้จ่าย/เป้า PP เมื่อขออนุมัติแล้ว (รออนุมัติ/อนุมัติแล้ว) — ฉบับร่าง/ถูกส่งกลับ ยังแก้ได้
-  $lockBudget = !empty($place) && in_array($place->status, [
+  // ปิดยอดแล้วก็ล็อกเสมอ แม้ admin ที่ยังแก้ข้อมูลทั่วไปได้ — งวดที่ปิดแล้วต้องไม่ขยับตัวเลข
+  $lockBudget = !empty($place) && ($place->isSettled() || in_array($place->status, [
       \App\Models\SourcePlace::STATUS_PENDING,
       \App\Models\SourcePlace::STATUS_APPROVED,
-  ]);
+  ]));
 @endphp
 @if (!empty($place) && $place->status === \App\Models\SourcePlace::STATUS_REJECTED && optional($place->request)->reject_reason)
   <div class="alert alert-warning d-flex align-items-start gap-2 mb-3">

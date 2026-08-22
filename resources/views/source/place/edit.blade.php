@@ -16,13 +16,24 @@
       </div>
 
       <div class="modal-body mf-body">
-        @php $isSettled = $place->isSettled(); @endphp
+        @php
+          $isSettled = $place->isSettled();
+          // ปิดยอดแล้ว = ดูอย่างเดียว ยกเว้น admin ที่ยังแก้ข้อมูลทั่วไป (เช่น วันที่) ได้
+          $locked = $isSettled && !($canEditSettled ?? false);
+        @endphp
 
-        @if ($isSettled)
+        @if ($locked)
           <div class="alert alert-secondary d-flex align-items-center py-2 mb-3">
             <i class="bx bx-lock-alt me-2 fs-5"></i>
             <div><strong>ปิดยอดแล้ว — ดูข้อมูลได้อย่างเดียว</strong>
               <div class="small text-muted">หากต้องแก้ไข ให้ "เปิดใหม่" ที่หน้าเคลียร์ค่าใช้จ่ายก่อน</div>
+            </div>
+          </div>
+        @elseif ($isSettled)
+          <div class="alert alert-warning d-flex align-items-center py-2 mb-3">
+            <i class="bx bx-shield-quarter me-2 fs-5"></i>
+            <div><strong>ปิดยอดแล้ว — แก้ไขได้เฉพาะแอดมิน</strong>
+              <div class="small">แก้ได้เฉพาะข้อมูลทั่วไป (เช่น วันที่) ส่วนงบประมาณถูกล็อกไว้ ต้อง "เปิดใหม่" ที่หน้าเคลียร์ค่าใช้จ่ายก่อน</div>
             </div>
           </div>
         @endif
@@ -30,14 +41,15 @@
         <form action="{{ route('source.place.update', $place->id) }}" method="POST">
           @csrf
           @method('PUT')
-          <fieldset {{ $isSettled ? 'disabled' : '' }}>
+          <fieldset {{ $locked ? 'disabled' : '' }}>
             @include('source.place._fields', ['place' => $place, 'offlineSources' => $offlineSources])
           </fieldset>
 
           <div class="d-flex justify-content-end gap-2 pt-1">
             <button type="button" class="btn btn-danger px-4" data-bs-dismiss="modal">
-              <i class="bx bx-x me-1"></i>{{ $isSettled ? 'ปิด' : 'ยกเลิก' }}
+              <i class="bx bx-x me-1"></i>{{ $locked ? 'ปิด' : 'ยกเลิก' }}
             </button>
+            {{-- ขอเพิ่มงบได้เฉพาะงวดที่ยังไม่ปิดยอด (admin ก็ไม่ได้) --}}
             @unless ($isSettled)
               @if ($place->status === \App\Models\SourcePlace::STATUS_APPROVED)
                 <button type="button" class="btn btn-warning px-4 btnOpenTopup" data-id="{{ $place->id }}"
@@ -45,6 +57,8 @@
                   <i class="bx bx-plus-circle me-1"></i>{{ $place->pending_extra !== null ? 'รออนุมัติงบเพิ่ม' : 'ขออนุมัติเพิ่ม' }}
                 </button>
               @endif
+            @endunless
+            @unless ($locked)
               <button type="button" class="btn btn-primary px-5 btnUpdatePlace">
                 <i class="bx bx-save me-1"></i>บันทึก
               </button>

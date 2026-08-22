@@ -244,7 +244,9 @@ class SourceController extends Controller
         $offlineSources = TbSalecarType::where('main_source', $this->placeMain())
             ->orderBy('name')->get();
         $approvers      = User::where('role', 'md')->orderBy('name')->get(['id', 'name', 'full_name']);
-        return view('source.place.edit', compact('place', 'offlineSources', 'approvers'));
+        // ปิดยอดแล้วปกติดูได้อย่างเดียว — ยกเว้น admin ที่ยังต้องตามแก้ข้อมูล (เช่น วันที่) ย้อนหลังได้
+        $canEditSettled = Auth::user()->role === 'admin';
+        return view('source.place.edit', compact('place', 'offlineSources', 'approvers', 'canEditSettled'));
     }
 
     public function updatePlace(Request $request, $id)
@@ -253,14 +255,17 @@ class SourceController extends Controller
             $place     = SourcePlace::findOrFail($id);
 
             // ปิดยอดแล้ว = ดูอย่างเดียว ต้องเปิดใหม่ก่อนจึงแก้ได้
-            if ($place->isSettled()) {
+            // ยกเว้น admin — ยังแก้ข้อมูลทั่วไป (เช่น วันที่) ได้โดยไม่ต้องเปิดยอดใหม่
+            if ($place->isSettled() && Auth::user()->role !== 'admin') {
                 return response()->json(['success' => false, 'message' => 'ปิดยอดแล้ว — ต้องเปิดใหม่ก่อนจึงแก้ไขได้'], 422);
             }
 
             $validated = $this->validatePlace($request);
 
             // ขออนุมัติแล้ว (รออนุมัติ/อนุมัติแล้ว) ห้ามแก้ ประมาณค่าใช้จ่าย/เป้า PP — กันแก้ฝั่ง client
-            $lockBudget = in_array($place->status, [SourcePlace::STATUS_PENDING, SourcePlace::STATUS_APPROVED]);
+            // ปิดยอดแล้วก็ล็อกงบเสมอ แม้เป็น admin — งวดที่ปิดแล้วต้องไม่ขยับตัวเลข
+            $lockBudget = $place->isSettled()
+                || in_array($place->status, [SourcePlace::STATUS_PENDING, SourcePlace::STATUS_APPROVED]);
 
             if ($lockBudget) {
                 unset($validated['target']);
