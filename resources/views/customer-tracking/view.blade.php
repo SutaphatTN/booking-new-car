@@ -89,6 +89,18 @@
             </div>
             @endif
 
+            {{-- แถว 3.2: รายงานลูกค้าจากงาน Offline แยกตามสถานที่ (1 สถานที่ = 1 sheet) --}}
+            @if (Auth::user()->role !== 'sale')
+            <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
+              <i class="bx bx-file-export text-muted"></i>
+              <span class="text-muted small">รายงานลูกค้างาน Offline (แยกสถานที่) :</span>
+              <input type="month" id="reportOfflinePlaceMonth" class="form-control form-control-sm" value="{{ date('Y-m') }}" style="width:155px;">
+              <button type="button" class="btn btn-success btn-sm" id="btnExportOfflinePlace">
+                <i class="bx bx-download me-1"></i>Excel
+              </button>
+            </div>
+            @endif
+
             {{-- แถว 3.1: รายงานเลยกำหนดติดตามลูกค้า (เซลล์) — เห็นทุก role ; sale เห็นเฉพาะของตัวเอง
                  ** ปิดชั่วคราว (ยังไม่เปิดหน้าบ้าน) — backend/route พร้อมใช้ เปิดได้โดยเอาคอมเมนต์ออก **
             <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
