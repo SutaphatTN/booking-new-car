@@ -620,6 +620,15 @@ $(document).ready(function () {
     window.location.href = `/customer-tracking/export-overdue?month=${month}`;
   });
 
+  $('#btnExportOfflinePlace').on('click', function () {
+    const month = $('#reportOfflinePlaceMonth').val();
+    if (!month) {
+      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกเดือน', timer: 1500, showConfirmButton: true });
+      return;
+    }
+    window.location.href = `/customer-tracking/export-offline-place?month=${month}`;
+  });
+
   $('#btnExportOverdueSale').on('click', function () {
     const month = $('#reportOverdueSaleMonth').val();
     if (!month) {

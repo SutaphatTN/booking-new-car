@@ -7,6 +7,7 @@ use App\Exports\customerTracking\CustomerTrackingByDateExport;
 use App\Exports\customerTracking\CustomerTrackingDailyExport;
 use App\Exports\customerTracking\CustomerTrackingOverdueExport;
 use App\Exports\customerTracking\CustomerTrackingOverdueReport;
+use App\Exports\customerTracking\CustomerTrackingOfflinePlaceReport;
 use App\Http\Controllers\Controller;
 use App\Models\Ad;
 use App\Traits\ConvertsThaiDate;
@@ -926,6 +927,19 @@ class CustomerTrackingController extends Controller
         $filename = ExportFilename::withBrand('รายงานเลยกำหนดติดตามลูกค้า(เซลล์)_' . $month . '.xlsx');
 
         return Excel::download(new CustomerTrackingOverdueReport($month, $saleId), $filename);
+    }
+
+    // รายงานลูกค้าจากงาน Offline แยกตามสถานที่ (1 สถานที่ = 1 sheet) — ซ่อนจาก role sale เหมือนรายงานอื่นในแถวนี้
+    public function exportOfflinePlaceReport(Request $request)
+    {
+        if (Auth::user()->role === 'sale') {
+            abort(403);
+        }
+
+        $month    = $request->month ?: now()->format('Y-m');
+        $filename = ExportFilename::withBrand('รายงานลูกค้างาน Offline แยกสถานที่_' . $month . '.xlsx');
+
+        return Excel::download(new CustomerTrackingOfflinePlaceReport($month), $filename);
     }
 
     public function saveTestDrive(Request $request, $id)
