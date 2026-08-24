@@ -129,11 +129,19 @@
                   @endforeach
                 </div>
 
-                {{-- ท้ายการ์ด: ผู้อนุมัติจ่าย/ช่องอนุมัติ | ปุ่มจัดการ --}}
-                {{-- ปิดยอดแล้ว = ดูอย่างเดียว เหลือแค่ชื่อผู้อนุมัติจ่าย (ถ้ามี) --}}
-                @if (!$isSettled || ($c->pay_approved && $c->payApprover))
+                {{-- ท้ายการ์ด: คนเพิ่มใบเคลียร์ + ผู้อนุมัติจ่าย/ช่องอนุมัติ | ปุ่มจัดการ --}}
+                {{-- ปิดยอดแล้ว = ดูอย่างเดียว เหลือแค่ชื่อคน (คนเพิ่ม / ผู้อนุมัติจ่าย ถ้ามี) --}}
+                @if (!$isSettled || $c->creator || ($c->pay_approved && $c->payApprover))
                   <div class="clr-ft">
                     <div class="clr-ft-left">
+                      {{-- คนเพิ่มใบเคลียร์งวดนี้ (UserInsert) — คนละคนกับผู้อนุมัติจ่ายได้ --}}
+                      @if ($c->creator)
+                        <span class="clr-approver">
+                          <i class="bx bx-user-plus"></i>
+                          เพิ่มโดย {{ $c->creator->full_name ?: $c->creator->name }}
+                        </span>
+                      @endif
+
                       @if ($c->pay_approved && $c->payApprover)
                         <span class="clr-approver">
                           <i class="bx bx-user-check"></i>
