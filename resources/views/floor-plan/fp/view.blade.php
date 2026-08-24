@@ -4,7 +4,8 @@
 @php
   $showOption   = $brand == 1;   // option เฉพาะ brand 1
   $showInterior = $brand == 2;   // สีภายใน เฉพาะ brand 2
-  $grandTotal   = collect($rows)->sum(fn ($r) => $r['totalInterest'] ?? 0);
+  // ยอดรวมของ "งวดที่เลือก" เท่านั้น — คันที่คร่อมงวดนับเฉพาะส่วนที่ตกในงวดนี้
+  $grandTotal   = collect($rows)->sum(fn ($r) => $r['periodInterest'] ?? 0);
 @endphp
 
 @section('content')
@@ -47,7 +48,7 @@
 
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <span class="badge bg-label-secondary"><i class="bx bx-calendar-event me-1"></i> งวด {{ $periodLabel }}</span>
-              <span class="badge bg-label-success"><i class="bx bx-money me-1"></i> รวมดอกเบี้ย {{ number_format($grandTotal, 2) }} ฿</span>
+              <span class="badge bg-label-success"><i class="bx bx-money me-1"></i> รวมดอกเบี้ยงวดนี้ {{ number_format($grandTotal, 2) }} ฿</span>
 
               {{-- ออกรายงาน : เลือกได้เป็นช่วงเดือน (ดูหลายงวดรวมกัน) --}}
               <form method="GET" action="{{ route('floor-plan.fp.export') }}" id="fpExportForm"
@@ -68,8 +69,10 @@
           <div class="text-muted small mb-3">
             <i class="bx bx-info-circle"></i>
             เดือนที่เลือก = <b>เดือนที่เริ่มงวด</b> (วันที่ 16 ของเดือนนั้น – วันที่ 15 ของเดือนถัดไป) เช่น เลือก ก.ค. = งวด 16/07 – 15/08
-            &nbsp;•&nbsp; กรอง "ปิดแล้ว" ตามงวดของ Billing date &nbsp;•&nbsp; <b>รอปิด FP แสดงเสมอ</b> (ยกเว้นเลือกสถานะ "ปิดแล้ว")
-            &nbsp;•&nbsp; รายงาน Excel เลือกได้หลายงวด — คันที่ยังไม่ปิด FP จะ<b>ประมาณการดอกเบี้ย</b>ถึงวันที่ 15 สิ้นงวดของเดือนสุดท้าย (แถวสีเหลือง)
+            &nbsp;•&nbsp; "ปิดแล้ว" แสดงในทุกงวดที่คันนั้นกินวันอยู่ — คอลัมน์วัน/ดอกเบี้ยเป็นของ<b>งวดที่เลือกเท่านั้น</b>
+            &nbsp;•&nbsp; <b>รอปิด FP แสดงเสมอ</b> (ยกเว้นเลือกสถานะ "ปิดแล้ว") — ยังไม่คิดดอกเบี้ยจนกว่าจะกรอกวันปิด
+            &nbsp;•&nbsp; รายงาน Excel เลือกได้หลายงวด — <b>1 แถว = 1 คัน × 1 งวด</b> คันที่คร่อมงวดจะแยกแถว คิดวัน/ดอกเบี้ยเฉพาะช่วงในงวดนั้น
+            &nbsp;•&nbsp; คันที่ยังไม่ปิด FP จะ<b>ประมาณการดอกเบี้ย</b>ถึงวันที่ 15 สิ้นงวดของเดือนสุดท้าย (แถวสีเหลือง)
           </div>
 
           <div class="table-responsive">
@@ -82,6 +85,8 @@
                   <th>J Number</th>
                   <th>ราคาทุน</th>
                   <th>Billing date</th>
+                  <th>วัน (งวดนี้)</th>
+                  <th>ดอกเบี้ย (งวดนี้)</th>
                   <th>สถานะ</th>
                   <th style="width:110px;">Action</th>
                 </tr>
@@ -98,6 +103,8 @@
                     <td>{{ $r['jNumber'] }}</td>
                     <td class="text-end">{{ number_format($r['cost'], 2) }}</td>
                     <td class="text-center">{{ $r['billingText'] }}</td>
+                    <td class="text-center">{{ $r['periodDays'] !== null ? $r['periodDays'] : '-' }}</td>
+                    <td class="text-end">{{ $r['periodInterest'] !== null ? number_format($r['periodInterest'], 2) : '-' }}</td>
                     <td class="text-center">
                       @if ($r['isClosed'])
                         <span class="badge bg-label-success">ปิดแล้ว</span>

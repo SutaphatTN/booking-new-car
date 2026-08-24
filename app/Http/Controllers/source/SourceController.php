@@ -525,7 +525,7 @@ class SourceController extends Controller
     // PDF สรุปการเคลียร์ค่าใช้จ่ายของสถานที่ (แนบรายการทำจ่าย — เห็นที่มาของค่าใช้จ่าย)
     public function clearPdf($id)
     {
-        $place = SourcePlace::with(['source', 'request', 'budgetItems', 'clears.items', 'clears.payApprover', 'settledBy'])
+        $place = SourcePlace::with(['source', 'request', 'budgetItems', 'clears.items', 'clears.payApprover', 'clears.creator', 'settledBy'])
             ->findOrFail($id);
 
         $pdf = Pdf::loadView('source.place.clear-pdf', ['place' => $place])
@@ -544,7 +544,7 @@ class SourceController extends Controller
 
     public function clearForm($id)
     {
-        $place      = SourcePlace::with(['source', 'budgetItems', 'clears.items', 'clears.payApprover', 'settledBy'])->findOrFail($id);
+        $place      = SourcePlace::with(['source', 'budgetItems', 'clears.items', 'clears.payApprover', 'clears.creator', 'settledBy'])->findOrFail($id);
         $clearTypes = config('source.clear_types', []);
         $canAccount = in_array(Auth::user()->role, $this->accountingRoles());
 

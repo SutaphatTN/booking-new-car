@@ -192,8 +192,12 @@ class FloorPlanController extends Controller
         $segments      = [];
         $totalInterest = 0.0;
 
-        $segStart    = $billing->copy();
-        $periodMonth = $billing->copy()->startOfMonth();
+        $segStart = $billing->copy();
+        // เดือนตั้งต้นของ segment = เดือนของ "งวด" ที่ billing date ตกอยู่ (16→15) ไม่ใช่ calendar month
+        // เช่น billing 14/08 อยู่งวด 2026-07 → ขอบงวดถัดไปคือ 16/08
+        // (ถ้าใช้ startOfMonth ขอบจะเพี้ยนไปเป็น 16/09 ทำให้คันที่ billing ก่อนวันที่ 16 ไม่ถูกแตกงวด
+        //  และป้ายชื่องวดไม่ตรงกับ periodOf() ที่ใช้กรองรายงาน)
+        $periodMonth = Carbon::createFromFormat('Y-m-d', $this->periodOf($billing) . '-01')->startOfDay();
 
         // กันลูปหลุด (สูงสุด ~10 ปี)
         for ($guard = 0; $guard < 130; $guard++) {
@@ -345,16 +349,30 @@ class FloorPlanController extends Controller
 
         $rows = $this->fpRows($brand);
 
-        // กรอง: รอปิด FP แสดงเสมอ (ยกเว้นเลือกสถานะ "ปิดแล้ว") / ปิดแล้ว กรองตามงวด billing
+        // กรอง: รอปิด FP แสดงเสมอ (ยกเว้นเลือกสถานะ "ปิดแล้ว")
+        // ปิดแล้ว = แสดงในทุกงวดที่คันนั้น "กินวัน" อยู่ ไม่ใช่เฉพาะงวดของ Billing date
+        // (คันที่คร่อมงวด เช่น billing 14/08 ปิด 17/08 จะเห็นทั้งงวด 2026-07 และ 2026-08)
         $rows = $rows->filter(function ($r) use ($month, $status) {
             $isPending = !$r['isClosed'];
+            $inPeriod  = collect($r['segments'])->contains(fn ($s) => $s['period'] === $month);
 
             if ($status === 'pending') return $isPending;
-            if ($status === 'closed')  return !$isPending && $r['billingPeriod'] === $month;
+            if ($status === 'closed')  return !$isPending && $inPeriod;
 
             // all
-            return $isPending || $r['billingPeriod'] === $month;
+            return $isPending || $inPeriod;
         })->values();
+
+        // ตัวเลขเฉพาะ "งวดที่เลือก" (คันคร่อมงวดจะเห็นวัน/ดอกเบี้ยของงวดนั้นเท่านั้น)
+        // คันที่ยังไม่ปิด FP ไม่มี segment → null (หน้า list ไม่ประมาณการ ต่างจากรายงาน Excel)
+        $rows = $rows->map(function ($r) use ($month) {
+            $segs = collect($r['segments'])->where('period', $month);
+
+            $r['periodDays']     = $segs->isNotEmpty() ? (int) $segs->sum('days') : null;
+            $r['periodInterest'] = $segs->isNotEmpty() ? (float) $segs->sum('interest') : null;
+
+            return $r;
+        });
 
         $canEditFp = $this->canEditFp();
 
@@ -429,7 +447,9 @@ class FloorPlanController extends Controller
     }
 
     /**
-     * ออกรายงาน FP (Excel) — ยึดตามงวด Billing date (calendar month ของ fp_date)
+     * ออกรายงาน FP (Excel) — ยึดตาม "งวด" (16 → 15 ของเดือนถัดไป) ไม่ใช่รายคัน
+     * 1 แถว = 1 คัน × 1 งวด : คันที่คร่อมงวดจะแยกแถวตามงวด แต่ละแถวคิดจำนวนวัน/ดอกเบี้ย
+     * เฉพาะช่วงที่ตกในงวดนั้น (ใช้ MOR/MLR ของงวดนั้น) รวมทุกงวดแล้วเท่ากับดอกเบี้ยทั้งคัน
      * เลือกได้เป็น "ช่วงเดือน" (month_from – month_to) เพื่อดูหลายงวดรวมกัน
      * ไม่ระบุเลย = ทุกงวด (ทุกคัน fp_tisco)
      *
@@ -463,21 +483,61 @@ class FloorPlanController extends Controller
 
         $rows = $this->fpRows($brand, $estimateTo);
 
-        if ($from) {
-            $rows = $rows->filter(
-                fn ($r) => $r['billingPeriod'] !== null
-                    && $r['billingPeriod'] >= $from
-                    && $r['billingPeriod'] <= $to
-            );
+        // ── แตกเป็น "รายงวด" : 1 แถว = 1 คัน × 1 งวด ──
+        // คันที่คร่อมงวด (เช่น billing 14/08 ปิด 17/08) จะได้ 2 แถว — งวด 2026-07 ช่วง 14–15/08
+        // และงวด 2026-08 ช่วง 16–17/08 โดยจำนวนวัน/ดอกเบี้ยของแต่ละแถวคิดเฉพาะช่วงในงวดนั้น
+        // (รวมทุกงวดแล้วเท่ากับดอกเบี้ยทั้งคันเท่าเดิม)
+        $reportRows = [];
+        foreach ($rows as $r) {
+            $segments = $r['segments'] ?: [];
+
+            // ไม่มี segment = ยังไม่มี Billing date → ไม่มีงวดให้ลง เก็บไว้เฉพาะตอนไม่กรองงวด
+            if (!$segments) {
+                if (!$from) {
+                    $reportRows[] = array_merge($r, [
+                        'period'      => null,
+                        'periodText'  => '-',
+                        'periodFrom'  => $r['billingText'],
+                        'periodTo'    => $r['closeText'],
+                        'segDays'     => null,
+                        'segRate'     => null,
+                        'segInterest' => null,
+                        'isEstimateCut' => false,
+                    ]);
+                }
+                continue;
+            }
+
+            foreach ($segments as $seg) {
+                if ($from && ($seg['period'] < $from || $seg['period'] > $to)) {
+                    continue;
+                }
+                $reportRows[] = array_merge($r, [
+                    'period'      => $seg['period'],
+                    'periodText'  => Carbon::createFromFormat('Y-m-d', $seg['period'] . '-01')->format('m/Y'),
+                    'periodFrom'  => $seg['startText'],
+                    'periodTo'    => $seg['endText'],
+                    'segDays'     => $seg['days'],
+                    'segRate'     => $seg['rate'],
+                    'segInterest' => $seg['interest'],
+                    // ใส่ * เฉพาะงวดสุดท้ายที่จบด้วย "วันตัดประมาณการ" จริง ๆ
+                    // (งวดกลาง ๆ จบที่วันที่ 15 ตามปกติ ไม่ใช่วันประมาณการ)
+                    'isEstimateCut' => $r['isEstimated']
+                        && $estimateTo
+                        && $seg['endText'] === $estimateTo->format('d/m/Y'),
+                ]);
+            }
         }
-        $rows = $rows->values();
+
+        // เรียงตามงวด (usort ของ PHP 8 เป็น stable → ในงวดเดียวกันคงลำดับเดิมจาก fpRows คือ billing ใหม่สุดก่อน)
+        usort($reportRows, fn ($a, $b) => ($a['period'] ?? '') <=> ($b['period'] ?? ''));
 
         $rangeLabel = $from
             ? ($from === $to ? " {$from}" : " {$from} ถึง {$to}")
             : '';
         $filename = ExportFilename::withBrand('รายงาน FP' . $rangeLabel . '.xlsx');
 
-        return Excel::download(new FpReportExport($rows->all(), $brand, $estimateTo), $filename);
+        return Excel::download(new FpReportExport($reportRows, $brand, $estimateTo), $filename);
     }
 
     /**

@@ -50,4 +50,10 @@ class SourcePlaceClear extends Model
     {
         return $this->belongsTo(User::class, 'pay_approved_by');
     }
+
+    /** คนที่เพิ่มใบเคลียร์งวดนี้ — UserInsert เขียนครั้งเดียวตอนสร้าง แก้ไขทีหลังไม่ทับ */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'UserInsert');
+    }
 }
