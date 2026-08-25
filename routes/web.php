@@ -557,6 +557,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/api/purchase-order/check-customer-tracking', [PurchaseOrderController::class, 'checkCustomerTracking']);
     Route::get('/api/purchase-order/customer-profile', [PurchaseOrderController::class, 'customerProfile']);
     Route::post('/api/purchase-order/customer-profile', [PurchaseOrderController::class, 'saveCustomerProfile']);
+    // รวมลูกค้าซ้ำ (คนเดียวกันแต่คนละแถว) — ใช้ตอนกรอกเลขบัตรแล้วชนกับลูกค้าเดิม
+    Route::post('/api/purchase-order/merge-customer', [PurchaseOrderController::class, 'mergeCustomer']);
     Route::get('purchase-order/viewPO', [PurchaseOrderController::class, 'viewPO'])->name('purchase-order.viewPO');
     Route::get('purchase-order/list-po', [PurchaseOrderController::class, 'listPO']);
     Route::get('purchase-order/viewBooking', [PurchaseOrderController::class, 'viewBooking'])->name('purchase-order.viewBooking');
@@ -613,6 +615,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('customer-tracking/detail/{detailId}/continue', [CustomerTrackingController::class, 'continueTracking'])->name('customer-tracking.continueTracking');
     Route::post('customer-tracking/{id}/grade', [CustomerTrackingController::class, 'saveGrade'])->name('customer-tracking.saveGrade');
     Route::post('customer-tracking/{id}/sale', [CustomerTrackingController::class, 'updateSale'])->name('customer-tracking.updateSale');
+    Route::post('customer-tracking/{id}/source', [CustomerTrackingController::class, 'updateSource'])->name('customer-tracking.updateSource');
     Route::post('customer-tracking/{id}/test-drive', [CustomerTrackingController::class, 'saveTestDrive'])->name('customer-tracking.saveTestDrive');
     Route::post('customer-tracking/{id}/cancel', [CustomerTrackingController::class, 'cancelTracking'])->name('customer-tracking.cancel');
     Route::delete('customer-tracking/{id}', [CustomerTrackingController::class, 'destroy'])->name('customer-tracking.destroy');

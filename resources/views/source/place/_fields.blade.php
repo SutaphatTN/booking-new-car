@@ -82,8 +82,15 @@
 
 {{-- ── แจกแจงประมาณค่าใช้จ่าย (หลายประเภท) — ใช้ชุดประเภทเดียวกับตอนเคลียร์ เพื่อเทียบ ประมาณ vs จริง ได้ ── --}}
 @php
-  $budgetTypes = config('source.clear_types', []);
   $budgetLines = empty($place) ? collect() : $place->budgetLines();
+
+  // ประเภทที่เลิกใช้แล้วจะไม่อยู่ในลิสต์ให้เลือกใหม่ แต่ถ้าใบนี้เคยคีย์ไว้ต้องเติมกลับ
+  // ไม่งั้นเปิดแก้ไขแล้ว select จะเด้งกลับเป็นค่าว่างโดยที่คนแก้ไม่รู้ตัว
+  $legacyTypes = config('source.legacy_clear_types', []);
+  $budgetTypes = array_merge(
+      config('source.clear_types', []),
+      $budgetLines->pluck('type')->unique()->intersect($legacyTypes)->values()->all()
+  );
 @endphp
 <div class="mf-section mt-3">
   <div class="mf-section-hd">
@@ -142,7 +149,9 @@
                   <select name="budget_items[{{ $i }}][type]" class="form-select form-select-sm budget-type">
                     <option value="">— เลือกประเภท —</option>
                     @foreach ($budgetTypes as $t)
-                      <option value="{{ $t }}" {{ $line['type'] === $t ? 'selected' : '' }}>{{ $t }}</option>
+                      <option value="{{ $t }}" {{ $line['type'] === $t ? 'selected' : '' }}>
+                        {{ in_array($t, $legacyTypes) ? $t . ' (เลิกใช้)' : $t }}
+                      </option>
                     @endforeach
                   </select>
                 </td>

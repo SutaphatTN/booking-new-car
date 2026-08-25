@@ -151,43 +151,94 @@
                 <div class="row g-4">
                   <div class="col-md-4">
                     @if ($canReassignSale)
-                      {{-- ย้ายลูกค้าไปให้เซลล์คนอื่น (admin/manager/audit/audit_lead/audit_dp/gm) --}}
+                      {{-- ย้ายลูกค้าไปให้เซลล์คนอื่น (admin/manager/audit/audit_lead/audit_dp/gm)
+                           บันทึกด้วยปุ่มเดียวท้ายการ์ดร่วมกับแหล่งที่มา --}}
                       <label class="po-label" for="vmSaleId">ผู้ขาย</label>
-                      <div class="d-flex gap-2">
-                        <select id="vmSaleId" class="form-select" data-current="{{ $tracking->sale_id }}">
-                          @foreach ($saleUser as $s)
-                            <option value="{{ $s->id }}" @selected($s->id == $tracking->sale_id)>{{ $s->name }}</option>
-                          @endforeach
-                        </select>
-                        <button type="button" class="btn btn-primary flex-shrink-0" id="btnSaveSale"
-                          data-tracking-id="{{ $tracking->id }}" disabled>
-                          <i class="bx bx-save"></i>
-                        </button>
-                      </div>
+                      <select id="vmSaleId" class="form-select" data-current="{{ $tracking->sale_id }}">
+                        @foreach ($saleUser as $s)
+                          <option value="{{ $s->id }}" @selected($s->id == $tracking->sale_id)>{{ $s->name }}</option>
+                        @endforeach
+                      </select>
                     @else
                       <div class="po-label">ผู้ขาย</div>
                       <div class="info-pill fw-semibold">{{ $tracking->sale->name ?? '-' }}</div>
                     @endif
                   </div>
-                  <div class="col-md-2">
-                    <div class="po-label">แหล่งที่มาหลัก</div>
-                    <div class="info-pill">{{ $sourceMainLabel }}</div>
-                  </div>
-                  <div class="col-md-2">
-                    <div class="po-label">แหล่งที่มาย่อย</div>
-                    <div class="info-pill">{{ $tracking->source->name ?? '-' }}</div>
-                  </div>
-                  @if ($isPlaceMain)
+                  @if ($canEditSource)
+                    {{-- แก้แหล่งที่มาย้อนหลัง (admin/adminPage/manager/audit*/gm)
+                         cascade หลัก→ย่อย→สถานที่ ใช้ initSourceCascade ตัวเดียวกับหน้าเพิ่มการติดตาม
+                         (id ต้องตรงกัน: #source_main / #source_id / #place_wrap / #place_id) --}}
                     <div class="col-md-4">
-                      <div class="po-label">สถานที่</div>
-                      <div class="info-pill">{{ $tracking->place->name ?? '' }}</div>
+                      <label class="po-label" for="source_main">แหล่งที่มาหลัก</label>
+                      <select id="source_main" class="form-select">
+                        <option value="">— เลือก —</option>
+                        @foreach ($sourceMains as $key => $label)
+                          <option value="{{ $key }}" @selected($key === $sourceMainKey)>{{ $label }}</option>
+                        @endforeach
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="po-label" for="source_id">แหล่งที่มาย่อย</label>
+                      <select id="source_id" class="form-select" data-current="{{ $tracking->source_id }}">
+                        <option value="">— เลือก —</option>
+                        @foreach ($sources as $s)
+                          <option value="{{ $s->id }}" data-main="{{ $s->main_source }}"
+                            @selected($s->id == $tracking->source_id)>{{ $s->name }}</option>
+                        @endforeach
+                      </select>
+                    </div>
+                    <div class="col-md-4" id="place_wrap" style="display:none;"
+                      data-place-main="{{ $placeMain }}" data-old-place="{{ $tracking->place_id }}">
+                      <label class="po-label" for="place_id">สถานที่</label>
+                      <select id="place_id" class="form-select" data-current="{{ $tracking->place_id }}">
+                        <option value="">— เลือก —</option>
+                      </select>
+                    </div>
+                  @else
+                    <div class="col-md-2">
+                      <div class="po-label">แหล่งที่มาหลัก</div>
+                      <div class="info-pill">{{ $sourceMainLabel }}</div>
+                    </div>
+                    <div class="col-md-2">
+                      <div class="po-label">แหล่งที่มาย่อย</div>
+                      <div class="info-pill">{{ $tracking->source->name ?? '-' }}</div>
+                    </div>
+                    @if ($isPlaceMain)
+                      <div class="col-md-4">
+                        <div class="po-label">สถานที่</div>
+                        <div class="info-pill">{{ $tracking->place->name ?? '' }}</div>
+                      </div>
+                    @endif
+                  @endif
+
+                  @if ($canEditAd)
+                    <div class="col-md-12">
+                      <label class="po-label" for="vmClipAddSelect">คลิปที่ยิงแอด
+                        <span class="text-secondary">(กรณีลูกค้าจาก Online)</span></label>
+                      <select id="vmClipAddSelect" class="form-select" data-current="{{ $tracking->clip_add }}">
+                        <option value="">— ไม่ระบุ —</option>
+                        @foreach ($ads as $ad)
+                          <option value="{{ $ad->id }}" @selected($ad->id == $tracking->clip_add)>{{ $ad->name }}</option>
+                        @endforeach
+                      </select>
+                    </div>
+                  @else
+                    <div class="col-md-12">
+                      <label class="po-label" for="vmClipAdd">คลิปที่ยิงแอด</label>
+                      <textarea id="vmClipAdd" name="clip_add_view" class="form-control" rows="2" readonly
+                        style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:9px 14px;font-size:0.9rem;color:#334155;resize:none;">{{ $tracking->ad ? trim($tracking->ad->name . ($tracking->ad->url ? "\n" . $tracking->ad->url : '')) : '-' }}</textarea>
                     </div>
                   @endif
-                  <div class="col-md-12">
-                    <label class="po-label" for="vmClipAdd">คลิปที่ยิงแอด</label>
-                    <textarea id="vmClipAdd" name="clip_add_view" class="form-control" rows="2" readonly
-                      style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:9px 14px;font-size:0.9rem;color:#334155;resize:none;">{{ $tracking->ad ? trim($tracking->ad->name . ($tracking->ad->url ? "\n" . $tracking->ad->url : '')) : '-' }}</textarea>
-                  </div>
+
+                  {{-- ปุ่มเดียวคุมทั้งการ์ด (ผู้ขาย + แหล่งที่มา + คลิปแอด) — เปิดใช้เมื่อมีค่าเปลี่ยนจริง --}}
+                  @if ($canReassignSale || $canEditSource)
+                    <div class="col-md-12 d-flex justify-content-end">
+                      <button type="button" class="btn btn-primary btn-save-dim" id="btnSaveSellerCard"
+                        data-tracking-id="{{ $tracking->id }}" disabled>
+                        <i class="bx bx-save me-1"></i> บันทึก
+                      </button>
+                    </div>
+                  @endif
                 </div>
               </div>
             </div>
