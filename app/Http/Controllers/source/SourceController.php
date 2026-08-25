@@ -542,13 +542,47 @@ class SourceController extends Controller
         return config('source.accounting_roles', ['account', 'admin', 'md']);
     }
 
+    /** ประเภทค่าใช้จ่ายที่ผ่าน validation ได้ = ที่เลือกใหม่ได้ + ที่เลิกใช้แล้ว (ใบเก่าต้องบันทึกซ้ำได้) */
+    private function allClearTypes(): array
+    {
+        return array_merge(
+            config('source.clear_types', []),
+            config('source.legacy_clear_types', [])
+        );
+    }
+
+    /**
+     * ตัวเลือกในดรอปดาวน์ของ "ใบนี้"
+     * = ประเภทปัจจุบัน + ประเภทที่เลิกใช้แล้วเฉพาะที่ใบนี้เคยคีย์ไว้
+     * ถ้าไม่เติมกลับ ค่าเดิมจะหายจาก select ตอนเปิดแก้ไข แล้วคนแก้ต้องเลือกใหม่โดยไม่รู้ตัว
+     */
+    private function clearTypeOptions(SourcePlace $place): array
+    {
+        $types  = config('source.clear_types', []);
+        $legacy = config('source.legacy_clear_types', []);
+
+        if (!$legacy) {
+            return $types;
+        }
+
+        $used = $place->clears->flatMap->items->pluck('type')
+            ->merge($place->budgetItems->pluck('type'))
+            ->unique()
+            ->intersect($legacy)
+            ->values()
+            ->all();
+
+        return array_merge($types, $used);
+    }
+
     public function clearForm($id)
     {
         $place      = SourcePlace::with(['source', 'budgetItems', 'clears.items', 'clears.payApprover', 'clears.creator', 'settledBy'])->findOrFail($id);
-        $clearTypes = config('source.clear_types', []);
+        $clearTypes = $this->clearTypeOptions($place);
+        $legacyTypes = config('source.legacy_clear_types', []);
         $canAccount = in_array(Auth::user()->role, $this->accountingRoles());
 
-        return view('source.place.clear', compact('place', 'clearTypes', 'canAccount'));
+        return view('source.place.clear', compact('place', 'clearTypes', 'legacyTypes', 'canAccount'));
     }
 
     public function storeClear(Request $request, $id)
@@ -575,7 +609,7 @@ class SourceController extends Controller
                 [
                     'clear_date'     => 'nullable|date',
                     'items'          => 'required|array|min:1',
-                    'items.*.type'   => ['required', Rule::in(config('source.clear_types', []))],
+                    'items.*.type'   => ['required', Rule::in($this->allClearTypes())],
                     'items.*.amount' => 'required|numeric|min:0',
                 ],
                 [
@@ -906,7 +940,7 @@ class SourceController extends Controller
         Validator::make(
             ['items' => $items->toArray()],
             [
-                'items.*.type'   => ['required', Rule::in(config('source.clear_types', []))],
+                'items.*.type'   => ['required', Rule::in($this->allClearTypes())],
                 'items.*.amount' => 'required|numeric|min:0',
             ],
             [
@@ -950,13 +984,27 @@ class SourceController extends Controller
     /* ===================== API cascade ===================== */
 
     /** คืนสถานที่ของ sub-source (offline) สำหรับ dropdown ในหน้าเพิ่ม customer-tracking — brand-aware */
-    public function apiPlaces($sourceId)
+    /**
+     * ตัวเลือกสถานที่ของแหล่งที่มาย่อยหนึ่ง ๆ
+     *
+     * @param int|null $include (query) สถานที่ที่ต้องมีในลิสต์เสมอแม้งานจะจบไปแล้ว
+     *        ใช้ตอน "แก้" การติดตามเก่า — ถ้าไม่ส่งมา สถานที่ที่ผูกอยู่จะหลุดจากลิสต์
+     *        แล้วหน้าจอจะมองว่าค่าถูกแก้ทั้งที่ผู้ใช้ไม่ได้แตะอะไร
+     */
+    public function apiPlaces(Request $request, $sourceId)
     {
+        $include = $request->query('include');
+
         $places = SourcePlace::where('salecar_type_id', $sourceId)
             ->where('status', SourcePlace::STATUS_APPROVED)
             // แสดงถึงวันจบงาน +1 วัน (เผื่อเซลล์กรอกข้อมูลย้อนหลัง) — ยังไม่ระบุวันจบ = แสดงไว้
-            ->where(function ($q) {
-                $q->whereNull('end_date')->orWhereDate('end_date', '>=', now()->subDay()->toDateString());
+            ->where(function ($q) use ($include) {
+                $q->whereNull('end_date')
+                    ->orWhereDate('end_date', '>=', now()->subDay()->toDateString());
+
+                if ($include) {
+                    $q->orWhere('id', $include);
+                }
             })
             ->orderBy('location')
             ->get()

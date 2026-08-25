@@ -255,7 +255,8 @@
                         <select class="form-select form-select-sm clear-type" required disabled>
                           <option value="">— เลือกประเภท —</option>
                           @foreach ($clearTypes as $t)
-                            <option value="{{ $t }}">{{ $t }}</option>
+                            {{-- ประเภทที่เลิกใช้แล้วจะโผล่เฉพาะใบที่เคยคีย์ไว้ ติดป้ายกันเลือกใหม่ --}}
+                            <option value="{{ $t }}">{{ in_array($t, $legacyTypes) ? $t . ' (เลิกใช้)' : $t }}</option>
                           @endforeach
                         </select>
                       </td>

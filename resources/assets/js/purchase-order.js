@@ -675,6 +675,135 @@ $(document).ready(function () {
     });
   };
 
+  // ข้อมูลที่กรอกในโมดัล — ใช้ทั้งตอนบันทึกปกติและตอนรวมลูกค้าซ้ำ (ส่งชุดเดียวกัน)
+  function ccpoPayload() {
+    return {
+      customer_id: poCustomerId,
+      PrefixName: $('#ccpo_prefix').val() || null,
+      FirstName: $('#ccpo_first_name').val().trim(),
+      LastName: $('#ccpo_last_name').val().trim(),
+      IDNumber: $('#ccpo_id_number').val().trim(),
+      Mobilephone1: $('#ccpo_phone').val().trim(),
+      house_number: $('#ccpo_house_number').val().trim(),
+      group: $('#ccpo_group').val(),
+      village: $('#ccpo_village').val(),
+      alley: $('#ccpo_alley').val(),
+      road: $('#ccpo_road').val(),
+      province: $('#ccpo_province').val(),
+      district: $('#ccpo_district').val(),
+      subdistrict: $('#ccpo_subdistrict').val(),
+      postal_code: $('#ccpo_postal_code').val(),
+      post_id: $('#ccpo_post_id').val() || null
+    };
+  }
+
+  // อัปเดตชื่อ/เลขบัตร/เบอร์ ที่แสดงบนหน้าจอง ถ้าเป็นลูกค้าคนที่เลือกอยู่
+  function applyCustomerDisplay(res, customerId) {
+    if (String($('#CusID').val()) !== String(customerId)) return;
+
+    const setDisplay = (id, val) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = val || '—';
+      el.classList.toggle('empty', !val);
+    };
+    if (res.name) {
+      $('#customerName').val(res.name);
+      setDisplay('customerName-display', res.name);
+    }
+    setDisplay('customerID-display', res.id_number);
+    setDisplay('customerPhone-display', res.mobile);
+  }
+
+  const esc = (s) => $('<div>').text(s == null ? '' : s).html();
+
+  // การ์ดบอกว่าเลขบัตร/เบอร์ที่กรอกไปชนกับลูกค้ารายไหน
+  function ownerCardHtml(owner) {
+    const chips = [];
+    if (!owner.same_brand) chips.push('<span class="badge bg-label-secondary">แบรนด์ ' + esc(owner.brand_name) + '</span>');
+    if (owner.branch) chips.push('<span class="badge bg-label-secondary">สาขา ' + esc(owner.branch) + '</span>');
+    if (owner.has_tracking) chips.push('<span class="badge bg-label-info">มีการติดตามเปิดอยู่</span>');
+    if (owner.has_booking) chips.push('<span class="badge bg-label-primary">มีใบจอง</span>');
+    if (owner.deleted) chips.push('<span class="badge bg-label-danger">ถูกลบแล้ว</span>');
+
+    return (
+      '<div class="text-start p-3 rounded" style="background:#f8fafc;border:1px solid #e2e8f0;">' +
+        '<div class="fw-bold mb-1">' + esc(owner.name || '(ไม่มีชื่อ)') + '</div>' +
+        '<div class="small text-muted">เลขบัตร ' + esc(owner.id_number || '-') + '</div>' +
+        '<div class="small text-muted">เบอร์ ' + esc(owner.mobile || '-') +
+          (owner.mobile2 ? ' , ' + esc(owner.mobile2) : '') + '</div>' +
+        (owner.created_at ? '<div class="small text-muted">เพิ่มเมื่อ ' + esc(owner.created_at) + '</div>' : '') +
+        (chips.length ? '<div class="mt-2 d-flex flex-wrap gap-1">' + chips.join('') + '</div>' : '') +
+      '</div>'
+    );
+  }
+
+  // เลขบัตรชน = เป็นคนเดียวกัน → เสนอให้รวมข้อมูลไปที่ลูกค้าเดิม แทนที่จะปิดประตู
+  function handleIdTaken(owner) {
+    if (owner.deleted) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'เลขบัตรนี้ถูกใช้อยู่แล้ว',
+        html: ownerCardHtml(owner) +
+          '<div class="small text-muted mt-2 text-start">ลูกค้ารายนี้ถูกลบไปแล้ว จึงรวมข้อมูลอัตโนมัติไม่ได้ — กรุณาแจ้งแอดมิน</div>',
+        confirmButtonText: 'ตกลง'
+      });
+      return;
+    }
+
+    Swal.fire({
+      icon: 'question',
+      title: 'เลขบัตรนี้มีลูกค้าอยู่แล้ว',
+      html: ownerCardHtml(owner) +
+        '<div class="small text-muted mt-2 text-start">ถ้าเป็นคนเดียวกัน ระบบจะย้ายการติดตาม/ใบจอง/ที่อยู่ มาไว้ที่ลูกค้ารายนี้ ' +
+        'เก็บเบอร์ที่กรอกเป็นเบอร์สำรอง แล้วลบข้อมูลที่ซ้ำออก</div>',
+      showCancelButton: true,
+      confirmButtonText: 'ใช่ เป็นคนเดียวกัน — รวมข้อมูล',
+      cancelButtonText: 'ไม่ใช่ ขอแก้เลขบัตร',
+      confirmButtonColor: '#0ea5e9'
+    }).then(function (r) {
+      if (r.isConfirmed) mergeIntoCustomer(owner);
+    });
+  }
+
+  function mergeIntoCustomer(owner) {
+    $.ajax({
+      url: '/api/purchase-order/merge-customer',
+      type: 'POST',
+      data: Object.assign(ccpoPayload(), { target_customer_id: owner.id }),
+      success: function (res) {
+        if (!res.success) {
+          Swal.fire({ icon: 'error', title: 'รวมข้อมูลไม่สำเร็จ', text: res.message || '' });
+          return;
+        }
+
+        // ใบจอง/การติดตาม ถูกย้ายมาที่ลูกค้าปลายทางแล้ว — หน้าจองต้องชี้ไปคนใหม่ด้วย
+        poCustomerId = res.customer_id;
+        $('#CusID').val(res.customer_id);
+        applyCustomerDisplay(res, res.customer_id);
+
+        window.poCustomerComplete = !!res.complete;
+        $modal.modal('hide');
+
+        const notes = (res.notes || []).map(n => '<li>' + esc(n) + '</li>').join('');
+        Swal.fire({
+          icon: 'success',
+          title: 'รวมข้อมูลลูกค้าแล้ว',
+          html: '<div class="text-start">ใช้ข้อมูลของ <b>' + esc(res.name) + '</b> เป็นผู้ซื้อ' +
+            (notes ? '<ul class="small text-muted mt-2 mb-0">' + notes + '</ul>' : '') +
+            (res.complete ? '' : '<div class="small text-danger mt-2">ข้อมูลยังไม่ครบ: ' + esc((res.missing || []).join(', ')) + '</div>') +
+            '</div>'
+        }).then(function () {
+          // ยังขาดข้อมูลอยู่ → เปิดโมดัลให้กรอกต่อกับลูกค้าคนใหม่
+          if (!res.complete) window.poEnsureCustomerComplete(res.customer_id, {});
+        });
+      },
+      error: function (xhr) {
+        Swal.fire({ icon: 'error', title: 'รวมข้อมูลไม่สำเร็จ', text: xhr.responseJSON?.message || 'กรุณาลองใหม่' });
+      }
+    });
+  }
+
   $('#btnSaveCompleteCustomerPO').on('click', function () {
     const firstName = $('#ccpo_first_name').val().trim();
     const idNumber = $('#ccpo_id_number').val().trim();
@@ -705,22 +834,7 @@ $(document).ready(function () {
     $.ajax({
       url: '/api/purchase-order/customer-profile',
       type: 'POST',
-      data: {
-        customer_id: poCustomerId,
-        PrefixName: $('#ccpo_prefix').val() || null,
-        FirstName: firstName,
-        LastName: $('#ccpo_last_name').val().trim(),
-        IDNumber: idNumber,
-        Mobilephone1: phone,
-        house_number: house,
-        group: $('#ccpo_group').val(),
-        village: $('#ccpo_village').val(),
-        alley: $('#ccpo_alley').val(),
-        road: $('#ccpo_road').val(),
-        province, district, subdistrict,
-        postal_code: $('#ccpo_postal_code').val(),
-        post_id: $('#ccpo_post_id').val() || null
-      },
+      data: ccpoPayload(),
       success: function (res) {
         if (!res.success) {
           Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: res.message || 'ไม่สามารถบันทึกได้' });
@@ -728,27 +842,31 @@ $(document).ready(function () {
         }
         window.poCustomerComplete = true;
 
-        // อัปเดตค่าที่แสดงบนหน้า ถ้าเป็นลูกค้าคนเดียวกับที่เลือกอยู่
-        if (String($('#CusID').val()) === String(poCustomerId)) {
-          const setDisplay = (id, val) => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.textContent = val || '—';
-            el.classList.toggle('empty', !val);
-          };
-          if (res.name) {
-            $('#customerName').val(res.name);
-            setDisplay('customerName-display', res.name);
-          }
-          setDisplay('customerID-display', res.id_number);
-          setDisplay('customerPhone-display', res.mobile);
-        }
+        applyCustomerDisplay(res, poCustomerId);
 
         $modal.modal('hide');
         Swal.fire({ icon: 'success', title: 'บันทึกข้อมูลลูกค้าแล้ว', timer: 1500, showConfirmButton: false });
       },
       error: function (xhr) {
-        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
+        const res = xhr.responseJSON || {};
+
+        // ค่าที่กรอกไปชนกับลูกค้ารายอื่น — ชี้ให้เห็นว่าชนกับใคร (เลขบัตรชน = เสนอรวมข้อมูลให้ด้วย)
+        if (res.code === 'id_taken' && res.owner) {
+          handleIdTaken(res.owner);
+          return;
+        }
+        if (res.code === 'phone_taken' && res.owner) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'เบอร์นี้มีลูกค้าอยู่แล้ว',
+            html: ownerCardHtml(res.owner) +
+              '<div class="small text-muted mt-2 text-start">เบอร์โทรห้ามซ้ำกัน — กรุณาแก้เบอร์ หรือถ้าเป็นคนเดียวกัน ให้กรอกเลขบัตรของลูกค้ารายนี้เพื่อรวมข้อมูล</div>',
+            confirmButtonText: 'ตกลง'
+          });
+          return;
+        }
+
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: res.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
       },
       complete: function () {
         $btn.prop('disabled', false);

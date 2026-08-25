@@ -1453,46 +1453,172 @@ $(document).ready(function () {
     });
   });
 
-  // ── ย้ายผู้ขาย (view-more) — ปุ่มจะกดได้ต่อเมื่อเลือกคนใหม่จริง ๆ
-  $('#vmSaleId').on('change', function () {
-    $('#btnSaveSale').prop('disabled', $(this).val() === String($(this).data('current')));
-  });
 
-  $('#btnSaveSale').on('click', function () {
-    const $btn = $(this);
-    const $select = $('#vmSaleId');
+  // ── การ์ด "ข้อมูลผู้ขาย" (view-more) : ผู้ขาย + แหล่งที่มา/สถานที่ + คลิปแอด ──
+  // ปุ่มบันทึกปุ่มเดียวคุมทั้งการ์ด แต่ยิงคนละ endpoint ตามสิทธิ์ (ย้ายผู้ขาย vs แก้แหล่งที่มา
+  // เป็นคนละ role กัน) — ยิงเฉพาะส่วนที่ค่าเปลี่ยนจริง
+  (function initSellerCard() {
+    const $btn = $('#btnSaveSellerCard');
+    if (!$btn.length) return;
+
     const trackingId = $btn.data('tracking-id');
-    const saleId = $select.val();
-    const saleName = $select.find('option:selected').text().trim();
+    const $sale = $('#vmSaleId');
+    const $main = $('#source_main');
+    const $sub = $('#source_id');
+    const $placeWrap = $('#place_wrap');
+    const $place = $('#place_id');
+    const $ad = $('#vmClipAddSelect');
 
-    Swal.fire({
-      icon: 'question',
-      title: 'ยืนยันย้ายผู้ขาย',
-      html: `ย้ายลูกค้ารายนี้ไปให้ <b>${saleName}</b> ใช่หรือไม่?`,
-      showCancelButton: true,
-      confirmButtonText: 'ยืนยัน',
-      cancelButtonText: 'ยกเลิก'
-    }).then(result => {
-      if (!result.isConfirmed) return;
+    const cur = ($el) => String($el.data('current') ?? '');
+    const val = ($el) => String($el.val() ?? '');
+    const changed = ($el) => $el.length && val($el) !== cur($el);
 
-      $btn.prop('disabled', true);
-      $.ajax({
-        url: `/customer-tracking/${trackingId}/sale`,
-        type: 'POST',
-        data: { sale_id: saleId },
-        success: function () {
-          $select.data('current', saleId);
-          Swal.fire({ icon: 'success', title: 'ย้ายผู้ขายสำเร็จ', timer: 1500, showConfirmButton: true });
-        },
-        error: function (xhr) {
-          $btn.prop('disabled', false);
-          Swal.fire({
-            icon: 'error',
-            title: 'เกิดข้อผิดพลาด',
-            text: xhr.responseJSON?.message || 'ไม่สามารถย้ายผู้ขายได้'
-          });
+    // สถานที่โหลดมาทีหลัง ถ้าค่าเดิมไม่มีอยู่ในลิสต์ (เช่นงานจบไปแล้ว) ให้ถือว่ายังไม่ถูกแก้
+    // ไม่งั้นเปิดหน้ามาเฉย ๆ ปุ่มจะกดได้ทั้งที่ผู้ใช้ไม่ได้แตะอะไร
+    function placeChanged() {
+      if (!$place.length) return false;
+      const current = cur($place);
+      if (current && !$place.find('option[value="' + current + '"]').length) return false;
+      return val($place) !== current;
+    }
+
+    function syncBtn() {
+      $btn.prop('disabled', !(changed($sale) || changed($sub) || placeChanged() || changed($ad)));
+    }
+
+    // ── cascade แหล่งที่มาหลัก → ย่อย → สถานที่ ──
+    // เขียนแยกจาก initSourceCascade ของหน้าเพิ่มการติดตาม เพราะบล็อกนั้นมี guard #ct_phone
+    // ที่ไม่มีบนหน้านี้ (ถ้าไปพึ่งกัน สถานที่จะไม่ขึ้นเลย)
+    if ($main.length) {
+      const placeMain = String($placeWrap.data('place-main') ?? 'offline');
+
+      // แสดงเฉพาะแหล่งที่มาย่อยที่อยู่ใต้แหล่งที่มาหลักที่เลือก
+      function filterSub() {
+        const main = $main.val();
+        $sub.find('option').each(function () {
+          const $o = $(this);
+          if (!$o.val()) return;
+          const match = String($o.data('main')) === main;
+          $o.prop('hidden', !match).prop('disabled', !match);
+        });
+        const $sel = $sub.find('option:selected');
+        if (!main || ($sel.val() && String($sel.data('main')) !== main)) $sub.val('');
+      }
+
+      function loadPlaces(preselect) {
+        const isOffline = $main.val() === placeMain;
+        const sourceId = $sub.val();
+
+        if (!isOffline) {
+          $placeWrap.hide();
+          $place.empty().append('<option value="">— เลือก —</option>').val('');
+          return $.Deferred().resolve().promise();
         }
+
+        $placeWrap.show();
+        if (!sourceId) {
+          $place.empty().append('<option value="">— เลือก —</option>');
+          return $.Deferred().resolve().promise();
+        }
+
+        // include = สถานที่ที่ผูกอยู่เดิม — บังคับให้อยู่ในลิสต์แม้งานจบไปแล้ว
+        // ไม่งั้นค่าเดิมจะหลุด แล้วปุ่มจะเข้าใจผิดว่ามีการแก้ไข
+        const keep = preselect || '';
+        return $.get('/api/source/places/' + sourceId + (keep ? '?include=' + encodeURIComponent(keep) : ''), function (data) {
+          $place.empty();
+          if (!data || !data.length) {
+            $place.append('<option value="">— ไม่มีข้อมูลสถานที่ —</option>');
+            return;
+          }
+          $place.append('<option value="">— เลือก —</option>');
+          data.forEach((p) => $place.append($('<option>', { value: p.id, text: p.label })));
+          if (preselect) $place.val(preselect);
+        });
+      }
+
+      $main.on('change', function () {
+        $sub.val('');
+        filterSub();
+        loadPlaces(null).always(syncBtn);
+      });
+
+      $sub.on('change', function () {
+        loadPlaces(null).always(syncBtn);
+      });
+
+      // ตั้งต้นจากค่าที่บันทึกไว้ — สถานที่ preselect ตัวเดิมหลังโหลดรายการเสร็จ
+      filterSub();
+      loadPlaces($place.data('current') || null).always(syncBtn);
+    }
+
+    $(document).on('change', '#vmSaleId, #place_id, #vmClipAddSelect', syncBtn);
+
+    $btn.on('click', function () {
+      const jobs = [];
+      const summary = [];
+
+      if (changed($sale)) {
+        summary.push('ย้ายผู้ขายไปให้ <b>' + $sale.find('option:selected').text().trim() + '</b>');
+      }
+      if (changed($sub) || changed($place) || changed($ad)) {
+        summary.push('แก้แหล่งที่มา/คลิปแอด (กระทบยอด PP รายสถานที่และการนับผลแอด)');
+      }
+
+      Swal.fire({
+        icon: 'question',
+        title: 'ยืนยันบันทึก',
+        html: '<div class="text-start small">' + summary.map((s) => '• ' + s).join('<br>') + '</div>',
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยัน',
+        cancelButtonText: 'ยกเลิก'
+      }).then((result) => {
+        if (!result.isConfirmed) return;
+
+        $btn.prop('disabled', true);
+
+        if (changed($sale)) {
+          jobs.push(
+            $.ajax({
+              url: `/customer-tracking/${trackingId}/sale`,
+              type: 'POST',
+              data: { sale_id: $sale.val() }
+            }).done(() => $sale.data('current', $sale.val()))
+          );
+        }
+
+        if (changed($sub) || changed($place) || changed($ad)) {
+          jobs.push(
+            $.ajax({
+              url: `/customer-tracking/${trackingId}/source`,
+              type: 'POST',
+              data: {
+                source_id: $sub.val(),
+                place_id: $place.val() || null,
+                clip_add: $ad.length ? $ad.val() || null : null
+              }
+            }).done(() => {
+              $sub.data('current', $sub.val());
+              $place.data('current', $place.val() || '');
+              if ($ad.length) $ad.data('current', $ad.val() || '');
+            })
+          );
+        }
+
+        // ยิงพร้อมกันได้เพราะคนละคอลัมน์ ไม่ชนกัน — รอให้จบทุกตัวก่อนค่อยสรุปผล
+        $.when.apply($, jobs)
+          .done(function () {
+            syncBtn();
+            Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', timer: 1500, showConfirmButton: false });
+          })
+          .fail(function (xhr) {
+            syncBtn();
+            Swal.fire({
+              icon: 'error',
+              title: 'เกิดข้อผิดพลาด',
+              text: xhr?.responseJSON?.message || 'ไม่สามารถบันทึกได้'
+            });
+          });
       });
     });
-  });
+  })();
 });

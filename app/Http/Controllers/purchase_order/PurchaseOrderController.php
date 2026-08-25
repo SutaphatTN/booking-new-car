@@ -3164,6 +3164,173 @@ class PurchaseOrderController extends Controller
         return $missing;
     }
 
+    /**
+     * ข้อมูลย่อของ "ลูกค้าที่ถือค่าซ้ำอยู่" (เลขบัตร/เบอร์) — ส่งกลับไปให้หน้าจอชี้ตัวได้ว่าชนกับใคร
+     * customers เป็นข้อมูลกลาง ไม่มี BrandScope เจ้าของอาจอยู่คนละแบรนด์/สาขา จึงบอกแบรนด์ไปด้วย
+     */
+    private function duplicateOwnerPayload(Customer $c): array
+    {
+        $authBrand = (int) Auth::user()->brand;
+
+        return [
+            'id'         => $c->id,
+            'name'       => trim(($c->prefix->Name_TH ?? '') . ' ' . $c->FirstName . ' ' . ($c->LastName ?? '')),
+            'id_number'  => $c->formatted_id_number,
+            'mobile'     => $c->formatted_mobile,
+            'mobile2'    => $c->Mobilephone2,
+            'brand'      => (int) $c->brand,
+            'brand_name' => config('brand.names')[$c->brand] ?? ('Brand ' . $c->brand),
+            'same_brand' => (int) $c->brand === $authBrand,
+            'branch'     => $c->branch,
+            'deleted'    => $c->trashed(),
+            'created_at' => optional($c->created_at)->format('d/m/Y'),
+            // การติดตาม/ใบจองที่ยังเปิดอยู่ (ทุกแบรนด์ — เพื่อบอกภาพรวมว่าลูกค้ารายนี้ยัง active ที่ไหน)
+            'has_tracking' => CustomerTracking::withoutGlobalScopes()
+                ->whereNull('deleted_at')->whereNull('cancelled_at')
+                ->where('customer_id', $c->id)->exists(),
+            'has_booking'  => Salecar::withoutGlobalScopes()
+                ->whereNull('deleted_at')->whereNull('CancelDate')
+                ->where('CusID', $c->id)->exists(),
+        ];
+    }
+
+    /**
+     * รวมลูกค้าซ้ำ: ย้ายทุกอย่างของ $from (แถวที่เพิ่งสร้างจากการติดตาม) ไปหา $target (แถวเดิมที่ถือเลขบัตร)
+     * แล้ว soft-delete $from — ใช้ตอนกรอกเลขบัตรในหน้าจองแล้วชนกับลูกค้าเดิมที่เป็นคนเดียวกัน
+     *
+     * เงื่อนไขกันพลาด: $target ต้องถือเลขบัตรที่ส่งมาจริง ๆ (ยืนยันว่าเป็นคนเดียวกัน) และต้องไม่ถูกลบ
+     * เบอร์ของ $from ย้ายไปช่อง Mobilephone2 เพราะ Mobilephone1 มี unique index (soft delete ไม่ปลดล็อกดัชนี)
+     */
+    public function mergeCustomer(Request $request)
+    {
+        $request->validate([
+            'customer_id'        => 'required|integer|exists:customers,id',
+            'target_customer_id' => 'required|integer|exists:customers,id',
+            'IDNumber'           => 'required|string',
+        ]);
+
+        $idNumber = Customer::normalizeIdNumber($request->IDNumber);
+
+        if ((int) $request->customer_id === (int) $request->target_customer_id) {
+            return response()->json(['success' => false, 'message' => 'เป็นลูกค้ารายเดียวกันอยู่แล้ว'], 422);
+        }
+
+        $from   = Customer::find($request->customer_id);
+        $target = Customer::find($request->target_customer_id);
+
+        if (!$from || !$target) {
+            return response()->json(['success' => false, 'message' => 'ไม่พบข้อมูลลูกค้า (อาจถูกลบไปแล้ว)'], 422);
+        }
+
+        if (Customer::normalizeIdNumber($target->IDNumber) !== $idNumber) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เลขบัตรของลูกค้าปลายทางไม่ตรงกับที่กรอก — ยกเลิกการรวมเพื่อความปลอดภัย',
+            ], 422);
+        }
+
+        $notes = [];
+
+        DB::beginTransaction();
+        try {
+            $fromPhone = $from->Mobilephone1;
+
+            // เบอร์เดิมของแถวที่จะถูกลบ — เก็บไว้เป็นเบอร์สำรองของลูกค้าปลายทาง ถ้ายังไม่ซ้ำกับที่มีอยู่
+            if ($fromPhone && $fromPhone !== $target->Mobilephone1 && $fromPhone !== $target->Mobilephone2) {
+                if (empty($target->Mobilephone2)) {
+                    $target->Mobilephone2 = $fromPhone;
+                    $notes[] = 'เก็บเบอร์ ' . $fromPhone . ' เป็นเบอร์สำรอง';
+                } else {
+                    $notes[] = 'เบอร์ ' . $fromPhone . ' ไม่ได้เก็บ (ช่องเบอร์สำรองมีข้อมูลอยู่แล้ว)';
+                }
+            }
+
+            // เติมเฉพาะช่องที่ปลายทางว่าง — ไม่ทับข้อมูลเดิมที่ยืนยันแล้ว
+            foreach (['PrefixName' => $from->PrefixName, 'FirstName' => $from->FirstName, 'LastName' => $from->LastName] as $col => $val) {
+                if (empty($target->$col) && !empty($val)) {
+                    $target->$col = $val;
+                }
+            }
+            $target->save();
+
+            // ย้ายสิ่งที่ผูกกับลูกค้าเก่า (ตารางที่อ้าง customer: address / customer_trackings / salecars / service_check_trackings)
+            $movedTracking = CustomerTracking::withoutGlobalScopes()
+                ->where('customer_id', $from->id)->update(['customer_id' => $target->id]);
+
+            $movedBooking = Salecar::withoutGlobalScopes()
+                ->where('CusID', $from->id)->update(['CusID' => $target->id]);
+
+            // อ้างอิงอื่นบนใบจองที่ชี้มาที่แถวเก่า — ย้ายด้วยไม่งั้นจะชี้ไปแถวที่ถูกลบ
+            Salecar::withoutGlobalScopes()
+                ->where('original_customer_id', $from->id)->update(['original_customer_id' => $target->id]);
+            Salecar::withoutGlobalScopes()
+                ->where('ReferrerID', $from->id)->update(['ReferrerID' => $target->id]);
+
+            DB::table('service_check_trackings')->where('customer_id', $from->id)->update(['customer_id' => $target->id]);
+
+            // ที่อยู่: ย้ายเฉพาะประเภทที่ปลายทางยังไม่มี — กันที่อยู่ซ้ำซ้อนบนลูกค้าคนเดียว
+            foreach (['current', 'document'] as $type) {
+                $targetHas = Address::where('customer_id', $target->id)->where('type', $type)->exists();
+                if ($targetHas) continue;
+
+                $addr = Address::where('customer_id', $from->id)->where('type', $type)->orderByDesc('id')->first();
+                if ($addr) {
+                    $addr->customer_id = $target->id;
+                    $addr->save();
+                    $notes[] = 'ย้ายที่อยู่ (' . $type . ')';
+                }
+            }
+
+            // ที่อยู่ปัจจุบันยังขาด แต่ผู้ใช้เพิ่งกรอกมาในฟอร์ม → สร้างให้เลย
+            $needAddress = !Address::where('customer_id', $target->id)->where('type', 'current')->exists();
+            if ($needAddress && $request->filled(['house_number', 'province', 'district', 'subdistrict'])) {
+                $authUser = Auth::user();
+                $addrData = [
+                    'house_number' => $request->house_number,
+                    'group'        => $request->group,
+                    'village'      => $request->village,
+                    'alley'        => $request->alley,
+                    'road'         => $request->road,
+                    'subdistrict'  => $request->subdistrict,
+                    'district'     => $request->district,
+                    'province'     => $request->province,
+                    'postal_code'  => $request->postal_code,
+                    'post_id'      => $request->post_id ?: null,
+                    'userZone'     => $target->userZone ?? $authUser->userZone,
+                    'brand'        => $target->brand ?? $authUser->brand,
+                    'branch'       => $target->branch ?? $authUser->branch,
+                ];
+                Address::create(['customer_id' => $target->id, 'type' => 'current'] + $addrData);
+                if (!Address::where('customer_id', $target->id)->where('type', 'document')->exists()) {
+                    Address::create(['customer_id' => $target->id, 'type' => 'document'] + $addrData);
+                }
+                $notes[] = 'บันทึกที่อยู่ที่กรอกใหม่';
+            }
+
+            $from->delete();
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'รวมข้อมูลไม่สำเร็จ กรุณาลองใหม่'], 500);
+        }
+
+        $target->refresh()->load('prefix');
+        $missing = $this->customerProfileMissing($target);
+
+        return response()->json([
+            'success'     => true,
+            'customer_id' => $target->id,
+            'name'        => trim(($target->prefix->Name_TH ?? '') . ' ' . $target->FirstName . ' ' . ($target->LastName ?? '')),
+            'id_number'   => $target->formatted_id_number,
+            'mobile'      => $target->formatted_mobile,
+            'complete'    => empty($missing),
+            'missing'     => $missing,
+            'moved'       => ['tracking' => $movedTracking, 'booking' => $movedBooking],
+            'notes'       => $notes,
+        ]);
+    }
+
     // ตรวจว่าลูกค้ามีข้อมูลครบก่อนทำการจอง: เลขบัตร + เบอร์โทร + ที่อยู่ปัจจุบัน (จังหวัด/อำเภอ/ตำบล)
     public function customerProfile(Request $request)
     {
@@ -3236,12 +3403,37 @@ class PurchaseOrderController extends Controller
             ], 422);
         }
 
-        if (Customer::where('IDNumber', $idNumber)->where('id', '!=', $request->customer_id)->exists()) {
-            return response()->json(['success' => false, 'message' => 'เลขบัตรประชาชนนี้มีอยู่ในระบบแล้ว'], 422);
+        // ชนเลขบัตร = เป็นคนเดียวกัน → ต้องบอกว่าชนกับใคร ไม่ใช่ปิดประตูเฉย ๆ
+        // (ลูกค้าส่วนใหญ่เข้าระบบทางการติดตามซึ่งยังไม่มีเลขบัตร คนเดิมที่มาด้วยเบอร์ใหม่จึงกลายเป็นอีกแถวได้ง่าย)
+        // withTrashed: ของเดิมไม่ได้เช็คคนที่ถูกลบ ทำให้บันทึกทับจนเกิดเลขบัตรซ้ำเงียบ ๆ
+        $idOwner = Customer::withTrashed()->with('prefix')
+            ->where('IDNumber', $idNumber)
+            ->where('id', '!=', $request->customer_id)
+            ->orderBy('id')
+            ->first();
+
+        if ($idOwner) {
+            return response()->json([
+                'success' => false,
+                'code'    => 'id_taken',
+                'message' => 'เลขบัตรประชาชนนี้เป็นของลูกค้ารายอื่นในระบบแล้ว',
+                'owner'   => $this->duplicateOwnerPayload($idOwner),
+            ], 422);
         }
 
-        if (Customer::withTrashed()->where('Mobilephone1', $mobile)->where('id', '!=', $request->customer_id)->exists()) {
-            return response()->json(['success' => false, 'message' => 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว'], 422);
+        $phoneOwner = Customer::withTrashed()->with('prefix')
+            ->where('Mobilephone1', $mobile)
+            ->where('id', '!=', $request->customer_id)
+            ->orderBy('id')
+            ->first();
+
+        if ($phoneOwner) {
+            return response()->json([
+                'success' => false,
+                'code'    => 'phone_taken',
+                'message' => 'เบอร์โทรศัพท์นี้เป็นของลูกค้ารายอื่นในระบบแล้ว',
+                'owner'   => $this->duplicateOwnerPayload($phoneOwner),
+            ], 422);
         }
 
         DB::beginTransaction();

@@ -700,6 +700,8 @@ class CustomerTrackingController extends Controller
             'customer.prefix',
             'sale',
             'source',
+            'place',
+            'ad',
             'model',
             'subModel',
             'details.decision',
@@ -708,13 +710,53 @@ class CustomerTrackingController extends Controller
 
         $decisions = TbDecision::all();
 
+        $authUser = Auth::user();
+
         // ย้ายลูกค้าไปให้เซลล์คนอื่นได้ไหม — โหลดรายชื่อเฉพาะ role ที่มีสิทธิ์ ไม่งั้นเปลือง query
-        $canReassignSale = Auth::user()->canReassignSale();
+        $canReassignSale = $authUser->canReassignSale();
         $saleUser = $canReassignSale
             ? User::salePoolForBrand((int) ($tracking->brand ?: Auth::user()->brand), (int) $tracking->sale_id)
             : collect();
 
-        return view('customer-tracking.view-more', compact('tracking', 'decisions', 'canReassignSale', 'saleUser'));
+        // แก้แหล่งที่มา/สถานที่/คลิปแอด ย้อนหลัง — โหลดตัวเลือกเฉพาะคนที่มีสิทธิ์
+        $canEditSource = $this->canEditTrackingSourceOf($tracking);
+        $canEditAd     = $canEditSource && $authUser->canEditTrackingAd();
+
+        $hiddenMains = config('source.tracking_hidden_main', []);
+        $placeMain   = config('source.place_main', 'offline');
+        $sourceMains = collect(config('source.main', []))->except($hiddenMains)->all();
+
+        // แหล่งที่มาปัจจุบันอาจเป็นตัวที่ถูกซ่อน/ลบไปแล้ว — ต้องคงไว้ในลิสต์ ไม่งั้นเปิดหน้ามาค่าจะหาย
+        $sources = $canEditSource
+            ? TbSalecarType::withTrashed()
+                ->where(fn ($q) => $q->whereNotIn('main_source', $hiddenMains)->orWhere('id', $tracking->source_id))
+                ->get()
+            : collect();
+
+        if ($canEditSource && $tracking->source && !array_key_exists($tracking->source->main_source, $sourceMains)) {
+            $sourceMains[$tracking->source->main_source] = config("source.main.{$tracking->source->main_source}", $tracking->source->main_source);
+        }
+
+        $ads = $canEditAd
+            ? Ad::where('brand', $tracking->brand ?: $authUser->brand)
+                ->where('branch', $tracking->branch ?: $authUser->branch)
+                ->where(fn ($q) => $q->where('is_active', 1)->orWhere('id', $tracking->clip_add))
+                ->orderBy('name')
+                ->get()
+            : collect();
+
+        return view('customer-tracking.view-more', compact(
+            'tracking',
+            'decisions',
+            'canReassignSale',
+            'saleUser',
+            'canEditSource',
+            'canEditAd',
+            'sources',
+            'sourceMains',
+            'placeMain',
+            'ads'
+        ));
     }
 
     /** ย้ายผู้ขายของการติดตามนี้ไปให้เซลล์อีกคน */
@@ -745,6 +787,93 @@ class CustomerTrackingController extends Controller
         return response()->json([
             'success'   => true,
             'sale_name' => $tracking->fresh('sale')->sale->name ?? '-',
+        ]);
+    }
+
+    /**
+     * แก้แหล่งที่มาของ "ใบนี้" ได้ไหม
+     * เซลล์แก้ได้เฉพาะการติดตามที่ตัวเองถืออยู่ (เห็นทั้งสาขาแต่แก้ของเพื่อนไม่ได้)
+     * role อื่นที่อยู่ในลิสต์แก้ได้ทุกใบที่มองเห็น
+     */
+    private function canEditTrackingSourceOf(CustomerTracking $tracking): bool
+    {
+        $user = Auth::user();
+
+        if (!$user->canEditTrackingSource()) {
+            return false;
+        }
+
+        return !$user->editsTrackingSourceOwnOnly()
+            || (int) $tracking->sale_id === (int) $user->id;
+    }
+
+    /**
+     * แก้แหล่งที่มา / สถานที่ / คลิปที่ยิงแอด ของการติดตามย้อนหลัง
+     * กติกาเดียวกับตอนสร้าง (store): place บังคับเมื่อแหล่งที่มาหลัก = offline และต้องเป็นสถานที่ที่อนุมัติแล้ว
+     * แหล่งที่มาที่ไม่ใช่ offline จะล้าง place_id ทิ้ง กันค่าค้างจากของเดิม
+     */
+    public function updateSource(Request $request, $id)
+    {
+        $authUser = Auth::user();
+        $tracking = CustomerTracking::findOrFail($id);
+
+        abort_unless($this->canEditTrackingSourceOf($tracking), 403);
+
+        $source    = TbSalecarType::withTrashed()->find($request->source_id);
+        $placeMain = config('source.place_main', 'offline');
+        $isOffline = $source && $source->main_source === $placeMain;
+
+        // แหล่งที่มาที่ไม่ใช่ offline ไม่ต้องตรวจ place เลย — ค่าที่ค้างมาจากของเดิมจะถูกล้างทิ้งอยู่แล้ว
+        $placeRules = $isOffline
+            ? [
+                'required',
+                Rule::exists('tb_source_place', 'id')
+                    ->where('salecar_type_id', $request->source_id)
+                    ->where('status', SourcePlace::STATUS_APPROVED)
+                    ->whereNull('deleted_at'),
+            ]
+            : ['nullable'];
+
+        $validator = Validator::make($request->all(), [
+            'source_id' => 'required|exists:tb_salecar_type,id',
+            'place_id'  => $placeRules,
+            'clip_add'  => 'nullable|exists:tb_ad,id',
+        ], [
+            'source_id.required' => 'กรุณาเลือกแหล่งที่มาย่อย',
+            'source_id.exists'   => 'แหล่งที่มาย่อยไม่ถูกต้อง',
+            'place_id.required'  => 'กรุณาเลือกสถานที่',
+            'place_id.exists'    => 'สถานที่ไม่ถูกต้อง',
+            'clip_add.exists'    => 'ไม่พบคลิปที่เลือก',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+        }
+
+        $data = [
+            'source_id' => (int) $request->source_id,
+            'place_id'  => $isOffline ? ($request->place_id ?: null) : null,
+        ];
+
+        // คลิปแอดแก้ได้เฉพาะ admin/adminPage — role อื่นส่งมาก็ไม่รับ ค่าเดิมคงไว้
+        if ($authUser->canEditTrackingAd()) {
+            $data['clip_add'] = $request->clip_add ?: null;
+        }
+
+        $tracking->update($data);
+        $tracking->refresh()->load(['source', 'place', 'ad']);
+
+        $mainKey = $tracking->source->main_source ?? null;
+
+        return response()->json([
+            'success'     => true,
+            'source_main' => $mainKey ? config("source.main.$mainKey", $mainKey) : '-',
+            'source_name' => $tracking->source->name ?? '-',
+            'place_name'  => $tracking->place->name ?? '-',
+            'is_offline'  => $mainKey === $placeMain,
+            'ad_text'     => $tracking->ad
+                ? trim($tracking->ad->name . ($tracking->ad->url ? "\n" . $tracking->ad->url : ''))
+                : '-',
         ]);
     }
 

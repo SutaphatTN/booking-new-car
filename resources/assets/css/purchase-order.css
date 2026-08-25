@@ -187,6 +187,20 @@
   }
 }
 
+/* ปุ่มบันทึกที่รอให้แก้ค่าก่อน — ตอน disabled ต้องจางกว่า disabled ปกติของ Bootstrap
+   ให้เห็นชัดว่ายังไม่มีอะไรให้บันทึก พอแก้ค่าแล้วจึงกลับเป็นสีเต็ม */
+.btn-save-dim {
+  transition: opacity 0.18s ease, filter 0.18s ease;
+}
+
+.btn-save-dim:disabled,
+.btn-save-dim.disabled {
+  opacity: 0.35;
+  filter: grayscale(0.7);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
 /* ── Section card ── */
 .po-section-edit {
   background: #fff;

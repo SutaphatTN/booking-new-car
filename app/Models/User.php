@@ -189,6 +189,38 @@ class User extends Authenticatable
 	}
 
 	/**
+	 * role ที่แก้ "แหล่งที่มา / สถานที่ / คลิปที่ยิงแอด" ของการติดตามย้อนหลังได้
+	 * แยก const เพราะเป็นการแก้ที่กระทบรายงาน (ยอด PP รายสถานที่ / การนับผลแอด)
+	 * ใส่ adminPage ด้วยเพราะเป็นคนคีย์ลูกค้า online และเป็นคนเดียวที่เลือกคลิปแอดตอนสร้าง
+	 */
+	public const EDIT_TRACKING_SOURCE_ROLES = ['admin', 'adminPage', 'manager', 'audit', 'audit_lead', 'audit_dp', 'gm', 'md', 'sale', 'lead_sale'];
+
+	/**
+	 * role ที่แก้ได้เฉพาะการติดตาม "ของตัวเอง" (sale_id = ตัวเอง)
+	 * เซลล์เห็นการติดตามทั้งสาขาตาม userAccess scope ถ้าไม่จำกัดตรงนี้จะไปแก้แหล่งที่มาของเพื่อนได้
+	 * เอาออกได้โดยทำ const นี้เป็น [] ถ้าอยากให้เซลล์แก้ของใครก็ได้
+	 */
+	public const EDIT_TRACKING_SOURCE_OWN_ONLY_ROLES = ['sale', 'lead_sale'];
+
+	public function canEditTrackingSource(): bool
+	{
+		return in_array($this->role, self::EDIT_TRACKING_SOURCE_ROLES, true);
+	}
+
+	public function editsTrackingSourceOwnOnly(): bool
+	{
+		return in_array($this->role, self::EDIT_TRACKING_SOURCE_OWN_ONLY_ROLES, true);
+	}
+
+	/** เลือก "คลิปที่ยิงแอด" ได้ — ตรงกับหน้าเพิ่มการติดตามที่เปิดช่องนี้ให้เฉพาะสองคนนี้ */
+	public const EDIT_TRACKING_AD_ROLES = ['admin', 'adminPage'];
+
+	public function canEditTrackingAd(): bool
+	{
+		return in_array($this->role, self::EDIT_TRACKING_AD_ROLES, true);
+	}
+
+	/**
 	 * role ที่แก้ "ราคารถ" (price_sub) ในหน้าใบจองได้
 	 * แยก const จาก REASSIGN_SALE_ROLES แม้รายชื่อจะตรงกัน เพราะเป็นคนละสิทธิ์
 	 * แก้อันนึงต้องไม่ลากอีกอันไปด้วย
