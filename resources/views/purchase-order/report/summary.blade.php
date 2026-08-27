@@ -333,20 +333,17 @@
                   {{ $saleCar->carOrder?->engine_number ?? '-' }}</div>
               </div>
 
-              @if ($saleCar->brand == 2)
+              @if (in_array($saleCar->brand, [2, 3, 4]))
                 <div class="f">
                   <div class="fl">สีรถ</div>
                   <div class="fv">{{ $saleCar->gwmColor->name ?? '-' }}</div>
                 </div>
-                <div class="f">
-                  <div class="fl">สีภายในรถ</div>
-                  <div class="fv">{{ $saleCar->interiorColor->name ?? '-' }}</div>
-                </div>
-              @elseif (in_array($saleCar->brand, [3, 4]))
-                <div class="f">
-                  <div class="fl">สีรถ</div>
-                  <div class="fv">{{ $saleCar->gwmColor->name ?? '-' }}</div>
-                </div>
+                @if (\App\Support\BrandFeature::hasInteriorColor($saleCar->brand))
+                  <div class="f">
+                    <div class="fl">สีภายในรถ</div>
+                    <div class="fv">{{ $saleCar->interiorColor->name ?? '-' }}</div>
+                  </div>
+                @endif
               @else
                 <div class="f">
                   <div class="fl">สีรถ</div>

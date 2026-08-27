@@ -17,6 +17,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use App\Support\BrandFeature;
 
 class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
@@ -182,7 +183,7 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 ? ($order->gwmColor->name ?? '-')
                 : ($order->color ?? '-');
 
-            $interiorColor = $order->brand == 2
+            $interiorColor = BrandFeature::hasInteriorColor($order->brand)
                 ? ($order->interiorColor->name ?? '-')
                 : null;
 

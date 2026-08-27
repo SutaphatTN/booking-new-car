@@ -3,7 +3,7 @@
 
 @php
   $showOption   = $brand == 1;   // option เฉพาะ brand 1
-  $showInterior = $brand == 2;   // สีภายใน เฉพาะ brand 2
+  $showInterior = \App\Support\BrandFeature::hasInteriorColor($brand);   // สีภายใน — ดู config/brand.php
 @endphp
 
 @section('content')

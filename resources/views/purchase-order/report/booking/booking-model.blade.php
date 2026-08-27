@@ -1,6 +1,9 @@
 @php
   // role manager เห็นรายงานนี้ได้ แต่ไม่ให้เห็นคอลัมน์ราคาทุน
   $showCost = auth()->user()->role !== 'manager';
+
+  // คอลัมน์ "สีภายใน" — เปิดตาม config/brand.php (interior_color_brands)
+  $showInterior = \App\Support\BrandFeature::hasInteriorColor();
 @endphp
 <table>
   <thead>
@@ -10,7 +13,7 @@
       @endif
       <th>รุ่นย่อย</th>
       <th>สี</th>
-      @if (auth()->user()->brand == 2)
+      @if ($showInterior)
         <th>สีภายใน</th>
       @endif
       <th>ปี</th>
@@ -48,7 +51,7 @@
         @endif
         <td>{{ $r['subModel'] }}</td>
         <td>{{ $r['color'] }}</td>
-        @if (auth()->user()->brand == 2)
+        @if ($showInterior)
           <td>{{ $r['interior_color'] }}</td>
         @endif
         <td>{{ $r['year'] }}</td>
@@ -80,7 +83,7 @@
     @empty
       <tr>
         {{-- <td colspan="{{ auth()->user()->brand == 2 ? 21 : 20 }}" align="center"> --}}
-        <td colspan="{{ ($showCost ? 23 : 22) + (auth()->user()->brand == 2 ? 1 : 0) }}" align="center">
+        <td colspan="{{ ($showCost ? 23 : 22) + (auth()->user()->brand == 2 ? 1 : 0) + ($showInterior ? 1 : 0) }}" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

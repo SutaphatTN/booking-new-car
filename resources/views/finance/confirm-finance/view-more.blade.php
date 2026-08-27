@@ -111,7 +111,7 @@
                         disabled>
                     </div>
                   @else
-                    <div class="col-md-6">
+                    <div class="col-md-{{ \App\Support\BrandFeature::hasInteriorColor() ? 3 : 6 }}">
                       <label for="Year" class="mf-label form-label">
                         <i class="bx bx-calendar ci-sky"></i> ปี
                       </label>
@@ -119,13 +119,23 @@
                         style="background:#f8fafc;color:#64748b;" disabled>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-{{ \App\Support\BrandFeature::hasInteriorColor() ? 5 : 6 }}">
                       <label for="Color" class="mf-label form-label">
                         <i class="bx bx-palette ci-sky"></i> สี
                       </label>
                       <input id="Color" type="text" class="form-control" value="{{ $sale->display_color }}"
                         style="background:#f8fafc;color:#64748b;" disabled>
                     </div>
+                    @if (\App\Support\BrandFeature::hasInteriorColor())
+                      <div class="col-md-4">
+                        <label for="interior_color" class="mf-label form-label">
+                          <i class="bx bx-palette ci-sky"></i> สีภายใน
+                        </label>
+                        <input id="interior_color" type="text" class="form-control"
+                          value="{{ $sale->interiorColor->name ?? '-' }}" style="background:#f8fafc;color:#64748b;"
+                          disabled>
+                      </div>
+                    @endif
                   @endif
 
                   <div class="col-md-6">

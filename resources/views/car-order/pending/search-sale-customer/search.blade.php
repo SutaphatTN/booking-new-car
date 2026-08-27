@@ -1,7 +1,7 @@
 @php
   $brand = auth()->user()->brand;
-  // brand 1 = มี Option, brand 2 = มีสีภายใน, brand อื่น = คอลัมน์ปกติ
-  $extraCol = $brand == 1 ? 'option' : ($brand == 2 ? 'interior' : '');
+  // brand 1 = มี Option, brand ที่มีสีภายใน (config/brand.php) = สีภายใน, brand อื่น = คอลัมน์ปกติ
+  $extraCol = $brand == 1 ? 'option' : (\App\Support\BrandFeature::hasInteriorColor($brand) ? 'interior' : '');
 @endphp
 
 <div class="modal fade" id="modalSearchPurchaseCus" tabindex="-1" aria-labelledby="modalSearchPurchaseCusLabel" aria-hidden="true" role="dialog">

@@ -422,7 +422,7 @@
                       </select>
                     </div>
                   @elseif (in_array(auth()->user()->brand, [3, 4]))
-                    <div class="col-md-3">
+                    <div class="col-md-{{ \App\Support\BrandFeature::hasInteriorColor() ? 2 : 3 }}">
                       <label for="model_id" class="po-label"><i class="bx bx-cube"></i> รุ่นรถหลัก</label>
                       <select id="model_id" name="model_id" class="form-select" required
                         style="{{ $carLockedStyle }}">
@@ -434,7 +434,7 @@
                         @endforeach
                       </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-{{ \App\Support\BrandFeature::hasInteriorColor() ? 3 : 4 }}">
                       <label for="subModel_id" class="po-label"><i class="bx bx-list-ul"></i> รุ่นรถย่อย</label>
                       <select id="subModel_id" name="subModel_id" class="form-select" required
                         style="{{ $carLockedStyle }}">
@@ -460,6 +460,22 @@
                         @endforeach
                       </select>
                     </div>
+                    @if (\App\Support\BrandFeature::hasInteriorColor())
+                      <div class="col-md-2">
+                        <label for="interior_color" class="po-label"><i class="bx bx-brush"></i> สีภายใน</label>
+                        <select id="interior_color" name="interior_color"
+                          class="form-select @error('interior_color') is-invalid @enderror" required
+                          style="{{ $carLockedStyle }}">
+                          <option value="">— เลือกสี —</option>
+                          @foreach ($interiorColor as $t)
+                            <option value="{{ $t->id }}" data-name="{{ $t->name }}"
+                              {{ $saleCar->interior_color == $t->id ? 'selected' : '' }}>
+                              {{ $t->name }}
+                            </option>
+                          @endforeach
+                        </select>
+                      </div>
+                    @endif
                     <div class="col-md-2">
                       <label for="pricelist_year" class="po-label"><i class="bx bx-calendar-alt"></i> ปี</label>
                       <select id="pricelist_year" name="Year"
@@ -917,6 +933,13 @@
                             <input id="carOrderColor" type="text" class="form-control"
                               value="{{ $saleCar->carOrder->gwmColor->name ?? '' }}" readonly>
                           </div>
+                          @if (\App\Support\BrandFeature::hasInteriorColor())
+                            <div class="col-md-3">
+                              <label for="carOrderInterior" class="po-label"><i class="bx bx-brush"></i> สีภายใน</label>
+                              <input id="carOrderInterior" type="text" class="form-control"
+                                value="{{ $saleCar->carOrder->interiorColor->name ?? '' }}" readonly>
+                            </div>
+                          @endif
                         @else
                           <div class="col-md-1">
                             <label for="carOrderOption" class="po-label"><i class="bx bx-code-block"></i>

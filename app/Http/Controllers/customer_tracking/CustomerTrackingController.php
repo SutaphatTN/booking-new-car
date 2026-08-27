@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Support\ExportFilename;
+use App\Support\BrandFeature;
 
 class CustomerTrackingController extends Controller
 {
@@ -426,7 +427,7 @@ class CustomerTrackingController extends Controller
                 $q->where('branch', $authUser->branch);
             })
             ->get();
-        $interiorColor = $authUser->brand == 2 ? TbInteriorColor::all() : collect();
+        $interiorColor = BrandFeature::hasInteriorColor($authUser->brand) ? TbInteriorColor::all() : collect();
         $prefixes      = TbPrefixname::all();
         $sourceMains   = collect(config('source.main', []))->except($hiddenMains)->all();
         $placeMain     = config('source.place_main', 'offline');
@@ -626,7 +627,7 @@ class CustomerTrackingController extends Controller
                 'pricelist_color'   => $brand === 1 ? ($request->pricelist_color ?: null) : null,
                 'option'            => $request->option ?: null,
                 'color_id'          => $brand === 1 ? null : ($request->color_id ?: null),
-                'interior_color_id' => $brand === 2 ? ($request->interior_color_id ?: null) : null,
+                'interior_color_id' => BrandFeature::hasInteriorColor($brand) ? ($request->interior_color_id ?: null) : null,
                 'color_text'        => $brand === 1 ? ($request->color_text ?: null) : null,
                 'clip_add'          => $request->clip_add ?: null,
                 'userZone'          => $authUser->userZone,

@@ -376,7 +376,7 @@
                     <div class="invalid-feedback">{{ $message }}</div>
                   @enderror
                 </div>
-                <div class="col-md-8">
+                <div class="col-md-{{ \App\Support\BrandFeature::hasInteriorColor() ? 4 : 8 }}">
                   <label class="po-label" for="gwm_color"><i class='bx bx-palette'></i> สี</label>
                   <select id="gwm_color" name="gwm_color" class="form-select" required>
                     <option value="">— เลือกสี —</option>
@@ -385,6 +385,17 @@
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                   @enderror
                 </div>
+                @if (\App\Support\BrandFeature::hasInteriorColor())
+                  <div class="col-md-4">
+                    <label class="po-label" for="interior_color"><i class='bx bx-paint'></i> สีภายใน</label>
+                    <select id="interior_color" name="interior_color" class="form-select" disabled>
+                      <option value="">— เลือกสี —</option>
+                    </select>
+                    @error('interior_color')
+                      <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
+                  </div>
+                @endif
               @endif
 
             </div>

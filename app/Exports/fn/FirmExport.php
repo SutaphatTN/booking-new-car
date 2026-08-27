@@ -3,6 +3,7 @@
 namespace App\Exports\fn;
 
 use App\Models\Salecar;
+use App\Support\BrandFeature;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -155,7 +156,7 @@ class FirmExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldA
                 ? ($r->gwmColor->name ?? '-')
                 : ($r->Color ?? '-');
 
-            $interiorColor = $r->brand == 2
+            $interiorColor = BrandFeature::hasInteriorColor($r->brand)
                 ? ($r->interiorColor->name ?? '-')
                 : null;
 

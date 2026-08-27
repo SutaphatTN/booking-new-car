@@ -16,6 +16,7 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
+use App\Support\BrandFeature;
 
 class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
@@ -133,7 +134,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       false, //    สี
     ];
 
-    if ($brand === 2) {
+    if (BrandFeature::hasInteriorColor($brand)) {
       $isNumber[] = false; // สีภายใน
     }
 
@@ -232,7 +233,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         ? ($r->carOrder->gwmColor->name ?? '-')
         : ($r->carOrder->color ?? '-');
 
-      $interiorColor = $r->brand == 2
+      $interiorColor = BrandFeature::hasInteriorColor($r->brand)
         ? ($r->interiorColor->name ?? '-')
         : null;
 

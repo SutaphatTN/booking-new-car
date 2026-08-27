@@ -155,6 +155,16 @@
                   <input id="gwm_color" class="form-control" type="text"
                     value="{{ $order->gwmColor->name ?? '-' }}" disabled>
                 </div>
+
+                @if (\App\Support\BrandFeature::hasInteriorColor())
+                  <div class="col-md-3">
+                    <label for="interior_color" class="mf-label form-label">
+                      <i class="bx bx-paint-roll ci-indigo"></i> สีภายใน
+                    </label>
+                    <input id="interior_color" class="form-control" type="text"
+                      value="{{ $order->interiorColor->name ?? '-' }}" disabled>
+                  </div>
+                @endif
               @else
                 <div class="col-md-2">
                   <label for="option" class="mf-label form-label">

@@ -2,9 +2,13 @@
   // role manager เห็นรายงานนี้ได้ แต่ไม่ให้เห็นคอลัมน์ราคาทุน
   $showCost = auth()->user()->role !== 'manager';
 
+  // คอลัมน์ "สีภายใน" — เปิดตาม config/brand.php (interior_color_brands)
+  $showInterior = \App\Support\BrandFeature::hasInteriorColor();
+
   // จำนวนคอลัมน์รวม (ปรับตาม brand + การซ่อนราคาทุน) สำหรับแถว "ไม่มีข้อมูล"
   $totalCols = 26;
-  if (auth()->user()->brand == 2) $totalCols += 2;         // สาขา + สีภายใน
+  if (auth()->user()->brand == 2) $totalCols++;             // สาขา — GWM เท่านั้น
+  if ($showInterior) $totalCols++;                          // สีภายใน
   if (in_array(auth()->user()->brand, [2, 3, 4])) $totalCols--; // ไม่มี Option
   if (!$showCost) $totalCols--;                             // ซ่อนราคาทุน
 @endphp
@@ -18,7 +22,7 @@
       <th>รุ่นรถหลัก</th>
       <th>รุ่นย่อย</th>
       <th>สี</th>
-      @if (auth()->user()->brand == 2)
+      @if ($showInterior)
         <th>สีภายใน</th>
       @endif
       <th>ปี</th>
@@ -59,7 +63,7 @@
         <td>{{ $s['model'] }}</td>
         <td>{{ $s['subModel'] }}</td>
         <td>{{ $s['color'] }}</td>
-        @if (auth()->user()->brand == 2)
+        @if ($showInterior)
           <td>{{ $s['interior_color'] }}</td>
         @endif
         <td>{{ $s['year'] }}</td>

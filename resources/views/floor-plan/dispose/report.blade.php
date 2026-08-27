@@ -1,11 +1,12 @@
 @php
   // รายงานถูก brand-scope อยู่แล้ว (UserAccessScope) → อิง brand ของ user ที่ login
   //  - Option: เฉพาะ brand 1
-  //  - สีภายใน: เฉพาะ brand 2
+  //  - สีภายใน: ตาม config/brand.php (interior_color_brands)
   $brand = auth()->user()->brand;
+  $showInterior = \App\Support\BrandFeature::hasInteriorColor($brand);
 
   // นับคอลัมน์ไว้ทำ colspan ของแถว "ไม่มีข้อมูล" (16 ฐาน + option + interior)
-  $colCount = 16 + ($brand == 1 ? 1 : 0) + ($brand == 2 ? 1 : 0);
+  $colCount = 16 + ($brand == 1 ? 1 : 0) + ($showInterior ? 1 : 0);
 @endphp
 <table>
   <thead>
@@ -21,7 +22,7 @@
       @if ($brand == 1)
         <th>Option</th>
       @endif
-      @if ($brand == 2)
+      @if ($showInterior)
         <th>สีภายใน</th>
       @endif
       <th>ราคาทุน</th>
@@ -53,7 +54,7 @@
         @if ($brand == 1)
           <td>{{ $co->option ?: '-' }}</td>
         @endif
-        @if ($brand == 2)
+        @if ($showInterior)
           <td>{{ $co->interiorColor->name ?? '-' }}</td>
         @endif
         <td>{{ $co->car_DNP ?? 0 }}</td>

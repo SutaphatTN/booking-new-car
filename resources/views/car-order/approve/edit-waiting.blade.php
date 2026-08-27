@@ -193,6 +193,14 @@
                     </label>
                     <input id="gwm_color" type="text" class="form-control form-control-plaintext-mf" value="{{ $waiting->gwmColor->name ?? '-' }}" disabled>
                   </div>
+                  @if (\App\Support\BrandFeature::hasInteriorColor())
+                    <div class="col-md-4">
+                      <label for="interior_color" class="mf-label form-label">
+                        <i class="bx bx-color-fill ci-sky"></i> สีภายใน
+                      </label>
+                      <input id="interior_color" type="text" class="form-control form-control-plaintext-mf" value="{{ $waiting->interiorColor->name ?? '-' }}" disabled>
+                    </div>
+                  @endif
                   <div class="col-md-4">
                     <label for="year" class="mf-label form-label">
                       <i class="bx bx-calendar ci-sky"></i> ปี
