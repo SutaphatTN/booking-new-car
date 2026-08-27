@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\LogsActivity;
 use App\Models\Traits\TracksUserActions;
 use App\Models\Traits\UserAccessScope;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,14 @@ class CarOrder extends Model
     use SoftDeletes;
     use UserAccessScope;
     use TracksUserActions;
+
+    // ประวัติการแก้ไขรายคัน ลง activity_logs (subject_type = 'CarOrder')
+    // UserUpdate เก็บได้แค่ "คนแก้ล่าสุด" ซึ่งทับของเก่าทุกครั้ง — สืบย้อนว่าใครแก้ฟิลด์ไหนไม่ได้
+    //
+    // ⚠️ trait ดักได้เฉพาะการแก้ผ่าน model instance — ห้ามใช้ CarOrder::where(...)->update([...])
+    //    กับตารางนี้ เพราะ query builder update ไม่ยิง model event ทำให้ประวัติหาย
+    //    ถ้าต้องอัปเดตหลายแถวให้ใช้ CarOrder::updateLogged(fn($q) => ..., [...]) แทน
+    use LogsActivity;
 
     protected $table = 'car_order';
 

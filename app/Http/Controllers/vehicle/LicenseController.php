@@ -58,10 +58,14 @@ class LicenseController extends Controller
       $nameSale = $history?->saleCarLic?->saleUser?->name ?? '';
 
       // ── สถานะ ──
-      // สถานะของตัวป้าย (สูญหาย/ชำรุด/ระหว่างติดตาม/ทดลองขับ) มาก่อนเสมอ — ป้ายพวกนี้หยิบมาใช้กับงานขายไม่ได้
-      // ทดลองขับแยกสีไว้ เพราะไม่ใช่ป้ายมีปัญหา แต่เป็นป้ายที่กันไว้ให้รถทดลองขับ
+      // สถานะของตัวป้ายมาก่อนเสมอ — ป้ายที่ไม่ใช่ "ปกติ" หยิบมาใช้กับงานขายใหม่ไม่ได้
+      // แยกสีตามลักษณะ : กันไว้ใช้เฉพาะทาง (ฟ้า) / ของไม่อยู่ในมือ (เหลือง) / ป้ายมีปัญหา (ดำ)
       if ($p->isBlocked()) {
-        $badge = $p->plate_status_value === TbLicensePlate::STATUS_TEST_DRIVE ? 'bg-primary' : 'bg-dark';
+        $badge = [
+          TbLicensePlate::STATUS_TEST_DRIVE    => 'bg-primary',
+          TbLicensePlate::STATUS_MOVING        => 'bg-info',
+          TbLicensePlate::STATUS_WITH_CUSTOMER => 'bg-warning text-dark',
+        ][$p->plate_status_value] ?? 'bg-dark';
         $status = '<span class="badge ' . $badge . '">' . e($p->plate_status_label) . '</span>';
       } elseif ($loan) {
         $isBorrower = $userBrand && $loan->borrower_brand == $userBrand;
@@ -177,8 +181,8 @@ class LicenseController extends Controller
   }
 
   /**
-   * แก้สถานะของตัวป้าย (ปกติ / สูญหาย / ชำรุด / ระหว่างติดตาม) — role ใน plate_manage_roles
-   * 3 สถานะหลังทำให้ป้ายถูกยืมหรือเลือกผูกงานขายใหม่ไม่ได้
+   * แก้สถานะของตัวป้าย — role ใน plate_manage_roles (ดู TbLicensePlate::PLATE_STATUSES)
+   * ทุกสถานะยกเว้น "ปกติ" ทำให้ป้ายถูกยืมหรือเลือกผูกงานขายใหม่ไม่ได้
    */
   public function updateStatus(Request $request, $id)
   {
@@ -188,33 +192,15 @@ class LicenseController extends Controller
       'plate_status' => ['required', 'string', Rule::in(array_keys(TbLicensePlate::PLATE_STATUSES))],
     ]);
 
-    // ข้าม brand scope — admin ไม่มีแบรนด์ประจำ และต้องแก้ป้ายที่แบรนด์อื่นยืมอยู่ได้ด้วย
+    // ข้าม brand scope — สถานะเป็นเรื่องของ "ตัวป้าย" ไม่ใช่ของแบรนด์ที่ถืออยู่
+    // ป้ายที่ยืมไปอาจชำรุด/สูญหายระหว่างอยู่กับผู้ยืม หรือค้างที่ลูกค้า จึงต้องแก้ได้ทุกกรณี
+    // ไม่มีด่านกันไว้แล้ว — ความรับผิดชอบอยู่ที่ activity_logs (เก็บว่าใคร แบรนด์ไหน เปลี่ยนจากอะไรเป็นอะไร)
     $plate = TbLicensePlate::withoutGlobalScope('brandAccess')->find($id);
     if (!$plate) {
       return response()->json(['success' => false, 'message' => 'ไม่พบป้ายแดง'], 404);
     }
 
-    $newStatus = $request->plate_status;
-    $isBlocking = in_array($newStatus, TbLicensePlate::BLOCKED_STATUSES, true);
-
-    // ป้ายที่ยังผูกงานขายอยู่ ห้าม mark สูญหาย/ชำรุด/ระหว่างติดตาม
-    // — ต้องปลดออกจากงานขายก่อน ไม่งั้นงานขายจะค้างกับป้ายที่ใช้ไม่ได้
-    if ($isBlocking && $plate->is_used) {
-      return response()->json([
-        'success' => false,
-        'message' => 'ป้ายนี้ยังผูกกับงานขายอยู่ ต้องกดยืนยันการจ่ายเงินจริงเพื่อปลดป้ายก่อน',
-      ], 422);
-    }
-
-    // ป้ายที่แบรนด์อื่นยืมค้างอยู่ ต้องคืนก่อน — ไม่งั้นฝั่งที่ยืมจะถือป้ายที่ใช้ไม่ได้ไว้
-    if ($isBlocking && $plate->loans()->whereNull('return_date')->exists()) {
-      return response()->json([
-        'success' => false,
-        'message' => 'ป้ายนี้ถูกยืมค้างอยู่ ต้องคืนป้ายก่อนจึงจะเปลี่ยนสถานะได้',
-      ], 422);
-    }
-
-    $plate->update(['plate_status' => $newStatus]);
+    $plate->update(['plate_status' => $request->plate_status]);
 
     return response()->json([
       'success' => true,

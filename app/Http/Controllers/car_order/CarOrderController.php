@@ -642,8 +642,10 @@ class CarOrderController extends Controller
                             ->whereNotIn('con_status', [7, 8, 9])
                             ->exists();
                         if (!$oldStillActive) {
-                            CarOrder::where('id', $oldCarOrderID)
-                                ->update(['car_status' => 'Available']);
+                            CarOrder::updateLogged(
+                                fn($q) => $q->whereKey($oldCarOrderID),
+                                ['car_status' => 'Available']
+                            );
                         }
                     }
 
@@ -1154,8 +1156,9 @@ class CarOrderController extends Controller
             }
 
             // อัปเดตผู้อนุมัติของรายการที่เลือกให้ตรงกับคนที่เลือกตอนขออนุมัติ + ปั๊มเวลาที่ขอ
+            // update ทีละ instance (ไม่ใช่ mass update) เพื่อให้ activity log ของ CarOrder ทำงาน — โมเดลโหลดมาแล้วจึงไม่ต้อง query ซ้ำ
             $stamp = ['approver' => $approver->id, 'approval_requested_at' => now()];
-            CarOrder::whereIn('id', $orders->pluck('id'))->update($stamp);
+            $orders->each(fn($order) => $order->update($stamp));
             CarOrderWaiting::whereIn('id', $waitings->pluck('id'))->update($stamp);
 
             // ประกอบรายการสำหรับเมล
@@ -1285,13 +1288,14 @@ class CarOrderController extends Controller
 
                 // order ลูกค้า
                 if (!empty($orderIds)) {
-                    $approved += CarOrder::whereIn('id', $orderIds)
-                        ->where('status', CarOrder::STATUS_PENDING)
-                        ->update([
+                    $approved += CarOrder::updateLogged(
+                        fn($q) => $q->whereIn('id', $orderIds)->where('status', CarOrder::STATUS_PENDING),
+                        [
                             'status'        => CarOrder::STATUS_APPROVED,
                             'approved_by'   => Auth::id(),
                             'approver_date' => now(),
-                        ]);
+                        ]
+                    );
                 }
 
                 // waiting — อนุมัติตามจำนวนที่สั่ง (count_order)
@@ -1696,11 +1700,14 @@ class CarOrderController extends Controller
         try {
             $waiting = CarOrderWaiting::findOrFail($id);
 
-            CarOrder::where('waiting_id', $id)->update([
-                'system_date'  => $this->toGregorian($request->system_date),
-                'order_status' => 2,
-                'status'       => CarOrder::STATUS_FINISHED,
-            ]);
+            CarOrder::updateLogged(
+                fn($q) => $q->where('waiting_id', $id),
+                [
+                    'system_date'  => $this->toGregorian($request->system_date),
+                    'order_status' => 2,
+                    'status'       => CarOrder::STATUS_FINISHED,
+                ]
+            );
 
             $waiting->update(['system_date' => $this->toGregorian($request->system_date)]);
 
