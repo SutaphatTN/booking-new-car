@@ -55,6 +55,16 @@
   .btn-check:checked + .fu-type-card.is-bp { border-color: #f59e0b; background: #fffbeb; }
   .btn-check:checked + .fu-type-card.is-bp .fu-type-ic { background: #f59e0b; color: #fff; }
   .btn-check:focus-visible + .fu-type-card { outline: 2px solid #818cf8; outline-offset: 2px; }
+  /* งานแก้ — เน้นให้เห็นชัดว่าใบนี้ไม่คิดเงิน */
+  .fu-rework {
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    padding: .75rem 1rem;
+    background: #f8fafc;
+  }
+  .fu-rework.is-on { border-color: #f59e0b; border-style: solid; background: #fffbeb; }
+  /* ซ่อนคอลัมน์เงินตอนเป็นงานแก้ — ต้อง !important เพราะ table-cell ชนะ class ปกติ */
+  .fu-hide-money .fu-money-col { display: none !important; }
 
   /* ── Fields flow into the same row as วันที่สั่งงาน ──
      display:contents ทำให้ลูกไม่ใช่ direct child ของ .row จึงต้องจำลอง .row > * เอง */
@@ -224,6 +234,27 @@
                     <span class="fu-type-sub">งานซ่อมสี / ตัวถัง</span>
                   </span>
                 </label>
+              </div>
+
+              {{-- งานแก้ — ลูกค้ากลับมาติดใหม่เพราะฟิล์มมีปัญหา : ตัดสต็อกตามปกติ แต่ไม่คิดเงิน/ค่าคอม --}}
+              <div class="fu-rework mt-3">
+                <div class="form-check form-switch m-0">
+                  <input class="form-check-input" type="checkbox" id="fu_is_rework" name="is_rework" value="1">
+                  <label class="form-check-label fw-semibold" for="fu_is_rework">
+                    <i class="bx bx-refresh me-1"></i> งานแก้ (ติดใหม่เพราะฟิล์มมีปัญหา)
+                  </label>
+                </div>
+                <div class="text-muted mt-1" style="font-size:.78rem;">
+                  <i class="bx bx-info-circle me-1"></i>นับตารางฟุตและตัดสต็อกตามปกติ แต่ไม่คิดราคาขายและค่าคอม
+                </div>
+
+                <div id="fu_rework_note_wrap" class="mt-3 d-none">
+                  <label for="fu_rework_note" class="mf-label form-label">
+                    <i class="bx bx-note"></i> หมายเหตุงานแก้ <span class="text-danger">*</span>
+                  </label>
+                  <textarea id="fu_rework_note" name="rework_note" class="form-control" rows="2" maxlength="500"
+                    placeholder="ระบุสาเหตุที่ต้องติดใหม่ เช่น ฟิล์มเป็นฟอง / มีรอยขีดข่วน / ลอกร่อน"></textarea>
+                </div>
               </div>
             </div>
           </div>
@@ -507,8 +538,8 @@
                       <th style="min-width:100px">ความเข้ม</th>
                       <th style="min-width:200px">Stock No.</th>
                       <th class="text-end" style="min-width:100px">ตร.ฟุต</th>
-                      <th class="text-end" style="min-width:130px">ราคาขาย (฿)</th>
-                      <th class="text-end" style="min-width:120px">ค่าคอม (฿)</th>
+                      <th class="text-end fu-money-col" style="min-width:130px">ราคาขาย (฿)</th>
+                      <th class="text-end fu-money-col" style="min-width:120px">ค่าคอม (฿)</th>
                     </tr>
                   </thead>
                   <tbody id="positionRows">
@@ -523,8 +554,8 @@
                     <tr class="table-light fw-bold">
                       <td colspan="3" class="text-end pe-3">รวมทั้งหมด</td>
                       <td class="text-end" id="totalSqft">-</td>
-                      <td class="text-end" id="totalPrice">-</td>
-                      <td class="text-end" id="totalCommission">-</td>
+                      <td class="text-end fu-money-col" id="totalPrice">-</td>
+                      <td class="text-end fu-money-col" id="totalCommission">-</td>
                     </tr>
                   </tfoot>
                 </table>

@@ -17,6 +17,9 @@ class FilmUsage extends Model
 
     protected $fillable = [
         'type',
+        // งานแก้ = ลูกค้ากลับมาติดใหม่เพราะฟิล์มมีปัญหา — ตัดสต็อกตามปกติแต่ไม่คิดเงิน/ค่าคอม
+        'is_rework',
+        'rework_note',
         'order_date',
         'vin',
         'car_order_id',
@@ -38,6 +41,7 @@ class FilmUsage extends Model
 
     protected $casts = [
         'order_date' => 'date',
+        'is_rework'  => 'boolean',
     ];
 
     public function items()

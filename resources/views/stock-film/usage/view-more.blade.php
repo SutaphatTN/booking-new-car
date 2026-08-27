@@ -44,6 +44,9 @@
             <span class="ms-auto badge {{ $isBp ? 'bg-warning text-dark' : 'bg-info' }}">
               {{ $isBp ? 'BP' : 'ทั่วไป' }}
             </span>
+            @if ($usage->is_rework)
+              <span class="badge bg-danger ms-2">งานแก้</span>
+            @endif
           </div>
           <div class="mf-section-body">
             <div class="row g-2">
@@ -100,6 +103,20 @@
                 </div>
               @endif
 
+              @if ($usage->is_rework)
+                <div class="col-12">
+                  <label class="mf-label form-label">
+                    <i class="bx bx-refresh text-danger"></i> หมายเหตุงานแก้
+                  </label>
+                  <div class="alert alert-warning mb-0 py-2 px-3" style="font-size:.85rem;">
+                    {{ $usage->rework_note ?: '-' }}
+                    <div class="text-muted mt-1" style="font-size:.75rem;">
+                      งานแก้ไม่คิดราคาขายและค่าคอม — นับเฉพาะตารางฟุตที่ตัดจากสต็อก
+                    </div>
+                  </div>
+                </div>
+              @endif
+
             </div>
           </div>
         </div>
@@ -121,8 +138,10 @@
                     <th class="text-center">ความเข้ม</th>
                     <th>Stock No.</th>
                     <th class="text-end">ตร.ฟุต</th>
-                    <th class="text-end">ราคาขาย (฿)</th>
-                    <th class="text-end">ค่าคอม (฿)</th>
+                    @unless ($usage->is_rework)
+                      <th class="text-end">ราคาขาย (฿)</th>
+                      <th class="text-end">ค่าคอม (฿)</th>
+                    @endunless
                   </tr>
                 </thead>
                 <tbody>
@@ -138,8 +157,10 @@
                         @endif
                       </td>
                       <td class="text-end">{{ $item->sqft_used !== null ? number_format($item->sqft_used, 2) : '-' }}</td>
-                      <td class="text-end">{{ $item->price !== null ? number_format($item->price, 2) : '-' }}</td>
-                      <td class="text-end">{{ $item->commission !== null ? number_format($item->commission, 2) : '-' }}</td>
+                      @unless ($usage->is_rework)
+                        <td class="text-end">{{ $item->price !== null ? number_format($item->price, 2) : "-" }}</td>
+                        <td class="text-end">{{ $item->commission !== null ? number_format($item->commission, 2) : "-" }}</td>
+                      @endunless
                     </tr>
                   @empty
                     <tr>
@@ -151,8 +172,10 @@
                   <tr class="table-light fw-bold">
                     <td colspan="3" class="text-end pe-3">รวมทั้งหมด</td>
                     <td class="text-end">{{ $totalSqft > 0 ? number_format($totalSqft, 2) : '-' }}</td>
-                    <td class="text-end">{{ $totalPrice > 0 ? number_format($totalPrice, 2) : '-' }}</td>
-                    <td class="text-end">{{ $totalCom > 0 ? number_format($totalCom, 2) : '-' }}</td>
+                    @unless ($usage->is_rework)
+                      <td class="text-end">{{ $totalPrice > 0 ? number_format($totalPrice, 2) : "-" }}</td>
+                      <td class="text-end">{{ $totalCom > 0 ? number_format($totalCom, 2) : "-" }}</td>
+                    @endunless
                   </tr>
                 </tfoot>
               </table>
