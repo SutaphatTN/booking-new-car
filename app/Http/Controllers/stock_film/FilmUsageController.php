@@ -48,6 +48,11 @@ class FilmUsageController extends Controller
                 ? '<span class="badge bg-warning text-dark">BP</span>'
                 : '<span class="badge bg-info">ทั่วไป</span>';
 
+            // งานแก้ = ติดใหม่เพราะฟิล์มมีปัญหา ต้องเห็นได้จากหน้ารายการเลย (ตัดสต็อกแต่ไม่มีรายได้)
+            if ($r->is_rework) {
+                $typeBadge .= '<div class="mt-1"><span class="badge bg-danger">งานแก้</span></div>';
+            }
+
             $totalSqft  = $r->items->sum('sqft_used');
             $totalPrice = $r->items->sum('price');
 
@@ -113,10 +118,18 @@ class FilmUsageController extends Controller
         try {
             $user = Auth::user();
 
+            // งานแก้ = ลูกค้ากลับมาติดใหม่เพราะฟิล์มมีปัญหา — ต้องระบุสาเหตุเสมอ
+            $isRework = (bool) $request->boolean('is_rework');
+            if ($isRework && trim((string) $request->rework_note) === '') {
+                return response()->json(['success' => false, 'message' => 'กรุณาระบุหมายเหตุงานแก้'], 422);
+            }
+
             DB::beginTransaction();
 
             $usage = FilmUsage::create([
                 'type'         => $request->type,
+                'is_rework'    => $isRework,
+                'rework_note'  => $isRework ? trim((string) $request->rework_note) : null,
                 'order_date'   => $request->order_date,
                 'vin'          => $request->vin ?: null,
                 'car_order_id' => $request->car_order_id ?: null,
@@ -149,8 +162,9 @@ class FilmUsageController extends Controller
                     'film_stock_id' => $item['film_stock_id'] ?: null,
                     'stock_no'      => $item['stock_no'] ?: null,
                     'sqft_used'     => $sqftUsed,
-                    'price'         => !empty($item['price']) ? str_replace(',', '', $item['price']) : null,
-                    'commission'    => !empty($item['commission']) ? str_replace(',', '', $item['commission']) : null,
+                    // งานแก้ไม่คิดเงิน — ล้างที่ server ด้วย ไม่พึ่งฝั่งหน้าจออย่างเดียว
+                    'price'         => !$isRework && !empty($item['price']) ? str_replace(',', '', $item['price']) : null,
+                    'commission'    => !$isRework && !empty($item['commission']) ? str_replace(',', '', $item['commission']) : null,
                 ]);
 
                 // ตัดสต็อก

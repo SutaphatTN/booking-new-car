@@ -42,6 +42,10 @@ class FilmUsageReport implements FromArray, WithTitle, WithHeadings, WithStyles,
       'ลำดับ',
       'วันที่สั่งงาน',
       'ประเภท',
+      // งานแก้ = ติดใหม่เพราะฟิล์มมีปัญหา — ตัดสต็อกตามปกติแต่ไม่มีราคาขาย/ค่าคอม
+      // วางไว้ก่อนคอลัมน์ตัวเลข เพราะ registerEvents จัด format ตัวเลขจาก 3 คอลัมน์สุดท้าย
+      'งานแก้',
+      'หมายเหตุงานแก้',
       'เลข VIN',
       'ชื่อลูกค้า',
       'รุ่นรถ',
@@ -95,6 +99,8 @@ class FilmUsageReport implements FromArray, WithTitle, WithHeadings, WithStyles,
           $no,
           $date,
           $type,
+          $r->is_rework ? 'งานแก้' : '',
+          $r->is_rework ? ($r->rework_note ?: '-') : '',
           $r->vin ?: '-',
           $r->customer_name ?: '-',
           $car,
@@ -105,8 +111,9 @@ class FilmUsageReport implements FromArray, WithTitle, WithHeadings, WithStyles,
           $item?->shade ?: '-',
           $item?->stock_no ?: '-',
           $item && $item->sqft_used !== null ? (float) $item->sqft_used : null,
-          $item && $item->price !== null ? (float) $item->price : null,
-          $item && $item->commission !== null ? (float) $item->commission : null,
+          // งานแก้ไม่มีรายได้ — เว้นช่องเงินไว้ กันเผลอเอาไปรวมยอดขาย
+          $item && !$r->is_rework && $item->price !== null ? (float) $item->price : null,
+          $item && !$r->is_rework && $item->commission !== null ? (float) $item->commission : null,
         ];
       }
     }

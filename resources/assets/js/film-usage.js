@@ -193,6 +193,20 @@ if ($('#formFilmUsage').length) {
     }
   });
 
+  // ── งานแก้ → ซ่อนคอลัมน์เงิน + บังคับกรอกหมายเหตุ ──────────────
+  // ตัดสต็อก/นับ ตร.ฟุต ตามปกติ แต่ใบนี้ไม่คิดเงิน ราคาที่ auto-fill ไว้จึงต้องไม่ถูกส่งไปบันทึก
+  function isRework() {
+    return $('#fu_is_rework').is(':checked');
+  }
+
+  $('#fu_is_rework').on('change', function () {
+    const on = this.checked;
+    $('.fu-rework').toggleClass('is-on', on);
+    $('#fu_rework_note_wrap').toggleClass('d-none', !on);
+    $('#positionTable').toggleClass('fu-hide-money', on);
+    if (!on) $('#fu_rework_note').val('');
+  });
+
   // ── BP: แหล่งที่มาลูกค้า → แสดง/ซ่อน ประกัน ───────────────────
   $(document).on('change', '[name="customer_source"]', function () {
     const isInsurance = $(this).val() === 'insurance';
@@ -595,11 +609,11 @@ if ($('#formFilmUsage').length) {
           <input type="number" class="form-control form-control-sm text-end rowSqft"
             data-idx="${idx}" step="0.01" min="0" placeholder="0.00">
         </td>
-        <td>
+        <td class="fu-money-col">
           <input type="text" class="form-control form-control-sm text-end money-input rowPrice"
             data-idx="${idx}" placeholder="0.00" autocomplete="off">
         </td>
-        <td>
+        <td class="fu-money-col">
           <input type="text" class="form-control form-control-sm text-end money-input rowCommission"
             data-idx="${idx}" placeholder="0.00" autocomplete="off">
         </td>
@@ -648,11 +662,11 @@ if ($('#formFilmUsage').length) {
           <input type="number" class="form-control form-control-sm text-end rowSqft"
             data-idx="${idx}" step="0.01" min="0" placeholder="0.00">
         </td>
-        <td>
+        <td class="fu-money-col">
           <input type="text" class="form-control form-control-sm text-end money-input rowPrice"
             data-idx="${idx}" placeholder="0.00" autocomplete="off">
         </td>
-        <td>
+        <td class="fu-money-col">
           <input type="text" class="form-control form-control-sm text-end money-input rowCommission"
             data-idx="${idx}" placeholder="0.00" autocomplete="off">
         </td>
@@ -916,6 +930,14 @@ if ($('#formFilmUsage').length) {
       return;
     }
 
+    const rework = isRework();
+    const reworkNote = $('#fu_rework_note').val().trim();
+    if (rework && !reworkNote) {
+      Swal.fire({ icon: 'warning', text: 'กรุณาระบุหมายเหตุงานแก้' });
+      $('#fu_rework_note').focus();
+      return;
+    }
+
     // คำนวณการตัดสต็อกให้เป็นปัจจุบันก่อนตรวจ
     $('#positionRows tr[data-position]').each(function () {
       rebuildAllocations($(this));
@@ -1014,15 +1036,25 @@ if ($('#formFilmUsage').length) {
 
     // แพ็กเกจฐาน (front_body/advanced) ไม่มีราคารายตำแหน่ง — แนบราคารวม/ค่าคอมรวมไว้ที่แถวฐานแถวแรก
     // เพื่อให้ยอดรวมในรายงาน (sum ของ items) ถูกต้อง โดยไม่กระจายตัวเลขปลอมลงทุกแถว
-    if (fpPackagePrice != null && rows.length) {
+    if (!rework && fpPackagePrice != null && rows.length) {
       if (!parseMoney(rows[0].price)) rows[0].price = String(fpPackagePrice);
       if (!parseMoney(rows[0].commission)) rows[0].commission = String(fpPackageCommission || 0);
+    }
+
+    // งานแก้ = ไม่คิดเงิน — ล้างราคาที่ auto-fill ไว้ทิ้งก่อนส่ง (ฝั่ง server ล้างซ้ำอีกชั้น)
+    if (rework) {
+      rows.forEach(function (r) {
+        r.price = '';
+        r.commission = '';
+      });
     }
 
     // Build payload
     const payload = {
       _token: $('meta[name="csrf-token"]').attr('content'),
       type,
+      is_rework: rework ? 1 : 0,
+      rework_note: rework ? reworkNote : '',
       order_date: date,
       film_brand_id: filmBrand,
       items: rows

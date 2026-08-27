@@ -108,6 +108,8 @@ class CustomerTrackingNextContactSheet implements FromView, WithTitle, WithStyle
         //     ->get();
 
         // [ใหม่] ดึงทุกนัด (manager) ในเดือนที่ยังไม่ได้กรอก (สถานะการติดต่อ หรือ หมายเหตุ ว่างช่องใดช่องหนึ่ง)
+        // หมายเหตุ: "ติดต่อไม่ได้ แต่ไม่พิมพ์หมายเหตุ" ยังโผล่ในรายงาน — ตั้งใจให้เป็นแบบนี้
+        // เพื่อบังคับให้ระบุเหตุผลว่าติดต่อไม่ได้เพราะอะไร (เบอร์ผิด / ไม่รับสาย / เลขหมายถูกระงับ)
         $details = CustomerTrackingDetail::with([
             'tracking.customer.prefix',
             'tracking.sale',
