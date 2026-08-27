@@ -40,6 +40,9 @@ return [
     // role ที่กดยืม/คืนป้ายแดงข้ามแบรนด์ได้ (audit_internal = role ใหม่ รอเพิ่มใน DB)
     'plate_loan_roles' => ['admin', 'audit_internal', 'audit_lead'],
 
+    // role ที่เพิ่มป้ายแดง / แก้สถานะตัวป้ายได้ (gm คู่กับ audit, audit_dp คู่กับ audit_lead ตามธรรมเนียมสิทธิ์ของระบบ)
+    'plate_manage_roles' => ['admin', 'audit', 'gm', 'audit_internal', 'audit_lead', 'audit_dp'],
+
     /*
     |--------------------------------------------------------------------------
     | ขอบเขตการสลับ brand ของ sale / audit / manager

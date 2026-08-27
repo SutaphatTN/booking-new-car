@@ -2,12 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Traits\LogsActivity;
 use App\Support\ScopeBypass;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class TbLicensePlate extends Model
 {
+	// ประวัติเพิ่มป้าย / เปลี่ยนสถานะป้าย ลง activity_logs (subject_type = 'TbLicensePlate')
+	// หมายเหตุ: is_used ถูกเปลี่ยนด้วย mass update จากฝั่งงานขาย จึงไม่เข้า log ตรงนี้ — ดู license_plate_history แทน
+	use LogsActivity;
+
 	protected $table = 'tb_license_plate';
 
 	protected $fillable = [

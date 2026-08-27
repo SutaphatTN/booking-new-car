@@ -45,10 +45,10 @@ class LicenseController extends Controller
     $user = Auth::user();
     $userBrand = $user->brand;
     $canLoan = in_array($user->role, config('brand.plate_loan_roles', []));
-    $isAdmin = $user->role === 'admin';
+    $canManage = in_array($user->role, config('brand.plate_manage_roles', []));
     $brandNames = config('brand.names', []);
 
-    $data = $plates->values()->map(function ($p, $index) use ($histories, $userBrand, $canLoan, $isAdmin, $brandNames) {
+    $data = $plates->values()->map(function ($p, $index) use ($histories, $userBrand, $canLoan, $canManage, $brandNames) {
       $history = $histories->get($p->id);
       $loan = $p->activeLoan;
 
@@ -96,9 +96,9 @@ class LicenseController extends Controller
           . ($action === '-' ? '' : $action);
       }
 
-      // ปุ่มแก้สถานะป้าย — admin เท่านั้น และต้องมีทุกแถว (รวมป้ายว่าง)
+      // ปุ่มแก้สถานะป้าย — role ใน plate_manage_roles และต้องมีทุกแถว (รวมป้ายว่าง)
       // เพราะใช้ mark สูญหาย/ชำรุด/ระหว่างติดตาม ซึ่งเกิดกับป้ายที่ไม่ได้ผูกงานขายก็ได้
-      if ($isAdmin) {
+      if ($canManage) {
         $action = '<button class="btn btn-icon btn-secondary btnEditPlateStatus" data-id="' . $p->id
           . '" data-number="' . e($p->number) . '" data-status="' . e($p->plate_status_value)
           . '" title="แก้ไขสถานะป้าย"><i class="bx bx-edit-alt"></i></button> '
@@ -126,31 +126,42 @@ class LicenseController extends Controller
     return response()->json(['data' => $data]);
   }
 
-  // เพิ่มป้ายแดงใหม่ — admin เท่านั้น (resource route: POST /license)
+  /** สิทธิ์เพิ่มป้าย / แก้สถานะตัวป้าย — ดู config/brand.php : plate_manage_roles */
+  private function ensureManageRole()
+  {
+    abort_unless(in_array(Auth::user()->role, config('brand.plate_manage_roles', [])), 403);
+  }
+
+  // เพิ่มป้ายแดงใหม่ (resource route: POST /license)
   public function store(Request $request)
   {
-    abort_unless(Auth::user()->role === 'admin', 403);
+    $this->ensureManageRole();
 
     $request->validate([
       'number' => 'required|string|max:50',
       'brand' => 'required|integer',
     ]);
 
-    $number = trim($request->number);
+    // เก็บรูปแบบที่พิมพ์มาไว้ตามเดิม แต่บีบช่องว่างซ้ำให้เหลือช่องเดียว
+    $number = preg_replace('/\s+/u', ' ', trim($request->number));
 
     if (!array_key_exists((int) $request->brand, config('brand.names', []))) {
       return response()->json(['success' => false, 'message' => 'แบรนด์ไม่ถูกต้อง'], 422);
     }
 
     // เลขป้ายจริงมีใบเดียว — ห้ามซ้ำข้ามทุกแบรนด์
+    // เทียบแบบถอดช่องว่าง/ขีด/จุดออกก่อน กันเคส "ก 2250" กับ "ก2250" ที่เป็นป้ายเดียวกันแต่พิมพ์คนละแบบ
     $existing = TbLicensePlate::withoutGlobalScope('brandAccess')
-      ->where('number', $number)
+      ->whereRaw(
+        "REPLACE(REPLACE(REPLACE(number, ' ', ''), '-', ''), '.', '') = ?",
+        [preg_replace('/[\s\-.]+/u', '', $number)]
+      )
       ->first();
     if ($existing) {
       $ownerName = config("brand.names.{$existing->brand}", 'แบรนด์อื่น');
       return response()->json([
         'success' => false,
-        'message' => "เลขป้าย {$number} มีอยู่แล้ว (ของ {$ownerName})"
+        'message' => "เลขป้าย {$existing->number} มีอยู่แล้ว (ของ {$ownerName})"
       ], 422);
     }
 
@@ -166,12 +177,12 @@ class LicenseController extends Controller
   }
 
   /**
-   * แก้สถานะของตัวป้าย (ปกติ / สูญหาย / ชำรุด / ระหว่างติดตาม) — admin เท่านั้น
+   * แก้สถานะของตัวป้าย (ปกติ / สูญหาย / ชำรุด / ระหว่างติดตาม) — role ใน plate_manage_roles
    * 3 สถานะหลังทำให้ป้ายถูกยืมหรือเลือกผูกงานขายใหม่ไม่ได้
    */
   public function updateStatus(Request $request, $id)
   {
-    abort_unless(Auth::user()->role === 'admin', 403);
+    $this->ensureManageRole();
 
     $request->validate([
       'plate_status' => ['required', 'string', Rule::in(array_keys(TbLicensePlate::PLATE_STATUSES))],

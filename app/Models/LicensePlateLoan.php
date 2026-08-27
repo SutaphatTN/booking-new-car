@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 class LicensePlateLoan extends Model
 {
+	// ประวัติการยืม (created) และการคืน (updated : return_date) ลง activity_logs
+	use LogsActivity;
+
 	protected $table = 'license_plate_loan';
 
 	// ไม่ใช้ BrandScope — ทั้งแบรนด์เจ้าของและแบรนด์ที่ยืมต้องเห็นรายการเดียวกัน
