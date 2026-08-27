@@ -2614,6 +2614,12 @@
                                   class="bx bx-comment me-1"></i>หมายเหตุ</label>
                               <textarea id="po_td_note" class="form-control" rows="2" placeholder="หมายเหตุ...">{{ $tracking->test_drive_note ?? '' }}</textarea>
                             </div>
+                            <div class="col-12">
+                              @include('customer-tracking._test-drive-attachments', [
+                                  'tracking' => $tracking,
+                                  'tdReadonly' => $isHistory,
+                              ])
+                            </div>
                           </div>
                           <div class="d-flex justify-content-end mt-3 mb-1">
                             <button type="button" class="btn btn-primary btn-sm px-4" id="btnSaveTestDrivePO"

@@ -1,5 +1,16 @@
+import {
+  initTestDriveAttachments,
+  renderTestDriveAttachments,
+  clearTestDriveInput,
+  testDriveFormData
+} from './shared/test-drive-attachments';
+
 $.ajaxSetup({
   headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+});
+
+$(function () {
+  initTestDriveAttachments();
 });
 
 // เหตุผลการจบ/ยกเลิกการติดตาม — Swal เลือกเหตุผล (dropdown + "อื่นๆ" กรอกเอง)
@@ -1407,20 +1418,26 @@ $(document).ready(function () {
   $('#btnSaveTestDrive').on('click', function () {
     const $btn = $(this);
     const trackingId = $btn.data('tracking-id');
+    const $wrap = $btn.closest('.po-section-edit').find('.td-attach-wrap');
 
     $btn.prop('disabled', true);
     $.ajax({
       url: `/customer-tracking/${trackingId}/test-drive`,
       type: 'POST',
-      data: {
-        test_drive_date: $('#td_date').val() || null,
-        test_drive_note: $('#td_note').val() || null
-      },
-      success: function () {
+      data: testDriveFormData($wrap, { date: $('#td_date').val(), note: $('#td_note').val() }),
+      processData: false,
+      contentType: false,
+      success: function (res) {
+        renderTestDriveAttachments($wrap, res.attachments || []);
+        clearTestDriveInput($wrap);
         Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1500, showConfirmButton: true });
       },
-      error: function () {
-        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถบันทึกได้' });
+      error: function (xhr) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกได้'
+        });
       },
       complete: function () {
         $btn.prop('disabled', false);
