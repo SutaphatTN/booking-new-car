@@ -33,17 +33,47 @@ class TbLicensePlate extends Model
 	/** ป้ายที่กันไว้ให้รถทดลองขับ — เลือกได้เฉพาะในหน้า Car Order ที่ประเภทการซื้อรถ = TestDrive */
 	public const STATUS_TEST_DRIVE = 'test_drive';
 
+	/** ป้ายที่กันไว้ใช้เคลื่อนย้ายรถ (ไม่ได้ผูกกับงานขายลูกค้า) */
+	public const STATUS_MOVING = 'moving';
+
+	/** ป้ายเก่าที่ลูกค้ายังไม่คืน — ของจริงไม่ได้อยู่ในมือ */
+	public const STATUS_WITH_CUSTOMER = 'with_customer';
+
 	public const PLATE_STATUSES = [
-		'normal'     => 'ปกติ',
-		'lost'       => 'สูญหาย',
-		'damaged'    => 'ชำรุด',
-		'tracking'   => 'ระหว่างติดตาม',
-		'test_drive' => 'ทดลองขับ',
+		'normal'        => 'ปกติ',
+		'lost'          => 'สูญหาย',
+		'damaged'       => 'ชำรุด',
+		'tracking'      => 'ระหว่างติดตาม',
+		'test_drive'    => 'ทดลองขับ',
+		'moving'        => 'ป้ายแดงเคลื่อนที่',
+		'with_customer' => 'ป้ายเก่าค้างที่ลูกค้า',
 	];
 
 	// สถานะที่ทำให้ป้ายใช้ไม่ได้ — ยืมไม่ได้ และเลือกผูกงานขายใหม่ไม่ได้
-	// test_drive อยู่ในกลุ่มนี้ด้วย เพราะเป็นป้ายที่กันไว้ให้รถทดลองขับโดยเฉพาะ ไม่เอาไปใช้กับงานขายปกติ
-	public const BLOCKED_STATUSES = ['lost', 'damaged', 'tracking', 'test_drive'];
+	// test_drive / moving = ป้ายที่กันไว้ใช้งานเฉพาะทาง , with_customer = ของจริงไม่ได้อยู่ในมือ
+	public const BLOCKED_STATUSES = ['lost', 'damaged', 'tracking', 'test_drive', 'moving', 'with_customer'];
+
+	/**
+	 * แก้สถานะป้ายข้ามแบรนด์ได้ (ป้ายที่ยืมไปอาจชำรุด/สูญหายระหว่างอยู่กับผู้ยืม)
+	 * จึงต้องเก็บไว้ว่าคนแก้อยู่แบรนด์ไหน — activity_logs.brand เก็บแบรนด์ "เจ้าของป้าย" ไม่ใช่คนแก้
+	 */
+	protected function activityMeta(): array
+	{
+		$user = Auth::user();
+		if (!$user) {
+			return [];
+		}
+
+		$ownerBrand = $this->brand !== null ? (int) $this->brand : null;
+		$actorBrand = $user->brand ? (int) $user->brand : null;
+
+		return [
+			'owner_brand' => $ownerBrand,
+			'actor_brand' => $actorBrand,
+			'actor_role'  => $user->role,
+			'cross_brand' => $ownerBrand !== null && $actorBrand !== null && $ownerBrand !== $actorBrand,
+		];
+	}
 
 	public function getPlateStatusValueAttribute(): string
 	{

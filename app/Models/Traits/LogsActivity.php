@@ -56,6 +56,26 @@ trait LogsActivity
         }
     }
 
+    /**
+     * อัปเดตหลายแถวโดยยังเขียน log ได้ — ใช้แทน Model::where(...)->update([...])
+     *
+     * query builder update ยิงเป็น SQL คำสั่งเดียวและไม่ผ่าน model event ทำให้ trait นี้ดักไม่ได้
+     * ตัวนี้ดึงแถวออกมา update ทีละ instance แทน (query เยอะกว่า แต่ได้ประวัติครบ + UserUpdate ถูกปั๊มด้วย)
+     *
+     * @param  \Closure  $filter  ใส่เงื่อนไขให้ query เช่น fn($q) => $q->whereKey($id)
+     * @return int  จำนวนแถวที่เข้าเงื่อนไข (ใช้แทนค่า affected rows ของ update เดิมได้)
+     */
+    public static function updateLogged(\Closure $filter, array $values): int
+    {
+        $models = static::query()->tap($filter)->get();
+
+        foreach ($models as $model) {
+            $model->update($values);
+        }
+
+        return $models->count();
+    }
+
     /** diff ตอน update : {col: {old, new}} ตัด noise ออก */
     protected function activityDiff(): array
     {
@@ -88,8 +108,22 @@ trait LogsActivity
         return $changes;
     }
 
+    /**
+     * บริบทเพิ่มเติมที่ model อยากแนบไปกับ log (merge ลง changes ใต้คีย์ `_meta`)
+     * ใช้เก็บสิ่งที่ไม่ใช่ค่าในคอลัมน์ เช่น "คนแก้อยู่แบรนด์ไหน" ซึ่งดูย้อนหลังจากตารางไม่ได้
+     */
+    protected function activityMeta(): array
+    {
+        return [];
+    }
+
     protected function writeActivityLog(string $event, ?array $changes): void
     {
+        $meta = $this->activityMeta();
+        if ($meta && is_array($changes)) {
+            $changes['_meta'] = $meta;
+        }
+
         ActivityLog::create([
             'subject_type' => class_basename($this),
             'subject_id'   => $this->getKey(),

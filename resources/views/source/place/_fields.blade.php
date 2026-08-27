@@ -49,7 +49,31 @@
           value="{{ $place->las_number ?? '' }}" placeholder="เช่น RS-26-05-00385">
       </div>
 
-      <div class="col-md-12">
+      @php
+        // brand ที่ user คนเดียวคุมหลายสาขา (ดู config source.place_branches) ต้องเลือกสาขาเอง
+        // เพื่อให้รายงาน PDF แยกยอดได้ — brand อื่นเติมสาขาจาก user ที่ล็อกอินอัตโนมัติ
+        $branchOptions = config('source.place_branches.' . auth()->user()->brand, []);
+        $branchNames   = $branchOptions ? \App\Models\TbBranch::whereIn('id', $branchOptions)->pluck('name', 'id') : collect();
+        $currentBranch = $place->branch ?? auth()->user()->branch;
+      @endphp
+
+      @if ($branchOptions)
+        <div class="col-md-4">
+          <label for="{{ $pfx }}_branch" class="mf-label form-label">
+            <i class="bx bx-buildings"></i> สาขา <span class="text-danger">*</span>
+          </label>
+          <select id="{{ $pfx }}_branch" name="branch" class="form-select" required>
+            <option value="">— เลือก —</option>
+            @foreach ($branchOptions as $bId)
+              <option value="{{ $bId }}" {{ (string) $currentBranch === (string) $bId ? 'selected' : '' }}>
+                {{ $branchNames[$bId] ?? ('สาขา ' . $bId) }}
+              </option>
+            @endforeach
+          </select>
+        </div>
+      @endif
+
+      <div class="{{ $branchOptions ? 'col-md-8' : 'col-md-12' }}">
         <label for="{{ $pfx }}_location" class="mf-label form-label">
           <i class="bx bx-map"></i> ระบุสถานที่ <span class="text-danger">*</span>
         </label>

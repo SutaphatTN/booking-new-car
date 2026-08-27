@@ -7,10 +7,12 @@ use App\Mail\SourcePlaceApprovalMail;
 use App\Mail\SourcePlaceApprovedMail;
 use App\Mail\SourcePlaceRevisionMail;
 use App\Models\CustomerTracking;
+use App\Models\Salecar;
 use App\Models\SourcePlace;
 use App\Models\SourcePlaceBudgetItem;
 use App\Models\SourcePlaceClear;
 use App\Models\SourcePlaceRequest;
+use App\Models\TbBranch;
 use App\Models\TbSalecarType;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -221,6 +223,7 @@ class SourceController extends Controller
             $items     = $this->validateBudgetItems($request);
             $user      = Auth::user();
 
+            // brand ที่เลือกสาขาเองได้ ค่าจะมากับ $validated แล้ว — ที่เหลือใช้สาขาของ user
             $place = SourcePlace::create($validated + $this->budgetTotals($items) + [
                 'brand'      => $user->brand ?? null,
                 'userZone'   => $user->userZone ?? null,
@@ -508,14 +511,47 @@ class SourceController extends Controller
             ->get();
 
         // ยอด PP จริง = จำนวนการติดตามลูกค้าที่เลือกสถานที่นี้ (นับทุก scope, ไม่รวมที่ลบ)
+        // ยอดจอง   = ใบจองที่เกิดจากการติดตามชุดนั้น (ผูกผ่าน salecars.tracking_id)
+        //             ตัดใบที่ถอนจอง (con_status 7,8,9) และที่ยกเลิกออก — นับเฉพาะที่ยังเป็นการจองจริง
         $places->each(function ($p) {
-            $p->pp_actual = CustomerTracking::withoutGlobalScopes()
+            $trackingIds = CustomerTracking::withoutGlobalScopes()
                 ->whereNull('deleted_at')
                 ->where('place_id', $p->id)
+                ->pluck('id');
+
+            $p->pp_actual = $trackingIds->count();
+
+            $p->booking_actual = $trackingIds->isEmpty() ? 0 : Salecar::withoutGlobalScopes()
+                ->whereNull('deleted_at')
+                ->whereNull('CancelDate')
+                ->whereNotIn('con_status', [7, 8, 9])
+                ->whereIn('tracking_id', $trackingIds)
                 ->count();
         });
 
-        $pdf = Pdf::loadView('source.place.report', ['places' => $places, 'period' => $period])
+        // แยกเป็นเซตต่อสาขา — เรียงตามลำดับใน config ก่อน (สำนักงานใหญ่ → อ่าวลึก)
+        // สาขาที่ไม่อยู่ใน config (ข้อมูลเก่า/brand อื่น) ต่อท้ายตามเลขสาขา ไม่ให้ตกหล่น
+        $order       = $this->selectableBranches();
+        $branchNames = TbBranch::pluck('name', 'id');
+
+        $groups = $places
+            ->groupBy(fn($p) => (string) ($p->branch ?? ''))
+            ->sortBy(function ($rows, $branch) use ($order) {
+                $i = array_search((int) $branch, $order, true);
+                return $i === false ? 900 + (int) $branch : $i;
+            })
+            ->map(fn($rows, $branch) => [
+                'branch' => $branch,
+                'name'   => $branchNames[(int) $branch] ?? ($branch === '' ? 'ไม่ระบุสาขา' : 'สาขา ' . $branch),
+                'places' => $rows->values(),
+            ])
+            ->values();
+
+        $pdf = Pdf::loadView('source.place.report', [
+            'places' => $places,   // ใช้คิดยอดรวมทั้งรายงาน
+            'groups' => $groups,
+            'period' => $period,
+        ])
             ->setPaper('a4', 'landscape')
             ->setOption(['isRemoteEnabled' => true, 'isHtml5ParserEnabled' => true]);
 
@@ -907,19 +943,39 @@ class SourceController extends Controller
     }
 
     /** validate + เตรียมค่าของสถานที่ (แปลงเงิน) */
+    /**
+     * สาขาที่ brand นี้เลือกเองได้ตอนเพิ่ม/แก้สถานที่ — ว่าง = ใช้สาขาของ user ที่ล็อกอิน
+     * (brand 1 คุมทั้งสำนักงานใหญ่/อ่าวลึกด้วย user เดียว จึงต้องระบุเองเพื่อให้รายงานแยกยอดได้)
+     */
+    private function selectableBranches(?int $brand = null): array
+    {
+        $brand = $brand ?? (int) Auth::user()->brand;
+        return array_map('intval', config("source.place_branches.$brand", []));
+    }
+
     private function validatePlace(Request $request): array
     {
         $request->merge([
             'target' => $request->filled('target') ? str_replace(',', '', $request->target) : null,
         ]);
 
-        return $request->validate([
+        $rules = [
             'salecar_type_id' => ['required', Rule::exists('tb_salecar_type', 'id')->where('main_source', $this->placeMain())],
             'location'        => 'required|string|max:255',
             'las_number'      => 'nullable|string|max:255',
             'start_date'      => 'nullable|date',
             'end_date'        => 'nullable|date|after_or_equal:start_date',
             'target'          => 'nullable|integer|min:0',
+        ];
+
+        // brand ที่เลือกสาขาเองได้ → บังคับเลือก และรับเฉพาะสาขาในลิสต์ของ brand นั้น
+        if ($branches = $this->selectableBranches()) {
+            $rules['branch'] = ['required', Rule::in($branches)];
+        }
+
+        return $request->validate($rules, [
+            'branch.required' => 'กรุณาเลือกสาขา',
+            'branch.in'       => 'สาขาไม่ถูกต้อง',
         ]);
     }
 

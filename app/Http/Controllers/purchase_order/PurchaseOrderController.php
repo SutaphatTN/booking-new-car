@@ -2021,8 +2021,10 @@ class PurchaseOrderController extends Controller
                         ->whereNotIn('con_status', [7, 8, 9])
                         ->exists();
                     if (!$stillActive) {
-                        CarOrder::where('id', $carOrderId)
-                            ->update(['car_status' => 'Available']);
+                        CarOrder::updateLogged(
+                            fn($q) => $q->whereKey($carOrderId),
+                            ['car_status' => 'Available']
+                        );
                     }
                 }
 
@@ -2049,10 +2051,16 @@ class PurchaseOrderController extends Controller
                         ->whereNotIn('con_status', [7, 8, 9])
                         ->exists();
                     if (!$oldStillActive) {
-                        CarOrder::where('id', $oldCarOrderID)->update(['car_status' => 'Available']);
+                        CarOrder::updateLogged(
+                            fn($q) => $q->whereKey($oldCarOrderID),
+                            ['car_status' => 'Available']
+                        );
                     }
                 }
-                CarOrder::where('id', $newCarOrderID)->update(['car_status' => 'Booked']);
+                CarOrder::updateLogged(
+                    fn($q) => $q->whereKey($newCarOrderID),
+                    ['car_status' => 'Booked']
+                );
             }
 
             //ส่งมอบรถ
@@ -2060,9 +2068,10 @@ class PurchaseOrderController extends Controller
 
                 $carOrderToDeliver = $newCarOrderID ?: $oldCarOrderID;
                 if ($carOrderToDeliver) {
-                    CarOrder::where('id', $carOrderToDeliver)->update([
-                        'car_status' => 'Delivered'
-                    ]);
+                    CarOrder::updateLogged(
+                        fn($q) => $q->whereKey($carOrderToDeliver),
+                        ['car_status' => 'Delivered']
+                    );
                 }
 
                 // ปิด customer tracking เมื่อส่งมอบรถแล้ว loop เสร็จสมบูรณ์
@@ -2787,7 +2796,10 @@ class PurchaseOrderController extends Controller
                     ->whereNotIn('con_status', [7, 8, 9])
                     ->exists();
                 if (!$stillActive) {
-                    CarOrder::where('id', $carOrderId)->update(['car_status' => 'Available']);
+                    CarOrder::updateLogged(
+                        fn($q) => $q->whereKey($carOrderId),
+                        ['car_status' => 'Available']
+                    );
                 }
 
                 $saleCar->carOrderHistories()->delete();
