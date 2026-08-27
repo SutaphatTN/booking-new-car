@@ -617,6 +617,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('customer-tracking/{id}/sale', [CustomerTrackingController::class, 'updateSale'])->name('customer-tracking.updateSale');
     Route::post('customer-tracking/{id}/source', [CustomerTrackingController::class, 'updateSource'])->name('customer-tracking.updateSource');
     Route::post('customer-tracking/{id}/test-drive', [CustomerTrackingController::class, 'saveTestDrive'])->name('customer-tracking.saveTestDrive');
+    // หลักฐานทดลองขับ — แนบได้ทั้งจากหน้า view-more ของการติดตาม และหน้าแก้ไขใบจอง
+    Route::get('customer-tracking/{id}/test-drive/proxy/{filename?}', [CustomerTrackingController::class, 'proxyTestDriveAttachment'])->where('filename', '[^/]+')->name('customer-tracking.test-drive.proxy');
+    Route::delete('customer-tracking/{id}/test-drive/attachment', [CustomerTrackingController::class, 'deleteTestDriveAttachment'])->name('customer-tracking.test-drive.delete-attachment');
     Route::post('customer-tracking/{id}/cancel', [CustomerTrackingController::class, 'cancelTracking'])->name('customer-tracking.cancel');
     Route::delete('customer-tracking/{id}', [CustomerTrackingController::class, 'destroy'])->name('customer-tracking.destroy');
     Route::post('customer-tracking/quick-store-customer', [CustomerTrackingController::class, 'quickStoreCustomer'])->name('customer-tracking.quickStoreCustomer');

@@ -22,7 +22,9 @@ use App\Models\TbPrefixname;
 use App\Models\TbSalecarType;
 use App\Models\SourcePlace;
 use App\Models\User;
+use App\Services\OneDriveService;
 use Carbon\Carbon;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -1074,11 +1076,132 @@ class CustomerTrackingController extends Controller
     public function saveTestDrive(Request $request, $id)
     {
         $tracking = CustomerTracking::findOrFail($id);
-        $tracking->update([
+
+        $request->validate([
+            'attachments'   => ['array'],
+            'attachments.*' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+        ]);
+
+        $data = [
             'test_drive_date' => $this->toGregorian($request->test_drive_date ?: null),
             'test_drive_note' => $request->test_drive_note ?: null,
+        ];
+
+        if ($request->hasFile('attachments')) {
+            try {
+                $data['test_drive_attachments'] = $this->uploadTestDriveFiles($tracking, $request->file('attachments'));
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'อัปโหลดไฟล์ไม่สำเร็จ กรุณาลองใหม่',
+                ], 500);
+            }
+        }
+
+        $tracking->update($data);
+
+        // ส่งรายการไฟล์ล่าสุดกลับไป ให้หน้าจอวาดใหม่ได้โดยไม่ต้อง reload
+        return response()->json([
+            'success'     => true,
+            'attachments' => $this->testDriveAttachmentPayload($tracking->fresh()),
         ]);
-        return response()->json(['success' => true]);
+    }
+
+    /**
+     * อัปโหลดหลักฐานทดลองขับขึ้น OneDrive แล้วต่อท้ายรายการเดิม
+     * โฟลเดอร์: New Car/{แบรนด์}/หลักฐานทดลองขับ/{id-ชื่อลูกค้า} — วางคู่กับ "หลักฐานการจอง" ที่ใช้อยู่เดิม
+     */
+    private function uploadTestDriveFiles(CustomerTracking $tracking, array $files): array
+    {
+        $customer = $tracking->customer;
+        $customerFolder = $tracking->customer_id . '-' . ($customer->FirstName ?? 'unknown');
+        $brandName = $tracking->brandInfo->name ?? (Auth::user()->brandInfo->name ?? 'Other');
+        $folder = "New Car/{$brandName}/หลักฐานทดลองขับ/{$customerFolder}";
+
+        $oneDrive = new OneDriveService();
+        $existing = is_array($tracking->test_drive_attachments) ? $tracking->test_drive_attachments : [];
+
+        foreach ($files as $index => $file) {
+            $fileName = 'testdrive_' . $tracking->id . '_' . ($index + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $existing[] = [
+                'url'  => $oneDrive->upload($file->getRealPath(), $fileName, $folder),
+                'name' => $file->getClientOriginalName(),
+            ];
+        }
+
+        return $existing;
+    }
+
+    /** รูปแบบข้อมูลไฟล์ที่หน้าจอใช้วาดรายการ (url ผ่าน proxy เพื่อไม่หลุด share link ตรง ๆ) */
+    private function testDriveAttachmentPayload(CustomerTracking $tracking): array
+    {
+        $items = is_array($tracking->test_drive_attachments) ? $tracking->test_drive_attachments : [];
+
+        return collect($items)->values()->map(function ($item, $i) use ($tracking) {
+            $url  = is_array($item) ? $item['url'] ?? '' : $item;
+            $name = is_array($item) ? $item['name'] ?? null : null;
+            $base = route('customer-tracking.test-drive.proxy', $tracking->id);
+
+            return [
+                'index' => $i,
+                'name'  => $name,
+                'ext'   => $name ? strtolower(pathinfo($name, PATHINFO_EXTENSION)) : null,
+                'url'   => $name
+                    ? $base . '/' . rawurlencode($name) . '?url=' . urlencode($url)
+                    : $base . '?url=' . urlencode($url),
+            ];
+        })->all();
+    }
+
+    /** ส่งไฟล์หลักฐานทดลองขับผ่าน server — กันคนเดา share url ของ OneDrive ตรง ๆ */
+    public function proxyTestDriveAttachment(Request $request, $id, $filename = null)
+    {
+        $tracking = CustomerTracking::findOrFail($id);
+        $shareUrl = $request->input('url');
+
+        $allowed = collect($tracking->test_drive_attachments ?? [])->contains(
+            fn($item) => (is_array($item) ? ($item['url'] ?? '') : $item) === $shareUrl
+        );
+
+        if (!$allowed) {
+            abort(403);
+        }
+
+        try {
+            $oneDrive = new OneDriveService();
+            ['url' => $downloadUrl, 'name' => $filename] = $oneDrive->getDownloadInfo($shareUrl);
+
+            $response = (new Client(['allow_redirects' => true]))->get($downloadUrl);
+
+            return response($response->getBody()->getContents(), 200, [
+                'Content-Type'        => $response->getHeader('Content-Type')[0] ?? 'application/octet-stream',
+                'Content-Disposition' => "inline; filename=\"{$filename}\"",
+                'Cache-Control'       => 'private, max-age=3600',
+            ]);
+        } catch (\Exception $e) {
+            abort(404);
+        }
+    }
+
+    /** ลบหลักฐานทดลองขับออกจากรายการ (ไฟล์บน OneDrive ยังอยู่ เหมือนหลักฐานการจอง) */
+    public function deleteTestDriveAttachment(Request $request, $id)
+    {
+        $tracking = CustomerTracking::findOrFail($id);
+
+        $index = (int) $request->input('index');
+        $items = is_array($tracking->test_drive_attachments) ? $tracking->test_drive_attachments : [];
+
+        if (!isset($items[$index])) {
+            return response()->json(['success' => false, 'message' => 'ไม่พบไฟล์'], 404);
+        }
+
+        array_splice($items, $index, 1);
+        $tracking->update(['test_drive_attachments' => $items]);
+
+        return response()->json([
+            'success'     => true,
+            'attachments' => $this->testDriveAttachmentPayload($tracking->fresh()),
+        ]);
     }
 
     public function saveGrade(Request $request, $id)

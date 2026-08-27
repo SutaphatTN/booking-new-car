@@ -18,6 +18,8 @@ class CustomerTracking extends Model
     protected $casts = [
         'booked_at'    => 'datetime',
         'cancelled_at' => 'datetime',
+        // หลักฐานทดลองขับ — เก็บเป็น array ของ ['url' => share url, 'name' => ชื่อไฟล์เดิม] เหมือน salecars.attachment_url
+        'test_drive_attachments' => 'array',
     ];
 
     protected $fillable = [
@@ -56,6 +58,7 @@ class CustomerTracking extends Model
         'engagement_scoring',
         'test_drive_date',
         'test_drive_note',
+        'test_drive_attachments',
         'customer_date',
     ];
 
@@ -67,6 +70,11 @@ class CustomerTracking extends Model
     public function sale()
     {
         return $this->belongsTo(User::class, 'sale_id');
+    }
+
+    public function brandInfo()
+    {
+        return $this->belongsTo(TbBrand::class, 'brand', 'id');
     }
 
     public function userInsert()
