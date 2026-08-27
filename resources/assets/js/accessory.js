@@ -94,20 +94,46 @@ $(document).ready(function () {
   });
 });
 
+// ใส่ comma หลักพันระหว่างพิมพ์ + พิมพ์จุดทศนิยมได้ (สูงสุด 2 ตำแหน่ง)
+//
+// ของเดิมใช้ parseFloat(value).toLocaleString() ซึ่ง "1500." → 1500 → "1,500"
+// = จุดที่เพิ่งพิมพ์ถูกกินทิ้งทุกครั้ง เลยกรอกทศนิยมไม่ได้เลย
+// ตัวใหม่จัดรูปแบบจาก string ตรง ๆ ไม่แปลงเป็นตัวเลขระหว่างพิมพ์ จุดจึงค้างอยู่ได้
 $(document).on('input', '.money-input', function () {
-  let value = this.value.replace(/,/g, '');
-  if (value === '' || isNaN(value)) {
-    this.value = '';
-    return;
+  const before = this.value;
+  const caret  = this.selectionStart;
+
+  // นับตัวอักษรที่ "นับจริง" (เลข+จุด) ก่อน cursor ไว้ ใช้คืนตำแหน่ง cursor หลังใส่ comma
+  const keptBefore = before.slice(0, caret).replace(/[^0-9.]/g, '').length;
+
+  const parts   = before.replace(/[^0-9.]/g, '').split('.');
+  // จุดได้ตัวเดียว ทศนิยมไม่เกิน 2 ตำแหน่ง (ตรงกับคอลัมน์ decimal(20,2) ใน DB)
+  const decPart = parts.length > 1 ? parts.slice(1).join('').slice(0, 2) : null;
+  const intPart = parts[0].replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  this.value = decPart !== null ? intPart + '.' + decPart : intPart;
+
+  let seen = 0;
+  let pos  = keptBefore === 0 ? 0 : this.value.length;
+  for (let i = 0; i < this.value.length && keptBefore > 0; i++) {
+    if (/[0-9.]/.test(this.value[i])) seen++;
+    if (seen >= keptBefore) {
+      pos = i + 1;
+      break;
+    }
   }
-  this.value = parseFloat(value).toLocaleString();
+  this.setSelectionRange(pos, pos);
 });
 
 $(document).on('blur', '.money-input', function () {
-  let value = this.value.replace(/,/g, '');
-  if (value && !isNaN(value)) {
-    this.value = parseFloat(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
+  const value = this.value.replace(/,/g, '');
+  if (value === '') return;
+
+  const n = parseFloat(value);
+  // ค่าที่ไม่เป็นตัวเลข (เช่นเหลือแค่ ".") ล้างทิ้ง ไม่งั้นส่งไป validate numeric ไม่ผ่าน
+  this.value = isNaN(n)
+    ? ''
+    : n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 });
 
 // ราคาทุนอะไหล่ต้อง > 0 (checkValidity ดัก required ได้ แต่ไม่ดัก 0)
