@@ -36,7 +36,7 @@
 - **รุ่นรถหลัก :** {{ $sc->model->Name_TH ?? '-' }}
 - **รุ่นรถย่อย :** {{ $sc->subModel->name ?? '-' }}
 - **สี :** {{ $color }}
-@if ($brand == 2)
+@if (\App\Support\BrandFeature::hasInteriorColor($brand))
 - **สีภายใน :** {{ $sc->interiorColor->name ?? '-' }}
 @endif
 - **ปี :** {{ $sc->Year ?? '-' }}

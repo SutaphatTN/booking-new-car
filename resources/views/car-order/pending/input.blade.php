@@ -273,6 +273,17 @@
                     </select>
                   </div>
 
+                  @if (\App\Support\BrandFeature::hasInteriorColor())
+                    <div class="col-md-4">
+                      <label for="interior_color" class="mf-label form-label">
+                        <i class="bx bx-color-fill ci-amber"></i> สีภายใน
+                      </label>
+                      <select id="interior_color" name="interior_color" class="form-select" disabled>
+                        <option value="">-- เลือกสี --</option>
+                      </select>
+                    </div>
+                  @endif
+
                   <div class="col-md-4">
                     <label for="pricelist_year" class="mf-label form-label">
                       <i class="bx bx-calendar ci-amber"></i> ปี

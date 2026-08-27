@@ -8,6 +8,7 @@ use App\Models\Salecar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use App\Support\BrandFeature;
 
 class ForecastController extends Controller
 {
@@ -25,7 +26,7 @@ class ForecastController extends Controller
      *
      * target = จำนวนรถที่ผู้ใช้อยากสั่งรวมทั้งเดือน (กรอกจากหน้า forecast)
      * การจัดกลุ่ม (model + subModel + สี) ต่างกันตาม brand:
-     *   brand 2 (GWM)   : + สีภายใน (interior_color)
+     *   brand ที่มีสีภายใน (config/brand.php interior_color_brands) : + สีภายใน (interior_color)
      *   brand 3 (Wuling): ใช้ gwm_color
      *   อื่นๆ (Mitsu)   : ใช้ Color (text)
      */
@@ -51,38 +52,25 @@ class ForecastController extends Controller
             ->whereIn('status', ['finished', 'approved']);
 
         // ── จัดกลุ่ม + นับจำนวน แยกตาม brand (key ของยอดขายและสต็อกต้องตรงกันเพื่อ match ทีหลัง) ──
-        if ($brand == 2) {
+        $showInterior = BrandFeature::hasInteriorColor($brand);
 
-            // GWM: แยกตาม รุ่น + รุ่นย่อย + สีภายนอก + สีภายใน
-            $query->with(['gwmColor', 'interiorColor'])
-                ->selectRaw('model_id, subModel_id, gwm_color, interior_color, COUNT(*) as total')
-                ->groupBy('model_id', 'subModel_id', 'gwm_color', 'interior_color');
+        if (in_array($brand, [2, 3, 4])) {
 
-            $stocks = $stockQuery
-                ->selectRaw('model_id, subModel_id, gwm_color, interior_color, COUNT(*) as stock_total')
-                ->groupBy('model_id', 'subModel_id', 'gwm_color', 'interior_color')
-                ->get()
-                ->keyBy(function ($item) {
-                    return $item->model_id . '_' .
-                        $item->subModel_id . '_' .
-                        $item->gwm_color . '_' .
-                        $item->interior_color;
-                });
-        } elseif (in_array($brand, [3, 4])) {
-
-            // Wuling: แยกตาม รุ่น + รุ่นย่อย + สี (gwm_color)
-            $query->with(['gwmColor'])
-                ->selectRaw('model_id, subModel_id, gwm_color, COUNT(*) as total')
-                ->groupBy('model_id', 'subModel_id', 'gwm_color');
+            // GWM / Wuling / Lepas: แยกตาม รุ่น + รุ่นย่อย + สี (gwm_color)
+            // brand ที่มีสีภายใน (ดู config/brand.php) แยกย่อยด้วย interior_color อีกชั้น
+            $query->with($showInterior ? ['gwmColor', 'interiorColor'] : ['gwmColor'])
+                ->selectRaw('model_id, subModel_id, gwm_color' . ($showInterior ? ', interior_color' : '') . ', COUNT(*) as total')
+                ->groupBy(...array_filter(['model_id', 'subModel_id', 'gwm_color', $showInterior ? 'interior_color' : null]));
 
             $stocks = $stockQuery
-                ->selectRaw('model_id, subModel_id, gwm_color, COUNT(*) as stock_total')
-                ->groupBy('model_id', 'subModel_id', 'gwm_color')
+                ->selectRaw('model_id, subModel_id, gwm_color' . ($showInterior ? ', interior_color' : '') . ', COUNT(*) as stock_total')
+                ->groupBy(...array_filter(['model_id', 'subModel_id', 'gwm_color', $showInterior ? 'interior_color' : null]))
                 ->get()
-                ->keyBy(function ($item) {
+                ->keyBy(function ($item) use ($showInterior) {
                     return $item->model_id . '_' .
                         $item->subModel_id . '_' .
-                        $item->gwm_color;
+                        $item->gwm_color .
+                        ($showInterior ? '_' . $item->interior_color : '');
                 });
         } else {
 
@@ -126,26 +114,19 @@ class ForecastController extends Controller
 
             $car = "รุ่นหลัก : {$modelOrder}<br>รุ่นย่อย : {$subDetail} - {$subModelOrder}";
 
-            if ($brand == 2) {
+            $interior = $showInterior ? (optional($sale->interiorColor)->name ?? '-') : '-';
 
-                $color = optional($sale->gwmColor)->name ?? '-';
-                $interior = optional($sale->interiorColor)->name ?? '-';
-
-                $key = $sale->model_id . '_' .
-                    $sale->subModel_id . '_' .
-                    $sale->gwm_color . '_' .
-                    $sale->interior_color;
-            } elseif (in_array($brand, [3, 4])) {
+            if (in_array($brand, [2, 3, 4])) {
 
                 $color = optional($sale->gwmColor)->name ?? '-';
 
                 $key = $sale->model_id . '_' .
                     $sale->subModel_id . '_' .
-                    $sale->gwm_color;
+                    $sale->gwm_color .
+                    ($showInterior ? '_' . $sale->interior_color : '');
             } else {
 
                 $color = $sale->Color ?? '-';
-                $interior = '-';
 
                 $key = $sale->model_id . '_' .
                     $sale->subModel_id . '_' .
@@ -175,7 +156,9 @@ class ForecastController extends Controller
         return response()->json([
             'success' => true,
             'data' => $result,
-            'brand' => $brand
+            'brand' => $brand,
+            // คุมคอลัมน์ "สีภายใน" ฝั่ง JS (brand ไหนมีบ้าง ดู config/brand.php)
+            'show_interior' => $showInterior
         ]);
     }
 }

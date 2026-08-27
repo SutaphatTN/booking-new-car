@@ -16,6 +16,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use App\Support\BrandFeature;
 
 class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
@@ -46,7 +47,7 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
         $next = 9; // A-H = No, ลูกค้า, ที่อยู่, ฝ่ายขาย, รุ่นหลัก, รุ่นย่อย, Vin, เลขเครื่อง
         if (!in_array($brand, [2, 3, 4])) $next++; // Option
         $next++;                                    // สี
-        if ($brand == 2) $next++;                   // สีภายใน
+        if (BrandFeature::hasInteriorColor($brand)) $next++; // สีภายใน
         $next++;                                    // ปี
         $msrp = $next++;                            // ราคาขาย
         $next += 3;                                 // แหล่งที่มา + ประเภทการขาย + ประเภทการซื้อรถ
@@ -157,7 +158,7 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
                 ? ($r->gwmColor->name ?? '-')
                 : ($r->Color ?? '-');
 
-            $interiorColor = $r->brand == 2
+            $interiorColor = BrandFeature::hasInteriorColor($r->brand)
                 ? ($r->interiorColor->name ?? '-')
                 : null;
 

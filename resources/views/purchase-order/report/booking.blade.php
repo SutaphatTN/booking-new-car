@@ -319,7 +319,7 @@
             <div class="fl">Option</div>
             <div class="fv">{{ $saleCar->option ?? '' }}</div>
           </div>
-        @elseif (auth()->user()->brand == 2)
+        @elseif (\App\Support\BrandFeature::hasInteriorColor())
           <div class="f">
             <div class="fl">สีภายใน</div>
             <div class="fv">{{ $saleCar->interiorColor?->name ?? '' }}</div>

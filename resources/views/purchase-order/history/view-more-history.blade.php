@@ -85,20 +85,17 @@
                   <span class="mf-info-label">Vin-Number</span>
                   <span class="mf-info-val">{{ $saleCar->carOrder?->vin_number ?? '-' }}</span>
                 </div>
-                @if (auth()->user()->brand == 2)
+                @if (in_array(auth()->user()->brand, [2, 3, 4]))
                   <div class="mf-info-row">
                     <span class="mf-info-label">สี</span>
                     <span class="mf-info-val">{{ $saleCar->gwmColor->name ?? '-' }}</span>
                   </div>
-                  <div class="mf-info-row">
-                    <span class="mf-info-label">สีภายใน</span>
-                    <span class="mf-info-val">{{ $saleCar->interiorColor->name ?? '-' }}</span>
-                  </div>
-                @elseif (in_array(auth()->user()->brand, [3, 4]))
-                  <div class="mf-info-row">
-                    <span class="mf-info-label">สี</span>
-                    <span class="mf-info-val">{{ $saleCar->gwmColor->name ?? '-' }}</span>
-                  </div>
+                  @if (\App\Support\BrandFeature::hasInteriorColor())
+                    <div class="mf-info-row">
+                      <span class="mf-info-label">สีภายใน</span>
+                      <span class="mf-info-val">{{ $saleCar->interiorColor->name ?? '-' }}</span>
+                    </div>
+                  @endif
                 @else
                   <div class="mf-info-row">
                     <span class="mf-info-label">Option</span>

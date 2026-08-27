@@ -16,6 +16,7 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use App\Support\BrandFeature;
 
 class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
@@ -130,7 +131,7 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
         ? ($order->gwmColor->name ?? '-')
         : ($order->color ?? '-');
 
-      $interiorColor = $order->brand == 2
+      $interiorColor = BrandFeature::hasInteriorColor($order->brand)
         ? ($order->interiorColor->name ?? '-')
         : null;
 

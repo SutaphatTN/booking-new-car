@@ -33,7 +33,7 @@
           return;
         }
 
-        // สร้างตารางผลลัพธ์ — คอลัมน์ "ภายใน" (สีภายใน) แสดงเฉพาะ brand 2 (GWM)
+        // สร้างตารางผลลัพธ์ — คอลัมน์ "ภายใน" (สีภายใน) แสดงเฉพาะ brand ที่มีสีภายใน (server เป็นคนบอก)
         let html = `
         <div class="table-responsive">
         <table class="table table-bordered tbl-table tbl-styled">
@@ -41,7 +41,7 @@
                 <tr>
                     <th>รุ่น</th>
                     <th>สี</th>
-                     ${res.brand == 2 ? '<th>ภายใน</th>' : ''}
+                     ${res.show_interior ? '<th>ภายใน</th>' : ''}
                     <th>ขายได้ 3 เดือน</th>
                     <th>จำนวนรถในสต็อค</th>
                     <th>Mix %</th>
@@ -57,7 +57,7 @@
                 <tr>
                     <td>${item.subModel}</td>
                     <td>${item.color}</td>
-                     ${res.brand == 2 ? `<td>${item.interior_color}</td>` : ''}
+                     ${res.show_interior ? `<td>${item.interior_color}</td>` : ''}
                     <td>${item.sold_last_3m}</td>
                     <td>${item.stock_available}</td>
                     <td>${item.mix_percent}%</td>

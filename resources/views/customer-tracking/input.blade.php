@@ -197,18 +197,26 @@
                   </select>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-{{ \App\Support\BrandFeature::hasInteriorColor() ? 4 : 6 }}">
                   <label class="po-label" for="year"><i class='bx bx-calendar-alt'></i> ปี <span class="text-danger">*</span></label>
                   <select id="year" name="year" class="form-select" disabled required>
                     <option value="">— เลือกปี —</option>
                   </select>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-{{ \App\Support\BrandFeature::hasInteriorColor() ? 4 : 6 }}">
                   <label class="po-label" for="color_id"><i class='bx bx-palette'></i> สี <span class="text-danger">*</span></label>
                   <select id="color_id" name="color_id" class="form-select" disabled required>
                     <option value="">— เลือกสี —</option>
                   </select>
                 </div>
+                @if (\App\Support\BrandFeature::hasInteriorColor())
+                  <div class="col-md-4">
+                    <label class="po-label" for="interior_color_id"><i class='bx bx-paint'></i> สีภายใน <span class="text-danger">*</span></label>
+                    <select id="interior_color_id" name="interior_color_id" class="form-select" disabled required>
+                      <option value="">— เลือกสี —</option>
+                    </select>
+                  </div>
+                @endif
               @endif
 
             </div>

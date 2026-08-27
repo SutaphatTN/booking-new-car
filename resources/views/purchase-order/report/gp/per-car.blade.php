@@ -1,3 +1,7 @@
+@php
+  // คอลัมน์ "สีภายใน" — เปิดตาม config/brand.php (interior_color_brands)
+  $showInterior = \App\Support\BrandFeature::hasInteriorColor();
+@endphp
 <table>
   <thead>
     <tr>
@@ -10,7 +14,7 @@
       <th>รุ่นรถหลัก</th>
       <th>รุ่นรถย่อย</th>
       <th>สี</th>
-      @if (auth()->user()->brand == 2)
+      @if ($showInterior)
         <th>สีภายใน</th>
       @endif
       <th>ปี</th>
@@ -99,7 +103,7 @@
         <td>{{ $p['model'] }}</td>
         <td>{{ $p['subModel'] }}</td>
         <td>{{ $p['color'] }}</td>
-        @if (auth()->user()->brand == 2)
+        @if ($showInterior)
           <td>{{ $p['interior_color'] }}</td>
         @endif
         <td>{{ $p['year'] }}</td>

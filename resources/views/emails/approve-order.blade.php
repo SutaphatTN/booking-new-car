@@ -6,8 +6,9 @@
         ? ($order->gwmColor->name ?? '-')
         : ($order->color ?? '-');
 
-    // สีภายใน — เฉพาะ brand = 2
-    $interiorColorName = $brand == 2 ? ($order->interiorColor->name ?? '-') : null;
+    // สีภายใน — เฉพาะ brand ที่เปิดไว้ใน config/brand.php
+    $showInterior = \App\Support\BrandFeature::hasInteriorColor($brand);
+    $interiorColorName = $showInterior ? ($order->interiorColor->name ?? '-') : null;
 
     // รุ่นรถย่อย — ใช้ detail เป็นหลัก ถ้ามี name ก็ดึงมาต่อท้าย
     $subDetail = $order->subModel->detail ?? null;
@@ -37,7 +38,7 @@
 - **Option :** {{ $order->option ?? '-' }}
 @endif
 - **ปี :** {{ $order->year ?? '-' }}
-@if ($brand == 2)
+@if ($showInterior)
 - **สีภายใน :** {{ $interiorColorName }}
 @endif
 - **หมายเหตุ :** {{ $order->note ?? '-' }}

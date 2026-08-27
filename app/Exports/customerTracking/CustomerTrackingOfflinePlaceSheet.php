@@ -16,6 +16,7 @@ use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use App\Support\BrandFeature;
 
 /**
  * 1 sheet = 1 สถานที่ — รายชื่อลูกค้าที่ได้จากงานนั้นในเดือนที่เลือก
@@ -156,8 +157,8 @@ class CustomerTrackingOfflinePlaceSheet implements FromView, WithTitle, WithStyl
             'placeType'     => $place?->source?->name ?? ($first?->source?->name ?? '-'),
             'placeRange'    => $range,
             'placeLasNo'    => $place?->las_number ?: '-',
-            // คุมการแสดงคอลัมน์ตาม brand: สีภายใน = GWM(2), Option = Mitsubishi(1), Wuling(3) ไม่มีทั้งคู่
-            'showInterior'  => $user->brand == 2,
+            // คุมการแสดงคอลัมน์ตาม brand: สีภายใน = ตาม config/brand.php, Option = Mitsubishi(1)
+            'showInterior'  => BrandFeature::hasInteriorColor($user->brand),
             'showOption'    => $user->brand == 1,
         ]);
     }

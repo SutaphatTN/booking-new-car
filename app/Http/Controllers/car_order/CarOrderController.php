@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Support\ExportFilename;
+use App\Support\BrandFeature;
 
 class CarOrderController extends Controller
 {
@@ -346,16 +347,13 @@ class CarOrderController extends Controller
 
         $order = $order->map(function ($item) {
 
-            if ($item->brand == 2) {
-                $item->display_color = $item->gwmColor->name ?? '-';
-                $item->display_interior_color = $item->interiorColor->name ?? '-';
-            } elseif (in_array($item->brand, [3, 4])) {
-                $item->display_color = $item->gwmColor->name ?? '-';
-                $item->display_interior_color = null;
-            } else {
-                $item->display_color = $item->color ?? '-';
-                $item->display_interior_color = null;
-            }
+            $item->display_color = in_array($item->brand, [2, 3, 4])
+                ? ($item->gwmColor->name ?? '-')
+                : ($item->color ?? '-');
+
+            $item->display_interior_color = BrandFeature::hasInteriorColor($item->brand)
+                ? ($item->interiorColor->name ?? '-')
+                : null;
 
             $item->format_order_stock_date = $item->format_order_stock_date;
 
@@ -599,13 +597,12 @@ class CarOrderController extends Controller
 
             $brand = Auth::user()->brand;
 
-            if ($brand == 2) {
+            if (in_array($brand, [2, 3, 4])) {
                 $data['gwm_color'] = $request->gwm_color;
-                $data['interior_color'] = $request->interior_color;
             }
 
-            if (in_array($brand, [3, 4])) {
-                $data['gwm_color'] = $request->gwm_color;
+            if (BrandFeature::hasInteriorColor($brand)) {
+                $data['interior_color'] = $request->interior_color;
             }
 
             $order = CarOrder::create($data);
@@ -733,12 +730,11 @@ class CarOrderController extends Controller
             ];
 
             $brand = Auth::user()->brand;
-            if ($brand == 2) {
-                $data['gwm_color']     = $request->gwm_color;
-                $data['interior_color'] = $request->interior_color;
-            }
-            if (in_array($brand, [3, 4])) {
+            if (in_array($brand, [2, 3, 4])) {
                 $data['gwm_color'] = $request->gwm_color;
+            }
+            if (BrandFeature::hasInteriorColor($brand)) {
+                $data['interior_color'] = $request->interior_color;
             }
 
             CarOrderWaiting::create($data);
@@ -840,14 +836,21 @@ class CarOrderController extends Controller
     // get interior color by model_id
     public function getInteriorColorByModel(Request $request)
     {
-        $modelId = $request->model_id;
+        return response()->json($this->interiorColorsForModel($request->model_id));
+    }
 
-        $colors = TbInteriorColor::whereHas('models', fn($q) => $q->where('tb_carmodels.id', $modelId))
+    /**
+     * สีภายในที่ผูกกับรุ่นรถนั้น (tb_interior_color_model)
+     * ไม่มี model_id = คืน collection ว่าง — กันไม่ให้เห็นสีของ brand อื่น
+     */
+    private function interiorColorsForModel($modelId)
+    {
+        if (!$modelId) return collect();
+
+        return TbInteriorColor::whereHas('models', fn($q) => $q->where('tb_carmodels.id', $modelId))
             ->select('id', 'name')
             ->orderBy('name')
             ->get();
-
-        return response()->json($colors);
     }
 
     //get price list car option
@@ -919,7 +922,7 @@ class CarOrderController extends Controller
         $gwmColor = $order->subModel
             ? $order->subModel->colors
             : collect();
-        $interiorColor = TbInteriorColor::all();
+        $interiorColor = $this->interiorColorsForModel($order->model_id);
         $provinces = TbProvinces::orderBy('name')->get();
 
         return view('car-order.pending.edit', compact('order', 'model', 'subModels', 'orderStatus', 'approvers', 'purchaseType', 'gwmColor', 'interiorColor', 'provinces'));
@@ -1630,7 +1633,7 @@ class CarOrderController extends Controller
         $gwmColor = $waiting->subModel
             ? $waiting->subModel->colors
             : collect();
-        $interiorColor = TbInteriorColor::all();
+        $interiorColor = $this->interiorColorsForModel($waiting->model_id);
         $provinces = TbProvinces::orderBy('name')->get();
 
         return view('car-order.pending.edit-waiting', compact('waiting', 'purchaseType', 'approvers', 'gwmColor', 'interiorColor', 'provinces'));

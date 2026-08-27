@@ -16,6 +16,7 @@ use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
+use App\Support\BrandFeature;
 
 class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
@@ -145,8 +146,8 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
             'rows'             => $rows,
             'dateFromFormatted' => Carbon::parse($this->dateFrom)->format('d/m/Y'),
             'dateToFormatted'   => Carbon::parse($this->dateTo)->format('d/m/Y'),
-            // คุมการแสดงคอลัมน์ตาม brand: สีภายใน = GWM(2), Option = Mitsubishi(1), Wuling(3) ไม่มีทั้งคู่
-            'showInterior'     => $user->brand == 2,
+            // คุมการแสดงคอลัมน์ตาม brand: สีภายใน = ตาม config/brand.php, Option = Mitsubishi(1)
+            'showInterior'     => BrandFeature::hasInteriorColor($user->brand),
             'showOption'       => $user->brand == 1,
         ]);
     }

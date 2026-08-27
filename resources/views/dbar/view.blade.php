@@ -58,7 +58,8 @@
 
   // ── ส่วนที่ 2 : ยอดขาย 3 เดือน → เกลี่ยยอดที่ต้องสั่งตามสัดส่วน ──
   function renderMix(res) {
-    const isB2 = res.brand == 2;
+    // brand ที่มีสีภายใน — server เป็นคนบอก (config/brand.php)
+    const showInterior = !!res.show_interior;
     let html = `
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-4 mb-2">
         <h6 class="mb-0">ยอดขายย้อนหลัง 3 เดือน (${res.summary.mix_range}) → ควรสั่ง</h6>
@@ -71,7 +72,7 @@
               <th>รุ่นหลัก</th>
               <th>รุ่นย่อย</th>
               <th>สี</th>
-              ${isB2 ? '<th>สีภายใน</th>' : ''}
+              ${showInterior ? '<th>สีภายใน</th>' : ''}
               <th class="text-end">ขายได้ 3 เดือน</th>
               <th class="text-end">ควรสั่ง (ตามสัดส่วน)</th>
             </tr>
@@ -79,7 +80,7 @@
           <tbody>`;
 
     if (!res.mix.length) {
-      html += `<tr><td colspan="${isB2 ? 6 : 5}" class="text-center text-muted">ไม่มียอดขายในช่วงนี้</td></tr>`;
+      html += `<tr><td colspan="${showInterior ? 6 : 5}" class="text-center text-muted">ไม่มียอดขายในช่วงนี้</td></tr>`;
     } else {
       // ตัวแปรไว้รวมแถวสีของรุ่นหลัก/รุ่นย่อยเดียวกัน (แสดงชื่อครั้งเดียว)
       let prevModel = null, prevSub = null;
@@ -91,7 +92,7 @@
             <td>${showModel ? m.model : ''}</td>
             <td>${showSub ? m.sub_model : ''}</td>
             <td>${m.color}</td>
-            ${isB2 ? `<td>${m.interior_color ?? '-'}</td>` : ''}
+            ${showInterior ? `<td>${m.interior_color ?? '-'}</td>` : ''}
             <td class="text-end">${m.sold_3m}</td>
             <td class="text-end fw-bold">${m.should_order}</td>
           </tr>`;

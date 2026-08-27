@@ -8,6 +8,7 @@ use App\Models\Salecar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use App\Support\BrandFeature;
 
 /**
  * D/Bar — คำนวณยอดรถที่ต้องสั่งเดือนถัดไป
@@ -80,6 +81,8 @@ class DbarController extends Controller
         return response()->json([
             'success' => true,
             'brand'   => $brand,
+            // คุมคอลัมน์ "สีภายใน" ฝั่ง JS (brand ไหนมีบ้าง ดู config/brand.php)
+            'show_interior' => BrandFeature::hasInteriorColor($brand),
             'summary' => [
                 'stock_all'         => $stockAll,         // A
                 'stock_net'         => $stockNet,         // B
@@ -109,30 +112,23 @@ class DbarController extends Controller
             ->whereDate('DeliveryInDMSDate', '>=', $from->toDateString())
             ->whereDate('DeliveryInDMSDate', '<=', $to->toDateString());
 
-        if ($brand == 2) {
-            $query->with(['gwmColor', 'interiorColor'])
-                ->selectRaw('model_id, subModel_id, gwm_color, interior_color, COUNT(*) as sold')
-                ->groupBy('model_id', 'subModel_id', 'gwm_color', 'interior_color');
-        } elseif (in_array($brand, [3, 4])) {
-            $query->with(['gwmColor'])
-                ->selectRaw('model_id, subModel_id, gwm_color, COUNT(*) as sold')
-                ->groupBy('model_id', 'subModel_id', 'gwm_color');
+        $showInterior = BrandFeature::hasInteriorColor($brand);
+
+        if (in_array($brand, [2, 3, 4])) {
+            $query->with($showInterior ? ['gwmColor', 'interiorColor'] : ['gwmColor'])
+                ->selectRaw('model_id, subModel_id, gwm_color' . ($showInterior ? ', interior_color' : '') . ', COUNT(*) as sold')
+                ->groupBy(...array_filter(['model_id', 'subModel_id', 'gwm_color', $showInterior ? 'interior_color' : null]));
         } else {
             $query->selectRaw('model_id, subModel_id, Color, COUNT(*) as sold')
                 ->groupBy('model_id', 'subModel_id', 'Color');
         }
 
-        $rows = $query->get()->map(function ($r) use ($brand) {
-            if ($brand == 2) {
-                $color    = optional($r->gwmColor)->name ?? '-';
-                $interior = optional($r->interiorColor)->name ?? '-';
-            } elseif (in_array($brand, [3, 4])) {
-                $color    = optional($r->gwmColor)->name ?? '-';
-                $interior = null;
-            } else {
-                $color    = $r->Color ?? '-';
-                $interior = null;
-            }
+        $rows = $query->get()->map(function ($r) use ($brand, $showInterior) {
+            $color = in_array($brand, [2, 3, 4])
+                ? (optional($r->gwmColor)->name ?? '-')
+                : ($r->Color ?? '-');
+
+            $interior = $showInterior ? (optional($r->interiorColor)->name ?? '-') : null;
 
             $subDetail = optional($r->subModel)->detail;
             $subName   = optional($r->subModel)->name ?? '-';

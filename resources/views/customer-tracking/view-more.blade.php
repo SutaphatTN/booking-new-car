@@ -299,11 +299,12 @@
                       <div class="info-pill">{{ $tracking->interiorColor->name ?? '-' }}</div>
                     </div>
                   @else
+                    @php $__si = \App\Support\BrandFeature::hasInteriorColor($tracking->brand); @endphp
                     <div class="col-md-3">
                       <div class="po-label">รุ่นหลัก</div>
                       <div class="info-pill">{{ $tracking->model->Name_TH ?? '-' }}</div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-{{ $__si ? 3 : 4 }}">
                       <div class="po-label">รุ่นย่อย</div>
                       <div class="info-pill">{{ $tracking->subModel->name ?? '-' }}</div>
                     </div>
@@ -311,10 +312,16 @@
                       <div class="po-label">ปี</div>
                       <div class="info-pill">{{ $tracking->year ?? '-' }}</div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-{{ $__si ? 2 : 3 }}">
                       <div class="po-label">สี</div>
                       <div class="info-pill">{{ $tracking->wuColor->name ?? '-' }}</div>
                     </div>
+                    @if ($__si)
+                      <div class="col-md-2">
+                        <div class="po-label">สีภายใน</div>
+                        <div class="info-pill">{{ $tracking->interiorColor->name ?? '-' }}</div>
+                      </div>
+                    @endif
                   @endif
                 </div>
               </div>

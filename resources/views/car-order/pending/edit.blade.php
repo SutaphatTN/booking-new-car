@@ -298,6 +298,26 @@
                     @enderror
                   </div>
 
+                  @if (\App\Support\BrandFeature::hasInteriorColor())
+                    <div class="col-md-4">
+                      <label for="interior_color" class="mf-label form-label">
+                        <i class="bx bx-color-fill ci-amber"></i> สีภายใน
+                      </label>
+                      <select id="interior_color" name="interior_color"
+                        class="form-select @error('interior_color') is-invalid @enderror">
+                        @foreach ($interiorColor as $t)
+                          <option value="{{ $t->id }}" data-name="{{ $t->name }}"
+                            {{ $order->interior_color == $t->id ? 'selected' : '' }}>
+                            {{ $t->name }}
+                          </option>
+                        @endforeach
+                      </select>
+                      @error('interior_color')
+                        <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                      @enderror
+                    </div>
+                  @endif
+
                   <div class="col-md-4">
                     <label for="year" class="mf-label form-label">
                       <i class="bx bx-calendar ci-amber"></i> ปี

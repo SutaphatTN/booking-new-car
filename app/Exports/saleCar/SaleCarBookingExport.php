@@ -17,6 +17,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
+use App\Support\BrandFeature;
 
 class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
@@ -153,7 +154,7 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
                 ? ($r->gwmColor->name ?? '-')
                 : ($r->Color ?? '-');
 
-            $interiorColor = $r->brand == 2
+            $interiorColor = BrandFeature::hasInteriorColor($r->brand)
                 ? ($r->interiorColor->name ?? '-')
                 : null;
 

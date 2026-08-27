@@ -70,6 +70,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Support\ExportFilename;
+use App\Support\BrandFeature;
 
 class PurchaseOrderController extends Controller
 {
@@ -1208,7 +1209,7 @@ class PurchaseOrderController extends Controller
                 'UserInsert' => Auth::id(),
                 'branch' => Auth::user()->branch ?? null,
                 'gwm_color' => in_array(Auth::user()->brand, [2, 3, 4]) ? $request->gwm_color : null,
-                'interior_color' => Auth::user()->brand == 2 ? $request->interior_color : null,
+                'interior_color' => BrandFeature::hasInteriorColor() ? $request->interior_color : null,
                 'tracking_id' => $trackingId,
             ]);
 
@@ -1891,7 +1892,7 @@ class PurchaseOrderController extends Controller
                 $data['gwm_color'] = $request->gwm_color;
             }
 
-            if (Auth::user()->brand == 2) {
+            if (BrandFeature::hasInteriorColor()) {
                 $data['interior_color'] = $request->interior_color;
             }
 

@@ -44,7 +44,7 @@
 - **รุ่นรถหลัก :** {{ $saleCar->model->Name_TH ?? '-' }}
 - **รุ่นรถย่อย :** {{ $saleCar->subModel->name ?? '-' }}
 - **สี :** {{ in_array($__brand, [2, 3, 4]) ? ($saleCar->gwmColor->name ?? '-') : ($saleCar->Color ?? '-') }}
-@if ($__brand == 2)
+@if (\App\Support\BrandFeature::hasInteriorColor($__brand))
 - **สีภายใน :** {{ $saleCar->interiorColor->name ?? '-' }}
 @endif
 - **ปี :** {{ $saleCar->Year ?? '-' }}

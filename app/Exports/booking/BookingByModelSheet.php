@@ -18,6 +18,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use App\Support\BrandFeature;
 
 class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
@@ -58,7 +59,8 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
     $showCost = auth()->user()->role !== 'manager';
 
     $next = 3; // A=รุ่นย่อย, B=สี
-    if ($brand == 2) $next += 2;                    // สาขา (แทรกเป็นคอลัมน์แรก) + สีภายใน
+    if ($brand == 2) $next++;                       // สาขา (แทรกเป็นคอลัมน์แรก) — GWM เท่านั้น
+    if (BrandFeature::hasInteriorColor($brand)) $next++; // สีภายใน
     $next++;                                          // ปี
     $option = null;
     if (!in_array($brand, [2, 3, 4])) $option = $next++; // Option
@@ -277,7 +279,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         ? ($order->gwmColor->name ?? '-')
         : ($order->color ?? '-');
 
-      $interiorColor = $order->brand == 2
+      $interiorColor = BrandFeature::hasInteriorColor($order->brand)
         ? ($order->interiorColor->name ?? '-')
         : null;
 
@@ -354,7 +356,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         ? ($sale->gwmColor->name ?? '-')
         : ($sale->Color ?? '-');
 
-      $interiorColor = $sale->brand == 2
+      $interiorColor = BrandFeature::hasInteriorColor($sale->brand)
         ? ($sale->interiorColor->name ?? '-')
         : null;
 
