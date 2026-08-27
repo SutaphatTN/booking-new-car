@@ -103,9 +103,14 @@ class DisposeReportExport implements FromView, WithTitle, WithStyles, WithEvents
     {
         // รายงาน = สิ่งที่เห็นในตารางหน้าจอ (สถานะ + เดือนของวันที่รับ)
         // ยึดจาก car_order (1 คัน = 1 แถว) เพราะเอกสารแจ้งจำหน่ายผูกกับรถ ไม่ใช่ใบจอง
-        $query = CarOrder::with([
+        // acrossBranches() = เห็นรถทุกสาขาใน brand ให้ตรงกับหน้าจอ (ดู CarOrder::scopeAcrossBranches)
+        $query = CarOrder::acrossBranches()
+            ->with([
                 'model', 'subModel', 'interiorColor', 'gwmColor',
-                'salecars' => fn ($q) => $q->whereNotIn('con_status', [7, 8, 9])->with('customer'),
+                // ปลด userAccess ของ Salecar ด้วย ไม่งั้นรถของสาขาอื่นจะไม่มีชื่อลูกค้า
+                // (ตัวรถถูกจำกัด brand จาก acrossBranches() อยู่แล้ว ใบจองก็ผูกกับรถคันนั้น)
+                'salecars' => fn ($q) => $q->withoutGlobalScope('userAccess')
+                    ->whereNotIn('con_status', [7, 8, 9])->with('customer'),
             ]);
 
         // สถานะเบิก — ตรงกับตัวกรองในหน้าจอ (ไม่ส่งมา = ทุกสถานะ)

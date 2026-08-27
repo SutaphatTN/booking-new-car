@@ -8,6 +8,7 @@ use App\Models\Traits\UserAccessScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class CarOrder extends Model
 {
@@ -222,6 +223,28 @@ class CarOrder extends Model
     public function branchInfo()
     {
         return $this->belongsTo(TbBranch::class, 'branch', 'id');
+    }
+
+    /**
+     * เห็นรถ "ข้ามสาขา" ทั้ง brand — ตัดตัวกรอง สาขา/zone ของ UserAccessScope ออก
+     * เหลือกรองแค่ brand (= สิทธิ์เท่ากับ role admin)
+     *
+     * ใช้เฉพาะหน้าที่จำกัด role แน่นอนอยู่แล้วและงานเป็นภาพรวมทั้ง brand
+     * ตอนนี้คือหน้า "แจ้งจำหน่าย" (Floor Plan — admin / audit_internal / md เท่านั้น)
+     * เพราะเอกสารแจ้งจำหน่ายคนทำมีไม่กี่คน ไล่ดูทีเดียวทั้ง brand สะดวกกว่าสลับสาขา
+     *
+     * ⚠️ ห้ามเอาไปใช้กับหน้าที่ role ทั่วไปเข้าถึงได้ — จะทะลุการแบ่งสาขาทั้งระบบ
+     */
+    public function scopeAcrossBranches($query)
+    {
+        $query->withoutGlobalScope('userAccess');
+
+        $brand = Auth::user()->brand ?? null;
+        if ($brand) {
+            $query->where($this->getTable() . '.brand', $brand);
+        }
+
+        return $query;
     }
 
     public function getFormatOrderDateAttribute()
