@@ -18,8 +18,8 @@
   <div class="editLicenseModel"></div>
   <div class="viewExportLicenseAllModel"></div>
 
-  {{-- ตัวเลือกสถานะป้าย (admin เท่านั้น) — ให้ JS อ่านไปสร้าง dropdown ตอนกดแก้สถานะ --}}
-  @if (auth()->user()->role === 'admin')
+  {{-- ตัวเลือกสถานะป้าย (เฉพาะ role ที่จัดการป้ายได้) — ให้ JS อ่านไปสร้าง dropdown ตอนกดแก้สถานะ --}}
+  @if (in_array(auth()->user()->role, config('brand.plate_manage_roles', [])))
     <div id="plateStatusOptions" class="d-none" data-options='@json(\App\Models\TbLicensePlate::PLATE_STATUSES)'></div>
   @endif
   <div class="row">
@@ -42,11 +42,12 @@
           {{-- ── Action bar ── --}}
           @php
             $canLoan = in_array(auth()->user()->role, config('brand.plate_loan_roles', []));
+            $canManage = in_array(auth()->user()->role, config('brand.plate_manage_roles', []));
             $userBrand = auth()->user()->brand;
             $brandNames = config('brand.names', []);
           @endphp
           <div class="po-filter-bar d-flex align-items-center gap-2 justify-content-end">
-            @if (auth()->user()->role === 'admin')
+            @if ($canManage)
               <button class="btn btn-primary btn-sm btnAddPlate" type="button">
                 <i class="bx bx-plus me-1"></i> เพิ่มป้ายแดง
               </button>
@@ -105,8 +106,8 @@
     </div>
   </div>
 
-  {{-- ── Modal เพิ่มป้ายแดง (admin เท่านั้น) ── --}}
-  @if (auth()->user()->role === 'admin')
+  {{-- ── Modal เพิ่มป้ายแดง (เฉพาะ role ที่จัดการป้ายได้) ── --}}
+  @if ($canManage)
     <div class="modal fade addPlateModal" tabindex="-1" role="dialog" data-bs-backdrop="static">
       <div class="modal-dialog modal-md" role="document">
         <div class="modal-content border-0 shadow mf-content mf-content--input">
