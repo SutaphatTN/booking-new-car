@@ -558,7 +558,10 @@ class FloorPlanController extends Controller
         $status = $request->input('status', 'pending');   // pending (ยังไม่เบิก) | withdrawn (เบิกแล้ว)
         $month  = $request->input('month');                // YYYY-MM ของ "วันที่รับ" (ว่าง = ทุกเดือน)
 
-        $query = CarOrder::with(['model', 'subModel', 'interiorColor', 'gwmColor', 'purchaseType', 'dealerProvince']);
+        // acrossBranches() = เห็นรถทุกสาขาใน brand (เหมือน admin) — หน้านี้ใช้กันไม่กี่คน
+        // และเป็นงานภาพรวมทั้ง brand สลับสาขาไปมาเสียเวลากว่า
+        $query = CarOrder::acrossBranches()
+            ->with(['model', 'subModel', 'interiorColor', 'gwmColor', 'purchaseType', 'dealerProvince']);
 
         // สถานะ: ยังไม่เบิก = ยังไม่มีวันที่ ทบ.เบิก / เบิกแล้ว = มีแล้ว
         if ($status === 'withdrawn') {
@@ -632,7 +635,8 @@ class FloorPlanController extends Controller
     {
         $this->authorizeAccess();
 
-        $order = CarOrder::findOrFail($id);
+        // ต้องใช้ scope เดียวกับหน้าลิสต์ ไม่งั้นรถของสาขาอื่นที่โชว์อยู่จะกดแก้ไม่ได้ (404)
+        $order = CarOrder::acrossBranches()->findOrFail($id);
 
         $validated = $request->validate([
             'dispose_set'               => ['nullable', Rule::in(array_keys(self::DISPOSE_SETS))],
