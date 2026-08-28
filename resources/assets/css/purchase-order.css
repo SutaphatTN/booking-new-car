@@ -1336,6 +1336,21 @@
   color: #b45309;
 }
 
+/* ช่อง "หักเกินงบ" (สูตรอัตโนมัติเมื่อ balanceCampaign ติดลบ) — ซ่อนเมื่อไม่ติดลบ */
+.com-stat-cell.com-overbudget-cell {
+  background: #fef2f2;
+}
+
+.com-stat-cell.com-overbudget-cell .com-lbl,
+.com-stat-cell.com-overbudget-cell .com-readonly-val {
+  color: #b91c1c;
+}
+
+.com-stat-cell.com-overbudget-cell #overBudgetPendingNote {
+  color: #9a3412;
+  font-weight: 600;
+}
+
 .com-stat-cell.com-total-cell {
   flex: 0 0 140px;
   border-right: none;

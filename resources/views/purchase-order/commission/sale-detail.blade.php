@@ -1,8 +1,6 @@
 @php
   $isBrand13 = in_array((int) $brand, [1, 3], true);
   $isBrand2  = (int) $brand === 2;
-  // brand 2/4 : ยอดที่ผู้จัดการกรอกเป็น "ยอดหัก" (ติดลบ) ; brand อื่น = "คอมที่ได้"
-  $approvedComLabel = in_array((int) $brand, [2, 4], true) ? 'ยอดหักค่าคอม' : 'คอมที่ได้';
   // audit_lead / audit_dp = ดูอย่างเดียว (ไม่มีปุ่มบันทึก + ทุกช่องเป็น readonly/disabled)
   $canEdit = $canEdit ?? true;
   $roInput = $canEdit ? '' : 'readonly';
@@ -34,8 +32,13 @@
           /* หัวตาราง + ช่องตัวเลข ไม่ตัดคำ (ให้เลื่อนแนวนอนแทน) ; ชื่อลูกค้า/รุ่นรถ ห่อบรรทัดได้ */
           .commission-cars-table th { white-space: nowrap; vertical-align: middle; }
           .commission-cars-table td { vertical-align: middle; }
-          .commission-cars-table td:nth-child(n+4) { white-space: nowrap; }  /* คอลัมน์ตัวเลข 4–9 */
+          .commission-cars-table td:nth-child(n+4) { white-space: nowrap; }  /* คอลัมน์ตัวเลขทั้งหมด */
           .commission-cars-table th:nth-child(2), .commission-cars-table th:nth-child(3) { min-width: 150px; }
+          /* กลุ่มสรุปท้ายแถว : รวมเงินได้ / หักเกินงบ / คอมสุทธิ — ไล่โทนให้อ่านเป็นก้อนเดียว */
+          .commission-cars-table .col-sum-pos { background: #f0fdf4; border-left: 2px solid #86efac; }
+          .commission-cars-table .col-sum-neg { background: #fef2f2; }
+          .commission-cars-table .col-sum-net { background: #ecfdf5; border-left: 2px solid #34d399; }
+          .commission-cars-table .cell-note { font-size: .68rem; line-height: 1.3; }
         </style>
         <div class="fw-bold mb-2"><i class="bx bx-list-ul me-1"></i> รายชื่อลูกค้าที่ส่งมอบในเดือนนี้</div>
         <div class="table-responsive mb-4">
@@ -45,20 +48,33 @@
                 <th style="width:44px;">No.</th>
                 <th>ลูกค้า</th>
                 <th>รุ่นรถ</th>
-                <th class="text-end">งบเหลือ</th>
-                <th class="text-end" title="ยอดที่ผู้จัดการ/GM อนุมัติ กรณีเกินงบทะลุเพดาน">{{ $approvedComLabel }}</th>
+                <th class="text-end" title="คอมตัวรถรายคัน — คันที่เกินงบทะลุเพดานไม่ได้คอมตัวรถ (แสดง 0)">คอมตัวรถ</th>
+                <th class="text-end" title="คอมงบเหลือ (สูตรอัตโนมัติ) — ถ้าเกินงบจะเป็น 0 แล้วยอดติดลบไปอยู่ช่องหักเกินงบ">งบเหลือ</th>
+                <th class="text-end" title="ยอดที่ผู้จัดการ/GM อนุมัติ กรณีเกินงบทะลุเพดาน (เฉพาะยอดที่เป็นบวก — ยอดหักไปอยู่ช่องหักเกินงบ)">คอมที่ได้</th>
                 <th class="text-end">ประดับยนต์</th>
-                <th class="text-end">คอมอื่นๆ</th>
                 <th class="text-end">ดอกเบี้ย</th>
                 <th class="text-end">รถเทิร์น</th>
+                <th class="text-end">คอมอื่นๆ</th>
                 @if ($isBrand2)
                   <th class="text-end">budget หัก</th>
                 @endif
-                <th class="text-end">รวมค่าคอมรถ</th>
+                <th class="text-end col-sum-pos" title="ผลรวมทุกยอดที่เป็นบวกของคันนี้">รวมเงินได้</th>
+                <th class="text-end col-sum-neg" title="ยอดหักจากการขายเกินงบ (สูตรอัตโนมัติ + ยอดหักที่ GM อนุมัติ)">หักเกินงบ</th>
+                <th class="text-end col-sum-net" title="รวมเงินได้ − หักเกินงบ">คอมสุทธิ</th>
               </tr>
             </thead>
             <tbody>
               @forelse ($cars as $i => $c)
+                @php
+                  $carCom = (float) ($c['carCommission'] ?? 0);
+                  $autoBal = (float) $c['balanceCampaign'];
+                  $approved = (float) ($c['approvedCom'] ?? 0);
+                  // ยอดบวก/ยอดลบ แยกคนละช่อง : ยอดติดลบทั้งหมดไปรวมที่ "หักเกินงบ"
+                  $rowNeg = min($autoBal, 0) + min($approved, 0);
+                  $rowBase = $c['commissionSale'] - $c['specialCom'] - $c['budgetDeduct'];
+                  $rowNet = $c['commissionSale'] + $carCom;
+                  $rowPos = $rowNet - $rowNeg;
+                @endphp
                 <tr>
                   <td class="text-center text-muted">{{ $i + 1 }}</td>
                   <td>
@@ -72,28 +88,57 @@
                     {{ $c['model'] }}
                     <div class="text-muted" style="font-size:.78rem;">{{ $c['subModel'] }}</div>
                   </td>
-                  <td class="text-end">
-                    {{ number_format($c['balanceCampaign'], 2) }}
+
+                  {{-- คอมตัวรถ : 0 พร้อมป้ายบอกเหตุผลถ้าเกินงบทะลุเพดาน ;
+                       กั๊ก/พักไว้ = เรื่องเวลาจ่าย ไม่ลดยอด → โชว์เป็นบรรทัดรองใต้ยอดคอมตัวรถที่มันถูกแบ่งออกมา --}}
+                  <td class="text-end {{ $carCom > 0 ? '' : 'text-muted' }}">
+                    {{ number_format($carCom, 2) }}
+                    @if (!empty($c['overCeiling']))
+                      <div class="text-danger cell-note" title="เกินงบทะลุเพดาน — ไม่ได้คอมตัวรถ (แต่ยังนับจำนวนคัน)">
+                        <i class="bx bx-error-circle"></i> เกินงบทะลุเพดาน
+                      </div>
+                    @endif
+                    @if (($rounds['active'] ?? false) && $carCom > 0)
+                      @if (empty($c['mainPayDate']))
+                        <div class="text-danger cell-note" title="ยังไม่รับรถ (DD ว่าง) — พักคอมตัวรถทั้งก้อนไว้ก่อน">
+                          <i class="bx bx-pause-circle"></i> พักไว้ (ยังไม่รับรถ)
+                        </div>
+                      @elseif (!empty($c['isHeld']) && $c['heldAmount'] > 0)
+                        <div class="text-warning cell-note" title="กั๊กไว้จ่ายรอบถัดไป — ไม่ได้ลดยอดคอมสุทธิ เป็นแค่เวลาจ่าย">
+                          <i class="bx bx-time-five"></i> กั๊ก {{ number_format($c['heldAmount'], 0) }}
+                          → {{ \Illuminate\Support\Carbon::parse($c['heldPayday'])->format('d/m/Y') }}
+                        </div>
+                      @endif
+                    @endif
+                  </td>
+
+                  {{-- งบเหลือ : เกินงบบังคับ 0 (ยอดติดลบไปช่อง "หักเกินงบ") --}}
+                  <td class="text-end {{ $autoBal > 0 ? '' : 'text-muted' }}">
+                    {{ number_format(max($autoBal, 0), 2) }}
                     @if (!empty($c['extraDeduct']))
-                      <div class="text-danger" style="font-size:.7rem;" title="ถูกหักเพื่อชดเก็บงบเพิ่มเติม">
+                      <div class="text-danger cell-note" title="ถูกหักเพื่อชดเก็บงบเพิ่มเติม">
                         − เก็บงบเพิ่มเติม {{ number_format($c['extraDeduct'], 2) }}
                       </div>
                     @endif
                   </td>
-                  @php $ac = (float) ($c['approvedCom'] ?? 0); @endphp
-                  <td class="text-end {{ $ac == 0 ? 'text-muted' : ($ac < 0 ? 'fw-semibold text-danger' : 'fw-semibold text-success') }}">
-                    {{ number_format($ac, 2) }}
+
+                  {{-- คอมที่ได้ : เฉพาะยอดอนุมัติที่เป็นบวก (brand 2/4 เป็นยอดหัก → ไปช่อง "หักเกินงบ") --}}
+                  <td class="text-end {{ $approved > 0 ? 'fw-semibold text-success' : 'text-muted' }}">
+                    {{ number_format(max($approved, 0), 2) }}
                   </td>
+
                   <td class="text-end">{{ number_format($c['accessoryCom'], 2) }}</td>
+                  <td class="text-end">{{ number_format($c['interestCom'], 2) }}</td>
+                  <td class="text-end">{{ number_format($c['turnCarCom'], 2) }}</td>
                   <td class="text-end" style="min-width:120px;">
                     <input type="text" inputmode="decimal"
                       class="form-control form-control-sm text-end car-special-input"
                       data-id="{{ $c['id'] }}"
-                      data-rowbase="{{ $c['commissionSale'] - $c['specialCom'] - $c['budgetDeduct'] }}"
+                      data-rowbase="{{ $rowBase }}"
+                      data-rowcar="{{ $carCom }}"
+                      data-rowneg="{{ $rowNeg }}"
                       value="{{ $c['specialCom'] }}" {{ $roInput }}>
                   </td>
-                  <td class="text-end">{{ number_format($c['interestCom'], 2) }}</td>
-                  <td class="text-end">{{ number_format($c['turnCarCom'], 2) }}</td>
                   @if ($isBrand2)
                     <td class="text-end" style="min-width:120px;">
                       <input type="text" inputmode="decimal"
@@ -102,18 +147,36 @@
                         value="{{ $c['budgetDeduct'] ?: '' }}" placeholder="0" {{ $roInput }}>
                     </td>
                   @endif
-                  <td class="text-end fw-semibold car-row-total">{{ number_format($c['commissionSale'], 2) }}</td>
+
+                  <td class="text-end fw-semibold col-sum-pos car-row-positive">{{ number_format($rowPos, 2) }}</td>
+                  <td class="text-end col-sum-neg {{ $rowNeg < 0 ? 'fw-semibold text-danger' : 'text-muted' }}">
+                    {{ number_format($rowNeg, 2) }}
+                    @if ($approved < 0)
+                      <div class="cell-note text-danger" title="ยอดหักที่ผู้จัดการ/GM อนุมัติ (เกินงบทะลุเพดาน)">
+                        ยอด GM อนุมัติ {{ number_format($approved, 2) }}
+                      </div>
+                    @elseif ($autoBal < 0)
+                      <div class="cell-note text-muted" title="ยอดจากสูตรอัตโนมัติ (balance × 2 × per_budget%)">
+                        {{ $c['overCeiling'] ? 'รอยอดอนุมัติ' : 'สูตรอัตโนมัติ' }}
+                      </div>
+                    @endif
+                  </td>
+                  <td class="text-end fw-bold col-sum-net car-row-total">{{ number_format($rowNet, 2) }}</td>
                 </tr>
               @empty
                 <tr>
-                  <td colspan="{{ $isBrand2 ? 11 : 10 }}" class="text-center py-4 text-muted">ไม่มีรายการส่งมอบในเดือนนี้</td>
+                  <td colspan="{{ $isBrand2 ? 14 : 13 }}" class="text-center py-4 text-muted">ไม่มีรายการส่งมอบในเดือนนี้</td>
                 </tr>
               @endforelse
             </tbody>
             <tfoot>
               <tr class="table-light fw-bold">
-                <td colspan="{{ $isBrand2 ? 10 : 9 }}" class="text-end">รวมค่าคอมรถทั้งหมด</td>
-                <td class="text-end" id="carsBaseTotal">{{ number_format($baseCommission, 2) }}</td>
+                <td colspan="3" class="text-end">รวมทั้งหมด</td>
+                <td class="text-end" id="carsCarTotal">0.00</td>
+                <td colspan="{{ $isBrand2 ? 7 : 6 }}"></td>
+                <td class="text-end col-sum-pos" id="carsPositiveTotal">0.00</td>
+                <td class="text-end col-sum-neg text-danger" id="carsNegativeTotal">0.00</td>
+                <td class="text-end col-sum-net" id="carsNetTotal">0.00</td>
               </tr>
             </tfoot>
           </table>

@@ -71,8 +71,29 @@ class CarCommissionQuery
      *   achievedByBrand:Collection // brand => bool
      * }
      */
+    /**
+     * memo ต่อ request (key = "brand|Y-m") — forMonth ถูกเรียกซ้ำหลายรอบต่อ 1 หน้า
+     * (controller 1 ครั้ง + HeldCommissionQuery อีกเดือนละครั้งย้อนหลัง 2-3 เดือน)
+     *
+     * ต้องมี brand ของผู้ใช้อยู่ใน key ด้วย เพราะ relation model (tb_carmodels) มี brand global scope
+     * → ผลของ isOverBudgetCeiling() ต่างกันตามคนที่เปิด ; ใน request จริงมีผู้ใช้คนเดียวจึงไม่ต่าง
+     * แต่ process ที่สลับผู้ใช้ (queue/artisan/สคริปต์ทดสอบ) จะได้ค่าปนกันถ้าไม่ใส่ brand
+     */
+    private static array $memo = [];
+
+    /** ล้าง memo (ใช้เมื่อมีการเขียนข้อมูลแล้วต้องอ่านใหม่ใน request เดียวกัน) */
+    public static function flush(): void
+    {
+        self::$memo = [];
+    }
+
     public static function forMonth(int $year, int $month): array
     {
+        $key = sprintf('%d|%04d-%02d', (int) (auth()->user()->brand ?? 0), $year, $month);
+        if (isset(self::$memo[$key])) {
+            return self::$memo[$key];
+        }
+
         $empty = [
             'active'          => false,
             'perSale'         => collect(),
@@ -82,26 +103,26 @@ class CarCommissionQuery
         ];
 
         if (!self::isActiveMonth($year, $month)) {
-            return $empty;
+            return self::$memo[$key] = $empty;
         }
 
         $from = Carbon::create($year, $month, 1)->startOfMonth();
         $to   = Carbon::create($year, $month, 1)->endOfMonth();
 
         // with('model') + balanceCampaign : ใช้เช็ค "เกินงบทะลุเพดาน" (คันแบบนี้ไม่ได้คอมตัวรถ)
-        $cars = Salecar::withoutGlobalScopes()
+        $cars = Salecar::withoutGlobalScope('userAccess')
             ->with('model')
             ->whereNotNull('DeliveryInCKDate')
             ->whereBetween('DeliveryInCKDate', [$from, $to])
             ->where('type_sale', self::SALE_TYPE_NORMAL)
-            ->whereHas('carOrder', fn($c) => $c->withoutGlobalScopes()
+            ->whereHas('carOrder', fn($c) => $c->withoutGlobalScope('userAccess')
                 ->where('purchase_type', self::PURCHASE_TYPE_RETAIL)
                 ->where(fn($q) => $q->where('purchase_source', '!=', self::SOURCE_DEALER)
                     ->orWhereNull('purchase_source')))
             ->get(['id', 'SaleID', 'brand', 'model_id', 'balanceCampaign']);
 
         if ($cars->isEmpty()) {
-            return array_merge($empty, ['active' => true]);
+            return self::$memo[$key] = array_merge($empty, ['active' => true]);
         }
 
         // ยอดรวมต่อ brand (ใช้ตัดสินบรรลุเป้า)
@@ -159,7 +180,7 @@ class CarCommissionQuery
             });
         });
 
-        return [
+        return self::$memo[$key] = [
             'active'          => true,
             'perSale'         => $perSale,
             'brandCount'      => $brandCount,

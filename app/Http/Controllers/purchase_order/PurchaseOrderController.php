@@ -3869,6 +3869,7 @@ class PurchaseOrderController extends Controller
                 'mainPayDate'     => $p['main_payday']?->format('Y-m-d'),
                 'balanceCampaign' => $balanceCampaign,
                 'approvedCom'     => $approvedCom,   // ยอดที่ผู้จัดการ/GM กรอก (เกินเพดาน) — brand2/4 ติดลบ
+                'overCeiling'     => $r->isOverBudgetCeiling(), // เกินงบทะลุเพดาน → ไม่ได้คอมตัวรถ
                 'extraDeduct'     => ExtraBudgetLedger::absorbedFor($r),
                 'accessoryCom'    => $accessoryCom,
                 'specialCom'      => $specialCom,

@@ -101,7 +101,7 @@ class HeldCommissionQuery
         // เรตคอมรายคันต่อเซลล์ (rate/mode) — คิดตามเดือน CK
         $perSale = CarCommissionQuery::forMonth($year, $month)['perSale'];
 
-        return Salecar::withoutGlobalScopes()
+        return Salecar::withoutGlobalScope('userAccess')
             ->with('model')   // ใช้เช็คเคส "เกินงบทะลุเพดาน" (คันนั้นไม่ได้คอมตัวรถ → ไม่มีคอมกั๊ก)
             ->where('brand', self::BRAND)
             ->whereNotNull('DeliveryInCKDate')
@@ -149,7 +149,7 @@ class HeldCommissionQuery
         $ckFrom = $mStart->copy()->subMonthsNoOverflow(2)->startOfMonth();
         $ddFrom = $mStart->copy()->subMonthNoOverflow()->startOfMonth();
 
-        $cars = Salecar::withoutGlobalScopes()
+        $cars = Salecar::withoutGlobalScope('userAccess')
             ->with('model')   // ใช้เช็คเคส "เกินงบทะลุเพดาน" (คันนั้นไม่ได้คอมตัวรถ → ไม่มีคอมกั๊ก)
             ->where('brand', self::BRAND)
             ->whereNotNull('DeliveryInCKDate')
@@ -228,7 +228,7 @@ class HeldCommissionQuery
         $ddTo   = $payMain->copy()->day(20)->endOfDay();
         $ckEnd  = Carbon::create($year, $month, 1)->startOfMonth(); // CK ต้องก่อนเดือน M
 
-        $cars = Salecar::withoutGlobalScopes()
+        $cars = Salecar::withoutGlobalScope('userAccess')
             ->with('model')   // ใช้เช็คเคส "เกินงบทะลุเพดาน" (คันนั้นไม่ได้คอมตัวรถ → ไม่มีคอมกั๊ก)
             ->where('brand', self::BRAND)
             ->whereNotNull('DeliveryInCKDate')
@@ -319,7 +319,7 @@ class HeldCommissionQuery
         $from = Carbon::create($year, $month, 1)->startOfMonth();
         $to   = Carbon::create($year, $month, 1)->endOfMonth();
 
-        return Salecar::withoutGlobalScopes()
+        return Salecar::withoutGlobalScope('userAccess')
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
             ->where('brand', self::BRAND)
@@ -350,7 +350,7 @@ class HeldCommissionQuery
         $prevFrom = $thisFrom->copy()->subMonthNoOverflow()->startOfMonth();
 
         // ดึงรถ brand 1 "ส่งมอบหลังวันที่ 10" ของเดือนนี้ + เดือนก่อน ในควิวรีเดียว แล้วแยกเดือนใน PHP
-        $late = Salecar::withoutGlobalScopes()
+        $late = Salecar::withoutGlobalScope('userAccess')
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
             ->where('brand', self::BRAND)

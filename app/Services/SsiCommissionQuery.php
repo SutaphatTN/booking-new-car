@@ -118,17 +118,17 @@ class SsiCommissionQuery
         [$from, $to] = self::window($year, $month);
 
         // รถ brand 1, Retail, ส่งมอบในหน้าต่าง, มี record SSI (unscoped ให้ครอบทั้ง brand จริง)
-        $records = SsiRecord::withoutGlobalScopes()
+        $records = SsiRecord::withoutGlobalScope('brandAccess')
             ->with([
                 'assessment',
-                'salecar' => fn($q) => $q->withoutGlobalScopes(),
+                'salecar' => fn($q) => $q->withoutGlobalScope('userAccess'),
             ])
             ->whereHas('salecar', function ($q) use ($from, $to) {
-                $q->withoutGlobalScopes()
+                $q->withoutGlobalScope('userAccess')
                     ->where('brand', 1)
                     ->whereNotNull('DeliveryInCKDate')
                     ->whereBetween('DeliveryInCKDate', [$from, $to])
-                    ->whereHas('carOrder', fn($c) => $c->withoutGlobalScopes()
+                    ->whereHas('carOrder', fn($c) => $c->withoutGlobalScope('userAccess')
                         ->where('purchase_type', self::SALE_TYPE_RETAIL));
             })
             ->get();

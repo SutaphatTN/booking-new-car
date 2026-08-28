@@ -203,19 +203,36 @@ function clampBudgetInput(el) {
 // แก้ "คอมอื่นๆ" / "budget หัก" ต่อคัน → คิดรวมค่าคอมรถต่อแถว + ยอดรวม + budget คงเหลือ + net สด
 function recomputeCarsTable() {
   const fmt = n => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // base = รวมค่าคอมรถ (ไม่รวมคอมตัวรถ) — ยอดสุทธิด้านล่างบวกคอมตัวรถแยกจาก data-car อยู่แล้ว
   let base = 0;
   let budgetUsed = 0;
+  let carTotal = 0;
+  let posTotal = 0;
+  let negTotal = 0;
+  let netTotal = 0;
   $('.car-special-input').each(function () {
     const $row = $(this).closest('tr');
     const rowbase = parseFloat($(this).data('rowbase')) || 0;
+    const rowcar = parseFloat($(this).data('rowcar')) || 0;  // คอมตัวรถของคันนี้ (คงที่)
+    const rowneg = parseFloat($(this).data('rowneg')) || 0;  // หักเกินงบ (คงที่, ติดลบหรือ 0)
     const special = parseMoney($(this).val());
     const budget = parseMoney($row.find('.car-budget-input').val()); // budget หัก (brand 2)
-    const rowTotal = rowbase + special + budget;
-    $row.find('.car-row-total').text(fmt(rowTotal));
+    const rowTotal = rowbase + special + budget;  // = รวมค่าคอมรถของคันนี้ (มียอดติดลบรวมอยู่แล้ว)
+    const rowNet = rowTotal + rowcar;             // คอมสุทธิ = รวมค่าคอมรถ + คอมตัวรถ
+    const rowPos = rowNet - rowneg;               // รวมเงินได้ = คอมสุทธิ − (ยอดติดลบ)
+    $row.find('.car-row-positive').text(fmt(rowPos));
+    $row.find('.car-row-total').text(fmt(rowNet));
     base += rowTotal;
     budgetUsed += budget;
+    carTotal += rowcar;
+    posTotal += rowPos;
+    negTotal += rowneg;
+    netTotal += rowNet;
   });
-  $('#carsBaseTotal').text(fmt(base));
+  $('#carsCarTotal').text(fmt(carTotal));
+  $('#carsPositiveTotal').text(fmt(posTotal));
+  $('#carsNegativeTotal').text(fmt(negTotal));
+  $('#carsNetTotal').text(fmt(netTotal));
   $('#netCommissionDisplay').data('base', base);
 
   // budget ยกมา (brand 2): อัปเดต ใช้ไป / คงเหลือ สด

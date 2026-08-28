@@ -3322,6 +3322,8 @@ function calculateCommissionSale() {
   // "คอมที่ได้ / ยอดหักค่าคอม" — ยอดที่ผู้จัดการอนุมัติ แยกช่องออกจากคอมงบเหลือ (0 = ไม่ใช่เคสนี้)
   let approvedCom = 0;
   let usesApproved = false;
+  // เกินเพดานแล้วแต่ผู้จัดการ/GM ยังไม่กรอกยอด D → ยอด "หักเกินงบ" เป็นแค่ยอดชั่วคราวจากสูตร
+  let pendingApproval = false;
 
   if (balanceCam >= 0) {
     // brand 2/4 : งบเหลือไม่คิดเป็นค่าคอมเซลล์ → 0 (เกินงบถึงจะคิด: −D ที่ GM อนุมัติ ในบล็อก else)
@@ -3341,11 +3343,17 @@ function calculateCommissionSale() {
       approvedCom = isB2Style ? -managerDeduct : managerDeduct;
       balanceCam = 0;
     } else {
+      pendingApproval = isOverCeiling;
       balanceCam = balanceCam * 2 * (perBudget / 100);
     }
   }
 
   const totalCommission = balanceCam + approvedCom + giftCom + extraCom + fiCom + turnCom + comSpecial + budgetDeduct;
+
+  // แยกการ "แสดงผล" ออกจากการคำนวณ: ยอดติดลบไม่โชว์ในช่องคอมงบเหลือ (บังคับ 0) แต่ไปโชว์ช่อง "หักเกินงบ"
+  // ยอดที่เข้า totalCommission ยังเป็น balanceCam ตัวเดิม — ไม่มีการเปลี่ยนสูตร
+  const overBudgetDeduct = balanceCam < 0 ? balanceCam : 0;
+  const balanceComDisplay = balanceCam < 0 ? 0 : balanceCam;
 
   // budget หัก (brand 2): โชว์ budget คงเหลือหลังหักคันนี้สด
   const $budgetEl = $('#budget_deduct');
@@ -3367,8 +3375,23 @@ function calculateCommissionSale() {
   );
 
   $('#TotalbalanceCampaign').val(
-    balanceCam.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    balanceComDisplay.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   );
+
+  // ช่อง "หักเกินงบ" — โชว์เฉพาะตอนสูตรอัตโนมัติให้ยอดติดลบ (เกินงบ และยังไม่ได้ใช้ยอดที่ GM อนุมัติ)
+  const overBudgetCell = document.getElementById('overBudgetDeductCell');
+  if (overBudgetCell) {
+    const hasDeduct = overBudgetDeduct < -0.005;
+    overBudgetCell.classList.toggle('com-cell-hidden', !hasDeduct);
+    const deductInput = document.getElementById('OverBudgetDeductDisplay');
+    if (deductInput) {
+      deductInput.value = overBudgetDeduct.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    const pendingNote = document.getElementById('overBudgetPendingNote');
+    if (pendingNote) {
+      pendingNote.style.display = hasDeduct && pendingApproval ? '' : 'none';
+    }
+  }
 
   // ช่อง "คอมที่ได้ / ยอดหักค่าคอม" — โชว์เฉพาะเคสเกินเพดานที่ผู้จัดการกรอกยอดมาแล้ว
   const approvedCell = document.getElementById('approvedComCell');
