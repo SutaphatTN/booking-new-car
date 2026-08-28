@@ -94,6 +94,7 @@ class Salecar extends Model
 		'attachment_url' => 'array',
 		'withdraw_attachment_url' => 'array',
 		'approval_files' => 'array',
+		'approval_is_vip' => 'bool',
 		'is_pre_approval' => 'bool',
 		'pre_approval_at' => 'datetime',
 		'pre_approval_booked_at' => 'datetime',
@@ -267,6 +268,7 @@ class Salecar extends Model
 		'approval_requested_at',
 		'approval_commission_deduct',
 		'approval_extra_budget',
+		'approval_is_vip',
 		'approval_md_note',
 		'approval_return_note',
 		'approval_returned_at',
@@ -544,8 +546,9 @@ class Salecar extends Model
 	 * เคสอนุมัติ (brand-aware) — ตรรกะเดียวกับ PurchaseOrderController::approvalCase
 	 *  normal     = งบปกติ
 	 *  b1_manager = brand1/3 เกิน ≤ over_budget → manager (จบ)
-	 *  b1_md      = brand1/3 เกิน > over_budget → manager กรอกหัก → md
-	 *  b2_gm      = brand2/4 เกินงบ → gm/md (brand 4 คิดคอมงบเหลือแบบ brand 2)
+	 *  b1_md      = brand1/3 เกิน > over_budget → manager กรอกค่าคอมที่ได้ → GM อนุมัติจบ (CC md)
+	 *  b2_gm      = brand2/4 เกินงบ (ไม่มีเพดาน) → manager กรอกยอดหัก → GM อนุมัติจบ (CC md)
+	 *               brand 2 เลือก "ไม่หักเงิน VIP" ได้ → ส่ง MD อนุมัติจบแทน (CC gm) — ดู approval_is_vip
 	 */
 	public function approvalCase(): string
 	{
@@ -600,9 +603,53 @@ class Salecar extends Model
 	}
 
 	/**
-	 * "คอมที่ได้ / ยอดหักค่าคอม" — ยอด D ที่ผู้จัดการ/GM กรอกตอนอนุมัติเกินเพดาน
-	 *  · brand 2, 4 (b2_gm) → −D (หักเงิน)
-	 *  · แบรนด์อื่น (b1_md) → +D ("ให้ค่าคอมฝ่ายขายเท่านี้แทน")
+	 * ยอด D ที่ผู้จัดการกรอก มีความหมายเป็น "ยอดหัก" (−D) หรือ "ค่าคอมที่ได้" (+D)
+	 *  · brand 2, 4 → −D (หักเงิน)
+	 *  · brand 1, 3 → +D ("ให้ค่าคอมฝ่ายขายเท่านี้แทน")
+	 *
+	 * TODO(brand4): รอสรุปจาก GM — ถ้าตกลงให้ brand 4 เหมือน brand 1 "ทุกอย่าง" (ตัวเลขเป็นค่าคอมที่ได้ +D
+	 *   และมีช่องเก็บงบเพิ่มเติม) ให้เอาเลข 4 ออกจาก array นี้ + usesExtraBudget() ด้านล่าง
+	 *   ผลข้างเคียง: ใบเก่าของ brand 4 ที่บันทึกไว้เป็น "ยอดหัก" จะกลับเครื่องหมาย ต้องแก้ข้อมูลตามด้วย
+	 */
+	public function usesDeductAmount(): bool
+	{
+		return in_array((int) $this->brand, [2, 4], true);
+	}
+	
+	/** ป้ายชื่อช่องยอดที่ผู้จัดการกรอก (ตามความหมายของแบรนด์) */
+	public function approvalDeductLabel(): string
+	{
+		return $this->usesDeductAmount() ? 'ยอดหักค่าคอมฝ่ายขาย' : 'ค่าคอมฝ่ายขายที่ได้';
+	}
+	
+	/** แบรนด์นี้ใช้ "เก็บงบเพิ่มเติม" ไหม — brand 2/4 ไม่ใช้ (ดู TODO(brand4) ด้านบน) */
+	public function usesExtraBudget(): bool
+	{
+		return !$this->usesDeductAmount();
+	}
+	
+	/** ผู้จัดการเลือก "ไม่หักเงิน VIP" (เฉพาะ brand 2) → ผู้อนุมัติขั้นสุดท้ายเป็น MD แทน GM */
+	public function isVipApproval(): bool
+	{
+		return (bool) $this->approval_is_vip;
+	}
+	
+	/** แบรนด์นี้ให้ผู้จัดการเลือก VIP ได้ไหม — ตอนนี้เฉพาะ brand 2 */
+	public function allowsVipChoice(): bool
+	{
+		return (int) $this->brand === 2 && $this->approvalCase() === 'b2_gm';
+	}
+	
+	/** ผู้อนุมัติขั้นสุดท้ายของเคสเกินเพดาน — VIP → MD, นอกนั้น → GM */
+	public function finalApproverRole(): string
+	{
+		return $this->isVipApproval() ? 'md' : 'gm';
+	}
+	
+	/**
+	 * "คอมที่ได้ / ยอดหักค่าคอม" — ยอด D ที่ผู้จัดการกรอกตอนอนุมัติเกินเพดาน
+	 *  · brand 2, 4 → −D (หักเงิน ; VIP = กรอก 0 → ไม่หัก ไม่ได้)
+	 *  · brand 1, 3 → +D ("ให้ค่าคอมฝ่ายขายเท่านี้แทน")
 	 * เคสอื่น (ยังไม่กรอก / ไม่ใช่เคสเกินเพดาน) = 0 → ไปคิดจากสูตรใน autoBalanceCommission แทน
 	 */
 	public function approvedCommission(): float
@@ -611,7 +658,7 @@ class Salecar extends Model
 			return 0.0;
 		}
 		$d = (float) $this->approval_commission_deduct;
-		return in_array((int) $this->brand, [2, 4], true) ? -1 * $d : $d;
+		return $this->usesDeductAmount() ? -1 * $d : $d;
 	}
 
 	/**

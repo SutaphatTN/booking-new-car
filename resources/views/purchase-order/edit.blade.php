@@ -41,8 +41,10 @@
         $apWaitingFor = null;
         if ($apPending) {
             $apWaitingFor = match ($saleCar->approvalCase()) {
-                'b1_md' => $saleCar->ApprovalSignature ? 'GM' : 'ผู้จัดการ',
-                'b2_gm' => $saleCar->ApprovalSignature ? 'MD' : 'GM',
+                // เกินเพดานทุกแบรนด์: ผู้จัดการกรอกยอดก่อน → ขั้นสุดท้าย GM (หรือ MD ถ้า VIP)
+                'b1_md', 'b2_gm' => $saleCar->ApprovalSignature
+                    ? strtoupper($saleCar->finalApproverRole())
+                    : 'ผู้จัดการ',
                 default => 'ผู้จัดการ',
             };
         }
@@ -2789,7 +2791,7 @@
                                และ update() จะไม่แตะค่าเดิม (ดู $request->has ใน PurchaseOrderController) --}}
                           @php $usesDeduct = in_array($saleCar->approvalCase(), ['b1_md', 'b2_gm'], true); @endphp
                           @if ($userRole === 'admin' && $usesDeduct)
-                            @php $deductLabel = (int) $saleCar->brand === 2 ? 'ยอดหักค่าคอมฝ่ายขาย' : 'ค่าคอมฝ่ายขายที่ได้'; @endphp
+                            @php $deductLabel = $saleCar->approvalDeductLabel(); @endphp
                             <div class="col-12">
                               <div class="approval-card">
                                 <div class="approval-card-header">

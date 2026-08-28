@@ -53,7 +53,8 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
       'ประเภทเกินงบ',
       'ยอดเกินงบ (เต็มจำนวน)',
       'งบเพดาน (over_budget)',
-      $this->brand == 2 ? 'ยอดหักคอม (ผู้จัดการกรอก)' : 'ค่าคอมฝ่ายขายที่ได้ (ผู้จัดการกรอก)',
+      // brand 2/4 ยอดที่กรอก = "ยอดหัก" (−D) ส่วน brand 1/3 = "ค่าคอมที่ได้" (+D) — ดู Salecar::usesDeductAmount
+      in_array((int) $this->brand, [2, 4], true) ? 'ยอดหักคอม (ผู้จัดการกรอก)' : 'ค่าคอมฝ่ายขายที่ได้ (ผู้จัดการกรอก)',
       'เหตุผลขอเกินงบ',
       'สถานะอนุมัติ',
       'สถานะการจอง',
@@ -114,9 +115,10 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
       $overAmount = $balance < 0 ? abs($balance) * 2 : 0.0;
       $ceiling = (float) ($r->model?->over_budget ?? 0);
 
-      // สถานะอนุมัติ — brand 2 ใช้ GMApprovalSignature, brand 1/3 ใช้ ApprovalSignature
-      $approved = !empty($r->ApprovalSignature) || !empty($r->GMApprovalSignature);
-      $appDate  = $r->ApprovalSignatureDate ?: $r->GMApprovalSignatureDate;
+      // สถานะอนุมัติ — ใช้ลายเซ็น "ตามเคส" (เกินเพดานต้องมี GMApprovalSignature ถึงจะจบ)
+      // เดิมเช็คแบบ OR → ใบที่ผู้จัดการกรอกยอดแล้วแต่ยังรอ GM/MD จะขึ้นว่าอนุมัติแล้ว
+      $approved = $r->isApprovedNow();
+      $appDate  = $r->GMApprovalSignatureDate ?: $r->ApprovalSignatureDate;
       $status   = $approved
         ? 'อนุมัติแล้ว' . ($appDate ? ' (' . Carbon::parse($appDate)->format('d-m-Y') . ')' : '')
         : 'รออนุมัติ';

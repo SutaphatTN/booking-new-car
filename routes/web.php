@@ -71,7 +71,6 @@ Route::get('purchase-order/approval/{token}', [PurchaseOrderController::class, '
 // ดูรายละเอียด (PDF สรุปการขาย) แบบ read-only ผ่าน token — ไม่มีปุ่มอนุมัติ
 Route::get('purchase-order/approval/{token}/summary', [PurchaseOrderController::class, 'emailSummary'])->name('purchase-order.emailSummary');
 Route::post('purchase-order/approval/{token}/manager', [PurchaseOrderController::class, 'managerApprove'])->name('purchase-order.managerApprove');
-Route::post('purchase-order/approval/{token}/gm-decide', [PurchaseOrderController::class, 'gmDecide'])->name('purchase-order.gmDecide');
 Route::post('purchase-order/approval/{token}/final', [PurchaseOrderController::class, 'finalApprove'])->name('purchase-order.finalApprove');
 // ตีกลับใบจอง (ทุกขั้น) — ปลายทางตามขั้นที่กด (admin+เซลล์ / ผู้จัดการ / GM)
 Route::post('purchase-order/approval/{token}/return', [PurchaseOrderController::class, 'returnApproval'])->name('purchase-order.returnApproval');

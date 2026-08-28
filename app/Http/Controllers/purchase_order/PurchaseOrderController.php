@@ -368,11 +368,12 @@ class PurchaseOrderController extends Controller
         return $com * 1.07 - $com * $tax;
     }
 
-    // เคสอนุมัติ (brand-aware):
-    //  normal     = งบปกติ → manager
-    //  b1_manager = brand1 เกิน ≤ over_budget → manager (จบ)
-    //  b1_md      = brand1 เกิน > over_budget → manager กรอกหัก → gm อนุมัติขั้นสุดท้าย (CC ให้ md)
-    //  b2_gm      = brand2 เกินงบ → gm (เลือกหักเงินจบ / ส่งต่อ md)
+    // เคสอนุมัติ (brand-aware) — ทุกแบรนด์เริ่มที่ "ผู้จัดการ" เหมือนกันหมด:
+    //  normal     = งบปกติ → manager (จบ)
+    //  b1_manager = brand1/3 เกิน ≤ over_budget → manager (จบ)
+    //  b1_md      = brand1/3 เกิน > over_budget → manager กรอกค่าคอมที่ได้ → GM อนุมัติจบ (CC ให้ md)
+    //  b2_gm      = brand2/4 เกินงบ (ไม่มีเพดาน) → manager กรอกยอดหัก → GM อนุมัติจบ (CC ให้ md)
+    //               brand 2 เลือก "ไม่หักเงิน VIP" ได้ → ส่ง MD อนุมัติจบแทน (CC ให้ gm)
     //  brand 3 ใช้ logic เดียวกับ brand 1 (ไม่มี over_budget → เกินงบทุกกรณีจะได้ b1_md เสมอ)
     private function approvalCase(Salecar $saleCar): string
     {
@@ -391,13 +392,17 @@ class PurchaseOrderController extends Controller
         };
     }
 
-    // role ผู้อนุมัติด่านแรกของแต่ละเคส (ใช้เลือกอีเมลตอนขออนุมัติ)
+    // role ผู้อนุมัติด่านแรก — ทุกเคส/ทุกแบรนด์เริ่มที่ผู้จัดการเสมอ
+    // (เดิม b2_gm ยิงเข้า GM ตรง ๆ — ย้ายมาให้ผู้จัดการกรอกยอดก่อนแล้ว)
     private function firstApproverRole(string $case): string
     {
-        return match ($case) {
-            'b2_gm' => 'gm',        // brand 2 เกินงบ → GM (ด่านแรก)
-            default => 'manager',   // normal, b1_manager, b1_md (brand 1/3) → manager ด่านแรก
-        };
+        return 'manager';
+    }
+
+    // ป้ายชื่อผู้อนุมัติขั้นสุดท้ายของเคสเกินเพดาน — VIP (brand 2) → MD, นอกนั้น → GM
+    private function finalApproverLabel(Salecar $saleCar): string
+    {
+        return strtoupper($saleCar->finalApproverRole());
     }
 
     // หาอีเมลผู้อนุมัติตามขั้น (manager/gm/md)
@@ -455,9 +460,9 @@ class PurchaseOrderController extends Controller
         return $files;
     }
 
-    // อีเมลที่ CC เพิ่มในสายอนุมัติเกินงบขั้น gm
-    //  - brand 2 : CC ผู้บริหาร (ketsudap + danut) ตลอดสาย (ทั้งขั้น gm และส่งต่อ md)
-    //  - brand 1/3 (b1_md) : CC ให้ md (ketsudap) รับทราบ — md ไม่ต้องกดอนุมัติ
+    // อีเมลที่ CC เพิ่มในสายอนุมัติเกินงบขั้นสุดท้าย
+    //  - brand 2 : CC ผู้บริหาร (ketsudap + danut) ตลอดสาย (ทั้งขั้น gm และ VIP ที่ส่ง md)
+    //  - brand 1/3/4 : CC ให้ md รับทราบ — md ไม่ต้องกดอนุมัติ แต่เปิดลิงก์กด "ตีกลับ" ได้
     //  - กันซ้ำกับ To ที่ส่ง (เช่น danut เป็น md อยู่แล้วในเมลส่งต่อ → เหลือ CC แค่ ketsudap)
     private function overBudgetCc(Salecar $saleCar, array $to = []): array
     {
@@ -487,12 +492,13 @@ class PurchaseOrderController extends Controller
     }
 
     // อีเมลขั้นถัดไป (ผู้อนุมัติขั้นสุดท้าย) พร้อมข้อมูล+ไฟล์ทั้งสอง
-    //  - b1_md (brand 1/3) : ส่งต่อ GM (CC ให้ md รับทราบ)
-    //  - b2_gm (brand 2)   : ส่งต่อ MD (CC ให้ ketsudap)
+    //  - b1_md (brand 1/3)       : ส่งต่อ GM (CC ให้ md รับทราบ — กดตีกลับจากลิงก์เดียวกันได้)
+    //  - b2_gm ปกติ (brand 2/4)  : ส่งต่อ GM (CC ให้ md เช่นกัน)
+    //  - b2_gm VIP (brand 2)     : ส่งต่อ MD (CC ให้ gm)
     private function emailFinalApprover(Salecar $saleCar, ?float $deduct): void
     {
         $case      = $this->approvalCase($saleCar);
-        $finalRole = $case === 'b1_md' ? 'gm' : 'md';
+        $finalRole = $case === 'b2_gm' ? $saleCar->finalApproverRole() : 'gm';
 
         $mailTo = $this->approverEmails($saleCar->brand, $saleCar->branch, $finalRole);
         if (empty($mailTo)) {
@@ -504,13 +510,23 @@ class PurchaseOrderController extends Controller
         $data = $this->buildApprovalData($saleCar);
         if ($deduct !== null) {
             $data['commission_deduct'] = $deduct;
-            // เก็บงบเพิ่มเติม = ค่าที่ผู้จัดการกรอกเอง (ไม่คำนวณจากยอดที่เหลือแล้ว)
-            $data['extra_budget'] = $saleCar->approval_extra_budget !== null ? (float) $saleCar->approval_extra_budget : null;
+            // เก็บงบเพิ่มเติม = ค่าที่ผู้จัดการกรอกเอง (เฉพาะแบรนด์ที่ใช้ช่องนี้ — brand 2/4 ไม่ใช้)
+            $data['extra_budget'] = $saleCar->usesExtraBudget() && $saleCar->approval_extra_budget !== null
+                ? (float) $saleCar->approval_extra_budget
+                : null;
         }
         $files = $this->buildApprovalAttachments($saleCar);
 
         $mailCc = $this->overBudgetCc($saleCar, (array) $mailTo);
-        $mailCc = array_merge($mailCc, $this->requestCc($saleCar->brand, array_merge((array) $mailTo, $mailCc)));
+        // VIP : ผู้อนุมัติจบคือ MD → CC ให้ GM รับทราบ (เปิดลิงก์เดิมกดตีกลับได้)
+        if ($finalRole === 'md') {
+            $gm = $this->approverEmails($saleCar->brand, $saleCar->branch, 'gm') ?: ['JirapornK@Chookiat.org'];
+            $mailCc = array_merge($mailCc, array_diff($gm, (array) $mailTo, $mailCc));
+        }
+        $mailCc = array_values(array_unique(array_merge(
+            $mailCc,
+            $this->requestCc($saleCar->brand, array_merge((array) $mailTo, $mailCc))
+        )));
 
         Mail::to($mailTo)->cc($mailCc)->send(new SaleRequestMail(
             $saleCar->fresh(['model', 'saleUser', 'customer.prefix']),
@@ -574,19 +590,18 @@ class PurchaseOrderController extends Controller
                 return view('purchase-order.approval-manager', ['saleCar' => $saleCar, 'token' => $token, 'showDeduct' => false]);
 
             case 'b1_md':
-                // ผู้จัดการกรอกหัก → ส่งต่อ gm อนุมัติขั้นสุดท้าย
+            case 'b2_gm':
+                // ผู้จัดการกรอกยอด (b2_gm ของ brand 2 เลือก "ไม่หักเงิน VIP" ได้) → ส่งต่อขั้นสุดท้าย
                 if (!$saleCar->ApprovalSignature) {
                     return view('purchase-order.approval-manager', ['saleCar' => $saleCar, 'token' => $token, 'showDeduct' => true]);
                 }
-                // gm: อนุมัติ (แก้ยอดได้) หรือ ตีกลับให้ผู้จัดการ
-                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => true, 'approverLabel' => 'GM']);
-
-            case 'b2_gm':
-                // gm เลือก หักเงิน(จบ) / ส่งต่อ md
-                if (!$saleCar->ApprovalSignature) {
-                    return view('purchase-order.approval-gm', compact('saleCar', 'token'));
-                }
-                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => false, 'approverLabel' => 'MD']);
+                // ขั้นสุดท้าย (GM หรือ MD ถ้า VIP): อนุมัติ (แก้ยอดได้) หรือ ตีกลับให้ผู้จัดการ
+                return view('purchase-order.approval-confirm', [
+                    'saleCar'       => $saleCar,
+                    'token'         => $token,
+                    'allowRevise'   => true,
+                    'approverLabel' => $this->finalApproverLabel($saleCar),
+                ]);
 
             default:
                 // fallback — ขั้นสุดท้าย (md) กดยืนยัน
@@ -594,7 +609,7 @@ class PurchaseOrderController extends Controller
         }
     }
 
-    // ผู้จัดการกดอนุมัติ — normal/b1_manager: กดยืนยัน | b1_md: กรอกหัก → ส่งต่อ gm
+    // ผู้จัดการกดอนุมัติ — normal/b1_manager: กดยืนยัน | b1_md/b2_gm: กรอกยอด → ส่งต่อขั้นสุดท้าย
     public function managerApprove(Request $request, $token)
     {
         ScopeBypass::$brand = true; // ผู้อนุมัติอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
@@ -613,29 +628,46 @@ class PurchaseOrderController extends Controller
                 $saleCar->update(['ApprovalSignature' => 1, 'ApprovalSignatureDate' => $today]);
                 $this->notifyApproved($saleCar);
                 return 'อนุมัติเรียบร้อย (ผู้จัดการ – เกินงบ ไม่เกินเพดาน)';
-            } elseif ($case === 'b1_md') {
-                $request->merge([
-                    'commission_deduct' => str_replace(',', '', (string) $request->commission_deduct),
-                    'extra_budget'      => $request->filled('extra_budget') ? str_replace(',', '', (string) $request->extra_budget) : null,
-                ]);
-                $request->validate([
-                    'commission_deduct' => 'required|numeric|min:0',
-                    'extra_budget'      => 'nullable|numeric|min:0',
-                ], [
-                    'commission_deduct.required' => 'กรุณากรอกค่าคอมฝ่ายขายที่ได้',
-                ]);
-                $deduct = (float) $request->commission_deduct;
+            } elseif ($case === 'b1_md' || $case === 'b2_gm') {
+                // brand 2 เท่านั้นที่เลือก "ไม่หักเงิน VIP" ได้ → ข้ามการกรอกยอด แล้วส่งให้ MD อนุมัติจบ
+                $isVip = $saleCar->allowsVipChoice() && $request->input('decision') === 'vip';
+
+                if ($isVip) {
+                    // VIP = ไม่หักเงิน → บันทึกเป็น 0 (ไม่ใช่ null) กันไม่ให้ตกไปเข้าสูตรหักอัตโนมัติ
+                    $deduct = 0.0;
+                } else {
+                    $request->merge([
+                        'commission_deduct' => str_replace(',', '', (string) $request->commission_deduct),
+                        'extra_budget'      => $request->filled('extra_budget') ? str_replace(',', '', (string) $request->extra_budget) : null,
+                    ]);
+                    $request->validate([
+                        'commission_deduct' => 'required|numeric|min:0',
+                        'extra_budget'      => 'nullable|numeric|min:0',
+                    ], [
+                        'commission_deduct.required' => 'กรุณากรอก' . $saleCar->approvalDeductLabel(),
+                    ]);
+                    $deduct = (float) $request->commission_deduct;
+                }
+
+                // "เก็บงบเพิ่มเติม" ใช้เฉพาะ brand 1/3 (ดู TODO(brand4) ใน Salecar::usesDeductAmount)
+                $extraBudget = ($saleCar->usesExtraBudget() && !$isVip && $request->filled('extra_budget'))
+                    ? (float) $request->extra_budget
+                    : null;
 
                 $saleCar->update([
                     'approval_commission_deduct' => $deduct,
-                    'approval_extra_budget'      => $request->filled('extra_budget') ? (float) $request->extra_budget : null,
+                    'approval_extra_budget'      => $extraBudget,
+                    'approval_is_vip'            => $isVip,
                     'ApprovalSignature' => 1,
                     'ApprovalSignatureDate' => $today,
-                    'approval_md_note' => null, // เคลียร์โน้ต MD รอบก่อน (ถ้าเคยถูกตีกลับ)
+                    'approval_md_note' => null, // เคลียร์โน้ตผู้อนุมัติรอบก่อน (ถ้าเคยถูกตีกลับ)
                 ]);
 
                 $this->emailFinalApprover($saleCar, $deduct);
-                return 'ผู้จัดการอนุมัติแล้ว — ส่งต่อให้ GM อนุมัติ (ส่งอีเมลพร้อมไฟล์แนบแล้ว)';
+                $label = $this->finalApproverLabel($saleCar);
+                return $isVip
+                    ? "ผู้จัดการเลือกไม่หักเงิน (VIP) — ส่งต่อให้ {$label} อนุมัติ (ส่งอีเมลพร้อมไฟล์แนบแล้ว)"
+                    : "ผู้จัดการอนุมัติแล้ว — ส่งต่อให้ {$label} อนุมัติ (ส่งอีเมลพร้อมไฟล์แนบแล้ว)";
             }
             abort(400);
         });
@@ -643,48 +675,7 @@ class PurchaseOrderController extends Controller
         return view('purchase-order.approval-result', compact('saleCar', 'msg'));
     }
 
-    // brand 2: gm เลือก หักเงิน(จบที่ gm) หรือ ส่งต่อ md
-    public function gmDecide(Request $request, $token)
-    {
-        ScopeBypass::$brand = true; // ผู้อนุมัติอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
-
-        $saleCar = Salecar::withoutGlobalScopes()->where('approval_token', $token)->firstOrFail();
-        if ($this->approvalCase($saleCar) !== 'b2_gm') {
-            abort(400);
-        }
-        $today = now();
-
-        if ($request->input('decision') === 'deduct') {
-            $request->merge(['commission_deduct' => str_replace(',', '', (string) $request->commission_deduct)]);
-            $request->validate([
-                'commission_deduct' => 'required|numeric|min:0',
-            ], [
-                'commission_deduct.required' => 'กรุณากรอกยอดหักค่าคอมฝ่ายขาย',
-            ]);
-            $deduct = (float) $request->commission_deduct;
-
-            // หักเงิน → จบที่ gm
-            $saleCar->update([
-                'approval_commission_deduct' => $deduct,
-                'GMApprovalSignature' => 1,
-                'GMApprovalSignatureDate' => $today,
-            ]);
-            $this->notifyApproved($saleCar);
-            $msg = 'อนุมัติเรียบร้อย (GM – หักเงิน จบที่ GM)';
-        } else {
-            // ส่งต่อ md (ไม่หักเงิน)
-            $saleCar->update([
-                'ApprovalSignature' => 1,
-                'ApprovalSignatureDate' => $today,
-            ]);
-            $this->emailFinalApprover($saleCar, null);
-            $msg = 'GM ส่งต่อให้ MD อนุมัติ (ส่งอีเมลพร้อมไฟล์แนบแล้ว)';
-        }
-
-        return view('purchase-order.approval-result', compact('saleCar', 'msg'));
-    }
-
-    // ขั้นสุดท้าย (b1_md → GM | b2_gm → MD) — อนุมัติ (ใช้ยอดเดิม/กรอกใหม่) หรือ ตีกลับให้ผู้จัดการกรอกใหม่
+    // ขั้นสุดท้าย (GM — หรือ MD ถ้าผู้จัดการเลือก VIP) — อนุมัติ (ใช้ยอดเดิม/กรอกใหม่) หรือ ตีกลับให้ผู้จัดการกรอกใหม่
     public function finalApprove(Request $request, $token)
     {
         ScopeBypass::$brand = true; // ผู้อนุมัติอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
@@ -700,10 +691,11 @@ class PurchaseOrderController extends Controller
         }
 
         $case = $this->approvalCase($saleCar);
-        $canRevise = $case === 'b1_md'; // ทางเลือกแก้ยอด/ตีกลับ เฉพาะเคส b1_md (ผู้อนุมัติขั้นสุดท้าย = GM)
-        $approverLabel = $case === 'b1_md' ? 'GM' : 'MD'; // b1_md → GM, b2_gm → MD
+        // ทุกเคสเกินเพดานผ่านมือผู้จัดการมาก่อนแล้ว → ผู้อนุมัติขั้นสุดท้ายแก้ยอด/ส่งกลับได้เหมือนกันหมด
+        $canRevise = in_array($case, ['b1_md', 'b2_gm'], true);
+        $approverLabel = $this->finalApproverLabel($saleCar); // GM (ปกติ) | MD (VIP)
 
-        // ── MD ตีกลับให้ผู้จัดการกรอกยอดหักใหม่ ──
+        // ── ผู้อนุมัติขั้นสุดท้ายตีกลับให้ผู้จัดการกรอกยอดใหม่ ──
         if ($canRevise && $request->input('decision') === 'return') {
             $request->validate([
                 'md_note' => 'nullable|string|max:1000',
@@ -719,11 +711,11 @@ class PurchaseOrderController extends Controller
 
             return view('purchase-order.approval-result', [
                 'saleCar' => $saleCar,
-                'msg'     => 'ส่งกลับให้ผู้จัดการกรอกค่าคอมฝ่ายขายที่ได้ใหม่แล้ว (แจ้งอีเมลผู้จัดการเรียบร้อย)',
+                'msg'     => 'ส่งกลับให้ผู้จัดการกรอก' . $saleCar->approvalDeductLabel() . 'ใหม่แล้ว (แจ้งอีเมลผู้จัดการเรียบร้อย)',
             ]);
         }
 
-        // ── MD อนุมัติ (ถ้ากรอกยอดใหม่มา → override) ──
+        // ── ผู้อนุมัติขั้นสุดท้ายอนุมัติ (ถ้ากรอกยอดใหม่มา → override) ──
         $mdEdited = false;
         if ($canRevise && $request->filled('commission_deduct')) {
             $request->merge(['commission_deduct' => str_replace(',', '', (string) $request->commission_deduct)]);
@@ -735,8 +727,8 @@ class PurchaseOrderController extends Controller
             $saleCar->approval_commission_deduct = $newDeduct;
         }
 
-        // เก็บงบเพิ่มเติม — GM แก้ได้ก่อนอนุมัติ (เฉพาะ b1_md)
-        if ($canRevise && $request->has('extra_budget')) {
+        // เก็บงบเพิ่มเติม — ผู้อนุมัติแก้ได้ก่อนอนุมัติ (เฉพาะแบรนด์ที่ใช้ช่องนี้ = brand 1/3)
+        if ($canRevise && $saleCar->usesExtraBudget() && $request->has('extra_budget')) {
             $request->merge([
                 'extra_budget' => $request->filled('extra_budget') ? str_replace(',', '', (string) $request->extra_budget) : null,
             ]);
@@ -758,17 +750,15 @@ class PurchaseOrderController extends Controller
         return view('purchase-order.approval-result', [
             'saleCar' => $saleCar,
             'msg'     => $mdEdited
-                ? "อนุมัติเรียบร้อย ({$approverLabel} — แก้ค่าคอมฝ่ายขายที่ได้ แจ้งผู้จัดการแล้ว)"
+                ? "อนุมัติเรียบร้อย ({$approverLabel} — แก้{$saleCar->approvalDeductLabel()} แจ้งผู้จัดการแล้ว)"
                 : "อนุมัติเรียบร้อย ({$approverLabel})",
         ]);
     }
 
     /**
      * ตีกลับใบจอง (ทุกขั้น) — ใช้เมื่อผู้อนุมัติเห็นว่ายอด/ข้อมูลผิด
-     *  ปลายทางตามขั้น:
-     *   - normal / b1_manager / b1_md(ผู้จัดการ) / b1_md(GM)  → audit (config) + ฝ่ายขาย  [จบรอบ ต้องขออนุมัติใหม่]
-     *   - b2_gm(GM)  → ผู้จัดการ                               [จบรอบ ต้องขออนุมัติใหม่]
-     *   - b2_gm(MD)  → GM                                      [อยู่ในรอบเดิม ลิงก์ GM กลับมาใช้ได้]
+     *  ปลายทาง: audit (config) + ฝ่ายขาย ทุกเคส [จบรอบ ต้องขออนุมัติใหม่]
+     *  (คนละอย่างกับปุ่ม "ส่งกลับให้ผู้จัดการแก้" ใน finalApprove ที่แก้แค่ยอด แล้วอยู่ในรอบเดิม)
      *  รีเซ็ตลายเซ็นทั้งหมดเสมอ
      */
     public function returnApproval(Request $request, $token)
@@ -784,32 +774,18 @@ class PurchaseOrderController extends Controller
 
         $case = $this->approvalCase($saleCar);
 
-        // ขั้นปัจจุบัน — ดูจากลายเซ็น "ก่อน" รีเซ็ต
-        if ($case === 'b2_gm') {
-            $stage = $saleCar->ApprovalSignature ? 'md' : 'gm';
-        } elseif ($case === 'b1_md') {
-            $stage = $saleCar->ApprovalSignature ? 'gm' : 'manager';
-        } else {
-            $stage = 'manager';
-        }
+        // ขั้นปัจจุบัน — ดูจากลายเซ็น "ก่อน" รีเซ็ต (เกินเพดานทุกเคส: ผู้จัดการ → ขั้นสุดท้าย)
+        $stage = (in_array($case, ['b1_md', 'b2_gm'], true) && $saleCar->ApprovalSignature)
+            ? 'final'
+            : 'manager';
 
-        // ปลายทาง + ผู้ตีกลับ + จบรอบหรือไม่
-        if ($case === 'b2_gm' && $stage === 'md') {
-            $mailTo     = $this->approverEmails($saleCar->brand, $saleCar->branch, 'gm');
-            $returnedBy = 'MD';
-            $endRound   = false; // GM ยังอยู่ในสาย → ลิงก์เดิมกลับไปหน้า GM
-        } elseif ($case === 'b2_gm' && $stage === 'gm') {
-            $mailTo     = $this->approverEmails($saleCar->brand, $saleCar->branch, 'manager');
-            $returnedBy = 'GM';
-            $endRound   = true;
-        } else {
-            $mailTo     = $this->approverEmails($saleCar->brand, $saleCar->branch, 'audit');
-            if ($saleCar->saleUser?->email) {
-                $mailTo[] = $saleCar->saleUser->email;
-            }
-            $returnedBy = $stage === 'gm' ? 'GM' : 'ผู้จัดการ';
-            $endRound   = true;
+        // ปลายทาง: แจ้ง audit + ฝ่ายขาย ให้แก้ใบจอง แล้วจบรอบ (ต้องยื่นคำขอใหม่)
+        $mailTo = $this->approverEmails($saleCar->brand, $saleCar->branch, 'audit');
+        if ($saleCar->saleUser?->email) {
+            $mailTo[] = $saleCar->saleUser->email;
         }
+        $returnedBy = $stage === 'final' ? $this->finalApproverLabel($saleCar) : 'ผู้จัดการ';
+        $endRound   = true;
 
         // รีเซ็ตลายเซ็นทั้งหมด + บันทึกเหตุผล
         $update = [
@@ -821,6 +797,7 @@ class PurchaseOrderController extends Controller
             'GMApprovalSignatureDate' => null,
             'approval_return_note'    => $request->return_reason,
             'approval_returned_at'    => now(),
+            'approval_is_vip'         => 0,   // ตีกลับ = เริ่มรอบใหม่ ผู้จัดการเลือก VIP ใหม่ได้
         ];
 
         // จบรอบ → เคลียร์คำขอ + ล้าง token (ลิงก์เมลเดิมใช้ไม่ได้) ต้องส่งขออนุมัติใหม่
@@ -855,8 +832,9 @@ class PurchaseOrderController extends Controller
     {
         $mailTo = $this->approverEmails($saleCar->brand, $saleCar->branch, 'manager');
         if (empty($mailTo)) {
+            // fallback ต้องเป็น "ผู้จัดการ" ของแบรนด์ (เดิม brand 2 ใส่อีเมล GM ไว้ผิดขั้น)
             $mailTo = $saleCar->brand == 2
-                ? ['JirapornK@Chookiat.org']
+                ? ['SasithornK@chookiat.org']
                 : ['Phung.mitsuchookiatkrabi@gmail.com'];
         }
 
@@ -1953,6 +1931,7 @@ class PurchaseOrderController extends Controller
                     // (ExtraBudgetLedger) ถ้าค้างไว้ = หนี้จากรอบอนุมัติที่ยกเลิกแล้วยังกัดคันอื่นอยู่
                     'approval_commission_deduct' => null,
                     'approval_extra_budget'      => null,
+                    'approval_is_vip'            => 0,
                 ]);
             }
 
@@ -2516,15 +2495,14 @@ class PurchaseOrderController extends Controller
                     ], 422);
                 }
 
-                $stageRole = $this->firstApproverRole($case);   // manager | gm | md
+                // ด่านแรก = ผู้จัดการเสมอ (ทุกแบรนด์/ทุกเคส) — ดู firstApproverRole()
+                $stageRole = $this->firstApproverRole($case);
 
                 $mailTo = $this->approverEmails($saleCar->brand, $saleCar->branch, $stageRole);
                 if (empty($mailTo)) {
-                    $mailTo = $stageRole === 'gm'
-                        ? ['JirapornK@Chookiat.org']   // GM ใช้คนเดียวกันทุก brand
-                        : ($saleCar->brand == 2
-                            ? ($stageRole === 'manager' ? ['SasithornK@chookiat.org'] : ['danut@chookiat.org'])
-                            : ($stageRole === 'manager' ? ['Phung.mitsuchookiatkrabi@gmail.com'] : ['ketsudap@chookiat.org']));
+                    $mailTo = $saleCar->brand == 2
+                        ? ['SasithornK@chookiat.org']
+                        : ['Phung.mitsuchookiatkrabi@gmail.com'];
                 }
 
                 $approvalData  = $this->buildApprovalData($saleCar);
@@ -2544,11 +2522,9 @@ class PurchaseOrderController extends Controller
                 }
                 $saleCar->update($update);
 
-                $mailType = $case === 'normal' ? 'normal' : ($stageRole === 'gm' ? 'gm' : 'manager');
-                // CC เฉพาะคำขอที่วิ่งเข้า gm (b1_md → CC md | b2_gm → CC ketsudap+danut)
-                $mailCc = $stageRole === 'gm' ? $this->overBudgetCc($saleCar, (array) $mailTo) : [];
+                $mailType = $case === 'normal' ? 'normal' : 'manager';
                 // CC ประจำแบรนด์ทุกคำขออนุมัติ (brand 1/3/4 → daw)
-                $mailCc = array_merge($mailCc, $this->requestCc($saleCar->brand, array_merge((array) $mailTo, $mailCc)));
+                $mailCc = $this->requestCc($saleCar->brand, (array) $mailTo);
                 Mail::to($mailTo)->cc($mailCc)->send(new SaleRequestMail($saleCar, $mailType, $approvalData, $approvalFiles));
             }
 

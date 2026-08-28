@@ -34,14 +34,17 @@
   @php $allowRevise = $allowRevise ?? false; @endphp
   <div class="card">
     <h1>อนุมัติคำขอเกินงบ ({{ $approverLabel }})</h1>
-    <div class="sub">ส่งต่อมาขั้น {{ $approverLabel }} — อนุมัติขั้นสุดท้าย</div>
+    <div class="sub">
+      ส่งต่อมาขั้น {{ $approverLabel }} — อนุมัติขั้นสุดท้าย
+      @if ($saleCar->isVipApproval()) <br><strong style="color:#b45309;">ผู้จัดการเลือก : ไม่หักเงิน (VIP)</strong> @endif
+    </div>
 
     <div class="row"><span class="lbl">ใบจอง</span><span class="val">{{ $saleCar->order_code ?? $saleCar->id }}</span></div>
     <div class="row"><span class="lbl">รุ่นรถ</span><span class="val">{{ $saleCar->model->Name_TH ?? '-' }}</span></div>
     <div class="row"><span class="lbl">ลูกค้า</span><span class="val">{{ $saleCar->customer->FirstName ?? '' }} {{ $saleCar->customer->LastName ?? '' }}</span></div>
     <div class="row"><span class="lbl">ยอดที่เหลือ</span><span class="val" style="color: {{ ($saleCar->approval_remaining ?? 0) < 0 ? '#dc2626' : '#059669' }}">{{ number_format($saleCar->approval_remaining ?? 0, 2) }}</span></div>
-    <div class="row"><span class="lbl">{{ (int) $saleCar->brand === 2 ? 'ยอดหักค่าคอม (ผู้จัดการกรอก)' : 'ค่าคอมฝ่ายขายที่ได้ (ผู้จัดการกรอก)' }}</span><span class="val">{{ number_format($saleCar->approval_commission_deduct ?? 0, 2) }}</span></div>
-    @if ((int) $saleCar->brand !== 2)
+    <div class="row"><span class="lbl">{{ $saleCar->approvalDeductLabel() }} (ผู้จัดการกรอก)</span><span class="val">{{ number_format($saleCar->approval_commission_deduct ?? 0, 2) }}</span></div>
+    @if ($saleCar->usesExtraBudget())
       <div class="row"><span class="lbl">เก็บงบเพิ่มเติม (ผู้จัดการกรอก)</span><span class="val">{{ $saleCar->approval_extra_budget !== null ? number_format($saleCar->approval_extra_budget, 2) : '-' }}</span></div>
     @endif
 
@@ -53,15 +56,17 @@
       @csrf
 
       @if ($allowRevise)
-        <label for="commission_deduct">ค่าคอมฝ่ายขายที่ได้ (แก้ได้ก่อนอนุมัติ)</label>
+        <label for="commission_deduct">{{ $saleCar->approvalDeductLabel() }} (แก้ได้ก่อนอนุมัติ)</label>
         <input type="text" inputmode="decimal" id="commission_deduct" name="commission_deduct"
           value="{{ old('commission_deduct', $saleCar->approval_commission_deduct) }}"
           oninput="formatComma(this)">
 
-        <label for="extra_budget">เก็บงบเพิ่มเติม (บาท)</label>
-        <input type="text" inputmode="decimal" id="extra_budget" name="extra_budget"
-          value="{{ old('extra_budget', $saleCar->approval_extra_budget) }}"
-          oninput="formatComma(this)">
+        @if ($saleCar->usesExtraBudget())
+          <label for="extra_budget">เก็บงบเพิ่มเติม (บาท)</label>
+          <input type="text" inputmode="decimal" id="extra_budget" name="extra_budget"
+            value="{{ old('extra_budget', $saleCar->approval_extra_budget) }}"
+            oninput="formatComma(this)">
+        @endif
 
         <label for="md_note">เหตุผล/โน้ตถึงผู้จัดการ (ไม่บังคับ)</label>
         <textarea id="md_note" name="md_note" placeholder="เช่น ยอดหักน้อยไป ขอให้ทบทวน...">{{ old('md_note') }}</textarea>
@@ -76,9 +81,8 @@
       @endif
     </form>
 
-    {{-- ตีกลับ (ลายเซ็นทั้งหมดจะถูกรีเซ็ต)
-         b1_md ขั้น GM  → แจ้งแอดมิน + ฝ่ายขาย ให้แก้ใบจอง (คนละอย่างกับ "ส่งกลับให้ผู้จัดการแก้" ด้านบนที่แก้แค่ยอดหัก)
-         b2_gm ขั้น MD → ส่งกลับให้ GM ทบทวน --}}
+    {{-- ตีกลับ (ลายเซ็นทั้งหมดจะถูกรีเซ็ต) → แจ้ง audit + ฝ่ายขาย ให้แก้ใบจอง แล้วต้องยื่นคำขอใหม่
+         (คนละอย่างกับ "ส่งกลับให้ผู้จัดการแก้" ด้านบน ที่แก้แค่ยอดแล้วอยู่ในรอบเดิม) --}}
     <hr style="margin:22px 0 14px;border:none;border-top:1px solid #e5e7eb;">
     <form method="POST" action="{{ route('purchase-order.returnApproval', $token) }}">
       @csrf
