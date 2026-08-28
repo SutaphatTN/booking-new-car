@@ -39,6 +39,7 @@ class CustomerTracking extends Model
         'userZone',
         'brand',
         'branch',
+        'sale_team_id',
         'UserInsert',
         'UserUpdate',
         'UserDelete',
@@ -67,6 +68,32 @@ class CustomerTracking extends Model
         return $this->belongsTo(Customer::class, 'customer_id')->withTrashed();
     }
 
+    /**
+     * snapshot ทีมขาย — เขียน sale_team_id จาก "ทีมของผู้ขาย ณ ตอนนั้น" ทุกครั้งที่ sale_id เปลี่ยน
+     *
+     * ต้องเป็น snapshot ไม่ใช่ join สดตอนทำรายงาน เพราะถ้าเซลล์ย้ายทีม ยอดย้อนหลังของทีมเดิม
+     * จะไหลตามไปทีมใหม่ทั้งก้อน (BI ที่เทียบรายปีจะเพี้ยน)
+     *
+     * วางไว้ที่ model แทนการไล่แก้ทุก controller — ครอบทั้งตอนสร้าง ตอนย้ายผู้ขาย
+     * และ write path ที่จะเพิ่มในอนาคตด้วย
+     */
+    protected static function booted()
+    {
+        static::saving(function ($model) {
+            if (!$model->isDirty('sale_id')) {
+                return;
+            }
+
+            $model->sale_team_id = $model->sale_id
+                ? User::withoutGlobalScopes()->whereKey($model->sale_id)->value('sale_team_id')
+                : null;
+        });
+    }
+
+    public function saleTeam()
+    {
+        return $this->belongsTo(SaleTeam::class, 'sale_team_id', 'id');
+    }
     public function sale()
     {
         return $this->belongsTo(User::class, 'sale_id');

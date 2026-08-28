@@ -84,6 +84,17 @@
                 </div>
 
                 <div class="row mb-3">
+                    <label for="sale_team_id"
+                        class="col-md-4 col-form-label text-md-end">{{ __('ทีมขาย') }}</label>
+
+                    <div class="col-md-6">
+                        <input id="sale_team_id" type="text"
+                            class="form-control readonly-field bg-light"
+                            name="sale_team_id" value="{{ $user->saleTeam->name ?? '— ไม่สังกัดทีม —' }}">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
                     <label for="userZone"
                         class="col-md-4 col-form-label text-md-end">{{ __('Zone') }}</label>
 

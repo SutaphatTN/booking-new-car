@@ -15,19 +15,26 @@ trait UserAccessScope
       $user = Auth::user();
       $table = $query->getModel()->getTable();
 
-      // ── กรณีพิเศษ: manager/audit ของ Lepas(brand 4) สลับไปดู Wuling(brand 3) ──
-      // ให้เห็นเฉพาะรายการที่ "เซลล์ผู้ทำ" เป็นคน brand 4 (ทีม Lepas ที่ไปขาย Wuling)
-      // — ไม่ปนลูกค้าของ manager Wuling. ใช้กับ salecars (SaleID) + customer_trackings (sale_id)
+      // ── ทีมที่ตั้งค่าเป็น isolated: manager/audit เห็นเฉพาะงานของเซลล์ในทีมตัวเอง ──
+      // ใช้ตอนไปทำงานใต้ "แบรนด์ที่ใช้ร่วมกับทีมอื่น" (เช่นทีม Lepas สลับไปขาย Wuling
+      // ที่ทีม Mitsu ก็ขายอยู่) — จะได้ไม่ปนลูกค้าของอีกทีม
+      //
+      // เงื่อนไข brand ที่ทำงานอยู่ ≠ home brand สำคัญ ห้ามตัดทิ้ง:
+      // ตอนดูแบรนด์บ้านตัวเองต้องเห็นครบ รวมใบที่เซลล์ทีมอื่นเป็นคนขายให้ด้วย
+      //
+      // ใช้กับ salecars (SaleID) + customer_trackings (sale_id)
+      $teamId = $user->sale_team_id ?? null;
       if (
-        in_array($user->role, ['manager', 'audit'], true)
-        && (int) $user->getOriginal('brand') === 4
-        && (int) $user->brand === 3
+        $teamId
+        && in_array($user->role, ['manager', 'audit'], true)
+        && (int) $user->getOriginal('brand') !== (int) $user->brand
+        && optional($user->saleTeam)->isIsolated()
       ) {
         $saleCol = ['salecars' => 'SaleID', 'customer_trackings' => 'sale_id'][$table] ?? null;
         if ($saleCol) {
-          $query->whereIn("{$table}.{$saleCol}", function ($q) {
+          $query->whereIn("{$table}.{$saleCol}", function ($q) use ($teamId) {
             $q->select('id')->from('users')
-              ->where('brand', 4)
+              ->where('sale_team_id', $teamId)
               ->whereIn('role', ['sale', 'lead_sale']);
           });
         }

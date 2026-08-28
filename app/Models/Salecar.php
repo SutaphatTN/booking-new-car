@@ -275,6 +275,7 @@ class Salecar extends Model
 		'approval_files',
 		'userZone',
 		'brand',
+		'sale_team_id',
 		'UserInsert',
 		'UserUpdate',
 		'UserDelete',
@@ -289,6 +290,32 @@ class Salecar extends Model
 
 	protected $dates = ['deleted_at'];
 
+	/**
+	 * snapshot ทีมขาย — เขียน sale_team_id จาก "ทีมของผู้ขาย ณ ตอนนั้น" ทุกครั้งที่ SaleID เปลี่ยน
+	 *
+	 * ต้องเป็น snapshot ไม่ใช่ join สดตอนทำรายงาน เพราะถ้าเซลล์ย้ายทีม ยอดย้อนหลังของทีมเดิม
+	 * จะไหลตามไปทีมใหม่ทั้งก้อน (BI ที่เทียบรายปีจะเพี้ยน)
+	 *
+	 * วางไว้ที่ model แทนการไล่แก้ทุก controller — ครอบทั้งตอนสร้าง ตอนย้ายผู้ขาย
+	 * และ write path ที่จะเพิ่มในอนาคตด้วย
+	 */
+	protected static function booted()
+	{
+		static::saving(function ($model) {
+			if (!$model->isDirty('SaleID')) {
+				return;
+			}
+
+			$model->sale_team_id = $model->SaleID
+				? User::withoutGlobalScopes()->whereKey($model->SaleID)->value('sale_team_id')
+				: null;
+		});
+	}
+
+	public function saleTeam()
+	{
+		return $this->belongsTo(SaleTeam::class, 'sale_team_id', 'id');
+	}
 	public function turnCar()
 	{
 		return $this->belongsTo(TurnCar::class, 'TurnCarID', 'id');

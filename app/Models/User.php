@@ -69,7 +69,8 @@ class User extends Authenticatable
 		'current_team_id',
 		'profile_photo_path',
 		'phone',
-		'userZone'
+		'userZone',
+		'sale_team_id'
 	];
 
 	protected $dates = ['deleted_at'];
@@ -115,6 +116,15 @@ class User extends Authenticatable
 	public function brandInfo()
 	{
 		return $this->belongsTo(TbBrand::class, 'brand', 'id');
+	}
+
+	/**
+	 * ทีมขายที่สังกัด — "หน่วยทำยอด" แยกจาก brand/branch
+	 * (คนละตัวกับ current_team_id ของ Jetstream ที่ระบบไม่ได้ใช้)
+	 */
+	public function saleTeam()
+	{
+		return $this->belongsTo(SaleTeam::class, 'sale_team_id', 'id');
 	}
 
 	public function getUserZoneNameAttribute()

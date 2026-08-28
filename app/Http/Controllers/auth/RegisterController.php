@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\SaleTeam;
 use App\Models\TbBranch;
 use App\Models\TbBrand;
 use App\Models\User;
@@ -42,6 +43,9 @@ class RegisterController extends Controller
                 'password' => Hash::make($request->password),
                 'password_plain' => $request->password,
                 'userZone' => $request->userZone,
+                // ทีมขาย: ตั้งอัตโนมัติจาก brand (sale_teams.default_for_brand)
+                // หน้าสมัครไม่มีช่องให้เลือก — ย้ายทีมทีหลังได้ที่หน้าแก้ไขผู้ใช้ (admin เท่านั้น)
+                'sale_team_id' => SaleTeam::defaultIdForBrand($request->brand),
             ]);
 
             return response()->json([
