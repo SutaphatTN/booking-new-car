@@ -86,6 +86,10 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
 
     $cols[] = ['label' => 'รวมค่าคอมรับ', 'key' => '__recv', 'role' => 'sum_recv', 'money' => true];
 
+    // ยอดติดลบจากการขายเกินงบ (สูตรอัตโนมัติ + ยอดหักที่ GM อนุมัติ) — เก็บเป็นค่าบวก แล้วรวมเข้า "รวมยอดหัก"
+    // ฝั่ง recv จึงเหลือแต่ยอดบวกล้วน ๆ ; คอมสุทธิ (รับ − หัก) ได้เท่าเดิมทุกบาท
+    $cols[] = ['label' => 'หักเกินงบ', 'key' => 'overBudgetDeduct', 'role' => 'ded', 'money' => true];
+
     $cols[] = ['label' => 'หักอื่นๆ (หักเงินเดือน/ สาย)', 'key' => 'deductAbsence', 'role' => 'ded', 'money' => true];
 
     $cols[] = ['label' => 'รวมยอดหัก', 'key' => '__ded', 'role' => 'sum_ded', 'money' => true];
@@ -184,6 +188,10 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
           : (float) ($entry['rate'] ?? 0);
       }
 
+      // แยกยอดบวก/ยอดลบ : ช่องรับโชว์เฉพาะบวก ยอดติดลบไปรวมที่ "หักเกินงบ" (ค่าบวก)
+      $autoBal  = $r->autoBalanceCommission();
+      $approved = $r->approvedCommission();
+
       $row = [
         'branch'   => optional($r->saleUser?->branchInfo)->name ?? '-',
         'saleName' => optional($r->saleUser)->name ?? '-',
@@ -197,9 +205,10 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
         'subModel' => $detailModel ? "{$detailModel} - {$sub}" : $sub,
 
         'carCommission'   => $carCommission,
-        'balanceCampaign' => $r->autoBalanceCommission(),   // สูตรอัตโนมัติล้วน ๆ
+        'balanceCampaign' => max($autoBal, 0.0),            // สูตรอัตโนมัติ (เฉพาะยอดบวก)
         'extraDeduct'     => ExtraBudgetLedger::absorbedFor($r) ?: null,
-        'approvedCom'     => $r->approvedCommission(),      // ยอดผู้จัดการ/GM (เกินเพดาน)
+        'approvedCom'     => max($approved, 0.0),           // ยอดผู้จัดการ/GM (เกินเพดาน) เฉพาะยอดบวก
+        'overBudgetDeduct' => -(min($autoBal, 0.0) + min($approved, 0.0)),
         'accessoryCom'    => $r->effectiveAccessoryCommission(),
         'specialCom'      => $r->effectiveSpecialCommission(),
         'interestCom'     => $r->remainingPayment->total_com ?? 0,

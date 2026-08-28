@@ -88,6 +88,10 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
 
         $cols[] = ['label' => 'รวมค่าคอมรับ', 'key' => '__recv', 'role' => 'sum_recv', 'money' => true];
 
+        // ยอดติดลบจากการขายเกินงบ (สูตรอัตโนมัติ + ยอดหักที่ GM อนุมัติ) — เก็บเป็นค่าบวก แล้วรวมเข้า "รวมยอดหัก"
+        // ฝั่ง recv จึงเหลือแต่ยอดบวกล้วน ๆ ; คอมสุทธิ (รับ − หัก) ได้เท่าเดิมทุกบาท
+        $cols[] = ['label' => 'หักเกินงบ', 'key' => 'overBudgetDeduct', 'role' => 'ded', 'money' => true];
+
         $cols[] = ['label' => 'หักอื่นๆ (หักเงินเดือน/ สาย)', 'key' => 'deductAbsence', 'role' => 'ded', 'money' => true];
 
         $cols[] = ['label' => 'รวมยอดหัก', 'key' => '__ded', 'role' => 'sum_ded', 'money' => true];
@@ -160,6 +164,13 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
             $saleUser = $rows->first()->saleUser;
             $adj = $adjust->get($saleId);
 
+            // แยกยอดบวก/ยอดลบ "รายคัน" ก่อนแล้วค่อยรวม — ถ้ารวมก่อนค่อยแยก คันบวกกับคันลบจะหักล้างกัน
+            $autoBal  = $rows->map(fn($r) => $r->autoBalanceCommission());
+            $approved = $rows->map(fn($r) => $r->approvedCommission());
+            $overBudgetDeduct = -(
+                $autoBal->sum(fn($v) => min($v, 0.0)) + $approved->sum(fn($v) => min($v, 0.0))
+            );
+
             // ยอดสุทธิ = ยอดที่ได้ทั้งเดือน (คอมกั๊กเป็นเรื่องเวลาจ่าย ดูละเอียดในชีท "คอมกั๊ก (รายคัน)")
             $row = [
                 'branch'    => $saleUser->branchInfo->name ?? '-',
@@ -169,9 +180,10 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
                 'testDrive' => $rows->where('carOrder.purchase_type', 1)->count(),
 
                 'carCommission'   => (float) (CarCommissionQuery::entry($carCom, (int) $saleId, $brand)['amount'] ?? 0),
-                'balanceCampaign' => $rows->sum(fn($r) => $r->autoBalanceCommission()),   // สูตรอัตโนมัติล้วน ๆ
+                'balanceCampaign' => $autoBal->sum(fn($v) => max($v, 0.0)),   // สูตรอัตโนมัติ (เฉพาะยอดบวก)
                 'extraDeduct'     => $rows->sum(fn($r) => ExtraBudgetLedger::absorbedFor($r)) ?: null,
-                'approvedCom'     => $rows->sum(fn($r) => $r->approvedCommission()),      // ยอดผู้จัดการ/GM (เกินเพดาน)
+                'approvedCom'     => $approved->sum(fn($v) => max($v, 0.0)),  // ยอดผู้จัดการ/GM (เกินเพดาน) เฉพาะยอดบวก
+                'overBudgetDeduct' => $overBudgetDeduct,
                 'accessoryCom'    => $rows->sum(fn($r) => $r->effectiveAccessoryCommission()),
                 'specialCom'      => $rows->sum(fn($r) => $r->effectiveSpecialCommission()),
                 'interestCom'     => $rows->sum(fn($r) => $r->remainingPayment->total_com ?? 0),

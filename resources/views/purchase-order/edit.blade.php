@@ -2421,6 +2421,20 @@
                                   </div>
                                 </div>
 
+                                {{-- ยอดหักเกินงบ (สูตรอัตโนมัติ balance × 2 × per_budget%) — แยกออกจาก "คอมงบเหลือ"
+                                     ที่บังคับโชว์ 0 เมื่อเกินงบ ; โชว์เฉพาะตอนมียอดติดลบจริง (JS toggle)
+                                     เคสเกินเพดานที่ยังไม่ได้ยอด GM = ยอดชั่วคราว → มีหมายเหตุ "รอยอดอนุมัติ" --}}
+                                <div class="com-stat-cell com-overbudget-cell com-cell-hidden" id="overBudgetDeductCell"
+                                  title="ยอดหักจากการขายเกินงบ (คำนวณอัตโนมัติจาก per_budget% ของรุ่น)">
+                                  <span class="com-lbl">หักเกินงบ</span>
+                                  <input type="text" class="com-readonly-val money-input" id="OverBudgetDeductDisplay"
+                                    readonly>
+                                  <div id="overBudgetPendingNote" style="font-size:.7rem; margin-top:2px; display:none;"
+                                    title="ยอดชั่วคราวจากสูตร — เมื่อผู้จัดการ/GM กรอกยอดอนุมัติแล้วจะย้ายไปช่องถัดไป">
+                                    รอยอดอนุมัติ
+                                  </div>
+                                </div>
+
                                 {{-- ค่าคอมที่ผู้จัดการ/GM กรอกตอนอนุมัติเกินเพดาน — โชว์เฉพาะเคสที่ใช้ยอดนี้ (JS toggle)
                                      brand 2/4 = ยอดหัก (ติดลบ) ; brand อื่น = ค่าคอมที่ได้ --}}
                                 @php $approvedComLabel = in_array((int) $saleCar->brand, [2, 4], true) ? 'ยอดหักค่าคอม' : 'คอมที่ได้'; @endphp
