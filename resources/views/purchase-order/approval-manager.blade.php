@@ -13,6 +13,7 @@
     .row .lbl { color: #475569; }
     .row .val { font-weight: 600; color: #0f172a; }
     label { display: block; font-size: .88rem; color: #334155; margin: 18px 0 6px; font-weight: 600; }
+    label.choice { display: block; margin: 14px 0 4px; font-size: .95rem; color: #334155; font-weight: 500; cursor: pointer; }
     input[type=number], input[type=text] { width: 100%; padding: 13px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1.2rem; font-weight: 600; text-align: right; box-sizing: border-box; }
     input:focus { outline: none; border-color: #6c5ffc; box-shadow: 0 0 0 3px rgba(108,95,252,.15); }
     .extra { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 10px 14px; margin-top: 14px; display: flex; justify-content: space-between; }
@@ -27,10 +28,18 @@
   </style>
 </head>
 <body>
+  @php
+    // ป้ายชื่อ/ช่องกรอก ต่างกันตามแบรนด์ (ดู Salecar::usesDeductAmount + TODO(brand4))
+    $deductLabel   = $saleCar->approvalDeductLabel();            // brand 2/4 = ยอดหัก | brand 1/3 = ค่าคอมที่ได้
+    $showVip       = $showDeduct && $saleCar->allowsVipChoice(); // เฉพาะ brand 2
+    $showExtra     = $showDeduct && $saleCar->usesExtraBudget(); // เฉพาะ brand 1/3
+    $finalLabel    = strtoupper($saleCar->finalApproverRole());
+    $decisionValue = old('decision', $saleCar->approval_is_vip ? 'vip' : 'deduct');
+  @endphp
   <div class="card">
     <h1>อนุมัติคำขอสั่งจอง</h1>
     <div class="sub">
-      @if ($showDeduct) ผู้จัดการ — กรอกค่าคอมฝ่ายขายที่ได้ ก่อนส่งต่อ GM @else ผู้จัดการ — ยืนยันการอนุมัติ @endif
+      @if ($showDeduct) ผู้จัดการ — กรอก{{ $deductLabel }} ก่อนส่งต่อผู้อนุมัติขั้นสุดท้าย @else ผู้จัดการ — ยืนยันการอนุมัติ @endif
     </div>
 
     <div class="row"><span class="lbl">ใบจอง</span><span class="val">{{ $saleCar->order_code ?? $saleCar->id }}</span></div>
@@ -40,8 +49,8 @@
 
     @if ($showDeduct && !empty($saleCar->approval_md_note))
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-top:14px;font-size:.9rem;color:#92400e;">
-        🔁 <strong>GM ตีกลับ</strong> — ขอให้ทบทวนค่าคอมฝ่ายขายที่ได้<br>
-        <span style="color:#78350f;">โน้ตจาก GM : {{ $saleCar->approval_md_note }}</span>
+        🔁 <strong>ผู้อนุมัติตีกลับ</strong> — ขอให้ทบทวน{{ $deductLabel }}<br>
+        <span style="color:#78350f;">โน้ตจากผู้อนุมัติ : {{ $saleCar->approval_md_note }}</span>
       </div>
     @endif
 
@@ -52,17 +61,33 @@
     <form method="POST" action="{{ route('purchase-order.managerApprove', $token) }}">
       @csrf
       @if ($showDeduct)
-        <label for="commission_deduct">ค่าคอมฝ่ายขายที่ได้ (บาท)</label>
-        <input type="text" inputmode="decimal" id="commission_deduct" name="commission_deduct"
-          value="{{ old('commission_deduct', $saleCar->approval_commission_deduct) }}" required
-          oninput="formatComma(this)">
+        @if ($showVip)
+          {{-- brand 2 : เลือกหักเงิน (ส่งต่อ GM) หรือ ไม่หักเงิน VIP (ส่งต่อ MD สำเนาถึง GM) --}}
+          <label class="choice">
+            <input type="radio" name="decision" value="deduct" {{ $decisionValue === 'deduct' ? 'checked' : '' }} onchange="toggleVip()">
+            หักเงิน — กรอก{{ $deductLabel }} (ส่งต่อ GM)
+          </label>
+          <label class="choice">
+            <input type="radio" name="decision" value="vip" {{ $decisionValue === 'vip' ? 'checked' : '' }} onchange="toggleVip()">
+            ไม่หักเงิน VIP — ส่งต่อ MD (สำเนาถึง GM)
+          </label>
+        @endif
 
-        <label for="extra_budget">เก็บงบเพิ่มเติม (บาท)</label>
-        <input type="text" inputmode="decimal" id="extra_budget" name="extra_budget"
-          value="{{ old('extra_budget', $saleCar->approval_extra_budget) }}"
-          oninput="formatComma(this)">
+        <div id="deductBox">
+          <label for="commission_deduct">{{ $deductLabel }} (บาท)</label>
+          <input type="text" inputmode="decimal" id="commission_deduct" name="commission_deduct"
+            value="{{ old('commission_deduct', $saleCar->approval_commission_deduct) }}" required
+            oninput="formatComma(this)">
 
-        <button type="submit">อนุมัติ และส่งต่อ GM</button>
+          @if ($showExtra)
+            <label for="extra_budget">เก็บงบเพิ่มเติม (บาท)</label>
+            <input type="text" inputmode="decimal" id="extra_budget" name="extra_budget"
+              value="{{ old('extra_budget', $saleCar->approval_extra_budget) }}"
+              oninput="formatComma(this)">
+          @endif
+        </div>
+
+        <button type="submit" id="btnSubmit">อนุมัติ และส่งต่อ {{ $decisionValue === 'vip' ? 'MD' : $finalLabel }}</button>
       @else
         <button type="submit">ยืนยันอนุมัติ</button>
       @endif
@@ -103,6 +128,19 @@
         el.value = dec !== undefined ? intp + '.' + dec.slice(0, 2) : intp;
       }
       document.querySelectorAll('input[inputmode=decimal]').forEach(formatComma);
+    </script>
+  @endif
+
+  @if ($showVip)
+    <script>
+      // VIP = ไม่หักเงิน → ซ่อนช่องยอด (ระบบบันทึกเป็น 0 ให้เอง) แล้วส่งต่อ MD
+      function toggleVip() {
+        const isVip = document.querySelector('input[name=decision]:checked').value === 'vip';
+        document.getElementById('deductBox').style.display = isVip ? 'none' : 'block';
+        document.getElementById('commission_deduct').required = !isVip;
+        document.getElementById('btnSubmit').textContent = isVip ? 'อนุมัติ และส่งต่อ MD (VIP)' : 'อนุมัติ และส่งต่อ GM';
+      }
+      toggleVip();
     </script>
   @endif
 </body>
