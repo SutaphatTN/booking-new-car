@@ -816,7 +816,7 @@ function calculateTotal() {
   let actually_received = parseNumber($('#actually_received').val() || 0);
 
   // console.log('comFin', comFin);
-  let total = excellent - advance + comFin + comExtra + comKickback + comSubsidy - specialMoney;
+  let total = excellent - advance + comFin + comExtra + comKickback - comSubsidy + specialMoney;
   let diff = total - actually_received;
 
   $('#total').val(formatMoney(total));
@@ -833,7 +833,7 @@ function calculateActuallyReceived() {
   let comSubsidy = parseNumber($('#com_subsidy_accept').val() || 0);
   let specialMoney = parseNumber($('#special_money_accept').val() || 0);
 
-  let received = excellent - advance + comFin + comExtra + comKickback + comSubsidy - specialMoney;
+  let received = excellent - advance + comFin + comExtra + comKickback - comSubsidy + specialMoney;
   $('#actually_received').val(formatMoney(received));
 }
 
@@ -851,7 +851,7 @@ function calculateAllDiff() {
   calculateActuallyReceived();
 
   // ยอด diff รวมด้านล่าง = ยอดรวมทั้งหมด - รับจริง ให้สอดคล้องกับแถว "รวมเงินทั้งหมด" (สูตรเดียวกับ calculateTotal)
-  // ไม่ใช้ผลรวม diff รายแถว เพราะ total คิดเครื่องหมาย (- ค่างวดล่วงหน้า, - เงินพิเศษ) และ "รับจริง" กรอกเอง
+  // ไม่ใช้ผลรวม diff รายแถว เพราะ total คิดเครื่องหมาย (- ค่างวดล่วงหน้า, - Com Subsidy) และ "รับจริง" กรอกเอง
   calculateTotal();
 }
 

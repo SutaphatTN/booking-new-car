@@ -321,7 +321,7 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
 
       // Total Revenue
       // $total_rev = $totalSaleMake + $ws + $ri + $acc_extra + $campaign + $campaign_top + $campaign_other + $campaign_ck + $com_fin + $com_extra + $com_kick +  $com_subsidy;
-      $total_rev = $totalSaleMake + $ws + $ri + $acc_extra + $campaign_top + $com_company + $com_extra + $com_kick +  $com_subsidy + $com_bo;
+      $total_rev = $totalSaleMake + $ws + $ri + $acc_extra + $campaign_top + $com_company + $com_extra + $com_kick -  $com_subsidy + $com_bo;
 
       $down_payDis = $r->DownPaymentDiscount ?? 0;
       $accGiftVat = $r->AccessoryGiftVat ?? 0;
