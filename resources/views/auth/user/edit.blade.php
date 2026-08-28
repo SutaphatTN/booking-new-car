@@ -157,6 +157,26 @@
                         </div>
                     </div>
 
+                    {{-- ทีมขาย — "หน่วยทำยอด" แยกจาก brand (สินค้าที่ขาย) และสาขา (ที่ตั้งจริง)
+                         ทีมที่ตั้งเป็น isolated จะทำให้ manager/audit ของทีมนั้นเห็นเฉพาะงานของทีมตัวเอง
+                         ตอนไปทำงานใต้แบรนด์ที่ใช้ร่วมกับทีมอื่น --}}
+                    <div class="row mb-3">
+                        <label for="sale_team_id"
+                            class="col-md-4 col-form-label text-md-end">{{ __('ทีมขาย') }}</label>
+
+                        <div class="col-md-6">
+                            <select id="sale_team_id" class="form-control" name="sale_team_id">
+                                <option value="">— ไม่สังกัดทีม —</option>
+                                @foreach ($teams as $team)
+                                <option value="{{ $team->id }}"
+                                    {{ (int) $user->sale_team_id === (int) $team->id ? 'selected' : '' }}>
+                                    {{ $team->name }}{{ $team->isIsolated() ? ' (เห็นเฉพาะทีมตัวเอง)' : '' }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="row mb-3">
                         <label for="userZone"
                             class="col-md-4 col-form-label text-md-end">{{ __('Zone') }}</label>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\SaleTeam;
 use App\Models\TbBranch;
 use App\Models\TbBrand;
 use App\Models\User;
@@ -53,8 +54,9 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $branch = TbBranch::all();
         $brand = TbBrand::all();
+        $teams = SaleTeam::selectable();
 
-        return view('auth.user.edit', compact('user', 'branch', 'brand'));
+        return view('auth.user.edit', compact('user', 'branch', 'brand', 'teams'));
     }
 
     public function update(Request $request, $id)
@@ -65,6 +67,13 @@ class UserController extends Controller
             $data = $request->except(['_token', '_method']);
 
             $data['phone'] = preg_replace('/\D/', '', $request->phone);
+
+            // ทีมขาย — เว้นว่าง = ไม่สังกัดทีม (เก็บเป็น NULL ไม่ใช่ 0)
+            if ($request->has('sale_team_id')) {
+                $data['sale_team_id'] = $request->filled('sale_team_id')
+                    ? (int) $request->sale_team_id
+                    : null;
+            }
 
             if ($request->filled('password')) {
                 $data['password_plain'] = $request->password;
