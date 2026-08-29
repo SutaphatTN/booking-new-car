@@ -25,4 +25,17 @@ class BrandFeature
 
         return in_array($brand, array_map('intval', (array) config('brand.interior_color_brands', [])), true);
     }
+
+    /**
+     * brand นี้มีหลายสาขาจริงไหม
+     *
+     * ใช้คุมรายงานที่ต้องดึงข้อมูลทั้ง brand ข้ามสาขา แล้วเพิ่มคอลัมน์ "สาขา"
+     * ไม่ส่ง $brand = ใช้ brand ของ user ที่ล็อกอินอยู่ (effective brand)
+     */
+    public static function hasMultipleBranches($brand = null): bool
+    {
+        $brand = (int) ($brand ?? (Auth::user()->brand ?? 0));
+
+        return in_array($brand, array_map('intval', (array) config('brand.multi_branch_brands', [])), true);
+    }
 }

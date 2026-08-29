@@ -8,6 +8,7 @@
 @section('content')
 <div class="viewMoreCarOrder"></div>
 <div class="editCarOrderModal"></div>
+@include('car-order.report.order-date-modal')
 <div class="row">
   <div class="col-12">
     <div class="card tbl-card">
@@ -28,9 +29,14 @@
         {{-- ── Action bar : ปุ่มรายงาน (ซ้าย) | ฟิลเตอร์รุ่นหลัก-ย่อย (ขวา) ── --}}
         <div class="po-filter-bar d-flex align-items-center justify-content-between gap-3 flex-wrap">
 
-          <button type="button" class="btn btn-success btn-sm btnCarOrderReport">
-            <i class="bx bx-download me-1"></i> รายงานข้อมูลรถ
-          </button>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button type="button" class="btn btn-success btn-sm btnCarOrderReport">
+              <i class="bx bx-download me-1"></i> รายงานข้อมูลรถ
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target=".carOrderByDateModal">
+              <i class="bx bx-calendar me-1"></i> รายงานการสั่งรถ
+            </button>
+          </div>
 
           <div class="d-flex align-items-center gap-3 flex-wrap">
             <div class="d-flex align-items-center gap-2">
