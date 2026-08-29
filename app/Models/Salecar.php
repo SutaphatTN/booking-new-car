@@ -95,6 +95,7 @@ class Salecar extends Model
 		'withdraw_attachment_url' => 'array',
 		'approval_files' => 'array',
 		'approval_is_vip' => 'bool',
+		'approval_is_deduct' => 'bool',
 		'is_pre_approval' => 'bool',
 		'pre_approval_at' => 'datetime',
 		'pre_approval_booked_at' => 'datetime',
@@ -269,6 +270,7 @@ class Salecar extends Model
 		'approval_commission_deduct',
 		'approval_extra_budget',
 		'approval_is_vip',
+		'approval_is_deduct',
 		'approval_md_note',
 		'approval_return_note',
 		'approval_returned_at',
@@ -602,30 +604,52 @@ class Salecar extends Model
 			&& in_array($this->approvalCase(), ['b1_md', 'b2_gm'], true);
 	}
 
+	/** % ที่ใช้คิด "ยอดหักแนะนำ" ของเคสเกินเพดาน — เกินงบยอดเต็ม × % นี้ (แก้ตัวเลขที่เดียวจบ) */
+	public const OVER_BUDGET_DEDUCT_PERCENT = 10;
+	
+	/**
+	 * ยอดหักแนะนำที่ระบบเติมให้ในหน้ากรอกของผู้จัดการ = |เกินงบยอดเต็ม| × 10%
+	 * "เกินงบยอดเต็ม" = balanceCampaign × 2 (คอลัมน์เก็บค่าที่หาร 2 ไว้แล้ว) — ตัวเดียวกับบรรทัด
+	 * "เกินงบ" ในไฟล์สรุปการขาย ; ผู้จัดการแก้ยอดเองได้ถ้าจะหักมากกว่านี้
+	 */
+	public function suggestedCommissionDeduct(): float
+	{
+		$balance = (float) ($this->balanceCampaign ?? 0);
+		if ($balance >= 0) {
+			return 0.0;
+		}
+		return abs($balance * 2) * (self::OVER_BUDGET_DEDUCT_PERCENT / 100);
+	}
+	
 	/**
 	 * ยอด D ที่ผู้จัดการกรอก มีความหมายเป็น "ยอดหัก" (−D) หรือ "ค่าคอมที่ได้" (+D)
-	 *  · brand 2, 4 → −D (หักเงิน)
-	 *  · brand 1, 3 → +D ("ให้ค่าคอมฝ่ายขายเท่านี้แทน")
 	 *
-	 * TODO(brand4): รอสรุปจาก GM — ถ้าตกลงให้ brand 4 เหมือน brand 1 "ทุกอย่าง" (ตัวเลขเป็นค่าคอมที่ได้ +D
-	 *   และมีช่องเก็บงบเพิ่มเติม) ให้เอาเลข 4 ออกจาก array นี้ + usesExtraBudget() ด้านล่าง
-	 *   ผลข้างเคียง: ใบเก่าของ brand 4 ที่บันทึกไว้เป็น "ยอดหัก" จะกลับเครื่องหมาย ต้องแก้ข้อมูลตามด้วย
+	 * กติกาใหม่ (ทุก brand) : กรอกเป็น "ยอดที่ต้องหัก" เสมอ → ใบที่บันทึกใหม่ตั้งธง approval_is_deduct = 1
+	 * ใบเก่าก่อนเปลี่ยนกติกา : brand 2/4 เก็บเป็นยอดหักอยู่แล้ว ส่วน brand 1/3 เก็บเป็น "ค่าคอมที่ได้" (+D)
+	 * จึงต้องคงความหมายเดิมไว้ ห้ามกลับเครื่องหมายย้อนหลัง (คอมที่จ่ายไปแล้วจะเพี้ยน)
 	 */
 	public function usesDeductAmount(): bool
 	{
+		if ($this->approval_is_deduct) {
+			return true;
+		}
 		return in_array((int) $this->brand, [2, 4], true);
 	}
 	
-	/** ป้ายชื่อช่องยอดที่ผู้จัดการกรอก (ตามความหมายของแบรนด์) */
+	/** ป้ายชื่อช่องยอดที่ผู้จัดการกรอก (ตามความหมายของใบนั้น) */
 	public function approvalDeductLabel(): string
 	{
 		return $this->usesDeductAmount() ? 'ยอดหักค่าคอมฝ่ายขาย' : 'ค่าคอมฝ่ายขายที่ได้';
 	}
 	
-	/** แบรนด์นี้ใช้ "เก็บงบเพิ่มเติม" ไหม — brand 2/4 ไม่ใช้ (ดู TODO(brand4) ด้านบน) */
+	/**
+	 * แบรนด์นี้ใช้ "เก็บงบเพิ่มเติม" ไหม — brand 1/3 ใช้ , brand 2/4 ไม่ใช้
+	 * (แยกจาก usesDeductAmount() แล้ว เพราะตอนนี้ทุกแบรนด์กรอกเป็น "ยอดหัก" เหมือนกันหมด
+	 *  แต่ช่องเก็บงบเพิ่มเติมยังมีเฉพาะ brand 1/3 ตามเดิม)
+	 */
 	public function usesExtraBudget(): bool
 	{
-		return !$this->usesDeductAmount();
+		return !in_array((int) $this->brand, [2, 4], true);
 	}
 	
 	/** ผู้จัดการเลือก "ไม่หักเงิน VIP" (เฉพาะ brand 2) → ผู้อนุมัติขั้นสุดท้ายเป็น MD แทน GM */
@@ -665,6 +689,7 @@ class Salecar extends Model
 	 * "คอมงบเหลือ" ล้วน ๆ (สูตรอัตโนมัติ) — ไม่รวมยอดที่ผู้จัดการกรอก (ดู approvedCommission)
 	 *  - งบเหลือ (balance ≥ 0): ได้งบเหลือ เพดาน 2500 (brand 2/4 = 0)
 	 *  - เกินงบไม่เกินเพดาน (b1_manager): สูตรอัตโนมัติ balance × 2 × per_budget% (ติดลบ)
+	 *  - เกินเพดานแต่ยังไม่อนุมัติ: ยอดชั่วคราว balance × 2 × 10% (เท่ากับยอดหักแนะนำ)
 	 *  - เคสที่ใช้ยอดผู้จัดการแล้ว (b1_md / b2_gm) → 0 (ยอดไปอยู่ที่ approvedCommission)
 	 * ต้อง eager load relation 'model' เพื่อความแม่นของเคส
 	 */
@@ -687,8 +712,14 @@ class Salecar extends Model
 			return min(max(0.0, $full - $absorbed) / 2, 2500);
 		}
 
-		// เกินงบ (balance < 0): คูณ per_budget (รุ่นย่อย AT ทับเป็น 40% ได้) → เคสเกินงบ ส่งเมล GM แล้วใช้ −D ที่อนุมัติ (approvedCommission)
-		return $balance * 2 * ($this->effectivePerBudget() / 100);
+		// เกินงบ (balance < 0) — ถึงตรงนี้แปลว่ายังไม่มียอดที่ผู้จัดการอนุมัติ (ยอดชั่วคราว "รอยอดอนุมัติ")
+		//  · ทะลุเพดาน (b1_md / b2_gm) : พรีวิวด้วยกติกาใหม่ 10% ให้ตรงกับยอดหักแนะนำที่ผู้จัดการจะกรอก
+		//  · ไม่ทะลุเพดาน (b1_manager) : ผู้จัดการอนุมัติจบเอง ไม่มีหน้ากรอกยอด → คงสูตรเดิม per_budget%
+		//    (รุ่นย่อย AT ทับรุ่นหลักเป็น 40% ได้)
+		$percent = $this->isOverBudgetCeiling()
+			? self::OVER_BUDGET_DEDUCT_PERCENT
+			: $this->effectivePerBudget();
+		return $balance * 2 * ($percent / 100);
 	}
 
 	/**

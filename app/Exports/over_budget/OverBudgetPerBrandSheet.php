@@ -53,8 +53,9 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
       'ประเภทเกินงบ',
       'ยอดเกินงบ (เต็มจำนวน)',
       'งบเพดาน (over_budget)',
-      // brand 2/4 ยอดที่กรอก = "ยอดหัก" (−D) ส่วน brand 1/3 = "ค่าคอมที่ได้" (+D) — ดู Salecar::usesDeductAmount
-      in_array((int) $this->brand, [2, 4], true) ? 'ยอดหักคอม (ผู้จัดการกรอก)' : 'ค่าคอมฝ่ายขายที่ได้ (ผู้จัดการกรอก)',
+      // กติกาใหม่ ทุกแบรนด์กรอกเป็น "ยอดหัก" แต่ใบเก่าของ brand 1/3 ยังเป็น "ค่าคอมที่ได้" อยู่
+      // (ดู Salecar::usesDeductAmount) → ใช้ป้ายกลาง ๆ ที่ครอบทั้งสองความหมาย
+      'ยอดที่ผู้จัดการกรอก',
       'เหตุผลขอเกินงบ',
       'สถานะอนุมัติ',
       'สถานะการจอง',
@@ -184,7 +185,7 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
           return;
         }
 
-        // คอลัมน์เงิน H (ยอดเกินงบ), I (งบเพดาน), J (ค่าคอมฝ่ายขายที่ได้)
+        // คอลัมน์เงิน H (ยอดเกินงบ), I (งบเพดาน), J (ยอดที่ผู้จัดการกรอก)
         foreach (['H', 'I', 'J'] as $col) {
           $sheet->getStyle("{$col}2:{$col}{$highestRow}")->getNumberFormat()->setFormatCode('#,##0.00');
         }

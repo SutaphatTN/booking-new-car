@@ -22,6 +22,8 @@
     button { width: 100%; margin-top: 22px; padding: 12px; background: #6c5ffc; color: #fff; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; }
     button:hover { background: #5a4fd6; }
     .err { color: #dc2626; font-size: .82rem; margin-top: 6px; }
+    .hint { font-size: .82rem; color: #64748b; margin-top: 6px; line-height: 1.35; }
+    .hint strong { color: #334155; }
     button:disabled { opacity: .7; cursor: not-allowed; }
     .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.5); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -29,12 +31,17 @@
 </head>
 <body>
   @php
-    // ป้ายชื่อ/ช่องกรอก ต่างกันตามแบรนด์ (ดู Salecar::usesDeductAmount + TODO(brand4))
-    $deductLabel   = $saleCar->approvalDeductLabel();            // brand 2/4 = ยอดหัก | brand 1/3 = ค่าคอมที่ได้
+    // กติกาใหม่ : ทุกแบรนด์กรอกเป็น "ยอดที่ต้องหัก" (ดู Salecar::usesDeductAmount / suggestedCommissionDeduct)
+    $deductLabel   = 'ยอดที่ต้องหัก';                             // กติกาใหม่ : ทุกแบรนด์กรอกเป็นยอดหัก
     $showVip       = $showDeduct && $saleCar->allowsVipChoice(); // เฉพาะ brand 2
     $showExtra     = $showDeduct && $saleCar->usesExtraBudget(); // เฉพาะ brand 1/3
     $finalLabel    = strtoupper($saleCar->finalApproverRole());
     $decisionValue = old('decision', $saleCar->approval_is_vip ? 'vip' : 'deduct');
+
+    // เกินงบยอดเต็ม + ยอดหักแนะนำ (เกินงบ × 10%) — เติมให้เป็นค่าตั้งต้น ผู้จัดการแก้เพิ่มได้
+    $overFull    = abs((float) ($saleCar->balanceCampaign ?? 0)) * 2;
+    $suggest     = $saleCar->suggestedCommissionDeduct();
+    $deductValue = old('commission_deduct', $saleCar->approval_commission_deduct ?? ($suggest > 0 ? number_format($suggest, 2, '.', '') : ''));
   @endphp
   <div class="card">
     <h1>อนุมัติคำขอสั่งจอง</h1>
@@ -76,8 +83,15 @@
         <div id="deductBox">
           <label for="commission_deduct">{{ $deductLabel }} (บาท)</label>
           <input type="text" inputmode="decimal" id="commission_deduct" name="commission_deduct"
-            value="{{ old('commission_deduct', $saleCar->approval_commission_deduct) }}" required
+            value="{{ $deductValue }}" required
             oninput="formatComma(this)">
+          @if ($suggest > 0)
+            <div class="hint">
+              ยอดตั้งต้นจาก เกินงบ {{ number_format($overFull, 2) }} ×
+              {{ \App\Models\Salecar::OVER_BUDGET_DEDUCT_PERCENT }}% =
+              <strong>{{ number_format($suggest, 2) }}</strong> — แก้ได้ถ้าต้องการหักเพิ่ม
+            </div>
+          @endif
 
           @if ($showExtra)
             <label for="extra_budget">เก็บงบเพิ่มเติม (บาท)</label>

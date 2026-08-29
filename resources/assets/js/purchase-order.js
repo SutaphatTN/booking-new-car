@@ -3302,15 +3302,21 @@ function calculateCommissionSale() {
   const budgetDeduct = safeNumber('#budget_deduct'); // budget หัก (brand 2) — งบเดือนก่อนมากลบคันติดลบ
 
   const selectedModel = $('#model_id option:selected');
+  // % หักของเคส "เกินเพดาน" — ต้องตรงกับ Salecar::OVER_BUDGET_DEDUCT_PERCENT ฝั่ง server
+  const OVER_BUDGET_DEDUCT_PERCENT = 10;
+
   // % หักคอมเกินงบ : รุ่นย่อยทับรุ่นหลักได้ (เช่น Triton AT = 40% แทน 30%) — ว่าง = ใช้ของรุ่นหลัก
   const subPerBudget = parseFloat($('#subModel_id option:selected').attr('data-perbudget'));
   const perBudget = !isNaN(subPerBudget) ? subPerBudget : (parseFloat(selectedModel.data('perbudget')) || 0);
   const overBudget = parseFloat(selectedModel.data('overbudget')) || 0;
   const saleBrand = parseInt($('#saleBrand').val()) || 0;
 
-  // ยอดที่ manager/gm กรอกไว้ (เคสเกิน over_budget) — brand 2 = หักเงิน (−D) ; แบรนด์อื่น = ค่าคอมที่ได้ (+D)
+  // ยอดที่ manager/gm กรอกไว้ (เคสเกิน over_budget)
+  // กติกาใหม่ : ทุกแบรนด์กรอกเป็น "ยอดหัก" (−D) ; ใบเก่า brand 1/3 = ค่าคอมที่ได้ (+D)
+  // ธงมาจาก Salecar::usesDeductAmount() ผ่าน hidden #approvalIsDeduct (mirror ฝั่ง server)
   const deductRaw = ($('#approvalCommissionDeduct').val() || '').toString().replace(/,/g, '').trim();
   const managerDeduct = deductRaw !== '' ? parseFloat(deductRaw) : null;
+  const approvalIsDeduct = $('#approvalIsDeduct').val() === '1';
 
   // เก็บงบเพิ่มเติม (running deduction): หนี้คงเหลือก่อนถึงคันนี้ → หักจาก "งบเต็ม" ในเคสงบปกติ
   const extraDebtBefore = parseFloat(($('#extraDebtBefore').val() || '0').toString().replace(/,/g, '')) || 0;
@@ -3335,16 +3341,20 @@ function calculateCommissionSale() {
       balanceCam = Math.min(Math.max(0, full - extraAbsorbed) / 2, 2500);
     }
   } else {
-    // เกินเพดาน: เทียบ "ยอดเต็ม" (×2) กับ over_budget (brand 2/4 = เกินเสมอ) ; ถ้าเกิน+manager กรอกยอด → brand2/4 −D, อื่น +D
+    // เกินเพดาน: เทียบ "ยอดเต็ม" (×2) กับ over_budget (brand 2/4 = เกินเสมอ)
     const isOverCeiling = isB2Style || Math.abs(balanceCam) * 2 > overBudget;
     if (isOverCeiling && managerDeduct !== null && !isNaN(managerDeduct)) {
-      // ใช้ยอดผู้จัดการแทนสูตร → คอมงบเหลือเป็น 0 แล้วไปโชว์ที่ช่อง "คอมที่ได้"
+      // ใช้ยอดผู้จัดการแทนสูตร → คอมงบเหลือเป็น 0 แล้วไปโชว์ที่ช่อง "คอมที่ได้ / ยอดหักค่าคอม"
       usesApproved = true;
-      approvedCom = isB2Style ? -managerDeduct : managerDeduct;
+      approvedCom = (approvalIsDeduct || isB2Style) ? -managerDeduct : managerDeduct;
       balanceCam = 0;
     } else {
       pendingApproval = isOverCeiling;
-      balanceCam = balanceCam * 2 * (perBudget / 100);
+      // ยังไม่มียอดอนุมัติ → ยอดชั่วคราว
+      //  · ทะลุเพดาน : ใช้ 10% ให้ตรงกับยอดหักแนะนำที่ผู้จัดการจะกรอก
+      //  · ไม่ทะลุเพดาน (ผู้จัดการอนุมัติจบเอง) : สูตรเดิม per_budget% ของรุ่น
+      const pendingPercent = isOverCeiling ? OVER_BUDGET_DEDUCT_PERCENT : perBudget;
+      balanceCam = balanceCam * 2 * (pendingPercent / 100);
     }
   }
 

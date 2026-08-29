@@ -616,12 +616,18 @@
                   <div class="fv">{{ is_numeric($balanceCam2) ? number_format($balanceCam2, 2) . ' บาท' : '-' }}
                   </div>
                 </div>
-                <div class="f">
-                  <div class="fl">{{ $isNegativeHalf ? 'หักคอม' : 'เหลืองบ (แบ่ง 2 ส่วน)' }}</div>
-                  <div class="fv">
-                    {{ is_numeric($displayBalanceCamHalf) ? number_format($displayBalanceCamHalf, 2) . ' บาท' : '-' }}
+                {{-- แถวนี้เดิมสลับ 2 ป้าย : เกินงบ → "หักคอม" | ไม่เกินงบ → "เหลืองบ (แบ่ง 2 ส่วน)"
+                     ปิดเฉพาะฝั่ง "หักคอม" (ยังไม่ใช้ — เป็นสูตรอัตโนมัติ เกินงบ × per_budget%
+                     ไม่ใช่ยอดที่อนุมัติจริง) ส่วน "เหลืองบ (แบ่ง 2 ส่วน)" ยังแสดงตามเดิม
+                     เปิด "หักคอม" กลับ : เอา @if/@endif ครอบออก แล้วคืนป้ายเป็น ternary เดิม --}}
+                @if (!$isNegativeHalf)
+                  <div class="f">
+                    <div class="fl">เหลืองบ (แบ่ง 2 ส่วน)</div>
+                    <div class="fv">
+                      {{ is_numeric($displayBalanceCamHalf) ? number_format($displayBalanceCamHalf, 2) . ' บาท' : '-' }}
+                    </div>
                   </div>
-                </div>
+                @endif
               @else
                 @php
                   $PaymentDiscount = $saleCar->PaymentDiscount ?? 0;
@@ -661,12 +667,15 @@
                   <div class="fv">{{ is_numeric($balanceCash) ? number_format($balanceCash, 2) . ' บาท' : '-' }}
                   </div>
                 </div>
-                <div class="f">
-                  <div class="fl">{{ $isNegativeHalf2 ? 'หักคอม' : 'เหลืองบ (แบ่ง 2 ส่วน)' }}</div>
-                  <div class="fv">
-                    {{ is_numeric($displayBalanceCamHalf2) ? number_format($displayBalanceCamHalf2, 2) . ' บาท' : '-' }}
+                {{-- ฝั่งเงินสด/โอน : ปิดเฉพาะ "หักคอม" เหมือนฝั่งไฟแนนซ์ ("เหลืองบ (แบ่ง 2 ส่วน)" ยังแสดง) --}}
+                @if (!$isNegativeHalf2)
+                  <div class="f">
+                    <div class="fl">เหลืองบ (แบ่ง 2 ส่วน)</div>
+                    <div class="fv">
+                      {{ is_numeric($displayBalanceCamHalf2) ? number_format($displayBalanceCamHalf2, 2) . ' บาท' : '-' }}
+                    </div>
                   </div>
-                </div>
+                @endif
               @endif
             </div>
           </div>

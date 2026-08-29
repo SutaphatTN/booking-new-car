@@ -338,7 +338,10 @@ class PurchaseOrderController extends Controller
     }
 
     /**
-     * "กระเป๋าของเซลล์" — งบที่ได้ทั้งก้อน เทียบกับทุกอย่างที่ถูกใช้ไป (ไฟล์แนบใบที่ 2 ของเมลขออนุมัติ)
+     * "กระเป๋าของเซลล์" — งบที่ได้ทั้งก้อน เทียบกับทุกอย่างที่ถูกใช้ไป
+     *
+     * ⚠ ยังไม่ได้ใช้งาน — การแนบไฟล์นี้ใน buildApprovalAttachments() ถูก comment ไว้
+     *   เก็บเมธอดกับ view (purchase-order/report/sale-pocket) ไว้รอเปิดใช้ทีหลัง
      *
      *  งบที่ได้      = ยอดแคมเปญทั้งหมด (TotalSaleCampaign) + บวกหัว 90% + Kick Back
      *  รายการที่ใช้ไป = ส่วนลดราคารถ + ส่วนลดเงินดาวน์ + เงินจอง + ของแถม(ราคาทุนอะไหล่) + Vat ของแถม
@@ -436,8 +439,9 @@ class PurchaseOrderController extends Controller
     // เคสอนุมัติ (brand-aware) — ทุกแบรนด์เริ่มที่ "ผู้จัดการ" เหมือนกันหมด:
     //  normal     = งบปกติ → manager (จบ)
     //  b1_manager = brand1/3 เกิน ≤ over_budget → manager (จบ)
-    //  b1_md      = brand1/3 เกิน > over_budget → manager กรอกค่าคอมที่ได้ → GM อนุมัติจบ (CC ให้ md)
-    //  b2_gm      = brand2/4 เกินงบ (ไม่มีเพดาน) → manager กรอกยอดหัก → GM อนุมัติจบ (CC ให้ md)
+    //  b1_md      = brand1/3 เกิน > over_budget → manager กรอกยอดที่ต้องหัก → GM อนุมัติจบ (CC ให้ md)
+    //  b2_gm      = brand2/4 เกินงบ (ไม่มีเพดาน) → manager กรอกยอดที่ต้องหัก → GM อนุมัติจบ (CC ให้ md)
+    //  ยอดที่กรอก ระบบเติมค่าตั้งต้นให้ = เกินงบยอดเต็ม × 10% (Salecar::suggestedCommissionDeduct) แก้เพิ่มได้
     //               brand 2 เลือก "ไม่หักเงิน VIP" ได้ → ส่ง MD อนุมัติจบแทน (CC ให้ gm)
     //  brand 3 ใช้ logic เดียวกับ brand 1 (ไม่มี over_budget → เกินงบทุกกรณีจะได้ b1_md เสมอ)
     private function approvalCase(Salecar $saleCar): string
@@ -513,14 +517,16 @@ class PurchaseOrderController extends Controller
         $files[] = Attachment::fromData(fn() => $pdf->output(), 'summary-' . $saleCar->id . '.pdf')
             ->withMime('application/pdf');
 
-        // (2) ไฟล์กระเป๋าของเซลล์ — งบที่ได้ทั้งก้อน vs ทุกอย่างที่ใช้ไป (แนบทุกเคสที่ขออนุมัติ)
-        $pocketPdf = Pdf::loadView('purchase-order.report.sale-pocket', [
-            'saleCar' => $saleCar,
-            'pocket'  => $this->buildSalePocketData($saleCar),
-        ])->setPaper('A4', 'portrait');
-
-        $files[] = Attachment::fromData(fn() => $pocketPdf->output(), 'sale-pocket-' . $saleCar->id . '.pdf')
-            ->withMime('application/pdf');
+        // (2) ไฟล์กระเป๋าของเซลล์ — งบที่ได้ทั้งก้อน vs ทุกอย่างที่ใช้ไป
+        //     ปิดไว้ก่อน (ยังไม่ใช้) — uncomment block นี้เพื่อเปิดแนบกลับทุกเคสที่ขออนุมัติ
+        //     โค้ดที่เกี่ยวข้องยังอยู่ครบ: buildSalePocketData() + view purchase-order/report/sale-pocket
+        // $pocketPdf = Pdf::loadView('purchase-order.report.sale-pocket', [
+        //     'saleCar' => $saleCar,
+        //     'pocket'  => $this->buildSalePocketData($saleCar),
+        // ])->setPaper('A4', 'portrait');
+        //
+        // $files[] = Attachment::fromData(fn() => $pocketPdf->output(), 'sale-pocket-' . $saleCar->id . '.pdf')
+        //     ->withMime('application/pdf');
 
         // (3) ไฟล์แนบจากผู้ขอ (เก็บไว้ใน storage — ส่งต่อ GM ได้)
         foreach (($saleCar->approval_files ?? []) as $f) {
@@ -718,12 +724,12 @@ class PurchaseOrderController extends Controller
                         'commission_deduct' => 'required|numeric|min:0',
                         'extra_budget'      => 'nullable|numeric|min:0',
                     ], [
-                        'commission_deduct.required' => 'กรุณากรอก' . $saleCar->approvalDeductLabel(),
+                        'commission_deduct.required' => 'กรุณากรอกยอดที่ต้องหัก',
                     ]);
                     $deduct = (float) $request->commission_deduct;
                 }
 
-                // "เก็บงบเพิ่มเติม" ใช้เฉพาะ brand 1/3 (ดู TODO(brand4) ใน Salecar::usesDeductAmount)
+                // "เก็บงบเพิ่มเติม" ใช้เฉพาะ brand 1/3 (ดู Salecar::usesExtraBudget)
                 $extraBudget = ($saleCar->usesExtraBudget() && !$isVip && $request->filled('extra_budget'))
                     ? (float) $request->extra_budget
                     : null;
@@ -732,6 +738,8 @@ class PurchaseOrderController extends Controller
                     'approval_commission_deduct' => $deduct,
                     'approval_extra_budget'      => $extraBudget,
                     'approval_is_vip'            => $isVip,
+                    // กติกาใหม่ : ยอดที่กรอกคือ "ยอดที่ต้องหัก" ทุกแบรนด์ (ใบเก่าไม่ตั้งธง จึงคงความหมายเดิม)
+                    'approval_is_deduct'         => true,
                     'ApprovalSignature' => 1,
                     'ApprovalSignatureDate' => $today,
                     'approval_md_note' => null, // เคลียร์โน้ตผู้อนุมัติรอบก่อน (ถ้าเคยถูกตีกลับ)
@@ -872,6 +880,7 @@ class PurchaseOrderController extends Controller
             'approval_return_note'    => $request->return_reason,
             'approval_returned_at'    => now(),
             'approval_is_vip'         => 0,   // ตีกลับ = เริ่มรอบใหม่ ผู้จัดการเลือก VIP ใหม่ได้
+            'approval_is_deduct'      => 0,
         ];
 
         // จบรอบ → เคลียร์คำขอ + ล้าง token (ลิงก์เมลเดิมใช้ไม่ได้) ต้องส่งขออนุมัติใหม่
@@ -901,7 +910,7 @@ class PurchaseOrderController extends Controller
         ]);
     }
 
-    // MD ตีกลับ → แจ้งผู้จัดการให้กรอกค่าคอมฝ่ายขายที่ได้ใหม่ (ลิงก์เดิมจะกลับไปหน้ากรอก)
+    // ผู้อนุมัติขั้นสุดท้ายตีกลับ → แจ้งผู้จัดการให้ทบทวนยอดที่ต้องหักใหม่ (ลิงก์เดิมจะกลับไปหน้ากรอก)
     private function emailReturnToManager(Salecar $saleCar, ?string $note = null): void
     {
         $mailTo = $this->approverEmails($saleCar->brand, $saleCar->branch, 'manager');
@@ -1938,6 +1947,12 @@ class PurchaseOrderController extends Controller
                 $data['approval_commission_deduct'] = $request->filled('approval_commission_deduct')
                     ? str_replace(',', '', $request->approval_commission_deduct)
                     : null;
+
+                // admin กรอกยอดให้ใบที่ยังไม่เคยมียอดมาก่อน → ถือเป็นการกรอกตามกติกาใหม่ (= ยอดหัก)
+                // ถ้าใบนั้นมียอดเดิมอยู่แล้ว ไม่แตะธง เพื่อไม่ให้ใบเก่า brand 1/3 กลับเครื่องหมาย
+                if ($saleCar->approval_commission_deduct === null && $data['approval_commission_deduct'] !== null) {
+                    $data['approval_is_deduct'] = true;
+                }
             }
 
             if (in_array(Auth::user()->brand, [2, 3, 4])) {
@@ -2006,6 +2021,7 @@ class PurchaseOrderController extends Controller
                     'approval_commission_deduct' => null,
                     'approval_extra_budget'      => null,
                     'approval_is_vip'            => 0,
+                    'approval_is_deduct'         => 0,
                 ]);
             }
 
