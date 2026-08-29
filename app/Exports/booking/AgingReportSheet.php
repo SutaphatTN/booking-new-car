@@ -2,7 +2,7 @@
 
 namespace App\Exports\booking;
 
-use App\Services\BookingReportQuery;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Illuminate\Contracts\View\View;
@@ -18,6 +18,14 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class AgingReportSheet  implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
+  /** รถ stock ที่มี order_stock_date — BookingExport โหลดมาให้ครั้งเดียว */
+  protected $cars;
+
+  public function __construct(Collection $cars)
+  {
+    $this->cars = $cars;
+  }
+
   public function title(): string
   {
     return 'Aging Report';
@@ -86,7 +94,7 @@ class AgingReportSheet  implements FromView, WithTitle, WithStyles, WithEvents, 
   public function view(): View
   {
     $today = Carbon::today();
-    $orders = BookingReportQuery::agingCars()->get();
+    $orders = $this->cars;
 
     $grouped = [];
 

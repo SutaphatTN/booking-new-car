@@ -3,6 +3,7 @@
 namespace App\Exports\booking;
 
 use App\Services\BookingReportQuery;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Illuminate\Contracts\View\View;
@@ -25,10 +26,16 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
   protected $model;
   protected $filter;
 
-  public function __construct($model, $filter = null)
+  /** ข้อมูลทั้งรายงานที่ BookingExport โหลดมาให้ครั้งเดียว — sheet นี้กรองเอาเองใน PHP */
+  protected $cars;
+  protected $orphans;
+
+  public function __construct($model, $filter, Collection $cars, Collection $orphans)
   {
-    $this->model = $model;
-    $this->filter = $filter;
+    $this->model   = $model;
+    $this->filter  = $filter;
+    $this->cars    = $cars;
+    $this->orphans = $orphans;
   }
 
   public function title(): string
@@ -177,32 +184,53 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
   /**
    * เงื่อนไขแยก sheet ตามรุ่นย่อย
    * ใช้ร่วมกันทั้งตอนเช็คว่ามีข้อมูลไหม (hasData) และตอนดึงข้อมูลจริง (view)
+   *
+   * กรองใน PHP เพราะข้อมูลถูกโหลดมาครั้งเดียวจาก BookingExport แล้ว
+   * (ต้องให้ผลเท่ากับ SQL เดิม → subModel_id ที่เป็น NULL ต้องไม่เข้าเงื่อนไข '!=' 9)
    */
-  private function applySubModelFilter($query)
+  private function applySubModelFilter(Collection $items): Collection
   {
     if ($this->model->id == 3) {
 
       if ($this->filter == 'only9') {
-        $query->where('subModel_id', 9);
+        return $items->filter(fn($i) => (int) $i->subModel_id === 9)->values();
       }
 
       if ($this->filter == 'exclude9') {
-        $query->where('subModel_id', '!=', 9);
+        return $items->filter(
+          fn($i) => !is_null($i->subModel_id) && (int) $i->subModel_id !== 9
+        )->values();
       }
     }
 
     if ($this->model->id == 9) {
 
       if ($this->filter == 'sub_4041') {
-        $query->whereIn('subModel_id', [40, 41]);
+        return $items->filter(fn($i) => in_array((int) $i->subModel_id, [40, 41], true))->values();
       }
 
       if ($this->filter == 'sub_5362') {
-        $query->whereIn('subModel_id', [53, 62]);
+        return $items->filter(fn($i) => in_array((int) $i->subModel_id, [53, 62], true))->values();
       }
     }
 
-    return $query;
+    return $items;
+  }
+
+  /** รถของ sheet นี้ */
+  private function sheetCars(): Collection
+  {
+    return $this->applySubModelFilter(
+      BookingReportQuery::byModel($this->cars, $this->model->id)
+    );
+  }
+
+  /** ใบจองที่ยังไม่ผูกรถของ sheet นี้ */
+  private function sheetOrphans(): Collection
+  {
+    return $this->applySubModelFilter(
+      BookingReportQuery::byModel($this->orphans, $this->model->id)
+    );
   }
 
   /**
@@ -210,26 +238,13 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
    */
   public function hasData(): bool
   {
-    $hasCars = $this->applySubModelFilter(
-      BookingReportQuery::carsByModel($this->model->id)
-    )->exists();
-
-    if ($hasCars) {
-      return true;
-    }
-
-    return $this->applySubModelFilter(
-      BookingReportQuery::orphanSalesByModel($this->model->id)
-    )->exists();
+    return $this->sheetCars()->isNotEmpty()
+      || $this->sheetOrphans()->isNotEmpty();
   }
 
   public function view(): View
   {
-    $query = $this->applySubModelFilter(
-      BookingReportQuery::carsByModel($this->model->id)
-    );
-
-    $carOrders = $query->get()
+    $carOrders = $this->sheetCars()
       ->sortBy([
         fn($o) => $o->subModel->detail ?? '',
         fn($o) => $o->subModel->name ?? '',
@@ -346,9 +361,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
     }
 
     //ยังไม่ผูกรถ
-    $orphanSales = $this->applySubModelFilter(
-      BookingReportQuery::orphanSalesByModel($this->model->id)
-    )->get();
+    $orphanSales = $this->sheetOrphans();
 
     foreach ($orphanSales as $sale) {
 
