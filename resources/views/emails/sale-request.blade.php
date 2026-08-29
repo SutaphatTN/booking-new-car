@@ -11,7 +11,7 @@
 @if ($type === 'normal')
 🔵 **ขออนุมัติยอดปกติ**
 @elseif ($type === 'manager_revise')
-🔁 **ผู้อนุมัติตีกลับ — ขอให้ผู้จัดการกรอกค่าคอมฝ่ายขายที่ได้ใหม่**
+🔁 **ผู้อนุมัติตีกลับ — ขอให้ผู้จัดการทบทวนยอดที่ต้องหักใหม่**
 @if (!empty($saleCar->approval_md_note))
 
 > **โน้ตจากผู้อนุมัติ :** {{ $saleCar->approval_md_note }}
@@ -19,7 +19,7 @@
 @elseif ($type === 'gm_final')
 🟢 **ขออนุมัติเกินงบ (เกินเพดาน) — เสนอ GM อนุมัติขั้นสุดท้าย**
 
-🔺 *ผู้จัดการกรอก{{ $saleCar->approvalDeductLabel() }}แล้ว — GM ตรวจ/แก้ยอด แล้วอนุมัติ (MD รับทราบผ่านสำเนา ไม่ต้องกดอนุมัติ แต่กดตีกลับได้)*
+🔺 *ผู้จัดการกรอกยอดที่ต้องหักแล้ว — GM ตรวจ/แก้ยอด แล้วอนุมัติ (MD รับทราบผ่านสำเนา ไม่ต้องกดอนุมัติ แต่กดตีกลับได้)*
 @elseif ($type === 'md_final')
 🟠 **ขออนุมัติเกินงบ — เสนอ MD อนุมัติขั้นสุดท้าย**
 @if ($saleCar->isVipApproval())
@@ -29,7 +29,10 @@
 @elseif ($__case === 'b1_md' || $__case === 'b2_gm')
 🔴 **ขออนุมัติเกินงบ (เกินเพดาน)**
 
-🔺 *เกินเพดานอนุมัติของผู้จัดการ — กรุณากรอก{{ $saleCar->approvalDeductLabel() }} จากนั้นระบบจะส่งต่อให้ GM อนุมัติขั้นสุดท้าย*
+{{-- ใช้คำคงที่ ไม่เรียก approvalDeductLabel() : ตอนส่งเมลฉบับแรก ธง approval_is_deduct ยังเป็น 0
+     (ผู้จัดการยังไม่กรอก) เมธอดนั้นจะตกไปใช้กติกาแบรนด์เดิม แล้วขึ้นคำผิดว่า "ค่าคอมฝ่ายขายที่ได้"
+     เมลทุกฉบับเป็นรอบอนุมัติที่ยังไม่จบ = ใช้กติกาใหม่เสมอ --}}
+🔺 *เกินเพดานอนุมัติของผู้จัดการ — กรุณากรอกยอดที่ต้องหัก (ระบบเติมยอด {{ \App\Models\Salecar::OVER_BUDGET_DEDUCT_PERCENT }}% ของเกินงบให้แล้ว แก้เพิ่มได้) จากนั้นระบบจะส่งต่อให้ GM อนุมัติขั้นสุดท้าย*
 @if ($saleCar->allowsVipChoice())
 
 🔺 *ลูกค้า VIP เลือก "ไม่หักเงิน" ได้ — ระบบจะส่งให้ MD อนุมัติแทน (สำเนาถึง GM)*
@@ -116,16 +119,38 @@
 ### ยอดที่เหลือ
 <span style="color: {{ ($data['remaining'] ?? 0) < 0 ? '#dc2626' : '#059669' }}; font-weight:bold; font-size:1.15em;">{{ number_format($data['remaining'], 2) }}</span>
 
-@isset($data['commission_deduct'])
+@php
+    // สรุปยอด : 2 บรรทัดแรกแสดงทุกฉบับตั้งแต่เมลแรก
+    //   · Margin คงเหลือ = ยอดที่เหลือ (ตัวเดียวกับหัวข้อด้านบน)
+    //   · สรุปการแถม     = balanceCampaign × 2 (ยอดเต็ม) → บอกว่า "งบเหลือ" หรือ "เกินงบ"
+    // อีก 2 บรรทัดโผล่เมื่อผู้จัดการตกลงยอดหักแล้ว (อ่านจาก $data ก่อน ไม่มีค่อยดูค่าที่บันทึกไว้ในใบ)
+    //   · เปอร์เซ็นต์หัก  = คิดย้อนจากยอดจริงที่กรอก → ปกติ 10% แต่ถ้าแก้ยอด % ขยับตาม
+    //   · สรุปหักค่าคอม  = ยอดที่ผู้จัดการตกลง
+    $__balFull = (float) ($saleCar->balanceCampaign ?? 0) * 2;
+    $__isOver  = $__balFull < 0;
+    $__deduct  = $data['commission_deduct'] ?? $saleCar->approval_commission_deduct;
+    $__pct     = ($__deduct !== null && $__isOver && abs($__balFull) > 0)
+        ? abs((float) $__deduct) / abs($__balFull) * 100
+        : null;
+@endphp
+
+### สรุปยอด
+- **Margin คงเหลือ :** {{ number_format($data['remaining'], 2) }}
+- **สรุปการแถม :** {{ $__isOver ? 'เกินงบ' : 'งบเหลือ' }} {{ number_format($__balFull, 2) }}
+@if ($__deduct !== null)
+- **เปอร์เซ็นต์หัก :** {{ $__pct !== null ? number_format($__pct, 2) . '%' : '-' }}
+- **สรุปหักค่าคอม :** **{{ number_format((float) $__deduct, 2) }}**
+@endif
+
+@if (($data['commission_deduct'] ?? null) !== null && ($saleCar->isVipApproval() || ($data['extra_budget'] ?? null) !== null))
 ### สรุปจากผู้จัดการ
 @if ($saleCar->isVipApproval())
 - **การตัดสินใจ :** ไม่หักเงิน (VIP)
 @endif
-- **{{ $saleCar->approvalDeductLabel() }} :** {{ number_format($data['commission_deduct'], 2) }}
 @if(($data['extra_budget'] ?? null) !== null)
 - **เก็บงบเพิ่มเติม :** **{{ number_format($data['extra_budget'], 2) }}**
 @endif
-@endisset
+@endif
 @endisset
 
 ---

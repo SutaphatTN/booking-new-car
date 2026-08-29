@@ -126,6 +126,8 @@
         <input type="hidden" id="canEditCarPrice" value="{{ $canEditCarPrice && !$isHistory ? 1 : 0 }}">
         {{-- ค่าคอมที่ manager/gm กรอก (เคสเกิน over_budget → คอมงบเหลือ: brand2 ใช้ −D, แบรนด์อื่น +D) --}}
         <input type="hidden" id="approvalCommissionDeduct" value="{{ $saleCar->approval_commission_deduct }}">
+        {{-- ใบนี้ตีความยอดที่กรอกเป็น "ยอดหัก" (−D) หรือไม่ — กติกาใหม่ = ทุกแบรนด์หัก, ใบเก่า brand 1/3 = คอมที่ได้ (+D) --}}
+        <input type="hidden" id="approvalIsDeduct" value="{{ $saleCar->usesDeductAmount() ? 1 : 0 }}">
         {{-- เก็บงบเพิ่มเติม: หนี้คงเหลือก่อนถึงคันนี้ (เคสงบปกติหักจากงบเต็มก่อนหาร 2) --}}
         <input type="hidden" id="extraDebtBefore" value="{{ $extraDebtBefore ?? 0 }}">
         {{-- คำขออนุมัติเกินงบล่วงหน้า (ยังไม่เป็นการจอง) — Preview จะบล็อกถ้าเคสไม่ใช่ทะลุเพดาน --}}
@@ -2437,9 +2439,9 @@
                                   </div>
                                 </div>
 
-                                {{-- ค่าคอมที่ผู้จัดการ/GM กรอกตอนอนุมัติเกินเพดาน — โชว์เฉพาะเคสที่ใช้ยอดนี้ (JS toggle)
-                                     brand 2/4 = ยอดหัก (ติดลบ) ; brand อื่น = ค่าคอมที่ได้ --}}
-                                @php $approvedComLabel = in_array((int) $saleCar->brand, [2, 4], true) ? 'ยอดหักค่าคอม' : 'คอมที่ได้'; @endphp
+                                {{-- ยอดที่ผู้จัดการ/GM กรอกตอนอนุมัติเกินเพดาน — โชว์เฉพาะเคสที่ใช้ยอดนี้ (JS toggle)
+                                     กติกาใหม่ = ยอดหัก (ติดลบ) ทุกแบรนด์ ; ใบเก่า brand 1/3 = ค่าคอมที่ได้ (บวก) --}}
+                                @php $approvedComLabel = $saleCar->usesDeductAmount() ? 'ยอดหักค่าคอม' : 'คอมที่ได้'; @endphp
                                 <div class="com-stat-cell com-approved-cell com-cell-hidden" id="approvedComCell"
                                   title="ยอดที่ผู้จัดการ/GM อนุมัติ (เคสเกินงบทะลุเพดาน) — ใช้แทนคอมงบเหลือ">
                                   <span class="com-lbl">{{ $approvedComLabel }}</span>
@@ -2791,7 +2793,7 @@
                                และ update() จะไม่แตะค่าเดิม (ดู $request->has ใน PurchaseOrderController) --}}
                           @php $usesDeduct = in_array($saleCar->approvalCase(), ['b1_md', 'b2_gm'], true); @endphp
                           @if ($userRole === 'admin' && $usesDeduct)
-                            @php $deductLabel = $saleCar->approvalDeductLabel(); @endphp
+                            @php $deductLabel = $saleCar->approvalDeductLabel(); @endphp {{-- ใบใหม่ = ยอดหัก ทุกแบรนด์ --}}
                             <div class="col-12">
                               <div class="approval-card">
                                 <div class="approval-card-header">
