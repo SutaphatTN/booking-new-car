@@ -94,9 +94,10 @@ class AccessoryController extends Controller
             $fullName = $row('bx-barcode', 'text-dark', 'รหัส', $a->accessory_id)
                       . $row('bx-label',   'text-primary',   'ชื่อ', $a->detail);
 
-            if ($a->allow_custom_price) {
-                $fullName .= '<div class="text-start mt-1"><span class="badge bg-label-success">ราคาไม่คงที่ — ระบุตอนจอง</span></div>';
-            }
+            // ── ปิดฟีเจอร์ "ระบุราคาเอง" 2026-08-29 (ดู PurchaseOrderController::ACC_CUSTOM_PRICE_ENABLED) ──
+            // if ($a->allow_custom_price) {
+            //     $fullName .= '<div class="text-start mt-1"><span class="badge bg-label-success">ราคาไม่คงที่ — ระบุตอนจอง</span></div>';
+            // }
 
             $costSpare = $a->cost_spare !== null ? number_format($a->cost_spare, 2) : '-';
             $cost = $a->cost !== null ? number_format($a->cost, 2) : '-';
@@ -198,7 +199,10 @@ class AccessoryController extends Controller
     /**
      * หารายการที่ซ้ำ — 1 รหัส + 1 รายละเอียด ต่อ 1 รุ่นรถ (query ถูก scope ตาม brand อยู่แล้ว)
      * ต้องเทียบ detail ด้วย เพราะของที่ไม่มีรหัสใช้ 999999 ร่วมกันทั้งระบบ
-     * ราคาที่ต่างกันรายดีลให้ไป "ระบุเอง" ตอนทำใบจองแทนการสร้างแถวใหม่
+     *
+     * 2026-08-29: ไม่บล็อกแล้ว — หลังปิดฟีเจอร์ "ระบุราคาเอง" การสร้างแถวใหม่เมื่อราคาต่างกัน
+     * กลับมาเป็นวิธีทำงานปกติ ตัวนี้จึงเหลือหน้าที่แค่ "เตือนก่อน" กันกดพลาด/กดซ้ำสองที
+     * (ส่งกลับ 409 + needs_confirm ให้หน้าจอถามยืนยัน แล้วยิงซ้ำพร้อม confirm_duplicate=1)
      */
     private function findDuplicateAccessory(Request $request, $exceptId = null)
     {
@@ -212,20 +216,23 @@ class AccessoryController extends Controller
     private function duplicateResponse(AccessoryPrice $dup)
     {
         $status = $dup->active === 'active' ? 'เปิดใช้งานอยู่' : 'ปิดใช้งานอยู่';
+        $price  = $dup->sale !== null ? number_format($dup->sale, 2) : '-';
 
         return response()->json([
             'success' => false,
+            'needs_confirm' => true,
             'duplicate_id' => $dup->id,
-            'message' => "มีรายการนี้อยู่แล้ว (รหัส {$dup->accessory_id} - {$dup->detail}, {$status}) "
-                . 'ไม่ต้องสร้างซ้ำ ถ้าราคาต่างกันให้เลือก "ระบุเอง" ตอนทำใบจอง',
-        ], 422);
+            'message' => "มีรายการนี้อยู่แล้ว<br><b>รหัส {$dup->accessory_id} — {$dup->detail}</b><br>"
+                . "ราคาขาย {$price} ({$status})<br><br>ถ้าราคาต่างจากเดิม เพิ่มซ้ำได้",
+        ], 409);
     }
 
     function store(Request $request)
     {
         $this->validateCostSpare($request);
 
-        if ($dup = $this->findDuplicateAccessory($request)) {
+        // เตือนครั้งเดียว — กดยืนยันแล้วส่ง confirm_duplicate มาด้วย ถือว่าตั้งใจเพิ่มซ้ำ
+        if (!$request->boolean('confirm_duplicate') && $dup = $this->findDuplicateAccessory($request)) {
             return $this->duplicateResponse($dup);
         }
 
@@ -306,13 +313,14 @@ class AccessoryController extends Controller
         // ค่าเดิมเป็น 0 (ตั้งจาก DB) → ยอมให้บันทึก 0 ซ้ำได้ | NULL หรือ > 0 → บังคับ > 0 เว้นแต่ติ๊กธง is_zero_cost
         $this->validateCostSpare($request, $acc->cost_spare !== null && (float) $acc->cost_spare === 0.0);
 
-        // กันแก้ชื่อ/รหัสไปชนกับแถวอื่นที่มีอยู่แล้ว
-        if ($dup = $this->findDuplicateAccessory($request, $acc->id)) {
+        // แก้ชื่อ/รหัสไปชนกับแถวอื่น — เตือนก่อน กดยืนยันแล้วผ่าน
+        if (!$request->boolean('confirm_duplicate') && $dup = $this->findDuplicateAccessory($request, $acc->id)) {
             return $this->duplicateResponse($dup);
         }
 
         try {
-            $data = $request->except(['_token', '_method']);
+            // confirm_duplicate เป็นแค่ธงยืนยันจากหน้าจอ ไม่ใช่คอลัมน์ในตาราง ต้องตัดออกก่อน mass update
+            $data = $request->except(['_token', '_method', 'confirm_duplicate']);
 
             $data['cost_spare'] = $request->cost_spare;
             $data['is_zero_cost'] = $request->boolean('is_zero_cost');

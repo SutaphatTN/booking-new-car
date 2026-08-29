@@ -277,6 +277,64 @@ $(document).on('change', '#model_id', function () {
   });
 });
 
+// บันทึกรายการประดับยนต์ (ใช้ร่วมกันทั้งเพิ่มและแก้ไข)
+// 2026-08-29 : รหัส+ชื่อซ้ำไม่บล็อกแล้ว — server ตอบ 409 + needs_confirm มาให้ถามยืนยันก่อน
+// ถ้ายืนยันก็ยิงซ้ำพร้อม confirm_duplicate=1 (ธงนี้ไม่ได้ลง DB, controller ตัดออกก่อนบันทึก)
+function submitAccessoryForm(opts) {
+  const formData = new FormData(opts.form);
+  if (opts.confirmDuplicate) formData.append('confirm_duplicate', '1');
+
+  $.ajax({
+    url: opts.url,
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    // ไม่ปิด modal ตอนยิง — ถ้าเจอรายการซ้ำ ผู้ใช้จะได้ไม่เสียข้อมูลที่กรอกมา
+    beforeSend: function () {
+      Swal.fire({
+        title: 'กำลังบันทึกข้อมูล...',
+        text: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+      opts.$btn.prop('disabled', true);
+    },
+    success: function (res) {
+      opts.onSuccess(res);
+    },
+    error: function (xhr) {
+      const res = xhr.responseJSON || {};
+
+      if (xhr.status === 409 && res.needs_confirm) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'มีรายการนี้อยู่แล้ว',
+          html: res.message,
+          showCancelButton: true,
+          confirmButtonText: 'ยืนยัน เพิ่มซ้ำ',
+          cancelButtonText: 'ยกเลิก',
+          confirmButtonColor: '#dc3545'
+        }).then(function (r) {
+          if (r.isConfirmed) {
+            submitAccessoryForm(Object.assign({}, opts, { confirmDuplicate: true }));
+          }
+        });
+        return;
+      }
+
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: res.message || 'ไม่สามารถบันทึกข้อมูลได้'
+      });
+    },
+    complete: function () {
+      opts.$btn.prop('disabled', false);
+    }
+  });
+}
+
 //input : save acc
 $(document).on('click', '.btnStoreAccessory', function (e) {
   e.preventDefault();
@@ -291,26 +349,11 @@ $(document).on('click', '.btnStoreAccessory', function (e) {
     return;
   }
 
-  const url = $(form).attr('action');
-  const formData = new FormData(form);
-
-  $.ajax({
-    url: url,
-    type: 'POST',
-    data: formData,
-    contentType: false,
-    processData: false,
-    // ไม่ปิด modal ตอนยิง — ถ้าเจอรายการซ้ำ (422) ผู้ใช้จะได้ไม่เสียข้อมูลที่กรอกมา
-    beforeSend: function () {
-      Swal.fire({
-        title: 'กำลังบันทึกข้อมูล...',
-        text: 'กรุณารอสักครู่',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-      });
-      $btn.prop('disabled', true);
-    },
-    success: function (res) {
+  submitAccessoryForm({
+    url: $(form).attr('action'),
+    form: form,
+    $btn: $btn,
+    onSuccess: function (res) {
       $('.inputAcc').modal('hide');
 
       Swal.fire({
@@ -322,20 +365,6 @@ $(document).on('click', '.btnStoreAccessory', function (e) {
       });
 
       accessoryTable.ajax.reload(null, false);
-    },
-    error: function (xhr) {
-      let errMsg = 'ไม่สามารถบันทึกข้อมูลได้';
-      if (xhr.responseJSON && xhr.responseJSON.message) {
-        errMsg = xhr.responseJSON.message;
-      }
-      Swal.fire({
-        icon: 'error',
-        title: 'เกิดข้อผิดพลาด',
-        text: errMsg
-      });
-    },
-    complete: function () {
-      $btn.prop('disabled', false);
     }
   });
 });
@@ -371,27 +400,11 @@ $(document).on('click', '.btnEditAcc', function () {
           return;
         }
 
-        const formData = new FormData(form);
-
-        $.ajax({
+        submitAccessoryForm({
           url: form.action,
-          type: 'POST',
-          data: formData,
-          processData: false,
-          contentType: false,
-          // ไม่ปิด modal ตอนยิง — ถ้าเจอรายการซ้ำ (422) ผู้ใช้จะได้ไม่เสียข้อมูลที่กรอกมา
-          beforeSend: function () {
-            Swal.fire({
-              title: 'กำลังบันทึกข้อมูล...',
-              text: 'กรุณารอสักครู่',
-              allowOutsideClick: false,
-              didOpen: () => {
-                Swal.showLoading();
-              }
-            });
-            $btn.prop('disabled', true);
-          },
-          success: function (res) {
+          form: form,
+          $btn: $btn,
+          onSuccess: function (res) {
             $modal.modal('hide');
 
             Swal.fire({
@@ -403,16 +416,6 @@ $(document).on('click', '.btnEditAcc', function () {
             });
 
             accessoryTable.ajax.reload(null, false);
-          },
-          error: function (xhr) {
-            Swal.fire({
-              icon: 'error',
-              title: 'เกิดข้อผิดพลาด!',
-              text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้'
-            });
-          },
-          complete: function () {
-            $btn.prop('disabled', false);
           }
         });
       });

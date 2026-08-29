@@ -223,7 +223,10 @@
                   </label>
                 </div>
 
-                {{-- ราคาไม่คงที่ ระบุตอนจอง --}}
+                {{-- ราคาไม่คงที่ (ระบุตอนจอง) — ปิดใช้งาน 2026-08-29
+                     เจ้าของกังวลว่าการกรอกราคาเองตอนทำใบจองเปิดช่องทุจริต ให้กลับไปสร้างรายการซ้ำใน master แทน
+                     เปิดคืน: เอา @if(false) / @endif ออก + ตั้ง PurchaseOrderController::ACC_CUSTOM_PRICE_ENABLED = true --}}
+                @if (false)
                 <div class="col-12">
                   <input type="hidden" name="allow_custom_price" value="0">
                   <label for="inp_acc_allow_custom_price"
@@ -242,6 +245,7 @@
                     </span>
                   </label>
                 </div>
+                @endif
 
                 {{-- ทุนอะไหล่เป็น 0 จริง --}}
                 <div class="col-12">

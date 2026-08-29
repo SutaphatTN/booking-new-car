@@ -84,11 +84,35 @@ class PurchaseOrderController extends Controller
     public const ACC_PRICE_TYPE_CUSTOM = 'ระบุเอง';
 
     /**
+     * สวิตช์ปิดฟีเจอร์ "ระบุราคาประดับยนต์เอง" ทั้งระบบ (ปิดเมื่อ 2026-08-29)
+     *
+     * เหตุผล: เจ้าของกิจการกังวลว่าการให้กรอกราคาเองตอนทำใบจองเปิดช่องทุจริต
+     * จึงกลับไปใช้วิธีเดิม คือสร้างรายการใหม่ใน master เมื่อราคาต่างกัน (เพิ่มรหัส/ชื่อซ้ำได้แล้ว)
+     *
+     * ปิดแทนการลบโค้ด เพราะยังมีใบจองเก่าที่บันทึกด้วยวิธีนี้ไว้ (43 รายการ ณ วันที่ปิด) และอาจกลับมาเปิดใช้อีก
+     * ใบเก่ายังเปิด/เซฟต่อได้ตราบใดที่ไม่แก้ตัวเลข (เงื่อนไข $unchanged ตอนบันทึกประดับยนต์)
+     *
+     * คอลัมน์ "ระบุเอง" ในโมดัลเลือกประดับยนต์หายไปเองตามค่านี้
+     * (gift.blade.php + purchase-order.js อ่านผ่าน canSetCustomAccessoryPrice ทั้งหัวตารางและช่องกรอก)
+     *
+     * เปิดคืน: เปลี่ยนเป็น true + เอา @if(false) ออกที่
+     *   - resources/views/accessory/input.blade.php  (สวิตช์ "ราคาไม่คงที่")
+     *   - resources/views/accessory/edit.blade.php   (สวิตช์ "ราคาไม่คงที่")
+     *   - app/Http/Controllers/accessory/AccessoryController.php (badge ในหน้ารายการ — เป็นคอมเมนต์ //)
+     */
+    public const ACC_CUSTOM_PRICE_ENABLED = false;
+
+    /**
      * ระบุราคาประดับยนต์เองได้ไหม — sale/lead_sale ห้าม
      * เพราะ cost_spare คือยอด "ของแถม" ที่ใช้คำนวณงบขออนุมัติและ GP
+     * ตอนนี้ปิดทั้งระบบด้วย ACC_CUSTOM_PRICE_ENABLED (ดูเหตุผลด้านบน)
      */
     public static function canSetCustomAccessoryPrice(): bool
     {
+        if (!self::ACC_CUSTOM_PRICE_ENABLED) {
+            return false;
+        }
+
         $role = Auth::user()->role ?? null;
 
         return $role !== null && !in_array($role, ['sale', 'lead_sale'], true);
@@ -233,7 +257,8 @@ class PurchaseOrderController extends Controller
                 'AccessorySalePrice' => $a->sale ?? null,
                 'AccessoryComSale' => $a->comSale ?? null,
                 'is_standard' => (bool) $a->is_standard,
-                'allow_custom_price' => (bool) $a->allow_custom_price, // เปิดช่อง "ระบุเอง" ให้เฉพาะรายการที่ราคาไม่คงที่
+                // เปิดช่อง "ระบุเอง" ให้เฉพาะรายการที่ราคาไม่คงที่ — ตอนนี้ปิดทั้งระบบ (ดู ACC_CUSTOM_PRICE_ENABLED)
+                'allow_custom_price' => self::ACC_CUSTOM_PRICE_ENABLED && (bool) $a->allow_custom_price,
                 'is_zero_cost' => (bool) $a->is_zero_cost, // ยืนยันแล้วว่าทุนอะไหล่ = 0 จริง → เลือกได้ทั้งที่ cost_spare เป็น 0
                 'cost_spare' => $a->cost_spare ?? null, // ราคาทุนอะไหล่ — ต้องมีถึงเลือกได้ (ใช้ตอนขออนุมัติ)
                 'require_note' => $a->requiresNote(), // ฟิล์ม — ต้องระบุรายละเอียด (ความเข้ม/ตำแหน่งที่ติด)
@@ -2201,7 +2226,11 @@ class PurchaseOrderController extends Controller
                                 && abs((float) $prevRow->cost_spare - (float) $sentSpare) < 0.005;
 
                             $error = null;
-                            if (!$unchanged && !$canCustomAcc) {
+                            if (!$unchanged && !self::ACC_CUSTOM_PRICE_ENABLED) {
+                                // ฟีเจอร์ถูกปิดแล้ว — ใบเก่าที่ค่าไม่เปลี่ยนยังเซฟผ่าน ($unchanged) แต่ตั้งราคาใหม่ไม่ได้
+                                $error = 'ระบบปิดการระบุราคาประดับยนต์เองแล้ว กรุณาเลือกราคาจากตาราง'
+                                    . ' (ถ้าราคาต่างจากเดิมให้เพิ่มรายการใหม่ในหน้าประดับยนต์)';
+                            } elseif (!$unchanged && !$canCustomAcc) {
                                 $error = 'สิทธิ์ของคุณไม่สามารถระบุราคาประดับยนต์เองได้';
                             } elseif (!$unchanged && !($accMasters[$a['id']]->allow_custom_price ?? false)) {
                                 $error = 'รายการนี้ไม่ได้เปิดให้ระบุราคาเอง กรุณาเลือกราคาจากตาราง';
