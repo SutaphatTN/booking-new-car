@@ -246,6 +246,7 @@
               <div class="row g-3">
 
                 @if (auth()->user()->brand == 2)
+                  @if (auth()->user()->canViewCarCost())
                   <div class="col-md-3">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-wallet ci-amber"></i> ราคาทุน
@@ -261,6 +262,7 @@
                       <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
                     @enderror
                   </div>
+                  @endif
 
                   <div class="col-md-3">
                     <label for="car_MSRP" class="mf-label form-label">
@@ -278,6 +280,7 @@
                     @enderror
                   </div>
                 @elseif (in_array(auth()->user()->brand, [3, 4]))
+                  @if (auth()->user()->canViewCarCost())
                   <div class="col-md-3">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-wallet ci-amber"></i> ราคาทุน
@@ -293,6 +296,7 @@
                       <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
                     @enderror
                   </div>
+                  @endif
 
                   <div class="col-md-3">
                     <label for="car_MSRP" class="mf-label form-label">
@@ -310,6 +314,7 @@
                     @enderror
                   </div>
                 @else
+                  @if (auth()->user()->canViewCarCost())
                   <div class="col-md-3">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-wallet ci-amber"></i> ราคาทุน
@@ -325,6 +330,7 @@
                       <span class="invalid-feedback d-block"><strong>{{ $message }}</strong></span>
                     @enderror
                   </div>
+                  @endif
 
                   <div class="col-md-3">
                     <label for="car_MSRP" class="mf-label form-label">

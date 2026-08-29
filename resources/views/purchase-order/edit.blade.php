@@ -968,16 +968,18 @@
                           <input id="carOrderYear" type="text" class="form-control"
                             value="{{ $saleCar->carOrder->year ?? '' }}" readonly>
                         </div>
-                        <div class="col-md-2">
-                          <label for="carOrderCost" class="po-label"><i class="bx bx-dollar-circle"></i>
-                            ราคาทุน</label>
-                          <div class="money-wrap">
-                            <input id="carOrderCost" type="text" class="form-control text-end money-input"
-                              value="{{ $saleCar->carOrder?->car_DNP !== null ? number_format($saleCar->carOrder->car_DNP, 2) : '' }}"
-                              readonly>
-                            <span class="money-suffix">฿</span>
+                        @if (auth()->user()->canViewCarCost())
+                          <div class="col-md-2">
+                            <label for="carOrderCost" class="po-label"><i class="bx bx-dollar-circle"></i>
+                              ราคาทุน</label>
+                            <div class="money-wrap">
+                              <input id="carOrderCost" type="text" class="form-control text-end money-input"
+                                value="{{ $saleCar->carOrder?->car_DNP !== null ? number_format($saleCar->carOrder->car_DNP, 2) : '' }}"
+                                readonly>
+                              <span class="money-suffix">฿</span>
+                            </div>
                           </div>
-                        </div>
+                        @endif
                         <div class="col-md-2">
                           <label for="carOrderSale" class="po-label"><i class="bx bx-money"></i> ราคาขาย</label>
                           <div class="money-wrap">

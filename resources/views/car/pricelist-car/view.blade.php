@@ -9,6 +9,8 @@
 <div class="inputPricelistCarModal"></div>
 <div class="editPricelistCarModal"></div>
 <input type="hidden" id="userBrand" value="{{ auth()->user()->brand }}">
+{{-- role ที่ห้ามเห็นราคาทุนรถ (manager) — ใช้ปิดคอลัมน์ DNP ใน DataTable --}}
+<input type="hidden" id="canViewCarCost" value="{{ auth()->user()->canViewCarCost() ? 1 : 0 }}">
 <div class="row">
   <div class="col-12">
     <div class="card tbl-card">

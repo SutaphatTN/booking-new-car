@@ -208,6 +208,7 @@
                       value="{{ $waiting->year }}" readonly>
                   </div>
 
+                  @if (auth()->user()->canViewCarCost())
                   <div class="col-md-4">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-purchase-tag ci-amber"></i> ราคาทุน
@@ -218,6 +219,7 @@
                         value="{{ $waiting->car_DNP !== null ? number_format($waiting->car_DNP, 2) : '' }}" readonly>
                     </div>
                   </div>
+                  @endif
 
                   <div class="col-md-4">
                     <label for="car_MSRP" class="mf-label form-label">
@@ -278,6 +280,7 @@
                       value="{{ $waiting->year }}" readonly>
                   </div>
 
+                  @if (auth()->user()->canViewCarCost())
                   <div class="col-md-4">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-purchase-tag ci-amber"></i> ราคาทุน
@@ -288,6 +291,7 @@
                         value="{{ $waiting->car_DNP !== null ? number_format($waiting->car_DNP, 2) : '' }}" readonly>
                     </div>
                   </div>
+                  @endif
 
                   <div class="col-md-4">
                     <label for="car_MSRP" class="mf-label form-label">
@@ -334,6 +338,7 @@
                       value="{{ $waiting->year }}" readonly>
                   </div>
 
+                  @if (auth()->user()->canViewCarCost())
                   <div class="col-md-4">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-purchase-tag ci-amber"></i> ราคาทุน
@@ -344,6 +349,7 @@
                         value="{{ $waiting->car_DNP !== null ? number_format($waiting->car_DNP, 2) : '' }}" readonly>
                     </div>
                   </div>
+                  @endif
 
                   <div class="col-md-4">
                     <label for="car_MSRP" class="mf-label form-label">

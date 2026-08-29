@@ -63,7 +63,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
   private function dynamicColumns(): array
   {
     $brand    = auth()->user()->brand;
-    $showCost = auth()->user()->role !== 'manager';
+    $showCost = auth()->user()->canViewCarCost();
 
     $next = 3; // A=รุ่นย่อย, B=สี
     if ($brand == 2) $next++;                       // สาขา (แทรกเป็นคอลัมน์แรก) — GWM เท่านั้น

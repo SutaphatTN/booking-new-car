@@ -588,6 +588,8 @@ $(document).on('click', '.btnDeleteSubCar', function () {
 let pricelistCarTable;
 const userBrand = parseInt($('#userBrand').val());
 const hide = [2, 3].includes(userBrand);
+// manager ไม่เห็นราคาทุนรถ — ตัดคอลัมน์ DNP ทิ้ง (ฝั่ง server ก็ส่งมาเป็น '-' อยู่แล้ว)
+const canViewCarCost = $('#canViewCarCost').val() !== '0';
 
 $(document).ready(function () {
   if ($.fn.DataTable.isDataTable('.pricelistCarTable')) {
@@ -602,7 +604,7 @@ $(document).ready(function () {
       { data: 'option', visible: !hide },
       { data: 'year' },
       { data: 'color', visible: !hide },
-      { data: 'dnp' },
+      { data: 'dnp', visible: canViewCarCost },
       { data: 'msrp' },
       { data: 'dm', visible: !hide },
       { data: 'ri', visible: !hide },

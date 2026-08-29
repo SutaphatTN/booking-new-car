@@ -1,6 +1,6 @@
 @php
   // role manager เห็นรายงานนี้ได้ แต่ไม่ให้เห็นคอลัมน์ราคาทุน
-  $showCost = auth()->user()->role !== 'manager';
+  $showCost = auth()->user()->canViewCarCost();
 
   // คอลัมน์ "สีภายใน" — เปิดตาม config/brand.php (interior_color_brands)
   $showInterior = \App\Support\BrandFeature::hasInteriorColor();

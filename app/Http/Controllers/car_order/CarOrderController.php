@@ -207,9 +207,7 @@ class CarOrderController extends Controller
 
             $data = $request->except(['_token', '_method']);
 
-            $data['car_DNP'] = $request->car_DNP
-                ? str_replace(',', '', $request->car_DNP)
-                : null;
+            $data['car_DNP'] = $this->keepCarDnp($request, $order->car_DNP);
 
             $data['car_MSRP'] = $request->car_MSRP
                 ? str_replace(',', '', $request->car_MSRP)
@@ -346,7 +344,14 @@ class CarOrderController extends Controller
             ->limit(20)
             ->get();
 
-        $order = $order->map(function ($item) {
+        // manager ห้ามเห็นราคาทุนรถ — ตัดออกก่อนส่ง JSON (หน้าใบจองแปะค่านี้ไว้บนปุ่ม "เลือก" รถ)
+        $showCost = Auth::user()->canViewCarCost();
+
+        $order = $order->map(function ($item) use ($showCost) {
+
+            if (!$showCost) {
+                $item->makeHidden('car_DNP');
+            }
 
             $item->display_color = in_array($item->brand, [2, 3, 4])
                 ? ($item->gwmColor->name ?? '-')
@@ -574,9 +579,7 @@ class CarOrderController extends Controller
                 'purchase_type' => $request->purchase_type,
                 'payment_type' => $request->payment_type,
                 'order_status' => 1,
-                'car_DNP' => $request->filled('car_DNP')
-                    ? str_replace(',', '', $request->car_DNP)
-                    : null,
+                'car_DNP' => $this->newCarDnp($request),
                 'car_MSRP' => $request->filled('car_MSRP')
                     ? str_replace(',', '', $request->car_MSRP)
                     : null,
@@ -716,7 +719,7 @@ class CarOrderController extends Controller
                 'year'           => $request->year,
                 'purchase_type'  => $request->purchase_type,
                 'payment_type'   => $request->payment_type,
-                'car_DNP'        => $request->filled('car_DNP')  ? str_replace(',', '', $request->car_DNP)  : null,
+                'car_DNP'        => $this->newCarDnp($request),
                 'car_MSRP'       => $request->filled('car_MSRP') ? str_replace(',', '', $request->car_MSRP) : null,
                 'RI'             => $request->filled('RI')  ? str_replace(',', '', $request->RI)  : null,
                 'WS'             => $request->filled('WS')  ? str_replace(',', '', $request->WS)  : null,
@@ -875,25 +878,59 @@ class CarOrderController extends Controller
         }
     }
 
-    //get price list data
-    public function getPricelistData(Request $request)
+    /**
+     * แถว price list ที่ตรงกับรุ่นย่อย/ปี/สี (brand 1 เท่านั้นที่แยกตามสี)
+     * เผื่อมีข้อมูลซ้ำหลงเหลืออยู่ ให้ยึดแถวที่เพิ่มล่าสุดเสมอ (เดิม first() จะได้แถวเก่าสุด)
+     */
+    private function pricelistRow($subModelId, $year, $color = null): ?TbPricelistCar
     {
-        $subModelId = $request->sub_model_id;
-        $year = $request->year;
-        $brand = Auth::user()->brand;
-
         if (!$subModelId || !$year) {
-            return response()->json(null);
+            return null;
         }
 
         $query = TbPricelistCar::where('subModel_id', $subModelId)->where('year', $year);
 
-        if ($brand == 1 && $request->color) {
-            $query->where('color', $request->color);
+        if (Auth::user()->brand == 1 && $color) {
+            $query->where('color', $color);
         }
 
-        // เผื่อมีข้อมูลซ้ำหลงเหลืออยู่ ให้ยึดแถวที่เพิ่มล่าสุดเสมอ (เดิม first() จะได้แถวเก่าสุด)
-        $row = $query->orderByDesc('id')->first();
+        return $query->orderByDesc('id')->first();
+    }
+
+    /** ราคาทุนที่กรอกมาในฟอร์ม (ตัดคอมม่าออก) */
+    private function postedCarDnp(Request $request)
+    {
+        return $request->filled('car_DNP') ? str_replace(',', '', $request->car_DNP) : null;
+    }
+
+    /**
+     * ราคาทุนรถตอน "สร้างใหม่"
+     * role ที่ห้ามเห็นราคาทุน (manager) ไม่มีช่องนี้ในฟอร์ม ค่าจึงไม่ถูกส่งมา —
+     * ดึงจาก price list ให้แทน (แถวเดียวกับที่ JS เติมให้ role อื่น) ไม่งั้นรถที่ manager คีย์จะไม่มีราคาทุน
+     */
+    private function newCarDnp(Request $request)
+    {
+        if (Auth::user()->canViewCarCost()) {
+            return $this->postedCarDnp($request);
+        }
+
+        return $this->pricelistRow($request->subModel_id, $request->year, $request->type_color)?->dnp;
+    }
+
+    /**
+     * ราคาทุนรถตอน "แก้ไข"
+     * ช่องถูกซ่อนจาก manager ค่าจึงไม่ถูกส่งกลับมา ต้องคงค่าเดิมไว้เสมอ
+     * ถ้าไม่ดัก แค่ manager กดบันทึก ราคาทุนที่มีอยู่จะกลายเป็น null
+     */
+    private function keepCarDnp(Request $request, $current)
+    {
+        return Auth::user()->canViewCarCost() ? $this->postedCarDnp($request) : $current;
+    }
+
+    //get price list data
+    public function getPricelistData(Request $request)
+    {
+        $row = $this->pricelistRow($request->sub_model_id, $request->year, $request->color);
 
         if (!$row) {
             return response()->json(null);
@@ -901,7 +938,8 @@ class CarOrderController extends Controller
 
         return response()->json([
             'option' => $row->option,
-            'dnp'    => $row->dnp,
+            // manager ห้ามเห็นราคาทุนรถ — ไม่ส่ง dnp กลับไปเลย (กันยิง endpoint ตรง)
+            'dnp'    => Auth::user()->canViewCarCost() ? $row->dnp : null,
             'msrp'   => $row->msrp,
             'ri'     => $row->ri,
             'ws'     => $row->ws,
@@ -935,9 +973,7 @@ class CarOrderController extends Controller
             $order = CarOrder::findOrFail($id);
             $data = $request->except(['_token', '_method']);
 
-            $data['car_DNP'] = $request->car_DNP
-                ? str_replace(',', '', $request->car_DNP)
-                : null;
+            $data['car_DNP'] = $this->keepCarDnp($request, $order->car_DNP);
 
             $data['car_MSRP'] = $request->car_MSRP
                 ? str_replace(',', '', $request->car_MSRP)
@@ -1647,7 +1683,7 @@ class CarOrderController extends Controller
 
             $data = $request->except(['_token', '_method']);
 
-            $data['car_DNP']  = $request->filled('car_DNP')  ? str_replace(',', '', $request->car_DNP)  : null;
+            $data['car_DNP']  = $this->keepCarDnp($request, $waiting->car_DNP);
             $data['car_MSRP'] = $request->filled('car_MSRP') ? str_replace(',', '', $request->car_MSRP) : null;
             $data['RI']       = $request->filled('RI')  ? str_replace(',', '', $request->RI)  : null;
             $data['WS']       = $request->filled('WS')  ? str_replace(',', '', $request->WS)  : null;

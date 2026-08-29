@@ -240,6 +240,7 @@
                     @enderror
                   </div>
 
+                  @if (auth()->user()->canViewCarCost())
                   <div class="col-md-4">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-purchase-tag ci-amber"></i> ราคาทุน
@@ -255,6 +256,7 @@
                       <span class="invalid-feedback d-block" role="alert"><strong>{{ $message }}</strong></span>
                     @enderror
                   </div>
+                  @endif
 
                   <div class="col-md-4">
                     <label for="car_MSRP" class="mf-label form-label">
@@ -329,6 +331,7 @@
                     @enderror
                   </div>
 
+                  @if (auth()->user()->canViewCarCost())
                   <div class="col-md-4">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-purchase-tag ci-amber"></i> ราคาทุน
@@ -344,6 +347,7 @@
                       <span class="invalid-feedback d-block" role="alert"><strong>{{ $message }}</strong></span>
                     @enderror
                   </div>
+                  @endif
 
                   <div class="col-md-4">
                     <label for="car_MSRP" class="mf-label form-label">
@@ -403,6 +407,7 @@
                     @enderror
                   </div>
 
+                  @if (auth()->user()->canViewCarCost())
                   <div class="col-md-4">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-purchase-tag ci-amber"></i> ราคาทุน
@@ -418,6 +423,7 @@
                       <span class="invalid-feedback d-block" role="alert"><strong>{{ $message }}</strong></span>
                     @enderror
                   </div>
+                  @endif
 
                   <div class="col-md-3">
                     <label for="car_MSRP" class="mf-label form-label">

@@ -259,6 +259,7 @@
             <div class="mf-section-body">
               <div class="row g-3">
 
+                @if (auth()->user()->canViewCarCost())
                 <div class="col-md-3">
                   <label for="car_DNP" class="mf-label form-label">
                     <i class="bx bx-purchase-tag ci-amber"></i> ราคาทุน
@@ -269,6 +270,7 @@
                       value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}" disabled>
                   </div>
                 </div>
+                @endif
 
                 <div class="col-md-3">
                   <label for="car_MSRP" class="mf-label form-label">

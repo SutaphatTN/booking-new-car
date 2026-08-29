@@ -97,6 +97,7 @@
               @enderror
             </div>
 
+            @if (auth()->user()->canViewCarCost())
             <div class="col-md-3 mb-5">
               <label for="car_DNP" class="form-label">ราคาทุน</label>
               <input id="car_DNP" type="text"
@@ -109,6 +110,7 @@
               </span>
               @enderror
             </div>
+            @endif
 
             <div class="col-md-3 mb-5">
               <label for="car_MSRP" class="form-label">ราคาขาย</label>

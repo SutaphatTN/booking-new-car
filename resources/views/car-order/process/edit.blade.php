@@ -180,6 +180,7 @@
                       style="background:#f8fafc;color:#64748b;" disabled>
                   </div>
 
+                  @if (auth()->user()->canViewCarCost())
                   <div class="col-md-4">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-purchase-tag ci-amber"></i> ราคาทุน
@@ -190,6 +191,7 @@
                         value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}" disabled>
                     </div>
                   </div>
+                  @endif
 
                   <div class="col-md-4">
                     <label for="car_MSRP" class="mf-label form-label">
@@ -237,6 +239,7 @@
                       style="background:#f8fafc;color:#64748b;" disabled>
                   </div>
 
+                  @if (auth()->user()->canViewCarCost())
                   <div class="col-md-4">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-purchase-tag ci-amber"></i> ราคาทุน
@@ -247,6 +250,7 @@
                         value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}" disabled>
                     </div>
                   </div>
+                  @endif
 
                   <div class="col-md-4">
                     <label for="car_MSRP" class="mf-label form-label">
@@ -297,6 +301,7 @@
                       style="background:#f8fafc;color:#64748b;" disabled>
                   </div>
 
+                  @if (auth()->user()->canViewCarCost())
                   <div class="col-md-4">
                     <label for="car_DNP" class="mf-label form-label">
                       <i class="bx bx-purchase-tag ci-amber"></i> ราคาทุน
@@ -307,6 +312,7 @@
                         value="{{ $order->car_DNP !== null ? number_format($order->car_DNP, 2) : '-' }}" disabled>
                     </div>
                   </div>
+                  @endif
 
                   <div class="col-md-4">
                     <label for="car_MSRP" class="mf-label form-label">
