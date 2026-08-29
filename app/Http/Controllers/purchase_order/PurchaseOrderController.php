@@ -337,6 +337,71 @@ class PurchaseOrderController extends Controller
         ];
     }
 
+    /**
+     * "กระเป๋าของเซลล์" — งบที่ได้ทั้งก้อน เทียบกับทุกอย่างที่ถูกใช้ไป (ไฟล์แนบใบที่ 2 ของเมลขออนุมัติ)
+     *
+     *  งบที่ได้      = ยอดแคมเปญทั้งหมด (TotalSaleCampaign) + บวกหัว 90% + Kick Back
+     *  รายการที่ใช้ไป = ส่วนลดราคารถ + ส่วนลดเงินดาวน์ + เงินจอง + ของแถม(ราคาทุนอะไหล่) + Vat ของแถม
+     *                  (ค่างวดล่วงหน้าไม่นับ — ไม่ได้ออกจากกระเป๋าเซลล์)
+     *  คงเหลือ       = งบที่ได้ − รายการที่ใช้ไป
+     *
+     * หมายเหตุ: ของแถมใช้ "ราคาทุนอะไหล่" (cost_spare) ชุดเดียวกับที่ลิสต์ในเมล ซึ่งเป็นคนละฐานกับ
+     * salecars.TotalAccessoryGift (ราคาที่ใช้ = pivot.price) ที่หน้าใบจองใช้คิด balanceCampaign
+     * → ยอดคงเหลือหน้านี้จึงไม่เท่ากับ "เหลืองบ/เกินงบ" ในไฟล์สรุปการขาย เป็นคนละมุมโดยตั้งใจ
+     */
+    private function buildSalePocketData(Salecar $saleCar): array
+    {
+        $saleCar->loadMissing(['accessories']);
+
+        $isFinance = $saleCar->payment_mode === 'finance';
+
+        // ── งบที่ได้ ──
+        $campaignTotal = (float) ($saleCar->TotalSaleCampaign ?? 0);
+        $markup90      = $isFinance ? (float) ($saleCar->Markup90 ?? 0) : 0.0;
+        $kickback      = (float) ($saleCar->kickback ?? 0);
+        $budgetTotal   = $campaignTotal + $markup90 + $kickback;
+
+        // ── รายการที่ใช้ไป ──
+        // ส่วนลดราคารถ : ไฟแนนซ์ใช้ discount / เงินสดใช้ PaymentDiscount (เหมือน buildApprovalData)
+        $carDiscount = $isFinance
+            ? (float) ($saleCar->discount ?? 0)
+            : (float) ($saleCar->PaymentDiscount ?? 0);
+
+        // ส่วนลดเงินดาวน์ / Vat ของแถม : มีเฉพาะเคสจัดไฟแนนซ์
+        $downPaymentDiscount = $isFinance ? (float) ($saleCar->DownPaymentDiscount ?? 0) : 0.0;
+        $accessoryGiftVat    = $isFinance ? (float) ($saleCar->AccessoryGiftVat ?? 0) : 0.0;
+
+        // เงินจอง — ใช้ salecars.CashDeposit (ช่องที่กรอกในใบจอง) ครบกว่า payment_type ประเภท reservation
+        $cashDeposit = (float) ($saleCar->CashDeposit ?? 0);
+
+        // ของแถม = ราคาทุนอะไหล่ (snapshot ในใบขาย) + รายละเอียดรายชิ้น เหมือนที่แสดงในเมล
+        $giftAccessories = $saleCar->accessories->where('pivot.type', 'gift');
+        $giftTotal   = (float) $giftAccessories->sum(fn($a) => $a->usedCostSpare());
+        $giftDetails = $giftAccessories->map(fn($a) => [
+            'detail' => $a->detail,
+            'note'   => $a->pivot->note, // ฟิล์ม: ความเข้ม/ตำแหน่งที่ติด
+            'amount' => $a->usedCostSpare(),
+        ])->values();
+
+        $usedTotal = $carDiscount + $downPaymentDiscount + $cashDeposit + $giftTotal + $accessoryGiftVat;
+
+        return [
+            'is_finance'            => $isFinance,
+            'campaign_total'        => $campaignTotal,
+            'markup90'              => $markup90,
+            'kickback'              => $kickback,
+            'budget_total'          => $budgetTotal,
+            'car_discount'          => $carDiscount,
+            'down_payment_discount' => $downPaymentDiscount,
+            'cash_deposit'          => $cashDeposit,
+            'gift_total'            => $giftTotal,
+            'gift_details'          => $giftDetails,
+            'accessory_gift_vat'    => $accessoryGiftVat,
+            'used_total'            => $usedTotal,
+            'remaining'             => $budgetTotal - $usedTotal,
+        ];
+    }
+
     // คำนวณ com finance ตามสูตรหน้า FN (finance.js: calculateComFin)
     private function calcComFinance(Salecar $saleCar)
     {
@@ -448,7 +513,16 @@ class PurchaseOrderController extends Controller
         $files[] = Attachment::fromData(fn() => $pdf->output(), 'summary-' . $saleCar->id . '.pdf')
             ->withMime('application/pdf');
 
-        // (2) ไฟล์แนบจากผู้ขอ (เก็บไว้ใน storage — ส่งต่อ GM ได้)
+        // (2) ไฟล์กระเป๋าของเซลล์ — งบที่ได้ทั้งก้อน vs ทุกอย่างที่ใช้ไป (แนบทุกเคสที่ขออนุมัติ)
+        $pocketPdf = Pdf::loadView('purchase-order.report.sale-pocket', [
+            'saleCar' => $saleCar,
+            'pocket'  => $this->buildSalePocketData($saleCar),
+        ])->setPaper('A4', 'portrait');
+
+        $files[] = Attachment::fromData(fn() => $pocketPdf->output(), 'sale-pocket-' . $saleCar->id . '.pdf')
+            ->withMime('application/pdf');
+
+        // (3) ไฟล์แนบจากผู้ขอ (เก็บไว้ใน storage — ส่งต่อ GM ได้)
         foreach (($saleCar->approval_files ?? []) as $f) {
             if (!empty($f['path']) && \Illuminate\Support\Facades\Storage::exists($f['path'])) {
                 $files[] = Attachment::fromPath(\Illuminate\Support\Facades\Storage::path($f['path']))
