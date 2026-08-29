@@ -2,7 +2,7 @@
 
 namespace App\Exports\booking;
 
-use App\Services\BookingReportQuery;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Illuminate\Contracts\View\View;
@@ -20,6 +20,14 @@ use App\Support\BrandFeature;
 
 class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
+  /** รถ test drive — BookingExport โหลดมาให้ครั้งเดียว */
+  protected $cars;
+
+  public function __construct(Collection $cars)
+  {
+    $this->cars = $cars;
+  }
+
   public function title(): string
   {
     return 'Test Drive';
@@ -108,8 +116,7 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
 
   public function view(): View
   {
-    $carOrders = BookingReportQuery::testDriveCars()
-      ->get()
+    $carOrders = $this->cars
       ->sortBy([
         fn($o) => $o->model->Name_TH ?? '',
         fn($o) => $o->subModel->detail ?? '',

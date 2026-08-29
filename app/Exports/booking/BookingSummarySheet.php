@@ -2,7 +2,7 @@
 
 namespace App\Exports\booking;
 
-use App\Services\BookingReportQuery;
+use Illuminate\Support\Collection;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\FromView;
@@ -23,9 +23,13 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
 {
     protected $request;
 
-    public function __construct($request)
+    /** รถ stock ทั้งหมด — BookingExport โหลดมาให้ครั้งเดียว */
+    protected $cars;
+
+    public function __construct($request, Collection $cars)
     {
         $this->request = $request;
+        $this->cars    = $cars;
     }
 
     public function title(): string
@@ -130,8 +134,7 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
 
     public function view(): View
     {
-        $carOrders = BookingReportQuery::stockCars()
-            ->get()
+        $carOrders = $this->cars
             ->sortBy([
                 fn($o) => $o->model->Name_TH ?? '',
                 fn($o) => $o->subModel->detail ?? '',
