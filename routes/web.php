@@ -152,6 +152,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('car-order/view-export-stock', [CarOrderController::class, 'viewExportStock'])->name('car-order.view-export-stock');
     Route::get('car-order/stock-export', [CarOrderController::class, 'exportStock'])->name('car-order.stock-export');
     Route::get('car-order/data-export', [CarOrderController::class, 'dataExport'])->name('car-order.data-export');
+    Route::get('car-order/order-date-export', [CarOrderController::class, 'orderDateExport'])->name('car-order.order-date-export');
 
     //accessory partner
     Route::get('accessory/partner', [AccessoryController::class, 'viewPartner'])->name('accessory.partner');

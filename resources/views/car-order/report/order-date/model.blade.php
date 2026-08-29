@@ -1,9 +1,9 @@
 @php
-  // role manager เห็นรายงานนี้ได้ แต่ไม่ให้เห็นคอลัมน์ราคาทุน (ยึดตาม convention รายงาน Stock เดิม)
+  // role manager เห็นรายงานนี้ได้ แต่ไม่ให้เห็นคอลัมน์ราคาทุน (ยึดตาม convention รายงานข้อมูลรถเดิม)
   $showCost = auth()->user()->role !== 'manager';
 
   // รายงานถูก brand-scope อยู่แล้ว (UserAccessScope) → อิง brand ของ user ที่ login
-  //  - Option + ราคาขาย RI/WS: เฉพาะ brand 1
+  //  - Option: เฉพาะ brand 1
   //  - สีภายใน: ตาม config/brand.php (interior_color_brands)
   $brand = auth()->user()->brand;
   $showInterior = \App\Support\BrandFeature::hasInteriorColor($brand);
@@ -12,9 +12,9 @@
   $showBranch = \App\Support\BrandFeature::hasMultipleBranches($brand);
 
   // นับคอลัมน์ไว้ทำ colspan ของแถว "ไม่มีข้อมูล"
-  $colCount = 13
+  $colCount = 14
       + ($showBranch ? 1 : 0)   // สาขา
-      + ($brand == 1 ? 3 : 0)   // Option + RI + WS
+      + ($brand == 1 ? 1 : 0)   // Option
       + ($showInterior ? 1 : 0) // สีภายใน
       + ($showCost ? 1 : 0);    // ราคาทุน
 @endphp
@@ -25,7 +25,7 @@
       @if ($showBranch)
         <th>สาขา</th>
       @endif
-      <th>รุ่นรถหลัก</th>
+      <th>วันที่สั่ง</th>
       <th>รุ่นย่อย</th>
       <th>VIN Number</th>
       <th>J Number</th>
@@ -41,10 +41,7 @@
       @if ($showCost)
         <th>ราคาทุน</th>
       @endif
-      @if ($brand == 1)
-        <th>RI</th>
-        <th>WS</th>
-      @endif
+      <th>ราคาขาย</th>
       <th>แหล่งที่มา</th>
       <th>ประเภทการซื้อรถ</th>
       <th>ประเภทการจ่าย</th>
@@ -59,7 +56,7 @@
       @if ($showBranch)
         <td>{{ $row->branchInfo->name ?? '-' }}</td>
       @endif
-      <td>{{ $row->model->Name_TH ?? '-' }}</td>
+      <td>{{ $row->format_order_date ?? '-' }}</td>
       <td>{{ $row->subModel->name ?? '-' }}</td>
       <td>{{ $row->vin_number ?? '-' }}</td>
       <td>{{ $row->j_number ?? '-' }}</td>
@@ -75,10 +72,7 @@
       @if ($showCost)
         <td>{{ $row->car_DNP ?? '-' }}</td>
       @endif
-      @if ($brand == 1)
-        <td>{{ $row->RI ?? '-' }}</td>
-        <td>{{ $row->WS ?? '-' }}</td>
-      @endif
+      <td>{{ $row->car_MSRP ?? '-' }}</td>
       <td>{{ $row->purchase_source_label }}</td>
       <td>{{ $row->purchaseType->name ?? '-' }}</td>
       <td>{{ $row->payment_type_label }}</td>

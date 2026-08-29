@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CarOrder;
 use App\Models\Salecar;
+use App\Support\BrandFeature;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,16 +18,16 @@ use Illuminate\Support\Facades\Auth;
 class BookingReportQuery
 {
   /**
-   * GWM(2) เป็นแบรนด์เดียวที่แยกสาขาจริง — รายงานนี้ต้องเห็นรถรวมทั้ง 2 สาขา
+   * brand ที่มีหลายสาขา (config brand.multi_branch_brands) ต้องเห็นรถรวมทุกสาขา
    * (ชีทรายคันมีคอลัมน์ "สาขา" แยกให้แล้ว) จึงปลด scope สาขาทิ้งแล้วล็อก brand เองแทน
-   * brand อื่นสาขาเดียวอยู่แล้ว ปล่อยให้ scope เดิมทำงานตามปกติ
+   * brand ที่มีสาขาเดียวปล่อยให้ scope เดิมทำงานตามปกติ
    */
   private static function scoped(string $model)
   {
-    $user = Auth::user();
+    $brand = (int) (Auth::user()->brand ?? 0);
 
-    if ((int) ($user->brand ?? 0) === 2) {
-      return $model::withoutGlobalScope('userAccess')->where('brand', 2);
+    if (BrandFeature::hasMultipleBranches($brand)) {
+      return $model::withoutGlobalScope('userAccess')->where('brand', $brand);
     }
 
     return $model::query();
@@ -34,15 +35,15 @@ class BookingReportQuery
 
   /**
    * ปลด scope ให้ relation salecars ตรงกับที่ปลดให้ car_order ด้านบน
-   * ไม่งั้น GWM จะเจอเคส "รถของอีกสาขาโผล่ในรายงาน แต่ชื่อผู้จอง/เซลล์/สถานะว่าง"
+   * ไม่งั้นจะเจอเคส "รถของอีกสาขาโผล่ในรายงาน แต่ชื่อผู้จอง/เซลล์/สถานะว่าง"
    * เพราะตัวรถหลุด scope มาแล้ว แต่ใบจองยังโดน userAccess กรองสาขาทิ้ง
    */
   private static function salecarsConstraint(): \Closure
   {
-    $user = Auth::user();
+    $brand = (int) (Auth::user()->brand ?? 0);
 
-    if ((int) ($user->brand ?? 0) === 2) {
-      return fn($q) => $q->withoutGlobalScope('userAccess')->where('salecars.brand', 2);
+    if (BrandFeature::hasMultipleBranches($brand)) {
+      return fn($q) => $q->withoutGlobalScope('userAccess')->where('salecars.brand', $brand);
     }
 
     return fn($q) => $q;

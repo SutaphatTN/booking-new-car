@@ -2,7 +2,7 @@
 
 namespace App\Exports\carOrder;
 
-use App\Models\CarOrder;
+use App\Exports\carOrder\Concerns\PullsAllBranches;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -19,9 +19,12 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 /**
  * รายงานข้อมูลรถ (Car Order) — ตัดสถานะรถ Delivered ออก
  * กรองตามรุ่นหลัก/รุ่นย่อยที่เลือก (ว่าง = ทั้งหมด) — brand-scope อัตโนมัติผ่าน UserAccessScope
+ * brand ที่มีหลายสาขาเห็นรถครบทุกสาขา พร้อมคอลัมน์ "สาขา" (ดู PullsAllBranches)
  */
 class CarOrderDataExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
+    use PullsAllBranches;
+
     protected $modelId;
     protected $subModelId;
 
@@ -103,7 +106,8 @@ class CarOrderDataExport implements FromView, WithTitle, WithStyles, WithEvents,
 
     public function view(): View
     {
-        $rows = CarOrder::with(['model', 'subModel', 'purchaseType', 'orderStatus', 'gwmColor', 'interiorColor', 'dealerProvince'])
+        $rows = $this->scopedCarOrders()
+            ->with(['model', 'subModel', 'purchaseType', 'orderStatus', 'gwmColor', 'interiorColor', 'dealerProvince', 'branchInfo'])
             ->where('status', 'finished')
             // ตัดรถที่ส่งมอบแล้วออก (null-safe: รถที่ car_status ยังว่างต้องไม่หลุด)
             ->where(fn($q) => $q->where('car_status', '!=', 'Delivered')->orWhereNull('car_status'))

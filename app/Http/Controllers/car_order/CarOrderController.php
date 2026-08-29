@@ -4,6 +4,7 @@ namespace App\Http\Controllers\car_order;
 
 use App\Exports\carOrder\CarOrderStockExport;
 use App\Exports\carOrder\CarOrderDataExport;
+use App\Exports\carOrder\CarOrderByOrderDateExport;
 use App\Http\Controllers\Controller;
 use App\Traits\ConvertsThaiDate;
 use App\Mail\ApproveCarOrderMail;
@@ -1791,6 +1792,21 @@ class CarOrderController extends Controller
         return Excel::download(
             new CarOrderDataExport($request->model_id, $request->sub_model_id),
             ExportFilename::withBrand('ข้อมูลรถ.xlsx')
+        );
+    }
+
+    /**
+     * รายงานข้อมูลรถที่สั่งในระบบ ตามช่วงวันที่สั่ง (order_date)
+     * ชีทแรกสรุปจำนวนคันแยกรุ่น ที่เหลือแยกชีทตามรุ่นหลัก — รวมรถทุกสถานะที่สั่งในช่วงนั้น
+     */
+    public function orderDateExport(Request $request)
+    {
+        $fromDate = $request->from_date ?: now()->startOfMonth()->format('Y-m-d');
+        $toDate   = $request->to_date   ?: now()->format('Y-m-d');
+
+        return Excel::download(
+            new CarOrderByOrderDateExport($fromDate, $toDate),
+            ExportFilename::withBrand('ข้อมูลรถที่สั่งในระบบ.xlsx')
         );
     }
 }
