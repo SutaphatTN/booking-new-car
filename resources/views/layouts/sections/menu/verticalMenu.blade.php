@@ -82,8 +82,9 @@
         $croAllowed   = ['pre-delivery-inspection', 'ssi'];
       @endphp
 
-      {{-- เมนู Floor Plan เห็นเฉพาะ role admin, audit_internal, md --}}
-      @if (!empty(array_intersect($menuSlugs, ['floor-plan'])) && !in_array($userRole, ['admin', 'audit_internal', 'md']))
+      {{-- เมนู Floor Plan เห็นเฉพาะ role admin, audit_internal, md, account
+           (account ดูได้ทุกหน้า + แก้ได้เฉพาะแจ้งจำหน่าย — ดู FloorPlanController) --}}
+      @if (!empty(array_intersect($menuSlugs, ['floor-plan'])) && !in_array($userRole, ['admin', 'audit_internal', 'md', 'account']))
         @continue
       @endif
 
