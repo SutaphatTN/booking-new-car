@@ -55,6 +55,7 @@ use App\Services\HeldCommissionQuery;
 use App\Services\ExtraBudgetLedger;
 use App\Services\BudgetWallet;
 use App\Services\OneDriveService;
+use App\Services\ApprovalSummary;
 use App\Support\ScopeBypass;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Mail\Mailables\Attachment;
@@ -269,97 +270,13 @@ class PurchaseOrderController extends Controller
     }
 
     // ประกอบข้อมูลสำหรับใบขออนุมัติ (เมล + เก็บยอดที่เหลือ)
+    // สูตรอยู่ที่ App\Services\ApprovalSummary — รายงานเกินงบใช้ชุดเดียวกัน
     private function buildApprovalData(Salecar $saleCar)
     {
         // รีเฟรช relations ที่เพิ่งถูก sync ในรีเควสต์เดียวกัน (accessories/campaigns) กัน cache เก่า
-        $saleCar->load([
-            'accessories',
-            'campaigns.campaign.type',
-            'campaigns.campaign.appellation',
-            'remainingPayment.financeInfo',
-            'model',
-        ]);
+        $saleCar->load(ApprovalSummary::RELATIONS);
 
-        // 1. ราคาขาย จาก price_sub
-        $priceSub = (float) ($saleCar->price_sub ?? 0);
-
-        $isFinance = $saleCar->payment_mode === 'finance';
-
-        // 3. margin = ราคาขาย × 2% — brand 2 ไม่มี margin (ไม่คิดเข้ายอดรวมแคมเปญ)
-        $hasMargin = (int) $saleCar->brand !== 2;
-        $margin = $hasMargin ? $priceSub * 0.02 : 0.0;
-
-        // 2. ri (cashSupport) จากแคมเปญที่ใช้ — นับเฉพาะ type = 1 (RI) และ type = 2 (On-Top)
-        //    เช็คตาม type ของแคมเปญที่ใช้จริง (tb_campaign_type แยก brand อยู่แล้ว จึงไม่ต้อง hardcode ตาม brand)
-        $usedCampaigns = $saleCar->campaigns->filter(
-            fn($c) => in_array((int) ($c->campaign?->type?->type ?? 0), [1, 2], true)
-        );
-        $ri = $usedCampaigns->sum(fn($c) => (float) ($c->CashSupport ?? 0));
-        $campaignDetails = $usedCampaigns->map(fn($c) => [
-            'name'   => trim(($c->campaign?->appellation?->name ?? '') . ' (' . ($c->campaign?->type?->name ?? '') . ')'),
-            'amount' => (float) ($c->CashSupport ?? 0),
-        ])->values();
-
-        // 4. com finance (port calculateComFin จากหน้า FN)
-        $comFin = $this->calcComFinance($saleCar);
-
-        // 4.1 บวกหัว (90%) — มีเฉพาะเคสจัดไฟแนนซ์
-        $markup90 = $isFinance ? (float) ($saleCar->Markup90 ?? 0) : 0.0;
-
-        // 4.2 ลูกค้าจ่ายเพิ่ม — มีทั้งเงินสด/ไฟแนนซ์ (คนละคอลัมน์)
-        $customerExtra = $isFinance
-            ? (float) ($saleCar->other_cost_fi ?? 0)
-            : (float) ($saleCar->other_cost ?? 0);
-
-        // 5. ยอดรวมแคมเปญ = ri + margin + com finance + บวกหัว(90%) + ลูกค้าจ่ายเพิ่ม
-        $campaignTotal = $ri + $margin + $comFin + $markup90 + $customerExtra;
-
-        // 6. ของแถม = ราคาทุนอะไหล่ (cost_spare) ของของแถมทั้งหมด + รายละเอียด
-        //    ใช้ค่าที่ snapshot ไว้ในใบขาย ไม่ใช่ค่าปัจจุบันใน master — แก้ราคา master แล้วใบเก่าต้องไม่ขยับ
-        $giftAccessories = $saleCar->accessories->where('pivot.type', 'gift');
-        $giftTotal = $giftAccessories->sum(fn($a) => $a->usedCostSpare());
-        $giftDetails = $giftAccessories->map(fn($a) => [
-            'detail' => $a->detail,
-            'note'   => $a->pivot->note, // ฟิล์ม: ความเข้ม/ตำแหน่งที่ติด
-            'amount' => $a->usedCostSpare(),
-        ])->values();
-
-        // 7. ส่วนลด
-        $discount = $isFinance
-            ? (float) ($saleCar->discount ?? 0)
-            : (float) ($saleCar->PaymentDiscount ?? 0);
-
-        // 7.1 ส่วนลดเงินดาวน์ — มีเฉพาะเคสจัดไฟแนนซ์ (เงินสดไม่มี) หักเหมือนส่วนลด
-        $downPaymentDiscount = $isFinance
-            ? (float) ($saleCar->DownPaymentDiscount ?? 0)
-            : 0.0;
-
-        // 7.2 Vat ของแถม — เคสจัดไฟแนนซ์เท่านั้น (ตรงกับสูตรยอดคงเหลือแคมเปญในหน้าใบจอง)
-        $accessoryGiftVat = $isFinance
-            ? (float) ($saleCar->AccessoryGiftVat ?? 0)
-            : 0.0;
-
-        // 8. ยอดที่เหลือ = ยอดรวมแคมเปญ − ของแถม − ส่วนลด − ส่วนลดเงินดาวน์ − Vat ของแถม
-        $remaining = $campaignTotal - $giftTotal - $discount - $downPaymentDiscount - $accessoryGiftVat;
-
-        return [
-            'price_sub'        => $priceSub,
-            'margin'           => $margin,
-            'has_margin'       => $hasMargin,
-            'ri'               => $ri,
-            'campaign_details' => $campaignDetails,
-            'com_fin'          => $comFin,
-            'markup90'         => $markup90,
-            'customer_extra'   => $customerExtra,
-            'campaign_total'   => $campaignTotal,
-            'gift_total'       => $giftTotal,
-            'gift_details'     => $giftDetails,
-            'discount'         => $discount,
-            'is_finance'       => $isFinance,
-            'down_payment_discount' => $downPaymentDiscount,
-            'accessory_gift_vat'    => $accessoryGiftVat,
-            'remaining'        => $remaining,
-        ];
+        return ApprovalSummary::build($saleCar);
     }
 
     /**
@@ -433,32 +350,7 @@ class PurchaseOrderController extends Controller
     // คำนวณ com finance ตามสูตรหน้า FN (finance.js: calculateComFin)
     private function calcComFinance(Salecar $saleCar)
     {
-        $rp = $saleCar->remainingPayment;
-        $fnCon = FinancesConfirm::withoutGlobalScopes()->where('SaleID', $saleCar->id)->first();
-
-        // ถ้าทำ FN แล้ว (มี com_fin บันทึกไว้) ใช้ค่านั้นเลย
-        if ($fnCon && $fnCon->com_fin !== null && (float) $fnCon->com_fin != 0.0) {
-            return (float) $fnCon->com_fin;
-        }
-
-        // excellent: ใช้ค่าใน FN ถ้ามี ไม่งั้น fallback เป็น balanceFinance (เหมือน editFN)
-        $excellent = (float) ($fnCon->excellent ?? $saleCar->balanceFinance ?? 0);
-
-        $alp      = (float) ($rp?->total_alp ?? 0);
-        $interest = (float) ($rp?->interest ?? 0) / 100;
-        $typeCom  = (float) ($rp?->type_com ?? 0) / 100;
-        $period   = (float) ($rp?->period ?? 0);
-        $maxYear  = (float) ($rp?->financeInfo?->max_year ?? 0);
-        $tax      = (float) ($rp?->financeInfo?->tax ?? 0) / 100;
-
-        $realYear = $period > 0 ? $period / 12 : 0;
-        $useYear  = $maxYear > 0 ? min($realYear, $maxYear) : $realYear;
-
-        $base = $excellent + $alp;
-        $per  = $typeCom * $interest * $useYear;
-        $com  = ($base * $per) / 1.07;
-
-        return $com * 1.07 - $com * $tax;
+        return ApprovalSummary::comFinance($saleCar);
     }
 
     // เคสอนุมัติ (brand-aware) — ทุกแบรนด์เริ่มที่ "ผู้จัดการ" เหมือนกันหมด:
