@@ -102,17 +102,19 @@
             <div class="mf-section-body">
               <div class="row g-3">
 
-                <div class="col-md-4">
-                  <label for="edit_pl_dnp" class="mf-label form-label">
-                    <i class="bx bx-store ci-amber"></i> ราคาทุน (DNP)
-                  </label>
-                  <div class="input-group">
-                    <span class="input-group-text ig-amber">฿</span>
-                    <input id="edit_pl_dnp" type="text" class="form-control text-end money-input" name="dnp"
-                      value="{{ $price->dnp !== null ? number_format($price->dnp, 2) : '' }}" autocomplete="off"
-                      placeholder="0.00">
+                @if (auth()->user()->canViewCarCost())
+                  <div class="col-md-4">
+                    <label for="edit_pl_dnp" class="mf-label form-label">
+                      <i class="bx bx-store ci-amber"></i> ราคาทุน (DNP)
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text ig-amber">฿</span>
+                      <input id="edit_pl_dnp" type="text" class="form-control text-end money-input" name="dnp"
+                        value="{{ $price->dnp !== null ? number_format($price->dnp, 2) : '' }}" autocomplete="off"
+                        placeholder="0.00">
+                    </div>
                   </div>
-                </div>
+                @endif
 
                 <div class="col-md-4">
                   <label for="edit_pl_msrp" class="mf-label form-label">

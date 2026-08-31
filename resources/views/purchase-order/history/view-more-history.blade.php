@@ -110,12 +110,14 @@
                   <span class="mf-info-label">ปี</span>
                   <span class="mf-info-val">{{ $saleCar->Year ?? '-' }}</span>
                 </div>
-                <div class="mf-info-row">
-                  <span class="mf-info-label">ราคา</span>
-                  <span class="mf-info-val">
-                    {{ $saleCar->carOrder?->car_DNP !== null ? number_format($saleCar->carOrder->car_DNP, 2) : '-' }} บาท
-                  </span>
-                </div>
+                @if (auth()->user()->canViewCarCost())
+                  <div class="mf-info-row">
+                    <span class="mf-info-label">ราคา</span>
+                    <span class="mf-info-val">
+                      {{ $saleCar->carOrder?->car_DNP !== null ? number_format($saleCar->carOrder->car_DNP, 2) : '-' }} บาท
+                    </span>
+                  </div>
+                @endif
                 <div class="mf-info-row">
                   <span class="mf-info-label">เงินจอง</span>
                   <span class="mf-info-val">

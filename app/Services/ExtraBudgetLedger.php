@@ -36,7 +36,7 @@ class ExtraBudgetLedger
 
         // bypass เฉพาะ UserAccessScope (กัน filter ตาม brand ผู้ดู) แต่คง SoftDeletes ไว้
         // (ใบที่ถูกยกเลิก/ลบ soft-delete จะไม่ถูกนับในกองหนี้/การหัก)
-        $cars = Salecar::withoutGlobalScope('userAccess')
+        $cars = Salecar::withoutGlobalScopes(['userAccess', 'saleTeam'])
             ->where('SaleID', $saleId)
             ->where('brand', $brand)
             ->whereNotNull('DeliveryDate')

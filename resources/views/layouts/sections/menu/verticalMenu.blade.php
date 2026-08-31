@@ -33,11 +33,13 @@
 
   <ul class="menu-inner py-1">
     @php
-      // manager/audit ของ Lepas(4) สลับไป Wuling(3) → โชว์เฉพาะเมนู ติดตาม/ลูกค้า/จอง (ซ่อนที่เหลือ รวมรายงาน)
+      // manager/audit ของ Lepas(4) สลับไป Wuling(3) → โชว์เฉพาะเมนู ติดตาม/ลูกค้า/จอง/รายงาน
+      // 2026-08-31: เปิดเมนู "รายงาน" คืน — ข้อมูลถูกกรองด้วยกลุ่มทีมที่ชั้น query แล้ว
+      // (App\Models\Traits\SaleTeamScope) จึงเห็นได้เฉพาะของทีมตัวเอง ไม่ต้องซ่อนทั้งเมนู
       $__u = auth()->user();
       $b4CrossWuling = in_array($userRole, ['manager', 'audit'], true)
           && (int) $__u->getOriginal('brand') === 4 && (int) $__u->brand === 3;
-      $wulingAllowedMenus = ['customer-tracking', 'customer', 'purchase-order'];
+      $wulingAllowedMenus = ['customer-tracking', 'customer', 'purchase-order', 'report'];
     @endphp
     @foreach ($menuData[0]->menu as $menu)
       @if ($b4CrossWuling && empty(array_intersect(is_array($menu->slug) ? $menu->slug : [$menu->slug], $wulingAllowedMenus)))

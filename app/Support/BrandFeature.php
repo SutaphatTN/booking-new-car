@@ -38,4 +38,17 @@ class BrandFeature
 
         return in_array($brand, array_map('intval', (array) config('brand.multi_branch_brands', [])), true);
     }
+
+    /**
+     * brand นี้ถูกขายโดยหลายทีมไหม
+     *
+     * ใช้คุมคอลัมน์ "ทีม" ในรายงานฐานใบจอง/การติดตาม — brand ที่มีทีมเดียว
+     * ไม่ต้องมีคอลัมน์นี้ ไม่ส่ง $brand = ใช้ brand ของ user ที่ล็อกอินอยู่
+     */
+    public static function hasMultipleTeams($brand = null): bool
+    {
+        $brand = (int) ($brand ?? (Auth::user()->brand ?? 0));
+
+        return in_array($brand, array_map('intval', (array) config('brand.multi_team_brands', [])), true);
+    }
 }

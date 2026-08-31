@@ -1,6 +1,6 @@
 @php
   // role manager เห็นรายงานนี้ได้ แต่ไม่ให้เห็นคอลัมน์ราคาทุน (ยึดตาม convention รายงานข้อมูลรถเดิม)
-  $showCost = auth()->user()->role !== 'manager';
+  $showCost = auth()->user()->canViewCarCost();
 
   // รายงานถูก brand-scope อยู่แล้ว (UserAccessScope) → อิง brand ของ user ที่ login
   //  - Option: เฉพาะ brand 1

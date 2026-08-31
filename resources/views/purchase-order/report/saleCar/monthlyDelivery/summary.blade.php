@@ -1,6 +1,9 @@
 @php
   // คอลัมน์ "สีภายใน" — เปิดตาม config/brand.php (interior_color_brands)
   $showInterior = \App\Support\BrandFeature::hasInteriorColor();
+
+  // คอลัมน์ "ทีม" — เฉพาะ brand ที่ถูกขายโดยหลายทีม (config/brand.php multi_team_brands)
+  $showTeam = \App\Support\BrandFeature::hasMultipleTeams();
 @endphp
 <table>
   <thead>
@@ -9,6 +12,9 @@
       <th>ชื่อ - นามสกุล ลูกค้า</th>
       <th>ที่อยู่</th>
       <th>ฝ่ายขาย</th>
+      @if ($showTeam)
+        <th>ทีม</th>
+      @endif
       <th>รุ่นรถหลัก</th>
       <th>รุ่นรถย่อย</th>
       <th>Vin-Number</th>
@@ -44,6 +50,9 @@
         <td>{{ $s['customer'] }}</td>
         <td>{{ $s['address'] }}</td>
         <td>{{ $s['sale'] }}</td>
+        @if ($showTeam)
+          <td>{{ $s['team'] }}</td>
+        @endif
         <td>{{ $s['model'] }}</td>
         <td>{{ $s['subModel'] }}</td>
         <td>{{ $s['vin'] }}</td>
@@ -73,7 +82,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="25" align="center">
+        <td colspan="{{ 25 + ($showTeam ? 1 : 0) }}" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

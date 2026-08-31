@@ -2016,7 +2016,8 @@ function loadPricelistData() {
       $('#car_DNP').val(data.dnp ? Number(data.dnp).toLocaleString() : '');
       $('#car_MSRP').val(data.msrp ? Number(data.msrp).toLocaleString() : '');
       $('#RI').val(data.ri ? Number(data.ri).toLocaleString() : '');
-      $('#WS').val(calcOrderWs(data.dnp));
+      // manager ไม่ได้รับ dnp กลับมา (ซ่อนราคาทุนรถ) — ใช้ค่า WS ที่ price list คำนวณไว้แทน จะได้ไม่เขียนทับเป็น 0
+      $('#WS').val(data.dnp ? calcOrderWs(data.dnp) : data.ws ? Number(data.ws).toLocaleString() : '');
     } else {
       $('#option').val('');
       $('#car_DNP').val('');

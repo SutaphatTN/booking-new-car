@@ -18,6 +18,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use App\Support\BrandFeature;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
 {
@@ -40,8 +41,29 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
     public function columnFormats(): array
     {
         return [
-            'C' => NumberFormat::FORMAT_TEXT,
+            'C' => NumberFormat::FORMAT_TEXT,   // เลขบัตรประชาชน (อยู่ก่อนคอลัมน์ที่ขยับได้ทั้งหมด)
         ];
+    }
+
+    /**
+     * ตำแหน่งคอลัมน์ ราคาขาย / เงินจอง — ขยับตาม brand เพราะ ทีม / Option / สีภายใน โผล่ไม่เท่ากัน
+     * ต้องตรงกับลำดับใน blade saleCar/booking/summary.blade.php
+     */
+    private function moneyColumns(): array
+    {
+        $brand = auth()->user()->brand;
+
+        $next = 9; // A-H = No, ลูกค้า, บัตรประชาชน, เบอร์โทร, ที่อยู่, ฝ่ายขาย, รุ่นหลัก, รุ่นย่อย
+        if (BrandFeature::hasMultipleTeams($brand)) $next++;  // ทีม (ต่อจากฝ่ายขาย)
+        if (!in_array($brand, [2, 3, 4])) $next++;            // Option
+        $next++;                                              // สี
+        if (BrandFeature::hasInteriorColor($brand)) $next++;  // สีภายใน
+        $next++;                                              // ปี
+        $msrp = $next++;                                      // ราคาขาย
+        $next++;                                              // แหล่งที่มา
+        $deposit = $next++;                                   // เงินจอง
+
+        return array_map(fn($i) => Coordinate::stringFromColumnIndex($i), [$msrp, $deposit]);
     }
 
     public function styles(Worksheet $sheet)
@@ -105,13 +127,7 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
                 $sheet->getTabColor()->setRGB('ffdaa2');
 
                 // format comma
-                $numberColumns = [
-                    'L',
-                    'N',
-                    // 'H',
-                    // 'I',
-                    // 'K'
-                ];
+                $numberColumns = $this->moneyColumns();
 
                 foreach ($numberColumns as $col) {
                     $sheet->getStyle("{$col}2:{$col}{$highestRow}")
@@ -171,6 +187,7 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
                 'phone'      => $r->customer?->formatted_mobile ?? '-',
                 'address'    => $r->customer?->documentAddress?->short_address ?? '-',
                 'sale' => $r->saleUser?->name ?? '-',
+                'team' => $r->saleTeam?->name ?? '-',
                 'model' => $model,
                 'subModel' => $subModel,
                 'option'     => $r->option ?? '-',

@@ -25,6 +25,7 @@
 
       <div class="card-body pt-3">
         <div class="table-responsive">
+          <input type="hidden" id="historyShowTeam" value="{{ \App\Support\BrandFeature::hasMultipleTeams() ? 1 : 0 }}">
           <table class="table table-bordered tbl-table tbl-styled historyFinalTable">
             <thead>
               <tr>
@@ -32,6 +33,7 @@
                 <th>ชื่อ - นามสกุล ลูกค้า</th>
                 {{-- <th>รหัส Car Order</th> --}}
                 <th>เลข Vin</th>
+                <th>ทีม</th>
                 <th class="text-center">ป้ายแดง</th>
                 <th class="tbl-th-action" style="width:190px;">Action</th>
               </tr>

@@ -465,7 +465,7 @@ class CustomerTrackingController extends Controller
      */
     private static function activeTrackingQuery($customerId, $brand, $branch)
     {
-        $query = CustomerTracking::withoutGlobalScope('userAccess')
+        $query = CustomerTracking::withoutGlobalScopes(['userAccess', 'saleTeam'])
             ->where('customer_id', $customerId)
             ->where('brand', $brand)
             ->whereNull('cancelled_at');
@@ -509,7 +509,7 @@ class CustomerTrackingController extends Controller
         }
 
         // เช็คการจอง active ใน brand เดียวกัน (con_status ไม่ใช่ 5,7,8,9 = จบแล้ว)
-        $hasBooking = Salecar::withoutGlobalScope('userAccess')
+        $hasBooking = Salecar::withoutGlobalScopes(['userAccess', 'saleTeam'])
             ->where('CusID', $customer->id)
             ->where('brand', $brand)
             ->whereNotIn('con_status', [5, 7, 8, 9])
@@ -591,7 +591,7 @@ class CustomerTrackingController extends Controller
                 }
             }
 
-            $hasBooking = Salecar::withoutGlobalScope('userAccess')
+            $hasBooking = Salecar::withoutGlobalScopes(['userAccess', 'saleTeam'])
                 ->where('CusID', $request->customer_id)
                 ->where('brand', $authUser->brand)
                 ->whereNotIn('con_status', [5, 7, 8, 9])

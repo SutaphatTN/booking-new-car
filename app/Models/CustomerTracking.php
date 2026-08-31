@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Traits\TracksUserActions;
+use App\Models\Traits\SaleTeamScope;
 use App\Models\Traits\UserAccessScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,7 +12,7 @@ use Carbon\Carbon;
 
 class CustomerTracking extends Model
 {
-    use SoftDeletes, UserAccessScope, TracksUserActions;
+    use SoftDeletes, UserAccessScope, SaleTeamScope, TracksUserActions;
 
     protected $table = 'customer_trackings';
 

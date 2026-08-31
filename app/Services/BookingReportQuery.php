@@ -43,11 +43,28 @@ class BookingReportQuery
     $brand = (int) (Auth::user()->brand ?? 0);
 
     if (BrandFeature::hasMultipleBranches($brand)) {
-      return fn($q) => $q->withoutGlobalScope('userAccess')->where('salecars.brand', $brand);
+      return fn($q) => $q->withoutGlobalScopes(['userAccess', 'saleTeam'])
+        ->with('saleTeam')
+        ->where('salecars.brand', $brand);
     }
 
-    return fn($q) => $q;
+    // ปลดตัวกรอง "ทีม" ทิ้งเสมอ — สต๊อกรถเป็นของกลาง ต้องเห็นครบทุกคัน
+    // ถ้าปล่อยให้กรอง คันที่ทีมอื่นจองไว้จะโผล่มาเป็น "รถว่าง" ซึ่งอันตรายกว่าเห็นเยอะไป
+    // (รายละเอียดผู้จองของทีมอื่นถูกปิดทับอีกชั้นด้วย hidesBookingDetail() ด้านล่าง)
+    return fn($q) => $q->withoutGlobalScope('saleTeam')->with('saleTeam');
   }
+
+  /**
+   * ใบจองใบนี้อยู่นอกกลุ่มทีมของคนดูไหม
+   * true = โชว์ได้แค่ "มีคนจองแล้ว" ห้ามโชว์ชื่อลูกค้า/ชื่อเซลล์
+   */
+  public static function hidesBookingDetail($sale): bool
+  {
+    return $sale ? Salecar::outsideViewerTeams($sale->sale_team_id) : false;
+  }
+
+  /** ข้อความแทนชื่อลูกค้า/เซลล์ ของใบจองทีมอื่น */
+  public const MASKED = 'ทีมอื่น';
 
   // base query
   public static function baseCarOrders()
@@ -93,6 +110,7 @@ class BookingReportQuery
         // ชีทรายรุ่นอ่านสีจากใบจองด้วย ถ้าไม่ eager จะกลายเป็น N+1 รายใบ
         'gwmColor',
         'interiorColor',
+        'saleTeam',
       ])
       ->whereNull('CarOrderID')
       ->whereNotIn('con_status', [5, 7, 8, 9])

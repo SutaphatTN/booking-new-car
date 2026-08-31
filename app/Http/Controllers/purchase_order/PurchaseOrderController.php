@@ -3211,7 +3211,7 @@ class PurchaseOrderController extends Controller
         }
 
         // 1) มีใบจองที่ยังดำเนินการอยู่ (con_status ไม่ใช่ 5,7,8,9 = ยังไม่จบ)
-        $hasActiveBooking = Salecar::withoutGlobalScope('userAccess')
+        $hasActiveBooking = Salecar::withoutGlobalScopes(['userAccess', 'saleTeam'])
             ->where('CusID', $customerId)
             ->where('brand', $brand)
             ->whereNotIn('con_status', [5, 7, 8, 9])
@@ -3222,7 +3222,7 @@ class PurchaseOrderController extends Controller
         }
 
         // 2) ยังอยู่ในลิสต์ติดตาม (ยังไม่ปิด) → ต้องจองผ่านหน้าการติดตาม
-        $openTracking = CustomerTracking::withoutGlobalScope('userAccess')
+        $openTracking = CustomerTracking::withoutGlobalScopes(['userAccess', 'saleTeam'])
             ->where('customer_id', $customerId)
             ->where('brand', $brand)
             ->whereNull('cancelled_at')
@@ -3237,7 +3237,7 @@ class PurchaseOrderController extends Controller
         }
 
         // 3) เคยมีการติดตามแต่ปิดแล้ว → จองใหม่ได้เลย
-        $hasAnyTracking = CustomerTracking::withoutGlobalScope('userAccess')
+        $hasAnyTracking = CustomerTracking::withoutGlobalScopes(['userAccess', 'saleTeam'])
             ->where('customer_id', $customerId)
             ->where('brand', $brand)
             ->exists();
@@ -3614,7 +3614,7 @@ class PurchaseOrderController extends Controller
     {
         $user = Auth::user();
 
-        $query = Salecar::with(['customer.prefix', 'originalCustomer.prefix', 'carOrder', 'licensePlateRed'])
+        $query = Salecar::with(['customer.prefix', 'originalCustomer.prefix', 'carOrder', 'licensePlateRed', 'saleTeam'])
             ->where('con_status', '5');
 
         if (in_array($user->role, ['sale', 'lead_sale'])) {
@@ -3657,6 +3657,8 @@ class PurchaseOrderController extends Controller
                 'FullName' => $this->customerNameWithOriginal($s),
                 // 'code'   => $s->carOrder->order_code ?? '-',
                 'vin_number' => $s->carOrder->vin_number ?? '-',
+                // ทีมขาย (snapshot ตอนออกใบจอง) — โชว์เฉพาะ brand ที่ถูกขายโดยหลายทีม
+                'team'       => $s->saleTeam?->name ?? '-',
                 // ป้ายแดง — คันที่ยังไม่มีจะขึ้นป้ายจาง ๆ ให้เห็นว่าต้องตามใส่
                 'red_plate' => $s->licensePlateRed
                     ? '<span class="badge bg-label-danger">' . e($s->licensePlateRed->number) . '</span>'
@@ -4369,17 +4371,21 @@ class PurchaseOrderController extends Controller
             $branchFilter = (int) $user->branch;   // เห็นแค่สาขาตัวเอง
         }
 
-        // แตกเป็น unit = (brand × สาขาที่มีเซลล์จริง) — brand 3 รวมเซลล์ brand 4 (Lepas ขายรถ Wuling)
+        // แตกเป็น unit = (brand × สาขาที่มีเซลล์จริง)
+        // "เซลล์ที่ขาย brand นี้ได้" อ่านจาก config/brand.php sale_pool + สิทธิ์ขายราย user
+        // เดิม hardcode [3,4] ทำให้เซลล์ Mitsu (brand 1) ที่ขาย Wuling หลุดจากรายงานทั้งหมด
         // whereNull('deleted_at') ต้องใส่เอง เพราะ withoutGlobalScopes() ปิด SoftDeletingScope ด้วย
         // (ถ้าไม่ใส่ สาขาที่เซลล์ถูกลบหมดแล้วจะยังสร้าง sheet เปล่าขึ้นมา)
         $branchNames = TbBranch::pluck('name', 'id')->all();
         $units = [];
         foreach ($brands as $brand) {
-            $rosterBrands = $brand === 3 ? [3, 4] : [$brand];
+            $saleBrands = array_map('intval', (array) config("brand.sale_pool.$brand", [$brand]));
+            $extraIds   = User::extraSaleUserIdsForBrand($brand);
+
             $q = User::withoutGlobalScopes()
                 ->whereNull('deleted_at')
                 ->whereIn('role', ['sale', 'lead_sale'])
-                ->whereIn('brand', $rosterBrands)
+                ->where(fn($w) => $w->whereIn('brand', $saleBrands)->orWhereIn('id', $extraIds))
                 ->whereNotNull('branch');
             if ($branchFilter !== null) {
                 $q->where('branch', $branchFilter);

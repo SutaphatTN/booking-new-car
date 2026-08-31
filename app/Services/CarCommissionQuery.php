@@ -110,12 +110,12 @@ class CarCommissionQuery
         $to   = Carbon::create($year, $month, 1)->endOfMonth();
 
         // with('model') + balanceCampaign : ใช้เช็ค "เกินงบทะลุเพดาน" (คันแบบนี้ไม่ได้คอมตัวรถ)
-        $cars = Salecar::withoutGlobalScope('userAccess')
+        $cars = Salecar::withoutGlobalScopes(['userAccess', 'saleTeam'])
             ->with('model')
             ->whereNotNull('DeliveryInCKDate')
             ->whereBetween('DeliveryInCKDate', [$from, $to])
             ->where('type_sale', self::SALE_TYPE_NORMAL)
-            ->whereHas('carOrder', fn($c) => $c->withoutGlobalScope('userAccess')
+            ->whereHas('carOrder', fn($c) => $c->withoutGlobalScopes(['userAccess', 'saleTeam'])
                 ->where('purchase_type', self::PURCHASE_TYPE_RETAIL)
                 ->where(fn($q) => $q->where('purchase_source', '!=', self::SOURCE_DEALER)
                     ->orWhereNull('purchase_source')))

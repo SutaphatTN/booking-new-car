@@ -28,7 +28,10 @@ class PricelistCarController extends Controller
         $subModels = TbSubcarmodel::whereIn('id', $subModelIds)->pluck('name', 'id');
         $subModelsDetail = TbSubcarmodel::whereIn('id', $subModelIds)->pluck('detail', 'id');
 
-        $data = $prices->map(function ($p, $index) use ($models, $subModels, $subModelsDetail, $userBrand) {
+        // manager ห้ามเห็นราคาทุนรถ — ไม่ส่งตัวเลขไปกับ JSON เลย (คอลัมน์ก็ถูกปิดที่ car.js อีกชั้น)
+        $showCost = Auth::user()->canViewCarCost();
+
+        $data = $prices->map(function ($p, $index) use ($models, $subModels, $subModelsDetail, $userBrand, $showCost) {
             $hide = in_array($userBrand, [2, 3, 4]);
 
             $model_id = $models[$p->model_id] ?? '-';
@@ -47,7 +50,7 @@ class PricelistCarController extends Controller
                 'option' => $hide ? '-' : ($p->option ?? '-'),
                 'year'       => $p->year ?? '-',
                 'color'  => $hide ? '-' : ($p->color ?? '-'),
-                'dnp'        => $p->dnp !== null ? number_format($p->dnp, 2) : '-',
+                'dnp'        => $showCost && $p->dnp !== null ? number_format($p->dnp, 2) : '-',
                 'msrp'       => $p->msrp !== null ? number_format($p->msrp, 2) : '-',
                 'dm' => $hide ? '-' : ($p->dm !== null ? number_format($p->dm, 2) : '-'),
                 'ri' => $hide ? '-' : ($p->ri !== null ? number_format($p->ri, 2) : '-'),
@@ -115,7 +118,7 @@ class PricelistCarController extends Controller
                     return response()->json($this->duplicatePayload($duplicate, $data, $brand), 409);
                 }
 
-                $duplicate->update($data);
+                $duplicate->update($this->keepCost($data, $duplicate));
 
                 return response()->json([
                     'success' => true,
@@ -183,7 +186,7 @@ class PricelistCarController extends Controller
                 ], 409);
             }
 
-            $price->update($data);
+            $price->update($this->keepCost($data, $price));
 
             return response()->json([
                 'success' => true,
@@ -230,10 +233,32 @@ class PricelistCarController extends Controller
         return $query->orderBy('id')->first();
     }
 
+    /**
+     * คงราคาทุนเดิมไว้เมื่อคนบันทึกเป็น role ที่ห้ามเห็นราคาทุน (manager)
+     * ช่อง dnp ถูกซ่อนจากฟอร์ม ค่าจึงไม่ถูกส่งกลับมา — ถ้าไม่ดัก แค่กดบันทึกราคาทุนจะหาย
+     * WS คำนวณจาก DNP จึงต้องคิดใหม่ตามค่าเดิมด้วย (เว้นแต่ผู้ใช้กรอก WS มาเอง)
+     */
+    private function keepCost(array $data, TbPricelistCar $existing): array
+    {
+        if (Auth::user()->canViewCarCost()) {
+            return $data;
+        }
+
+        $data['dnp'] = $existing->dnp;
+
+        if (array_key_exists('ws', $data) && !request()->filled('ws')) {
+            $data['ws'] = $this->calcWs($existing->dnp);
+        }
+
+        return $data;
+    }
+
     /** ข้อมูลเปรียบเทียบค่าเดิม–ค่าใหม่ ส่งให้หน้าเว็บถามยืนยันก่อนทับ */
     private function duplicatePayload(TbPricelistCar $existing, array $data, $brand): array
     {
-        $fields = ['dnp' => 'ราคาทุน (DNP)', 'msrp' => 'ราคาขาย (MSRP)'];
+        $fields = Auth::user()->canViewCarCost()
+            ? ['dnp' => 'ราคาทุน (DNP)', 'msrp' => 'ราคาขาย (MSRP)']
+            : ['msrp' => 'ราคาขาย (MSRP)'];
 
         if ($brand == 1) {
             $fields += ['dm' => 'DM', 'ri' => 'RI', 'ws' => 'WS'];

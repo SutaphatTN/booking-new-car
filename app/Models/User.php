@@ -242,6 +242,18 @@ class User extends Authenticatable
 		return in_array($this->role, self::EDIT_CAR_PRICE_ROLES, true);
 	}
 
+	/**
+	 * role ที่ "ห้าม" เห็นราคาทุนรถ (car_DNP บนคลังรถ/ใบจอง และ dnp บน Price List)
+	 * มติ 2026-08-29 : ผู้จัดการดูราคาขาย/ส่วนลดได้ แต่ไม่ให้เห็นทุนรถทุกช่องทาง
+	 * ใช้คู่กับการกันฝั่ง server — ซ่อนช่องแล้วค่าจะไม่ถูกส่งกลับมา ต้องคงค่าเดิมไว้เสมอ
+	 */
+	public const HIDE_CAR_COST_ROLES = ['manager'];
+
+	public function canViewCarCost(): bool
+	{
+		return !in_array($this->role, self::HIDE_CAR_COST_ROLES, true);
+	}
+
 	/** role ที่กำหนด "ป้ายแดง" ให้ใบจองได้ (ทั้งในหน้าใบจอง และหน้าประวัติที่ส่งมอบแล้ว) */
 	public const RED_PLATE_ROLES = ['admin', 'audit', 'audit_lead', 'audit_dp', 'gm', 'manager', 'md'];
 

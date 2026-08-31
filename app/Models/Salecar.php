@@ -9,6 +9,7 @@ namespace App\Models;
 use App\Models\Traits\LogsActivity;
 use App\Models\Traits\PreApprovalScope;
 use App\Models\Traits\TracksUserActions;
+use App\Models\Traits\SaleTeamScope;
 use App\Models\Traits\UserAccessScope;
 use App\Models\CustomerTracking;
 use App\Services\ExtraBudgetLedger;
@@ -84,6 +85,7 @@ class Salecar extends Model
 {
 	use SoftDeletes;
 	use UserAccessScope;
+	use SaleTeamScope;
 	use PreApprovalScope;
 	use TracksUserActions;
 	use LogsActivity;
