@@ -15,6 +15,7 @@ use App\Models\CustomerTracking;
 use App\Services\ExtraBudgetLedger;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -278,6 +279,7 @@ class Salecar extends Model
 		'approval_returned_at',
 		'approval_remaining',
 		'approval_token',
+		'approval_final_token',
 		'approval_files',
 		'userZone',
 		'brand',
@@ -655,6 +657,20 @@ class Salecar extends Model
 	}
 	
 	/** ผู้จัดการเลือก "ไม่หักเงิน VIP" (เฉพาะ brand 2) → ผู้อนุมัติขั้นสุดท้ายเป็น MD แทน GM */
+	/**
+	 * ระบบมีคอลัมน์ approval_final_token แล้วหรือยัง
+	 *
+	 * กันพังกรณี deploy โค้ดก่อนรัน ALTER TABLE — ถ้ายังไม่มีคอลัมน์ ระบบจะทำงาน
+	 * แบบเดิม (ลิงก์เดียวใช้ได้ทุกคน) แทนที่จะ error ทั้งสายอนุมัติ
+	 * เช็คครั้งเดียวต่อ request (information_schema ยิงทีเดียวพอ)
+	 */
+	public static function hasFinalTokenColumn(): bool
+	{
+		static $has = null;
+
+		return $has ??= Schema::hasColumn('salecars', 'approval_final_token');
+	}
+
 	public function isVipApproval(): bool
 	{
 		return (bool) $this->approval_is_vip;

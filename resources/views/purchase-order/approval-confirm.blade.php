@@ -31,11 +31,18 @@
   </style>
 </head>
 <body>
-  @php $allowRevise = $allowRevise ?? false; @endphp
+  @php
+    $allowRevise = $allowRevise ?? false;
+    // เปิดมาด้วยลิงก์สำเนา (CC) → ตีกลับได้ แต่กดอนุมัติไม่ได้
+    $canApproveFinal = $canApproveFinal ?? true;
+  @endphp
   <div class="card">
     <h1>อนุมัติคำขอเกินงบ ({{ $approverLabel }})</h1>
     <div class="sub">
       ส่งต่อมาขั้น {{ $approverLabel }} — อนุมัติขั้นสุดท้าย
+      @unless ($canApproveFinal)
+        <br><strong style="color:#b45309;">ลิงก์นี้เป็นสำเนาเพื่อรับทราบ</strong> — การอนุมัติขั้นสุดท้ายต้องกดจากอีเมลของ {{ $approverLabel }} เท่านั้น (ตีกลับได้จากหน้านี้)
+      @endunless
       @if ($saleCar->isVipApproval()) <br><strong style="color:#b45309;">ผู้จัดการเลือก : ไม่หักเงิน (VIP)</strong> @endif
     </div>
 
@@ -72,10 +79,12 @@
         <textarea id="md_note" name="md_note" placeholder="เช่น ยอดหักน้อยไป ขอให้ทบทวน...">{{ old('md_note') }}</textarea>
 
         {{-- decision เก็บใน hidden (กันค่าหายเมื่อปุ่มโดน disable ตอน submit) --}}
-        <input type="hidden" name="decision" id="decisionField" value="approve">
-        <button type="submit" data-decision="approve" class="btn-approve">อนุมัติ (ใช้ยอดนี้)</button>
+        <input type="hidden" name="decision" id="decisionField" value="{{ $canApproveFinal ? 'approve' : 'return' }}">
+        @if ($canApproveFinal)
+          <button type="submit" data-decision="approve" class="btn-approve">อนุมัติ (ใช้ยอดนี้)</button>
+        @endif
         <button type="submit" data-decision="return" class="btn-return">ส่งกลับให้ผู้จัดการแก้</button>
-      @else
+      @elseif ($canApproveFinal)
         <input type="hidden" name="decision" value="approve">
         <button type="submit" class="btn-approve">ยืนยันอนุมัติ ({{ $approverLabel }})</button>
       @endif

@@ -66,6 +66,7 @@ use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -525,12 +526,25 @@ class PurchaseOrderController extends Controller
             $this->requestCc($saleCar->brand, array_merge((array) $mailTo, $mailCc))
         )));
 
-        Mail::to($mailTo)->cc($mailCc)->send(new SaleRequestMail(
-            $saleCar->fresh(['model', 'saleUser', 'customer.prefix']),
-            $finalRole === 'gm' ? 'gm_final' : 'md_final',
-            $data,
-            $files
-        ));
+        // ── ลิงก์อนุมัติ "ขั้นสุดท้าย" ใช้ token คนละตัวกับลิงก์ทั่วไป ──
+        // เดิมใช้ token เดียวทั้งฉบับ คนที่อยู่ใน CC (เช่น GM ที่ถูก CC ในเคส VIP ซึ่งต้องให้ MD อนุมัติ)
+        // จึงกดอนุมัติแทนได้ — ออก token ใหม่ทุกครั้งที่ส่ง แล้วใส่เฉพาะเมลของผู้อนุมัติตัวจริง
+        $finalToken = null;
+        if (Salecar::hasFinalTokenColumn()) {
+            $finalToken = Str::random(48);
+            $saleCar->update(['approval_final_token' => $finalToken]);
+        }
+
+        $mailModel = $saleCar->fresh(['model', 'saleUser', 'customer.prefix']);
+        $mailType  = $finalRole === 'gm' ? 'gm_final' : 'md_final';
+
+        // ผู้อนุมัติตัวจริง — ได้ลิงก์ที่กดอนุมัติได้
+        Mail::to($mailTo)->send(new SaleRequestMail($mailModel, $mailType, $data, $files, $finalToken));
+
+        // สำเนา — ส่งแยกด้วย token ปกติ เปิดดู/ตีกลับได้ แต่กดอนุมัติไม่ได้
+        if ($mailCc) {
+            Mail::to($mailCc)->send(new SaleRequestMail($mailModel, $mailType, $data, $files, null, true));
+        }
     }
 
     // แจ้งเมื่ออนุมัติเสร็จสมบูรณ์ → ส่งหา เซลล์ (saleUser) + audit (ตาม brand จาก config)
@@ -557,6 +571,19 @@ class PurchaseOrderController extends Controller
     }
 
     // เปิดลิงก์อนุมัติจากเมล (ไม่ต้อง login — ใช้ token) — แสดงหน้าตามเคส/ขั้นปัจจุบัน
+    /**
+     * token ที่ยื่นมาเป็นของ "ผู้อนุมัติขั้นสุดท้าย" ตัวจริงไหม
+     * ยังไม่ได้รัน ALTER (ไม่มีคอลัมน์) หรือใบนี้ยังไม่เคยออก token จบ → ถือว่าใช่ (พฤติกรรมเดิม)
+     */
+    private function holdsFinalToken(Salecar $saleCar, string $token): bool
+    {
+        if (!Salecar::hasFinalTokenColumn() || empty($saleCar->approval_final_token)) {
+            return true;
+        }
+
+        return hash_equals((string) $saleCar->approval_final_token, $token);
+    }
+
     public function emailApprove($token)
     {
         // เปิดผ่านลิงก์ในเมล — ผู้กดอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
@@ -564,12 +591,16 @@ class PurchaseOrderController extends Controller
 
         $saleCar = Salecar::withoutGlobalScopes()
             ->with(['model', 'saleUser', 'customer'])
-            ->where('approval_token', $token)
+            ->where(fn($q) => $q->where('approval_token', $token)
+                ->when(Salecar::hasFinalTokenColumn(), fn($w) => $w->orWhere('approval_final_token', $token)))
             ->first();
 
         if (!$saleCar) {
             return response('ลิงก์ไม่ถูกต้องหรือหมดอายุ', 404);
         }
+
+        // เปิดมาด้วยลิงก์ของผู้อนุมัติตัวจริงไหม — คนที่ถูก CC จะได้ token ปกติ กดอนุมัติจบไม่ได้
+        $canApproveFinal = $this->holdsFinalToken($saleCar, $token);
 
         if ($this->isApproved($saleCar)) {
             return view('purchase-order.approval-result', [
@@ -594,15 +625,16 @@ class PurchaseOrderController extends Controller
                 }
                 // ขั้นสุดท้าย (GM หรือ MD ถ้า VIP): อนุมัติ (แก้ยอดได้) หรือ ตีกลับให้ผู้จัดการ
                 return view('purchase-order.approval-confirm', [
-                    'saleCar'       => $saleCar,
-                    'token'         => $token,
-                    'allowRevise'   => true,
-                    'approverLabel' => $this->finalApproverLabel($saleCar),
+                    'saleCar'         => $saleCar,
+                    'token'           => $token,
+                    'allowRevise'     => true,
+                    'approverLabel'   => $this->finalApproverLabel($saleCar),
+                    'canApproveFinal' => $canApproveFinal,
                 ]);
 
             default:
                 // fallback — ขั้นสุดท้าย (md) กดยืนยัน
-                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => false, 'approverLabel' => 'MD']);
+                return view('purchase-order.approval-confirm', ['saleCar' => $saleCar, 'token' => $token, 'allowRevise' => false, 'approverLabel' => 'MD', 'canApproveFinal' => $canApproveFinal]);
         }
     }
 
@@ -679,7 +711,10 @@ class PurchaseOrderController extends Controller
     {
         ScopeBypass::$brand = true; // ผู้อนุมัติอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
 
-        $saleCar = Salecar::withoutGlobalScopes()->where('approval_token', $token)->firstOrFail();
+        $saleCar = Salecar::withoutGlobalScopes()
+            ->where(fn($q) => $q->where('approval_token', $token)
+                ->when(Salecar::hasFinalTokenColumn(), fn($w) => $w->orWhere('approval_final_token', $token)))
+            ->firstOrFail();
 
         // อนุมัติจบแล้ว → แสดงผลเดิม
         if ($saleCar->GMApprovalSignature) {
@@ -715,6 +750,15 @@ class PurchaseOrderController extends Controller
         }
 
         // ── ผู้อนุมัติขั้นสุดท้ายอนุมัติ (ถ้ากรอกยอดใหม่มา → override) ──
+        // ต้องมาด้วยลิงก์ของผู้อนุมัติตัวจริงเท่านั้น — คนที่ถูก CC ได้ token ปกติ กดอนุมัติไม่ได้
+        // (แต่ยัง "ตีกลับ" ได้ ซึ่งเป็นเจตนาเดิมของการ CC)
+        if (!$this->holdsFinalToken($saleCar, $token)) {
+            return view('purchase-order.approval-result', [
+                'saleCar' => $saleCar,
+                'msg'     => "ลิงก์นี้เป็นสำเนาสำหรับรับทราบ — การอนุมัติขั้นสุดท้ายต้องกดจากอีเมลของ {$approverLabel} เท่านั้น (ตีกลับยังทำได้จากลิงก์นี้)",
+            ]);
+        }
+
         $mdEdited = false;
         if ($canRevise && $request->filled('commission_deduct')) {
             $request->merge(['commission_deduct' => str_replace(',', '', (string) $request->commission_deduct)]);
@@ -804,6 +848,9 @@ class PurchaseOrderController extends Controller
         if ($endRound) {
             $update['approval_requested_at'] = null;
             $update['approval_token']        = null;
+            if (Salecar::hasFinalTokenColumn()) {
+                $update['approval_final_token'] = null;
+            }
         }
 
         $saleCar->update($update);
@@ -1929,6 +1976,7 @@ class PurchaseOrderController extends Controller
                     'GMApprovalSignatureDate'    => null,
                     'approval_requested_at'      => null,
                     'approval_token'             => null,   // ลิงก์อนุมัติในเมลเดิมใช้ไม่ได้
+                    ...(Salecar::hasFinalTokenColumn() ? ['approval_final_token' => null] : []),
                     'approval_case'              => null,
                     'approval_type'              => null,
                     'approval_remaining'         => null,
@@ -2517,7 +2565,7 @@ class PurchaseOrderController extends Controller
                 }
 
                 $approvalData  = $this->buildApprovalData($saleCar);
-                $token         = $saleCar->approval_token ?: \Illuminate\Support\Str::random(48);
+                $token         = $saleCar->approval_token ?: Str::random(48);
                 $approvalFiles = $this->buildApprovalAttachments($saleCar);
 
                 $update = [
@@ -2826,24 +2874,36 @@ class PurchaseOrderController extends Controller
             ], 422);
         }
 
-        if ($this->isApproved($saleCar)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'คำขอนี้อนุมัติแล้ว ดึงกลับไม่ได้',
-            ], 422);
-        }
+        // 2026-08-31 : เดิมบล็อกใบที่อนุมัติแล้ว — เปิดให้ดึงกลับได้ทุกสถานะตามที่ขอ
+        // เพราะบางเคส GM/MD อนุมัติไปแล้วค่อยเจอว่าข้อมูลผิด ต้องถอยมาขออนุมัติใหม่
+        $wasApproved = $this->isApproved($saleCar);
 
+        // ล้างลายเซ็นทุกขั้นด้วย ไม่งั้นใบจะค้างสถานะ "อนุมัติแล้ว" ทั้งที่ไม่มีคำขอ
+        // (ชุดเดียวกับตอน "ตีกลับ" — เริ่มรอบใหม่ ผู้จัดการเลือก VIP/กรอกยอดใหม่ได้)
         $saleCar->update([
-            'approval_requested_at' => null,
-            'approval_token'        => null,
-            'approval_case'         => null,
-            'approval_type'         => null,
-            'approval_remaining'    => null,
+            'approval_requested_at'      => null,
+            'approval_token'             => null,
+            ...(Salecar::hasFinalTokenColumn() ? ['approval_final_token' => null] : []),
+            'approval_case'              => null,
+            'approval_type'              => null,
+            'approval_remaining'         => null,
+            'SMSignature'                => 0,
+            'SMCheckedDate'              => null,
+            'ApprovalSignature'          => 0,
+            'ApprovalSignatureDate'      => null,
+            'GMApprovalSignature'        => 0,
+            'GMApprovalSignatureDate'    => null,
+            'approval_commission_deduct' => null,
+            'approval_is_vip'            => 0,
+            'approval_is_deduct'         => 0,
+            'approval_md_note'           => null,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'ดึงคำขอกลับเรียบร้อยแล้ว',
+            'message' => $wasApproved
+                ? 'ดึงคำขอกลับแล้ว — ลายเซ็นอนุมัติถูกล้าง ต้องยื่นขออนุมัติใหม่'
+                : 'ดึงคำขอกลับเรียบร้อยแล้ว',
         ]);
     }
 

@@ -2738,7 +2738,9 @@ $(document).on('click', '#btnWithdrawApproval', function () {
   const id = this.dataset.id;
   Swal.fire({
     title: 'ดึงคำขอกลับ?',
-    html: 'คำขออนุมัติจะถูกยกเลิก และลิงก์อนุมัติในอีเมลจะใช้ไม่ได้<br><small class="text-muted">แก้ข้อมูลแล้วส่งขออนุมัติใหม่ได้</small>',
+    html: 'คำขออนุมัติจะถูกยกเลิก และลิงก์อนุมัติในอีเมลจะใช้ไม่ได้<br>' +
+      '<strong class="text-danger">ถ้าอนุมัติไปแล้ว ลายเซ็นอนุมัติทุกขั้นจะถูกล้างด้วย</strong><br>' +
+      '<small class="text-muted">แก้ข้อมูลแล้วส่งขออนุมัติใหม่ได้</small>',
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#dc3545',
@@ -4455,26 +4457,17 @@ document.addEventListener('DOMContentLoaded', function () {
     // return;
     // ===== /ปิดการขออนุมัติชั่วคราว =====
 
-    // admin บันทึกได้ตรง ไม่ต้องรออนุมัติ — แต่ยังต้องเห็นปุ่มขออนุมัติไว้ด้วย
-    // เผื่อ admin ต้องการยิงคำขอ/ส่งเมลหาผู้อนุมัติเอง (เช่น เซลล์ยิงไม่ได้ หรือต้องส่งเมลซ้ำ)
-    if (userRole === 'admin') {
+    // admin ต่างจาก role อื่นแค่ 2 อย่าง : บันทึกได้โดยไม่ต้องรออนุมัติ และดึงคำขอกลับได้
+    // ส่วนปุ่ม "ขออนุมัติ" ใช้กติกาเดียวกับทุก role — ของเดิม admin เห็นตลอดเวลา
+    // จนแยกไม่ออกว่าใบนี้อนุมัติไปแล้วหรือยัง
+    const isAdmin = userRole === 'admin';
+    if (isAdmin) {
       btnSave.classList.remove('d-none');
-      // ประเภทการขาย = Dealer ไม่มีสายอนุมัติ (backend ข้ามการส่งเมล) → ไม่ต้องโชว์ปุ่มขอ กันกดแล้วเงียบ
-      if (!isDealerTypeSaleSelected()) {
-        revealRequestButton();
-      }
-      // มีคำขอค้างและยังไม่อนุมัติ → admin ดึงคำขอกลับได้ (backend กันเคสอนุมัติแล้วอีกชั้น)
-      const smSig = document.getElementById('smSignature')?.value === '1';
-      const appSig = document.getElementById('approvalSignature')?.value === '1';
-      const gmSig = document.getElementById('gmApprovalSignature')?.value === '1';
-      const isApprovedNow =
-        currentCase === 'normal' ? smSig : currentCase === 'b1_manager' ? appSig : gmSig;
-      if (approvalRequested && !isApprovedNow) {
+      // ดึงคำขอกลับ : แสดงตลอดเมื่อมีคำขอ แม้ GM/MD อนุมัติไปแล้ว
+      // (เจอข้อมูลผิดหลังอนุมัติ ต้องถอยมาขอใหม่ — backend ล้างลายเซ็นให้ด้วย)
+      if (approvalRequested) {
         btnWithdrawApproval?.classList.remove('d-none');
       }
-      content.innerHTML = html;
-      modal.show();
-      return;
     }
 
     // ประเภทการขาย = Dealer → ไม่ต้องขออนุมัติ (อ่านค่าที่เลือกอยู่สดๆ เผื่อเพิ่งเปลี่ยนยังไม่บันทึก)
@@ -4515,9 +4508,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ขออนุมัติแล้ว รอผลอนุมัติ (เคสยังตรงเดิม) → แสดงแค่ปิด (ยังบันทึกไม่ได้)
-    // admin ดึงคำขอกลับได้ (backend กันเคสที่อนุมัติไปแล้ว)
+    // ปุ่มบันทึก/ดึงคำขอกลับของ admin ถูกเปิดไว้แล้วที่บล็อกด้านบน
     if (approvalRequested && !staleRequest) {
-      if (userRole === 'admin') btnWithdrawApproval?.classList.remove('d-none');
       content.innerHTML = html;
       modal.show();
       return;

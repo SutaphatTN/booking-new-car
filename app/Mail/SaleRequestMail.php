@@ -18,15 +18,28 @@ class SaleRequestMail extends Mailable
     public $data;
     public $files;
 
+    /** token ที่จะใส่ในลิงก์ของเมลฉบับนี้ (null = ใช้ approval_token ปกติ) */
+    public $linkToken;
+
+    /** ฉบับสำเนา (CC) — ไม่มีปุ่มอนุมัติ มีแต่ลิงก์เปิดดู/ตีกลับ */
+    public $isCopy;
+
     /**
      * @param array $files รายการไฟล์แนบ (Illuminate\Mail\Mailables\Attachment)
      */
-    public function __construct($saleCar, $type, $data = null, array $files = [])
+    /**
+     * @param string|null $linkToken  token สำหรับลิงก์ในเมลฉบับนี้ — แยกให้ผู้อนุมัติตัวจริง
+     *                                กับคนที่ถูก CC ได้คนละตัว (ดู emailFinalApprover)
+     * @param bool        $isCopy     true = ฉบับสำเนา ไม่ให้กดอนุมัติ
+     */
+    public function __construct($saleCar, $type, $data = null, array $files = [], $linkToken = null, bool $isCopy = false)
     {
         $this->saleCar = $saleCar;
         $this->type = $type;
         $this->data = $data;
         $this->files = $files;
+        $this->linkToken = $linkToken;
+        $this->isCopy = $isCopy;
     }
 
     public function build()
