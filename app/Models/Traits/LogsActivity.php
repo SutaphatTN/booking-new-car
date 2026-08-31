@@ -24,7 +24,7 @@ trait LogsActivity
         return array_merge([
             'created_at', 'updated_at', 'deleted_at',
             'UserInsert', 'UserUpdate', 'UserDelete',
-            'approval_token', 'remember_token', 'password',
+            'approval_token', 'approval_final_token', 'remember_token', 'password',
         ], property_exists($this, 'activityExclude') ? $this->activityExclude : []);
     }
 

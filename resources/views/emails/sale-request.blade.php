@@ -155,13 +155,20 @@
 
 ---
 
-@if(!empty($saleCar->approval_token))
-@component('mail::button', ['url' => route('purchase-order.emailApprove', $saleCar->approval_token), 'color' => 'success'])
-อนุมัติ
+@php
+    // ลิงก์ของเมลฉบับนี้ — ฉบับผู้อนุมัติตัวจริงใช้ token เฉพาะ ส่วนสำเนา (CC) ใช้ token ปกติ
+    $mailLinkToken = ($linkToken ?? null) ?: $saleCar->approval_token;
+@endphp
+@if(!empty($mailLinkToken))
+@if(!empty($isCopy))
+> **สำเนาเพื่อรับทราบ** — ปุ่มด้านล่างเปิดดูรายละเอียดและตีกลับได้ แต่กดอนุมัติขั้นสุดท้ายไม่ได้
+@endif
+@component('mail::button', ['url' => route('purchase-order.emailApprove', $mailLinkToken), 'color' => empty($isCopy) ? 'success' : 'primary'])
+{{ empty($isCopy) ? 'อนุมัติ' : 'เปิดดูรายละเอียด' }}
 @endcomponent
 
 {{-- ปุ่ม "ดูรายละเอียด" ปิดไว้ก่อน (uncomment เพื่อเปิดใช้ — ชี้ PDF สรุปการขาย read-only ผ่าน token)
-@component('mail::button', ['url' => route('purchase-order.emailSummary', $saleCar->approval_token), 'color' => 'primary'])
+@component('mail::button', ['url' => route('purchase-order.emailSummary', $mailLinkToken), 'color' => 'primary'])
 ดูรายละเอียด
 @endcomponent
 --}}
