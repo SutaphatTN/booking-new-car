@@ -18,11 +18,16 @@ use App\Support\ExportFilename;
 
 class FloorPlanController extends Controller
 {
-    // เมนู Floor Plan เห็น/แก้ได้เฉพาะ admin, audit_internal, md
-    private const ALLOWED_ROLES = ['admin', 'audit_internal', 'md'];
+    // เข้าเมนู Floor Plan ได้ (ดูทุกหน้า + โหลด Excel)
+    // 2026-08-31 เพิ่ม account — ดูได้ทุกหน้าและแก้ "แจ้งจำหน่าย" ได้ (มีชุด "ส่งบัญชี" เป็นงานของฝ่ายนี้)
+    // แต่ห้ามแตะอัตราดอกเบี้ยกับวันปิด FP → คุมด้วย 2 const ด้านล่าง
+    private const ALLOWED_ROLES = ['admin', 'audit_internal', 'md', 'account'];
 
     // แก้ข้อมูล FP ในโมดัล (Billing date / วันที่ปิด FP / Net Amount)
     private const FP_EDIT_ROLES = ['admin', 'audit_internal', 'md'];
+
+    // แก้อัตราดอกเบี้ยวงเงิน (MOR / spread) — ค่ากลางที่กระทบดอกเบี้ยทุกคัน
+    private const RATE_EDIT_ROLES = ['admin', 'audit_internal', 'md'];
 
     // ชุดแจ้งจำหน่าย (key => label) — key เก็บลง salecars.dispose_set
     public const DISPOSE_SETS = [
@@ -43,6 +48,11 @@ class FloorPlanController extends Controller
     private function canEditFp(): bool
     {
         return in_array(Auth::user()->role, self::FP_EDIT_ROLES, true);
+    }
+
+    private function canEditRate(): bool
+    {
+        return in_array(Auth::user()->role, self::RATE_EDIT_ROLES, true);
     }
 
     /**
@@ -101,6 +111,8 @@ class FloorPlanController extends Controller
         $morIsThisMonth   = FpMorRate::where('period', $month)->exists();
         $spreadIsThisMonth = FpInterestRate::where('brand', $brand)->where('period', $month)->exists();
 
+        $canEditRate = $this->canEditRate();
+
         return view('floor-plan.interest-rate.view', compact(
             'month',
             'brand',
@@ -110,7 +122,8 @@ class FloorPlanController extends Controller
             'buckets',
             'periodLabel',
             'morIsThisMonth',
-            'spreadIsThisMonth'
+            'spreadIsThisMonth',
+            'canEditRate'
         ));
     }
 
@@ -121,6 +134,9 @@ class FloorPlanController extends Controller
     public function updateInterestRate(Request $request)
     {
         $this->authorizeAccess();
+
+        // account เข้าหน้านี้ได้แต่แก้ไม่ได้ (กันยิง endpoint ตรง)
+        abort_unless($this->canEditRate(), 403);
 
         $validated = $request->validate([
             'month'          => 'required|date_format:Y-m',

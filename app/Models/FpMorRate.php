@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\LogsActivity;
 use App\Models\Traits\TracksUserActions;
 use Illuminate\Database\Eloquent\Model;
 
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 class FpMorRate extends Model
 {
     use TracksUserActions;
+    use LogsActivity;   // เก็บประวัติ ใคร/เมื่อไหร่/ค่าเก่า→ค่าใหม่ ลง activity_logs
 
     protected $table = 'fp_mor_rates';
 

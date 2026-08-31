@@ -61,7 +61,7 @@
                     </div>
                   </div>
                   <div class="fp-mor-card__field">
-                    <input type="number" step="0.01" min="0" id="mor" name="mor"
+                    <input type="number" step="0.01" min="0" id="mor" name="mor" @disabled(!$canEditRate)
                       value="{{ number_format($mor, 2, '.', '') }}" required>
                     <span class="fp-mor-card__pct">%</span>
                   </div>
@@ -92,7 +92,7 @@
                           <div class="input-group input-group-sm">
                             <input type="number" step="0.01" min="0"
                               class="form-control text-end spread-input" name="{{ $col }}"
-                              data-target="rate_{{ $col }}"
+                              data-target="rate_{{ $col }}" @disabled(!$canEditRate)
                               value="{{ number_format($spreads[$col], 2, '.', '') }}" required>
                             <span class="input-group-text">%</span>
                           </div>
@@ -107,9 +107,16 @@
             </div>
 
             <div class="d-flex justify-content-end gap-2 pt-4">
-              <button type="submit" class="btn btn-primary px-5" id="btnSaveRate">
-                <i class="bx bx-save me-1"></i>บันทึกงวดนี้
-              </button>
+              @if ($canEditRate)
+                <button type="submit" class="btn btn-primary px-5" id="btnSaveRate">
+                  <i class="bx bx-save me-1"></i>บันทึกงวดนี้
+                </button>
+              @else
+                {{-- role ที่ดูได้อย่างเดียว (เช่น account) — ฝั่ง server ก็ abort 403 ซ้ำอีกชั้น --}}
+                <span class="text-muted small align-self-center">
+                  <i class="bx bx-lock-alt me-1"></i>ดูได้อย่างเดียว — แก้อัตราดอกเบี้ยได้เฉพาะ admin / ตรวจสอบภายใน / MD
+                </span>
+              @endif
             </div>
           </form>
 
