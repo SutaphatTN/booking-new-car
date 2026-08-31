@@ -97,6 +97,7 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
             'tracking.subModel',
             'tracking.wuColor',
             'tracking.interiorColor',
+            'tracking.saleTeam',
             'decision',
             'insertedBy',
         ])
@@ -124,6 +125,7 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
                 'full_name'      => $fullName,
                 'phone'          => $customer?->formatted_mobile ?? '-',
                 'sale'           => $tracking?->sale?->name ?? '-',
+                'team'           => $tracking?->saleTeam?->name ?? '-',
                 'source'         => $tracking?->source?->name ?? '-',
                 'model'          => $tracking?->model?->Name_TH ?? '-',
                 'sub_model'      => $tracking?->subModel?->name ?? '-',

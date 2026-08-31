@@ -100,7 +100,7 @@ class StockLicExport implements FromView, WithTitle, WithStyles, WithEvents, Sho
             ->whereIn('licenseID', $rows->pluck('id'))
             ->whereNull('finance_approved')
             ->with(['saleCarLic' => function ($q) {
-                $q->withoutGlobalScope('userAccess')->with(['customer.prefix', 'saleUser']);
+                $q->withoutGlobalScopes(['userAccess', 'saleTeam'])->with(['customer.prefix', 'saleUser']);
             }])
             ->orderBy('id')
             ->get()
@@ -111,7 +111,7 @@ class StockLicExport implements FromView, WithTitle, WithStyles, WithEvents, Sho
 
         // Vin ของรถทดลองขับที่ผูกกับป้าย (ผูกจากหน้า Car Order เมื่อประเภทการซื้อรถ = TestDrive)
         // ข้าม userAccess scope เพราะรถอาจถูกบันทึกโดยคนละสาขา/โซนกับคนที่ออกรายงาน
-        $testDriveVins = CarOrder::withoutGlobalScope('userAccess')
+        $testDriveVins = CarOrder::withoutGlobalScopes(['userAccess', 'saleTeam'])
             ->whereIn('license_plate_id', $rows->pluck('id'))
             ->orderBy('id')
             ->get(['license_plate_id', 'vin_number'])

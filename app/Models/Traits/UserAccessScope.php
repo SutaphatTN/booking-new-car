@@ -15,30 +15,8 @@ trait UserAccessScope
       $user = Auth::user();
       $table = $query->getModel()->getTable();
 
-      // ── ทีมที่ตั้งค่าเป็น isolated: manager/audit เห็นเฉพาะงานของเซลล์ในทีมตัวเอง ──
-      // ใช้ตอนไปทำงานใต้ "แบรนด์ที่ใช้ร่วมกับทีมอื่น" (เช่นทีม Lepas สลับไปขาย Wuling
-      // ที่ทีม Mitsu ก็ขายอยู่) — จะได้ไม่ปนลูกค้าของอีกทีม
-      //
-      // เงื่อนไข brand ที่ทำงานอยู่ ≠ home brand สำคัญ ห้ามตัดทิ้ง:
-      // ตอนดูแบรนด์บ้านตัวเองต้องเห็นครบ รวมใบที่เซลล์ทีมอื่นเป็นคนขายให้ด้วย
-      //
-      // ใช้กับ salecars (SaleID) + customer_trackings (sale_id)
-      $teamId = $user->sale_team_id ?? null;
-      if (
-        $teamId
-        && in_array($user->role, ['manager', 'audit'], true)
-        && (int) $user->getOriginal('brand') !== (int) $user->brand
-        && optional($user->saleTeam)->isIsolated()
-      ) {
-        $saleCol = ['salecars' => 'SaleID', 'customer_trackings' => 'sale_id'][$table] ?? null;
-        if ($saleCol) {
-          $query->whereIn("{$table}.{$saleCol}", function ($q) use ($teamId) {
-            $q->select('id')->from('users')
-              ->where('sale_team_id', $teamId)
-              ->whereIn('role', ['sale', 'lead_sale']);
-          });
-        }
-      }
+      // ตัวกรอง "ทีมขาย" ย้ายไปอยู่ scope แยกชื่อ 'saleTeam' แล้ว (App\Models\Traits\SaleTeamScope)
+      // เพราะรายงานที่ปลด userAccess เพื่อข้ามสาขา/แบรนด์ เคยทำให้ตัวกรองทีมหลุดไปด้วย
 
       if ($user->role === 'admin') {
         if ($user->brand) {

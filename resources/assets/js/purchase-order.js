@@ -4654,6 +4654,8 @@ $(document).ready(function () {
       { data: 'FullName', orderable: false },
       // { data: 'code', orderable: false },
       { data: 'vin_number', orderable: false },
+      // คอลัมน์ "ทีม" มีเฉพาะ brand ที่ถูกขายโดยหลายทีม (config/brand.php multi_team_brands)
+      { data: 'team', orderable: false, searchable: false, visible: $('#historyShowTeam').val() === '1' },
       { data: 'red_plate', orderable: false, searchable: false, className: 'text-center' },
       { data: 'Action', orderable: false, searchable: false }
     ],

@@ -7,6 +7,9 @@
       <th>รุ่นย่อย</th>
       <th>สี</th>
       <th>ผู้ขาย</th>
+      @if (\App\Support\BrandFeature::hasMultipleTeams())
+        <th>ทีม</th>
+      @endif
       <th>แหล่งที่มา</th>
       <th>วันที่ทดลองขับ</th>
       <th>หมายเหตุทดลองขับ</th>
@@ -25,6 +28,9 @@
         <td>{{ $r['sub_model'] }}</td>
         <td>{{ $r['color'] }}</td>
         <td>{{ $r['sale'] }}</td>
+        @if (\App\Support\BrandFeature::hasMultipleTeams())
+          <td>{{ $r['team'] }}</td>
+        @endif
         <td>{{ $r['source'] }}</td>
         <td>{{ $r['test_date'] }}</td>
         <td>{{ $r['test_note'] }}</td>
@@ -35,7 +41,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="13" align="center">ไม่มีข้อมูล</td>
+        <td colspan="{{ 13 + (\App\Support\BrandFeature::hasMultipleTeams() ? 1 : 0) }}" align="center">ไม่มีข้อมูล</td>
       </tr>
     @endforelse
   </tbody>

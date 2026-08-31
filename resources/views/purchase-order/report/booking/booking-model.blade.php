@@ -4,6 +4,9 @@
 
   // คอลัมน์ "สีภายใน" — เปิดตาม config/brand.php (interior_color_brands)
   $showInterior = \App\Support\BrandFeature::hasInteriorColor();
+
+  // คอลัมน์ "ทีม" — เฉพาะ brand ที่ถูกขายโดยหลายทีม (config/brand.php multi_team_brands)
+  $showTeam = \App\Support\BrandFeature::hasMultipleTeams();
 @endphp
 <table>
   <thead>
@@ -32,6 +35,9 @@
       <th>ชื่อผู้จอง</th>
       <th>สถานะสัญญา</th>
       <th>Sale</th>
+      @if ($showTeam)
+        <th>ทีม</th>
+      @endif
       <th>วันที่จอง</th>
       <th>วันประมาณการ</th>
       <th>สถานะสัญญา</th>
@@ -70,6 +76,9 @@
         <td>{{ $r['customer'] }}</td>
         <td>{{ $r['con_status'] }}</td>
         <td>{{ $r['sale'] }}</td>
+        @if ($showTeam)
+          <td>{{ $r['team'] }}</td>
+        @endif
         <td>{{ $r['bookingDate'] }}</td>
         <td>{{ $r['DeliveryEstimateDate'] }}</td>
         <td>{{ $r['status'] }}</td>
@@ -83,7 +92,7 @@
     @empty
       <tr>
         {{-- <td colspan="{{ auth()->user()->brand == 2 ? 21 : 20 }}" align="center"> --}}
-        <td colspan="{{ ($showCost ? 23 : 22) + (auth()->user()->brand == 2 ? 1 : 0) + ($showInterior ? 1 : 0) }}" align="center">
+        <td colspan="{{ ($showCost ? 23 : 22) + (auth()->user()->brand == 2 ? 1 : 0) + ($showInterior ? 1 : 0) + ($showTeam ? 1 : 0) }}" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

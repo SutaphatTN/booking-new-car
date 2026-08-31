@@ -30,6 +30,7 @@ class SaleTeam extends Model
     protected $fillable = [
         'name',
         'code',
+        'group_code',       // ค่าย/กลุ่มทีม — ทีมในกลุ่มเดียวกันมองเห็นข้อมูลกันได้
         'branch',            // สาขาที่ทีมนี้รายงานยอดเข้า (ใช้แทน hardcode ใน view BI)
         'default_for_brand', // brand ที่ใช้ทีมนี้เป็นค่าเริ่มต้นตอนสร้าง user ใหม่ (1 brand = 1 ทีม)
         'visibility',
@@ -45,6 +46,29 @@ class SaleTeam extends Model
     public function users()
     {
         return $this->hasMany(User::class, 'sale_team_id', 'id');
+    }
+
+    /**
+     * team id ทั้งหมดใน "กลุ่ม" เดียวกับทีมนี้ (ค่ายเดียวกัน)
+     *
+     * ค่ายนึงมีได้หลายทีม — ฝั่ง Mitsu มีทั้งทีมสำนักงานใหญ่และทีมอ่าวลึก ซึ่งผู้จัดการ
+     * ต้องเห็นทั้งคู่ ส่วนทีม Lepas เป็นคนละค่าย จึงต้องกรองด้วยกลุ่มไม่ใช่ทีมเดี่ยว
+     *
+     * ทีมที่ยังไม่ตั้ง group_code = อยู่คนเดียว (พฤติกรรมเดิมก่อนมีคอลัมน์นี้)
+     * อ่านผ่าน $this->group_code เฉย ๆ เพื่อให้โค้ดยังทำงานได้ถ้ายังไม่ได้รัน ALTER TABLE
+     */
+    public function groupTeamIds(): array
+    {
+        $group = $this->group_code ?? null;
+
+        if (!$group) {
+            return [(int) $this->id];
+        }
+
+        return static::where('group_code', $group)
+            ->pluck('id')
+            ->map(fn($id) => (int) $id)
+            ->all();
     }
 
     /** ทีมนี้เห็นเฉพาะงานของตัวเองไหม (เมื่อไปทำงานใต้แบรนด์ที่ใช้ร่วมกับทีมอื่น) */

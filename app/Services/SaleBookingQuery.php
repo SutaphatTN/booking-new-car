@@ -67,6 +67,7 @@ class SaleBookingQuery
             'remainingPayment',
             'remainingPayment.financeInfo',
             'type',
+            'saleTeam',
         ]);
     }
 }

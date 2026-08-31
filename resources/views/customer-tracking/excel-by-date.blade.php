@@ -1,4 +1,8 @@
-@php $colspan = 18 + ($showInterior ? 1 : 0) + ($showOption ? 1 : 0); @endphp
+@php
+  // คอลัมน์ "ทีม" — เฉพาะ brand ที่ถูกขายโดยหลายทีม (config/brand.php multi_team_brands)
+  $showTeam = \App\Support\BrandFeature::hasMultipleTeams();
+  $colspan  = 18 + ($showInterior ? 1 : 0) + ($showOption ? 1 : 0) + ($showTeam ? 1 : 0);
+@endphp
 <table>
   <thead>
     <tr>
@@ -10,6 +14,9 @@
       <th>ชื่อ - นามสกุล</th>
       <th>เบอร์โทร</th>
       <th>ผู้ขาย</th>
+      @if ($showTeam)
+        <th>ทีม</th>
+      @endif
       <th>แหล่งที่มา</th>
       <th>รุ่นรถหลัก</th>
       <th>รุ่นย่อย</th>
@@ -39,6 +46,9 @@
         <td>{{ $r['full_name'] }}</td>
         <td>{{ $r['phone'] }}</td>
         <td>{{ $r['sale'] }}</td>
+        @if ($showTeam)
+          <td>{{ $r['team'] }}</td>
+        @endif
         <td>{{ $r['source'] }}</td>
         <td>{{ $r['model'] }}</td>
         <td>{{ $r['sub_model'] }}</td>

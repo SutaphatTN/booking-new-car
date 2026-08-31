@@ -261,6 +261,9 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
       $sale = $order->salecars
         ->first(fn($s) => !in_array($s->con_status, [5, 7, 8, 9]));
 
+      // ใบจองของทีมอื่น: บอกได้แค่ว่ารถคันนี้ถูกจองแล้ว ห้ามโชว์ชื่อลูกค้า/เซลล์
+      $maskSale = BookingReportQuery::hidesBookingDetail($sale);
+
       //เงื่อนไข การจัดสรรรถใหม่
       $bookingDate = $sale?->BookingDate
         ? Carbon::parse($sale->BookingDate)->startOfDay()
@@ -330,15 +333,18 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         //   ->diffInDays(now()->startOfDay()) . ' วัน'
         //   : '-',
 
-        'customer' => $sale?->customer
-          ? trim(
-            ($sale->customer->prefix->Name_TH ?? '') . ' ' .
-              ($sale->customer->FirstName ?? '') . ' ' .
-              ($sale->customer->LastName ?? '')
-          )
-          : '',
+        'customer' => $maskSale
+          ? BookingReportQuery::MASKED
+          : ($sale?->customer
+            ? trim(
+              ($sale->customer->prefix->Name_TH ?? '') . ' ' .
+                ($sale->customer->FirstName ?? '') . ' ' .
+                ($sale->customer->LastName ?? '')
+            )
+            : ''),
         'con_status'  => $sale?->conStatus?->name ?? '',
-        'sale'        => $sale?->saleUser?->name ?? '',
+        'sale'        => $maskSale ? BookingReportQuery::MASKED : ($sale?->saleUser?->name ?? ''),
+        'team'        => $sale?->saleTeam?->name ?? '',
         'bookingDate' => $sale?->format_booking_date ?? '',
         'DeliveryEstimateDate' => $sale?->format_delivery_estimate_date ?? '',
         'status'      => $sale?->conStatus?->name ?? '',
@@ -405,6 +411,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
 
         'con_status'  => $sale->conStatus?->name ?? '',
         'sale'        => $sale->saleUser?->name ?? '',
+        'team'        => $sale->saleTeam?->name ?? '',
         'bookingDate' => $sale->format_booking_date ?? '',
         'DeliveryEstimateDate' => $sale->format_delivery_estimate_date ?? '',
         'status'      => $sale?->conStatus?->name ?? '',

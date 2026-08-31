@@ -5,12 +5,16 @@
   // คอลัมน์ "สีภายใน" — เปิดตาม config/brand.php (interior_color_brands)
   $showInterior = \App\Support\BrandFeature::hasInteriorColor();
 
+  // คอลัมน์ "ทีม" — เฉพาะ brand ที่ถูกขายโดยหลายทีม (config/brand.php multi_team_brands)
+  $showTeam = \App\Support\BrandFeature::hasMultipleTeams();
+
   // จำนวนคอลัมน์รวม (ปรับตาม brand + การซ่อนราคาทุน) สำหรับแถว "ไม่มีข้อมูล"
   $totalCols = 26;
   if (auth()->user()->brand == 2) $totalCols++;             // สาขา — GWM เท่านั้น
   if ($showInterior) $totalCols++;                          // สีภายใน
   if (in_array(auth()->user()->brand, [2, 3, 4])) $totalCols--; // ไม่มี Option
   if (!$showCost) $totalCols--;                             // ซ่อนราคาทุน
+  if ($showTeam) $totalCols++;                              // ทีม
 @endphp
 <table>
   <thead>
@@ -44,6 +48,9 @@
       <th>Aging (Stock Date)</th>
       <th>ผู้จอง</th>
       <th>Sale</th>
+      @if ($showTeam)
+        <th>ทีม</th>
+      @endif
       <th>วันจอง</th>
       <th>สถานะสัญญา</th>
       <th>ระยะเวลาการจอง</th>
@@ -85,6 +92,9 @@
         <td>{{ $s['aging_date'] }}</td>
         <td>{{ $s['customer'] }}</td>
         <td>{{ $s['sale'] }}</td>
+        @if ($showTeam)
+          <td>{{ $s['team'] }}</td>
+        @endif
         <td>{{ $s['bookingDate'] }}</td>
         <td>{{ $s['status'] }}</td>
         <td>{{ $s['daysBind'] }}</td>

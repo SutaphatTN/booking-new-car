@@ -413,7 +413,7 @@ class CustomerController extends Controller
             // กันทุกสถานะ ไม่เว้นส่งมอบ/ถอนจอง/ยกเลิกติดตาม เพราะใบจองกับประวัติติดตาม
             // ต้องอ้างชื่อลูกค้าได้ตลอดไป — เคยมีเคสลบลูกค้าที่ใบจองถอนจองแล้ว (con_status 9)
             // ทำให้ใบจองนั้นไม่มีชื่อลูกค้าโผล่มา
-            $hasTracking = CustomerTracking::withoutGlobalScope('userAccess')
+            $hasTracking = CustomerTracking::withoutGlobalScopes(['userAccess', 'saleTeam'])
                 ->where('customer_id', $customer->id)
                 ->exists();
 

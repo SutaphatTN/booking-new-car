@@ -3,6 +3,7 @@
 namespace App\Exports\over_budget;
 
 use App\Models\Salecar;
+use App\Support\BrandFeature;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -41,12 +42,19 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
     return config("brand.names.{$this->brand}", 'Brand ' . $this->brand);
   }
 
+  /** brand นี้ต้องมีคอลัมน์ "ทีม" ไหม (config/brand.php multi_team_brands) */
+  private function showsTeam(): bool
+  {
+    return BrandFeature::hasMultipleTeams($this->brand);
+  }
+
   public function headings(): array
   {
-    return [
+    return array_values(array_filter([
       'วันที่ขอ',
       'สาขา',
       'ชื่อฝ่ายขาย',
+      $this->showsTeam() ? 'ทีม' : null,
       'ชื่อลูกค้า',
       'รุ่นรถ',
       'รุ่นย่อย',
@@ -60,7 +68,7 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
       'สถานะอนุมัติ',
       'สถานะการจอง',
       'หมายเหตุ MD',
-    ];
+    ], fn($h) => $h !== null));
   }
 
   public function array(): array
@@ -74,6 +82,7 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
       ->withoutGlobalScope('preApproval')
       ->with([
         'saleUser.branchInfo',
+        'saleTeam',
         'customer.prefix',
         'carOrder.model',
         'carOrder.subModel',
@@ -124,10 +133,11 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
         ? 'อนุมัติแล้ว' . ($appDate ? ' (' . Carbon::parse($appDate)->format('d-m-Y') . ')' : '')
         : 'รออนุมัติ';
 
-      return [
+      return array_values(array_filter([
         $r->approval_requested_at ? Carbon::parse($r->approval_requested_at)->format('d-m-Y') : '-',
         optional($r->saleUser?->branchInfo)->name ?? '-',
         optional($r->saleUser)->name ?? '-',
+        $this->showsTeam() ? ($r->saleTeam?->name ?? '-') : null,
         $customer ?: '-',
         $r->carOrder?->model?->Name_TH ?? $r->model?->Name_TH ?? '-',
         $detail ? "{$detail} - {$sub}" : $sub,
@@ -139,7 +149,7 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
         $status,
         $r->bookingStatusLabel(),
         $r->approval_md_note ?: '-',
-      ];
+      ], fn($v) => $v !== null));
     })->all();
   }
 
@@ -185,8 +195,17 @@ class OverBudgetPerBrandSheet implements FromArray, WithTitle, WithHeadings, Wit
           return;
         }
 
-        // คอลัมน์เงิน H (ยอดเกินงบ), I (งบเพดาน), J (ยอดที่ผู้จัดการกรอก)
-        foreach (['H', 'I', 'J'] as $col) {
+        // คอลัมน์เงิน — หาตำแหน่งจากชื่อหัวตาราง (ขยับตามคอลัมน์ "ทีม" ที่โผล่บาง brand)
+        $headings  = $this->headings();
+        $moneyCols = [];
+        foreach (['ยอดเกินงบ (เต็มจำนวน)', 'งบเพดาน (over_budget)', 'ยอดที่ผู้จัดการกรอก'] as $label) {
+          $i = array_search($label, $headings, true);
+          if ($i !== false) {
+            $moneyCols[] = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i + 1);
+          }
+        }
+
+        foreach ($moneyCols as $col) {
           $sheet->getStyle("{$col}2:{$col}{$highestRow}")->getNumberFormat()->setFormatCode('#,##0.00');
         }
       },

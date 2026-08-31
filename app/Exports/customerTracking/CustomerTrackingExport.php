@@ -94,6 +94,7 @@ class CustomerTrackingExport implements FromView, WithTitle, WithStyles, WithEve
             'latestDetail.decision',
             // 'details.decision', // ใช้แทน latestDetail เมื่อต้องการแสดงทุก detail
             'wuColor',
+            'saleTeam',
         ])
             ->whereNotIn('customer_id', $bookedCustomerIds)
             ->whereNull('cancelled_at')
@@ -115,6 +116,7 @@ class CustomerTrackingExport implements FromView, WithTitle, WithStyles, WithEve
                 'sub_model'      => $t->subModel->name ?? '-',
                 'color'          => $t->wuColor->name ?? '-',
                 'sale'           => $t->sale->name ?? '-',
+                'team'           => $t->saleTeam?->name ?? '-',
                 'source'         => $t->source->name ?? '-',
                 'contact_date'   => $latestDetail?->contact_date ?? '-',
                 'contact_status' => ($latestDetail && !is_null($latestDetail->contact_status))

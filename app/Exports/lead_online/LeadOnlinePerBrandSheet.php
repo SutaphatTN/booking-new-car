@@ -4,6 +4,7 @@ namespace App\Exports\lead_online;
 
 use App\Models\Salecar;
 use App\Models\User;
+use App\Support\BrandFeature;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromArray;
@@ -244,23 +245,36 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
 
   /**
    * เซลล์ของ brand นี้ "เฉพาะสาขานี้" (role sale/lead_sale) เรียงตามชื่อ — รวมคนที่ยังไม่มีข้อมูล
-   * brand 3 (Wuling) รวมเซลล์ brand 4 (Lepas) ด้วย เพราะ Lepas ขายรถ Wuling (record brand=3)
+   * "ใครขาย brand นี้ได้" อ่านจาก config/brand.php sale_pool + สิทธิ์ขายราย user (sale_switch_extra)
+   * ต้องตรงกับที่ PurchaseOrderController::exportLeadOnline ใช้แตก unit
    *
    * ต้อง whereNull('deleted_at') เอง — withoutGlobalScopes() ปิด SoftDeletingScope ไปด้วย
    * ทำให้เซลล์ที่ลบไปแล้วโผล่ในรายงาน (ใส่ไว้เพื่อข้ามขอบเขต brand ของ user ที่กดออกรายงาน)
    */
   protected function salespeople(): array
   {
-    $rosterBrands = $this->brand === 3 ? [3, 4] : [$this->brand];
+    $saleBrands = array_map('intval', (array) config("brand.sale_pool.{$this->brand}", [$this->brand]));
+    $extraIds   = User::extraSaleUserIdsForBrand($this->brand);
+
+    // brand ที่ถูกขายโดยหลายทีม ต่อท้ายชื่อด้วยทีม เช่น "ซันมาห์ หลานหาด (Mitsu อ่าวลึก)"
+    // ใช้วิธีต่อท้ายชื่อแทนการเพิ่มคอลัมน์ เพราะชีทนี้มีสูตร Excel อ้างตัวอักษรคอลัมน์
+    // ตายตัว (C..L) เต็มไปหมด แทรกคอลัมน์เมื่อไหร่สูตรเพี้ยนทั้งชีท
+    // roster = "ใครอยู่ทีมไหนตอนนี้" จึงอ่านทีมปัจจุบันจาก users ถูกแล้ว ไม่ใช่ snapshot
+    $showTeam = BrandFeature::hasMultipleTeams($this->brand);
 
     return $this->salesCache ??= User::withoutGlobalScopes()
+      ->with('saleTeam')
       ->whereNull('deleted_at')
       ->whereIn('role', ['sale', 'lead_sale'])
-      ->whereIn('brand', $rosterBrands)
+      ->where(fn($w) => $w->whereIn('brand', $saleBrands)->orWhereIn('id', $extraIds))
       ->where('branch', $this->branch)
       ->orderBy('name')
-      ->get(['id', 'name'])
-      ->map(fn($u) => ['id' => $u->id, 'name' => $u->name])
+      ->get(['id', 'name', 'sale_team_id'])
+      ->map(function ($u) use ($showTeam) {
+        $team = $showTeam ? $u->saleTeam?->name : null;
+
+        return ['id' => $u->id, 'name' => $u->name . ($team ? " ({$team})" : '')];
+      })
       ->all();
   }
 

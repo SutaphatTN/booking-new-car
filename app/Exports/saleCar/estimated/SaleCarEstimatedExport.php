@@ -17,6 +17,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use App\Support\BrandFeature;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
@@ -37,6 +38,26 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
         $branch = TbBranch::find($this->branchId);
 
         return $branch?->name ?? 'ไม่ทราบสาขา';
+    }
+
+    /**
+     * ตำแหน่งคอลัมน์ ราคาขาย / เงินจอง — ขยับตาม brand เพราะ ทีม / Option / สีภายใน โผล่ไม่เท่ากัน
+     * ต้องตรงกับลำดับใน blade saleCar/estimated/summary.blade.php
+     */
+    private function moneyColumns(): array
+    {
+        $brand = auth()->user()->brand;
+
+        $next = 6; // A-E = No, ลูกค้า, ฝ่ายขาย, รุ่นหลัก, รุ่นย่อย
+        if (BrandFeature::hasMultipleTeams($brand)) $next++;  // ทีม (ต่อจากฝ่ายขาย)
+        if (!in_array($brand, [2, 3, 4])) $next++;            // Option
+        $next++;                                              // สี
+        if (BrandFeature::hasInteriorColor($brand)) $next++;  // สีภายใน
+        $next++;                                              // ปี
+        $msrp    = $next++;                                   // ราคาขาย
+        $deposit = $next++;                                   // เงินจอง
+
+        return array_map(fn($i) => Coordinate::stringFromColumnIndex($i), [$msrp, $deposit]);
     }
 
     public function styles(Worksheet $sheet)
@@ -100,11 +121,7 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
                 $sheet->getTabColor()->setRGB('d7a2ff');
 
                 // format comma
-                $numberColumns = [
-                    // 'H',
-                    'I',
-                    'J'
-                ];
+                $numberColumns = $this->moneyColumns();
 
                 foreach ($numberColumns as $col) {
                     $sheet->getStyle("{$col}2:{$col}{$highestRow}")
@@ -166,6 +183,7 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
             return [
                 'customer' => $customerName,
                 'sale' => $r->saleUser?->name ?? '-',
+                'team' => $r->saleTeam?->name ?? '-',
                 'model' => $model,
                 'subModel' => $subModel,
                 'option'     => $r->option ?? '-',

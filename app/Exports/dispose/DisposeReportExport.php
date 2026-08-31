@@ -109,7 +109,7 @@ class DisposeReportExport implements FromView, WithTitle, WithStyles, WithEvents
                 'model', 'subModel', 'interiorColor', 'gwmColor',
                 // ปลด userAccess ของ Salecar ด้วย ไม่งั้นรถของสาขาอื่นจะไม่มีชื่อลูกค้า
                 // (ตัวรถถูกจำกัด brand จาก acrossBranches() อยู่แล้ว ใบจองก็ผูกกับรถคันนั้น)
-                'salecars' => fn ($q) => $q->withoutGlobalScope('userAccess')
+                'salecars' => fn ($q) => $q->withoutGlobalScopes(['userAccess', 'saleTeam'])
                     ->whereNotIn('con_status', [7, 8, 9])->with('customer'),
             ]);
 

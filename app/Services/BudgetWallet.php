@@ -25,7 +25,7 @@ class BudgetWallet
     {
         $prev = Carbon::create($year, $month, 1)->subMonthNoOverflow();
 
-        $count = Salecar::withoutGlobalScope('userAccess')
+        $count = Salecar::withoutGlobalScopes(['userAccess', 'saleTeam'])
             ->where('SaleID', $saleId)
             ->where('brand', 2)
             ->where('con_status', 5)
@@ -43,7 +43,7 @@ class BudgetWallet
     /** budget ที่ถูกหักไปแล้วในเดือนคอมนี้ (ผลรวม budget_deduct ของคันที่ DeliveryInCKDate อยู่เดือนนี้) */
     public static function used(int $saleId, int $year, int $month, ?int $excludeCarId = null): float
     {
-        return (float) Salecar::withoutGlobalScope('userAccess')
+        return (float) Salecar::withoutGlobalScopes(['userAccess', 'saleTeam'])
             ->where('SaleID', $saleId)
             ->where('brand', 2)
             ->whereYear('DeliveryInCKDate', $year)

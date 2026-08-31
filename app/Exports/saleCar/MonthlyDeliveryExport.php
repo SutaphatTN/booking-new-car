@@ -45,6 +45,7 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
         $brand = auth()->user()->brand;
 
         $next = 9; // A-H = No, ลูกค้า, ที่อยู่, ฝ่ายขาย, รุ่นหลัก, รุ่นย่อย, Vin, เลขเครื่อง
+        if (BrandFeature::hasMultipleTeams($brand)) $next++; // ทีม (ต่อจากฝ่ายขาย)
         if (!in_array($brand, [2, 3, 4])) $next++; // Option
         $next++;                                    // สี
         if (BrandFeature::hasInteriorColor($brand)) $next++; // สีภายใน
@@ -171,6 +172,7 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
                 'customer'            => $customerName,
                 'address'             => ($r->customer?->documentAddress ?? $r->customer?->currentAddress)?->full_address ?? '',
                 'sale'                => $r->saleUser?->name ?? '-',
+                'team'                => $r->saleTeam?->name ?? '-',
                 'model'               => $model,
                 'subModel'            => $subModel,
                 'vin'                 => $r->carOrder?->vin_number,
