@@ -939,6 +939,29 @@
   padding: 14px 16px;
 }
 
+/* การ์ดอนุมัติที่ role นี้แตะไม่ได้ (เช่น IA ที่ให้เฉพาะ gm/md/admin ติ๊ก)
+   — ยังอ่านสถานะได้ แต่ช่องกรอกถูกหรี่ + กันคลิก ให้รู้ว่าไม่ใช่ของตัวเอง */
+.approval-card.locked {
+  background: #fafafa;
+  border-style: dashed;
+}
+.approval-card.locked .approval-card-header {
+  background: #f3f4f6;
+}
+.approval-card.locked .form-check-input,
+.approval-card.locked .form-control {
+  opacity: 0.45;
+  filter: grayscale(1);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.approval-locked-note {
+  margin-top: 8px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
 /* ── Summary section ── */
 .summary-header {
   display: flex;

@@ -137,9 +137,14 @@ class HeldCommissionQuery
     /**
      * มุมมอง "เดือนที่จ่ายเงิน" — คืนทุก payment (ทุกเดือน CK) ที่ครบกำหนดจ่ายในเดือน M
      * (รอบ 10/M และ 20/M) เรตคิดตามเดือน CK ของแต่ละคัน
+     *
+     * $saleId : จำกัดเฉพาะเซลล์คนเดียว (หน้า modal รายคนไม่ต้องสแกนทั้ง brand)
+     *           ไม่กระทบผลลัพธ์ — เรต/วันจ่ายคิดต่อคันอยู่แล้ว ไม่ได้ขึ้นกับคันของเซลล์คนอื่น
+     * $ckBefore : เอาเฉพาะคันที่ CK ก่อนวันนี้ (ฝั่งเรียกที่สนใจแค่ "ยกมา" ไม่ต้องคิดเดือน CK ที่จะทิ้งอยู่ดี)
+     *           — ตัดทั้งคันตั้งแต่ใน SQL จึงไม่ต้องเรียก CarCommissionQuery::forMonth() ของเดือนนั้น
      * @return Collection ต่อ payment: salecar_id, SaleID, ck, dd, kind(main|held), amount, payday, round(10|20)
      */
-    public static function paymentsInMonth(int $year, int $month): Collection
+    public static function paymentsInMonth(int $year, int $month, ?int $saleId = null, ?\DateTimeInterface $ckBefore = null): Collection
     {
         $mStart = Carbon::create($year, $month, 1)->startOfMonth();
         $mEnd   = Carbon::create($year, $month, 1)->endOfMonth();
@@ -152,6 +157,8 @@ class HeldCommissionQuery
         $cars = Salecar::withoutGlobalScopes(['userAccess', 'saleTeam'])
             ->with('model')   // ใช้เช็คเคส "เกินงบทะลุเพดาน" (คันนั้นไม่ได้คอมตัวรถ → ไม่มีคอมกั๊ก)
             ->where('brand', self::BRAND)
+            ->when($saleId !== null, fn($q) => $q->where('SaleID', $saleId))
+            ->when($ckBefore !== null, fn($q) => $q->where('DeliveryInCKDate', '<', $ckBefore))
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
             ->salesQualifying()

@@ -24,7 +24,10 @@
         @continue
       @endif
 
-      @if ($b4CrossWuling && in_array($submenu->slug, ['purchase-order.viewCommission', 'purchase-order.viewFN', 'purchase-order.gp-setting', 'purchase-order.view-export-insurance']))
+      {{-- 2026-09-01: เปิดเมนู "ค่าคอมมิชชั่น" คืน — เหตุผลเดียวกับเมนู "รายงาน" (ดู verticalMenu.blade.php)
+           ข้อมูลถูกกรองด้วยกลุ่มทีมที่ชั้น query แล้ว (App\Models\Traits\SaleTeamScope ผ่าน
+           SaleCommissionQuery::base) manager Lepas จึงเห็นเฉพาะเซลล์ทีมตัวเองที่ขาย Wuling --}}
+      @if ($b4CrossWuling && in_array($submenu->slug, ['purchase-order.viewFN', 'purchase-order.gp-setting', 'purchase-order.view-export-insurance']))
         @continue
       @endif
 

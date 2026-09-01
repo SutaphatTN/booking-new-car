@@ -64,6 +64,14 @@
               </tr>
             </thead>
             <tbody>
+              {{-- ยอดรวมของคอลัมน์ที่ค่าคงที่ (ช่องที่แก้สดได้ — คอมอื่นๆ / budget หัก — รวมฝั่ง JS) --}}
+              @php
+                $sumBalance = 0.0;
+                $sumApproved = 0.0;
+                $sumAccessory = 0.0;
+                $sumInterest = 0.0;
+                $sumTurn = 0.0;
+              @endphp
               @forelse ($cars as $i => $c)
                 @php
                   $carCom = (float) ($c['carCommission'] ?? 0);
@@ -74,6 +82,14 @@
                   $rowBase = $c['commissionSale'] - $c['specialCom'] - $c['budgetDeduct'];
                   $rowNet = $c['commissionSale'] + $carCom;
                   $rowPos = $rowNet - $rowNeg;
+
+                  // สะสมยอดรวมท้ายตาราง — บวกด้วย "ค่าที่แสดงในช่อง" ให้ตรงกับที่ตาเห็น
+                  // (งบเหลือ/คอมที่ได้ ตัดยอดติดลบออก เพราะติดลบไปโผล่ช่อง "หักเกินงบ" แล้ว)
+                  $sumBalance += max($autoBal, 0);
+                  $sumApproved += max($approved, 0);
+                  $sumAccessory += (float) $c['accessoryCom'];
+                  $sumInterest += (float) $c['interestCom'];
+                  $sumTurn += (float) $c['turnCarCom'];
                 @endphp
                 <tr>
                   <td class="text-center text-muted">{{ $i + 1 }}</td>
@@ -176,7 +192,16 @@
               <tr class="table-light fw-bold">
                 <td colspan="3" class="text-end">รวมทั้งหมด</td>
                 <td class="text-end" id="carsCarTotal">0.00</td>
-                <td colspan="{{ $isBrand2 ? 7 : 6 }}"></td>
+                <td class="text-end">{{ number_format($sumBalance, 2) }}</td>
+                <td class="text-end">{{ number_format($sumApproved, 2) }}</td>
+                <td class="text-end">{{ number_format($sumAccessory, 2) }}</td>
+                <td class="text-end">{{ number_format($sumInterest, 2) }}</td>
+                <td class="text-end">{{ number_format($sumTurn, 2) }}</td>
+                {{-- ช่องที่แก้สดได้ → รวมฝั่ง JS (recomputeCarsTable) --}}
+                <td class="text-end" id="carsSpecialTotal">0.00</td>
+                @if ($isBrand2)
+                  <td class="text-end" id="carsBudgetTotal">0.00</td>
+                @endif
                 <td class="text-end col-sum-pos" id="carsPositiveTotal">0.00</td>
                 <td class="text-end col-sum-neg text-danger" id="carsNegativeTotal">0.00</td>
                 <td class="text-end col-sum-net" id="carsNetTotal">0.00</td>

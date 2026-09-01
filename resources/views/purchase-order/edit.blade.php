@@ -12,6 +12,13 @@
 @php
   $readonly = $isHistory ? 'readonly' : '';
   $disabled = $isHistory ? 'disabled' : '';
+  // "ตรวจสอบรายการ (IA)" — ใช้เฉพาะใบของ brand 2 (Salecar::IA_GATE_BRAND)
+  //  - brand 2 : ติ๊กได้เฉพาะ gm/md/admin (User::IA_CHECK_ROLES) role อื่นเห็นการ์ดแต่ช่องถูกล็อก
+  //              (ดู .approval-card.locked) และต้องติ๊กก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"
+  //  - brand อื่น: เหมือนเดิมทุกอย่าง ใครก็ติ๊กได้ ไม่มีด่าน
+  $iaGated = (int) $saleCar->brand === \App\Models\Salecar::IA_GATE_BRAND;
+  $canIaCheck = !$iaGated || auth()->user()->canIaCheck();
+  $iaDisabled = $canIaCheck ? $disabled : 'disabled';
   $carLocked = !empty($saleCar->CarOrderID);
   $carLockedStyle = $carLocked ? 'pointer-events:none;background-color:#f8f9fa;' : '';
 @endphp
@@ -2707,21 +2714,35 @@
                           </div>
 
                           <div class="col-md-6">
-                            <div class="approval-card @if ($saleCar->CheckerID) approved @endif">
+                            <div class="approval-card @if ($saleCar->CheckerID) approved @endif @unless ($canIaCheck) locked @endunless"
+                              @unless ($canIaCheck) title="ติ๊กได้เฉพาะ GM / MD / ผู้ดูแลระบบ" @endunless>
                               <div class="approval-card-header">
                                 <div class="approval-icon indigo"><i class="bx bx-search-alt-2"></i></div>
-                                <div class="approval-title">ตรวจสอบรายการ (IA)</div>
+                                <div class="approval-title">
+                                  ตรวจสอบรายการ (IA)
+                                  @unless ($canIaCheck)
+                                    <i class="bx bx-lock-alt ms-1 text-muted"></i>
+                                  @endunless
+                                </div>
                                 <div class="ms-auto">
                                   <div class="form-check form-switch m-0">
                                     <input class="form-check-input" type="checkbox" id="CheckerID"
-                                      name="CheckerID" value="1" {{ $saleCar->CheckerID ? 'checked' : '' }}>
+                                      name="CheckerID" value="1" {{ $saleCar->CheckerID ? 'checked' : '' }}
+                                      {{ $iaDisabled }}>
                                   </div>
                                 </div>
                               </div>
                               <div class="approval-card-body">
                                 <label for="CheckerCheckedDate" class="more-field-label mb-1">วันที่ตรวจสอบ</label>
                                 <input class="form-control" type="date" id="CheckerCheckedDate"
-                                  name="CheckerCheckedDate" value="{{ $saleCar->CheckerCheckedDate }}">
+                                  name="CheckerCheckedDate" value="{{ $saleCar->CheckerCheckedDate }}"
+                                  {{ $iaDisabled }}>
+                                @unless ($canIaCheck)
+                                  <div class="approval-locked-note">
+                                    <i class="bx bx-info-circle me-1"></i>
+                                    ต้องให้ GM / MD / ผู้ดูแลระบบ ตรวจสอบก่อนเปลี่ยนสถานะเป็น “ส่งมอบ”
+                                  </div>
+                                @endunless
                               </div>
                             </div>
                           </div>

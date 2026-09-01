@@ -543,6 +543,18 @@ class Salecar extends Model
 	/** ประเภทการขาย = Dealer (tb_sale_purchase_type.id) → ไม่ต้องขออนุมัติงบ */
 	public const TYPE_SALE_DEALER = 3;
 
+	/**
+	 * brand ที่บังคับด่าน "ตรวจสอบรายการ (IA)" ก่อนเปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5)
+	 * — GWM(2) เท่านั้น ; brand อื่นช่อง IA ยังอยู่แต่ใครก็ติ๊กได้และไม่มีด่าน
+	 * เช็คผ่าน needsIaCheck() เสมอ ห้ามเทียบ brand == 2 ตรง ๆ กระจายตามที่ต่าง ๆ
+	 */
+	public const IA_GATE_BRAND = 2;
+
+	public function needsIaCheck(): bool
+	{
+		return (int) $this->brand === self::IA_GATE_BRAND;
+	}
+
 	public function isDealerSale(): bool
 	{
 		return (int) $this->type_sale === self::TYPE_SALE_DEALER;
