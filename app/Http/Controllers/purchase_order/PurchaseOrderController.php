@@ -425,25 +425,31 @@ class PurchaseOrderController extends Controller
         // รีเฟรช accessories/campaigns ที่เพิ่ง sync กัน PDF ได้ข้อมูลเก่า
         $saleCar->load(['accessories', 'campaigns.campaign.type', 'campaigns.campaign.appellation']);
 
+        // ⚠ ต้อง render "ครั้งเดียว" แล้วเก็บ bytes ไว้ ห้ามส่ง closure ที่เรียก $pdf->output() ตรง ๆ
+        //   เพราะ closure ของ Attachment ถูกเรียกใหม่ทุกครั้งที่ Mail::send() และ dompdf instance เดิม
+        //   จะ "ฝังไฟล์ฟอนต์เพิ่มอีกชุด" ทุกรอบที่ output() → ส่ง 2 ฉบับได้ไฟล์ 683KB (FontFile2 4)
+        //   ส่ง 3 ฉบับได้ 1MB (FontFile2 6) แล้วโปรแกรมอ่าน PDF จะชี้ glyph ผิด ตัวหนังสือหาย
+        //   (เมลสายอนุมัติส่งแยกหลายฉบับ: ผู้อนุมัติหลัก / ผู้บริหารอีกฝั่ง / สำเนา audit)
+
         // (1) ไฟล์สรุปการขาย — ใช้ view เดิม ซ่อน section วันส่งมอบ
-        $pdf = Pdf::loadView('purchase-order.report.summary', [
+        $summaryBytes = Pdf::loadView('purchase-order.report.summary', [
             'saleCar'      => $saleCar,
             'model'        => collect(),
             'hideDelivery' => true,
-        ])->setPaper('A4', 'portrait');
+        ])->setPaper('A4', 'portrait')->output();
 
-        $files[] = Attachment::fromData(fn() => $pdf->output(), 'summary-' . $saleCar->id . '.pdf')
+        $files[] = Attachment::fromData(fn() => $summaryBytes, 'summary-' . $saleCar->id . '.pdf')
             ->withMime('application/pdf');
 
         // (2) ไฟล์กระเป๋าของเซลล์ — งบที่ได้ทั้งก้อน vs ทุกอย่างที่ใช้ไป
         //     ปิดไว้ก่อน (ยังไม่ใช้) — uncomment block นี้เพื่อเปิดแนบกลับทุกเคสที่ขออนุมัติ
         //     โค้ดที่เกี่ยวข้องยังอยู่ครบ: buildSalePocketData() + view purchase-order/report/sale-pocket
-        // $pocketPdf = Pdf::loadView('purchase-order.report.sale-pocket', [
+        // $pocketBytes = Pdf::loadView('purchase-order.report.sale-pocket', [
         //     'saleCar' => $saleCar,
         //     'pocket'  => $this->buildSalePocketData($saleCar),
-        // ])->setPaper('A4', 'portrait');
+        // ])->setPaper('A4', 'portrait')->output();
         //
-        // $files[] = Attachment::fromData(fn() => $pocketPdf->output(), 'sale-pocket-' . $saleCar->id . '.pdf')
+        // $files[] = Attachment::fromData(fn() => $pocketBytes, 'sale-pocket-' . $saleCar->id . '.pdf')
         //     ->withMime('application/pdf');
 
         // (3) ไฟล์แนบจากผู้ขอ (เก็บไว้ใน storage — ส่งต่อ GM ได้)
