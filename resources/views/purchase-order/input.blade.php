@@ -152,10 +152,11 @@
           <div class="po-section-body">
             <div class="row g-3 pb-2">
 
+              {{-- บรรทัดแรก: ผู้ขาย / ประเภทการขาย / วันที่จอง --}}
               {{-- ผู้ขาย --}}
               @if (in_array(auth()->user()->role, ['sale', 'lead_sale']))
                 <input type="hidden" id="SaleID" name="SaleID" value="{{ Auth::user()->id }}">
-                <div class="col-md-6">
+                <div class="col-md-4">
                   <div class="po-label"><i class='bx bx-user'></i> ชื่อ - นามสกุล ผู้ขาย</div>
                   <div class="info-pill" id="saleOwnerPill">
                     <i class="bx bx-check-circle me-2" style="color:#10b981;"></i>
@@ -163,7 +164,7 @@
                   </div>
                 </div>
               @else
-                <div class="col-md-6">
+                <div class="col-md-4">
                   <label class="po-label" for="SaleID"><i class='bx bx-user'></i> ชื่อ - นามสกุล ผู้ขาย</label>
                   <select id="SaleID" name="SaleID" class="form-select" required>
                     <option value="">— เลือกผู้ขาย —</option>
@@ -178,7 +179,7 @@
               @endif
 
               {{-- ประเภทการขาย --}}
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <label class="po-label" for="type_sale"><i class='bx bx-tag'></i> ประเภทการขาย</label>
                 <select id="type_sale" name="type_sale" class="form-select" required>
                   <option value="">— เลือก —</option>
@@ -186,6 +187,16 @@
                     <option value="{{ $item->id }}">{{ $item->name }}</option>
                   @endforeach
                 </select>
+              </div>
+
+              {{-- วันที่จอง (โหมดคำขออนุมัติ: ไม่บังคับ) --}}
+              <div class="col-md-4">
+                <label class="po-label" for="BookingDate"><i class='bx bx-calendar'></i> วันที่จอง</label>
+                <input id="BookingDate" type="date" name="BookingDate"
+                  class="form-control @error('BookingDate') is-invalid @enderror" {{ $reqIfBooking }}>
+                @error('BookingDate')
+                  <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
               </div>
 
               {{-- ขาย Dealer → ไม่ผูกฝ่ายขาย (JS toggle ตาม #type_sale) --}}
@@ -197,32 +208,50 @@
                 </div>
               </div>
 
-              {{-- แหล่งที่มา --}}
+              {{-- แหล่งที่มา : หลัก → ย่อย (cascade ด้วย initBookingSourceCascade ใน purchase-order.js)
+                   #source_main เป็นแค่ตัวกรอง ไม่ได้ส่งขึ้นเซิร์ฟเวอร์ — ใบจองเก็บแค่แหล่งที่มาย่อย (type)
+                   แล้วอ่านกลุ่มหลักจาก main_source ของมันอีกที --}}
               <div class="col-md-6">
-                <label class="po-label" for="type"><i class='bx bx-map-pin'></i> แหล่งที่มา</label>
-                <select id="type" name="type" class="form-select" required>
-                  <option value="">— เลือก —</option>
-                  @foreach ($type as $item)
-                    {{-- ซ่อนแหล่งที่มา id 12,16 จาก sale/lead_sale --}}
-                    @if (in_array(auth()->user()->role, ['sale', 'lead_sale']) && in_array($item->id, [12, 16]))
-                      @continue
-                    @endif
-                    <option value="{{ $item->id }}"
-                      {{ isset($prefill['source_id']) && $prefill['source_id'] == $item->id ? 'selected' : '' }}>
-                      {{ $item->name }}
-                    </option>
-                  @endforeach
-                </select>
+                <label class="po-label" for="source_main"><i class='bx bx-layer'></i> แหล่งที่มาหลัก</label>
+                @if ($canEditSource)
+                  <select id="source_main" class="form-select" required>
+                    <option value="">— เลือก —</option>
+                    @foreach ($sourceMains as $key => $label)
+                      <option value="{{ $key }}" {{ $prefillSource?->main_source === $key ? 'selected' : '' }}>
+                        {{ $label }}
+                      </option>
+                    @endforeach
+                  </select>
+                @else
+                  <input type="text" class="form-control" readonly
+                    value="{{ $prefillSource ? config("source.main.{$prefillSource->main_source}", $prefillSource->main_source) : '-' }}">
+                @endif
               </div>
 
-              {{-- วันที่จอง (โหมดคำขออนุมัติ: ไม่บังคับ) --}}
               <div class="col-md-6">
-                <label class="po-label" for="BookingDate"><i class='bx bx-calendar'></i> วันที่จอง</label>
-                <input id="BookingDate" type="date" name="BookingDate"
-                  class="form-control @error('BookingDate') is-invalid @enderror" {{ $reqIfBooking }}>
-                @error('BookingDate')
-                  <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                <label class="po-label" for="type"><i class='bx bx-map-pin'></i> แหล่งที่มาย่อย
+                  @if (!$canEditSource)
+                    <span class="badge bg-label-secondary ms-1" style="font-size:.7rem;"
+                      title="ใบจองนี้สร้างจากการติดตามลูกค้า แหล่งที่มาต้องตรงกับใบติดตาม แก้ได้เฉพาะแอดมิน">
+                      <i class="bx bx-lock-alt me-1"></i>ตามใบติดตาม
+                    </span>
+                  @endif
+                </label>
+                @if ($canEditSource)
+                  <select id="type" name="type" class="form-select" required>
+                    <option value="">— เลือก —</option>
+                    {{-- $type กรองตามสิทธิ์มาจาก controller แล้ว (SourceScope::allowedSubs) --}}
+                    @foreach ($type as $item)
+                      <option value="{{ $item->id }}" data-main="{{ $item->main_source }}"
+                        {{ isset($prefill['source_id']) && $prefill['source_id'] == $item->id ? 'selected' : '' }}>
+                        {{ $item->name }}
+                      </option>
+                    @endforeach
+                  </select>
+                @else
+                  <input type="hidden" name="type" value="{{ $prefillSource->id ?? '' }}">
+                  <input type="text" class="form-control" readonly value="{{ $prefillSource->name ?? '-' }}">
+                @endif
               </div>
 
             </div>

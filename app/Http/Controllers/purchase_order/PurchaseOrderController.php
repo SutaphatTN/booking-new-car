@@ -73,6 +73,7 @@ use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Support\ExportFilename;
 use App\Support\BrandFeature;
+use App\Support\SourceScope;
 
 class PurchaseOrderController extends Controller
 {
@@ -121,6 +122,17 @@ class PurchaseOrderController extends Controller
     }
 
     /**
+     * แก้ "แหล่งที่มา" ของใบจองใบนี้ได้ไหม
+     * ใบที่กดจองต่อจากหน้าติดตามลูกค้า (มี tracking_id) ดึงแหล่งที่มามาจากใบติดตามตั้งแต่แรก
+     * ถ้าปล่อยให้แก้ทีหลัง แหล่งที่มาสองฝั่งจะเพี้ยนกันจนรายงาน Lead Channel ไม่ตรง → ล็อกไว้
+     * ใบที่คีย์เองตั้งแต่ต้น (ไม่มี tracking_id) ใครก็แก้ได้เหมือนเดิม
+     */
+    public static function canEditBookingSource(Salecar $saleCar): bool
+    {
+        return !$saleCar->tracking_id || (Auth::user()->role ?? null) === 'admin';
+    }
+
+    /**
      * ถอนจอง (ปุ่มลบในหน้ารายการจอง) ได้ไหม — sale/lead_sale ห้าม
      * ถอนจองคือการปิดใบจอง (con_status = 9) + ปลดรถกลับเป็น Available
      * ฝ่ายขายกดเองไม่ได้ ต้องให้ระดับที่ดูแลใบจองเป็นคนตัดสิน
@@ -156,7 +168,6 @@ class PurchaseOrderController extends Controller
         $authUser = Auth::user();
 
         $model = TbCarmodel::all();
-        $type = TbSalecarType::all();
         $saleBrands = config("brand.sale_pool.{$authUser->brand}", [$authUser->brand]);
         $extraSaleIds = User::extraSaleUserIdsForBrand((int) $authUser->brand);
         $saleUser = User::whereIn('role', ['sale', 'lead_sale'])
@@ -212,7 +223,22 @@ class PurchaseOrderController extends Controller
         // สร้างจากโมดูล "ขออนุมัติเกินงบล่วงหน้า" (?pre_approval=1) → ยังไม่เป็นการจอง
         $isPreApproval = $request->boolean('pre_approval');
 
-        return view('purchase-order.input', compact('model', 'type', 'typeSale', 'interiorColor', 'saleUser', 'prefill', 'prefixes', 'isPreApproval'));
+        // จองต่อจากใบติดตาม → แหล่งที่มาถูกดึงมาแล้ว ล็อกไว้ตั้งแต่ตอนสร้าง (แก้ได้เฉพาะ admin)
+        // ต้องล็อกตั้งแต่หน้านี้ ไม่ใช่แค่ตอนแก้ ไม่งั้นเปลี่ยนตอนสร้างข้อมูลก็เพี้ยนตั้งแต่ใบแรกแล้ว
+        $canEditSource = !$prefill || (Auth::user()->role ?? null) === 'admin';
+
+        // แหล่งที่มา: กติกาเดียวกับหน้าติดตามลูกค้า (เซลล์คีย์ Online บริษัท / ดีลเลอร์ เองไม่ได้)
+        // ค่าที่ดึงมาจากใบติดตามอาจอยู่ในกลุ่มที่คนคีย์เลือกเองไม่ได้ (แอดมินเพจเป็นคนลงให้)
+        // ต้องคงไว้ในลิสต์ ไม่งั้นค่าที่ prefill มาหายตั้งแต่เปิดหน้า
+        $type        = SourceScope::allowedSubs($prefill['source_id'] ?? null);
+        $sourceMains = SourceScope::allowedMains();
+
+        $prefillSource = $prefill ? $type->firstWhere('id', $prefill['source_id']) : null;
+        if ($prefillSource && !array_key_exists($prefillSource->main_source, $sourceMains)) {
+            $sourceMains[$prefillSource->main_source] = config("source.main.{$prefillSource->main_source}", $prefillSource->main_source);
+        }
+
+        return view('purchase-order.input', compact('model', 'type', 'typeSale', 'interiorColor', 'saleUser', 'prefill', 'prefixes', 'isPreApproval', 'canEditSource', 'sourceMains', 'prefillSource'));
     }
 
     public function searchAccessory(Request $request)
@@ -1214,6 +1240,17 @@ class PurchaseOrderController extends Controller
 
             $trackingId ??= $trackingQuery()->orderByDesc('created_at')->value('id');
 
+            // แหล่งที่มา: กดจองต่อจากใบติดตามต้องใช้ค่าจากใบติดตามเสมอ (แก้ได้เฉพาะ admin)
+            // ฟอร์มล็อกช่องไว้แล้ว บังคับซ้ำตรงนี้กันยิง request ตรง
+            // อิง from_tracking ไม่ใช่ $trackingId เพราะ $trackingId เผลอ fallback ไปใบล่าสุดของลูกค้าได้
+            $sourceId = $request->type;
+            if ($request->filled('from_tracking') && (Auth::user()->role ?? null) !== 'admin') {
+                $sourceId = CustomerTracking::whereKey($request->from_tracking)->value('source_id') ?? $sourceId;
+            } elseif ($sourceId && !SourceScope::allowsSub($sourceId)) {
+                // คีย์เอง: ต้องอยู่ในกลุ่มที่ role นี้เลือกได้ (กติกาเดียวกับหน้าติดตาม) — กันยิงผ่าน devtools
+                $sourceId = null;
+            }
+
             // สร้างจากโมดูล "ขออนุมัติเกินงบล่วงหน้า" → ยังไม่เป็นการจอง (global scope ซ่อนไว้)
             $isPreApproval = $request->boolean('is_pre_approval');
 
@@ -1225,7 +1262,7 @@ class PurchaseOrderController extends Controller
                 'is_pre_approval' => $isPreApproval,
                 'pre_approval_at' => $isPreApproval ? now() : null,
                 'SaleID' => $isDealerSale ? null : $request->SaleID,
-                'type' => $request->type,
+                'type' => $sourceId,
                 'type_sale' => $request->type_sale,
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,
@@ -1444,7 +1481,8 @@ class PurchaseOrderController extends Controller
         $licensePlateRed = $this->availableRedPlates($saleCar);
         $provinces = TbProvinces::all();
         $insurances = Insurance::orderBy('name')->get();
-        $type = TbSalecarType::all();
+        // แหล่งที่มา: กติกาเดียวกับหน้าติดตามลูกค้า — คงค่าเดิมของใบนี้ไว้เสมอแม้อยู่ในกลุ่มที่เลือกเองไม่ได้
+        $type = SourceScope::allowedSubs($saleCar->type);
         $typeSale = TbSalePurchaseType::all();
         $payments = SaleCarPayment::where('SaleID', $id)->get();
         $userRole = Auth::user()->role;
@@ -1534,7 +1572,17 @@ class PurchaseOrderController extends Controller
         // ผูก/ปลดรถได้ไหม — อิง brand ของใบจอง ไม่ใช่ brand ที่ user กำลังสลับอยู่
         $canBindCarOrder = Auth::user()->canBindCarOrder((int) $saleCar->brand);
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet', 'canCustomAccPrice', 'redPlateAccIds', 'canReassignSale', 'saleUser', 'canEditCarPrice', 'canBindCarOrder'));
+        // แก้แหล่งที่มาได้ไหม — ใบที่จองต่อจากใบติดตามถูกล็อกไว้ (ดู canEditBookingSource)
+        $canEditSource = self::canEditBookingSource($saleCar);
+
+        // กลุ่มหลักของใบนี้อาจเป็นกลุ่มที่คนเปิดหน้าเลือกเองไม่ได้ — คงไว้ ไม่งั้นเปิดมาค่าหาย
+        $sourceMains = SourceScope::allowedMains();
+        $currentSource = $type->firstWhere('id', $saleCar->type);
+        if ($currentSource && !array_key_exists($currentSource->main_source, $sourceMains)) {
+            $sourceMains[$currentSource->main_source] = config("source.main.{$currentSource->main_source}", $currentSource->main_source);
+        }
+
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet', 'canCustomAccPrice', 'redPlateAccIds', 'canReassignSale', 'saleUser', 'canEditCarPrice', 'canBindCarOrder', 'canEditSource', 'sourceMains'));
     }
 
     /** id ประดับยนต์ที่ถูก mark ว่าเป็น "ป้ายแดง" (ตั้งค่าหลังบ้าน — ข้ามทุก scope เพราะใช้เทียบ id ข้ามแบรนด์) */
@@ -1757,7 +1805,12 @@ class PurchaseOrderController extends Controller
                     : (Auth::user()->canReassignSale()
                         ? ($request->filled('SaleID') ? (int) $request->SaleID : $saleCar->SaleID)
                         : $saleCar->SaleID),
-                'type' => $request->type,
+                // แหล่งที่มา: ใบที่จองต่อจากใบติดตามล็อกให้ตรงกับใบติดตาม — role อื่นบังคับใช้ค่าเดิมเสมอ
+                // ถ้าแก้ได้ ค่าใหม่ก็ยังต้องอยู่ในกลุ่มที่ role นี้เลือกได้ (กติกาเดียวกับหน้าติดตาม)
+                // ฟอร์มปิดช่อง/ตัดตัวเลือกไว้แล้ว ตรงนี้กันยิงผ่าน devtools
+                'type' => self::canEditBookingSource($saleCar) && SourceScope::allowsSub($request->type)
+                    ? $request->type
+                    : $saleCar->type,
                 'type_sale' => $request->type_sale,
                 'model_id' => $request->model_id,
                 'subModel_id' => $request->subModel_id,

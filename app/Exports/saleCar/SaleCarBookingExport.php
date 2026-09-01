@@ -3,28 +3,30 @@
 namespace App\Exports\saleCar;
 
 use App\Services\SaleBookingQuery;
-use Illuminate\Contracts\View\View;
-use Illuminate\Support\Carbon;
-use Maatwebsite\Excel\Concerns\FromView;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithColumnFormatting;
-use Maatwebsite\Excel\Events\AfterSheet;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Color;
 use App\Support\BrandFeature;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
-class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize, WithColumnFormatting
+/**
+ * รายงาน "ข้อมูลการจอง" — 2 sheet
+ *   1) สรุปข้อมูลการจอง  : รายใบจอง 1 บรรทัด
+ *   2) สรุป Lead Channel : ตารางไขว้แหล่งที่มาย่อย/ฝ่ายขาย × แหล่งที่มาหลัก
+ *
+ * query + map ข้อมูลไว้ที่นี่ที่เดียวแล้วส่งต่อให้ทั้งสอง sheet — sheet สรุปนับจากชุดเดียวกับ
+ * ที่พิมพ์ในตารางเสมอ ตัวเลขเลยไม่มีทางเพี้ยนกัน และไม่ยิง query ซ้ำ (DB อยู่ remote)
+ */
+class SaleCarBookingExport implements WithMultipleSheets
 {
     protected $fromDate;
     protected $toDate;
     protected $status;
+
+    /**
+     * maatwebsite/excel เรียก sheets() 2 รอบต่อการ export 1 ครั้ง
+     * (Writer::export() และ WriterFactory::includesCharts()) → ถ้าไม่จำผลไว้ จะโหลดข้อมูลซ้ำฟรี ๆ
+     */
+    protected ?array $sheets = null;
 
     public function __construct($fromDate = null, $toDate = null, $status = null)
     {
@@ -33,114 +35,27 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
         $this->status   = $status;
     }
 
-    public function title(): string
+    public function sheets(): array
     {
-        return 'สรุปข้อมูลการจอง';
-    }
+        if ($this->sheets !== null) {
+            return $this->sheets;
+        }
 
-    public function columnFormats(): array
-    {
-        return [
-            'C' => NumberFormat::FORMAT_TEXT,   // เลขบัตรประชาชน (อยู่ก่อนคอลัมน์ที่ขยับได้ทั้งหมด)
+        $rows = $this->rows();
+
+        return $this->sheets = [
+            new SaleCarBookingSheet($rows),
+            new SaleCarLeadChannelSheet($rows, $this->fromDate, $this->toDate),
         ];
     }
 
-    /**
-     * ตำแหน่งคอลัมน์ ราคาขาย / เงินจอง — ขยับตาม brand เพราะ ทีม / Option / สีภายใน โผล่ไม่เท่ากัน
-     * ต้องตรงกับลำดับใน blade saleCar/booking/summary.blade.php
-     */
-    private function moneyColumns(): array
-    {
-        $brand = auth()->user()->brand;
-
-        $next = 9; // A-H = No, ลูกค้า, บัตรประชาชน, เบอร์โทร, ที่อยู่, ฝ่ายขาย, รุ่นหลัก, รุ่นย่อย
-        if (BrandFeature::hasMultipleTeams($brand)) $next++;  // ทีม (ต่อจากฝ่ายขาย)
-        if (!in_array($brand, [2, 3, 4])) $next++;            // Option
-        $next++;                                              // สี
-        if (BrandFeature::hasInteriorColor($brand)) $next++;  // สีภายใน
-        $next++;                                              // ปี
-        $msrp = $next++;                                      // ราคาขาย
-        $next++;                                              // แหล่งที่มา
-        $deposit = $next++;                                   // เงินจอง
-
-        return array_map(fn($i) => Coordinate::stringFromColumnIndex($i), [$msrp, $deposit]);
-    }
-
-    public function styles(Worksheet $sheet)
-    {
-        return [
-            //แถวบนสุด
-            1 => [
-                'font' => [],
-                'fill' => [
-                    'fillType' => 'solid',
-                    'startColor' => ['rgb' => 'ffdaa2'],
-                ],
-                'alignment' => [
-                    'horizontal' => 'center',
-                    'vertical' => 'center',
-                ],
-            ],
-        ];
-    }
-
-    public function registerEvents(): array
-    {
-        return [
-            AfterSheet::class => function (AfterSheet $event) {
-
-                $sheet = $event->sheet->getDelegate();
-                $highestRow = $sheet->getHighestRow();
-                $highestCol = $sheet->getHighestColumn();
-
-                // font
-                $sheet->getStyle("A1:{$highestCol}{$highestRow}")
-                    ->getFont()
-                    ->setName('Angsana New')
-                    ->setSize(14);
-
-                // กึ่งกลางตาม row
-                $sheet->getStyle("A1:{$highestCol}{$highestRow}")
-                    ->getAlignment()
-                    ->setVertical(Alignment::VERTICAL_CENTER);
-
-                // เส้นกรอบ
-                $sheet->getStyle("A1:{$highestCol}{$highestRow}")
-                    ->getBorders()
-                    ->getAllBorders()
-                    ->setBorderStyle(Border::BORDER_THIN)
-                    ->setColor(new Color(Color::COLOR_BLACK));
-
-                // ความสูงของ row
-                $sheet->getRowDimension(1)->setRowHeight(25);
-                for ($row = 2; $row <= $highestRow; $row++) {
-                    $sheet->getRowDimension($row)->setRowHeight(20);
-                }
-
-                // ฟิลเตอร์เฉพาะ I
-                $sheet->setAutoFilter("B1:{$highestCol}{$highestRow}");
-
-                // freeze header
-                $sheet->freezePane('A2');
-
-                // สี sheet
-                $sheet->getTabColor()->setRGB('ffdaa2');
-
-                // format comma
-                $numberColumns = $this->moneyColumns();
-
-                foreach ($numberColumns as $col) {
-                    $sheet->getStyle("{$col}2:{$col}{$highestRow}")
-                        ->getNumberFormat()
-                        ->setFormatCode('#,##0.00');
-                }
-            },
-        ];
-    }
-
-    public function view(): View
+    /** ใบจองที่เข้าเงื่อนไข map เป็น array พร้อมใช้ (คีย์ตรงกับที่ blade summary ใช้) */
+    protected function rows(): Collection
     {
         $rows = SaleBookingQuery::base()
+            // เซลล์ที่ลาออกแล้วถูก soft-delete ใน users → belongsTo ปกติจะคืน null แล้วรายงานขึ้น "-"
+            // ทั้งที่ใบจองนั้นมีเจ้าของจริง จึงต้อง withTrashed (และ eager load ไปเลย กัน N+1)
+            ->with(['saleUser' => fn($q) => $q->withTrashed()])
             ->when($this->fromDate && $this->toDate, function ($q) {
                 $start = Carbon::createFromFormat('Y-m-d', $this->fromDate)->startOfDay();
                 $end   = Carbon::createFromFormat('Y-m-d', $this->toDate)->endOfDay();
@@ -151,7 +66,7 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
             })
             ->get();
 
-        $data = $rows->map(function ($r) {
+        return $rows->map(function ($r) {
             $customerName = trim(
                 ($r->customer->prefix->Name_TH ?? '') . ' ' .
                     ($r->customer->FirstName ?? '') . ' ' .
@@ -179,6 +94,11 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
                 ? ($r->remainingPayment?->financeInfo?->FinanceCompany ?? '-')
                 : 'ซื้อสด';
 
+            // แหล่งที่มา: salecars.type ชี้ไปแหล่งที่มา "ย่อย" กลุ่มหลักอ่านจาก main_source ของมันอีกที
+            // (getRelation เพราะ 'type' เป็นชื่อคอลัมน์ด้วย เรียก $r->type ตรง ๆ จะได้ค่า id)
+            $sourceType    = $r->getRelation('type');
+            $sourceMainKey = $sourceType?->main_source;
+
             return [
                 'id'         => $r->id,
                 'con_status' => $r->con_status,
@@ -205,12 +125,10 @@ class SaleCarBookingExport implements FromView, WithTitle, WithStyles, WithEvent
                 'DeliveryEstimateDate' => $r?->format_delivery_estimate_date ?? '-',
                 'DeliveryDate' => $r?->format_delivery_date ?? '-',
                 'status' => $r?->conStatus?->name ?? '-',
-                'type' => $r->getRelation('type')?->name ?? '-',
+                'source_main_key' => $sourceMainKey,
+                'source_main' => $sourceMainKey ? config("source.main.$sourceMainKey", $sourceMainKey) : '-',
+                'source_sub' => $sourceType?->name ?? '-',
             ];
         });
-
-        return view('purchase-order.report.saleCar.booking.summary', [
-            'sale' => $data
-        ]);
     }
 }

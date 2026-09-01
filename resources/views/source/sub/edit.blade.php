@@ -43,8 +43,8 @@
                     <i class="bx bx-layer"></i> แหล่งที่มาหลัก <span class="text-danger">*</span>
                   </label>
                   @php
-                    $allowedMains = ['offline', 'online', 'walkin'];
-                    // เผื่อข้อมูลเดิมเป็นค่านอก 3 ตัว (อื่นๆ/ลูกค้าเก่า) คงไว้ไม่ให้หาย
+                    $allowedMains = config('source.settings_main', []);
+                    // เผื่อข้อมูลเดิมเป็นค่านอกลิสต์ (ดีลเลอร์/ลูกค้าเก่า) คงไว้ไม่ให้หาย
                     if (!in_array($source->main_source, $allowedMains)) {
                         $allowedMains[] = $source->main_source;
                     }

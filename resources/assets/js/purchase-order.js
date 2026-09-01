@@ -13,7 +13,36 @@ $.ajaxSetup({
 
 $(function () {
   initTestDriveAttachments();
+  initBookingSourceCascade();
 });
+
+// แหล่งที่มา : หลัก (#source_main) → ย่อย (#type) — ใช้ร่วมกันทั้งหน้าเพิ่มและหน้าแก้ใบจอง
+// #source_main เป็นตัวกรองอย่างเดียว ไม่มี name จึงไม่ถูกส่งขึ้นเซิร์ฟเวอร์
+// หน้าแก้ที่ล็อกแหล่งที่มา (ใบที่จองต่อจากใบติดตาม) จะ render เป็น input readonly ไม่มี select → guard ตรงนี้ผ่านเลย
+function initBookingSourceCascade() {
+  const $main = $('#source_main');
+  const $sub = $('select#type');
+  if (!$main.length || !$sub.length) return;
+
+  function filterSub() {
+    const main = $main.val();
+    $sub.find('option').each(function () {
+      const $o = $(this);
+      if (!$o.val()) return; // placeholder
+      const match = String($o.data('main')) === main;
+      $o.prop('hidden', !match).prop('disabled', !match);
+    });
+  }
+
+  // เปลี่ยนกลุ่มหลัก = ค่าย่อยเดิมไม่เข้าพวกแล้ว ต้องล้างทิ้ง
+  // (แยกจาก filterSub เพราะตอนโหลดหน้าต้องคงค่าที่ prefill/บันทึกไว้)
+  $main.on('change', function () {
+    filterSub();
+    $sub.val('');
+  });
+
+  filterSub();
+}
 
 //format
 function formatNumber(num) {

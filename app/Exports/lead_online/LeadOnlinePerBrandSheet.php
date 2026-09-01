@@ -42,7 +42,7 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
   protected string $branchName;
   protected string $fromDate;
 
-  /** id แหล่งที่มาที่นับ (main_source online ยกเว้น 7,20) — ส่งมาจาก Export */
+  /** id แหล่งที่มาที่นับ (main_source online + platform) — ส่งมาจาก Export */
   protected array $onlineSourceIds;
 
   /** แถวใน sheet Master_Settings ที่สูตรของ brand นี้อ้างถึง (คอลัมน์ B) */

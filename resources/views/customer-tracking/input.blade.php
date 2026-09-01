@@ -269,9 +269,9 @@
                 <select id="source_main" name="source_main"
                   class="form-select @error('source_main') is-invalid @enderror" required>
                   <option value="">— เลือก —</option>
+                  {{-- $sourceMains ถูกกรองตามสิทธิ์มาจาก controller แล้ว (allowedSourceMains) --}}
                   @foreach ($sourceMains as $key => $label)
-                    {{-- เฉพาะหน้านี้: แสดง "อื่นๆ" (other) เป็น "ตัดขาย" --}}
-                    <option value="{{ $key }}" {{ old('source_main') == $key ? 'selected' : '' }}>{{ $key === 'other' ? 'ตัดขาย' : $label }}</option>
+                    <option value="{{ $key }}" {{ old('source_main') == $key ? 'selected' : '' }}>{{ $label }}</option>
                   @endforeach
                 </select>
                 @error('source_main')
@@ -285,11 +285,8 @@
                 <select id="source_id" name="source_id"
                   class="form-select @error('source_id') is-invalid @enderror" required disabled>
                   <option value="">— เลือก —</option>
+                  {{-- $sources โหลดเฉพาะกลุ่มใน $sourceMains อยู่แล้ว ไม่ต้องกรองรายตัวซ้ำ --}}
                   @foreach ($sources as $s)
-                    {{-- ซ่อนแหล่งที่มา id 12,16 จาก sale/lead_sale --}}
-                    @if (in_array(auth()->user()->role, ['sale', 'lead_sale']) && in_array($s->id, [12, 16]))
-                      @continue
-                    @endif
                     <option value="{{ $s->id }}" data-main="{{ $s->main_source }}"
                       {{ old('source_id') == $s->id ? 'selected' : '' }}>{{ $s->name }}</option>
                   @endforeach

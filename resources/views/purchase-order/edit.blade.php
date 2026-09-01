@@ -266,20 +266,52 @@
                       value="{{ $saleCar->BookingDate }}" required>
                   </div>
 
+                  {{-- แหล่งที่มา : หลัก → ย่อย
+                       ใบที่จองต่อจากใบติดตาม ($saleCar->tracking_id) ล็อกไว้ให้ตรงกับใบติดตามเสมอ
+                       แก้ได้เฉพาะ admin ($canEditSource — controller บังคับซ้ำตอนบันทึกด้วย) --}}
+                  @php
+                    $currentSource = $type->firstWhere('id', $saleCar->type);
+                    $currentMain = $currentSource?->main_source;
+                  @endphp
+
                   <div class="col-md-2">
-                    <label for="type" class="po-label"><i class="bx bx-map-pin"></i> แหล่งที่มา</label>
-                    <select id="type" name="type" class="form-select">
-                      <option value="">— เลือก —</option>
-                      @foreach ($type as $item)
-                        {{-- ซ่อนแหล่งที่มา id 12,16 จาก sale/lead_sale --}}
-                        @if (in_array(auth()->user()->role, ['sale', 'lead_sale']) && in_array($item->id, [12, 16]))
-                          @continue
-                        @endif
-                        <option value="{{ @$item->id }}" {{ $saleCar->type == $item->id ? 'selected' : '' }}>
-                          {{ @$item->name }}
-                        </option>
-                      @endforeach
-                    </select>
+                    <label for="source_main" class="po-label"><i class="bx bx-layer"></i> แหล่งที่มาหลัก</label>
+                    @if ($canEditSource)
+                      <select id="source_main" class="form-select">
+                        <option value="">— เลือก —</option>
+                        @foreach ($sourceMains as $key => $label)
+                          <option value="{{ $key }}" {{ $currentMain === $key ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                      </select>
+                    @else
+                      <input type="text" class="form-control" readonly
+                        value="{{ $currentMain ? config("source.main.$currentMain", $currentMain) : '-' }}">
+                    @endif
+                  </div>
+
+                  <div class="col-md-2">
+                    <label for="type" class="po-label"><i class="bx bx-map-pin"></i> แหล่งที่มาย่อย
+                      @if (!$canEditSource)
+                        <span class="badge bg-label-secondary ms-1" style="font-size:.7rem;"
+                          title="ใบจองนี้สร้างจากการติดตามลูกค้า แหล่งที่มาต้องตรงกับใบติดตาม แก้ได้เฉพาะแอดมิน">
+                          <i class="bx bx-lock-alt me-1"></i>ตามใบติดตาม
+                        </span>
+                      @endif
+                    </label>
+                    @if ($canEditSource)
+                      <select id="type" name="type" class="form-select">
+                        <option value="">— เลือก —</option>
+                        {{-- $type กรองตามสิทธิ์มาจาก controller แล้ว (SourceScope::allowedSubs) --}}
+                        @foreach ($type as $item)
+                          <option value="{{ @$item->id }}" data-main="{{ @$item->main_source }}"
+                            {{ $saleCar->type == $item->id ? 'selected' : '' }}>
+                            {{ @$item->name }}
+                          </option>
+                        @endforeach
+                      </select>
+                    @else
+                      <input type="text" class="form-control" readonly value="{{ $currentSource->name ?? '-' }}">
+                    @endif
                   </div>
 
                   <div class="col-md-2">
