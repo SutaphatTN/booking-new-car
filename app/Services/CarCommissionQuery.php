@@ -119,7 +119,8 @@ class CarCommissionQuery
                 ->where('purchase_type', self::PURCHASE_TYPE_RETAIL)
                 ->where(fn($q) => $q->where('purchase_source', '!=', self::SOURCE_DEALER)
                     ->orWhereNull('purchase_source')))
-            ->get(['id', 'SaleID', 'brand', 'model_id', 'balanceCampaign']);
+            // DeliveryInCKDate : ใช้เทียบวันตัดใน earnsCarCommission()
+            ->get(['id', 'SaleID', 'brand', 'model_id', 'balanceCampaign', 'DeliveryInCKDate']);
 
         if ($cars->isEmpty()) {
             return self::$memo[$key] = array_merge($empty, ['active' => true]);
@@ -139,15 +140,23 @@ class CarCommissionQuery
             return $target !== null && $target > 0 && $cnt >= $target * $mult;
         });
 
+        // แบรนด์นี้ "ตั้งเป้า" ไว้ในเดือนนี้ไหม — แยกจาก achieved เพราะแบรนด์ที่ไม่มีเป้า (เช่น brand 4)
+        // จะได้ achieved = false เสมอ แล้วหน้าจอขึ้นป้าย "ไม่บรรลุเป้า" ทั้งที่ไม่เคยมีเป้าให้บรรลุ
+        $hasTargetByBrand = $brandCount->map(function ($cnt, $brand) use ($targets) {
+            $target = $targets[$brand] ?? null;
+            return $target !== null && $target > 0;
+        });
+
         // แยกคอมตาม (SaleID + brand) — เซลล์ที่ขายหลาย brand (เช่น brand 3 ใช้ทีมขายร่วมกับ brand 1)
         // จะได้คอมของแต่ละ brand แยกกัน ไม่ปนกัน → perSale[SaleID][brand]
-        $perSale = $cars->groupBy('SaleID')->map(function (Collection $g) use ($achievedByBrand) {
-            return $g->groupBy('brand')->map(function (Collection $bg) use ($achievedByBrand) {
+        $perSale = $cars->groupBy('SaleID')->map(function (Collection $g) use ($achievedByBrand, $hasTargetByBrand) {
+            return $g->groupBy('brand')->map(function (Collection $bg) use ($achievedByBrand, $hasTargetByBrand) {
                 $brand = (int) $bg->first()->brand;
                 $count = $bg->count();
 
-                // คันที่เกินงบทะลุเพดาน : ยังนับจำนวนคัน (เรต/เป้าเหมือนเดิม) แต่ไม่ได้ยอดคอมตัวรถ
-                $paidCars  = $bg->reject(fn($c) => $c->isOverBudgetCeiling());
+                // คันที่เกินงบทะลุเพดาน "ก่อนวันตัด" : ยังนับจำนวนคัน (เรต/เป้าเหมือนเดิม) แต่ไม่ได้ยอดคอมตัวรถ
+                // ตั้งแต่วันตัดเป็นต้นไปได้คอมตัวรถทุกคัน (ดู Salecar::earnsCarCommission)
+                $paidCars  = $bg->filter(fn($c) => $c->earnsCarCommission());
                 $paidCount = $paidCars->count();
 
                 // brand ที่ไม่มีเป้า (เช่น brand 3) → คิดเรตตามรุ่นหลัก รวมทุกคัน
@@ -159,6 +168,7 @@ class CarCommissionQuery
                         'count'     => $count,
                         'paidCount' => $paidCount,
                         'achieved'  => null,
+                        'hasTarget' => false,
                         'rate'      => null,
                         'amount'    => $amount,
                     ];
@@ -174,6 +184,7 @@ class CarCommissionQuery
                     'count'     => $count,
                     'paidCount' => $paidCount,
                     'achieved'  => $achieved,
+                    'hasTarget' => (bool) ($hasTargetByBrand[$brand] ?? false),
                     'rate'      => $rate,
                     'amount'    => $rate * $paidCount,
                 ];

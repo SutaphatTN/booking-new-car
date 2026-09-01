@@ -4,6 +4,58 @@ $.ajaxSetup({
   }
 });
 
+//view : table "รถที่ส่งมอบ" (car-order/delivered) — ใช้ handler ปุ่ม view/edit ร่วมกับตารางรายการรถ
+let carOrderDeliveredTable;
+
+$(document).ready(function () {
+  const $table = $('.carOrderDeliveredTable');
+  if (!$table.length) return; // ไม่ได้อยู่หน้านี้
+
+  if ($.fn.DataTable.isDataTable('.carOrderDeliveredTable')) {
+    $table.DataTable().destroy();
+  }
+
+  carOrderDeliveredTable = $table.DataTable({
+    ajax: '/car-order/delivered/list',
+    columns: [
+      { data: 'No' },
+      { data: 'customer' },
+      { data: 'vin_number' },
+      { data: 'Action', orderable: false, searchable: false }
+    ],
+    paging: true,
+    lengthChange: true,
+    searching: true,
+    ordering: false,
+    info: true,
+    pageLength: 10,
+    autoWidth: false,
+    language: {
+      lengthMenu: 'แสดง _MENU_ แถว',
+      zeroRecords: 'ไม่พบข้อมูล',
+      info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
+      infoEmpty: 'ไม่มีข้อมูล',
+      search: 'ค้นหา:',
+      paginate: {
+        next: 'ถัดไป',
+        previous: 'ก่อนหน้า'
+      }
+    }
+  });
+
+  // คุม loader overlay เอง (แบบเดียวกับตารางรายการรถ)
+  carOrderDeliveredTable.on('preXhr.dt', function () {
+    $('#carOrderDeliveredLoadingOverlay').css('display', 'flex');
+  });
+  carOrderDeliveredTable.on('xhr.dt', function () {
+    $('#carOrderDeliveredLoadingOverlay').hide();
+  });
+  carOrderDeliveredTable.on('draw', function () {
+    $('#carOrderDeliveredLoadingOverlay').hide();
+    $('[data-bs-toggle="tooltip"]').tooltip();
+  });
+});
+
 //view : table car-order
 let carOrderTable;
 

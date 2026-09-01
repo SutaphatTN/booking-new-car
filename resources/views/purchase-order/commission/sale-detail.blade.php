@@ -93,8 +93,10 @@
                        กั๊ก/พักไว้ = เรื่องเวลาจ่าย ไม่ลดยอด → โชว์เป็นบรรทัดรองใต้ยอดคอมตัวรถที่มันถูกแบ่งออกมา --}}
                   <td class="text-end {{ $carCom > 0 ? '' : 'text-muted' }}">
                     {{ number_format($carCom, 2) }}
-                    @if (!empty($c['overCeiling']))
-                      <div class="text-danger cell-note" title="เกินงบทะลุเพดาน — ไม่ได้คอมตัวรถ (แต่ยังนับจำนวนคัน)">
+                    {{-- ป้ายแดงขึ้นเฉพาะคันที่ "ไม่ได้คอมตัวรถ" จริง ๆ (เกินเพดาน + CK ก่อนวันตัด)
+                         คันตั้งแต่วันตัดเป็นต้นไปถึงจะเกินเพดานก็ได้คอมตัวรถ จึงไม่ต้องขึ้นป้าย --}}
+                    @if (!empty($c['noCarCom']))
+                      <div class="text-danger cell-note" title="เกินงบทะลุเพดาน (ก่อนวันเปลี่ยนกติกา) — ไม่ได้คอมตัวรถ แต่ยังนับจำนวนคัน">
                         <i class="bx bx-error-circle"></i> เกินงบทะลุเพดาน
                       </div>
                     @endif
@@ -316,9 +318,21 @@
                   — ขาย <strong>{{ $car['count'] }}</strong> คัน
                   (ได้คอม <strong>{{ $car['paidCount'] }}</strong> คัน) ×
                   เรต <strong>{{ number_format($car['rate'], 0) }}</strong>/คัน
-                  <span class="badge {{ $car['achieved'] ? 'bg-success' : 'bg-secondary' }}">
-                    {{ $car['achieved'] ? 'บรรลุเป้า 120%' : 'ไม่บรรลุเป้า' }}
-                  </span>
+                  {{-- แบรนด์ที่ไม่มีเป้า (brand 3/4 — ดู config brands_without_target) ไม่ต้องโชว์ป้ายเลย
+                       เพราะเรตสองคอลัมน์เท่ากัน ป้ายจะขึ้น "ไม่บรรลุเป้า" ตลอดทั้งที่ไม่เคยมีเป้าให้บรรลุ
+                       ส่วนแบรนด์ที่ใช้เป้าแต่ยังไม่ได้ตั้งเป้าเดือนนั้น โชว์ว่า "ยังไม่ได้ตั้งเป้า"
+                       จะได้รู้ว่าต้องไปตั้ง ไม่ใช่เงียบหายไปเฉย ๆ --}}
+                  @unless (in_array((int) $car['brand'], config('car_commission.brands_without_target', []), true))
+                    @if (!empty($car['hasTarget']))
+                      <span class="badge {{ $car['achieved'] ? 'bg-success' : 'bg-secondary' }}">
+                        {{ $car['achieved'] ? 'บรรลุเป้า 120%' : 'ไม่บรรลุเป้า' }}
+                      </span>
+                    @else
+                      <span class="badge bg-warning text-dark" title="ยังไม่ได้ตั้งเป้าของเดือนนี้ — ระบบคิดเรตแบบไม่บรรลุเป้าไปก่อน">
+                        ยังไม่ได้ตั้งเป้า
+                      </span>
+                    @endif
+                  @endunless
                 @endif
                 @if ($carSkipped > 0)
                   <div class="mt-1 text-danger">

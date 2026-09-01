@@ -459,8 +459,8 @@ class PurchaseOrderController extends Controller
     }
 
     // อีเมลที่ CC เพิ่มในสายอนุมัติเกินงบขั้นสุดท้าย
-    //  - brand 2 : CC ผู้บริหาร (ketsudap + danut) ตลอดสาย (ทั้งขั้น gm และ VIP ที่ส่ง md)
-    //  - brand 1/3/4 : CC ให้ md รับทราบ — md ไม่ต้องกดอนุมัติ แต่เปิดลิงก์กด "ตีกลับ" ได้
+    //  - brand 2 : ผู้บริหาร (ketsudap + danut) ตลอดสาย (ทั้งขั้น gm และ VIP ที่ส่ง md)
+    //  - brand 1/3/4 : md — ได้ลิงก์อนุมัติเหมือนผู้อนุมัติหลัก (ดู emailFinalApprover)
     //  - กันซ้ำกับ To ที่ส่ง (เช่น danut เป็น md อยู่แล้วในเมลส่งต่อ → เหลือ CC แค่ ketsudap)
     private function overBudgetCc(Salecar $saleCar, array $to = []): array
     {
@@ -490,9 +490,11 @@ class PurchaseOrderController extends Controller
     }
 
     // อีเมลขั้นถัดไป (ผู้อนุมัติขั้นสุดท้าย) พร้อมข้อมูล+ไฟล์ทั้งสอง
-    //  - b1_md (brand 1/3)       : ส่งต่อ GM (CC ให้ md รับทราบ — กดตีกลับจากลิงก์เดียวกันได้)
-    //  - b2_gm ปกติ (brand 2/4)  : ส่งต่อ GM (CC ให้ md เช่นกัน)
-    //  - b2_gm VIP (brand 2)     : ส่งต่อ MD (CC ให้ gm)
+    //  - b1_md (brand 1/3)       : ส่งต่อ GM (MD ได้ลิงก์อนุมัติด้วย)
+    //  - b2_gm ปกติ (brand 2/4)  : ส่งต่อ GM (MD ได้ลิงก์อนุมัติด้วย)
+    //  - b2_gm VIP (brand 2)     : ส่งต่อ MD (GM ได้ลิงก์อนุมัติด้วย)
+    //  ทั้งคู่ใช้ approval_final_token ตัวเดียวกัน → ใครกดอนุมัติก่อนถือว่าจบ
+    //  ส่วน audit ประจำแบรนด์ได้แค่สำเนา (approval_token) เปิดดู/ตีกลับได้ แต่กดอนุมัติไม่ได้
     private function emailFinalApprover(Salecar $saleCar, ?float $deduct): void
     {
         $case      = $this->approvalCase($saleCar);
@@ -515,20 +517,22 @@ class PurchaseOrderController extends Controller
         }
         $files = $this->buildApprovalAttachments($saleCar);
 
-        $mailCc = $this->overBudgetCc($saleCar, (array) $mailTo);
-        // VIP : ผู้อนุมัติจบคือ MD → CC ให้ GM รับทราบ (เปิดลิงก์เดิมกดตีกลับได้)
+        // ── แยกผู้รับ 2 กลุ่ม ──
+        // (1) ผู้บริหารอีกฝั่ง (เคสปกติ = MD | เคส VIP = GM) — ตกลงกันว่าให้ "กดอนุมัติจบได้" เหมือนกัน
+        //     ใครกดก่อนถือว่าจบ (ใช้ approval_final_token ตัวเดียวกันกับผู้อนุมัติหลัก)
+        $ccApprovers = $this->overBudgetCc($saleCar, (array) $mailTo);
         if ($finalRole === 'md') {
             $gm = $this->approverEmails($saleCar->brand, $saleCar->branch, 'gm') ?: ['JirapornK@Chookiat.org'];
-            $mailCc = array_merge($mailCc, array_diff($gm, (array) $mailTo, $mailCc));
+            $ccApprovers = array_merge($ccApprovers, array_diff($gm, (array) $mailTo, $ccApprovers));
         }
-        $mailCc = array_values(array_unique(array_merge(
-            $mailCc,
-            $this->requestCc($saleCar->brand, array_merge((array) $mailTo, $mailCc))
-        )));
+        $ccApprovers = array_values(array_unique($ccApprovers));
+
+        // (2) สำเนารับทราบประจำแบรนด์ (audit) — เปิดดู/ตีกลับได้ แต่กดอนุมัติไม่ได้
+        $ccInfo = $this->requestCc($saleCar->brand, array_merge((array) $mailTo, $ccApprovers));
 
         // ── ลิงก์อนุมัติ "ขั้นสุดท้าย" ใช้ token คนละตัวกับลิงก์ทั่วไป ──
-        // เดิมใช้ token เดียวทั้งฉบับ คนที่อยู่ใน CC (เช่น GM ที่ถูก CC ในเคส VIP ซึ่งต้องให้ MD อนุมัติ)
-        // จึงกดอนุมัติแทนได้ — ออก token ใหม่ทุกครั้งที่ส่ง แล้วใส่เฉพาะเมลของผู้อนุมัติตัวจริง
+        // ออก token ใหม่ทุกครั้งที่ส่ง แล้วใส่ให้เฉพาะกลุ่มที่มีสิทธิ์อนุมัติ (To + ผู้บริหารอีกฝั่ง)
+        // ส่วนสำเนา audit ยังได้ approval_token ปกติ ซึ่ง holdsFinalToken() จะกันไม่ให้กดอนุมัติ
         $finalToken = null;
         if (Salecar::hasFinalTokenColumn()) {
             $finalToken = Str::random(48);
@@ -538,12 +542,17 @@ class PurchaseOrderController extends Controller
         $mailModel = $saleCar->fresh(['model', 'saleUser', 'customer.prefix']);
         $mailType  = $finalRole === 'gm' ? 'gm_final' : 'md_final';
 
-        // ผู้อนุมัติตัวจริง — ได้ลิงก์ที่กดอนุมัติได้
+        // ผู้อนุมัติหลัก
         Mail::to($mailTo)->send(new SaleRequestMail($mailModel, $mailType, $data, $files, $finalToken));
 
-        // สำเนา — ส่งแยกด้วย token ปกติ เปิดดู/ตีกลับได้ แต่กดอนุมัติไม่ได้
-        if ($mailCc) {
-            Mail::to($mailCc)->send(new SaleRequestMail($mailModel, $mailType, $data, $files, null, true));
+        // ผู้บริหารอีกฝั่ง — ลิงก์กดอนุมัติได้เหมือนกัน
+        if ($ccApprovers) {
+            Mail::to($ccApprovers)->send(new SaleRequestMail($mailModel, $mailType, $data, $files, $finalToken));
+        }
+
+        // สำเนารับทราบ — token ปกติ กดอนุมัติไม่ได้
+        if ($ccInfo) {
+            Mail::to($ccInfo)->send(new SaleRequestMail($mailModel, $mailType, $data, $files, null, true));
         }
     }
 
@@ -3034,7 +3043,12 @@ class PurchaseOrderController extends Controller
 
             return [
                 'No' => $index + 1,
-                'FullName' => $c->prefix->Name_TH ?? '' . ' ' . $c->FirstName ?? '' . ' ' . $c->LastName ?? '',
+                // '.' มี precedence สูงกว่า '??' โค้ดเดิมจึงคืนแค่คำนำหน้า ทำให้ค้นหาชื่อในตารางไม่เจอ
+                'FullName' => trim(implode(' ', array_filter([
+                    $c?->prefix?->Name_TH,
+                    $c?->FirstName,
+                    $c?->LastName,
+                ]))),
                 'model' => $model,
                 'subModel' => $subModel,
                 'po' => $number,
@@ -3092,7 +3106,12 @@ class PurchaseOrderController extends Controller
                 'subModel' => $s->subModel?->name ?? '-',
                 'option' => $s->option,
                 'order' => $s->carOrder?->order_code ?? 'ไม่มีข้อมูลการผูกรถ',
-                'FullName' => $c->prefix->Name_TH ?? '' . ' ' . $c->FirstName ?? '' . ' ' . $c->LastName ?? '',
+                // '.' มี precedence สูงกว่า '??' โค้ดเดิมจึงคืนแค่คำนำหน้า ทำให้ค้นหาชื่อในตารางไม่เจอ
+                'FullName' => trim(implode(' ', array_filter([
+                    $c?->prefix?->Name_TH,
+                    $c?->FirstName,
+                    $c?->LastName,
+                ]))),
                 'sale' => $s->saleUser->name ?? '-',
                 'date' => $s->BookingDate,
                 'status' => $s->conStatus?->name ?? '',
@@ -3888,9 +3907,9 @@ class PurchaseOrderController extends Controller
             $interestCom  = $r->remainingPayment->total_com ?? 0;
             $turnCarCom   = $r->turnCar->com_turn ?? 0;
 
-            // ค่าคอมรายคัน C ของคันนี้ (สำหรับคิดคอมกั๊ก brand 1) — เกินงบทะลุเพดาน = ไม่ได้คอมตัวรถ
+            // ค่าคอมรายคัน C ของคันนี้ (สำหรับคิดคอมกั๊ก brand 1) — เกินงบทะลุเพดานก่อนวันตัด = ไม่ได้คอมตัวรถ
             $C = 0.0;
-            if ($carEntry && !$r->isOverBudgetCeiling()) {
+            if ($carEntry && $r->earnsCarCommission()) {
                 $C = $carMode === 'model'
                     ? CarCommissionQuery::modelRate((int) $r->brand, $r->model_id !== null ? (int) $r->model_id : null)
                     : $carRate;
@@ -3918,7 +3937,8 @@ class PurchaseOrderController extends Controller
                 'mainPayDate'     => $p['main_payday']?->format('Y-m-d'),
                 'balanceCampaign' => $balanceCampaign,
                 'approvedCom'     => $approvedCom,   // ยอดที่ผู้จัดการ/GM กรอก (เกินเพดาน) — brand2/4 ติดลบ
-                'overCeiling'     => $r->isOverBudgetCeiling(), // เกินงบทะลุเพดาน → ไม่ได้คอมตัวรถ
+                'overCeiling'     => $r->isOverBudgetCeiling(), // เกินงบทะลุเพดาน (ใช้กับป้าย "รอยอดอนุมัติ")
+                'noCarCom'        => !$r->earnsCarCommission(), // คันเก่าก่อนวันตัด → ไม่ได้คอมตัวรถ
                 'extraDeduct'     => ExtraBudgetLedger::absorbedFor($r),
                 'accessoryCom'    => $accessoryCom,
                 'specialCom'      => $specialCom,

@@ -35,8 +35,8 @@
               <input type="month" id="commissionMonth" class="form-control form-control-sm" style="max-width:170px;"
                 value="{{ now()->format('Y-m') }}">
             </div>
-            @if (auth()->user()->brand != 3)
-              {{-- brand 3 ไม่มีเป้า (คอมตัวรถคิดตามรุ่น) จึงไม่ต้องมีช่องเป้า --}}
+            @unless (in_array((int) auth()->user()->brand, config('car_commission.brands_without_target', []), true))
+              {{-- แบรนด์ที่ไม่มีเป้า (brand 3 คิดตามรุ่น / brand 4 คิดตามจำนวนคันล้วน) ไม่ต้องมีช่องกรอกเป้า --}}
               <div class="d-flex align-items-center gap-2">
                 <label for="monthlyTarget" class="mb-0 fw-semibold text-nowrap">
                   <i class="bx bx-target-lock me-1"></i> เป้าเดือนนี้ (คัน)
@@ -48,7 +48,7 @@
                 </button>
                 <span id="targetStatus" class="small text-muted"></span>
               </div>
-            @endif
+            @endunless
           </div>
           <button class="btn btn-warning btn-sm btnViewExportCom">
             <i class="bx bx-file me-1"></i> รายงานค่าคอม

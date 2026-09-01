@@ -599,6 +599,47 @@ class Salecar extends Model
 	}
 
 	/**
+	 * คันนี้ได้ "คอมตัวรถรายคัน" ไหม
+	 *
+	 * เดิม: เกินงบทะลุเพดาน = ไม่ได้คอมตัวรถ (นับจำนวนคันแต่ไม่ได้ยอด)
+	 * ใหม่: เปลี่ยนการอนุมัติเป็น "หักเงิน" แล้ว จึงไม่ตัดคอมตัวรถซ้ำอีก → ได้ทุกคัน
+	 *
+	 * ลำดับการตัดสิน (ทั้งหมดตั้งค่าที่ config/car_commission.php):
+	 *   1. ไม่เกินเพดาน → ได้เสมอ
+	 *   2. อยู่ในรายการยกเว้นรายคัน (over_ceiling_car_commission_ids) → ได้
+	 *   3. เทียบ DeliveryInCKDate กับวันตัดของแบรนด์ (from_brand) ถ้าไม่ตั้งไว้ใช้วันตัดกลาง (from)
+	 *      คันเก่าก่อนวันตัดจ่ายคอมไปแล้ว ห้ามขยับย้อนหลัง
+	 *
+	 * ต้อง eager load 'model' (ใช้ใน isOverBudgetCeiling) และ select DeliveryInCKDate มาด้วย
+	 */
+	public function earnsCarCommission(): bool
+	{
+		if (!$this->isOverBudgetCeiling()) {
+			return true;
+		}
+	
+		// ยกเว้นรายคันที่ตกลงกันไว้ (เช่น คันที่โดนหักเงินไปแล้วแต่ CK อยู่ก่อนวันตัด)
+		$exceptIds = (array) config('car_commission.over_ceiling_car_commission_ids', []);
+		if (in_array((int) $this->id, array_map('intval', $exceptIds), true)) {
+			return true;
+		}
+	
+		$perBrand = (array) config('car_commission.over_ceiling_car_commission_from_brand', []);
+		$from = $perBrand[(int) $this->brand]
+			?? config('car_commission.over_ceiling_car_commission_from');
+	
+		if ($from === null || $from === '') {
+			return true;   // ไม่ตั้งวันตัด = ใช้กติกาใหม่กับทุกคัน
+		}
+		if (!$this->DeliveryInCKDate) {
+			return false;  // ยังไม่มีวัน CK = ยังไม่เข้ารอบคอมอยู่แล้ว
+		}
+	
+		return Carbon::parse($this->DeliveryInCKDate)->startOfDay()
+			->gte(Carbon::parse($from)->startOfDay());
+	}
+	
+	/**
 	 * คันนี้ใช้ "ยอดที่ผู้จัดการ/GM กรอก" แทนสูตรคอมงบเหลือหรือไม่
 	 * (เคสเกิน over_budget ที่ MD/GM อนุมัติ แล้ว manager กรอกยอด D มาแล้ว)
 	 */
