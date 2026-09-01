@@ -123,10 +123,24 @@ $(document).on('click', '.btnCommissionDetail', function () {
   if (!saleId) return;
 
   const month = $('#commissionMonth').val();
+  const $btn = $(this);
+  if ($btn.prop('disabled')) return;   // กันกดรัว ๆ ยิงซ้ำระหว่างรอ
+
+  $btn.prop('disabled', true);
+  $('#commissionLoadingOverlay').css('display', 'flex');
+
   $.get('/purchase-order/commission-sale-detail/' + saleId, { month: month }, function (html) {
     $('.commissionDetailModel').html(html);
     $('.commissionDetail').modal('show');
-  });
+  })
+    .fail(function () {
+      if (window.Swal) Swal.fire({ icon: 'error', title: 'โหลดรายละเอียดไม่สำเร็จ' });
+      else alert('โหลดรายละเอียดไม่สำเร็จ');
+    })
+    .always(function () {
+      $('#commissionLoadingOverlay').css('display', 'none');
+      $btn.prop('disabled', false);
+    });
 });
 
 // live recompute net commission in the detail modal (brand-aware)
@@ -210,6 +224,7 @@ function recomputeCarsTable() {
   let posTotal = 0;
   let negTotal = 0;
   let netTotal = 0;
+  let specialTotal = 0;   // รวมช่อง "คอมอื่นๆ" (แก้สดได้ จึงรวมที่นี่ ไม่ใช่ฝั่ง blade)
   $('.car-special-input').each(function () {
     const $row = $(this).closest('tr');
     const rowbase = parseFloat($(this).data('rowbase')) || 0;
@@ -228,7 +243,10 @@ function recomputeCarsTable() {
     posTotal += rowPos;
     negTotal += rowneg;
     netTotal += rowNet;
+    specialTotal += special;
   });
+  $('#carsSpecialTotal').text(fmt(specialTotal));
+  $('#carsBudgetTotal').text(fmt(budgetUsed));
   $('#carsCarTotal').text(fmt(carTotal));
   $('#carsPositiveTotal').text(fmt(posTotal));
   $('#carsNegativeTotal').text(fmt(negTotal));

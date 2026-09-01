@@ -263,6 +263,18 @@ class User extends Authenticatable
 	}
 
 	/**
+	 * role ที่ติ๊ก "ตรวจสอบรายการ (IA)" ได้
+	 * เป็นด่านบังคับก่อนเปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5)
+	 * role อื่นยังเห็นการ์ดใบนี้ได้ แต่ติ๊กไม่ได้ (ช่องถูก disable ไว้)
+	 */
+	public const IA_CHECK_ROLES = ['admin', 'gm', 'md'];
+
+	public function canIaCheck(): bool
+	{
+		return in_array($this->role, self::IA_CHECK_ROLES, true);
+	}
+
+	/**
 	 * role ที่ผูก/ปลดรถ (CarOrderID) บนใบจองของ brand 2 ได้
 	 * brand 2 คุมการจ่ายรถจากส่วนกลาง — role อื่นเห็นข้อมูลรถได้แต่แตะไม่ได้
 	 */

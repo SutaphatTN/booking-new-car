@@ -2516,6 +2516,25 @@ $(document).ready(function () {
   $(document).on('click', '#btnUpdatePurchase', function (e) {
     e.preventDefault();
 
+    // สถานะ "ส่งมอบ" (con_status = 5) ต้องผ่าน "ตรวจสอบรายการ (IA)" ก่อน — เฉพาะ brand 2
+    // (Salecar::IA_GATE_BRAND) ; ช่อง IA ของ brand 2 ติ๊กได้เฉพาะ gm/md/admin role อื่นเห็นแต่กดไม่ได้
+    // ดักเฉพาะตอน "เปลี่ยนเข้า" สถานะ 5 เหมือนฝั่ง server — ใบที่ส่งมอบไปแล้วไม่ต้องดักซ้ำ
+    const wasDelivered = String(document.getElementById('originalConStatus')?.value ?? '') === '5';
+    const iaGated = (parseInt(document.getElementById('saleBrand')?.value, 10) || 0) === 2;
+    if (iaGated && $('#con_status').val() === '5' && !wasDelivered
+      && $('#CheckerID').length && !$('#CheckerID').is(':checked')) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'ยังไม่ผ่านการตรวจสอบ (IA)',
+        text: 'ต้องให้ GM / MD / ผู้ดูแลระบบ ติ๊ก "ตรวจสอบรายการ (IA)" ก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"'
+      });
+      // เปิดแท็บที่มีการ์ด IA ให้ผู้ใช้เห็น
+      const iaTabId = $('#CheckerID').closest('.tab-pane').attr('id');
+      if (iaTabId) $(`[data-bs-target="#${iaTabId}"], [href="#${iaTabId}"]`).tab('show');
+      $('#CheckerID')[0]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     // สถานะ "ส่งมอบ" (con_status = 5) ต้องเลือกป้ายแดงก่อน
     // — เฉพาะใบขายที่มีประดับยนต์ "ป้ายแดง" อยู่ (ลูกค้าที่ไม่เอาป้ายแดง ส่งมอบได้เลย)
     if ($('#con_status').val() === '5' && $('#red_license').length && !$('#red_license').val() && hasRedPlateAccessory()) {

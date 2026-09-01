@@ -1745,6 +1745,10 @@ class PurchaseOrderController extends Controller
             // (เช็คค่าที่กำลังบันทึก เผื่อเพิ่งเปลี่ยนเป็น Dealer)
             $isDealerSale = (int) $request->input('type_sale', $saleCar->type_sale) === Salecar::TYPE_SALE_DEALER;
 
+            // ด่าน "ตรวจสอบรายการ (IA)" ใช้เฉพาะ brand 2 — brand อื่นใครก็ติ๊กได้เหมือนเดิม
+            $iaGated = $saleCar->needsIaCheck();
+            $canIaCheck = !$iaGated || Auth::user()->canIaCheck();
+
             $data = [
                 // ผู้ขาย: ย้ายได้เฉพาะ role ที่มีสิทธิ์ — role อื่นบังคับใช้ค่าเดิมเสมอ (กันแก้ผ่าน devtools)
                 // ขาย Dealer ไม่นับยอด/ไม่คิดคอม → ล้าง SaleID ทิ้งเสมอ (ฟอร์มปิดช่อง จึงไม่ถูกส่งมา)
@@ -1896,8 +1900,12 @@ class PurchaseOrderController extends Controller
                 'SMCheckedDate' => $this->toGregorian($request->SMCheckedDate),
                 'AdminSignature' => $request->AdminSignature,
                 'AdminCheckedDate' => $this->toGregorian($request->AdminCheckedDate),
-                'CheckerID' => $request->CheckerID,
-                'CheckerCheckedDate' => $this->toGregorian($request->CheckerCheckedDate),
+                // "ตรวจสอบรายการ (IA)" ติ๊กได้เฉพาะ User::IA_CHECK_ROLES — role อื่นช่องถูก disable
+                // จึงไม่ส่งค่ามา ต้องคงค่าเดิม ไม่งั้นบันทึกทีเดียวการตรวจสอบหลุด (แบบเดียวกับ red_license)
+                'CheckerID' => $canIaCheck ? $request->CheckerID : $saleCar->CheckerID,
+                'CheckerCheckedDate' => $canIaCheck
+                    ? $this->toGregorian($request->CheckerCheckedDate)
+                    : $saleCar->CheckerCheckedDate,
                 'GMApprovalSignature' => $request->GMApprovalSignature,
                 'GMApprovalSignatureDate' => $this->toGregorian($request->GMApprovalSignatureDate),
                 'DeliveryEstimateDate' => $this->toGregorian($request->DeliveryEstimateDate),
@@ -1958,6 +1966,19 @@ class PurchaseOrderController extends Controller
             $prevApprovalType = $saleCar->approval_type;
 
             $oldPlate = $saleCar->red_license;
+
+            // เปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5) ต้องผ่าน "ตรวจสอบรายการ (IA)" ก่อน
+            // ใช้ค่าที่จะบันทึกจริง (role ที่ติ๊กไม่ได้ ช่องถูก disable → ใช้ค่าเดิมของรายการ)
+            // ดักเฉพาะตอน "เปลี่ยนเข้า" สถานะ 5 เหมือน $enteringApprovalStage — ใบที่ส่งมอบไปแล้ว
+            // ก่อนมีด่านนี้ (ส่วนใหญ่ยังไม่มี CheckerID) ต้องแก้ฟิลด์อื่นได้ตามปกติ
+            $enteringDelivered = (int) $request->con_status === 5 && (int) $saleCar->con_status !== 5;
+            if ($iaGated && $enteringDelivered && empty($data['CheckerID'])) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ต้องให้ GM / MD / ผู้ดูแลระบบ ติ๊ก "ตรวจสอบรายการ (IA)" ก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"',
+                ], 422);
+            }
 
             // เปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5) ต้องมีป้ายแดง
             // — เฉพาะเมื่อใบขายนี้มีประดับยนต์ "ป้ายแดง" อยู่ (ลูกค้าที่ไม่เอาป้ายแดงส่งมอบได้เลย)
@@ -3680,6 +3701,16 @@ class PurchaseOrderController extends Controller
         ]);
 
         $saleCar = Salecar::findOrFail($id);
+
+        // ด่านเดียวกับหน้าแก้ไข (เฉพาะ brand 2) — "เปลี่ยนเข้า" สถานะ "ส่งมอบ" (5) ต้องผ่าน IA มาก่อน
+        if ($saleCar->needsIaCheck() && (int) $request->con_status === 5
+            && (int) $saleCar->con_status !== 5 && empty($saleCar->CheckerID)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ต้องติ๊ก "ตรวจสอบรายการ (IA)" ในใบจองก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"',
+            ], 422);
+        }
+
         $saleCar->update(['con_status' => $request->con_status]);
 
         return response()->json([
@@ -3884,6 +3915,14 @@ class PurchaseOrderController extends Controller
             ->get();
 
         $saleUser = User::with('branchInfo')->find($saleId);
+
+        // กันเปิดข้ามทีมด้วยการยิง URL ตรง — ต้องเช็คเอง เพราะ $carData/$rounds ด้านล่าง
+        // อ่านจาก CarCommissionQuery ที่ปลด scope ไว้ (ตัวเลขของทีมอื่นจะหลุดมาแม้ตารางรายคันว่าง)
+        abort_if(
+            $this->commissionSaleOutOfReach((int) $saleId, $year, $month, $rows->isNotEmpty(), $saleUser),
+            403
+        );
+
         // brand ที่กำลังดู (brand 3 ใช้เซลล์ร่วมกับ brand 1 → SSI/กั๊กต้องผูกกับหน้าที่ดู ไม่ใช่ brand ของตัวเซลล์)
         $viewerBrand = (int) Auth::user()->brand;
 
@@ -3990,6 +4029,8 @@ class PurchaseOrderController extends Controller
             'paidCount' => $carEntry['paidCount'] ?? ($carEntry['count'] ?? 0),
             'rate'      => $carEntry['rate'] ?? 0,
             'achieved'  => $carEntry['achieved'] ?? false,
+            'hasTarget' => $carEntry['hasTarget'] ?? false,
+            'brand'     => (int) ($carEntry['brand'] ?? $viewerBrand),
             'amount'    => (float) ($carEntry['amount'] ?? 0),
         ];
 
@@ -4020,12 +4061,13 @@ class PurchaseOrderController extends Controller
                 }
             }
             // ยกมา: กั๊กของรถ CK เดือนก่อน ที่มาถึงกำหนดจ่ายในรอบหลักเดือนนี้ (10 ของ M+1)
-            $ymM = Carbon::create($year, $month, 1)->format('Y-m');
-            $carriedIn = HeldCommissionQuery::paymentsInMonth((int) $mainCK->year, (int) $mainCK->month)
-                ->where('SaleID', (int) $saleId)
-                ->where('kind', 'held')
-                ->filter(fn($p) => Carbon::parse($p['ck'])->format('Y-m') < $ymM)
-                ->sum('amount');
+            // กรอง SaleID + "CK ก่อนเดือนที่ดู" ตั้งแต่ใน SQL — เดิมสแกนรถ brand 1 ทุกคน 3 เดือนแล้วค่อยทิ้ง
+            $carriedIn = HeldCommissionQuery::paymentsInMonth(
+                (int) $mainCK->year,
+                (int) $mainCK->month,
+                (int) $saleId,
+                Carbon::create($year, $month, 1)->startOfMonth()
+            )->where('kind', 'held')->sum('amount');
 
             $rounds = [
                 'active'     => true,
@@ -4109,6 +4151,39 @@ class PurchaseOrderController extends Controller
         return response()->json(['status' => 'success']);
     }
 
+    /**
+     * เซลล์คนนี้อยู่นอกขอบเขตของคนดูไหม (ใช้ทั้งหน้ารายละเอียดและตอนบันทึก)
+     *
+     * ผ่านเมื่ออย่างใดอย่างหนึ่ง:
+     *  - คนดูไม่ถูกจำกัดทีม (admin/gm/md หรือ manager ที่ดูแบรนด์บ้านตัวเอง) → เห็นได้หมด
+     *  - เซลล์อยู่ในกลุ่มทีมเดียวกับคนดู "ตอนนี้" → เผื่อเดือนที่เซลล์ยังไม่มีรถ
+     *  - เซลล์มีรถในเดือนนั้นที่คนดูเห็นได้ → อ่าน sale_team_id ที่เป็น snapshot บนใบ
+     *    (เซลล์ย้ายทีมแล้ว ยอดเดือนเก่ายังอยู่กับทีมเดิม — ต้องยังเปิดดูได้)
+     */
+    private function commissionSaleOutOfReach(int $saleId, int $year, int $month, ?bool $hasVisibleCars = null, $saleUser = null): bool
+    {
+        if (Salecar::visibleSaleTeamIds() === null) {
+            return false;   // ไม่ถูกจำกัดทีม
+        }
+
+        $teamId = $saleUser ? ($saleUser->sale_team_id ?? null) : User::whereKey($saleId)->value('sale_team_id');
+
+        if (!Salecar::outsideViewerTeams($teamId)) {
+            return false;   // อยู่ในกลุ่มทีมเดียวกันตอนนี้
+        }
+
+        if ($hasVisibleCars === null) {
+            $hasVisibleCars = SaleCommissionQuery::base(
+                Auth::user(),
+                false,
+                Carbon::create($year, $month, 1)->startOfMonth()->format('Y-m-d'),
+                Carbon::create($year, $month, 1)->endOfMonth()->format('Y-m-d')
+            )->where('SaleID', $saleId)->exists();
+        }
+
+        return !$hasVisibleCars;
+    }
+
     /** บันทึกค่าคอมเพิ่มเติมต่อเซลล์ต่อเดือน */
     public function saveCommissionMonthly(Request $request)
     {
@@ -4125,6 +4200,12 @@ class PurchaseOrderController extends Controller
             'discipline_failed' => 'nullable|boolean',
         ]);
 
+        // ห้ามบันทึกให้เซลล์นอกขอบเขตตัวเอง (ยิง POST ตรงข้ามทีม/ข้ามแบรนด์)
+        abort_if(
+            $this->commissionSaleOutOfReach((int) $data['SaleID'], (int) $data['year'], (int) $data['month']),
+            403
+        );
+
         SaleCommissionMonthly::updateOrCreate(
             [
                 'SaleID' => $data['SaleID'],
@@ -4140,22 +4221,37 @@ class PurchaseOrderController extends Controller
             ]
         );
 
-        // "คอมอื่นๆ" (CommissionSpecial) ต่อคัน — แก้ได้จากตารางในหน้ารายละเอียด
-        if (is_array($request->input('car_special'))) {
-            foreach ($request->input('car_special') as $salecarId => $value) {
-                Salecar::withoutGlobalScopes()
-                    ->where('id', (int) $salecarId)
-                    ->update(['CommissionSpecial' => is_numeric($value) ? (float) $value : 0]);
-            }
-        }
+        // ── ช่องรายคัน — รับเฉพาะ id ที่อยู่ในตารางของหน้านั้นจริง ──
+        // เดิม update ด้วย withoutGlobalScopes() ตาม id ที่ส่งมาดิบ ๆ → ยิง POST เองแก้คันของเซลล์
+        // ทีมอื่น/แบรนด์อื่นได้ ตอนนี้คัดผ่าน base query (brand/สาขา/ทีม + SaleID + เดือนเดียวกัน) ก่อน
+        $special = is_array($request->input('car_special')) ? $request->input('car_special') : [];
+        $deduct  = is_array($request->input('car_budget_deduct')) ? $request->input('car_budget_deduct') : [];
 
-        // "budget หัก" ต่อคัน (brand 2) — งบเดือนก่อนที่เอามากลบคันติดลบ
-        if (is_array($request->input('car_budget_deduct'))) {
-            foreach ($request->input('car_budget_deduct') as $salecarId => $value) {
-                Salecar::withoutGlobalScopes()
-                    ->where('id', (int) $salecarId)
-                    ->where('brand', 2)
-                    ->update(['budget_deduct' => is_numeric($value) ? (float) $value : 0]);
+        if ($special || $deduct) {
+            $fromDate = Carbon::create($data['year'], $data['month'], 1)->startOfMonth()->format('Y-m-d');
+            $toDate   = Carbon::create($data['year'], $data['month'], 1)->endOfMonth()->format('Y-m-d');
+
+            $allowed = SaleCommissionQuery::base(Auth::user(), false, $fromDate, $toDate)
+                ->where('SaleID', $data['SaleID'])
+                ->whereIn('id', array_map('intval', array_keys($special + $deduct)))
+                ->pluck('id')
+                ->map(fn($id) => (int) $id)
+                ->all();
+
+            foreach ($allowed as $id) {
+                // "คอมอื่นๆ" (CommissionSpecial) ต่อคัน — แก้ได้จากตารางในหน้ารายละเอียด
+                if (array_key_exists($id, $special)) {
+                    $v = $special[$id];
+                    Salecar::withoutGlobalScopes()->where('id', $id)
+                        ->update(['CommissionSpecial' => is_numeric($v) ? (float) $v : 0]);
+                }
+
+                // "budget หัก" ต่อคัน (brand 2) — งบเดือนก่อนที่เอามากลบคันติดลบ
+                if (array_key_exists($id, $deduct)) {
+                    $v = $deduct[$id];
+                    Salecar::withoutGlobalScopes()->where('id', $id)->where('brand', 2)
+                        ->update(['budget_deduct' => is_numeric($v) ? (float) $v : 0]);
+                }
             }
         }
 
