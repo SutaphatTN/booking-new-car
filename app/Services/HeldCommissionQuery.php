@@ -201,11 +201,11 @@ class HeldCommissionQuery
 
     /**
      * ค่าคอมรายคัน C ของรถคันหนึ่ง จาก perSale ของเดือน CK ของมัน
-     * เกินงบทะลุเพดาน (MD/GM อนุมัติ) → ไม่ได้คอมตัวรถ → C = 0 (ไม่มีคอมกั๊กด้วย)
+     * เกินงบทะลุเพดาน "ก่อนวันตัด" → ไม่ได้คอมตัวรถ → C = 0 (ไม่มีคอมกั๊กด้วย)
      */
     private static function carCommissionOf($r, ?array $entry): float
     {
-        if (!$entry || $r->isOverBudgetCeiling()) {
+        if (!$entry || !$r->earnsCarCommission()) {
             return 0.0;
         }
         return ($entry['mode'] ?? 'volume') === 'model'

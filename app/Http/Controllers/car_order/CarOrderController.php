@@ -45,6 +45,52 @@ class CarOrderController extends Controller
         return view('car-order.view', compact('order', 'model'));
     }
 
+    /**
+     * "รถที่ส่งมอบ" — รถที่ส่งมอบไปแล้ว เอาไว้ย้อนดูประวัติรถ
+     * แยกหน้าจาก "รายการรถ" เพราะหน้านั้นตัด car_status = Delivered ออก (listCarOrder)
+     */
+    public function delivered()
+    {
+        return view('car-order.delivered.view');
+    }
+
+    public function listDelivered(Request $request)
+    {
+        // ชื่อลูกค้าอ่านจากใบขายที่ผูกกับรถคันนี้ — ปลด scope ของ Salecar ทิ้ง
+        // ไม่งั้นจะเจอเคส "รถโผล่ในตาราง แต่ช่องชื่อลูกค้าว่าง" เพราะตัวรถผ่าน scope มาแล้ว
+        // แต่ใบขายโดน userAccess/saleTeam กรองทิ้ง (คง SoftDeletes ไว้ — ใบที่ลบแล้วไม่ต้องเอา)
+        $orders = CarOrder::with([
+            'salecars' => fn($q) => $q->withoutGlobalScopes(['userAccess', 'saleTeam', 'preApproval'])
+                ->with('customer.prefix'),
+        ])
+            ->where('status', 'finished')
+            ->where('car_status', 'Delivered')
+            ->orderByDesc('id')
+            ->get();
+
+        // แก้ไขได้เฉพาะ admin — role อื่นที่เข้าเมนู "ระบบรถ" ได้ เห็นแค่ปุ่มดูข้อมูล
+        $canEdit = Auth::user()->role === 'admin';
+
+        $data = $orders->map(function ($c, $index) use ($canEdit) {
+            // ใบที่ส่งมอบจริง (con_status 5) มาก่อน ถ้าไม่มีค่อยหยิบใบล่าสุดที่ผูกไว้
+            $sale = $c->salecars->firstWhere('con_status', 5) ?? $c->salecars->last();
+            $cus  = $sale?->customer;
+
+            $customer = $cus
+                ? trim(($cus->prefix->Name_TH ?? '') . ' ' . ($cus->FirstName ?? '') . ' ' . ($cus->LastName ?? ''))
+                : '';
+
+            return [
+                'No'         => $index + 1,
+                'customer'   => $customer !== '' ? $customer : '-',
+                'vin_number' => $c->vin_number ?: '-',
+                'Action'     => view('car-order.delivered.button', ['c' => $c, 'canEdit' => $canEdit])->render(),
+            ];
+        });
+
+        return response()->json(['data' => $data->values()]);
+    }
+
     public function listCarOrder(Request $request)
     {
         $query = CarOrder::with('model', 'subModel')

@@ -27,7 +27,18 @@ class SaleBookingQuery
     /** เลือก base query ตามชนิดรายงาน : 'sale' = ประมาณการเซลล์ , อื่น ๆ = ข้อมูลประมาณการ */
     public static function forReport(string $mode)
     {
-        return $mode === 'sale' ? self::estimatedSale() : self::estimated();
+        $query = $mode === 'sale' ? self::estimatedSale() : self::estimated();
+
+        // "ข้อมูลประมาณการ" ใช้วางแผนรับรถ/ส่งมอบของทั้งแบรนด์ → ผู้จัดการต้องเห็นของทุกทีม
+        // ไม่ใช่แค่ทีมตัวเอง (มติเจ้าของ) จึงปลดตัวกรองทีมทิ้งเฉพาะรายงานนี้
+        // แยกทีมไหนเป็นของใครดูได้จากคอลัมน์ "ทีม" ที่มีอยู่แล้ว (BrandFeature::hasMultipleTeams)
+        //
+        // "ประมาณการเซลล์" (mode 'sale') ยังกรองตามทีมเหมือนเดิม เพราะเป็นผลงานรายคน
+        if ($mode !== 'sale') {
+            $query->withoutGlobalScope('saleTeam');
+        }
+
+        return $query;
     }
 
     /** คอลัมน์วันที่ที่ใช้กรองเดือน ตามชนิดรายงาน */

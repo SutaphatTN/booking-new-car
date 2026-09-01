@@ -180,7 +180,7 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       $isCounted = ((int) $r->type_sale === CarCommissionQuery::SALE_TYPE_NORMAL)
         && ((int) optional($r->carOrder)->purchase_type === CarCommissionQuery::PURCHASE_TYPE_RETAIL)
         && ($src !== CarCommissionQuery::SOURCE_DEALER)
-        && !$r->isOverBudgetCeiling();
+        && $r->earnsCarCommission();
       $carCommission = 0.0;
       if ($entry && $isCounted) {
         $carCommission = ($entry['mode'] ?? 'volume') === 'model'

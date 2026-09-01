@@ -294,6 +294,9 @@ Route::middleware(['auth', 'notsale'])->group(function () {
 
     //car-order
     Route::get('car-order/list', [CarOrderController::class, 'listCarOrder']);
+    //car-order : รถที่ส่งมอบแล้ว (ดูประวัติรถ) — ต้องมาก่อน Route::resource('car-order') ไม่งั้นชน {id}
+    Route::get('car-order/delivered', [CarOrderController::class, 'delivered'])->name('car-order.delivered');
+    Route::get('car-order/delivered/list', [CarOrderController::class, 'listDelivered']);
     Route::get('car-order/{id}/view-more', [CarOrderController::class, 'viewMore'])->name('car-order.viewMore');
     Route::get('/api/car-order/sub-model', [CarOrderController::class, 'getSubModelCarOrder']);
     Route::get('/car-order/search', [CarOrderController::class, 'search'])->name('car-order.search');

@@ -259,6 +259,11 @@
               "slug": "car-order.approve"
             },
             {
+              "url": "car-order/delivered",
+              "name": "รถที่ส่งมอบ",
+              "slug": "car-order.delivered"
+            },
+            {
               "url": "dbar",
               "name": "D/Bar",
               "slug": "dbar.index"
