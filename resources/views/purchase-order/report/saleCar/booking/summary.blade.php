@@ -28,7 +28,8 @@
       @endif
       <th>ปี</th>
       <th>ราคาขาย</th>
-      <th>แหล่งที่มา</th>
+      <th>แหล่งที่มาหลัก</th>
+      <th>แหล่งที่มาย่อย</th>
       <th>เงินจอง</th>
       <th>วันที่จอง</th>
       <th>ไฟแนนซ์</th>
@@ -65,7 +66,8 @@
         @endif
         <td>{{ $s['year'] }}</td>
         <td>{{ $s['car_MSRP'] }}</td>
-        <td>{{ $s['type'] }}</td>
+        <td>{{ $s['source_main'] }}</td>
+        <td>{{ $s['source_sub'] }}</td>
         <td>{{ $s['reservation_cost'] }}</td>
         <td>{{ $s['bookingDate'] }}</td>
         <td>{{ $s['name_fi'] }}</td>
@@ -86,7 +88,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="{{ 24 + ($showTeam ? 1 : 0) }}" align="center">
+        <td colspan="{{ 25 + ($showTeam ? 1 : 0) }}" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

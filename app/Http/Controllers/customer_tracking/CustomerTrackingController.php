@@ -33,6 +33,7 @@ use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Support\ExportFilename;
 use App\Support\BrandFeature;
+use App\Support\SourceScope;
 
 class CustomerTrackingController extends Controller
 {
@@ -412,9 +413,10 @@ class CustomerTrackingController extends Controller
     {
         $authUser      = Auth::user();
         $model         = TbCarmodel::where('brand', $authUser->brand)->get();
-        // ซ่อนแหล่งที่มาหลักที่ใช้เฉพาะตอนจอง (เช่น "ลูกค้าเก่า") ออกจากหน้าเพิ่มการติดตาม
-        $hiddenMains   = config('source.tracking_hidden_main', []);
-        $sources       = TbSalecarType::whereNotIn('main_source', $hiddenMains)->get();
+        // แหล่งที่มาหลักที่คีย์ได้ — ตัดกลุ่มเฉพาะตอนจอง ("ลูกค้าเก่า") และกลุ่มที่เซลล์คีย์เองไม่ได้
+        // ("Online บริษัท" / "ดีลเลอร์") ออกตั้งแต่ต้นทาง เพื่อให้ sub-source ล้อกับกลุ่มที่เหลือเสมอ
+        $sourceMains   = SourceScope::allowedMains();
+        $sources       = TbSalecarType::whereIn('main_source', array_keys($sourceMains))->get();
         $decisions     = TbDecision::all();
         $saleBrands = config("brand.sale_pool.{$authUser->brand}", [$authUser->brand]);
         $extraSaleIds = User::extraSaleUserIdsForBrand((int) $authUser->brand);
@@ -429,7 +431,6 @@ class CustomerTrackingController extends Controller
             ->get();
         $interiorColor = BrandFeature::hasInteriorColor($authUser->brand) ? TbInteriorColor::all() : collect();
         $prefixes      = TbPrefixname::all();
-        $sourceMains   = collect(config('source.main', []))->except($hiddenMains)->all();
         $placeMain     = config('source.place_main', 'offline');
 
         // ตัวเลือก "คลิปที่ยิงแอด" — เฉพาะแอดที่ยังแสดง (is_active=1) ของ brand+branch นี้
@@ -547,9 +548,15 @@ class CustomerTrackingController extends Controller
             $placeMain = config('source.place_main', 'offline');
             $isOffline = $source && $source->main_source === $placeMain;
 
+            // กลุ่มที่ผู้ใช้คนนี้คีย์ได้ — ต้องตรวจซ้ำฝั่งเซิร์ฟเวอร์ ไม่งั้นยิง request ตรงข้ามดรอปดาวน์ได้
+            $allowedMains = array_keys(SourceScope::allowedMains());
+
             $validator = Validator::make($request->all(), [
-                'source_main' => ['required', Rule::in(array_keys(config('source.main', [])))],
-                'source_id'   => 'required|exists:tb_salecar_type,id',
+                'source_main' => ['required', Rule::in($allowedMains)],
+                'source_id'   => [
+                    'required',
+                    Rule::exists('tb_salecar_type', 'id')->whereIn('main_source', $allowedMains),
+                ],
                 'place_id'    => [
                     $isOffline ? 'required' : 'nullable',
                     Rule::exists('tb_source_place', 'id')
@@ -725,15 +732,13 @@ class CustomerTrackingController extends Controller
         $canEditSource = $this->canEditTrackingSourceOf($tracking);
         $canEditAd     = $canEditSource && $authUser->canEditTrackingAd();
 
-        $hiddenMains = config('source.tracking_hidden_main', []);
         $placeMain   = config('source.place_main', 'offline');
-        $sourceMains = collect(config('source.main', []))->except($hiddenMains)->all();
+        // กติกาเดียวกับหน้าเพิ่มการติดตาม: เซลล์ไม่เห็นกลุ่ม "Online บริษัท" / "ดีลเลอร์"
+        $sourceMains = SourceScope::allowedMains();
 
         // แหล่งที่มาปัจจุบันอาจเป็นตัวที่ถูกซ่อน/ลบไปแล้ว — ต้องคงไว้ในลิสต์ ไม่งั้นเปิดหน้ามาค่าจะหาย
         $sources = $canEditSource
-            ? TbSalecarType::withTrashed()
-                ->where(fn ($q) => $q->whereNotIn('main_source', $hiddenMains)->orWhere('id', $tracking->source_id))
-                ->get()
+            ? SourceScope::allowedSubs($tracking->source_id)
             : collect();
 
         if ($canEditSource && $tracking->source && !array_key_exists($tracking->source->main_source, $sourceMains)) {
@@ -837,8 +842,17 @@ class CustomerTrackingController extends Controller
             ]
             : ['nullable'];
 
+        // ย้ายได้เฉพาะกลุ่มที่ตัวเองคีย์ได้ + ค่าเดิมของใบนี้ (ค่าเดิมอาจอยู่ในกลุ่มที่ถูกซ่อน
+        // เช่นเซลล์เปิดใบที่แอดมินลงเป็น "Online บริษัท" ไว้ — ต้องกดบันทึกช่องอื่นได้โดยไม่ติด validate)
+        $allowedMains = array_keys(SourceScope::allowedMains());
+
         $validator = Validator::make($request->all(), [
-            'source_id' => 'required|exists:tb_salecar_type,id',
+            'source_id' => [
+                'required',
+                Rule::exists('tb_salecar_type', 'id')
+                    ->where(fn ($q) => $q->whereIn('main_source', $allowedMains)
+                        ->orWhere('id', $tracking->source_id)),
+            ],
             'place_id'  => $placeRules,
             'clip_add'  => 'nullable|exists:tb_ad,id',
         ], [

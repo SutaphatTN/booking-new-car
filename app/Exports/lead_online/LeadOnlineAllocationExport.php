@@ -31,9 +31,10 @@ class LeadOnlineAllocationExport implements WithMultipleSheets
 
   public function sheets(): array
   {
-    // แหล่งที่มาที่นับ = main_source 'online' ยกเว้น id 7 (เพจส่วนตัว) และ 20 (Showroom Event)
-    $onlineSourceIds = TbSalecarType::where('main_source', 'online')
-      ->whereNotIn('id', [7, 20])
+    // แหล่งที่มาที่นับ = ลีดออนไลน์ของบริษัท (main 'online') + แพลตฟอร์มนอก (GCIP ฯลฯ)
+    // เดิมสองกลุ่มนี้เป็น main 'online' ก้อนเดียวกัน แยกกลุ่มตอนจัดหมวดใหม่ 2026-09-01
+    // ต้องนับทั้งคู่ ไม่งั้น GCIP หลุดจากรายงาน — เพจ/Tik Tok "ส่วนตัว" ยังไม่นับเหมือนเดิม
+    $onlineSourceIds = TbSalecarType::whereIn('main_source', ['online', 'platform'])
       ->pluck('id')
       ->all();
 

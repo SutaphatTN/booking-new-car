@@ -43,8 +43,8 @@
                   </label>
                   <select id="inp_sub_main" name="main_source" class="form-select" required>
                     <option value="">— เลือก —</option>
-                    {{-- แสดงเฉพาะ Offline / Online / Walk-in --}}
-                    @foreach (\Illuminate\Support\Arr::only($mains, ['offline', 'online', 'walkin']) as $key => $label)
+                    {{-- แสดงเฉพาะกลุ่มที่ตั้งค่าเองได้ (config/source.php : settings_main) --}}
+                    @foreach (\Illuminate\Support\Arr::only($mains, config('source.settings_main', [])) as $key => $label)
                       <option value="{{ $key }}">{{ $label }}</option>
                     @endforeach
                   </select>
