@@ -309,8 +309,16 @@ $(document).on('submit', '#commissionMonthlyForm', function (e) {
   const $btn = $('#btnSaveCommissionMonthly');
   $btn.prop('disabled', true);
 
-  // strip comma ช่องค่าคอมรายเดือน (backend validate numeric)
-  const moneyFields = ['com_discipline', 'deduct_absence', 'deduct_other', 'com_lead', 'com_clip'];
+  // strip comma ช่องค่าคอมรายเดือน (backend validate numeric — "3,500.00" จะไม่ผ่านแล้วได้ 422)
+  // เพิ่มช่องเงินใหม่ตรงนี้ทุกครั้ง ไม่งั้นค่าที่มีหลักพันขึ้นไปจะบันทึกไม่ผ่าน (ต่ำกว่าพันไม่มี comma เลยรอด)
+  const moneyFields = [
+    'com_discipline',
+    'deduct_absence',
+    'deduct_other',
+    'com_lead',
+    'com_clip',
+    'com_accessory_sold'
+  ];
   const payload = $(this)
     .serializeArray()
     .map(f => (moneyFields.includes(f.name) ? { name: f.name, value: parseMoney(f.value) } : f));
@@ -330,11 +338,17 @@ $(document).on('submit', '#commissionMonthlyForm', function (e) {
       Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1400, showConfirmButton: false });
     }
   })
-    .fail(function () {
+    .fail(function (xhr) {
+      // โชว์สาเหตุจริงจาก server (422 = ข้อมูลไม่ผ่าน validate, 403 = ไม่มีสิทธิ์)
+      // ไม่งั้นขึ้นแต่ "กรุณาลองใหม่อีกครั้ง" แล้วหาสาเหตุไม่ได้เลย
+      const res = xhr.responseJSON || {};
+      const detail = res.errors
+        ? Object.values(res.errors).flat().join('\n')
+        : res.message || 'กรุณาลองใหม่อีกครั้ง';
       if (window.Swal) {
-        Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: 'กรุณาลองใหม่อีกครั้ง' });
+        Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: detail });
       } else {
-        alert('บันทึกไม่สำเร็จ');
+        alert('บันทึกไม่สำเร็จ\n' + detail);
       }
     })
     .always(function () {
