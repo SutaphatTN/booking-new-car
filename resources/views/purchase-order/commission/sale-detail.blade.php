@@ -3,7 +3,8 @@
   // ต้องตรงกับกลุ่ม [1,3,4] ใน SaleCommissionMonthly::computeNet เป๊ะ ๆ
   // (เดิมฟอร์ม brand 4 โชว์ช่อง วินัย/lead/clip แบบ brand 2 ทั้งที่ computeNet ไม่เอามาคิด → กรอกแล้วยอดไม่ขยับ)
   $isBrand13 = in_array((int) $brand, [1, 3, 4], true);
-  $isBrand2 = (int) $brand === 2;
+  // คอลัมน์ "budget หัก" ผูกกับระบบ budget ไม่ใช่แค่ brand 2 — เดือนที่เลิกใช้ budget แล้วต้องไม่มีคอลัมน์นี้
+  $showBudgetCol = (int) $brand === 2 && ($budget["active"] ?? false);
   // audit_lead / audit_dp = ดูอย่างเดียว (ไม่มีปุ่มบันทึก + ทุกช่องเป็น readonly/disabled)
   $canEdit = $canEdit ?? true;
   $roInput = $canEdit ? '' : 'readonly';
@@ -90,7 +91,7 @@
                 <th class="text-end">ดอกเบี้ย</th>
                 <th class="text-end">รถเทิร์น</th>
                 <th class="text-end">คอมอื่นๆ</th>
-                @if ($isBrand2)
+                @if ($showBudgetCol)
                   <th class="text-end">budget หัก</th>
                 @endif
                 <th class="text-end col-sum-pos" title="ผลรวมทุกยอดที่เป็นบวกของคันนี้">รวมเงินได้</th>
@@ -194,7 +195,7 @@
                       data-rowbase="{{ $rowBase }}" data-rowcar="{{ $carCom }}"
                       data-rowneg="{{ $rowNeg }}" value="{{ $c['specialCom'] }}" {{ $roInput }}>
                   </td>
-                  @if ($isBrand2)
+                  @if ($showBudgetCol)
                     <td class="text-end" style="min-width:120px;">
                       <input type="text" inputmode="decimal"
                         class="form-control form-control-sm text-end car-budget-input" data-id="{{ $c['id'] }}"
@@ -237,7 +238,7 @@
                 </tr>
               @empty
                 <tr>
-                  <td colspan="{{ $isBrand2 ? 14 : 13 }}" class="text-center py-4 text-muted">
+                  <td colspan="{{ $showBudgetCol ? 14 : 13 }}" class="text-center py-4 text-muted">
                     ไม่มีรายการส่งมอบในเดือนนี้</td>
                 </tr>
               @endforelse
@@ -253,7 +254,7 @@
                 <td class="text-end">{{ number_format($sumTurn, 2) }}</td>
                 {{-- ช่องที่แก้สดได้ → รวมฝั่ง JS (recomputeCarsTable) --}}
                 <td class="text-end" id="carsSpecialTotal">0.00</td>
-                @if ($isBrand2)
+                @if ($showBudgetCol)
                   <td class="text-end" id="carsBudgetTotal">0.00</td>
                 @endif
                 <td class="text-end col-sum-pos" id="carsPositiveTotal">0.00</td>
@@ -384,7 +385,8 @@
           @if ($budget['active'])
             <div
               class="alert alert-primary d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3"
-              id="budgetWalletBox" data-carried="{{ $budget['carried'] }}">
+              id="budgetWalletBox" data-carried="{{ $budget['carried'] }}"
+              data-bonus-rate="{{ $budget['bonus_rate'] }}" data-bonus="{{ $budget['bonus'] }}">
               <div class="small">
                 <i class="bx bx-wallet me-1"></i>
                 <strong>budget ยกมา</strong> (จากรถส่งมอบเดือนก่อน × 1,000)
@@ -394,8 +396,14 @@
                     id="budgetUsedDisplay">{{ number_format($budget['used'], 2) }}</strong> ฿
                 </div>
               </div>
-              <div class="fw-bold text-primary">
+              <div class="fw-bold text-primary text-end">
                 คงเหลือ = <span id="budgetRemainingDisplay">{{ number_format($budget['remaining'], 2) }}</span> ฿
+                {{-- budget ที่เหลือคืนเซลล์ 30% — รวมอยู่ในยอดค่าคอมสุทธิด้านล่างแล้ว --}}
+                <div class="small fw-normal text-success mt-1">
+                  + คืนเซลล์ {{ (int) ($budget['bonus_rate'] * 100) }}% =
+                  <strong id="budgetBonusDisplay">{{ number_format($budget['bonus'], 2) }}</strong> ฿
+                  <span class="text-muted">(รวมในยอดสุทธิแล้ว)</span>
+                </div>
               </div>
             </div>
           @endif
@@ -430,8 +438,11 @@
             </div>
           @endif
 
-          {{-- ── คอมตัวรถรายคัน (รายเดือน) — รวมเข้ายอดสุทธิ ── --}}
-          @if ($car['active'])
+          {{-- ── คอมตัวรถรายคัน (รายเดือน) ──
+               ปิดการแสดงผลไว้ตามที่ผู้ใช้ขอ (2026-09-02) — ยอดยังถูกคิดรวมในยอดสุทธิเหมือนเดิม
+               และดูรายคันได้จากคอลัมน์ "คอมตัวรถ" ในตารางด้านบนอยู่แล้ว
+               เปิดคืน: เอา false && ออกจากบรรทัดล่าง (ห้ามใช้ blade comment ครอบ เพราะข้างในมี comment ซ้อน) --}}
+          @if (false && $car['active'])
             @php $carSkipped = (int) $car['count'] - (int) $car['paidCount']; @endphp
             <div
               class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3">

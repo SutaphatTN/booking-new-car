@@ -173,6 +173,8 @@ function recomputeCommissionNet() {
   net -= num('deduct_other'); // หักอื่นๆ ใช้ทุก brand (ตรงกับ SaleCommissionMonthly::computeNet)
   // คอมประดับยนต์ (หน้าร้าน) ใช้ทุก brand — บวกนอกฐาน จึงไม่โดนหัก 15% ตอนวินัยไม่ผ่าน
   net += num('com_accessory_sold');
+  // โบนัส budget ที่เหลือ × 30% (brand 2) — recomputeCarsTable คิดสดไว้ให้แล้ว
+  net += parseFloat($('#budgetWalletBox').data('bonus')) || 0;
   net += ssi + car + held;
 
   $display.text(net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ฿');
@@ -268,8 +270,14 @@ function recomputeCarsTable() {
   const $wallet = $('#budgetWalletBox');
   if ($wallet.length) {
     const carried = parseMoney($wallet.data('carried'));
+    const remaining = carried - budgetUsed;
     $('#budgetUsedDisplay').text(fmt(budgetUsed));
-    $('#budgetRemainingDisplay').text(fmt(carried - budgetUsed));
+    $('#budgetRemainingDisplay').text(fmt(remaining));
+    // budget ที่เหลือ × 30% คืนเซลล์ → เก็บไว้ให้ recomputeCommissionNet บวกเข้ายอดสุทธิ
+    // (ยิ่งหัก budget เยอะ โบนัสยิ่งลด — ต้องขยับสดตอนพิมพ์ ไม่งั้นยอดไม่ตรงกับที่ server จะบันทึก)
+    const bonus = Math.max(0, remaining) * (parseFloat($wallet.data('bonusRate')) || 0);
+    $wallet.data('bonus', bonus);
+    $('#budgetBonusDisplay').text(fmt(bonus));
   }
   recomputeCommissionNet();
 }

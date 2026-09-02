@@ -275,6 +275,20 @@ class User extends Authenticatable
 	}
 
 	/**
+	 * role ที่แก้ "ลายเซ็นอนุมัติ" 3 ตัวบนใบจองด้วยมือได้
+	 * (SMSignature / ApprovalSignature / GMApprovalSignature)
+	 * ทางปกติของการอนุมัติคือกดลิงก์ในอีเมล — สวิตช์พวกนี้เป็นทางลัดไว้แก้เคสที่หลุด
+	 * role อื่นยังเห็นการ์ดอยู่ แต่ช่องถูก disable และ server ไม่รับค่าจากฟอร์ม (คงค่าใน DB ไว้)
+	 * ไม่รวม manager: เป็นคนเซ็นเองในสายอนุมัติ ถ้าติ๊กเองได้จะข้ามด่าน GM/MD ได้
+	 */
+	public const APPROVAL_SIGNATURE_ROLES = ['admin', 'gm', 'md'];
+
+	public function canEditApprovalSignature(): bool
+	{
+		return in_array($this->role, self::APPROVAL_SIGNATURE_ROLES, true);
+	}
+
+	/**
 	 * role ที่ผูก/ปลดรถ (CarOrderID) บนใบจองของ brand 2 ได้
 	 * brand 2 คุมการจ่ายรถจากส่วนกลาง — role อื่นเห็นข้อมูลรถได้แต่แตะไม่ได้
 	 */
