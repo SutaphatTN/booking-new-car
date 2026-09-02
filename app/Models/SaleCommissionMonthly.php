@@ -37,6 +37,7 @@ class SaleCommissionMonthly extends Model
         'deduct_other_note',
         'com_lead',
         'com_clip',
+        'com_accessory_sold',
         'discipline_failed',
     ];
 
@@ -49,32 +50,39 @@ class SaleCommissionMonthly extends Model
         'deduct_other' => 'float',
         'com_lead' => 'float',
         'com_clip' => 'float',
+        'com_accessory_sold' => 'float',
         'discipline_failed' => 'bool',
     ];
 
     /**
      * ยอดค่าคอมสุทธิ (brand-aware)
-     *  - brand 1/3 : (วินัยไม่ผ่าน → base×0.85) − ขาด/ลา/มาสาย − หักอื่นๆ
-     *  - brand อื่น (2) : base + วินัย + lead + clip − ขาด/ลา/มาสาย − หักอื่นๆ
+     *  - brand 1/3/4 : (วินัยไม่ผ่าน → base×0.85) + คอมประดับยนต์(ขายแยก) − ขาด/ลา/มาสาย − หักอื่นๆ
+     *  - brand อื่น (2) : base + วินัย + lead + clip + คอมประดับยนต์(ขายแยก) − ขาด/ลา/มาสาย − หักอื่นๆ
      *
-     * "หักอื่นๆ" (deduct_other) ใช้ทุก brand — เป็นช่องหักปลายเปิดที่ระบุเหตุผลเองใน deduct_other_note
+     * "หักอื่นๆ" (deduct_other) และ "คอมประดับยนต์ (ขายแยก)" (com_accessory_sold) ใช้ทุก brand
+     * — เป็นช่องปลายเปิดที่ผู้จัดการ/GM กรอกเอง (หักอื่นๆ ต้องระบุเหตุผลใน deduct_other_note)
+     *
+     * คอมประดับยนต์ (ขายแยก) บวก "นอกฐาน" ไม่โดนหัก 15% ตอนวินัยไม่ผ่าน
+     * เพราะ 15% เป็นบทลงโทษของค่าคอมรถ ไม่ใช่ของงานขายประดับยนต์
      */
     public function computeNet(float $baseCommission, int $brand): float
     {
         $otherDeductions = (float) ($this->deduct_absence ?? 0) + (float) ($this->deduct_other ?? 0);
+        $accessorySold   = (float) ($this->com_accessory_sold ?? 0);
 
         if (in_array($brand, [1, 3, 4], true)) {
             $base = $this->discipline_failed
                 ? $baseCommission * (1 - self::DISCIPLINE_FAIL_RATE)
                 : $baseCommission;
 
-            return $base - $otherDeductions;
+            return $base + $accessorySold - $otherDeductions;
         }
 
         return $baseCommission
             + (float) ($this->com_discipline ?? 0)
             + (float) ($this->com_lead ?? 0)
             + (float) ($this->com_clip ?? 0)
+            + $accessorySold
             - $otherDeductions;
     }
 

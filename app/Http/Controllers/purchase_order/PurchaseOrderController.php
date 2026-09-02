@@ -1514,7 +1514,11 @@ class PurchaseOrderController extends Controller
             ->where('category', 'delivery')
             ->first();
 
-        $campaigns = [];
+        $selected_campaigns = $saleCar->campaigns->pluck('CampaignID')->filter()
+            ->map(fn($v) => (int) $v)->unique()->values()->all();
+
+        // แคมเปญที่ "เลือกใหม่ได้ตอนนี้" — ของรุ่นย่อยนี้ + ยังไม่หมดอายุ
+        $campaigns = collect();
         if ($subModel_id) {
             $campaigns = Campaign::with(['appellation', 'type'])
                 ->forSubModel($subModel_id, $saleCar->model_id)
@@ -1524,7 +1528,15 @@ class PurchaseOrderController extends Controller
                 ->get();
         }
 
-        $selected_campaigns = $saleCar->campaigns->pluck('CampaignID')->toArray();
+        // แคมเปญที่ใบนี้ "เลือกไว้แล้ว" แต่หมดอายุ/ถูกปิดไปแล้ว ต้องยังอยู่ในลิสต์ด้วย
+        // ไม่งั้น blade วาด option ไม่ออก → ยอดหายจากหน้าจอ และพอกดบันทึกจะถูกลบถาวร
+        // (update() ลบ Salecampaign ทั้งหมดแล้วสร้างใหม่จาก CampaignID[] ที่ฟอร์มส่งมา)
+        $expiredCampaignIds = array_values(array_diff($selected_campaigns, $campaigns->pluck('id')->all()));
+        if ($expiredCampaignIds) {
+            $campaigns = $campaigns->concat(
+                Campaign::with(['appellation', 'type'])->whereIn('id', $expiredCampaignIds)->get()
+            );
+        }
 
         $pricelistRows = $subModel_id
             ? TbPricelistCar::where('subModel_id', $subModel_id)
@@ -1584,7 +1596,7 @@ class PurchaseOrderController extends Controller
             $sourceMains[$currentSource->main_source] = config("source.main.{$currentSource->main_source}", $currentSource->main_source);
         }
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet', 'canCustomAccPrice', 'redPlateAccIds', 'canReassignSale', 'saleUser', 'canEditCarPrice', 'canBindCarOrder', 'canEditSource', 'sourceMains'));
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'expiredCampaignIds', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet', 'canCustomAccPrice', 'redPlateAccIds', 'canReassignSale', 'saleUser', 'canEditCarPrice', 'canBindCarOrder', 'canEditSource', 'sourceMains'));
     }
 
     /** id ประดับยนต์ที่ถูก mark ว่าเป็น "ป้ายแดง" (ตั้งค่าหลังบ้าน — ข้ามทุก scope เพราะใช้เทียบ id ข้ามแบรนด์) */
@@ -3960,9 +3972,20 @@ class PurchaseOrderController extends Controller
 
         $saleCar = $saleCar->keyBy('SaleID');
 
-        // เฉพาะ viewer brand 1: เพิ่มเซลล์ที่ได้ SSI แต่ไม่มีรถส่งมอบในเดือนที่เลือก (SSI เป็นของ brand 1)
-        if ((int) $user->brand === 1) {
-            $missingIds = $ssiPerSale->filter(fn($v) => ($v['amount'] ?? 0) > 0)->keys()->diff($saleCar->keys());
+        // ส่วนต่าง "คอมของเดือน" -> "เงินเข้ารอบจ่ายของเดือนนี้" (กั๊กยกมา − กั๊กยกไป − พักไว้)
+        // brand 1 เท่านั้น (ระบบกั๊กมีแบรนด์เดียว) — ใช้ตัวเดียวกับที่หน้ารายละเอียดคิด ยอดจะได้ตรงกัน
+        $viewerBrand = (int) $user->brand;
+        $payOffset = $viewerBrand === 1
+            ? HeldCommissionQuery::payRoundOffsetPerSale($year, $month)
+            : collect();
+
+        // เฉพาะ viewer brand 1: เพิ่มเซลล์ที่ได้ SSI หรือมีกั๊กยกมา แต่ไม่มีรถส่งมอบในเดือนที่เลือก
+        // (ไม่งั้นเงินที่เข้ารอบจริงของคนนั้นจะหายไปจากหน้ารายชื่อ เพราะไม่มีแถวให้แสดง)
+        if ($viewerBrand === 1) {
+            $missingIds = $ssiPerSale->filter(fn($v) => ($v['amount'] ?? 0) > 0)->keys()
+                ->merge($payOffset->filter(fn($v) => abs($v) > 0.005)->keys())
+                ->unique()
+                ->diff($saleCar->keys());
             if ($missingIds->isNotEmpty()) {
                 $extraUsers = User::with('branchInfo')->whereIn('id', $missingIds)->get()->keyBy('id');
                 foreach ($missingIds as $sid) {
@@ -3986,10 +4009,10 @@ class PurchaseOrderController extends Controller
             ->get()
             ->keyBy('SaleID');
 
-        // ยอดสุทธิ = ยอดที่ได้ "ทั้งเดือน" (base + คอมตัวรถ + SSI) — คอมกั๊กเป็นเรื่องเวลาจ่าย ไม่ลดยอดรวม
-        // SSI เป็นของ brand 1 → คิดเฉพาะตอนดูหน้า brand 1 (brand 3 ใช้เซลล์ร่วมกับ brand 1 จึง gate ด้วย viewer brand)
-        $viewerBrand = (int) $user->brand;
-        $saleCar = $saleCar->map(function ($s) use ($adjustments, $ssiPerSale, $carCommission, $viewerBrand) {
+        // ยอดสุทธิ = "เงินเข้ารอบจ่ายของเดือนนี้" ให้ตรงกับตัวเลขใหญ่ในหน้ารายละเอียด
+        //   base + คอมตัวรถ + SSI  +(กั๊กยกมาจากเดือนก่อน) −(กั๊กที่ยกไป) −(พักไว้ DD ว่าง)
+        // SSI/กั๊ก เป็นของ brand 1 → คิดเฉพาะตอนดูหน้า brand 1 (brand 3 ใช้เซลล์ร่วมกับ brand 1 จึง gate ด้วย viewer brand)
+        $saleCar = $saleCar->map(function ($s) use ($adjustments, $ssiPerSale, $carCommission, $viewerBrand, $payOffset) {
             $adj = $adjustments->get($s->SaleID);
             $brand = (int) ($s->saleUser->brand ?? 0);
             $net = $adj
@@ -3999,6 +4022,7 @@ class PurchaseOrderController extends Controller
             $net += (float) ($carEntry['amount'] ?? 0);
             if ($viewerBrand === 1) {
                 $net += (float) ($ssiPerSale[$s->SaleID]['amount'] ?? 0);
+                $net += (float) ($payOffset[(int) $s->SaleID] ?? 0);
             }
             $s->net_commission = $net;
             return $s;
@@ -4116,8 +4140,10 @@ class PurchaseOrderController extends Controller
             // คอมกั๊ก (โมเดลใหม่): DD > รอบหลักของ CK หรือ DD ว่าง → กั๊ก H=min(2000,C) ; โชว์เฉพาะ brand 1
             $ck = $r->DeliveryInCKDate ? Carbon::parse($r->DeliveryInCKDate) : null;
             $dd = $r->DeliveryDate ? Carbon::parse($r->DeliveryDate) : null;
+            // ฐานการกั๊ก = "คอมสุทธิของคัน" ไม่ใช่คอมตัวรถอย่างเดียว — คันที่เกินงบทะลุเพดาน
+            // ได้ C = 0 แต่ยังมีคอมก้อนอื่น ก็ต้องกั๊กได้เท่าที่มี (ดู HeldCommissionQuery::holdBaseOf)
             $p = ($viewerBrand === 1 && $ck)
-                ? HeldCommissionQuery::paymentFor($ck, $dd, $C)
+                ? HeldCommissionQuery::paymentFor($ck, $dd, $C, HeldCommissionQuery::holdBaseOf($r, $C))
                 : ['held' => false, 'held_amount' => 0.0, 'main_amount' => $C, 'main_payday' => null, 'held_payday' => null];
 
             return [
@@ -4231,6 +4257,13 @@ class PurchaseOrderController extends Controller
                 'gak_total'  => (float) array_sum(array_column($gakItems, 'amount')),
                 'pending'    => $pendingTotal,
             ];
+
+            // ── ตัวเลขใหญ่ท้ายจอ = "เงินเข้ารอบนี้" (ไม่ใช่คอมที่เกิดในเดือน) ──
+            //  = รอบหลัก + กั๊กยกมาจากเดือนก่อน  (ก้อนกั๊กที่ยกไป/พักไว้ ยังไม่จ่ายรอบนี้ จึงไม่นับ)
+            // net_offset = ส่วนต่างจาก $net เอาไว้ให้ JS คิดสดตอนแก้ช่องค่าคอมเพิ่มเติม
+            //   $net − gak_total − pending + carried_in = main_own + carried_in
+            $rounds['pay_total']  = $rounds['main_own'] + $rounds['carried_in'];
+            $rounds['net_offset'] = $rounds['carried_in'] - $rounds['gak_total'] - $rounds['pending'];
         }
 
         $months = [1 => 'มกราคม', 2 => 'กุมภาพันธ์', 3 => 'มีนาคม', 4 => 'เมษายน', 5 => 'พฤษภาคม', 6 => 'มิถุนายน', 7 => 'กรกฎาคม', 8 => 'สิงหาคม', 9 => 'กันยายน', 10 => 'ตุลาคม', 11 => 'พฤศจิกายน', 12 => 'ธันวาคม'];
@@ -4352,6 +4385,8 @@ class PurchaseOrderController extends Controller
             'deduct_other_note' => 'nullable|string|max:255',
             'com_lead'          => 'nullable|numeric',
             'com_clip'          => 'nullable|numeric',
+            // คอมประดับยนต์ (ขายแยก) — ผู้จัดการ/GM กรอกเอง บวกเข้ายอดคอม ใช้ทุก brand
+            'com_accessory_sold' => 'nullable|numeric',
             'discipline_failed' => 'nullable|boolean',
         ]);
 
@@ -4377,6 +4412,7 @@ class PurchaseOrderController extends Controller
                     : null,
                 'com_lead'          => $data['com_lead'] ?? 0,
                 'com_clip'          => $data['com_clip'] ?? 0,
+                'com_accessory_sold' => $data['com_accessory_sold'] ?? 0,
                 'discipline_failed' => (bool) ($data['discipline_failed'] ?? false),
             ]
         );
