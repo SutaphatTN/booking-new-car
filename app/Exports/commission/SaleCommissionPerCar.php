@@ -90,7 +90,11 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
     // ฝั่ง recv จึงเหลือแต่ยอดบวกล้วน ๆ ; คอมสุทธิ (รับ − หัก) ได้เท่าเดิมทุกบาท
     $cols[] = ['label' => 'หักเกินงบ', 'key' => 'overBudgetDeduct', 'role' => 'ded', 'money' => true];
 
-    $cols[] = ['label' => 'หักอื่นๆ (หักเงินเดือน/ สาย)', 'key' => 'deductAbsence', 'role' => 'ded', 'money' => true];
+    $cols[] = ['label' => 'หักขาด/ลา/มาสาย', 'key' => 'deductAbsence', 'role' => 'ded', 'money' => true];
+
+    // ช่องหักปลายเปิด (ทุก brand) — หมายเหตุเป็น info เฉย ๆ ไม่เข้ายอดรวม
+    $cols[] = ['label' => 'หักอื่นๆ', 'key' => 'deductOther', 'role' => 'ded', 'money' => true];
+    $cols[] = ['label' => 'หมายเหตุหักอื่นๆ', 'key' => 'deductOtherNote', 'role' => 'info'];
 
     $cols[] = ['label' => 'รวมยอดหัก', 'key' => '__ded', 'role' => 'sum_ded', 'money' => true];
     $cols[] = ['label' => 'คอมสุทธิ',  'key' => '__net', 'role' => 'net',     'money' => true];
@@ -220,7 +224,9 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       $seen[$saleId] = true;
       $adj = $adjust->get($saleId);
 
-      $row['deductAbsence'] = $first ? (float) ($adj->deduct_absence ?? 0) : 0.0;
+      $row['deductAbsence']   = $first ? (float) ($adj->deduct_absence ?? 0) : 0.0;
+      $row['deductOther']     = $first ? (float) ($adj->deduct_other ?? 0) : 0.0;
+      $row['deductOtherNote'] = $first ? ($adj->deduct_other_note ?? '') : '';
 
       if ($brand === 1) {
         $row['ssi'] = $first ? (float) ($ssiPer[$saleId]['amount'] ?? 0) : 0.0;

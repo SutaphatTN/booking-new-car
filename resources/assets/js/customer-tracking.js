@@ -90,6 +90,11 @@ function ctGetCurrentFilterParams(exclude) {
 const ctFilterCache = {};
 
 function ctLoadFilterOptions(params, callback) {
+  // หน้า "ติดตามที่ปิดแล้ว" ต้องได้ตัวเลือกในดรอปดาวน์กรองจากชุดข้อมูลเดียวกับที่ตารางแสดง
+  if (String($('#trackingTable').data('booked') || '0') === '1') {
+    params = Object.assign({}, params, { booked: 1 });
+  }
+
   const cacheKey = JSON.stringify(params);
   const cached = ctFilterCache[cacheKey];
 
@@ -147,12 +152,17 @@ $(document).ready(function () {
   const ctUserRole = $('#trackingTable').data('userRole') || '';
   const ctCanEndTracking = !['sale', 'adminPage', 'lead_sale'].includes(ctUserRole);
 
+  // หน้า "ติดตามที่ปิดแล้ว" ใช้ view เดียวกับรายการติดตาม ต่างกันแค่ flag นี้
+  // (ต้องส่งไปทั้ง /list และ /filter-options ไม่งั้นตัวเลือกในดรอปดาวน์กรองจะเป็นของอีกชุด)
+  const ctBooked = String($('#trackingTable').data('booked') || '0') === '1';
+
   ctTrackingTable = $('#trackingTable').DataTable({
     serverSide: true,
     processing: false,
     ajax: {
       url: '/customer-tracking/list',
       data: function (d) {
+        if (ctBooked) d.booked = 1;
         d.decision_id = $('#filterDecision').val();
         if (ctSaleFilterActive !== null) d.sale_filter = JSON.stringify(ctSaleFilterActive);
         if (ctSourceFilterActive !== null) d.source_filter = JSON.stringify(ctSourceFilterActive);
@@ -171,6 +181,23 @@ $(document).ready(function () {
       { data: 'last_date', orderable: false },
       { data: 'next_date', orderable: false },
       { data: 'status', orderable: false },
+      // คอลัมน์ "ปิดด้วยสาเหตุ" มีเฉพาะหน้าย้อนหลัง — จำนวนคอลัมน์ต้องตรงกับ <th> ใน view
+      ...(ctBooked
+        ? [{
+            data: 'outcome',
+            orderable: false,
+            searchable: false,
+            render: function (outcome, type, row) {
+              if (type !== 'display') return outcome;
+              const cls = { 'จองแล้ว': 'bg-label-success', 'จบการติดตาม': 'bg-label-secondary' }[outcome] || 'bg-label-danger';
+              // เหตุผลยกเลิกเป็นข้อความที่ผู้ใช้พิมพ์เอง ต้อง escape ก่อนยัดเป็น HTML
+              const note = row.cancel_reason
+                ? `<div class="text-muted" style="font-size:.75rem;">${$('<div>').text(row.cancel_reason).html()}</div>`
+                : '';
+              return `<span class="badge ${cls}">${outcome}</span>${note}`;
+            }
+          }]
+        : []),
       {
         data: 'id',
         orderable: false,

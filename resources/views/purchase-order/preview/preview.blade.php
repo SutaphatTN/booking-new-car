@@ -46,6 +46,18 @@
           <i class="bx bx-error-circle me-1"></i>ขออนุมัติเกินงบ
         </button>
 
+        {{-- ส่งคำขอให้ IA ตรวจสอบ — คนละสายกับการอนุมัติงบ (เมลไม่มีปุ่มอนุมัติ มีแต่ลิงก์เปิดใบจอง)
+             เฉพาะ brand ที่มีด่าน IA จริง (needsIaCheck = GWM) brand อื่นไม่มีด่านนี้จึงไม่ต้องขอ
+             ซ่อนเมื่อ IA ติ๊กให้แล้ว เพราะไม่มีอะไรต้องขอ --}}
+        @if ($saleCar->needsIaCheck() && !$saleCar->CheckerID)
+          <button type="button"
+            class="btn btn-outline-primary px-4"
+            id="btnRequestIaCheck"
+            data-id="{{ $saleCar->id }}">
+            <i class="bx bx-search-alt-2 me-1"></i>ส่งขอ IA ตรวจสอบ
+          </button>
+        @endif
+
         {{-- ดึงคำขอกลับ (เฉพาะ admin) — โชว์ตอนสถานะ "รออนุมัติ" ที่ยังไม่อนุมัติ --}}
         <button type="button"
           class="btn btn-outline-danger px-4 d-none"

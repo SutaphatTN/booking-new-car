@@ -1,5 +1,9 @@
 @extends('layouts/contentNavbarLayout')
-@section('title', 'รายการติดตามลูกค้า')
+@php
+  // หน้าเดียวกันใช้ 2 โหมด : รายการติดตามปกติ กับ หน้าย้อนหลัง (จอง/ปิดไปแล้ว — admin เท่านั้น)
+  $bookedMode = $bookedMode ?? false;
+@endphp
+@section('title', $bookedMode ? 'ติดตามที่ปิดแล้ว' : 'รายการติดตามลูกค้า')
 
 @section('page-script')
   @vite(['resources/assets/js/customer-tracking.js'])
@@ -13,11 +17,15 @@
         {{-- ── Card header ── --}}
         <div class="po-card-header d-flex align-items-center gap-3">
           <div class="po-hd-icon">
-            <i class="bx bx-radar fs-4 text-white"></i>
+            <i class="bx {{ $bookedMode ? 'bx-history' : 'bx-radar' }} fs-4 text-white"></i>
           </div>
           <div>
-            <div class="text-white fw-bold mf-hd-title">รายการติดตามลูกค้า</div>
-            <div class="text-white mf-hd-sub">Customer Tracking</div>
+            <div class="text-white fw-bold mf-hd-title">
+              {{ $bookedMode ? 'ติดตามที่ปิดแล้ว (จองแล้ว / จบการติดตาม)' : 'รายการติดตามลูกค้า' }}
+            </div>
+            <div class="text-white mf-hd-sub">
+              {{ $bookedMode ? 'Closed Tracking — ดูและแก้ย้อนหลัง' : 'Customer Tracking' }}
+            </div>
           </div>
         </div>
 
@@ -129,8 +137,9 @@
 
           {{-- ── Table ── --}}
           <div class="table-responsive">
+            {{-- data-booked=1 → DataTable/filter-options สลับไปดึงใบที่จอง/ปิดไปแล้ว (หน้าย้อนหลังของ admin) --}}
             <table class="table table-bordered tbl-table tbl-styled" id="trackingTable" style="min-width:1300px;"
-              data-user-role="{{ auth()->user()->role }}">
+              data-user-role="{{ auth()->user()->role }}" data-booked="{{ ($bookedMode ?? false) ? 1 : 0 }}">
               <thead>
                 <tr>
                   <th class="tbl-th-no">No.</th>
@@ -182,6 +191,10 @@
                       </button>
                     </div>
                   </th>
+                  @if ($bookedMode)
+                    {{-- ปิดเพราะอะไร — จองแล้ว / จบการติดตาม / ยกเลิกการติดตาม (คอลัมน์นี้มีเฉพาะหน้าย้อนหลัง) --}}
+                    <th style="width:150px;">ปิดด้วยสาเหตุ</th>
+                  @endif
                   <th class="tbl-th-action" style="width:120px;">Action</th>
                 </tr>
               </thead>

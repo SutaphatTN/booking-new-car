@@ -2555,7 +2555,7 @@ $(document).ready(function () {
       Swal.fire({
         icon: 'warning',
         title: 'ยังไม่ผ่านการตรวจสอบ (IA)',
-        text: 'ต้องให้ GM / MD / ผู้ดูแลระบบ ติ๊ก "ตรวจสอบรายการ (IA)" ก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"'
+        text: 'ต้องให้ GM / MD ติ๊ก "ตรวจสอบรายการ (IA)" ก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"'
       });
       // เปิดแท็บที่มีการ์ด IA ให้ผู้ใช้เห็น
       const iaTabId = $('#CheckerID').closest('.tab-pane').attr('id');
@@ -2708,14 +2708,31 @@ const APPROVAL_LOCKED_STATUS = ['4', '5'];
  * เรียก proceed() ต่อเมื่อสถานะปัจจุบันส่งคำขอได้จริง
  */
 function guardApprovalConStatus(proceed) {
+  guardConStatus(APPROVAL_LOCKED_STATUS, 'ต้องอนุมัติก่อนจึงใช้สถานะนี้ได้', 'ต้องผ่านการอนุมัติก่อน', proceed, true);
+}
+
+// สถานะที่ต้อง "IA ตรวจสอบก่อน" ถึงจะเปลี่ยนเข้าได้ — 5 ส่งมอบ (mirror ของด่าน IA ใน update())
+const IA_LOCKED_STATUS = ['5'];
+
+/**
+ * ดักสถานะก่อนส่งคำขอ (ใช้ร่วมกันระหว่างสายอนุมัติกับสายขอ IA ตรวจสอบ)
+ *
+ * @param {string[]} locked      สถานะที่ยัง "เปลี่ยนเข้า" ไม่ได้ในขั้นนี้
+ * @param {string}   title       หัวข้อกล่องเตือน
+ * @param {string}   reasonText  เหตุผลที่เปลี่ยนเข้าไม่ได้ (ต่อท้ายชื่อสถานะ)
+ * @param {Function} proceed     เรียกเมื่อสถานะปัจจุบันส่งคำขอได้จริง
+ * @param {boolean}  skipAdmin   admin ข้าม gate ฝั่ง server ได้ไหม (สายอนุมัติ = ได้, สาย IA = ไม่ได้)
+ */
+function guardConStatus(locked, title, reasonText, proceed, skipAdmin) {
   const $sel = $('#con_status');
   const current = String($sel.val() ?? '');
   const original = String(document.getElementById('originalConStatus')?.value ?? '');
   const role = document.getElementById('userRole')?.value || '';
 
-  // admin ข้าม gate ฝั่ง server อยู่แล้ว → ไม่ต้องดัก ไม่งั้นจะบล็อกสิ่งที่บันทึกผ่านได้จริง
-  // ไม่ได้กำลังเปลี่ยน "เข้า" 4/5 (หรืออยู่สถานะนั้นมาแต่เดิม) → ส่งคำขอได้เลย
-  if (role === 'admin' || !APPROVAL_LOCKED_STATUS.includes(current) || current === original) {
+  // ไม่ได้กำลังเปลี่ยน "เข้า" สถานะที่ล็อกไว้ (หรืออยู่สถานะนั้นมาแต่เดิม) → ส่งคำขอได้เลย
+  // สายอนุมัติ: admin ข้าม gate ฝั่ง server อยู่แล้ว → ไม่ต้องดัก ไม่งั้นจะบล็อกสิ่งที่บันทึกผ่านได้จริง
+  // สาย IA: ด่านฝั่ง server ไม่ยกเว้น admin จึงต้องดักทุก role
+  if ((skipAdmin && role === 'admin') || !locked.includes(current) || current === original) {
     proceed();
     return;
   }
@@ -2736,30 +2753,30 @@ function guardApprovalConStatus(proceed) {
   if (!original || !originalText) {
     Swal.fire({
       icon: 'warning',
-      title: 'ต้องอนุมัติก่อนจึงใช้สถานะนี้ได้',
+      title: title,
       html:
         'สถานะ <strong>' +
         currentText +
-        '</strong> ต้องผ่านการอนุมัติก่อน<br>' +
-        '<small class="text-muted">กรุณาเปลี่ยนเป็นสถานะอื่นก่อนส่งคำขออนุมัติ</small>'
+        '</strong> ' + reasonText + '<br>' +
+        '<small class="text-muted">กรุณาเปลี่ยนเป็นสถานะอื่นก่อนส่งคำขอ</small>'
     }).then(gotoConStatus);
     return;
   }
 
   Swal.fire({
     icon: 'warning',
-    title: 'ต้องอนุมัติก่อนจึงใช้สถานะนี้ได้',
+    title: title,
     html:
       'สถานะ <strong>' +
       currentText +
-      '</strong> ต้องผ่านการอนุมัติก่อน — ส่งคำขอทั้งอย่างนี้จะถูกตีกลับ<br>' +
+      '</strong> ' + reasonText + ' — ส่งคำขอทั้งอย่างนี้จะบันทึกไม่ผ่าน<br>' +
       '<small class="text-muted">ส่งคำขอโดยคงสถานะ <strong>' +
       originalText +
-      '</strong> ไว้ก่อน แล้วค่อยกลับมาเปลี่ยนสถานะหลังอนุมัติผ่าน</small>',
+      '</strong> ไว้ก่อน แล้วค่อยกลับมาเปลี่ยนสถานะทีหลัง</small>',
     showCancelButton: true,
     confirmButtonColor: '#6c5ffc',
     cancelButtonColor: '#6c757d',
-    confirmButtonText: 'คงสถานะ "' + originalText + '" แล้วขออนุมัติต่อ',
+    confirmButtonText: 'คงสถานะ "' + originalText + '" แล้วส่งคำขอต่อ',
     cancelButtonText: 'กลับไปแก้สถานะเอง',
     reverseButtons: true
   }).then(result => {
@@ -2779,6 +2796,37 @@ $(document).on('click', '#btnRequestNormal', function () {
     $('#btnUpdatePurchase').trigger('click');
     disablePreviewFooterButtons();
   });
+});
+
+// ปุ่มส่งขอ IA ตรวจสอบ — บันทึกข้อมูลที่แก้ไว้ก่อน แล้วเซิร์ฟเวอร์ค่อยยิงเมลให้ GM
+// ใช้ทางเดียวกับปุ่มขออนุมัติ (action_type + submit ฟอร์ม) เพื่อให้ผู้ตรวจเปิดลิงก์มาแล้ว
+// เห็นข้อมูลชุดเดียวกับที่ผู้ขอเห็นตอนกดปุ่ม ไม่ใช่ของเก่าก่อนแก้
+$(document).on('click', '#btnRequestIaCheck', function () {
+  // ด่านสถานะ: ยังเปลี่ยนเข้า "ส่งมอบ" ไม่ได้จนกว่า IA จะติ๊กให้ → คงสถานะเดิมไว้ก่อน
+  // ไม่ยกเว้น admin เพราะด่าน IA ฝั่งเซิร์ฟเวอร์ก็ไม่ยกเว้น
+  guardConStatus(
+    IA_LOCKED_STATUS,
+    'ต้องให้ IA ตรวจสอบก่อนจึงใช้สถานะนี้ได้',
+    'ต้องผ่านการตรวจสอบ (IA) ก่อน',
+    () => {
+      Swal.fire({
+        title: 'ส่งขอ IA ตรวจสอบ?',
+        html: 'ระบบจะ<strong>บันทึกข้อมูลในใบจองนี้</strong> แล้วส่งอีเมลให้ GM พร้อมลิงก์เปิดใบจอง',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#0d6efd',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'บันทึกและส่งคำขอ',
+        cancelButtonText: 'ยกเลิก'
+      }).then(result => {
+        if (!result.isConfirmed) return;
+        $('#action_type').val('request_ia');
+        $('#btnUpdatePurchase').trigger('click');
+        disablePreviewFooterButtons();
+      });
+    },
+    false
+  );
 });
 
 // ปุ่มดึงคำขอกลับ (admin เท่านั้น — backend กันเคสที่อนุมัติไปแล้ว)
