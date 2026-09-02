@@ -369,12 +369,21 @@ class Salecar extends Model
 	 */
 	public function scopeSalesQualifying($query)
 	{
+		$table = $this->getTable();
+
+		// brand ที่ "ขายให้ดีลเลอร์อื่น (OTHDealer) ก็ได้คอม" — ตั้งที่ config/car_commission.php
+		// brand อื่นตัด dealer ออกจากคอมตามเดิม
+		$dealerOkBrands = array_map('intval', (array) config('car_commission.dealer_sale_earns_commission_brands', []));
+
 		return $query
-			->where($this->getTable() . '.type_sale', 1)
+			->where($table . '.type_sale', 1)
 			->whereHas('carOrder', fn($c) => $c->withoutGlobalScopes()
-				->where('purchase_type', 2)
-				->where(fn($q) => $q->where('purchase_source', '!=', 'OTHDealer')
-					->orWhereNull('purchase_source')));
+				->where('purchase_type', 2))
+			->where(fn($q) => $q
+				->whereHas('carOrder', fn($c) => $c->withoutGlobalScopes()
+					->where(fn($w) => $w->where('purchase_source', '!=', 'OTHDealer')
+						->orWhereNull('purchase_source')))
+				->when($dealerOkBrands, fn($w) => $w->orWhereIn($table . '.brand', $dealerOkBrands)));
 	}
 
 	public function carOrderHistories()
@@ -648,9 +657,11 @@ class Salecar extends Model
 			return true;
 		}
 	
+		// ใส่ key ของ brand ไว้แล้วเป็น null = "แบรนด์นี้ไม่มีวันตัด" (ห้ามใช้ ?? เพราะ null จะตกไปใช้ค่ากลาง)
 		$perBrand = (array) config('car_commission.over_ceiling_car_commission_from_brand', []);
-		$from = $perBrand[(int) $this->brand]
-			?? config('car_commission.over_ceiling_car_commission_from');
+		$from = array_key_exists((int) $this->brand, $perBrand)
+			? $perBrand[(int) $this->brand]
+			: config('car_commission.over_ceiling_car_commission_from');
 	
 		if ($from === null || $from === '') {
 			return true;   // ไม่ตั้งวันตัด = ใช้กติกาใหม่กับทุกคัน

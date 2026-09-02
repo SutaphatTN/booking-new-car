@@ -114,11 +114,9 @@ class CarCommissionQuery
             ->with('model')
             ->whereNotNull('DeliveryInCKDate')
             ->whereBetween('DeliveryInCKDate', [$from, $to])
-            ->where('type_sale', self::SALE_TYPE_NORMAL)
-            ->whereHas('carOrder', fn($c) => $c->withoutGlobalScopes(['userAccess', 'saleTeam'])
-                ->where('purchase_type', self::PURCHASE_TYPE_RETAIL)
-                ->where(fn($q) => $q->where('purchase_source', '!=', self::SOURCE_DEALER)
-                    ->orWhereNull('purchase_source')))
+            // ใช้ scope ตัวเดียวกับคอมพื้นฐาน (Salecar::scopeSalesQualifying) — เดิมก๊อปเงื่อนไขมาไว้ที่นี่
+            // ทำให้กติกา "รถแบบไหนได้คอม" มี 2 ชุดต้องแก้พร้อมกัน พลาดทีเดียวคอมตัวรถกับคอมพื้นฐานไม่ตรงกัน
+            ->salesQualifying()
             // DeliveryInCKDate : ใช้เทียบวันตัดใน earnsCarCommission()
             ->get(['id', 'SaleID', 'brand', 'model_id', 'balanceCampaign', 'DeliveryInCKDate']);
 

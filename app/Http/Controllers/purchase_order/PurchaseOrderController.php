@@ -1852,6 +1852,14 @@ class PurchaseOrderController extends Controller
             $iaGated = $saleCar->needsIaCheck();
             $canIaCheck = !$iaGated || Auth::user()->canIaCheck();
 
+            // ลายเซ็นอนุมัติ 3 ตัว แก้ด้วยมือได้เฉพาะ admin/gm/md (User::APPROVAL_SIGNATURE_ROLES)
+            // role อื่นช่องถูก disable ในฟอร์ม — แต่ checkbox ที่ไม่ติ๊กกับที่ถูก disable ส่งค่ามาเหมือนกัน
+            // (คือไม่ส่งเลย) จึงเช็ค $request->has() แยกไม่ออก ต้องตัดสินจาก role อย่างเดียว
+            // ต้องมีธง signature_fields_editable ด้วย = ฟอร์มนี้ช่องลายเซ็นเปิดให้ติ๊กจริง
+            // (ใบที่ปิดแล้วช่องถูก disable ทุก role และฟอร์มเก่าก่อน deploy ไม่มีธง → คงค่าเดิมไว้)
+            $canEditApprovalSig = Auth::user()->canEditApprovalSignature()
+                && $request->boolean('signature_fields_editable');
+
             $data = [
                 // ผู้ขาย: ย้ายได้เฉพาะ role ที่มีสิทธิ์ — role อื่นบังคับใช้ค่าเดิมเสมอ (กันแก้ผ่าน devtools)
                 // ขาย Dealer ไม่นับยอด/ไม่คิดคอม → ล้าง SaleID ทิ้งเสมอ (ฟอร์มปิดช่อง จึงไม่ถูกส่งมา)
@@ -1995,8 +2003,12 @@ class PurchaseOrderController extends Controller
                 'budget_deduct' => $request->filled('budget_deduct')
                     ? str_replace(',', '', $request->budget_deduct)
                     : null,
-                'ApprovalSignature' => $request->ApprovalSignature,
-                'ApprovalSignatureDate' => $this->toGregorian($request->ApprovalSignatureDate),
+                'ApprovalSignature' => $canEditApprovalSig
+                    ? $request->ApprovalSignature
+                    : $saleCar->ApprovalSignature,
+                'ApprovalSignatureDate' => $canEditApprovalSig
+                    ? $this->toGregorian($request->ApprovalSignatureDate)
+                    : $saleCar->ApprovalSignatureDate,
                 'FinanceAmount' => $request->FinanceAmount,
                 'InterestRate' => $request->InterestRate,
                 'InterestCampaignID' => $request->InterestCampaignID,
@@ -2004,8 +2016,12 @@ class PurchaseOrderController extends Controller
                 'EXC_ALP' => $request->EXC_ALP,
                 'INC_ALP' => $request->INC_ALP,
                 'ALPAmount' => $request->ALPAmount,
-                'SMSignature' => $request->SMSignature,
-                'SMCheckedDate' => $this->toGregorian($request->SMCheckedDate),
+                'SMSignature' => $canEditApprovalSig
+                    ? $request->SMSignature
+                    : $saleCar->SMSignature,
+                'SMCheckedDate' => $canEditApprovalSig
+                    ? $this->toGregorian($request->SMCheckedDate)
+                    : $saleCar->SMCheckedDate,
                 'AdminSignature' => $request->AdminSignature,
                 'AdminCheckedDate' => $this->toGregorian($request->AdminCheckedDate),
                 // "ตรวจสอบรายการ (IA)" ติ๊กได้เฉพาะ User::IA_CHECK_ROLES — role อื่นช่องถูก disable
@@ -2014,8 +2030,12 @@ class PurchaseOrderController extends Controller
                 'CheckerCheckedDate' => $canIaCheck
                     ? $this->toGregorian($request->CheckerCheckedDate)
                     : $saleCar->CheckerCheckedDate,
-                'GMApprovalSignature' => $request->GMApprovalSignature,
-                'GMApprovalSignatureDate' => $this->toGregorian($request->GMApprovalSignatureDate),
+                'GMApprovalSignature' => $canEditApprovalSig
+                    ? $request->GMApprovalSignature
+                    : $saleCar->GMApprovalSignature,
+                'GMApprovalSignatureDate' => $canEditApprovalSig
+                    ? $this->toGregorian($request->GMApprovalSignatureDate)
+                    : $saleCar->GMApprovalSignatureDate,
                 'DeliveryEstimateDate' => $this->toGregorian($request->DeliveryEstimateDate),
                 'Note' => $request->Note,
                 // ช่องป้ายแดงมีเฉพาะ role ใน RED_PLATE_ROLES — role อื่นไม่ส่งมา ต้องคงค่าเดิม ไม่งั้นบันทึกทีเดียวป้ายหลุด
@@ -2109,6 +2129,36 @@ class PurchaseOrderController extends Controller
                     'success' => false,
                     'message' => 'ต้องระบุป้ายแดงก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"',
                 ], 422);
+            }
+
+            // ── กันฟอร์มเก่าเขียน "ลายเซ็นอนุมัติ" ที่ถูกล้างไปแล้วกลับมา ──
+            // ช่องลายเซ็น 3 ตัวถูก render ตอนเปิดหน้า ถ้าระหว่างที่หน้าเปิดค้างมีคน "ดึงคำขอกลับ" /
+            // ตีกลับ / อนุมัติผ่านลิงก์ในอีเมล ค่าที่ฟอร์มส่งมาจะเป็นของเก่าแล้วทับสถานะล่าสุดทันที
+            // (เคสจริง: ใบ 817 admin ดึงคำขอกลับ 13:35:30 → มีคนกดบันทึกจากหน้าเก่า 13:36:03
+            //  ลายเซ็นผู้จัดการ+GM กลับมาเป็น 1 → ใบค้างสถานะ "อนุมัติแล้ว" ทั้งที่ไม่มีคำขอ
+            //  และปุ่มขออนุมัติใหม่ไม่ขึ้น เพราะ preview เห็นว่าอนุมัติแล้ว)
+            // เทียบ orig_* (ค่า ณ ตอนเปิดหน้า) กับค่าปัจจุบันใน DB — ไม่ตรง = ฟอร์มเก่า ให้คงค่าใน DB ไว้
+            $signatureDateFields = [
+                'SMSignature'         => 'SMCheckedDate',
+                'ApprovalSignature'   => 'ApprovalSignatureDate',
+                'GMApprovalSignature' => 'GMApprovalSignatureDate',
+            ];
+
+            $staleSignatureForm = false;
+            foreach (array_keys($signatureDateFields) as $sigField) {
+                // ฟอร์มเก่าก่อน deploy ไม่มี orig_* → ข้ามไป (พฤติกรรมเดิม)
+                if ($request->has("orig_{$sigField}")
+                    && (int) $request->input("orig_{$sigField}") !== (int) ($saleCar->$sigField ?? 0)) {
+                    $staleSignatureForm = true;
+                    break;
+                }
+            }
+
+            if ($staleSignatureForm) {
+                foreach ($signatureDateFields as $sigField => $dateField) {
+                    $data[$sigField]  = $saleCar->$sigField;
+                    $data[$dateField] = $saleCar->$dateField;
+                }
             }
 
             // ── ราคารถเปลี่ยน → รีเซ็ตการอนุมัติ ต้องขอใหม่ ──
@@ -2818,7 +2868,10 @@ class PurchaseOrderController extends Controller
             // คำขออนุมัติล่วงหน้า (ยังไม่เป็นการจอง) → กลับหน้าโมดูลของมัน ไม่ใช่รายการจอง
             return response()->json([
                 'success'  => true,
-                'message'  => 'บันทึกข้อมูลเรียบร้อยแล้ว',
+                // บอกให้รู้ตัวว่าหน้าที่เปิดค้างไว้เก่าไปแล้ว ไม่งั้นจะงงว่าทำไมลายเซ็นไม่เป็นอย่างที่เห็นบนหน้าจอ
+                'message'  => $staleSignatureForm
+                    ? 'บันทึกข้อมูลเรียบร้อยแล้ว — สถานะอนุมัติของใบนี้ถูกเปลี่ยนจากที่อื่นระหว่างที่หน้านี้เปิดค้าง ระบบคงสถานะล่าสุดไว้ กรุณารีเฟรชหน้าเพื่อดูค่าปัจจุบัน'
+                    : 'บันทึกข้อมูลเรียบร้อยแล้ว',
                 'redirect' => $saleCar->is_pre_approval
                     ? route('pre-approval.index')
                     : route('purchase-order.index'),
@@ -4008,7 +4061,8 @@ class PurchaseOrderController extends Controller
         // ดึงรายคัน (พร้อม relation ที่ต้องใช้คิดค่าคอมสด) แล้วค่อยรวมต่อเซลล์ใน PHP
         // — ใช้ effectiveCommissionSale() เพื่อรองรับเคสเกิน over_budget ที่ใช้ยอดหักของ manager
         $rows = SaleCommissionQuery::base($user, false, $fromDate, $toDate)
-            ->with(['model', 'saleUser.branchInfo'])
+            // withTrashed : เซลล์ที่ถูกลบชื่อไปแล้วต้องยังโชว์ชื่อในค่าคอมเดือนที่เขายังขายอยู่
+            ->with(['model', 'saleUser' => fn($q) => $q->withTrashed()->with('branchInfo')])
             ->when(in_array($user->role, ['sale', 'lead_sale']), function ($q) use ($user) {
                 $visibleSaleIds = [$user->id];
                 if ($user->role === 'lead_sale') {
@@ -4023,6 +4077,9 @@ class PurchaseOrderController extends Controller
             return (object) [
                 'SaleID'           => $saleId,
                 'saleUser'         => $first->saleUser,
+                // brand ของ "รถ" ไม่ใช่ของตัวเซลล์ — เซลล์ที่ย้ายแบรนด์แล้ว (เช่น ขาย GWM อยู่แล้วย้ายไป Lepas)
+                // ต้องคิดคอมย้อนหลังด้วยกติกาของแบรนด์ที่ขายตอนนั้น ไม่ใช่แบรนด์ที่สังกัดวันนี้
+                'brand'            => (int) $first->brand,
                 'total_cars'       => $group->count(),
                 'total_commission' => (float) $group->sum(fn($r) => $r->effectiveCommissionSale()),
             ];
@@ -4057,11 +4114,12 @@ class PurchaseOrderController extends Controller
                 ->unique()
                 ->diff($saleCar->keys());
             if ($missingIds->isNotEmpty()) {
-                $extraUsers = User::with('branchInfo')->whereIn('id', $missingIds)->get()->keyBy('id');
+                $extraUsers = User::withTrashed()->with('branchInfo')->whereIn('id', $missingIds)->get()->keyBy('id');
                 foreach ($missingIds as $sid) {
                     $saleCar->put($sid, (object) [
                         'SaleID'           => $sid,
                         'saleUser'         => $extraUsers->get($sid),
+                        'brand'            => $viewerBrand,   // ไม่มีรถในเดือนนี้ ใช้แบรนด์ของหน้าที่กำลังดู
                         'total_cars'       => 0,
                         'total_commission' => 0.0,
                     ]);
@@ -4082,9 +4140,15 @@ class PurchaseOrderController extends Controller
         // ยอดสุทธิ = "เงินเข้ารอบจ่ายของเดือนนี้" ให้ตรงกับตัวเลขใหญ่ในหน้ารายละเอียด
         //   base + คอมตัวรถ + SSI  +(กั๊กยกมาจากเดือนก่อน) −(กั๊กที่ยกไป) −(พักไว้ DD ว่าง)
         // SSI/กั๊ก เป็นของ brand 1 → คิดเฉพาะตอนดูหน้า brand 1 (brand 3 ใช้เซลล์ร่วมกับ brand 1 จึง gate ด้วย viewer brand)
-        $saleCar = $saleCar->map(function ($s) use ($adjustments, $ssiPerSale, $carCommission, $viewerBrand, $payOffset) {
+        // โบนัส budget ที่เหลือ × 30% (brand 2, ถึงเดือน BudgetWallet::LAST_MONTH) — ต้องบวกให้ตรงกับหน้ารายละเอียด
+        // ดึงทีเดียวทั้งเดือน (2 query) ไม่ใช่ยิงต่อเซลล์
+        $budgetBonus = $viewerBrand === 2
+            ? BudgetWallet::bonusPerSale($year, $month, $saleCar->keys()->map(fn($k) => (int) $k)->all())
+            : [];
+
+        $saleCar = $saleCar->map(function ($s) use ($adjustments, $ssiPerSale, $carCommission, $viewerBrand, $payOffset, $budgetBonus) {
             $adj = $adjustments->get($s->SaleID);
-            $brand = (int) ($s->saleUser->brand ?? 0);
+            $brand = (int) ($s->brand ?? $viewerBrand);   // brand ของรถในเดือนนั้น (ไม่ใช่แบรนด์ที่เซลล์สังกัดวันนี้)
             $net = $adj
                 ? $adj->computeNet($s->total_commission, $brand)
                 : $s->total_commission;
@@ -4094,6 +4158,7 @@ class PurchaseOrderController extends Controller
                 $net += (float) ($ssiPerSale[$s->SaleID]['amount'] ?? 0);
                 $net += (float) ($payOffset[(int) $s->SaleID] ?? 0);
             }
+            $net += (float) ($budgetBonus[(int) $s->SaleID] ?? 0);
             $s->net_commission = $net;
             return $s;
         })->values()->sortByDesc('net_commission')->values();
@@ -4101,9 +4166,20 @@ class PurchaseOrderController extends Controller
         $showEmoji = !in_array($user->role, ['sale', 'lead_sale']) && $saleCar->count() > 1;
         $lastIndex = $saleCar->count() - 1;
 
-        $data = $saleCar->map(function ($s, $index) use ($showEmoji, $lastIndex) {
-            $nameSale = $s->saleUser->name ?? '-';
+        $brandNames = config('brand.names', []);
+
+        $data = $saleCar->map(function ($s, $index) use ($showEmoji, $lastIndex, $brandNames) {
+            $nameSale = $s->saleUser->name ?? '(ไม่พบผู้ใช้ #' . $s->SaleID . ')';
             $branchSale = $s->saleUser->branchInfo->name ?? '-';
+
+            // เซลล์ที่ถูกลบ / ย้ายไปแบรนด์อื่นแล้ว ยังต้องเห็นชื่อ + รู้ว่าทำไมถึงยังมียอดค้างอยู่ตรงนี้
+            $note = '';
+            if ($s->saleUser && $s->saleUser->trashed()) {
+                $note = ' <span class="badge bg-secondary">ลาออกแล้ว</span>';
+            } elseif ($s->saleUser && (int) $s->saleUser->brand !== (int) $s->brand) {
+                $moved = $brandNames[(int) $s->saleUser->brand] ?? ('brand ' . (int) $s->saleUser->brand);
+                $note = ' <span class="badge bg-warning text-dark">ย้ายไป ' . e($moved) . ' แล้ว</span>';
+            }
 
             $emoji = '';
             if ($showEmoji) {
@@ -4114,7 +4190,7 @@ class PurchaseOrderController extends Controller
                 }
             }
 
-            $sale = "{$nameSale}{$emoji}<br>(สาขา : {$branchSale})";
+            $sale = "{$nameSale}{$emoji}{$note}<br>(สาขา : {$branchSale})";
 
             return [
                 'No' => $index + 1,
@@ -4161,7 +4237,8 @@ class PurchaseOrderController extends Controller
             ->where('SaleID', $saleId)
             ->get();
 
-        $saleUser = User::with('branchInfo')->find($saleId);
+        // withTrashed : เซลล์ที่ลาออกแล้วต้องยังเปิดดูค่าคอมย้อนหลังได้ (ไม่งั้นชื่อหาย ยอดลอย)
+        $saleUser = User::withTrashed()->with('branchInfo')->find($saleId);
 
         // กันเปิดข้ามทีมด้วยการยิง URL ตรง — ต้องเช็คเอง เพราะ $carData/$rounds ด้านล่าง
         // อ่านจาก CarCommissionQuery ที่ปลด scope ไว้ (ตัวเลขของทีมอื่นจะหลุดมาแม้ตารางรายคันว่าง)
@@ -4251,7 +4328,9 @@ class PurchaseOrderController extends Controller
             'month'  => $month,
         ]);
 
-        $brand = (int) ($saleUser->brand ?? 0);
+        // brand ของ "รถ" ในเดือนนั้น ไม่ใช่แบรนด์ที่เซลล์สังกัดวันนี้ — เซลล์ที่ย้ายแบรนด์แล้ว
+        // ต้องคิดคอม + เห็นฟอร์มของแบรนด์ที่ขายตอนนั้น (เดือนที่ไม่มีรถ = ใช้แบรนด์ของหน้าที่กำลังดู)
+        $brand = (int) ($rows->first()->brand ?? $viewerBrand);
 
         // คอม SSI (brand 1, เฉพาะเดือน 3/10) — เฉลี่ยแยกสาขา + เกณฑ์ ≥18 คัน/≥1 ทุกเดือน
         $ssi = SsiCommissionQuery::forPeriod($year, $month);
@@ -4339,13 +4418,21 @@ class PurchaseOrderController extends Controller
         $months = [1 => 'มกราคม', 2 => 'กุมภาพันธ์', 3 => 'มีนาคม', 4 => 'เมษายน', 5 => 'พฤษภาคม', 6 => 'มิถุนายน', 7 => 'กรกฎาคม', 8 => 'สิงหาคม', 9 => 'กันยายน', 10 => 'ตุลาคม', 11 => 'พฤศจิกายน', 12 => 'ธันวาคม'];
 
         // budget ยกมา (brand 2) — กระเป๋าตังค์จากรถส่งมอบเดือนก่อน × 1,000 ; หักผ่าน budget_deduct ต่อคัน
-        $carried = $brand === 2 ? BudgetWallet::carried((int) $saleId, $year, $month) : 0.0;
+        // ใช้ถึงเดือน BudgetWallet::LAST_MONTH เท่านั้น หลังจากนั้นตัดทั้งก้อน (ไม่มีกล่อง/ช่องหัก/โบนัส)
+        $budgetActive = $brand === 2 && BudgetWallet::activeFor($year, $month);
         $budget = [
-            'active'    => $brand === 2,
-            'carried'   => $carried,
-            'used'      => $brand === 2 ? BudgetWallet::used((int) $saleId, $year, $month) : 0.0,
-            'remaining' => $brand === 2 ? BudgetWallet::remaining((int) $saleId, $year, $month) : 0.0,
+            'active'     => $budgetActive,
+            'carried'    => $budgetActive ? BudgetWallet::carried((int) $saleId, $year, $month) : 0.0,
+            'used'       => $budgetActive ? BudgetWallet::used((int) $saleId, $year, $month) : 0.0,
+            'remaining'  => $budgetActive ? BudgetWallet::remaining((int) $saleId, $year, $month) : 0.0,
+            'bonus_rate' => BudgetWallet::BONUS_RATE,
+            // budget ที่เหลือ × 30% → คืนให้เซลล์ รวมเข้ายอดค่าคอมสุทธิ
+            'bonus'      => $budgetActive ? BudgetWallet::bonus((int) $saleId, $year, $month) : 0.0,
         ];
+
+        // โบนัส budget เป็นเงินที่เซลล์ได้จริง → รวมเข้ายอดสุทธิ
+        // (ไม่ต้องแตะ $rounds เพราะรอบจ่าย/คอมกั๊กเป็นของ brand 1 ส่วน budget เป็นของ brand 2 ไม่มีทางชนกัน)
+        $net += $budget['bonus'];
 
         return view('purchase-order.commission.sale-detail', [
             'canEdit'        => $canEditCommission,

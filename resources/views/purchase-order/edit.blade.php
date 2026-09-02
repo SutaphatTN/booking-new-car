@@ -19,6 +19,10 @@
   $iaGated = (int) $saleCar->brand === \App\Models\Salecar::IA_GATE_BRAND;
   $canIaCheck = !$iaGated || auth()->user()->canIaCheck();
   $iaDisabled = $canIaCheck ? $disabled : 'disabled';
+  // ลายเซ็นอนุมัติ 3 ตัว — แก้ด้วยมือได้เฉพาะ User::APPROVAL_SIGNATURE_ROLES (admin/gm/md)
+  // role อื่นเห็นการ์ดแต่ช่องถูกล็อก และ server ไม่รับค่าจากฟอร์ม (คงค่าใน DB ไว้)
+  $canEditApprovalSig = auth()->user()->canEditApprovalSignature();
+  $approvalSigDisabled = $canEditApprovalSig ? $disabled : 'disabled';
   $carLocked = !empty($saleCar->CarOrderID);
   $carLockedStyle = $carLocked ? 'pointer-events:none;background-color:#f8f9fa;' : '';
 @endphp
@@ -2778,6 +2782,20 @@
                       <div class="po-section-body-edit">
                         <div class="row g-3">
 
+                          {{-- ค่าลายเซ็น ณ ตอนเปิดหน้า — server ใช้เทียบว่าฟอร์มนี้เก่าไปแล้วหรือยัง
+                               ถ้าระหว่างเปิดหน้าค้างมีคนดึงคำขอกลับ/ตีกลับ/อนุมัติผ่านอีเมล
+                               ค่าที่ฟอร์มส่งไปจะเป็นของเก่า → update() จะไม่เอาไปทับ (ดู $staleSignatureForm) --}}
+                          {{-- ธงว่า "ช่องลายเซ็นในฟอร์มนี้ติ๊กได้จริง" — ส่งเมื่อ role มีสิทธิ์ + ใบยังไม่ปิดเท่านั้น
+                               ไม่มีธง = ช่องถูก disable (ไม่ส่งค่ามา) → server ต้องคงค่าเดิม ห้ามตีความว่า "ปลดติ๊ก" --}}
+                          @if ($canEditApprovalSig && !$isHistory)
+                            <input type="hidden" name="signature_fields_editable" value="1">
+                          @endif
+                          <input type="hidden" name="orig_SMSignature" value="{{ $saleCar->SMSignature ? 1 : 0 }}">
+                          <input type="hidden" name="orig_ApprovalSignature"
+                            value="{{ $saleCar->ApprovalSignature ? 1 : 0 }}">
+                          <input type="hidden" name="orig_GMApprovalSignature"
+                            value="{{ $saleCar->GMApprovalSignature ? 1 : 0 }}">
+
                           <div class="col-md-6">
                             <div class="approval-card @if ($saleCar->AdminSignature) approved @endif">
                               <div class="approval-card-header">
@@ -2834,57 +2852,91 @@
                           </div>
 
                           <div class="col-md-6">
-                            <div class="approval-card @if ($saleCar->SMSignature) approved @endif">
+                            <div
+                              class="approval-card @if ($saleCar->SMSignature) approved @endif @unless ($canEditApprovalSig) locked @endunless"
+                              @unless ($canEditApprovalSig) title="แก้ด้วยมือได้เฉพาะ Admin / GM / MD" @endunless>
                               <div class="approval-card-header">
                                 <div class="approval-icon amber"><i class="bx bx-medal"></i></div>
-                                <div class="approval-title">ผู้จัดการ อนุมัติการขาย</div>
+                                <div class="approval-title">
+                                  ผู้จัดการ อนุมัติการขาย
+                                  @unless ($canEditApprovalSig)
+                                    <i class="bx bx-lock-alt ms-1 text-muted"></i>
+                                  @endunless
+                                </div>
                                 <div class="ms-auto">
                                   <div class="form-check form-switch m-0">
                                     <input class="form-check-input" type="checkbox" id="SMSignature"
                                       name="SMSignature" value="1"
-                                      {{ $saleCar->SMSignature ? 'checked' : '' }}>
+                                      {{ $saleCar->SMSignature ? 'checked' : '' }} {{ $approvalSigDisabled }}>
                                   </div>
                                 </div>
                               </div>
                               <div class="approval-card-body">
                                 <label for="SMCheckedDate" class="more-field-label mb-1">วันที่อนุมัติ</label>
                                 <input class="form-control" type="date" id="SMCheckedDate" name="SMCheckedDate"
-                                  value="{{ $saleCar->SMCheckedDate }}">
+                                  value="{{ $saleCar->SMCheckedDate }}" {{ $approvalSigDisabled }}>
+                                @unless ($canEditApprovalSig)
+                                  <div class="approval-locked-note">
+                                    <i class="bx bx-info-circle me-1"></i>
+                                    ลายเซ็นนี้มาจากการกดอนุมัติในอีเมล — แก้ด้วยมือได้เฉพาะ Admin / GM / MD
+                                  </div>
+                                @endunless
                               </div>
                             </div>
                           </div>
 
                           <div class="col-md-6">
-                            <div class="approval-card @if ($saleCar->ApprovalSignature) approved @endif">
+                            <div
+                              class="approval-card @if ($saleCar->ApprovalSignature) approved @endif @unless ($canEditApprovalSig) locked @endunless"
+                              @unless ($canEditApprovalSig) title="แก้ด้วยมือได้เฉพาะ Admin / GM / MD" @endunless>
                               <div class="approval-card-header">
                                 <div class="approval-icon rose"><i class="bx bx-trending-up"></i></div>
-                                <div class="approval-title">ผู้จัดการ อนุมัติกรณีงบเกิน</div>
+                                <div class="approval-title">
+                                  ผู้จัดการ อนุมัติกรณีงบเกิน
+                                  @unless ($canEditApprovalSig)
+                                    <i class="bx bx-lock-alt ms-1 text-muted"></i>
+                                  @endunless
+                                </div>
                                 <div class="ms-auto">
                                   <div class="form-check form-switch m-0">
                                     <input class="form-check-input" type="checkbox" id="ApprovalSignature"
                                       name="ApprovalSignature" value="1"
-                                      {{ $saleCar->ApprovalSignature ? 'checked' : '' }}>
+                                      {{ $saleCar->ApprovalSignature ? 'checked' : '' }} {{ $approvalSigDisabled }}>
                                   </div>
                                 </div>
                               </div>
                               <div class="approval-card-body">
                                 <label for="ApprovalSignatureDate" class="more-field-label mb-1">วันที่อนุมัติ</label>
                                 <input class="form-control" type="date" id="ApprovalSignatureDate"
-                                  name="ApprovalSignatureDate" value="{{ $saleCar->ApprovalSignatureDate }}">
+                                  name="ApprovalSignatureDate" value="{{ $saleCar->ApprovalSignatureDate }}"
+                                  {{ $approvalSigDisabled }}>
+                                @unless ($canEditApprovalSig)
+                                  <div class="approval-locked-note">
+                                    <i class="bx bx-info-circle me-1"></i>
+                                    ลายเซ็นนี้มาจากการกดอนุมัติในอีเมล — แก้ด้วยมือได้เฉพาะ Admin / GM / MD
+                                  </div>
+                                @endunless
                               </div>
                             </div>
                           </div>
 
                           <div class="col-md-6">
-                            <div class="approval-card @if ($saleCar->GMApprovalSignature) approved @endif">
+                            <div
+                              class="approval-card @if ($saleCar->GMApprovalSignature) approved @endif @unless ($canEditApprovalSig) locked @endunless"
+                              @unless ($canEditApprovalSig) title="แก้ด้วยมือได้เฉพาะ Admin / GM / MD" @endunless>
                               <div class="approval-card-header">
                                 <div class="approval-icon pink"><i class="bx bx-crown"></i></div>
-                                <div class="approval-title">GM อนุมัติกรณีงบเกิน (N)</div>
+                                <div class="approval-title">
+                                  GM อนุมัติกรณีงบเกิน (N)
+                                  @unless ($canEditApprovalSig)
+                                    <i class="bx bx-lock-alt ms-1 text-muted"></i>
+                                  @endunless
+                                </div>
                                 <div class="ms-auto">
                                   <div class="form-check form-switch m-0">
                                     <input class="form-check-input" type="checkbox" id="GMApprovalSignature"
                                       name="GMApprovalSignature" value="1"
-                                      {{ $saleCar->GMApprovalSignature ? 'checked' : '' }}>
+                                      {{ $saleCar->GMApprovalSignature ? 'checked' : '' }} {{ $approvalSigDisabled }}>
                                   </div>
                                 </div>
                               </div>
@@ -2892,7 +2944,14 @@
                                 <label for="GMApprovalSignatureDate"
                                   class="more-field-label mb-1">วันที่อนุมัติ</label>
                                 <input class="form-control" type="date" id="GMApprovalSignatureDate"
-                                  name="GMApprovalSignatureDate" value="{{ $saleCar->GMApprovalSignatureDate }}">
+                                  name="GMApprovalSignatureDate" value="{{ $saleCar->GMApprovalSignatureDate }}"
+                                  {{ $approvalSigDisabled }}>
+                                @unless ($canEditApprovalSig)
+                                  <div class="approval-locked-note">
+                                    <i class="bx bx-info-circle me-1"></i>
+                                    ลายเซ็นนี้มาจากการกดอนุมัติในอีเมล — แก้ด้วยมือได้เฉพาะ Admin / GM / MD
+                                  </div>
+                                @endunless
                               </div>
                             </div>
                           </div>
