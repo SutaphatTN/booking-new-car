@@ -90,21 +90,27 @@ function loadMonthlyTarget() {
 $(document).on('click', '#btnSaveTarget', function () {
   const $btn = $(this);
   $btn.prop('disabled', true);
-  $.post('/purchase-order/commission-target', {
-    month: $('#commissionMonth').val(),
-    target: $('#monthlyTarget').val() || 0
-  }, function () {
-    if (commissionTable) commissionTable.ajax.reload(null, false);
-    loadMonthlyTarget();
-    if (window.Swal) {
-      Swal.fire({ icon: 'success', title: 'บันทึกเป้าแล้ว', timer: 1200, showConfirmButton: false });
+  $.post(
+    '/purchase-order/commission-target',
+    {
+      month: $('#commissionMonth').val(),
+      target: $('#monthlyTarget').val() || 0
+    },
+    function () {
+      if (commissionTable) commissionTable.ajax.reload(null, false);
+      loadMonthlyTarget();
+      if (window.Swal) {
+        Swal.fire({ icon: 'success', title: 'บันทึกเป้าแล้ว', timer: 1200, showConfirmButton: false });
+      }
     }
-  })
+  )
     .fail(function () {
       if (window.Swal) Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ' });
       else alert('บันทึกไม่สำเร็จ');
     })
-    .always(function () { $btn.prop('disabled', false); });
+    .always(function () {
+      $btn.prop('disabled', false);
+    });
 });
 
 $(document).ready(loadMonthlyTarget);
@@ -124,7 +130,7 @@ $(document).on('click', '.btnCommissionDetail', function () {
 
   const month = $('#commissionMonth').val();
   const $btn = $(this);
-  if ($btn.prop('disabled')) return;   // กันกดรัว ๆ ยิงซ้ำระหว่างรอ
+  if ($btn.prop('disabled')) return; // กันกดรัว ๆ ยิงซ้ำระหว่างรอ
 
   $btn.prop('disabled', true);
   $('#commissionLoadingOverlay').css('display', 'flex');
@@ -165,7 +171,7 @@ function recomputeCommissionNet() {
     net = base + num('com_discipline') + num('com_lead') + num('com_clip') - num('deduct_absence');
   }
   net -= num('deduct_other'); // หักอื่นๆ ใช้ทุก brand (ตรงกับ SaleCommissionMonthly::computeNet)
-  // คอมประดับยนต์ (ขายแยก) ใช้ทุก brand — บวกนอกฐาน จึงไม่โดนหัก 15% ตอนวินัยไม่ผ่าน
+  // คอมประดับยนต์ (หน้าร้าน) ใช้ทุก brand — บวกนอกฐาน จึงไม่โดนหัก 15% ตอนวินัยไม่ผ่าน
   net += num('com_accessory_sold');
   net += ssi + car + held;
 
@@ -179,8 +185,7 @@ $(document).on('input', '.cmoney', function () {
 });
 $(document).on('blur', '.cmoney', function () {
   if (this.value.trim() === '') return;
-  this.value = parseMoney(this.value)
-    .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  this.value = parseMoney(this.value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 });
 $(document).on('change', '#commissionMonthlyForm input[name="discipline_failed"]', recomputeCommissionNet);
 
@@ -228,17 +233,17 @@ function recomputeCarsTable() {
   let posTotal = 0;
   let negTotal = 0;
   let netTotal = 0;
-  let specialTotal = 0;   // รวมช่อง "คอมอื่นๆ" (แก้สดได้ จึงรวมที่นี่ ไม่ใช่ฝั่ง blade)
+  let specialTotal = 0; // รวมช่อง "คอมอื่นๆ" (แก้สดได้ จึงรวมที่นี่ ไม่ใช่ฝั่ง blade)
   $('.car-special-input').each(function () {
     const $row = $(this).closest('tr');
     const rowbase = parseFloat($(this).data('rowbase')) || 0;
-    const rowcar = parseFloat($(this).data('rowcar')) || 0;  // คอมตัวรถของคันนี้ (คงที่)
-    const rowneg = parseFloat($(this).data('rowneg')) || 0;  // หักเกินงบ (คงที่, ติดลบหรือ 0)
+    const rowcar = parseFloat($(this).data('rowcar')) || 0; // คอมตัวรถของคันนี้ (คงที่)
+    const rowneg = parseFloat($(this).data('rowneg')) || 0; // หักเกินงบ (คงที่, ติดลบหรือ 0)
     const special = parseMoney($(this).val());
     const budget = parseMoney($row.find('.car-budget-input').val()); // budget หัก (brand 2)
-    const rowTotal = rowbase + special + budget;  // = รวมค่าคอมรถของคันนี้ (มียอดติดลบรวมอยู่แล้ว)
-    const rowNet = rowTotal + rowcar;             // คอมสุทธิ = รวมค่าคอมรถ + คอมตัวรถ
-    const rowPos = rowNet - rowneg;               // รวมเงินได้ = คอมสุทธิ − (ยอดติดลบ)
+    const rowTotal = rowbase + special + budget; // = รวมค่าคอมรถของคันนี้ (มียอดติดลบรวมอยู่แล้ว)
+    const rowNet = rowTotal + rowcar; // คอมสุทธิ = รวมค่าคอมรถ + คอมตัวรถ
+    const rowPos = rowNet - rowneg; // รวมเงินได้ = คอมสุทธิ − (ยอดติดลบ)
     $row.find('.car-row-positive').text(fmt(rowPos));
     $row.find('.car-row-total').text(fmt(rowNet));
     base += rowTotal;
@@ -283,15 +288,16 @@ $(document).on('input', '.car-budget-input', function () {
 // ออกจากช่อง → เติมทศนิยม 2 ตำแหน่ง
 $(document).on('blur', '.car-special-input, .car-budget-input', function () {
   if (this.value.trim() === '') return;
-  this.value = parseMoney(this.value)
-    .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  this.value = parseMoney(this.value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 });
 // เปิด modal → จัด comma ค่าที่ server ส่งมา + คิดยอดครั้งแรก
 $(document).on('shown.bs.modal', '.commissionDetail', function () {
   $('.car-special-input, .car-budget-input, .cmoney').each(function () {
     if (this.value.trim() !== '') {
-      this.value = parseMoney(this.value)
-        .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      this.value = parseMoney(this.value).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
     }
   });
   recomputeCarsTable();
@@ -305,9 +311,9 @@ $(document).on('submit', '#commissionMonthlyForm', function (e) {
 
   // strip comma ช่องค่าคอมรายเดือน (backend validate numeric)
   const moneyFields = ['com_discipline', 'deduct_absence', 'deduct_other', 'com_lead', 'com_clip'];
-  const payload = $(this).serializeArray().map(f =>
-    moneyFields.includes(f.name) ? { name: f.name, value: parseMoney(f.value) } : f
-  );
+  const payload = $(this)
+    .serializeArray()
+    .map(f => (moneyFields.includes(f.name) ? { name: f.name, value: parseMoney(f.value) } : f));
   $('.car-special-input').each(function () {
     payload.push({ name: 'car_special[' + $(this).data('id') + ']', value: parseMoney($(this).val()) });
   });

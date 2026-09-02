@@ -3,7 +3,7 @@
   // ต้องตรงกับกลุ่ม [1,3,4] ใน SaleCommissionMonthly::computeNet เป๊ะ ๆ
   // (เดิมฟอร์ม brand 4 โชว์ช่อง วินัย/lead/clip แบบ brand 2 ทั้งที่ computeNet ไม่เอามาคิด → กรอกแล้วยอดไม่ขยับ)
   $isBrand13 = in_array((int) $brand, [1, 3, 4], true);
-  $isBrand2  = (int) $brand === 2;
+  $isBrand2 = (int) $brand === 2;
   // audit_lead / audit_dp = ดูอย่างเดียว (ไม่มีปุ่มบันทึก + ทุกช่องเป็น readonly/disabled)
   $canEdit = $canEdit ?? true;
   $roInput = $canEdit ? '' : 'readonly';
@@ -33,15 +33,44 @@
         {{-- ── รายชื่อลูกค้า / ค่าคอมรายคัน (อ้างอิง) ── --}}
         <style>
           /* หัวตาราง + ช่องตัวเลข ไม่ตัดคำ (ให้เลื่อนแนวนอนแทน) ; ชื่อลูกค้า/รุ่นรถ ห่อบรรทัดได้ */
-          .commission-cars-table th { white-space: nowrap; vertical-align: middle; }
-          .commission-cars-table td { vertical-align: middle; }
-          .commission-cars-table td:nth-child(n+4) { white-space: nowrap; }  /* คอลัมน์ตัวเลขทั้งหมด */
-          .commission-cars-table th:nth-child(2), .commission-cars-table th:nth-child(3) { min-width: 150px; }
+          .commission-cars-table th {
+            white-space: nowrap;
+            vertical-align: middle;
+          }
+
+          .commission-cars-table td {
+            vertical-align: middle;
+          }
+
+          .commission-cars-table td:nth-child(n+4) {
+            white-space: nowrap;
+          }
+
+          /* คอลัมน์ตัวเลขทั้งหมด */
+          .commission-cars-table th:nth-child(2),
+          .commission-cars-table th:nth-child(3) {
+            min-width: 150px;
+          }
+
           /* กลุ่มสรุปท้ายแถว : รวมเงินได้ / หักเกินงบ / คอมสุทธิ — ไล่โทนให้อ่านเป็นก้อนเดียว */
-          .commission-cars-table .col-sum-pos { background: #f0fdf4; border-left: 2px solid #86efac; }
-          .commission-cars-table .col-sum-neg { background: #fef2f2; }
-          .commission-cars-table .col-sum-net { background: #ecfdf5; border-left: 2px solid #34d399; }
-          .commission-cars-table .cell-note { font-size: .68rem; line-height: 1.3; }
+          .commission-cars-table .col-sum-pos {
+            background: #f0fdf4;
+            border-left: 2px solid #86efac;
+          }
+
+          .commission-cars-table .col-sum-neg {
+            background: #fef2f2;
+          }
+
+          .commission-cars-table .col-sum-net {
+            background: #ecfdf5;
+            border-left: 2px solid #34d399;
+          }
+
+          .commission-cars-table .cell-note {
+            font-size: .68rem;
+            line-height: 1.3;
+          }
         </style>
         <div class="fw-bold mb-2"><i class="bx bx-list-ul me-1"></i> รายชื่อลูกค้าที่ส่งมอบในเดือนนี้</div>
         <div class="table-responsive mb-4">
@@ -52,8 +81,11 @@
                 <th>ลูกค้า</th>
                 <th>รุ่นรถ</th>
                 <th class="text-end" title="คอมตัวรถรายคัน — คันที่เกินงบทะลุเพดานไม่ได้คอมตัวรถ (แสดง 0)">คอมตัวรถ</th>
-                <th class="text-end" title="คอมงบเหลือ (สูตรอัตโนมัติ) — ถ้าเกินงบจะเป็น 0 แล้วยอดติดลบไปอยู่ช่องหักเกินงบ">งบเหลือ</th>
-                <th class="text-end" title="ยอดที่ผู้จัดการ/GM อนุมัติ กรณีเกินงบทะลุเพดาน — เฉพาะยอดที่เป็นบวก (ใบเก่า brand 1/3) ; กติกาใหม่กรอกเป็นยอดหัก จะไปอยู่ช่องหักเกินงบ">คอมที่ได้</th>
+                <th class="text-end"
+                  title="คอมงบเหลือ (สูตรอัตโนมัติ) — ถ้าเกินงบจะเป็น 0 แล้วยอดติดลบไปอยู่ช่องหักเกินงบ">งบเหลือ</th>
+                <th class="text-end"
+                  title="ยอดที่ผู้จัดการ/GM อนุมัติ กรณีเกินงบทะลุเพดาน — เฉพาะยอดที่เป็นบวก (ใบเก่า brand 1/3) ; กติกาใหม่กรอกเป็นยอดหัก จะไปอยู่ช่องหักเกินงบ">
+                  คอมที่ได้</th>
                 <th class="text-end">ประดับยนต์</th>
                 <th class="text-end">ดอกเบี้ย</th>
                 <th class="text-end">รถเทิร์น</th>
@@ -62,7 +94,8 @@
                   <th class="text-end">budget หัก</th>
                 @endif
                 <th class="text-end col-sum-pos" title="ผลรวมทุกยอดที่เป็นบวกของคันนี้">รวมเงินได้</th>
-                <th class="text-end col-sum-neg" title="ยอดหักจากการขายเกินงบ (สูตรอัตโนมัติ + ยอดหักที่ GM อนุมัติ)">หักเกินงบ</th>
+                <th class="text-end col-sum-neg" title="ยอดหักจากการขายเกินงบ (สูตรอัตโนมัติ + ยอดหักที่ GM อนุมัติ)">
+                  หักเกินงบ</th>
                 <th class="text-end col-sum-net" title="รวมเงินได้ − หักเกินงบ">คอมสุทธิ</th>
               </tr>
             </thead>
@@ -74,7 +107,7 @@
                 $sumAccessory = 0.0;
                 $sumInterest = 0.0;
                 $sumTurn = 0.0;
-                $sumWithheld = 0.0;   // รวมยอดที่ถูกกั๊ก/พักไว้ ยังไม่จ่ายรอบนี้
+                $sumWithheld = 0.0; // รวมยอดที่ถูกกั๊ก/พักไว้ ยังไม่จ่ายรอบนี้
               @endphp
               @forelse ($cars as $i => $c)
                 @php
@@ -98,9 +131,10 @@
                   // ยอดของคันนี้ที่ "ยังไม่จ่ายรอบนี้" — กั๊กยกไปรอบหน้า หรือพักไว้เพราะยังไม่รับรถ
                   // (ตรงกับที่ controller ใช้คิด $rounds['gak_total'] / $rounds['pending'])
                   $rowPending = ($rounds['active'] ?? false) && empty($c['mainPayDate']) ? $carCom : 0.0;
-                  $rowHeld = ($rounds['active'] ?? false) && !empty($c['mainPayDate']) && !empty($c['isHeld'])
-                      ? (float) $c['heldAmount']
-                      : 0.0;
+                  $rowHeld =
+                      ($rounds['active'] ?? false) && !empty($c['mainPayDate']) && !empty($c['isHeld'])
+                          ? (float) $c['heldAmount']
+                          : 0.0;
                   $sumWithheld += $rowPending + $rowHeld;
                 @endphp
                 <tr>
@@ -108,8 +142,12 @@
                   <td>
                     {{ $c['customer'] }}
                     <div class="text-muted" style="font-size:.72rem; line-height:1.4;">
-                      <div><i class="bx bx-calendar-check"></i> CK : {{ !empty($c['ckDate']) ? \Illuminate\Support\Carbon::parse($c['ckDate'])->format('d-m-Y') : '-' }}</div>
-                      <div><i class="bx bx-car"></i> DD : {{ !empty($c['ddDate']) ? \Illuminate\Support\Carbon::parse($c['ddDate'])->format('d-m-Y') : '— ยังไม่รับรถ' }}</div>
+                      <div><i class="bx bx-calendar-check"></i> CK :
+                        {{ !empty($c['ckDate']) ? \Illuminate\Support\Carbon::parse($c['ckDate'])->format('d-m-Y') : '-' }}
+                      </div>
+                      <div><i class="bx bx-car"></i> DD :
+                        {{ !empty($c['ddDate']) ? \Illuminate\Support\Carbon::parse($c['ddDate'])->format('d-m-Y') : '— ยังไม่รับรถ' }}
+                      </div>
                     </div>
                   </td>
                   <td>
@@ -124,7 +162,8 @@
                     {{-- ป้ายแดงขึ้นเฉพาะคันที่ "ไม่ได้คอมตัวรถ" จริง ๆ (เกินเพดาน + CK ก่อนวันตัด)
                          คันตั้งแต่วันตัดเป็นต้นไปถึงจะเกินเพดานก็ได้คอมตัวรถ จึงไม่ต้องขึ้นป้าย --}}
                     @if (!empty($c['noCarCom']))
-                      <div class="text-danger cell-note" title="เกินงบทะลุเพดาน (ก่อนวันเปลี่ยนกติกา) — ไม่ได้คอมตัวรถ แต่ยังนับจำนวนคัน">
+                      <div class="text-danger cell-note"
+                        title="เกินงบทะลุเพดาน (ก่อนวันเปลี่ยนกติกา) — ไม่ได้คอมตัวรถ แต่ยังนับจำนวนคัน">
                         <i class="bx bx-error-circle"></i> เกินงบทะลุเพดาน
                       </div>
                     @endif
@@ -151,18 +190,14 @@
                   <td class="text-end">{{ number_format($c['turnCarCom'], 2) }}</td>
                   <td class="text-end" style="min-width:120px;">
                     <input type="text" inputmode="decimal"
-                      class="form-control form-control-sm text-end car-special-input"
-                      data-id="{{ $c['id'] }}"
-                      data-rowbase="{{ $rowBase }}"
-                      data-rowcar="{{ $carCom }}"
-                      data-rowneg="{{ $rowNeg }}"
-                      value="{{ $c['specialCom'] }}" {{ $roInput }}>
+                      class="form-control form-control-sm text-end car-special-input" data-id="{{ $c['id'] }}"
+                      data-rowbase="{{ $rowBase }}" data-rowcar="{{ $carCom }}"
+                      data-rowneg="{{ $rowNeg }}" value="{{ $c['specialCom'] }}" {{ $roInput }}>
                   </td>
                   @if ($isBrand2)
                     <td class="text-end" style="min-width:120px;">
                       <input type="text" inputmode="decimal"
-                        class="form-control form-control-sm text-end car-budget-input"
-                        data-id="{{ $c['id'] }}"
+                        class="form-control form-control-sm text-end car-budget-input" data-id="{{ $c['id'] }}"
                         value="{{ $c['budgetDeduct'] ?: '' }}" placeholder="0" {{ $roInput }}>
                     </td>
                   @endif
@@ -186,11 +221,13 @@
                     <div class="car-row-total">{{ number_format($rowNet, 2) }}</div>
                     @if ($rounds['active'] ?? false)
                       @if (empty($c['mainPayDate']) && $carCom > 0)
-                        <div class="text-danger cell-note fw-normal" title="ยังไม่รับรถ (DD ว่าง) — พักคอมตัวรถไว้ก่อน จ่ายเมื่อมีวันรับรถ">
+                        <div class="text-danger cell-note fw-normal"
+                          title="ยังไม่รับรถ (DD ว่าง) — พักคอมตัวรถไว้ก่อน จ่ายเมื่อมีวันรับรถ">
                           <i class="bx bx-pause-circle"></i> − พักไว้ {{ number_format($rowPending, 2) }}
                         </div>
                       @elseif ($rowHeld > 0)
-                        <div class="text-warning cell-note fw-normal" title="กั๊กไว้จ่ายรอบถัดไป — ยอดของคันนี้ไม่ได้หายไป แค่เลื่อนวันจ่าย">
+                        <div class="text-warning cell-note fw-normal"
+                          title="กั๊กไว้จ่ายรอบถัดไป — ยอดของคันนี้ไม่ได้หายไป แค่เลื่อนวันจ่าย">
                           <i class="bx bx-time-five"></i> − กั๊ก {{ number_format($rowHeld, 2) }}
                           → {{ \Illuminate\Support\Carbon::parse($c['heldPayday'])->format('d/m/Y') }}
                         </div>
@@ -200,7 +237,8 @@
                 </tr>
               @empty
                 <tr>
-                  <td colspan="{{ $isBrand2 ? 14 : 13 }}" class="text-center py-4 text-muted">ไม่มีรายการส่งมอบในเดือนนี้</td>
+                  <td colspan="{{ $isBrand2 ? 14 : 13 }}" class="text-center py-4 text-muted">
+                    ไม่มีรายการส่งมอบในเดือนนี้</td>
                 </tr>
               @endforelse
             </tbody>
@@ -224,7 +262,8 @@
                 <td class="text-end col-sum-net" data-withheld="{{ (float) $sumWithheld }}">
                   <span id="carsNetTotal">0.00</span>
                   @if ($sumWithheld > 0)
-                    <div class="cell-note fw-normal text-warning" title="ยอดที่ถูกกั๊ก/พักไว้ ยังไม่จ่ายรอบนี้ — หักออกจากยอดรวมแล้ว">
+                    <div class="cell-note fw-normal text-warning"
+                      title="ยอดที่ถูกกั๊ก/พักไว้ ยังไม่จ่ายรอบนี้ — หักออกจากยอดรวมแล้ว">
                       หักกั๊ก/พักไว้ {{ number_format($sumWithheld, 2) }}
                     </div>
                   @endif
@@ -273,7 +312,8 @@
                   <i class="bx bx-minus-circle text-danger"></i> ขาด/ลา/มาสาย (หัก)
                 </label>
                 <input type="text" inputmode="decimal" class="form-control form-control-sm text-end cmoney"
-                  id="deduct_absence" name="deduct_absence" value="{{ $adjustment->deduct_absence ?? 0 }}" {{ $roInput }}>
+                  id="deduct_absence" name="deduct_absence" value="{{ $adjustment->deduct_absence ?? 0 }}"
+                  {{ $roInput }}>
               </div>
             @else
               {{-- brand 2 : ตัวเงินทั้งหมด --}}
@@ -282,14 +322,16 @@
                   <i class="bx bx-medal text-success"></i> ค่าคอมวินัย
                 </label>
                 <input type="text" inputmode="decimal" class="form-control form-control-sm text-end cmoney"
-                  id="com_discipline" name="com_discipline" value="{{ $adjustment->com_discipline ?? 0 }}" {{ $roInput }}>
+                  id="com_discipline" name="com_discipline" value="{{ $adjustment->com_discipline ?? 0 }}"
+                  {{ $roInput }}>
               </div>
               <div class="col-md-2 col-6">
                 <label for="deduct_absence" class="mf-label form-label">
                   <i class="bx bx-minus-circle text-danger"></i> ขาด/ลา/มาสาย (หัก)
                 </label>
                 <input type="text" inputmode="decimal" class="form-control form-control-sm text-end cmoney"
-                  id="deduct_absence" name="deduct_absence" value="{{ $adjustment->deduct_absence ?? 0 }}" {{ $roInput }}>
+                  id="deduct_absence" name="deduct_absence" value="{{ $adjustment->deduct_absence ?? 0 }}"
+                  {{ $roInput }}>
               </div>
               <div class="col-md-2 col-6">
                 <label for="com_lead" class="mf-label form-label">
@@ -307,15 +349,15 @@
               </div>
             @endif
 
-            {{-- คอมประดับยนต์ (ขายแยก) — ใช้ทุก brand : ผู้จัดการ/GM กรอกเอง บวกเข้ายอดคอม
+            {{-- คอมประดับยนต์ (หน้าร้าน) — ใช้ทุก brand : ผู้จัดการ/GM กรอกเอง บวกเข้ายอดคอม
                  บวกนอกฐาน จึงไม่โดนหัก 15% ตอนวินัยไม่ผ่าน (ดู SaleCommissionMonthly::computeNet) --}}
             <div class="col-md-2 col-6">
               <label for="com_accessory_sold" class="mf-label form-label">
-                <i class="bx bx-plus-circle text-success"></i> คอมประดับยนต์ (ขายแยก)
+                <i class="bx bx-plus-circle text-success"></i> คอมประดับยนต์ (หน้าร้าน)
               </label>
               <input type="text" inputmode="decimal" class="form-control form-control-sm text-end cmoney"
-                id="com_accessory_sold" name="com_accessory_sold"
-                value="{{ $adjustment->com_accessory_sold ?? 0 }}" {{ $roInput }}>
+                id="com_accessory_sold" name="com_accessory_sold" value="{{ $adjustment->com_accessory_sold ?? 0 }}"
+                {{ $roInput }}>
             </div>
 
             {{-- หักอื่นๆ + หมายเหตุ — ไว้ท้ายสุดให้กรอกต่อกันได้ (ใช้ทุก brand เป็นช่องหักปลายเปิด) --}}
@@ -324,28 +366,32 @@
                 <i class="bx bx-minus-circle text-danger"></i> หักอื่นๆ
               </label>
               <input type="text" inputmode="decimal" class="form-control form-control-sm text-end cmoney"
-                id="deduct_other" name="deduct_other" value="{{ $adjustment->deduct_other ?? 0 }}" {{ $roInput }}>
+                id="deduct_other" name="deduct_other" value="{{ $adjustment->deduct_other ?? 0 }}"
+                {{ $roInput }}>
             </div>
             <div class="col-md-{{ $isBrand13 ? 3 : 12 }} col-12">
               <label for="deduct_other_note" class="mf-label form-label">
-                <i class="bx bx-note text-secondary"></i> หมายเหตุหักอื่นๆ <span class="text-muted">(ระบุว่าหักค่าอะไร)</span>
+                <i class="bx bx-note text-secondary"></i> หมายเหตุหักอื่นๆ <span
+                  class="text-muted">(ระบุว่าหักค่าอะไร)</span>
               </label>
-              <input type="text" class="form-control form-control-sm" id="deduct_other_note" name="deduct_other_note"
-                maxlength="255" placeholder="เช่น ค่าปรับผิดระเบียบ / ค่าเสียหายรถทดลองขับ"
+              <input type="text" class="form-control form-control-sm" id="deduct_other_note"
+                name="deduct_other_note" maxlength="255" placeholder="เช่น ค่าปรับผิดระเบียบ / ค่าเสียหายรถทดลองขับ"
                 value="{{ $adjustment->deduct_other_note ?? '' }}" {{ $roInput }}>
             </div>
           </div>
 
           {{-- ── budget ยกมา (brand 2) — กระเป๋าตังค์จากรถส่งมอบเดือนก่อน × 1,000 ── --}}
           @if ($budget['active'])
-            <div class="alert alert-primary d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3"
+            <div
+              class="alert alert-primary d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3"
               id="budgetWalletBox" data-carried="{{ $budget['carried'] }}">
               <div class="small">
                 <i class="bx bx-wallet me-1"></i>
                 <strong>budget ยกมา</strong> (จากรถส่งมอบเดือนก่อน × 1,000)
                 <div class="mt-1">
                   ยกมา <strong>{{ number_format($budget['carried'], 2) }}</strong> ฿
-                  · ใช้ไป (budget หัก) <strong class="text-danger" id="budgetUsedDisplay">{{ number_format($budget['used'], 2) }}</strong> ฿
+                  · ใช้ไป (budget หัก) <strong class="text-danger"
+                    id="budgetUsedDisplay">{{ number_format($budget['used'], 2) }}</strong> ฿
                 </div>
               </div>
               <div class="fw-bold text-primary">
@@ -357,7 +403,8 @@
           {{-- ── คอม SSI (brand 1 เดือน 3/10) — เฉลี่ยแยกสาขา + เกณฑ์ ≥18 คัน/≥1 ทุกเดือน ── --}}
           @if ($ssi['active'])
             @php $ssiOk = $ssi['eligible']; @endphp
-            <div class="alert {{ $ssiOk ? 'alert-info' : 'alert-secondary' }} d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3">
+            <div
+              class="alert {{ $ssiOk ? 'alert-info' : 'alert-secondary' }} d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3">
               <div class="small">
                 <i class="bx bx-award me-1"></i>
                 <strong>คอมค่าครึ่งปี (SSI)</strong>
@@ -368,7 +415,8 @@
                 <div class="mt-1">
                   เงื่อนไข:
                   <span class="{{ $ssi['count'] >= $ssi['min_cars'] ? 'text-success' : 'text-danger' }}">
-                    ขาย ≥ {{ $ssi['min_cars'] }} คัน {{ $ssi['count'] >= $ssi['min_cars'] ? '✓' : '✗ (ได้ ' . $ssi['count'] . ')' }}
+                    ขาย ≥ {{ $ssi['min_cars'] }} คัน
+                    {{ $ssi['count'] >= $ssi['min_cars'] ? '✓' : '✗ (ได้ ' . $ssi['count'] . ')' }}
                   </span>
                   ·
                   <span class="{{ $ssi['every_month'] ? 'text-success' : 'text-danger' }}">
@@ -385,7 +433,8 @@
           {{-- ── คอมตัวรถรายคัน (รายเดือน) — รวมเข้ายอดสุทธิ ── --}}
           @if ($car['active'])
             @php $carSkipped = (int) $car['count'] - (int) $car['paidCount']; @endphp
-            <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3">
+            <div
+              class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3">
               <div class="small">
                 <i class="bx bx-car me-1"></i>
                 <strong>คอมตัวรถรายคัน</strong>
@@ -405,7 +454,8 @@
                         {{ $car['achieved'] ? 'บรรลุเป้า 120%' : 'ไม่บรรลุเป้า' }}
                       </span>
                     @else
-                      <span class="badge bg-warning text-dark" title="ยังไม่ได้ตั้งเป้าของเดือนนี้ — ระบบคิดเรตแบบไม่บรรลุเป้าไปก่อน">
+                      <span class="badge bg-warning text-dark"
+                        title="ยังไม่ได้ตั้งเป้าของเดือนนี้ — ระบบคิดเรตแบบไม่บรรลุเป้าไปก่อน">
                         ยังไม่ได้ตั้งเป้า
                       </span>
                     @endif
@@ -430,7 +480,8 @@
               </div>
               <div class="small">
                 <div class="d-flex justify-content-between">
-                  <span><i class="bx bx-money text-success"></i> รอบหลัก {{ $rounds['main_date'] }} (คอมพื้นฐาน + SSI + ค่าคอมรถส่วนหลัก)</span>
+                  <span><i class="bx bx-money text-success"></i> รอบหลัก {{ $rounds['main_date'] }} (คอมพื้นฐาน + SSI
+                    + ค่าคอมรถส่วนหลัก)</span>
                   <span class="fw-bold text-success">{{ number_format($rounds['main_own'], 2) }} ฿</span>
                 </div>
                 @if ($rounds['carried_in'] > 0)
@@ -448,7 +499,8 @@
                 @endif
                 @foreach ($rounds['gak_items'] as $g)
                   <div class="d-flex justify-content-between text-warning">
-                    <span class="ps-3"><i class="bx bx-time-five"></i> กั๊ก 2,000 — {{ $g['customer'] }} → ยกไปจ่าย {{ $g['date'] }}</span>
+                    <span class="ps-3"><i class="bx bx-time-five"></i> กั๊ก 2,000 — {{ $g['customer'] }} →
+                      ยกไปจ่าย {{ $g['date'] }}</span>
                     <span class="fw-bold">{{ number_format($g['amount'], 2) }} ฿</span>
                   </div>
                 @endforeach
@@ -475,10 +527,9 @@
                   ยอดค่าคอมสุทธิ (คอมทั้งเดือน{{ $ssi['active'] ? ' + SSI' : '' }} + ค่าคอมรถ)
                 @endif
               </div>
-              <div class="fs-4 fw-bold text-success" id="netCommissionDisplay"
-                data-base="{{ $baseCommission }}" data-brand="{{ (int) $brand }}"
-                data-ssi="{{ $ssiAmount }}" data-car="{{ (float) $car['amount'] }}"
-                data-held="{{ (float) ($rounds['net_offset'] ?? 0) }}">
+              <div class="fs-4 fw-bold text-success" id="netCommissionDisplay" data-base="{{ $baseCommission }}"
+                data-brand="{{ (int) $brand }}" data-ssi="{{ $ssiAmount }}"
+                data-car="{{ (float) $car['amount'] }}" data-held="{{ (float) ($rounds['net_offset'] ?? 0) }}">
                 {{ number_format($rounds['pay_total'] ?? $net, 2) }} ฿
               </div>
             </div>
