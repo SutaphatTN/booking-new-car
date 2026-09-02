@@ -125,6 +125,26 @@ class CustomerTracking extends Model
         return $this->belongsTo(User::class, 'BookedBy');
     }
 
+    /**
+     * ป้ายสถานะของใบติดตาม — จองแล้ว / จบการติดตาม / ยกเลิกการติดตาม / กำลังติดตาม
+     *
+     * "จองแล้ว" มาก่อนเสมอ เพราะพอส่งมอบรถระบบจะปิด tracking ด้วย cancelled_at ทีหลัง
+     * ถ้าเช็ค cancelled_at ก่อน ใบที่จองแล้วส่งมอบไปจะกลายเป็น "จบการติดตาม" ผิดหมด
+     * ใช้ร่วมกันระหว่างรายงานสถานที่ Offline กับหน้ารายการติดตาม (ห้ามมีสองนิยาม)
+     */
+    public function statusLabel(): string
+    {
+        if ($this->booked_at) {
+            return 'จองแล้ว';
+        }
+
+        if ($this->cancelled_at) {
+            return $this->end_type === 'finished' ? 'จบการติดตาม' : 'ยกเลิกการติดตาม';
+        }
+
+        return 'กำลังติดตาม';
+    }
+
     public function cancelledBy()
     {
         return $this->belongsTo(User::class, 'CancelledBy');

@@ -281,6 +281,10 @@ class Salecar extends Model
 		'approval_token',
 		'approval_final_token',
 		'approval_files',
+		// คำขอให้ IA ตรวจสอบรายการ (แยกจากสายอนุมัติ — ไม่มีปุ่มอนุมัติในเมล)
+		'ia_request_token',
+		'ia_requested_at',
+		'ia_requested_by',
 		'userZone',
 		'brand',
 		'sale_team_id',

@@ -92,7 +92,11 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
         // ฝั่ง recv จึงเหลือแต่ยอดบวกล้วน ๆ ; คอมสุทธิ (รับ − หัก) ได้เท่าเดิมทุกบาท
         $cols[] = ['label' => 'หักเกินงบ', 'key' => 'overBudgetDeduct', 'role' => 'ded', 'money' => true];
 
-        $cols[] = ['label' => 'หักอื่นๆ (หักเงินเดือน/ สาย)', 'key' => 'deductAbsence', 'role' => 'ded', 'money' => true];
+        $cols[] = ['label' => 'หักขาด/ลา/มาสาย', 'key' => 'deductAbsence', 'role' => 'ded', 'money' => true];
+
+        // ช่องหักปลายเปิด (ทุก brand) — หมายเหตุเป็น info เฉย ๆ ไม่เข้ายอดรวม
+        $cols[] = ['label' => 'หักอื่นๆ', 'key' => 'deductOther', 'role' => 'ded', 'money' => true];
+        $cols[] = ['label' => 'หมายเหตุหักอื่นๆ', 'key' => 'deductOtherNote', 'role' => 'info'];
 
         $cols[] = ['label' => 'รวมยอดหัก', 'key' => '__ded', 'role' => 'sum_ded', 'money' => true];
         $cols[] = ['label' => 'คอมสุทธิ',  'key' => '__net', 'role' => 'net',     'money' => true];
@@ -190,6 +194,8 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
                 'turnCarCom'      => $rows->sum(fn($r) => $r->turnCar->com_turn ?? 0),
 
                 'deductAbsence'   => (float) ($adj->deduct_absence ?? 0),
+                'deductOther'     => (float) ($adj->deduct_other ?? 0),
+                'deductOtherNote' => $adj->deduct_other_note ?? '',
             ];
 
             if ($brand === 1) {

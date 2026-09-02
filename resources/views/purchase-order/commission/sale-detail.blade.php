@@ -282,6 +282,23 @@
                   value="{{ $adjustment->com_clip ?? 0 }}" {{ $roInput }}>
               </div>
             @endif
+
+            {{-- หักอื่นๆ — ใช้ทุก brand เป็นช่องหักปลายเปิด ต้องระบุหมายเหตุว่าหักอะไร --}}
+            <div class="col-md-3 col-6">
+              <label for="deduct_other" class="mf-label form-label">
+                <i class="bx bx-minus-circle text-danger"></i> หักอื่นๆ
+              </label>
+              <input type="text" inputmode="decimal" class="form-control text-end cmoney" id="deduct_other"
+                name="deduct_other" value="{{ $adjustment->deduct_other ?? 0 }}" {{ $roInput }}>
+            </div>
+            <div class="col-md-{{ $isBrand13 ? 6 : 9 }} col-12">
+              <label for="deduct_other_note" class="mf-label form-label">
+                <i class="bx bx-note text-secondary"></i> หมายเหตุหักอื่นๆ <span class="text-muted">(ระบุว่าหักค่าอะไร)</span>
+              </label>
+              <input type="text" class="form-control" id="deduct_other_note" name="deduct_other_note" maxlength="255"
+                placeholder="เช่น ค่าปรับผิดระเบียบ / ค่าเสียหายรถทดลองขับ"
+                value="{{ $adjustment->deduct_other_note ?? '' }}" {{ $roInput }}>
+            </div>
           </div>
 
           {{-- ── budget ยกมา (brand 2) — กระเป๋าตังค์จากรถส่งมอบเดือนก่อน × 1,000 ── --}}

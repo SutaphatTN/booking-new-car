@@ -33,6 +33,8 @@ class SaleCommissionMonthly extends Model
         'month',
         'com_discipline',
         'deduct_absence',
+        'deduct_other',
+        'deduct_other_note',
         'com_lead',
         'com_clip',
         'discipline_failed',
@@ -44,6 +46,7 @@ class SaleCommissionMonthly extends Model
         'month' => 'int',
         'com_discipline' => 'float',
         'deduct_absence' => 'float',
+        'deduct_other' => 'float',
         'com_lead' => 'float',
         'com_clip' => 'float',
         'discipline_failed' => 'bool',
@@ -51,24 +54,28 @@ class SaleCommissionMonthly extends Model
 
     /**
      * ยอดค่าคอมสุทธิ (brand-aware)
-     *  - brand 1/3 : (วินัยไม่ผ่าน → base×0.85) − ขาด/ลา/มาสาย
-     *  - brand อื่น (2) : base + วินัย + lead + clip − ขาด/ลา/มาสาย
+     *  - brand 1/3 : (วินัยไม่ผ่าน → base×0.85) − ขาด/ลา/มาสาย − หักอื่นๆ
+     *  - brand อื่น (2) : base + วินัย + lead + clip − ขาด/ลา/มาสาย − หักอื่นๆ
+     *
+     * "หักอื่นๆ" (deduct_other) ใช้ทุก brand — เป็นช่องหักปลายเปิดที่ระบุเหตุผลเองใน deduct_other_note
      */
     public function computeNet(float $baseCommission, int $brand): float
     {
+        $otherDeductions = (float) ($this->deduct_absence ?? 0) + (float) ($this->deduct_other ?? 0);
+
         if (in_array($brand, [1, 3, 4], true)) {
             $base = $this->discipline_failed
                 ? $baseCommission * (1 - self::DISCIPLINE_FAIL_RATE)
                 : $baseCommission;
 
-            return $base - (float) ($this->deduct_absence ?? 0);
+            return $base - $otherDeductions;
         }
 
         return $baseCommission
             + (float) ($this->com_discipline ?? 0)
             + (float) ($this->com_lead ?? 0)
             + (float) ($this->com_clip ?? 0)
-            - (float) ($this->deduct_absence ?? 0);
+            - $otherDeductions;
     }
 
     public function saleUser()

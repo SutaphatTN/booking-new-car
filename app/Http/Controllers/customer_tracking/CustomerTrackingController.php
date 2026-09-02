@@ -42,7 +42,40 @@ class CustomerTrackingController extends Controller
     public function index()
     {
         $decisions = TbDecision::all();
-        return view('customer-tracking.view', compact('decisions'));
+        $bookedMode = false;
+        return view('customer-tracking.view', compact('decisions', 'bookedMode'));
+    }
+
+    /**
+     * รายการติดตาม "ที่ปิดไปแล้ว" — หน้าย้อนหลังของ admin
+     *
+     * หน้ารายการติดตามปกติซ่อนใบที่ลูกค้าจองแล้ว (customer_id อยู่ในใบจอง active) กับใบที่ถูกปิด
+     * ด้วย cancelled_at ทิ้ง พอปิดไปแล้วก็ตามดู/แก้ย้อนหลังไม่ได้เลย หน้านี้กลับด้านตัวกรอง
+     * ให้เหลือเฉพาะใบพวกนั้น — สองหน้ารวมกันได้ใบติดตามครบทุกใบพอดี ไม่ซ้ำกัน
+     * ใช้ view + DataTable ตัวเดียวกับหน้ารายการติดตาม (ปุ่มจึงเหมือนกันทุกปุ่ม)
+     */
+    public function booked()
+    {
+        abort_unless(Auth::user()->role === 'admin', 403);
+
+        $decisions = TbDecision::all();
+        $bookedMode = true;
+        return view('customer-tracking.view', compact('decisions', 'bookedMode'));
+    }
+
+    /**
+     * ใบติดตามโหมดไหน — ปกติ (ยังติดตามอยู่) หรือย้อนหลัง (จอง/ปิดไปแล้ว)
+     * โหมดย้อนหลังเปิดให้ admin เท่านั้น role อื่นยิง ?booked=1 มาก็ได้ลิสต์ปกติ
+     */
+    private function applyBookedScope($query, $bookedSubquery, bool $booked)
+    {
+        if ($booked && Auth::user()->role === 'admin') {
+            return $query->where(
+                fn($q) => $q->whereIn('customer_id', $bookedSubquery)->orWhereNotNull('cancelled_at')
+            );
+        }
+
+        return $query->whereNotIn('customer_id', $bookedSubquery)->whereNull('cancelled_at');
     }
 
     public function list(Request $request)
@@ -67,9 +100,11 @@ class CustomerTrackingController extends Controller
             ->whereIn('con_status', [1, 2, 3, 4, 6])
             ->where('brand', $user->brand);
 
-        $base = CustomerTracking::query()
-            ->whereNotIn('customer_id', $bookedSubquery)
-            ->whereNull('cancelled_at');
+        $base = $this->applyBookedScope(
+            CustomerTracking::query(),
+            $bookedSubquery,
+            $request->boolean('booked')
+        );
 
         if (in_array($user->role, ['sale', 'lead_sale'])) {
             $visibleSaleIds = [$user->id];
@@ -254,6 +289,9 @@ class CustomerTrackingController extends Controller
                 'next_date_sort' => $nextDateRaw,
                 'status'         => $decision,
                 'decision_id'    => $activeDetail?->decision_id ?? '',
+                // จองแล้ว / จบการติดตาม / ยกเลิกการติดตาม — โชว์เฉพาะหน้าย้อนหลัง (ดู CustomerTracking::statusLabel)
+                'outcome'        => $t->statusLabel(),
+                'cancel_reason'  => trim(($t->cancel_reason ?? '') . ' ' . ($t->cancel_reason_note ?? '')),
             ];
         });
 
@@ -290,12 +328,14 @@ class CustomerTrackingController extends Controller
             }
         }
 
-        $base = CustomerTracking::whereNotIn('customer_id', $bookedSubquery)
-            ->whereNull('cancelled_at')
-            ->when(
-                in_array($user->role, ['sale', 'lead_sale']),
-                fn($q) => $q->whereIn('sale_id', $visibleSaleIds)
-            );
+        $base = $this->applyBookedScope(
+            CustomerTracking::query(),
+            $bookedSubquery,
+            $request->boolean('booked')
+        )->when(
+            in_array($user->role, ['sale', 'lead_sale']),
+            fn($q) => $q->whereIn('sale_id', $visibleSaleIds)
+        );
 
         if ($decisionId) {
             $base->whereRaw('(

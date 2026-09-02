@@ -578,6 +578,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/{id}/red-plate', [PurchaseOrderController::class, 'redPlateForm'])->name('purchase-order.red-plate');
     Route::put('purchase-order/{id}/red-plate', [PurchaseOrderController::class, 'updateRedPlate'])->name('purchase-order.red-plate.update');
     Route::post('purchase-order/{id}/change-status', [PurchaseOrderController::class, 'changeStatus'])->name('purchase-order.change-status');
+    // ปลายทางลิงก์ในเมลขอ IA ตรวจสอบ — อยู่ใน auth เพราะต้องพาเข้าหน้าใบจองจริง (สลับแบรนด์ให้ถ้าคนละแบรนด์)
+    // ตัวส่งคำขอไม่มี route แยก — ไปกับการบันทึกใบจอง (action_type = request_ia) เหมือนปุ่มขออนุมัติ
+    Route::get('purchase-order/ia-review/{token}', [PurchaseOrderController::class, 'iaReview'])->name('purchase-order.iaReview');
     // ดึงคำขออนุมัติกลับ (เฉพาะ admin — เช็คใน controller) : เคลียร์คำขอ + หมุน token กันลิงก์เมลเดิม
     Route::post('purchase-order/{id}/withdraw-approval', [PurchaseOrderController::class, 'withdrawApproval'])->name('purchase-order.withdrawApproval');
     Route::get('/purchase-order/search', [PurchaseOrderController::class, 'search'])->name('purchase-order.search');
@@ -603,6 +606,8 @@ Route::group(['middleware' => 'auth'], function () {
     // API cascade — สถานที่ตาม sub-source (ต้องให้ sale เรียกได้ตอนเพิ่มการติดตาม)
     Route::get('/api/source/places/{source_id}', [SourceController::class, 'apiPlaces']);
     Route::get('customer-tracking/list', [CustomerTrackingController::class, 'list']);
+    // ต้องมาก่อน Route::resource ท้ายไฟล์ ไม่งั้น 'booked' จะถูกจับเป็น {customer_tracking}
+    Route::get('customer-tracking/booked', [CustomerTrackingController::class, 'booked'])->name('customer-tracking.booked');
     Route::get('customer-tracking/filter-options', [CustomerTrackingController::class, 'filterOptions']);
     Route::get('customer-tracking/check-duplicate', [CustomerTrackingController::class, 'checkDuplicate']);
     Route::get('customer-tracking/check-phone', [CustomerTrackingController::class, 'checkPhone']);

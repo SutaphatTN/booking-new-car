@@ -62,6 +62,8 @@ use Illuminate\Mail\Mailables\Attachment;
 use App\Mail\SaleApprovedMail;
 use App\Mail\CarDeliveredMail;
 use App\Mail\ApprovalReturnMail;
+use App\Mail\IaCheckRequestMail;
+use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -2029,7 +2031,18 @@ class PurchaseOrderController extends Controller
                 DB::rollBack();
                 return response()->json([
                     'success' => false,
-                    'message' => 'ต้องให้ GM / MD / ผู้ดูแลระบบ ติ๊ก "ตรวจสอบรายการ (IA)" ก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"',
+                    'message' => 'ต้องให้ GM / MD ติ๊ก "ตรวจสอบรายการ (IA)" ก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"',
+                ], 422);
+            }
+
+            // เปลี่ยนสถานะเป็น "ส่งมอบ" ต้องผ่าน "เช็ครายการ (แอดมินขาย)" ก่อน — ทุก brand
+            // (ต่างจากด่าน IA ที่บังคับเฉพาะ brand 2) ใบที่ส่งมอบไปแล้วติ๊กช่องนี้กัน 98-100% ทุก brand
+            // อยู่แล้ว ด่านนี้จึงแค่บังคับสิ่งที่ทำกันเป็นปกติ ไม่ได้เพิ่มขั้นตอนใหม่ให้ใคร
+            if ($enteringDelivered && empty($data['AdminSignature'])) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ต้องติ๊ก "เช็ครายการ (แอดมินขาย)" ก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"',
                 ], 422);
             }
 
@@ -2676,7 +2689,24 @@ class PurchaseOrderController extends Controller
                 Mail::to($mailTo)->cc($mailCc)->send(new SaleRequestMail($saleCar, $mailType, $approvalData, $approvalFiles));
             }
 
+            // ขอให้ IA ตรวจสอบ — คนละสายกับการอนุมัติงบ (ไม่มีปุ่มอนุมัติในเมล มีแต่ลิงก์เปิดใบจอง)
+            // ออก token ในทรานแซกชันเดียวกับการบันทึก แล้วค่อยยิงเมลหลัง commit
+            $iaToken = null;
+            if ($action === 'request_ia') {
+                // token ใหม่ทุกครั้ง — ลิงก์เก่าในเมลฉบับก่อนใช้ไม่ได้ กันเปิดใบที่แก้ไปแล้ว
+                $iaToken = Str::random(48);
+                $saleCar->update([
+                    'ia_request_token' => $iaToken,
+                    'ia_requested_at'  => now(),
+                    'ia_requested_by'  => $user->id,
+                ]);
+            }
+
             DB::commit();
+
+            if ($iaToken) {
+                $this->sendIaCheckRequest($saleCar, $iaToken);
+            }
 
             // แจ้งอีเมล "ส่งมอบ" — ยิง "ครั้งเดียว" เมื่อมีข้อมูลส่งมอบตัวใดตัวหนึ่ง
             //  trigger: DeliveryDate / DeliveryInDMSDate / DeliveryInCKDate / con_status=5
@@ -3740,6 +3770,67 @@ class PurchaseOrderController extends Controller
     }
 
     /**
+     * ยิงเมลขอให้ IA (GM) ตรวจสอบรายการใบจอง — เรียกหลัง commit ของ update()
+     *
+     * ต่างจากสายอนุมัติตรงที่ไม่มีปุ่มกดอนุมัติในเมล เพราะการติ๊ก "ตรวจสอบรายการ (IA)"
+     * ต้องดูข้อมูลทั้งใบก่อน ลิงก์จึงพาเข้าหน้าใบจองจริง (iaReview) แทนที่จะเป็น PDF
+     *
+     * เมลล้มไม่ทำให้การบันทึกล้มตาม — ข้อมูล commit ไปแล้ว แค่ log ไว้ให้ตามได้
+     */
+    private function sendIaCheckRequest(Salecar $saleCar, string $token): void
+    {
+        $mailTo = $this->approverEmails($saleCar->brand, $saleCar->branch, 'gm');
+
+        if (empty($mailTo)) {
+            Log::warning('ไม่ได้ส่งเมลขอ IA ตรวจสอบ — ยังไม่ได้ตั้งค่าอีเมล GM ของแบรนด์นี้', [
+                'salecar' => $saleCar->id,
+                'brand'   => $saleCar->brand,
+            ]);
+            return;
+        }
+
+        try {
+            $saleCar->load(['customer.prefix', 'model', 'subModel', 'saleUser', 'gwmColor', 'conStatus']);
+            Mail::to($mailTo)->send(new IaCheckRequestMail($saleCar, $token, Auth::user()->name));
+        } catch (\Throwable $e) {
+            Log::error('ส่งเมลขอ IA ตรวจสอบไม่สำเร็จ', [
+                'salecar' => $saleCar->id,
+                'error'   => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * เปิดใบจองจากลิงก์ในเมลขอ IA ตรวจสอบ
+     *
+     * ต้องล็อกอินก่อน (route อยู่ใน middleware auth — Laravel จะเด้งไป login แล้วกลับมาที่นี่เอง)
+     * ถ้าผู้กดกำลังใช้งานอยู่คนละแบรนด์กับใบจอง จะสลับแบรนด์ให้ก่อน redirect
+     * เพราะหน้าใบจองยิง query ที่ติด BrandScope เต็มไปหมด — ScopeBypass ครอบได้แค่ request เดียว
+     * ใช้ไม่ได้กับการ redirect (คนละ request) จึงต้องสลับ session เหมือนปุ่มสลับแบรนด์
+     */
+    public function iaReview($token)
+    {
+        ScopeBypass::$brand = true;
+
+        $saleCar = Salecar::withoutGlobalScopes()
+            ->where('ia_request_token', $token)
+            ->firstOrFail();
+
+        $user  = Auth::user();
+        $brand = (int) $saleCar->brand;
+
+        if ((int) $user->brand !== $brand) {
+            if (!in_array($brand, $user->switchableBrandIds(), true)) {
+                abort(403, 'บัญชีนี้ไม่มีสิทธิ์เข้าถึงใบจองของแบรนด์นี้');
+            }
+
+            session(['brand_switch' => $brand]);
+        }
+
+        return redirect()->route('purchase-order.edit', $saleCar->id);
+    }
+
+    /**
      * ดึงคำสั่งซื้อที่ส่งมอบแล้วกลับมา / เปลี่ยนสถานะ — เฉพาะ role = admin
      * เปลี่ยนแค่ con_status เท่านั้น ไม่ยุ่งกับ CarOrder / tracking
      */
@@ -3755,12 +3846,21 @@ class PurchaseOrderController extends Controller
 
         $saleCar = Salecar::findOrFail($id);
 
-        // ด่านเดียวกับหน้าแก้ไข (เฉพาะ brand 2) — "เปลี่ยนเข้า" สถานะ "ส่งมอบ" (5) ต้องผ่าน IA มาก่อน
-        if ($saleCar->needsIaCheck() && (int) $request->con_status === 5
-            && (int) $saleCar->con_status !== 5 && empty($saleCar->CheckerID)) {
+        // ด่านเดียวกับหน้าแก้ไข — "เปลี่ยนเข้า" สถานะ "ส่งมอบ" (5)
+        // ต้องใส่ที่นี่ด้วยทุกด่าน ไม่งั้นรั่วทางปุ่มเปลี่ยนสถานะในหน้ารายการ
+        $enteringDelivered = (int) $request->con_status === 5 && (int) $saleCar->con_status !== 5;
+
+        if ($saleCar->needsIaCheck() && $enteringDelivered && empty($saleCar->CheckerID)) {
             return response()->json([
                 'success' => false,
                 'message' => 'ต้องติ๊ก "ตรวจสอบรายการ (IA)" ในใบจองก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"',
+            ], 422);
+        }
+
+        if ($enteringDelivered && empty($saleCar->AdminSignature)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ต้องติ๊ก "เช็ครายการ (แอดมินขาย)" ในใบจองก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"',
             ], 422);
         }
 
@@ -4248,6 +4348,8 @@ class PurchaseOrderController extends Controller
             'month'             => 'required|integer|min:1|max:12',
             'com_discipline'    => 'nullable|numeric',
             'deduct_absence'    => 'nullable|numeric',
+            'deduct_other'      => 'nullable|numeric',
+            'deduct_other_note' => 'nullable|string|max:255',
             'com_lead'          => 'nullable|numeric',
             'com_clip'          => 'nullable|numeric',
             'discipline_failed' => 'nullable|boolean',
@@ -4268,6 +4370,11 @@ class PurchaseOrderController extends Controller
             [
                 'com_discipline'    => $data['com_discipline'] ?? 0,
                 'deduct_absence'    => $data['deduct_absence'] ?? 0,
+                'deduct_other'      => $data['deduct_other'] ?? 0,
+                // ยอดหักเป็น 0 = ไม่ได้หักอะไร ไม่ต้องเก็บหมายเหตุค้างไว้ให้สับสนในรายงาน
+                'deduct_other_note' => ($data['deduct_other'] ?? 0) > 0
+                    ? (trim($data['deduct_other_note'] ?? '') ?: null)
+                    : null,
                 'com_lead'          => $data['com_lead'] ?? 0,
                 'com_clip'          => $data['com_clip'] ?? 0,
                 'discipline_failed' => (bool) ($data['discipline_failed'] ?? false),

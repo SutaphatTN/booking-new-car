@@ -2747,7 +2747,7 @@
 
                           <div class="col-md-6">
                             <div class="approval-card @if ($saleCar->CheckerID) approved @endif @unless ($canIaCheck) locked @endunless"
-                              @unless ($canIaCheck) title="ติ๊กได้เฉพาะ GM / MD / ผู้ดูแลระบบ" @endunless>
+                              @unless ($canIaCheck) title="ติ๊กได้เฉพาะ GM / MD " @endunless>
                               <div class="approval-card-header">
                                 <div class="approval-icon indigo"><i class="bx bx-search-alt-2"></i></div>
                                 <div class="approval-title">
@@ -2772,7 +2772,7 @@
                                 @unless ($canIaCheck)
                                   <div class="approval-locked-note">
                                     <i class="bx bx-info-circle me-1"></i>
-                                    ต้องให้ GM / MD / ผู้ดูแลระบบ ตรวจสอบก่อนเปลี่ยนสถานะเป็น “ส่งมอบ”
+                                    ต้องให้ GM / MD ตรวจสอบก่อนเปลี่ยนสถานะเป็น “ส่งมอบ”
                                   </div>
                                 @endunless
                               </div>

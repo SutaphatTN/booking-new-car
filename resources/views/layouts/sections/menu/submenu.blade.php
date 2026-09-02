@@ -14,6 +14,11 @@
         @continue
       @endif
 
+      {{-- เมนู "ติดตามที่ปิดแล้ว" (ดูย้อนหลัง แก้ได้) เห็นเฉพาะ admin --}}
+      @if ($submenu->slug == 'customer-tracking.booked' && $userRole !== 'admin')
+        @continue
+      @endif
+
       {{-- เมนู "แอด" (การตลาด) เห็นเฉพาะ admin, adminPage --}}
       @if ($submenu->slug == 'ad.index' && !in_array($userRole, ['admin', 'adminPage']))
         @continue

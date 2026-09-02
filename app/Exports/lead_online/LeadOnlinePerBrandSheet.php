@@ -218,7 +218,7 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
         ->whereNull('ct.deleted_at')
         ->where('ct.brand', $this->brand)
         ->whereIn('ct.source_id', $this->onlineSourceIds)
-        ->whereIn('ct.UserInsert', $this->adminPageUserIds())
+        ->tap(fn($q) => $this->scopeEntrant($q))
         ->whereIn('ct.sale_id', $saleIds)
         ->whereBetween('fc.first_contact', [
           $this->start->format('Y-m-d 00:00:00'),
@@ -297,12 +297,45 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
   }
 
   /**
+   * สาขานี้เริ่มนับ lead ที่ "ใครกรอกก็ได้" ตั้งแต่วันไหน (null = ไม่มี นับเฉพาะที่คนดูแลเพจกรอก)
+   *
+   * ปกตินับเฉพาะ lead ที่คนดูแลเพจกรอก (= lead ที่เพจรับมาแล้วจ่ายให้เซลล์จริง ๆ) เพราะข้อมูล
+   * ย้อนหลังมีเซลล์ติดแหล่งที่มา Online เองไว้เยอะมาก ถ้านับหมดตัวเลขจะเด้งเป็นเท่าตัว
+   *
+   * สาขาที่เปิดให้เซลล์คีย์ "Online บริษัท" ได้เอง (config/source.php sale_online_count_since)
+   * เซลล์รับลีดเองทั้งสาขา ถ้ายังบังคับ adminPage อยู่ PP จะขาดไปทั้งที่ salecarCounts()
+   * นับยอดจองให้ครบ → อัตราปิดการขายเพี้ยน แต่ให้นับเฉพาะใบที่คีย์ตั้งแต่วันเริ่มใช้จริง
+   * ของเก่าก่อนหน้านั้นยังใช้กติกาเดิม
+   */
+  protected function anyEntrantSince(): ?string
+  {
+    $since = config('source.sale_online_count_since', [])[(int) $this->brand][(int) $this->branch] ?? null;
+
+    return $since ? (string) $since : null;
+  }
+
+  /** เงื่อนไข "ใครเป็นคนกรอก" ของสาขานี้ — ใช้ร่วมกันทั้ง PP รายเดือนและ PP รายเซลล์ */
+  protected function scopeEntrant($query)
+  {
+    $since = $this->anyEntrantSince();
+
+    return $query->where(function ($q) use ($since) {
+      $q->whereIn('ct.UserInsert', $this->adminPageUserIds());
+
+      if ($since) {
+        $q->orWhere('ct.created_at', '>=', $since . ' 00:00:00');
+      }
+    });
+  }
+
+  /**
    * PP = จำนวน customer_trackings ที่ "contact_date ตัวแรก" (detail แรกสุด) ตกอยู่ในช่วงเวลา
    *      นับต่อ tracking แค่ครั้งเดียว จัดกลุ่มตาม sale_id ของ tracking
    * (ใช้ contact_date ตัวแรกแทนวันที่สร้าง เพราะกรอกย้อนหลังได้)
    *
    * นับเฉพาะ lead ที่ "คนเพิ่ม" (UserInsert) เป็นคนดูแลเพจ — คือ lead ที่เพจรับมาแล้วจ่ายให้เซลล์จริง ๆ
    * ตัด tracking ที่เซลล์กรอกเองออก แม้จะติดแหล่งที่มาเป็น Online ก็ตาม
+   * ยกเว้นสาขาที่เปิดให้เซลล์คีย์ "Online บริษัท" เองได้ ซึ่งนับทุกคนที่กรอก (ดู anyEntrantSince)
    */
   protected function ppCounts(): array
   {
@@ -318,8 +351,8 @@ class LeadOnlinePerBrandSheet implements FromArray, WithTitle, WithEvents, Shoul
       ->where('ct.brand', $this->brand)
       // นับเฉพาะแหล่งที่มา Online (ยกเว้น id 7,20) — รวม tracking ที่ยกเลิก (cancelled_at) ด้วย
       ->whereIn('ct.source_id', $this->onlineSourceIds)
-      // เฉพาะ lead ที่คนดูแลเพจเป็นคนกรอก (ไม่ใช่เซลล์กรอกเอง)
-      ->whereIn('ct.UserInsert', $this->adminPageUserIds())
+      // เฉพาะ lead ที่คนดูแลเพจกรอก — ยกเว้นสาขาที่เซลล์คีย์เองได้ (ดู anyEntrantSince)
+      ->tap(fn($q) => $this->scopeEntrant($q))
       ->whereBetween('fc.first_contact', [
         $this->start->format('Y-m-d 00:00:00'),
         $this->end->format('Y-m-d 23:59:59'),

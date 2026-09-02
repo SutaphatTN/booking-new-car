@@ -35,16 +35,10 @@ class CustomerTrackingOfflinePlaceSheet implements FromView, WithTitle, WithStyl
         return $this->sheetTitle;
     }
 
-    /** สถานะของรายการติดตาม — จองแล้วมาก่อนเสมอ (ส่งมอบแล้วระบบปิด tracking ด้วย cancelled_at ทีหลัง) */
+    /** สถานะของรายการติดตาม — นิยามจริงอยู่บน model (ใช้ร่วมกับหน้ารายการติดตาม) */
     public static function statusLabel(CustomerTracking $t): string
     {
-        if ($t->booked_at) {
-            return 'จองแล้ว';
-        }
-        if ($t->cancelled_at) {
-            return $t->end_type === 'finished' ? 'จบการติดตาม' : 'ยกเลิกการติดตาม';
-        }
-        return 'กำลังติดตาม';
+        return $t->statusLabel();
     }
 
     public function styles(Worksheet $sheet)

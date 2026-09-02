@@ -163,6 +163,7 @@ function recomputeCommissionNet() {
   } else {
     net = base + num('com_discipline') + num('com_lead') + num('com_clip') - num('deduct_absence');
   }
+  net -= num('deduct_other'); // หักอื่นๆ ใช้ทุก brand (ตรงกับ SaleCommissionMonthly::computeNet)
   net += ssi + car + held;
 
   $display.text(net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ฿');
@@ -298,7 +299,7 @@ $(document).on('submit', '#commissionMonthlyForm', function (e) {
   $btn.prop('disabled', true);
 
   // strip comma ช่องค่าคอมรายเดือน (backend validate numeric)
-  const moneyFields = ['com_discipline', 'deduct_absence', 'com_lead', 'com_clip'];
+  const moneyFields = ['com_discipline', 'deduct_absence', 'deduct_other', 'com_lead', 'com_clip'];
   const payload = $(this).serializeArray().map(f =>
     moneyFields.includes(f.name) ? { name: f.name, value: parseMoney(f.value) } : f
   );
