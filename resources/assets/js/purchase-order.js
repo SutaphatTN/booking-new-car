@@ -3555,7 +3555,8 @@ function calculateCommissionSale() {
     }
   }
 
-  const totalCommission = balanceCam + approvedCom + giftCom + extraCom + fiCom + turnCom + comSpecial + budgetDeduct;
+  // budget หัก ไม่เข้าสูตรคอมของคันนี้ — เป็นการใช้งบจากกระเป๋า budget ยกมา (ตรงกับ Salecar::effectiveCommissionSale)
+  const totalCommission = balanceCam + approvedCom + giftCom + extraCom + fiCom + turnCom + comSpecial;
 
   // แยกการ "แสดงผล" ออกจากการคำนวณ: ยอดติดลบไม่โชว์ในช่องคอมงบเหลือ (บังคับ 0) แต่ไปโชว์ช่อง "หักเกินงบ"
   // ยอดที่เข้า totalCommission ยังเป็น balanceCam ตัวเดิม — ไม่มีการเปลี่ยนสูตร

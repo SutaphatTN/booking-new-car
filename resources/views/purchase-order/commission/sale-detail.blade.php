@@ -117,7 +117,8 @@
                   $approved = (float) ($c['approvedCom'] ?? 0);
                   // ยอดบวก/ยอดลบ แยกคนละช่อง : ยอดติดลบทั้งหมดไปรวมที่ "หักเกินงบ"
                   $rowNeg = min($autoBal, 0) + min($approved, 0);
-                  $rowBase = $c['commissionSale'] - $c['specialCom'] - $c['budgetDeduct'];
+                  // ฐานคงที่ของแถว (ถอดเฉพาะช่องที่แก้สดได้) — budget หักไม่อยู่ในสูตรคอมแล้ว จึงไม่ต้องถอด
+                  $rowBase = $c['commissionSale'] - $c['specialCom'];
                   $rowNet = $c['commissionSale'] + $carCom;
                   $rowPos = $rowNet - $rowNeg;
 
@@ -160,12 +161,23 @@
                        (ป้ายกั๊ก/พักไว้ ย้ายไปช่อง "คอมสุทธิ" แล้ว เพราะกั๊กหักจากคอมสุทธิของคัน ไม่ใช่คอมตัวรถ) --}}
                   <td class="text-end {{ $carCom > 0 ? '' : 'text-muted' }}">
                     {{ number_format($carCom, 2) }}
-                    {{-- ป้ายแดงขึ้นเฉพาะคันที่ "ไม่ได้คอมตัวรถ" จริง ๆ (เกินเพดาน + CK ก่อนวันตัด)
-                         คันตั้งแต่วันตัดเป็นต้นไปถึงจะเกินเพดานก็ได้คอมตัวรถ จึงไม่ต้องขึ้นป้าย --}}
+                    {{-- ป้ายบอกสถานะงบของคันนี้ — ยอดคอมตัวรถด้านบนไม่เปลี่ยน แค่บอกว่าคันไหนเกินงบ
+                         · แดง = เกินเพดาน + CK ก่อนวันตัด → ไม่ได้คอมตัวรถจริง ๆ (ยอดเป็น 0)
+                         · ส้ม = เกินงบ/เกินเพดาน แต่ยังได้คอมตัวรถเต็ม (เช่น brand 2 ที่ไม่สนใจการเกินงบแล้ว) --}}
                     @if (!empty($c['noCarCom']))
                       <div class="text-danger cell-note"
                         title="เกินงบทะลุเพดาน (ก่อนวันเปลี่ยนกติกา) — ไม่ได้คอมตัวรถ แต่ยังนับจำนวนคัน">
                         <i class="bx bx-error-circle"></i> เกินงบทะลุเพดาน
+                      </div>
+                    @elseif (!empty($c['overCeiling']))
+                      <div class="text-warning cell-note"
+                        title="เกินงบทะลุเพดาน — แต่ยังได้คอมตัวรถเต็มตามกติกาปัจจุบัน">
+                        <i class="bx bx-error-circle"></i> เกินงบทะลุเพดาน
+                      </div>
+                    @elseif (!empty($c['isOverBudget']))
+                      <div class="text-warning cell-note"
+                        title="ใบนี้เกินงบ (งบเหลือติดลบ) — ยังได้คอมตัวรถเต็ม">
+                        <i class="bx bx-error-circle"></i> เกินงบ
                       </div>
                     @endif
                   </td>

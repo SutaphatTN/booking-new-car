@@ -4309,6 +4309,9 @@ class PurchaseOrderController extends Controller
                 'balanceCampaign' => $balanceCampaign,
                 'approvedCom'     => $approvedCom,   // ยอดที่ผู้จัดการ/GM กรอก (เกินเพดาน) — brand2/4 ติดลบ
                 'overCeiling'     => $r->isOverBudgetCeiling(), // เกินงบทะลุเพดาน (ใช้กับป้าย "รอยอดอนุมัติ")
+                // เกินงบ (balance ติดลบ) — ใช้ติดป้ายบอกในช่อง "คอมตัวรถ" ให้รู้ว่าคันไหนเกินงบ
+                // แม้คันนั้นจะยังได้คอมตัวรถเต็ม (เช่น brand 2 ที่ไม่สนใจการเกินงบแล้ว)
+                'isOverBudget'    => (float) ($r->balanceCampaign ?? 0) < 0,
                 'noCarCom'        => !$r->earnsCarCommission(), // คันเก่าก่อนวันตัด → ไม่ได้คอมตัวรถ
                 'extraDeduct'     => ExtraBudgetLedger::absorbedFor($r),
                 'accessoryCom'    => $accessoryCom,

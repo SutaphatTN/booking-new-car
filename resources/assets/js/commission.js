@@ -242,8 +242,9 @@ function recomputeCarsTable() {
     const rowcar = parseFloat($(this).data('rowcar')) || 0; // คอมตัวรถของคันนี้ (คงที่)
     const rowneg = parseFloat($(this).data('rowneg')) || 0; // หักเกินงบ (คงที่, ติดลบหรือ 0)
     const special = parseMoney($(this).val());
-    const budget = parseMoney($row.find('.car-budget-input').val()); // budget หัก (brand 2)
-    const rowTotal = rowbase + special + budget; // = รวมค่าคอมรถของคันนี้ (มียอดติดลบรวมอยู่แล้ว)
+    // budget หัก : ไปหักกระเป๋า budget ยกมาอย่างเดียว ไม่เข้าคอมของคันนี้ (ตรงกับ Salecar::effectiveCommissionSale)
+    const budget = parseMoney($row.find('.car-budget-input').val());
+    const rowTotal = rowbase + special; // = รวมค่าคอมรถของคันนี้ (มียอดติดลบรวมอยู่แล้ว)
     const rowNet = rowTotal + rowcar; // คอมสุทธิ = รวมค่าคอมรถ + คอมตัวรถ
     const rowPos = rowNet - rowneg; // รวมเงินได้ = คอมสุทธิ − (ยอดติดลบ)
     $row.find('.car-row-positive').text(fmt(rowPos));

@@ -826,14 +826,22 @@ class Salecar extends Model
 	}
 
 	/**
-	 * "คอมประดับยนต์" (gift + extra) — เกินงบทุกกรณี (balance < 0) ไม่คิด (คืน 0)
+	 * "คอมประดับยนต์" = ของแถม (gift) + ซื้อเพิ่ม (extra)
+	 *
+	 * 2026-09-02 (ตามที่ผู้ใช้สั่ง): แยกกติกาสองก้อน
+	 *  - ซื้อเพิ่ม (AccessoryExtraCom) : ลูกค้าจ่ายเงินซื้อเอง = เป็นยอดขายจริง → ได้คอม "ทุกกรณี"
+	 *    แม้ใบนั้นจะเกินงบ (เดิมโดนตัดทิ้งไปด้วย ทั้งที่ไม่ได้ใช้งบบริษัท)
+	 *  - ของแถม (AccessoryGiftCom) : จ่ายจากงบ → เกินงบ (balance < 0) แล้วไม่ได้คอม เหมือนเดิม
 	 */
 	public function effectiveAccessoryCommission(): float
 	{
+		$extra = (float) ($this->AccessoryExtraCom ?? 0);
+
 		if ((float) ($this->balanceCampaign ?? 0) < 0) {
-			return 0.0;
+			return $extra;
 		}
-		return (float) ($this->AccessoryGiftCom ?? 0) + (float) ($this->AccessoryExtraCom ?? 0);
+
+		return (float) ($this->AccessoryGiftCom ?? 0) + $extra;
 	}
 
 	/**
@@ -869,10 +877,12 @@ class Salecar extends Model
 		$fiCom    = (float) ($this->remainingPayment->total_com ?? 0);
 		$turnCom  = (float) ($this->turnCar->com_turn ?? 0);
 
+		// หมายเหตุ: budget หัก (brand 2) ไม่เข้าสูตรนี้ — เป็นการ "ใช้งบ" ที่ไปหักกระเป๋า budget ยกมา
+		// ของเดือนนั้น (ดู BudgetWallet::used) แล้วมีผลกับเงินเซลล์ผ่านโบนัส 30% ของงบที่เหลือแทน
+		// 2026-09-02: เดิมบวก effectiveBudgetDeduct() เข้ามาด้วย ทำให้กรอก budget หัก แล้วคอมของคันนั้นเพิ่มขึ้นเอง
 		return $this->effectiveBalanceCommission()
 			+ $this->effectiveAccessoryCommission()
-			+ $fiCom + $turnCom + $this->effectiveSpecialCommission()
-			+ $this->effectiveBudgetDeduct();
+			+ $fiCom + $turnCom + $this->effectiveSpecialCommission();
 	}
 
 	public function branchInfo()
