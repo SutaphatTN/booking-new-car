@@ -1155,14 +1155,40 @@
                           @foreach ($campaigns as $camp)
                             {{-- แคมเปญที่หมดอายุ/ถูกปิดไปแล้ว แต่ใบนี้เลือกไว้ตั้งแต่ตอนจอง — ต้องคงไว้ในลิสต์
                                  (เอาออกเมื่อไหร่ ยอดจะหายจากหน้าจอ และโดนลบถาวรตอนกดบันทึก) --}}
-                            @php $campExpired = in_array($camp->id, $expiredCampaignIds ?? []); @endphp
+                            @php
+                              $campExpired = in_array($camp->id, $expiredCampaignIds ?? []);
+                              $campSelected = in_array($camp->id, $selected_campaigns ?? []);
+                              // แคมเปญที่ใบนี้เลือกไว้แล้ว → ใช้ยอดที่ snapshot ไว้ตอนจอง ไม่ใช่ยอดปัจจุบันของ master
+                              // (JS รวม TotalSaleCampaign จาก data-cash-support-final → ต้องเป็นยอดชุดเดียวกับใน salecampaigns)
+                              $campHasSnapshot = array_key_exists($camp->id, $campaignSnapshots ?? []);
+                              $campAmount = $campHasSnapshot
+                                  ? $campaignSnapshots[$camp->id]
+                                  : (float) $camp->cashSupport_final;
+                              $campMasterChanged =
+                                  $campHasSnapshot &&
+                                  abs($campAmount - (float) $camp->cashSupport_final) >= 0.005;
+                              // ชิ้นส่วนข้อความ option — ปุ่ม "ดึงยอดล่าสุด" (admin) ใช้ประกอบ label ใหม่
+                              // เมื่อยอดเปลี่ยน จะได้ไม่ต้องไปแทนที่ตัวเลขในข้อความด้วย regex
+                              $campLabelPrefix = '(' . ($camp->type->name ?? '-') . ') ' . ($camp->appellation->name ?? '-') . ' — ';
+                              $campLabelSuffix =
+                                  ' ฿' .
+                                  ($campExpired
+                                      ? ' [หมดอายุ ' .
+                                          ($camp->endDate
+                                              ? \Illuminate\Support\Carbon::parse($camp->endDate)->format('d/m/Y')
+                                              : '-') .
+                                          ']'
+                                      : '');
+                            @endphp
                             <option value="{{ $camp->id }}"
-                              data-cash-support-final="{{ $camp->cashSupport_final }}"
+                              data-cash-support-final="{{ $campAmount }}"
+                              data-label-prefix="{{ $campLabelPrefix }}" data-label-suffix="{{ $campLabelSuffix }}"
                               @if ($campExpired) data-expired="1" @endif
-                              {{ in_array($camp->id, $selected_campaigns ?? []) ? 'selected' : '' }}>
+                              @if ($campMasterChanged) title="ยอดตั้งค่าปัจจุบัน {{ number_format((float) $camp->cashSupport_final, 2, '.', ',') }} ฿ — ใบนี้ใช้ยอดตอนจอง" @endif
+                              {{ $campSelected ? 'selected' : '' }}>
                               ({{ $camp->type->name ?? '-' }})
                               {{ $camp->appellation->name ?? '-' }} —
-                              {{ number_format((float) $camp->cashSupport_final, 2, '.', ',') }} ฿
+                              {{ number_format($campAmount, 2, '.', ',') }} ฿
                               @if ($campExpired)
                                 [หมดอายุ {{ $camp->endDate ? \Illuminate\Support\Carbon::parse($camp->endDate)->format('d/m/Y') : '-' }}]
                               @endif
@@ -1172,7 +1198,20 @@
                         <div id="campaignWarning" class="mt-2 text-danger small"></div>
                         <div class="mt-1 text-muted" style="font-size:.78rem;">
                           <i class="bx bx-info-circle me-1"></i>สามารถเลือกได้หลายแคมเปญ
+                          <span class="d-block">ยอดที่แสดงคือยอด ณ ตอนจอง (ไม่เปลี่ยนตามหน้าตั้งค่า)</span>
                         </div>
+
+                        {{-- ปกติใบจองล็อกยอดแคมเปญตอนจองไว้ — ปุ่มนี้คือทางออกตอนตั้งค่าพิมพ์ผิดแล้วต้องแก้ใบเก่า
+                             เฉพาะ admin (คนเดียวกับที่แก้ยอดในหน้าตั้งค่าได้) และ server เช็คสิทธิ์ซ้ำอีกชั้น --}}
+                        @if (Auth::user()->role === 'admin' && !$isHistory)
+                          <button type="button" id="refreshCampaignAmount" class="btn btn-sm btn-outline-secondary mt-2">
+                            <i class="bx bx-refresh me-1"></i> ดึงยอดล่าสุดจากตั้งค่า
+                          </button>
+                          <span id="refreshCampaignHint" class="ms-2 small text-success d-none">
+                            <i class="bx bx-check"></i> ดึงยอดใหม่แล้ว — กดบันทึกเพื่อยืนยัน
+                          </span>
+                        @endif
+                        <input type="hidden" name="refresh_campaign_amount" id="refresh_campaign_amount" value="0">
                       </div>
                     </div>
 
@@ -1254,6 +1293,10 @@
                               <td style="font-size:.85rem; color:#374151;">{{ $a->accessory_id }}</td>
                               <td class="acc-detail">
                                 {{ $a->detail }}
+                                {{-- รายการที่ถูกลบในหน้าตั้งค่าทีหลัง — ยังต้องแสดงไว้ในใบเก่า --}}
+                                @if ($a->trashed())
+                                  <span class="badge bg-label-secondary" style="font-size:.65rem;">ลบจากตั้งค่าแล้ว</span>
+                                @endif
                                 @if ($a->requiresNote())
                                   @include('purchase-order.accessory-gift.note-input', [
                                       'note' => $a->pivot->note,
@@ -1352,6 +1395,10 @@
                               <td>{{ $a->accessory_id }}</td>
                               <td class="acc-detail">
                                 {{ $a->detail }}
+                                {{-- รายการที่ถูกลบในหน้าตั้งค่าทีหลัง — ยังต้องแสดงไว้ในใบเก่า --}}
+                                @if ($a->trashed())
+                                  <span class="badge bg-label-secondary" style="font-size:.65rem;">ลบจากตั้งค่าแล้ว</span>
+                                @endif
                                 @if ($a->requiresNote())
                                   @include('purchase-order.accessory-gift.note-input', [
                                       'note' => $a->pivot->note,

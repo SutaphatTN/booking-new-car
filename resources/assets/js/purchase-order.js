@@ -3078,6 +3078,75 @@ $(document).ready(function () {
     calculateBalanceCampaign?.();
   }
 
+  // ดึงยอดแคมเปญล่าสุดจากหน้าตั้งค่า (ปุ่มมีเฉพาะ admin — server เช็คสิทธิ์ซ้ำอีกชั้น)
+  // ปกติใบจองล็อกยอด ณ ตอนจองไว้ ปุ่มนี้ตั้งใจให้ทับ snapshot จึงต้องยืนยันก่อน
+  // และยังไม่บันทึกทันที — แค่เปลี่ยนตัวเลขในฟอร์มให้คำนวณยอดอื่นตามปกติ แล้วรอ user กดบันทึกเอง
+  $('#refreshCampaignAmount').on('click', function () {
+    const ids = $('#CampaignID option:selected')
+      .map(function () {
+        return this.value;
+      })
+      .get();
+
+    if (!ids.length) {
+      Swal.fire({ icon: 'info', title: 'ใบนี้ยังไม่ได้เลือกแคมเปญ' });
+      return;
+    }
+
+    Swal.fire({
+      icon: 'warning',
+      title: 'ดึงยอดล่าสุดจากตั้งค่า?',
+      text: 'ยอดแคมเปญของใบนี้จะถูกแทนที่ด้วยยอดปัจจุบันในหน้าตั้งค่า มีผลกับ GP/รายงานย้อนหลังของคันนี้',
+      showCancelButton: true,
+      confirmButtonText: 'ดึงยอดล่าสุด',
+      cancelButtonText: 'ยกเลิก'
+    }).then(result => {
+      if (!result.isConfirmed) return;
+
+      const $btn = $('#refreshCampaignAmount').prop('disabled', true);
+
+      $.get('/purchase-order/campaign-current-amounts', { ids: ids })
+        .done(function (res) {
+          const byId = {};
+          (res || []).forEach(c => {
+            byId[String(c.id)] = c.cashSupport_final;
+          });
+
+          $('#CampaignID option:selected').each(function () {
+            const fresh = byId[String(this.value)];
+            if (fresh === undefined || fresh === null) return;
+
+            const $opt = $(this);
+            // ต้องเซ็ตทั้ง attr และ data — calcTotalCampaign อ่านผ่าน .data() ซึ่ง cache ค่าเดิมไว้
+            $opt.attr('data-cash-support-final', fresh).data('cashSupportFinal', fresh);
+            $opt.removeAttr('title');
+            $opt.text(
+              ($opt.attr('data-label-prefix') || '') +
+                formatMoney(fresh) +
+                ($opt.attr('data-label-suffix') || '')
+            );
+          });
+
+          // บอก server ว่าครั้งนี้ให้ทับ snapshot ด้วยยอด master (ไม่งั้น update() จะคงยอดเดิมไว้)
+          $('#refresh_campaign_amount').val('1');
+          $('#refreshCampaignHint').removeClass('d-none');
+
+          $('#CampaignID').trigger('change.select2');
+          calcTotalCampaign();
+        })
+        .fail(function (xhr) {
+          Swal.fire({
+            icon: 'error',
+            title: 'ดึงยอดไม่สำเร็จ',
+            text: xhr.status === 403 ? 'สิทธิ์ของคุณใช้ปุ่มนี้ไม่ได้' : 'กรุณาลองใหม่อีกครั้ง'
+          });
+        })
+        .always(function () {
+          $btn.prop('disabled', false);
+        });
+    });
+  });
+
   $('#CampaignID').on('select2:select select2:unselect', function () {
     calcTotalCampaign();
   });

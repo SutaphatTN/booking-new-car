@@ -9,6 +9,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 /**
  * Class Salecampaign
@@ -55,9 +56,12 @@ class Salecampaign extends Model
 
 	protected $dates = ['deleted_at'];
 	
+	// ปลด soft delete ของ master — แคมเปญที่ถูกลบในหน้าตั้งค่าทีหลัง ใบเก่าต้องยังอ่านชื่อ/ประเภทได้
+	// (GP กับใบขออนุมัติแยกยอดตาม type ของแคมเปญ ถ้า relation เป็น null ยอดจะหายไปทั้งก้อน)
 	public function campaign()
 	{
-		return $this->belongsTo(Campaign::class, 'CampaignID', 'id');
+		return $this->belongsTo(Campaign::class, 'CampaignID', 'id')
+			->withoutGlobalScope(SoftDeletingScope::class);
 	}
 
 	public function saleCar()
