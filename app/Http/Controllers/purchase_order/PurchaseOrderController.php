@@ -1008,24 +1008,30 @@ class PurchaseOrderController extends Controller
         if ($search) {
             $base->where(function ($q) use ($search) {
                 $q->whereHas('customer', fn($q) => $q->searchFullName($search))
-                // ค้นชื่อ "ผู้จองเดิม" ด้วย (กรณีเปลี่ยนผู้ซื้อ) — ตารางแสดง 2 ชื่อ ต้องค้นเจอทั้งคู่
-                ->orWhereHas('originalCustomer', fn($q) => $q->searchFullName($search))
-                ->orWhereHas('saleUser', fn($q) =>
-                    $q->where('name', 'like', "%{$search}%")
-                )
-                ->orWhereHas('carOrder', fn($q) =>
-                    $q->where('order_code', 'like', "%{$search}%")
-                )
-                // รุ่นรถ — คอลัมน์ "รุ่นรถ" ในตารางแสดง รุ่นหลัก/รุ่นย่อย/รายละเอียด จึงต้องค้นได้ทั้งสามค่า
-                // ครอบ closure ซ้อนไว้ ไม่งั้น orWhere จะหลุดออกนอกเงื่อนไข join ของ whereHas
-                ->orWhereHas('model', fn($q) => $q->where(fn($w) =>
-                    $w->where('Name_TH', 'like', "%{$search}%")
-                      ->orWhere('Name_EN', 'like', "%{$search}%")
-                ))
-                ->orWhereHas('subModel', fn($q) => $q->where(fn($w) =>
-                    $w->where('name', 'like', "%{$search}%")
-                      ->orWhere('detail', 'like', "%{$search}%")
-                ));
+                    // ค้นชื่อ "ผู้จองเดิม" ด้วย (กรณีเปลี่ยนผู้ซื้อ) — ตารางแสดง 2 ชื่อ ต้องค้นเจอทั้งคู่
+                    ->orWhereHas('originalCustomer', fn($q) => $q->searchFullName($search))
+                    ->orWhereHas(
+                        'saleUser',
+                        fn($q) =>
+                        $q->where('name', 'like', "%{$search}%")
+                    )
+                    ->orWhereHas(
+                        'carOrder',
+                        fn($q) =>
+                        $q->where('order_code', 'like', "%{$search}%")
+                    )
+                    // รุ่นรถ — คอลัมน์ "รุ่นรถ" ในตารางแสดง รุ่นหลัก/รุ่นย่อย/รายละเอียด จึงต้องค้นได้ทั้งสามค่า
+                    // ครอบ closure ซ้อนไว้ ไม่งั้น orWhere จะหลุดออกนอกเงื่อนไข join ของ whereHas
+                    ->orWhereHas('model', fn($q) => $q->where(
+                        fn($w) =>
+                        $w->where('Name_TH', 'like', "%{$search}%")
+                            ->orWhere('Name_EN', 'like', "%{$search}%")
+                    ))
+                    ->orWhereHas('subModel', fn($q) => $q->where(
+                        fn($w) =>
+                        $w->where('name', 'like', "%{$search}%")
+                            ->orWhere('detail', 'like', "%{$search}%")
+                    ));
             });
         }
 
@@ -1048,15 +1054,15 @@ class PurchaseOrderController extends Controller
             $statusSale   = $s->conStatus ? $s->conStatus->name : '';
 
             $row = fn($icon, $class, $tip, $text) =>
-                "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
+            "<div class=\"text-start\"><i class=\"bx {$icon} {$class} me-1\" data-bs-toggle=\"tooltip\" title=\"{$tip}\"></i>:&nbsp;{$text}</div>";
 
             if (in_array($s->brand, [2, 3, 4])) {
                 $car = $row('bxs-car',       'text-primary', 'รุ่นหลัก', $model)
-                     . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale);
+                    . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale);
             } else {
                 $car = $row('bxs-car',       'text-primary', 'รุ่นหลัก', $model)
-                     . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale)
-                     . ($subDetail ? $row('bx-info-circle', 'text-warning', 'รายละเอียด', $subDetail) : '');
+                    . $row('bx-git-branch', 'text-info',    'รุ่นย่อย', $subModelSale)
+                    . ($subDetail ? $row('bx-info-circle', 'text-warning', 'รายละเอียด', $subDetail) : '');
             }
 
             if (!empty($s->GMApprovalSignature)) {
@@ -1072,7 +1078,7 @@ class PurchaseOrderController extends Controller
             }
 
             $status = $row('bx-receipt',      'text-success', 'ใบจอง',        $statusSale)
-                    . $row('bx-check-shield', 'text-warning', 'การตรวจสอบ', $approver);
+                . $row('bx-check-shield', 'text-warning', 'การตรวจสอบ', $approver);
 
             $salecarId    = $s->id;
             $editUrl      = route('purchase-order.edit', $salecarId);
@@ -1112,8 +1118,8 @@ class PurchaseOrderController extends Controller
                         ? Carbon::parse($s->remainingPayment->po_date)->format('d-m-Y')
                         : '-';
                     return $row('bx-calendar',   'text-primary', 'วันที่จอง',        $booking)
-                         . $row('bx-pen',        'text-success', 'วันที่เซ็นสัญญา', $contract)
-                         . $row('bx-file-blank', 'text-warning', 'วันที่ PO',        $po);
+                        . $row('bx-pen',        'text-success', 'วันที่เซ็นสัญญา', $contract)
+                        . $row('bx-file-blank', 'text-warning', 'วันที่ PO',        $po);
                 })(),
                 // ใบขาย Dealer ไม่ผูกฝ่ายขาย (SaleID = NULL)
                 'sale'   => $s->saleUser?->name ?? '-',
@@ -2733,8 +2739,14 @@ class PurchaseOrderController extends Controller
                 if (!empty($deliveryTriggers)) {
                     try {
                         $saleCar->load([
-                            'customer.prefix', 'model', 'subModel', 'carOrder',
-                            'saleUser.branchInfo', 'gwmColor', 'interiorColor', 'conStatus',
+                            'customer.prefix',
+                            'model',
+                            'subModel',
+                            'carOrder',
+                            'saleUser.branchInfo',
+                            'gwmColor',
+                            'interiorColor',
+                            'conStatus',
                             'remainingPayment.financeInfo', // ชื่อไฟแนนซ์ในเมล
                         ]);
                         Mail::to('waliwan.mitsuchookiatkrabi@gmail.com')->send(new CarDeliveredMail($saleCar, $deliveryTriggers));
@@ -4385,7 +4397,7 @@ class PurchaseOrderController extends Controller
             'deduct_other_note' => 'nullable|string|max:255',
             'com_lead'          => 'nullable|numeric',
             'com_clip'          => 'nullable|numeric',
-            // คอมประดับยนต์ (ขายแยก) — ผู้จัดการ/GM กรอกเอง บวกเข้ายอดคอม ใช้ทุก brand
+            // คอมประดับยนต์ (หน้าร้าน) — ผู้จัดการ/GM กรอกเอง บวกเข้ายอดคอม ใช้ทุก brand
             'com_accessory_sold' => 'nullable|numeric',
             'discipline_failed' => 'nullable|boolean',
         ]);
