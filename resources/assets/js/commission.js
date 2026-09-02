@@ -156,7 +156,8 @@ function recomputeCommissionNet() {
   const held = parseFloat($display.data('held')) || 0; // คอมกั๊ก brand 1 = (ยกมา) − (กั๊กเดือนนี้)
 
   let net;
-  if (brand === 1 || brand === 3) {
+  // กลุ่ม [1,3,4] ต้องตรงกับ SaleCommissionMonthly::computeNet และ $isBrand13 ในหน้า blade
+  if (brand === 1 || brand === 3 || brand === 4) {
     // วินัยไม่ผ่าน → หัก 15% จากรวมค่าคอมรถ ; ไม่มี lead/clip
     const failed = $('input[name="discipline_failed"]:checked').val() === '1';
     net = (failed ? base * 0.85 : base) - num('deduct_absence');
@@ -164,6 +165,8 @@ function recomputeCommissionNet() {
     net = base + num('com_discipline') + num('com_lead') + num('com_clip') - num('deduct_absence');
   }
   net -= num('deduct_other'); // หักอื่นๆ ใช้ทุก brand (ตรงกับ SaleCommissionMonthly::computeNet)
+  // คอมประดับยนต์ (ขายแยก) ใช้ทุก brand — บวกนอกฐาน จึงไม่โดนหัก 15% ตอนวินัยไม่ผ่าน
+  net += num('com_accessory_sold');
   net += ssi + car + held;
 
   $display.text(net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ฿');
@@ -251,7 +254,9 @@ function recomputeCarsTable() {
   $('#carsCarTotal').text(fmt(carTotal));
   $('#carsPositiveTotal').text(fmt(posTotal));
   $('#carsNegativeTotal').text(fmt(negTotal));
-  $('#carsNetTotal').text(fmt(netTotal));
+  // คอมสุทธิรวม : หักยอดที่กั๊ก/พักไว้ (ยังไม่จ่ายรอบนี้) ออก — ค่าคงที่จาก server
+  const withheld = parseFloat($('#carsNetTotal').closest('td').data('withheld')) || 0;
+  $('#carsNetTotal').text(fmt(netTotal - withheld));
   $('#netCommissionDisplay').data('base', base);
 
   // budget ยกมา (brand 2): อัปเดต ใช้ไป / คงเหลือ สด

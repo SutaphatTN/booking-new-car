@@ -2940,6 +2940,31 @@ $(document).ready(function () {
     });
   }
 
+  // แคมเปญที่ "หมดอายุแล้วแต่ใบนี้เลือกไว้ตั้งแต่ตอนจอง" (server ติด data-expired มาให้)
+  // /purchase-order/get-campaign กรองด้วยวันที่ปัจจุบัน → โหลดใหม่ทีไรตัวพวกนี้จะหลุดจาก DOM
+  // แล้วโดนลบถาวรตอนกดบันทึก (update() ลบ Salecampaign ทั้งหมดแล้วสร้างจาก CampaignID[] ที่ส่งมา)
+  // จึงจำไว้ตั้งแต่ตอนโหลดหน้า แล้วเติมกลับหลังโหลดลิสต์ใหม่ — เฉพาะตอนที่ยังเป็นรุ่นย่อยเดิม
+  // (ถ้าเปลี่ยนรุ่น/รุ่นย่อย แคมเปญเก่าใช้ไม่ได้จริง ๆ ต้องให้เลือกใหม่ ไม่ต้องเติมกลับ)
+  const originalSubModelId = $('#subModel_id').val();
+  const keptExpiredCampaigns = $('#CampaignID option[data-expired="1"]:selected')
+    .map(function () {
+      return { id: this.value, text: this.textContent.trim(), cash: $(this).attr('data-cash-support-final') };
+    })
+    .get();
+
+  function restoreExpiredCampaigns() {
+    if (!keptExpiredCampaigns.length) return;
+    if ($('#subModel_id').val() !== originalSubModelId) return;
+
+    keptExpiredCampaigns.forEach(c => {
+      if ($('#CampaignID option[value="' + c.id + '"]').length) return;
+      const option = new Option(c.text, c.id, true, true);
+      $(option).attr('data-cash-support-final', c.cash).attr('data-expired', '1');
+      $('#CampaignID').append(option);
+    });
+    $('#CampaignID').trigger('change.select2');
+  }
+
   // ล้างค่ายอดรวม
   function clearCampaignSelection() {
     $('#CampaignID').val(null).empty().prop('disabled', true).trigger('change.select2');
@@ -3010,6 +3035,9 @@ $(document).ready(function () {
 
         if (!res || res.length === 0) {
           resetCampaign('ไม่มีแคมเปญสำหรับรุ่นและปีนี้');
+          restoreExpiredCampaigns();   // ยังต้องคงแคมเปญเดิมที่ใบนี้เลือกไว้
+          if ($('#CampaignID option').length) $('#CampaignID').prop('disabled', false);
+          calcTotalCampaign();
           return;
         }
 
@@ -3027,7 +3055,9 @@ $(document).ready(function () {
           $('#CampaignID').append(option);
         });
 
+        restoreExpiredCampaigns();
         $('#CampaignID').trigger('change.select2');
+        calcTotalCampaign();
       },
       error: function () {
         resetCampaign('เกิดข้อผิดพลาดในการโหลดแคมเปญ');

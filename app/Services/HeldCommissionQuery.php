@@ -19,8 +19,14 @@ use Illuminate\Support\Collection;
 class HeldCommissionQuery
 {
     public const BRAND        = 1;    // เฉพาะ brand 1
-    public const HOLD_PER_CAR = 2000; // กั๊กคันละ 2,000 (cap ที่ค่าคอมรายคัน)
+    public const HOLD_PER_CAR = 2000; // กั๊กคันละ 2,000 (cap ที่คอมสุทธิของคันนั้น)
     public const CUTOFF_DAY   = 10;   // (legacy) — โมเดลเก่าใช้ "ส่งมอบหลังวันที่ 10"
+
+    /**
+     * relation ที่ต้อง eager load เพื่อคิด "คอมสุทธิของคัน" (ฐานการกั๊ก — ดู holdBaseOf)
+     * ชุดเดียวกับที่ SaleCommissionQuery::base ใช้ ไม่งั้น effectiveCommissionSale() จะยิง query รายคัน
+     */
+    private const HOLD_BASE_RELATIONS = ['model', 'subModel', 'remainingPayment', 'turnCar'];
 
     /** รอบหลักของ CK = วันที่ 10 ของเดือนถัดจาก CK */
     public static function mainPaydayCK(Carbon $ck): Carbon
@@ -59,17 +65,34 @@ class HeldCommissionQuery
         return $dd === null || $dd->gt(self::mainPaydayCK($ck));
     }
 
-    /** ยอดกั๊ก = min(2000, ค่าคอมรายคัน) — ไม่ติดลบ */
-    public static function heldAmount(bool $held, float $carCommission): float
+    /** ยอดกั๊ก = min(2000, ฐานที่กั๊กได้) — ไม่ติดลบ */
+    public static function heldAmount(bool $held, float $holdBase): float
     {
-        return $held ? min((float) self::HOLD_PER_CAR, max(0.0, $carCommission)) : 0.0;
+        return $held ? min((float) self::HOLD_PER_CAR, max(0.0, $holdBase)) : 0.0;
     }
 
     /**
-     * แผนจ่ายค่าคอมรายคันของรถ 1 คัน (CK, DD, ค่าคอม C)
+     * ฐานที่ใช้กั๊กของรถ 1 คัน = "คอมสุทธิของคันนั้น" (คอมรถทั้งหมด + คอมตัวรถ)
+     *
+     * เดิมกั๊กจากค่าคอมตัวรถ (C) อย่างเดียว → คันที่ "เกินงบทะลุเพดาน" ได้ C = 0
+     * เลยกั๊กไม่ได้เลยทั้งที่ DD มาช้าและยังมีคอมก้อนอื่นอยู่ (เช่น คอมงบเหลือ/ประดับยนต์)
+     * ย้ายมากั๊กจากคอมสุทธิ → กั๊กได้ "เท่าที่คันนั้นมี" สูงสุด 2,000 ตามเดิม
+     */
+    public static function holdBaseOf(Salecar $car, float $C): float
+    {
+        return $car->effectiveCommissionSale() + $C;
+    }
+
+    /**
+     * แผนจ่ายค่าคอมรายคันของรถ 1 คัน (CK, DD, ค่าคอมตัวรถ C)
+     *
+     * $holdBase : ฐานที่กั๊กได้ = คอมสุทธิของคัน (ดู holdBaseOf) — ไม่ส่งมา = ใช้ C แบบเดิม
+     *             main_amount ยังเป็น C − H เหมือนเดิม เพราะฝั่งที่เรียกรวมยอดเป็น
+     *             (คอมก้อนอื่นทั้งเดือน) + Σ(คอมตัวรถ − ยอดกั๊ก) อยู่แล้ว ยอดรวมจึงถูกต้อง
+     *             (คันที่กั๊กเกินคอมตัวรถของตัวเอง จะได้ main_amount ติดลบ = ดึงออกจากรอบหลัก)
      * @return array{held:bool, held_amount:float, main_amount:float, main_payday:Carbon, held_payday:?Carbon}
      */
-    public static function paymentFor(Carbon $ck, ?Carbon $dd, float $C): array
+    public static function paymentFor(Carbon $ck, ?Carbon $dd, float $C, ?float $holdBase = null): array
     {
         $mainCK = self::mainPaydayCK($ck);
 
@@ -84,7 +107,7 @@ class HeldCommissionQuery
         }
 
         // รับรถช้า (DD > รอบหลัก CK) → กั๊ก 2000: (C−2000) จ่ายรอบหลัก CK, 2000 จ่ายงวด 10 ถัดจากรับรถ
-        $H = self::heldAmount(true, $C);
+        $H = self::heldAmount(true, $holdBase ?? $C);
         return ['held' => true, 'held_amount' => $H, 'main_amount' => $C - $H, 'main_payday' => $mainCK, 'held_payday' => self::installment10($dd)];
     }
 
@@ -102,13 +125,13 @@ class HeldCommissionQuery
         $perSale = CarCommissionQuery::forMonth($year, $month)['perSale'];
 
         return Salecar::withoutGlobalScopes(['userAccess', 'saleTeam'])
-            ->with('model')   // ใช้เช็คเคส "เกินงบทะลุเพดาน" (คันนั้นไม่ได้คอมตัวรถ → ไม่มีคอมกั๊ก)
+            ->with(self::HOLD_BASE_RELATIONS)
             ->where('brand', self::BRAND)
             ->whereNotNull('DeliveryInCKDate')
             ->whereNotNull('CarOrderID')
             ->salesQualifying()
             ->whereBetween('DeliveryInCKDate', [$from, $to])
-            ->get(['id', 'SaleID', 'DeliveryInCKDate', 'DeliveryDate', 'model_id', 'brand', 'balanceCampaign'])
+            ->get()
             ->map(function ($r) use ($perSale) {
                 $saleId = (int) $r->SaleID;
                 // entry ของ (SaleID + brand ของรถคันนี้) — เซลล์ที่ขายหลาย brand จะไม่ปนกัน
@@ -117,7 +140,7 @@ class HeldCommissionQuery
 
                 $ck = Carbon::parse($r->DeliveryInCKDate);
                 $dd = $r->DeliveryDate ? Carbon::parse($r->DeliveryDate) : null;
-                $p  = self::paymentFor($ck, $dd, $C);
+                $p  = self::paymentFor($ck, $dd, $C, self::holdBaseOf($r, $C));
 
                 return [
                     'salecar_id'  => (int) $r->id,
@@ -155,7 +178,7 @@ class HeldCommissionQuery
         $ddFrom = $mStart->copy()->subMonthNoOverflow()->startOfMonth();
 
         $cars = Salecar::withoutGlobalScopes(['userAccess', 'saleTeam'])
-            ->with('model')   // ใช้เช็คเคส "เกินงบทะลุเพดาน" (คันนั้นไม่ได้คอมตัวรถ → ไม่มีคอมกั๊ก)
+            ->with(self::HOLD_BASE_RELATIONS)
             ->where('brand', self::BRAND)
             ->when($saleId !== null, fn($q) => $q->where('SaleID', $saleId))
             ->when($ckBefore !== null, fn($q) => $q->where('DeliveryInCKDate', '<', $ckBefore))
@@ -166,7 +189,7 @@ class HeldCommissionQuery
                 $q->whereBetween('DeliveryInCKDate', [$ckFrom, $mEnd])
                     ->orWhereBetween('DeliveryDate', [$ddFrom, $mEnd]);
             })
-            ->get(['id', 'SaleID', 'DeliveryInCKDate', 'DeliveryDate', 'model_id', 'brand', 'balanceCampaign']);
+            ->get();
 
         $ckCache = [];
         $payments = collect();
@@ -180,7 +203,7 @@ class HeldCommissionQuery
                 $ckCache[$ckKey] = CarCommissionQuery::forMonth($y, $m)['perSale'];
             }
             $C = self::carCommissionOf($r, CarCommissionQuery::entry($ckCache[$ckKey], (int) $r->SaleID, (int) $r->brand));
-            $p = self::paymentFor($ck, $dd, $C);
+            $p = self::paymentFor($ck, $dd, $C, self::holdBaseOf($r, $C));
 
             // ส่วนหลัก (C−H) ที่ตกเดือน M (ข้าม DD ว่าง = พักไว้ ยังไม่จ่าย)
             if ($p['main_amount'] != 0.0 && $p['main_payday'] !== null && $p['main_payday']->format('Y-m') === $ymM) {
@@ -204,6 +227,43 @@ class HeldCommissionQuery
             }
         }
         return $payments;
+    }
+
+    /**
+     * ส่วนต่างระหว่าง "คอมที่เกิดในเดือน M" กับ "เงินที่เข้ารอบจ่ายของเดือน M" ต่อเซลล์
+     *
+     *   offset = (กั๊กยกมาจากเดือนก่อนที่จ่ายรอบนี้) − (กั๊กเดือนนี้ที่ยกไปรอบหน้า) − (พักไว้ DD ว่าง)
+     *
+     * ใช้ให้ยอดในหน้ารายชื่อ (listCommission) ตรงกับตัวเลขใหญ่ในหน้ารายละเอียด
+     * — คิดจากกติกาวันจ่ายชุด paymentFor ชุดเดียว (อย่าเอา carriedInPerCar/forMonth ซึ่งเป็นกติกาเก่ามาปน)
+     *
+     * @return Collection SaleID => float
+     */
+    public static function payRoundOffsetPerSale(int $year, int $month): Collection
+    {
+        $monthStart = Carbon::create($year, $month, 1)->startOfMonth();
+        $mainCK     = self::mainPaydayCK($monthStart);
+
+        // ยกมา: กั๊กของเดือน CK ก่อนหน้า ที่ครบกำหนดจ่ายในรอบหลักของเดือนนี้
+        $carriedIn = self::paymentsInMonth((int) $mainCK->year, (int) $mainCK->month, null, $monthStart)
+            ->where('kind', 'held')
+            ->groupBy('SaleID')
+            ->map(fn($g) => (float) $g->sum('amount'));
+
+        // ของเดือนนี้ที่ยังไม่จ่ายรอบนี้ : กั๊กที่ยกไป + ก้อนที่พักไว้เพราะยังไม่รับรถ
+        $withheld = self::perCarForCkMonth($year, $month)
+            ->groupBy('SaleID')
+            ->map(function ($g) {
+                $gak = $g->filter(fn($c) => $c['main_payday'] !== null && $c['held'] && $c['held_amount'] > 0)
+                    ->sum('held_amount');
+                $pending = $g->filter(fn($c) => $c['main_payday'] === null)->sum('car_commission');
+                return (float) $gak + (float) $pending;
+            });
+
+        return $carriedIn->keys()->merge($withheld->keys())->unique()
+            ->mapWithKeys(fn($id) => [
+                (int) $id => (float) ($carriedIn[$id] ?? 0) - (float) ($withheld[$id] ?? 0),
+            ]);
     }
 
     /**

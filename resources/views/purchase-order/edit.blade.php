@@ -1153,12 +1153,19 @@
                         <select name="CampaignID[]" id="CampaignID" multiple class="form-select campaign-select"
                           {{ $disabled }}>
                           @foreach ($campaigns as $camp)
+                            {{-- แคมเปญที่หมดอายุ/ถูกปิดไปแล้ว แต่ใบนี้เลือกไว้ตั้งแต่ตอนจอง — ต้องคงไว้ในลิสต์
+                                 (เอาออกเมื่อไหร่ ยอดจะหายจากหน้าจอ และโดนลบถาวรตอนกดบันทึก) --}}
+                            @php $campExpired = in_array($camp->id, $expiredCampaignIds ?? []); @endphp
                             <option value="{{ $camp->id }}"
                               data-cash-support-final="{{ $camp->cashSupport_final }}"
+                              @if ($campExpired) data-expired="1" @endif
                               {{ in_array($camp->id, $selected_campaigns ?? []) ? 'selected' : '' }}>
                               ({{ $camp->type->name ?? '-' }})
                               {{ $camp->appellation->name ?? '-' }} —
                               {{ number_format((float) $camp->cashSupport_final, 2, '.', ',') }} ฿
+                              @if ($campExpired)
+                                [หมดอายุ {{ $camp->endDate ? \Illuminate\Support\Carbon::parse($camp->endDate)->format('d/m/Y') : '-' }}]
+                              @endif
                             </option>
                           @endforeach
                         </select>
