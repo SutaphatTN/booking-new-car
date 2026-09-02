@@ -9,6 +9,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 /**
  * Class Saleaccessory
@@ -57,8 +58,10 @@ class Saleaccessory extends Model
 		return $this->belongsTo(Salecar::class, 'salecar_id', 'id');
 	}
 
+	// ปลด soft delete ของ master — รายการที่ถูกลบในหน้าตั้งค่าทีหลัง ต้องยังอ่านชื่อ/ทุนย้อนหลังได้
 	public function accessory()
 	{
-		return $this->belongsTo(AccessoryPrice::class, 'accessory_id', 'id');
+		return $this->belongsTo(AccessoryPrice::class, 'accessory_id', 'id')
+			->withoutGlobalScope(SoftDeletingScope::class);
 	}
 }

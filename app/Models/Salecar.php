@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 /**
  * Class Salecar
@@ -381,9 +382,16 @@ class Salecar extends Model
 		return $this->hasOne(CarOrderHistory::class, 'SaleID')->latest();
 	}
 
+	/**
+	 * ประดับยนต์ของใบขาย — ปลด soft delete ของ master ทิ้ง
+	 * รายการที่ถูกลบในหน้าตั้งค่าทีหลัง ใบเก่าที่เคยใช้ต้องยังเห็นอยู่
+	 * ไม่งั้นแถวหายจากหน้าจอ แล้วโดนลบถาวรตอนกดบันทึกใบ
+	 * (update() detach ทั้งหมดแล้ว attach เฉพาะที่ฟอร์มส่งมา) และยอด GP/ของแถมย้อนหลังจะเพี้ยน
+	 */
 	public function accessories()
 	{
 		return $this->belongsToMany(AccessoryPrice::class, 'saleaccessory', 'salecar_id', 'accessory_id')
+			->withoutGlobalScope(SoftDeletingScope::class)
 			->withPivot(['price_type', 'price', 'commission', 'cost_spare', 'type', 'note'])
 			->withTimestamps();
 	}

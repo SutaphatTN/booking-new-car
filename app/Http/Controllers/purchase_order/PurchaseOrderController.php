@@ -1478,6 +1478,31 @@ class PurchaseOrderController extends Controller
         return response()->json($campaigns);
     }
 
+    /**
+     * ยอดแคมเปญ "ปัจจุบัน" จากหน้าตั้งค่า ตาม id ที่ส่งมา
+     * ใช้กับปุ่ม "ดึงยอดล่าสุดจากตั้งค่า" ในใบจอง — ปกติใบจองล็อกยอดตอนจองไว้ (snapshot)
+     * ปุ่มนี้คือทางออกตอนตั้งค่าพิมพ์ผิด จึงจำกัดไว้ที่ admin เท่านั้น (คนเดียวกับที่แก้ยอดในหน้าตั้งค่าได้)
+     * withTrashed: แคมเปญที่ถูกลบไปแล้วก็ยังคืนยอดมาให้ ใบเก่าจะได้ไม่กลายเป็น 0
+     */
+    public function campaignCurrentAmounts(Request $request)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403);
+        }
+
+        $ids = array_filter(array_map('intval', (array) $request->input('ids', [])));
+
+        if (empty($ids)) {
+            return response()->json([]);
+        }
+
+        return response()->json(
+            Campaign::withTrashed()
+                ->whereIn('id', $ids)
+                ->get(['id', 'cashSupport', 'cashSupport_deduct', 'cashSupport_final'])
+        );
+    }
+
     public function edit($id)
     {
         // ปลด scope preApproval — id-based จึงปลอดภัย และต้องแก้ไข "คำขออนุมัติล่วงหน้า" ได้ด้วย
@@ -1537,12 +1562,22 @@ class PurchaseOrderController extends Controller
         // แคมเปญที่ใบนี้ "เลือกไว้แล้ว" แต่หมดอายุ/ถูกปิดไปแล้ว ต้องยังอยู่ในลิสต์ด้วย
         // ไม่งั้น blade วาด option ไม่ออก → ยอดหายจากหน้าจอ และพอกดบันทึกจะถูกลบถาวร
         // (update() ลบ Salecampaign ทั้งหมดแล้วสร้างใหม่จาก CampaignID[] ที่ฟอร์มส่งมา)
+        // withTrashed: แคมเปญที่ถูกลบในหน้าตั้งค่าทีหลัง ก็ต้องคงอยู่ในลิสต์ของใบเก่าเหมือนกัน
         $expiredCampaignIds = array_values(array_diff($selected_campaigns, $campaigns->pluck('id')->all()));
         if ($expiredCampaignIds) {
             $campaigns = $campaigns->concat(
-                Campaign::with(['appellation', 'type'])->whereIn('id', $expiredCampaignIds)->get()
+                Campaign::withTrashed()->with(['appellation', 'type'])->whereIn('id', $expiredCampaignIds)->get()
             );
         }
+
+        // ยอดแคมเปญที่ "บันทึกไว้ในใบนี้" (snapshot ตอนจอง) — key = CampaignID
+        // blade ต้องแสดงยอดชุดนี้ ไม่ใช่ยอดปัจจุบันของ master ไม่งั้นแก้ยอดในหน้าตั้งค่าแล้ว
+        // ยอดบนใบเก่าจะขยับตาม (และไม่ตรงกับ salecampaigns ที่รายงาน/GP/เคลมใช้)
+        $campaignSnapshots = $saleCar->campaigns
+            ->filter(fn($c) => $c->CampaignID !== null && $c->CashSupportFinal !== null)
+            ->keyBy(fn($c) => (int) $c->CampaignID)
+            ->map(fn($c) => (float) $c->CashSupportFinal)
+            ->all();
 
         $pricelistRows = $subModel_id
             ? TbPricelistCar::where('subModel_id', $subModel_id)
@@ -1602,7 +1637,7 @@ class PurchaseOrderController extends Controller
             $sourceMains[$currentSource->main_source] = config("source.main.{$currentSource->main_source}", $currentSource->main_source);
         }
 
-        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'expiredCampaignIds', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet', 'canCustomAccPrice', 'redPlateAccIds', 'canReassignSale', 'saleUser', 'canEditCarPrice', 'canBindCarOrder', 'canEditSource', 'sourceMains'));
+        return view('purchase-order.edit', compact('saleCar', 'model', 'subModels', 'campaigns', 'selected_campaigns', 'expiredCampaignIds', 'campaignSnapshots', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'finances', 'conStatus', 'licensePlateRed', 'provinces', 'insurances', 'type', 'typeSale', 'payments', 'userRole', 'isHistory', 'gwmColor', 'interiorColor', 'pricelistRows', 'prefixes', 'tracking', 'extraAbsorbed', 'extraDebtBefore', 'budgetWallet', 'canCustomAccPrice', 'redPlateAccIds', 'canReassignSale', 'saleUser', 'canEditCarPrice', 'canBindCarOrder', 'canEditSource', 'sourceMains'));
     }
 
     /** id ประดับยนต์ที่ถูก mark ว่าเป็น "ป้ายแดง" (ตั้งค่าหลังบ้าน — ข้ามทุก scope เพราะใช้เทียบ id ข้ามแบรนด์) */
@@ -2260,7 +2295,9 @@ class PurchaseOrderController extends Controller
                 if (is_array($accessories)) {
                     $canCustomAcc = self::canSetCustomAccessoryPrice();
                     // ปลด brand scope — อ่านแค่ทุนอะไหล่ของรายการที่ถูกเลือกไว้แล้ว และ id เป็นตัวชี้อยู่แล้ว
+                    // withTrashed: รายการที่ถูกลบในหน้าตั้งค่าทีหลัง ใบเก่ายังต้องบันทึกกลับได้
                     $accMasters = AccessoryPrice::withoutGlobalScope('brandAccess')
+                        ->withTrashed()
                         ->whereIn('id', array_column($accessories, 'id'))
                         ->get()
                         ->keyBy('id');
@@ -2338,21 +2375,42 @@ class PurchaseOrderController extends Controller
                 }
             }
 
+            // snapshot เดิมของใบนี้ (เก็บก่อนลบ) — แคมเปญที่เลือกไว้อยู่แล้วต้องคงยอดเดิม
+            // ห้ามดึงยอดปัจจุบันจาก master มาทับ ไม่งั้นแก้ยอดในหน้าตั้งค่าแล้วใบเก่าที่กดบันทึกอีกครั้ง
+            // (แม้แก้เรื่องอื่น) ยอดจะขยับตาม → รายงาน/GP/เคลม เพี้ยนย้อนหลัง
+            $prevCamp = Salecampaign::where('SaleID', $saleCar->id)
+                ->get()
+                ->keyBy(fn($c) => (int) $c->CampaignID);
+
+            // ปุ่ม "ดึงยอดล่าสุดจากตั้งค่า" (admin เท่านั้น) — ตั้งใจให้ทับ snapshot ด้วยยอดปัจจุบัน
+            // ใช้ตอนตั้งค่าพิมพ์ผิดแล้วต้องแก้ใบที่ออกไปแล้ว นอกนั้นห้ามทับเด็ดขาด
+            if ($request->boolean('refresh_campaign_amount') && Auth::user()->role === 'admin') {
+                $prevCamp = collect();
+            }
+
             Salecampaign::where('SaleID', $saleCar->id)->delete();
 
             // เพิ่มแคมเปญใหม่
             if ($request->has('CampaignID')) {
-                foreach ($request->input('CampaignID') as $campId) {
-                    $campaign = Campaign::find($campId);
+                // withTrashed: แคมเปญที่ถูกลบในหน้าตั้งค่าทีหลัง ยังต้องบันทึกกลับได้
+                $campMasters = Campaign::withTrashed()
+                    ->whereIn('id', array_map('intval', (array) $request->input('CampaignID')))
+                    ->get()
+                    ->keyBy('id');
 
+                foreach ($request->input('CampaignID') as $campId) {
+                    $campaign = $campMasters[(int) $campId] ?? null;
+                    $prev = $prevCamp[(int) $campId] ?? null;
+
+                    // แถวเดิม → คงยอดที่ snapshot ไว้ | แถวที่เพิ่งเลือกใหม่ → ดึงยอดปัจจุบันจาก master
                     Salecampaign::create([
                         'SaleID' => $saleCar->id,
                         'CampaignID' => $campId,
-                        'CampaignName' => $campaign->camName_id ?? '',
-                        'CampaignType' => $campaign->campaign_type,
-                        'CashSupport' => $campaign->cashSupport ?? 0,
-                        'CashSupportDeduct' => $campaign->cashSupport_deduct ?? 0,
-                        'CashSupportFinal' => $campaign->cashSupport_final ?? 0,
+                        'CampaignName' => $prev->CampaignName ?? $campaign->camName_id ?? '',
+                        'CampaignType' => $prev->CampaignType ?? $campaign->campaign_type ?? null,
+                        'CashSupport' => $prev ? $prev->CashSupport : ($campaign->cashSupport ?? 0),
+                        'CashSupportDeduct' => $prev ? $prev->CashSupportDeduct : ($campaign->cashSupport_deduct ?? 0),
+                        'CashSupportFinal' => $prev ? $prev->CashSupportFinal : ($campaign->cashSupport_final ?? 0),
                     ]);
                 }
             }

@@ -549,6 +549,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/list', [PurchaseOrderController::class, 'listPurchaseOrder']);
     Route::get('purchase-order/sale-options', [PurchaseOrderController::class, 'saleOptions']);
     Route::get('/purchase-order/get-campaign', [PurchaseOrderController::class, 'getCampaign']);
+    // ยอดแคมเปญปัจจุบันจากหน้าตั้งค่า — ใช้กับปุ่ม "ดึงยอดล่าสุด" ในใบจอง (admin เท่านั้น)
+    Route::get('/purchase-order/campaign-current-amounts', [PurchaseOrderController::class, 'campaignCurrentAmounts']);
     Route::get('purchase-order/summary/{id}', [PurchaseOrderController::class, 'summaryPurchase'])->name('purchase-order.summary');
     Route::get('purchase-order/booking-pdf/{id}', [PurchaseOrderController::class, 'bookingPdf'])->name('purchase-order.booking-pdf');
     Route::get('/api/purchase-order/sub-model/{model_id}', [PurchaseOrderController::class, 'getSubModelPurchase']);
