@@ -79,23 +79,24 @@
                               <i class="icon-base bx bx-cog icon-md me-3"></i><span>Settings</span>
                           </a>
                       </li> -->
-          @if (Auth::user()->role == 'audit' || Auth::user()->role == 'audit_lead' || Auth::user()->role == 'audit_dp' || Auth::user()->role == 'gm' || Auth::user()->role == 'admin' || Auth::user()->role == 'manager')
+          @if (in_array(Auth::user()->role, ['admin', 'audit_lead', 'audit_dp'], true))
             <li>
               <div class="dropdown-divider my-1"></div>
             </li>
-            <li>
-              <a class="dropdown-item" href="{{ route('register.index') }}">
-                <i class="icon-base bx bx-id-card icon-md me-3"></i><span>ลงทะเบียน</span>
-              </a>
-            </li>
-            {{-- รายชื่อผู้ใช้งาน — เฉพาะ admin + audit_lead (audit_lead ดูได้อย่างเดียว) --}}
-            @if (in_array(Auth::user()->role, ['admin', 'audit_lead', 'audit_dp'], true))
+            {{-- ลงทะเบียน (สร้าง user) — admin เท่านั้น --}}
+            @if (Auth::user()->role === 'admin')
               <li>
-                <a class="dropdown-item" href="{{ route('user.index') }}">
-                  <i class="icon-base bx bx-group icon-md me-3"></i><span>รายชื่อผู้ใช้งาน</span>
+                <a class="dropdown-item" href="{{ route('register.index') }}">
+                  <i class="icon-base bx bx-id-card icon-md me-3"></i><span>ลงทะเบียน</span>
                 </a>
               </li>
             @endif
+            {{-- รายชื่อผู้ใช้งาน — admin + audit_lead/audit_dp (สองตัวหลังดูได้อย่างเดียว) --}}
+            <li>
+              <a class="dropdown-item" href="{{ route('user.index') }}">
+                <i class="icon-base bx bx-group icon-md me-3"></i><span>รายชื่อผู้ใช้งาน</span>
+              </a>
+            </li>
 
             <!-- <li>
                           <a class="dropdown-item" href="javascript:void(0);">

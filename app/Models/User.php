@@ -11,6 +11,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Class User
@@ -86,7 +87,14 @@ class User extends Authenticatable
 	{
 		$restore = [];
 
-		foreach (['brand' => 'brand_switch', 'branch' => 'branch_switch'] as $col => $sessionKey) {
+		// คืนค่า home ได้เฉพาะ "แถวของคนที่ล็อกอินอยู่ ตอน update" เท่านั้น
+		//  - ตอน create ยังไม่มีค่า original → คืนค่าแล้วได้ null (เคยทำให้สมัคร user ใหม่ตอนสลับ brand แล้ว brand หาย)
+		//  - แถวของ user คนอื่น middleware ไม่เคยเขียนทับ → admin ต้องแก้ brand ให้คนอื่นได้ แม้ตัวเองกำลังสลับ brand อยู่
+		$guarded = $this->exists && Auth::check() && (int) Auth::id() === (int) $this->getKey()
+			? ['brand' => 'brand_switch', 'branch' => 'branch_switch']
+			: [];
+
+		foreach ($guarded as $col => $sessionKey) {
 			if ($this->isDirty($col) && session()->has($sessionKey)) {
 				$restore[$col] = $this->attributes[$col];
 				$this->attributes[$col] = $this->getOriginal($col);

@@ -55,8 +55,8 @@ Route::post('/login', [LoginController::class, 'store'])
 Route::post('/logout', [LoginController::class, 'logout'])
     ->name('logout');
 
-// ลงทะเบียน (สร้าง user) — ต้อง login และเป็น role ที่มีสิทธิ์เท่านั้น
-Route::middleware(['auth', 'role:audit,audit_lead,audit_dp,gm,admin,manager'])->group(function () {
+// ลงทะเบียน (สร้าง user) — admin เท่านั้น (ฟอร์มตั้ง brand/สาขา/ทีมขาย/สิทธิ์ ให้ทั้งระบบ)
+Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('register', RegisterController::class)->only(['index', 'store']);
 });
 Route::resource('forgot', ForgotController::class);

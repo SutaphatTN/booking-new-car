@@ -43,6 +43,18 @@ form.addEventListener('submit', function(e) {
   });
 });
 
+document.getElementById('phone').addEventListener('input', function (e) {
+  const digits = e.target.value.replace(/\D/g, '').substring(0, 10);
+
+  if (digits.length <= 3) {
+    e.target.value = digits;
+  } else if (digits.length <= 7) {
+    e.target.value = digits.substring(0, 3) + '-' + digits.substring(3);
+  } else {
+    e.target.value = digits.substring(0, 3) + '-' + digits.substring(3, 7) + '-' + digits.substring(7);
+  }
+});
+
 document.getElementById('cardID').addEventListener('input', function (e) {
   let value = e.target.value.replace(/\D/g, '');
 

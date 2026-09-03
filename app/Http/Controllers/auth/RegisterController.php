@@ -16,19 +16,27 @@ class RegisterController extends Controller
     {
         $branch = TbBranch::all();
         $brand = TbBrand::all();
+        $teams = SaleTeam::selectable();
 
-        return view('auth.register', compact('branch', 'brand'));
+        return view('auth.register', compact('branch', 'brand', 'teams'));
     }
 
     public function store(Request $request)
     {
+        // branch/brand/userZone ต้อง validate ฝั่ง server ด้วย — ถ้าปล่อยให้ว่างได้
+        // user จะถูกสร้างแบบไม่มีสังกัด แล้วไปโผล่ผิดที่ (หรือหายไปเลย) ในทุกหน้าที่ scope ตาม brand
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255'],
+            'email' => ['nullable', 'string', 'email', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users'],
             'cardID' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:6'],
-            'role' => ['required', 'string', 'in:sale,audit,account,finance,manager,md,bp,cs,registration'],
+            'role' => ['required', 'string', 'in:sale,audit,account,manager,md,bp,cs,registration'],
+            'branch' => ['required', 'integer', 'exists:tb_branch,id'],
+            'brand' => ['required', 'integer', 'exists:tb_brand,id'],
+            'userZone' => ['required', 'in:10,40'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'sale_team_id' => ['nullable', 'integer', 'exists:sale_teams,id'],
         ]);
 
         try {
@@ -43,9 +51,11 @@ class RegisterController extends Controller
                 'password' => Hash::make($request->password),
                 'password_plain' => $request->password,
                 'userZone' => $request->userZone,
-                // ทีมขาย: ตั้งอัตโนมัติจาก brand (sale_teams.default_for_brand)
-                // หน้าสมัครไม่มีช่องให้เลือก — ย้ายทีมทีหลังได้ที่หน้าแก้ไขผู้ใช้ (admin เท่านั้น)
-                'sale_team_id' => SaleTeam::defaultIdForBrand($request->brand),
+                'phone' => preg_replace('/\D/', '', $request->phone),
+                // ทีมขาย: ถ้าไม่ได้เลือก ให้ตั้งอัตโนมัติจาก brand (sale_teams.default_for_brand)
+                'sale_team_id' => $request->filled('sale_team_id')
+                    ? (int) $request->sale_team_id
+                    : SaleTeam::defaultIdForBrand($request->brand),
             ]);
 
             return response()->json([
