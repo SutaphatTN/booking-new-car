@@ -9,4 +9,11 @@ return [
    */
   'note_required_type_ids' => [13],
 
+  /*
+   * ประเภทประดับยนต์ (tb_accessory_type.id) ที่นับเป็น "ของชำร่วย"
+   * 15 = ของชำร่วย — ใช้กรองรายงานของชำร่วย (accessory.souvenir-export)
+   * เก็บเป็น config เผื่อวันหลังมีประเภทย่อยเพิ่ม จะได้ไม่ต้องแก้โค้ดรายงาน
+   */
+  'souvenir_type_ids' => [15],
+
 ];

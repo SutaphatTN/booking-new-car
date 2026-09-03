@@ -170,6 +170,9 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     //export accessory partner
     Route::get('accessory/view-export-accessory', [AccessoryController::class, 'viewExportAccessory'])->name('accessory.view-export-accessory');
     Route::get('/accessory/accessory-partner-export', [AccessoryController::class, 'exportAccessoryPartner'])->name('accessory.accessory-partner-export');
+    //export ของชำร่วย
+    Route::get('accessory/view-export-souvenir', [AccessoryController::class, 'viewExportSouvenir'])->name('accessory.view-export-souvenir');
+    Route::get('accessory/souvenir-export', [AccessoryController::class, 'exportSouvenir'])->name('accessory.souvenir-export');
 
     //marketing : แอด (คลิปที่ยิงแอด) — เฉพาะ admin/adminPage, แยก brand+branch
     Route::get('marketing/ad', [AdController::class, 'index'])->name('ad.index');

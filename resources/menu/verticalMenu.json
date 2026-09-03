@@ -294,6 +294,11 @@
               "url": "accessory/view-export-accessory",
               "name": "รายงานต้นทุน",
               "slug": "accessory.view-export-accessory"
+            },
+            {
+              "url": "accessory/view-export-souvenir",
+              "name": "รายงานของชำร่วย",
+              "slug": "accessory.view-export-souvenir"
             }
           ]
         },
