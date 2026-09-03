@@ -46,7 +46,7 @@
 
             <div class="mb-3">
               <label for="branch" class="form-label">สาขา</label>
-              <select id="branch" name="branch" class="form-select">
+              <select id="branch" name="branch" class="form-select" required>
                 <option value="">-- เลือกสาขา --</option>
                 @foreach ($branch as $item)
                 <option value="{{ @$item->id }}">{{ @$item->name }}</option>
@@ -56,10 +56,23 @@
 
              <div class="mb-3">
               <label for="brand" class="form-label">Brand</label>
-              <select id="brand" name="brand" class="form-select">
+              <select id="brand" name="brand" class="form-select" required>
                 <option value="">-- เลือก brand --</option>
                 @foreach ($brand as $item)
                 <option value="{{ @$item->id }}">{{ @$item->name }}</option>
+                @endforeach
+              </select>
+            </div>
+
+            {{-- ทีมขาย — ปล่อยว่างไว้ได้ ระบบจะตั้งทีมเริ่มต้นของ brand นั้นให้เอง --}}
+            <div class="mb-3">
+              <label for="sale_team_id" class="form-label">ทีมขาย</label>
+              <select id="sale_team_id" name="sale_team_id" class="form-select">
+                <option value="">-- ตั้งอัตโนมัติตามแบรนด์ --</option>
+                @foreach ($teams as $team)
+                <option value="{{ $team->id }}">
+                  {{ $team->name }}{{ $team->isIsolated() ? ' (เห็นเฉพาะทีมตัวเอง)' : '' }}
+                </option>
                 @endforeach
               </select>
             </div>
@@ -86,6 +99,11 @@
                 <option value="manager">Manager</option>
                 <option value="md">MD</option>
               </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="phone" class="form-label">เบอร์โทร</label>
+              <input type="text" class="form-control" id="phone" name="phone" maxlength="12" autocomplete="off">
             </div>
 
             <div class="form-password-toggle">

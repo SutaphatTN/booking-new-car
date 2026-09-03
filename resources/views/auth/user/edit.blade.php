@@ -148,6 +148,12 @@
 
                         <div class="col-md-6">
                             <select id="brand" class="form-control" name="brand" required>
+                                {{-- user ที่ brand ว่าง (ข้อมูลเก่าที่บันทึกไม่ครบ) ต้องเห็นว่า "ยังไม่ได้ตั้ง"
+                                     ไม่ใช่ให้ browser เลือก option แรกให้เองแล้วเผลอบันทึกผิด brand --}}
+                                @if (!$brand->contains('id', $user->brand))
+                                <option value="" selected>-- ยังไม่ได้ตั้ง brand --</option>
+                                @endif
+
                                 @foreach ($brand as $item)
                                 <option value="{{ @$item->id }}" {{ $user->brand == $item->id ? 'selected' : '' }}>
                                     {{ @$item->name }}
