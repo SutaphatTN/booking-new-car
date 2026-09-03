@@ -97,7 +97,7 @@ class CustomerTracking extends Model
     }
     public function sale()
     {
-        return $this->belongsTo(User::class, 'sale_id');
+        return $this->belongsTo(User::class, 'sale_id')->withTrashed();
     }
 
     public function brandInfo()
@@ -107,22 +107,22 @@ class CustomerTracking extends Model
 
     public function userInsert()
     {
-        return $this->belongsTo(User::class, 'UserInsert');
+        return $this->belongsTo(User::class, 'UserInsert')->withTrashed();
     }
 
     public function userUpdate()
     {
-        return $this->belongsTo(User::class, 'UserUpdate');
+        return $this->belongsTo(User::class, 'UserUpdate')->withTrashed();
     }
 
     public function userDelete()
     {
-        return $this->belongsTo(User::class, 'UserDelete');
+        return $this->belongsTo(User::class, 'UserDelete')->withTrashed();
     }
 
     public function bookedBy()
     {
-        return $this->belongsTo(User::class, 'BookedBy');
+        return $this->belongsTo(User::class, 'BookedBy')->withTrashed();
     }
 
     /**
@@ -147,7 +147,7 @@ class CustomerTracking extends Model
 
     public function cancelledBy()
     {
-        return $this->belongsTo(User::class, 'CancelledBy');
+        return $this->belongsTo(User::class, 'CancelledBy')->withTrashed();
     }
 
     public function source()

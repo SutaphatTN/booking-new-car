@@ -47,7 +47,7 @@ class FilmStock extends Model
 
     public function inspector()
     {
-        return $this->belongsTo(User::class, 'inspection_by');
+        return $this->belongsTo(User::class, 'inspection_by')->withTrashed();
     }
 
     const BRAND_GROUPS = [

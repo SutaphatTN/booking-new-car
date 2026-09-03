@@ -52,7 +52,7 @@ class LicensePlateHistory extends Model
 
 	public function financeUser()
 	{
-		return $this->belongsTo(User::class, 'finance_approved', 'id');
+		return $this->belongsTo(User::class, 'finance_approved', 'id')->withTrashed();
 	}
 
 	public function getCustRefundDateAttribute($value)

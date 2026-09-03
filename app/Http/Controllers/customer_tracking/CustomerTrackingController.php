@@ -131,7 +131,7 @@ class CustomerTrackingController extends Controller
 
         // Sale column filter
         if ($saleFilter && count($saleFilter) > 0) {
-            $saleIds = User::whereIn('name', $saleFilter)->pluck('id');
+            $saleIds = User::withTrashed()->whereIn('name', $saleFilter)->pluck('id');
             $base->whereIn('sale_id', $saleIds);
         }
 
@@ -282,7 +282,7 @@ class CustomerTrackingController extends Controller
                 'FullName'       => trim($fullName),
                 'contact_info'   => $contactInfo,
                 'model'          => $car,
-                'sale'           => $t->sale->name ?? '-',
+                'sale'           => $t->sale->display_name ?? '-',
                 'source'         => $t->source->name ?? '-',
                 'last_date'      => $lastDate,
                 'next_date'      => $nextDate,
@@ -352,7 +352,7 @@ class CustomerTrackingController extends Controller
         }
 
         if ($saleFilter && count($saleFilter) > 0) {
-            $saleIds = User::whereIn('name', $saleFilter)->pluck('id');
+            $saleIds = User::withTrashed()->whereIn('name', $saleFilter)->pluck('id');
             $base->whereIn('sale_id', $saleIds);
         }
 
@@ -401,7 +401,8 @@ class CustomerTrackingController extends Controller
         $trackingIds = $base->pluck('id');
 
         // Distinct sale names
-        $sales = User::whereIn(
+        // withTrashed: ตัวเลือกกรอง "ผู้ขาย" ต้องมีเซลล์ที่ลาออก/ถูกลบด้วย ไม่งั้นใบเก่าของเขากรองหาไม่เจอ
+        $sales = User::withTrashed()->whereIn(
             'id',
             CustomerTracking::whereIn('id', $trackingIds)->pluck('sale_id')->unique()
         )->orderBy('name')->pluck('name');

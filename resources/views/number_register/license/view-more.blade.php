@@ -103,7 +103,7 @@
                   <i class="bx bx-user-check ci-indigo"></i> ฝ่ายขาย
                 </label>
                 <input id="sale_fullname" type="text" class="form-control"
-                  value="{{ $lic->saleCarLic?->saleUser?->name ?? '-' }}"
+                  value="{{ $lic->saleCarLic?->saleUser?->display_name ?? '-' }}"
                   style="background:#f8fafc;color:#64748b;" disabled>
               </div>
 

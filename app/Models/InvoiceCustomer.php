@@ -59,12 +59,12 @@ class InvoiceCustomer extends Model
 
     public function insertInvoice()
     {
-        return $this->belongsTo(User::class, 'UserInsert', 'id');
+        return $this->belongsTo(User::class, 'UserInsert', 'id')->withTrashed();
     }
 
     public function approvedInvoice()
     {
-        return $this->belongsTo(User::class, 'UserApproved', 'id');
+        return $this->belongsTo(User::class, 'UserApproved', 'id')->withTrashed();
     }
 
     public function getFormattedDateAttribute()

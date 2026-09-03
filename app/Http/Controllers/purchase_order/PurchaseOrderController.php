@@ -999,7 +999,7 @@ class PurchaseOrderController extends Controller
         }
 
         if ($saleFilter && count($saleFilter) > 0) {
-            $saleIds = User::whereIn('name', $saleFilter)->pluck('id');
+            $saleIds = User::withTrashed()->whereIn('name', $saleFilter)->pluck('id');
             $base->whereIn('SaleID', $saleIds);
         }
 
@@ -1122,7 +1122,7 @@ class PurchaseOrderController extends Controller
                         . $row('bx-file-blank', 'text-warning', 'วันที่ PO',        $po);
                 })(),
                 // ใบขาย Dealer ไม่ผูกฝ่ายขาย (SaleID = NULL)
-                'sale'   => $s->saleUser?->name ?? '-',
+                'sale'   => $s->saleUser?->display_name ?? '-',
                 'statusSale'    => $status,
                 'Action'        => $action,
             ];
@@ -4177,8 +4177,14 @@ class PurchaseOrderController extends Controller
             if ($s->saleUser && $s->saleUser->trashed()) {
                 $note = ' <span class="badge bg-secondary">ลาออกแล้ว</span>';
             } elseif ($s->saleUser && (int) $s->saleUser->brand !== (int) $s->brand) {
-                $moved = $brandNames[(int) $s->saleUser->brand] ?? ('brand ' . (int) $s->saleUser->brand);
-                $note = ' <span class="badge bg-warning text-dark">ย้ายไป ' . e($moved) . ' แล้ว</span>';
+                $homeName = $brandNames[(int) $s->saleUser->brand] ?? ('brand ' . (int) $s->saleUser->brand);
+
+                // brand ประจำตัวไม่ตรงกับ brand ของรถ ไม่ได้แปลว่า "ย้าย" เสมอไป —
+                // เซลล์ที่มีสิทธิ์ขายข้ามแบรนด์ (sale_switch_scope / sale_switch_extra) ก็ไม่ตรงเป็นปกติ
+                // เช่นหน้าค่าคอม Wuling ที่ใช้เซลล์ Mitsu + Lepas ทั้งหน้า — ป้าย "ย้ายไป" ขึ้นทุกแถวทั้งที่ไม่มีใครย้าย
+                $note = in_array((int) $s->brand, $s->saleUser->switchableBrandIds(), true)
+                    ? ' <span class="badge bg-label-secondary">สังกัด ' . e($homeName) . '</span>'
+                    : ' <span class="badge bg-warning text-dark">ย้ายไป ' . e($homeName) . ' แล้ว</span>';
             }
 
             $emoji = '';

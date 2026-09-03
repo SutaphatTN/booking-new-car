@@ -76,7 +76,7 @@ class CarOrderWaiting extends Model
 
     public function approvers()
     {
-        return $this->belongsTo(User::class, 'approver', 'id');
+        return $this->belongsTo(User::class, 'approver', 'id')->withTrashed();
     }
 
     public function purchaseType()

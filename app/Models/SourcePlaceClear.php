@@ -48,12 +48,12 @@ class SourcePlaceClear extends Model
 
     public function payApprover()
     {
-        return $this->belongsTo(User::class, 'pay_approved_by');
+        return $this->belongsTo(User::class, 'pay_approved_by')->withTrashed();
     }
 
     /** คนที่เพิ่มใบเคลียร์งวดนี้ — UserInsert เขียนครั้งเดียวตอนสร้าง แก้ไขทีหลังไม่ทับ */
     public function creator()
     {
-        return $this->belongsTo(User::class, 'UserInsert');
+        return $this->belongsTo(User::class, 'UserInsert')->withTrashed();
     }
 }
