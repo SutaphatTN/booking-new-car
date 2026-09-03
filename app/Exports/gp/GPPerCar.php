@@ -199,6 +199,12 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       false, // สถานะ
     );
 
+    // เงินสนับสนุน / วันที่รับเงินสนับสนุน — โผล่เฉพาะ brand 4
+    if ($brand === 4) {
+      $isNumber[] = true;  // เงินสนับสนุน
+      $isNumber[] = false; // วันที่รับเงินสนับสนุน
+    }
+
     $letters = [];
     foreach ($isNumber as $i => $number) {
       if ($number) {
@@ -463,6 +469,9 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         'fn_diff' => $r->financeConfirm?->diff ?? 0,
         'remark' => $r->financeConfirm?->remark ?? '',
         'status' => $r->conStatus?->name ?? '-',
+        // เงินสนับสนุน (กรอกจากหน้า "ตั้งค่า GP") — โชว์เฉพาะ brand 4 ยังไม่นำไปรวมกับยอดใด
+        'support_amount' => $r->carOrder?->gp_support_amount ?? 0,
+        'support_date' => $r->carOrder?->gp_support_date ? $r->carOrder->gp_support_date->format('d-m-Y') : '-',
 
         // 'gross_profit' => $grossProfit,
         // 'gross_percent' => $grossProfitPercent,

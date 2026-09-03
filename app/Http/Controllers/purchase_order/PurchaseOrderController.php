@@ -4664,6 +4664,8 @@ class PurchaseOrderController extends Controller
             'gp_cost_price_override' => 'nullable|numeric|min:0',
             'gp_accessory_cost'      => 'nullable|numeric|min:0',
             'gp_commission_sale'     => 'nullable|numeric|min:0',
+            'gp_support_amount'      => 'nullable|numeric|min:0',
+            'gp_support_date'        => 'nullable|date',
             'car_DNP'                => 'nullable|numeric|min:0',
             'car_MSRP'               => 'nullable|numeric|min:0',
             'RI'                     => 'nullable|numeric',
@@ -4676,10 +4678,15 @@ class PurchaseOrderController extends Controller
         $salecar->gp_commission_sale     = $validated['gp_commission_sale'] ?? null;
         $salecar->save();
 
-        // RI / WS / ราคาทุน(DNP) / ราคาขาย(MSRP) เก็บที่ car_order
+        // RI / WS / ราคาทุน(DNP) / ราคาขาย(MSRP) / เงินสนับสนุน เก็บที่ car_order
         if ($salecar->carOrder) {
             $salecar->carOrder->RI = $validated['RI'] ?? null;
             $salecar->carOrder->WS = $validated['WS'] ?? null;
+            // เงินสนับสนุน / วันที่รับเงินสนับสนุน — เฉพาะ brand 4 (Lepas)
+            if ((int) $salecar->brand === 4) {
+                $salecar->carOrder->gp_support_amount = $validated['gp_support_amount'] ?? null;
+                $salecar->carOrder->gp_support_date   = $validated['gp_support_date'] ?? null;
+            }
             // ราคาทุน(DNP)/ราคาขาย(MSRP) แก้ได้เฉพาะ admin (audit เป็น readonly)
             if ($role === 'admin') {
                 $salecar->carOrder->car_DNP  = $validated['car_DNP'] ?? null;

@@ -80,7 +80,10 @@
                     data-ws="{{ $r->carOrder->WS ?? '' }}"
                     data-cost="{{ $r->gp_cost_price_override ?? '' }}"
                     data-acc="{{ $r->gp_accessory_cost ?? '' }}"
-                    data-com="{{ $r->gp_commission_sale ?? '' }}">
+                    data-com="{{ $r->gp_commission_sale ?? '' }}"
+                    data-brand="{{ $r->brand ?? '' }}"
+                    data-support-amount="{{ $r->carOrder->gp_support_amount ?? '' }}"
+                    data-support-date="{{ optional($r->carOrder?->gp_support_date)->format('Y-m-d') ?? '' }}">
                     <td>{{ $i + 1 }}</td>
                     <td>{{ $r->format_ck_date ?? '-' }}</td>
                     <td>{{ $customerName }}</td>
@@ -229,6 +232,28 @@
             </div>
           </div>
 
+          {{-- Section 4 : เงินสนับสนุน (เฉพาะ brand 4 - Lepas) --}}
+          <div class="mf-section d-none" id="gpSupportSection">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon amber">
+                <i class="bx bx-gift"></i>
+              </div>
+              <span class="mf-section-title">เงินสนับสนุน</span>
+            </div>
+            <div class="mf-section-body">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label for="m_gp_support_amount" class="mf-label form-label"><i class="bx bx-money ci-amber"></i> เงินสนับสนุน</label>
+                  <input type="text" inputmode="decimal" class="form-control text-end gp-num" id="m_gp_support_amount">
+                </div>
+                <div class="col-md-4">
+                  <label for="m_gp_support_date" class="mf-label form-label"><i class="bx bx-calendar ci-amber"></i> วันที่รับเงินสนับสนุน</label>
+                  <input type="date" class="form-control" id="m_gp_support_date">
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="d-flex justify-content-end gap-2 pt-1">
             <button type="button" class="btn btn-danger px-4" data-bs-dismiss="modal">
               <i class="bx bx-x me-1"></i>ปิด
@@ -367,11 +392,18 @@
         // คอมขาย: ถ้ายังไม่มีค่า แสดง default 3500
         const comVal = (d.com === '' || d.com === null || d.com === undefined) ? 3500 : d.com;
         $('#m_gp_com').val(fmtNum(comVal));
+
+        // เงินสนับสนุน — เฉพาะ brand 4 (Lepas)
+        const isSupportBrand = Number(d.brand) === 4;
+        $('#gpSupportSection').toggleClass('d-none', !isSupportBrand);
+        $('#m_gp_support_amount').val(isSupportBrand ? fmtNum(d.supportAmount) : '');
+        $('#m_gp_support_date').val(isSupportBrand ? (d.supportDate ?? '') : '');
       });
 
       $('#btnSaveGp').on('click', function () {
         const $btn = $(this);
         const id = $('#m_id').val();
+        const hasSupport = !$('#gpSupportSection').hasClass('d-none');
 
         const payload = {
           _method: 'PUT',
@@ -384,6 +416,11 @@
           RI: unfmtNum('#m_RI'),
           WS: unfmtNum('#m_WS'),
         };
+
+        if (hasSupport) {
+          payload.gp_support_amount = unfmtNum('#m_gp_support_amount');
+          payload.gp_support_date   = $('#m_gp_support_date').val() || null;
+        }
 
         $btn.prop('disabled', true);
 
@@ -401,6 +438,10 @@
                 .data('msrp', payload.car_MSRP ?? '')
                 .data('ri', payload.RI ?? '')
                 .data('ws', payload.WS ?? '');
+              if (hasSupport) {
+                $activeRow.data('supportAmount', payload.gp_support_amount ?? '')
+                  .data('supportDate', payload.gp_support_date ?? '');
+              }
             }
             bootstrap.Modal.getInstance(document.getElementById('gpEditModal')).hide();
             Swal.fire({ icon: 'success', title: res.message ?? 'บันทึกเรียบร้อยแล้ว', timer: 1200, showConfirmButton: true });
