@@ -50,7 +50,13 @@
         $isAllowedForBp = $userRole === 'bp' && $isStockFilm;
 
         // role sp เห็นเฉพาะเมนู Stock Film และ ประดับยนต์ (ทุกเมนูย่อย)
-        $accessorySlugs = ['accessory', 'accessory.partner', 'accessory.index', 'accessory.view-export-accessory'];
+        $accessorySlugs = [
+            'accessory',
+            'accessory.partner',
+            'accessory.index',
+            'accessory.view-export-accessory',
+            'accessory.view-export-souvenir',
+        ];
         $isAccessory = !is_array($submenu->slug) && in_array($submenu->slug, $accessorySlugs);
 
         // role sp เห็นทุกเมนูย่อยในใบสั่งซื้อ
@@ -135,6 +141,7 @@
                   'purchase-order.viewFN',
                   'purchase-order.cancellation',
                   'accessory.view-export-accessory',
+                  'accessory.view-export-souvenir',
               ]))
         @continue
       @endif

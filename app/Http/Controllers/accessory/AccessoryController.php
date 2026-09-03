@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\accessory;
 
+use App\Exports\accessory\SouvenirReport;
 use App\Http\Controllers\Controller;
 use App\Models\AccessoryPartner;
 use App\Models\AccessoryPrice;
@@ -11,9 +12,11 @@ use App\Models\TbCarmodel;
 use App\Models\TbSubcarmodel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use App\Support\ExportFilename;
 use App\Traits\ConvertsThaiDate;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AccessoryController extends Controller
 {
@@ -526,5 +529,25 @@ class AccessoryController extends Controller
         ]);
 
         return $pdf->stream('accessory-report.pdf');
+    }
+
+    /** หน้าเลือกช่วงวันที่ของรายงานของชำร่วย */
+    public function viewExportSouvenir()
+    {
+        return view('accessory.report.souvenir');
+    }
+
+    /** รายงานของชำร่วย (Excel) — เฉพาะประดับยนต์ประเภท "ของชำร่วย" ตามช่วงวันที่ส่งมอบ */
+    public function exportSouvenir(Request $request)
+    {
+        $validated = $request->validate([
+            'from_date' => 'required|date',
+            'to_date'   => 'required|date|after_or_equal:from_date',
+        ]);
+
+        return Excel::download(
+            new SouvenirReport($validated['from_date'], $validated['to_date']),
+            ExportFilename::withBrand('รายงานของชำร่วย.xlsx')
+        );
     }
 }
