@@ -29,6 +29,7 @@ class CarOrder extends Model
     protected $casts = [
         'order_date' => 'date:Y-m-d',
         'order_invoice_date'   => 'date:Y-m-d',
+        'gp_support_date'      => 'date:Y-m-d',
     ];
 
     protected $fillable = [
@@ -71,6 +72,9 @@ class CarOrder extends Model
         'car_MSRP',
         'RI',
         'WS',
+        // เงินสนับสนุน (เฉพาะ brand 4) — กรอกจากหน้า "ตั้งค่า GP" เก็บที่คันรถเหมือน RI/WS
+        'gp_support_amount',
+        'gp_support_date',
         'estimated_stock_date',
         'stock_id',
         'car_status',

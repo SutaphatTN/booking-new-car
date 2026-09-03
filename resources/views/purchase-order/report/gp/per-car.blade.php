@@ -1,6 +1,8 @@
 @php
   // คอลัมน์ "สีภายใน" — เปิดตาม config/brand.php (interior_color_brands)
   $showInterior = \App\Support\BrandFeature::hasInteriorColor();
+  // คอลัมน์ "เงินสนับสนุน" / "วันที่รับเงินสนับสนุน" — เฉพาะ brand 4 (Lepas)
+  $showSupport = (int) auth()->user()->brand === 4;
 @endphp
 <table>
   <thead>
@@ -74,6 +76,10 @@
       <th>DIFF</th>
       <th>หมายเหตุ</th>
       <th>สถานะ</th>
+      @if ($showSupport)
+        <th>เงินสนับสนุน</th>
+        <th>วันที่รับเงินสนับสนุน</th>
+      @endif
 
       {{-- <th>กำไรขั้นต้น</th>
       <th>% กำไรขั้นต้น</th>
@@ -163,6 +169,10 @@
         <td>{{ $p['fn_diff'] }}</td>
         <td>{{ $p['remark'] }}</td>
         <td>{{ $p['status'] }}</td>
+        @if ($showSupport)
+          <td>{{ $p['support_amount'] }}</td>
+          <td>{{ $p['support_date'] }}</td>
+        @endif
 
         {{-- <td>{{ $p['sale_price'] }}</td>
       <td>{{ $p['cost_price'] }}</td>
