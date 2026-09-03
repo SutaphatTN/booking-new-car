@@ -136,17 +136,17 @@ class Customer extends Model
 
 	public function userInsert()
 	{
-		return $this->belongsTo(User::class, 'UserInsert', 'id');
+		return $this->belongsTo(User::class, 'UserInsert', 'id')->withTrashed();
 	}
 
 	public function userUpdate()
 	{
-		return $this->belongsTo(User::class, 'UserUpdate', 'id');
+		return $this->belongsTo(User::class, 'UserUpdate', 'id')->withTrashed();
 	}
 
 	public function userDelete()
 	{
-		return $this->belongsTo(User::class, 'UserDelete', 'id');
+		return $this->belongsTo(User::class, 'UserDelete', 'id')->withTrashed();
 	}
 
 	/**

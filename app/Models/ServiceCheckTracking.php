@@ -35,7 +35,7 @@ class ServiceCheckTracking extends Model
 
     public function insertUser()
     {
-        return $this->belongsTo(User::class, 'UserInsert');
+        return $this->belongsTo(User::class, 'UserInsert')->withTrashed();
     }
 
     public function details()

@@ -161,7 +161,7 @@
                       </select>
                     @else
                       <div class="po-label">ผู้ขาย</div>
-                      <div class="info-pill fw-semibold">{{ $tracking->sale->name ?? '-' }}</div>
+                      <div class="info-pill fw-semibold">{{ $tracking->sale->display_name ?? '-' }}</div>
                     @endif
                   </div>
                   @if ($canEditSource)

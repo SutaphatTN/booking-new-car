@@ -88,6 +88,6 @@ class SaleCommissionMonthly extends Model
 
     public function saleUser()
     {
-        return $this->belongsTo(User::class, 'SaleID', 'id');
+        return $this->belongsTo(User::class, 'SaleID', 'id')->withTrashed();
     }
 }

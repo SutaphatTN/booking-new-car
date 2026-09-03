@@ -33,12 +33,12 @@ class LicensePlateLoan extends Model
 
 	public function borrowedByUser()
 	{
-		return $this->belongsTo(User::class, 'borrowed_by', 'id');
+		return $this->belongsTo(User::class, 'borrowed_by', 'id')->withTrashed();
 	}
 
 	public function returnedByUser()
 	{
-		return $this->belongsTo(User::class, 'returned_by', 'id');
+		return $this->belongsTo(User::class, 'returned_by', 'id')->withTrashed();
 	}
 
 	// loan ที่ยังไม่คืน = ป้ายยังอยู่กับแบรนด์ที่ยืม

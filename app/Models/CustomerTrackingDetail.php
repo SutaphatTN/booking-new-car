@@ -37,7 +37,7 @@ class CustomerTrackingDetail extends Model
 
     public function insertedBy()
     {
-        return $this->belongsTo(User::class, 'UserInsert');
+        return $this->belongsTo(User::class, 'UserInsert')->withTrashed();
     }
 
     public function getContactDateAttribute($value)

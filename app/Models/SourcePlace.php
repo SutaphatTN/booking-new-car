@@ -147,7 +147,7 @@ class SourcePlace extends Model
 
     public function settledBy()
     {
-        return $this->belongsTo(User::class, 'settled_by');
+        return $this->belongsTo(User::class, 'settled_by')->withTrashed();
     }
 
     /** "ปิดยอด" แล้วหรือยัง — บัญชีกดปิดเอง (ใช้ตัดสินว่าจะซ่อนจากรายการที่ต้องทำ) */

@@ -35,7 +35,7 @@ class SsiRecord extends Model
 
     public function completedBy()
     {
-        return $this->belongsTo(User::class, 'completed_by');
+        return $this->belongsTo(User::class, 'completed_by')->withTrashed();
     }
 
     public function contacts()

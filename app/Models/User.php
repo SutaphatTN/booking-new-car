@@ -135,6 +135,15 @@ class User extends Authenticatable
 		return $this->belongsTo(SaleTeam::class, 'sale_team_id', 'id');
 	}
 
+	/**
+	 * ชื่อสำหรับหน้า "ประวัติ" — คนที่ถูกลบไปแล้วต้องเห็นว่าลบแล้ว ไม่ใช่เข้าใจว่ายังทำงานอยู่
+	 * ใช้เฉพาะจอที่คนในบริษัทดู — เอกสารที่พิมพ์ให้ลูกค้า/อีเมล/ไฟล์ export ยังใช้ name เปล่า
+	 */
+	public function getDisplayNameAttribute(): string
+	{
+		return $this->trashed() ? $this->name . ' (ลบแล้ว)' : (string) $this->name;
+	}
+
 	public function getUserZoneNameAttribute()
 	{
 		$zones = [
@@ -327,7 +336,7 @@ class User extends Authenticatable
 		$saleBrands   = config("brand.sale_pool.$brand", [$brand]);
 		$extraSaleIds = self::extraSaleUserIdsForBrand($brand);
 
-		return self::where(function ($q) use ($saleBrands, $extraSaleIds, $includeId) {
+		$pool = self::where(function ($q) use ($saleBrands, $extraSaleIds, $includeId) {
 			$q->where(function ($qq) use ($saleBrands, $extraSaleIds) {
 				$qq->whereIn('role', ['sale', 'lead_sale'])
 					->where(function ($qqq) use ($saleBrands, $extraSaleIds) {
@@ -342,5 +351,17 @@ class User extends Authenticatable
 		})
 			->orderBy('name')
 			->get();
+
+		// เซลล์เจ้าของใบถูกลบไปแล้ว → global scope ตัดออกจาก list
+		// ถ้าไม่ใส่กลับเข้าไป dropdown จะไม่มีค่าเดิม แล้วคนแก้ใบต้องเลือกเซลล์คนอื่นทับ (ใบเปลี่ยนเจ้าของเอง)
+		if ($includeId && !$pool->contains('id', $includeId)) {
+			$deleted = self::withTrashed()->find($includeId);
+
+			if ($deleted) {
+				$pool->prepend($deleted);
+			}
+		}
+
+		return $pool;
 	}
 }

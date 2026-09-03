@@ -43,7 +43,7 @@
                 </div>
                 <div class="mf-info-row">
                   <span class="mf-info-label">ชื่อฝ่ายขาย</span>
-                  <span class="mf-info-val">{{ $saleCar->saleUser?->name ?? '-' }}</span>
+                  <span class="mf-info-val">{{ $saleCar->saleUser?->display_name ?? '-' }}</span>
                 </div>
                 <div class="mf-info-row">
                   <span class="mf-info-label">ที่อยู่ปัจจุบัน</span>

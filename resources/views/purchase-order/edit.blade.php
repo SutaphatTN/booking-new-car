@@ -221,13 +221,13 @@
                              ไม่งั้น browser จะเลือก option แรกให้เอง แล้วบันทึกทับเป็นเซลล์คนนั้น --}}
                         <option value="">— เลือกผู้ขาย —</option>
                         @foreach ($saleUser as $s)
-                          <option value="{{ $s->id }}" @selected($s->id == $saleCar->SaleID)>{{ $s->name }}</option>
+                          <option value="{{ $s->id }}" @selected($s->id == $saleCar->SaleID)>{{ $s->display_name }}</option>
                         @endforeach
                       </select>
                     @else
                       <label for="sale_name" class="po-label"><i class="bx bx-user-pin"></i> ชื่อ - นามสกุล ผู้ขาย</label>
                       <input id="sale_name" class="form-control" type="text"
-                        value="{{ $saleCar->saleUser->name ?? '-' }}" readonly>
+                        value="{{ $saleCar->saleUser->display_name ?? '-' }}" readonly>
                     @endif
                   </div>
 

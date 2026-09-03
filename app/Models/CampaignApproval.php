@@ -44,11 +44,11 @@ class CampaignApproval extends Model
 
     public function requester()
     {
-        return $this->belongsTo(User::class, 'requested_by', 'id');
+        return $this->belongsTo(User::class, 'requested_by', 'id')->withTrashed();
     }
 
     public function approver()
     {
-        return $this->belongsTo(User::class, 'approved_by', 'id');
+        return $this->belongsTo(User::class, 'approved_by', 'id')->withTrashed();
     }
 }
