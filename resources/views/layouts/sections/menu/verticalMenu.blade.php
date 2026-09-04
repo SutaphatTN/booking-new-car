@@ -143,10 +143,6 @@
         @continue
       @endif
 
-      @if (!in_array(auth()->user()->brand, [3, 4]) && in_array($menu->slug, ['delivery-form']))
-        @continue
-      @endif
-
       {{-- adding active and open class if child is active --}}
 
       {{-- menu headers --}}
