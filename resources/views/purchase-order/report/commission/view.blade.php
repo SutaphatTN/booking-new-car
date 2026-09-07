@@ -6,21 +6,26 @@
           <div class="mf-hd-icon"><i class="bx bx-download fs-5 text-white"></i></div>
           <div>
             <h6 class="mb-0 fw-bold text-white mf-hd-title">Commission Sales</h6>
-            <small class="text-white mf-hd-sub">เลือกช่วงวันที่ที่ต้องการ</small>
+            <small class="text-white mf-hd-sub">เลือกเดือนที่ต้องการ</small>
           </div>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body mf-body">
         <form action="{{ route('purchase-order.sale-com-export') }}" method="GET">
+          {{-- เลือกเป็น "เดือน" เท่านั้น — คอมตัวรถ/SSI/คอมกั๊ก เป็นยอดรายเดือน
+               ถ้าให้เลือกช่วงวันที่คร่อมเดือนได้ ยอดจะผสมสองเดือนแล้วไม่ตรงกับหน้าค่าคอมมิชชั่น --}}
           <div class="row g-3">
-            <div class="col-6">
-              <label for="from_date" class="mf-label form-label"><i class="bx bx-calendar"></i> จากวันที่</label>
-              <input type="date" id="from_date" name="from_date" class="form-control">
-            </div>
-            <div class="col-6">
-              <label for="to_date" class="mf-label form-label"><i class="bx bx-calendar-check"></i> ถึงวันที่</label>
-              <input type="date" id="to_date" name="to_date" class="form-control">
+            <div class="col-12">
+              <label for="commissionReportMonth" class="mf-label form-label">
+                <i class="bx bx-calendar"></i> เดือนที่ต้องการ
+              </label>
+              <input type="month" id="commissionReportMonth" name="month" class="form-control" required
+                value="{{ now()->format('Y-m') }}">
+              <div class="mt-1 text-muted" style="font-size:.78rem;">
+                <i class="bx bx-info-circle me-1"></i>
+                ยอดจะตรงกับหน้า “ข้อมูลค่าคอมมิชชั่นฝ่ายขาย” ของเดือนเดียวกัน
+              </div>
             </div>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4">

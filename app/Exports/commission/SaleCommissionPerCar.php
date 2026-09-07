@@ -7,6 +7,7 @@ use App\Services\CarCommissionQuery;
 use App\Services\ExtraBudgetLedger;
 use App\Services\HeldCommissionQuery;
 use App\Services\SsiCommissionQuery;
+use App\Services\BudgetWallet;
 use App\Models\SaleCommissionMonthly;
 use App\Exports\commission\Concerns\BuildsCommissionReport;
 use Illuminate\Support\Carbon;
@@ -84,6 +85,15 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       $cols[] = ['label' => 'คอม Clip',  'key' => 'comClip',       'role' => 'recv', 'money' => true];
     }
 
+    // ให้มีชุดคอลัมน์เหมือนชีทสรุป ไม่งั้นยอดรวมท้ายชีทสองใบไม่ตรงกัน (โชว์แถวแรกของเซลล์ครั้งเดียว)
+    $cols[] = ['label' => 'คอมประดับยนต์ (ขายแยก)', 'key' => 'comAccessorySold', 'role' => 'recv', 'money' => true];
+    if ($b === 1) {
+      $cols[] = ['label' => 'กั๊กยกมา (จ่ายรอบนี้)', 'key' => 'heldCarriedIn', 'role' => 'recv', 'money' => true];
+    }
+    if ($b === 2) {
+      $cols[] = ['label' => 'โบนัส budget 30%', 'key' => 'budgetBonus', 'role' => 'recv', 'money' => true];
+    }
+
     $cols[] = ['label' => 'รวมค่าคอมรับ', 'key' => '__recv', 'role' => 'sum_recv', 'money' => true];
 
     // ยอดติดลบจากการขายเกินงบ (สูตรอัตโนมัติ + ยอดหักที่ GM อนุมัติ) — เก็บเป็นค่าบวก แล้วรวมเข้า "รวมยอดหัก"
@@ -91,6 +101,13 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
     $cols[] = ['label' => 'หักเกินงบ', 'key' => 'overBudgetDeduct', 'role' => 'ded', 'money' => true];
 
     $cols[] = ['label' => 'หักขาด/ลา/มาสาย', 'key' => 'deductAbsence', 'role' => 'ded', 'money' => true];
+
+    if ($b !== 2) {
+      $cols[] = ['label' => 'หักวินัยไม่ผ่าน 15%', 'key' => 'disciplineDeduct', 'role' => 'ded', 'money' => true];
+    }
+    if ($b === 1) {
+      $cols[] = ['label' => 'กั๊กยกไป/พักไว้', 'key' => 'heldWithheld', 'role' => 'ded', 'money' => true];
+    }
 
     // ช่องหักปลายเปิด (ทุก brand) — หมายเหตุเป็น info เฉย ๆ ไม่เข้ายอดรวม
     $cols[] = ['label' => 'หักอื่นๆ', 'key' => 'deductOther', 'role' => 'ded', 'money' => true];
@@ -162,10 +179,23 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
     $adjust = SaleCommissionMonthly::where('year', $year)->where('month', $month)
       ->get()->keyBy('SaleID');
 
+    // คอมกั๊ก (brand 1) / โบนัส budget (brand 2) — ใช้ service เดียวกับหน้าค่าคอมและชีทสรุป
+    $saleIds = $rows->pluck('SaleID')->map(fn($v) => (int) $v)->unique()->values();
+    $heldParts = $brand === 1
+      ? HeldCommissionQuery::payRoundPartsPerSale($year, $month)
+      : collect();
+    $budgetBonus = $brand === 2
+      ? BudgetWallet::bonusPerSale($year, $month, $saleIds->all())
+      : [];
+
+    // ฐานคิดหักวินัย 15% = รวมค่าคอมรถทั้งเดือนของเซลล์คนนั้น (ตรงกับ computeNet)
+    $baseBySale = $rows->groupBy('SaleID')
+      ->map(fn($g) => (float) $g->sum(fn($r) => $r->effectiveCommissionSale()));
+
     // ค่ารายเซลล์/เดือน โชว์ครั้งเดียว (แถวแรกของเซลล์) กัน Total ซ้ำ
     $seen = [];
 
-    $data = $rows->map(function ($r) use ($brand, $carCom, $ssiPer, $adjust, &$seen) {
+    $data = $rows->map(function ($r) use ($brand, $carCom, $ssiPer, $adjust, &$seen, $heldParts, $budgetBonus, $baseBySale) {
 
       $customerName = trim(
         ($r->customer->prefix->Name_TH ?? '') . ' ' .
@@ -177,20 +207,11 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       $sub = $r->carOrder->subModel->name ?? '-';
       $detailModel = $r->carOrder->subModel->detail ?? null;
 
-      // ค่าคอมรถ (คอมรายคันรถปกติ) รายคัน — นับเฉพาะ Retail + Normal + ไม่ใช่ dealer (ตรงกับ CarCommissionQuery)
-      // และคันที่เกินงบทะลุเพดาน ไม่ได้คอมตัวรถ (นับจำนวนคันแต่ไม่ได้ยอด)
+      // ค่าคอมตัวรถรายคัน — ใช้สูตรกลางตัวเดียวกับหน้าค่าคอม (ห้ามคิดเองซ้ำ)
+      // เดิมเช็ค type_sale/purchase_type/dealer เองอีกชั้น ทำให้รถ dealer ของ brand 2 ที่เปิดให้ได้คอมแล้ว
+      // ยังโชว์ 0 ในรายงาน ทั้งที่หน้าค่าคอมให้เต็ม (เงื่อนไข "รถแบบไหนนับ" scope base กรองมาให้แล้ว)
       $entry = CarCommissionQuery::entry($carCom, $saleId, (int) $r->brand);
-      $src = optional($r->carOrder)->purchase_source;
-      $isCounted = ((int) $r->type_sale === CarCommissionQuery::SALE_TYPE_NORMAL)
-        && ((int) optional($r->carOrder)->purchase_type === CarCommissionQuery::PURCHASE_TYPE_RETAIL)
-        && ($src !== CarCommissionQuery::SOURCE_DEALER)
-        && $r->earnsCarCommission();
-      $carCommission = 0.0;
-      if ($entry && $isCounted) {
-        $carCommission = ($entry['mode'] ?? 'volume') === 'model'
-          ? CarCommissionQuery::modelRate((int) $r->brand, $r->model_id !== null ? (int) $r->model_id : null)
-          : (float) ($entry['rate'] ?? 0);
-      }
+      $carCommission = CarCommissionQuery::amountForCar($r, $entry);
 
       // แยกยอดบวก/ยอดลบ : ช่องรับโชว์เฉพาะบวก ยอดติดลบไปรวมที่ "หักเกินงบ" (ค่าบวก)
       $autoBal  = $r->autoBalanceCommission();
@@ -224,16 +245,28 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       $seen[$saleId] = true;
       $adj = $adjust->get($saleId);
 
-      $row['deductAbsence']   = $first ? (float) ($adj->deduct_absence ?? 0) : 0.0;
-      $row['deductOther']     = $first ? (float) ($adj->deduct_other ?? 0) : 0.0;
-      $row['deductOtherNote'] = $first ? ($adj->deduct_other_note ?? '') : '';
+      $row['deductAbsence']    = $first ? (float) ($adj->deduct_absence ?? 0) : 0.0;
+      $row['deductOther']      = $first ? (float) ($adj->deduct_other ?? 0) : 0.0;
+      $row['deductOtherNote']  = $first ? ($adj->deduct_other_note ?? '') : '';
+      $row['comAccessorySold'] = $first ? (float) ($adj->com_accessory_sold ?? 0) : 0.0;
+
+      // วินัยไม่ผ่าน → หัก 15% ของรวมค่าคอมรถทั้งเดือนของเซลล์คนนั้น (ไม่ใช่รายคัน) → ลงแถวแรกครั้งเดียว
+      if ($brand !== 2) {
+        $row['disciplineDeduct'] = ($first && $adj && $adj->discipline_failed)
+          ? (float) ($baseBySale[$saleId] ?? 0) * SaleCommissionMonthly::DISCIPLINE_FAIL_RATE
+          : 0.0;
+      }
 
       if ($brand === 1) {
         $row['ssi'] = $first ? (float) ($ssiPer[$saleId]['amount'] ?? 0) : 0.0;
+        $parts = $heldParts[$saleId] ?? ['carried_in' => 0.0, 'withheld' => 0.0];
+        $row['heldCarriedIn'] = $first ? (float) $parts['carried_in'] : 0.0;
+        $row['heldWithheld']  = $first ? (float) $parts['withheld'] : 0.0;
       } elseif ($brand === 2) {
         $row['comDiscipline'] = $first ? (float) ($adj->com_discipline ?? 0) : 0.0;
         $row['comLead']       = $first ? (float) ($adj->com_lead ?? 0) : 0.0;
         $row['comClip']       = $first ? (float) ($adj->com_clip ?? 0) : 0.0;
+        $row['budgetBonus']   = $first ? (float) ($budgetBonus[$saleId] ?? 0) : 0.0;
       }
 
       return $row;

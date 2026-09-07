@@ -63,6 +63,25 @@ class CarCommissionQuery
     }
 
     /**
+     * ค่าคอมตัวรถของรถ 1 คัน จาก entry ของเดือน CK ของมัน
+     *
+     * ใช้ตัวนี้ทุกที่ (หน้าค่าคอม / รายงาน / คอมกั๊ก) ห้ามคิดเองซ้ำ — เคยมีก๊อปสูตรไว้ 3 ที่
+     * แล้วพอแก้กติกา (เช่น เปิดให้รถ dealer ของ brand 2 ได้คอม) ก็แก้ไม่ครบ ยอดเลยไม่ตรงกัน
+     *
+     * เงื่อนไข "รถแบบไหนนับ" ไม่ต้องเช็คซ้ำที่นี่ — ผู้เรียกดึงรถผ่าน scope salesQualifying มาแล้ว
+     */
+    public static function amountForCar($car, ?array $entry): float
+    {
+        if (!$entry || !$car->earnsCarCommission()) {
+            return 0.0;
+        }
+
+        return ($entry['mode'] ?? 'volume') === 'model'
+            ? self::modelRate((int) $car->brand, $car->model_id !== null ? (int) $car->model_id : null)
+            : (float) ($entry['rate'] ?? 0);
+    }
+
+    /**
      * @return array{
      *   active:bool,
      *   perSale:Collection,        // SaleID => ['brand','count','achieved','rate','amount']
