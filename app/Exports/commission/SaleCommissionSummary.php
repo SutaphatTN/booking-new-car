@@ -6,6 +6,8 @@ use App\Services\SaleCommissionQuery;
 use App\Services\CarCommissionQuery;
 use App\Services\ExtraBudgetLedger;
 use App\Services\SsiCommissionQuery;
+use App\Services\HeldCommissionQuery;
+use App\Services\BudgetWallet;
 use App\Models\SaleCommissionMonthly;
 use App\Exports\commission\Concerns\BuildsCommissionReport;
 use Illuminate\Support\Carbon;
@@ -78,12 +80,26 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
             ['label' => 'คอมรถเทิร์น',      'key' => 'turnCarCom',      'role' => 'recv', 'money' => true],
         ];
 
+        // คอมประดับยนต์ที่ผู้จัดการ/GM กรอกเอง (ขายแยก) — ใช้ทุก brand
+        $cols[] = ['label' => 'คอมประดับยนต์ (ขายแยก)', 'key' => 'comAccessorySold', 'role' => 'recv', 'money' => true];
+
         if ($b === 1) {
             $cols[] = ['label' => 'SSI', 'key' => 'ssi', 'role' => 'recv', 'money' => true];
         } elseif ($b === 2) {
             $cols[] = ['label' => 'คอมวินัย',  'key' => 'comDiscipline', 'role' => 'recv', 'money' => true];
             $cols[] = ['label' => 'คอม Lead',  'key' => 'comLead',       'role' => 'recv', 'money' => true];
             $cols[] = ['label' => 'คอม Clip',  'key' => 'comClip',       'role' => 'recv', 'money' => true];
+        }
+
+        // คอมกั๊ก (brand 1) — ยกมาจากเดือนก่อนคือเงินที่จ่ายรอบนี้ ส่วนที่กั๊กไป/พักไว้ยังไม่จ่าย
+        // ต้องอยู่ในรายงานด้วย ไม่งั้นยอดสุทธิไม่ตรงกับ "เงินเข้ารอบ" ในหน้าค่าคอมมิชชั่น
+        if ($b === 1) {
+            $cols[] = ['label' => 'กั๊กยกมา (จ่ายรอบนี้)', 'key' => 'heldCarriedIn', 'role' => 'recv', 'money' => true];
+        }
+
+        // budget ที่เหลือคืนเซลล์ 30% (brand 2, ถึงเดือน BudgetWallet::LAST_MONTH)
+        if ($b === 2) {
+            $cols[] = ['label' => 'โบนัส budget 30%', 'key' => 'budgetBonus', 'role' => 'recv', 'money' => true];
         }
 
         $cols[] = ['label' => 'รวมค่าคอมรับ', 'key' => '__recv', 'role' => 'sum_recv', 'money' => true];
@@ -93,6 +109,16 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
         $cols[] = ['label' => 'หักเกินงบ', 'key' => 'overBudgetDeduct', 'role' => 'ded', 'money' => true];
 
         $cols[] = ['label' => 'หักขาด/ลา/มาสาย', 'key' => 'deductAbsence', 'role' => 'ded', 'money' => true];
+
+        // วินัยไม่ผ่าน → หัก 15% จากรวมค่าคอมรถ (brand 1/3/4 — ดู SaleCommissionMonthly::computeNet)
+        if ($b !== 2) {
+            $cols[] = ['label' => 'หักวินัยไม่ผ่าน 15%', 'key' => 'disciplineDeduct', 'role' => 'ded', 'money' => true];
+        }
+
+        // กั๊กเดือนนี้ที่ยกไปรอบหน้า + ก้อนที่พักไว้เพราะยังไม่รับรถ — ยังไม่จ่ายในรอบนี้
+        if ($b === 1) {
+            $cols[] = ['label' => 'กั๊กยกไป/พักไว้', 'key' => 'heldWithheld', 'role' => 'ded', 'money' => true];
+        }
 
         // ช่องหักปลายเปิด (ทุก brand) — หมายเหตุเป็น info เฉย ๆ ไม่เข้ายอดรวม
         $cols[] = ['label' => 'หักอื่นๆ', 'key' => 'deductOther', 'role' => 'ded', 'money' => true];
@@ -163,7 +189,15 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
         $adjust = SaleCommissionMonthly::where('year', $year)->where('month', $month)
             ->get()->keyBy('SaleID');
 
-        $data = $sales->map(function ($rows, $saleId) use ($brand, $carCom, $ssiPer, $adjust) {
+        // คอมกั๊ก (brand 1) / โบนัส budget (brand 2) — ใช้ตัวเดียวกับหน้าค่าคอมมิชชั่น ยอดจะได้ตรงกัน
+        $heldParts = $brand === 1
+            ? HeldCommissionQuery::payRoundPartsPerSale($year, $month)
+            : collect();
+        $budgetBonus = $brand === 2
+            ? BudgetWallet::bonusPerSale($year, $month, $sales->keys()->map(fn($k) => (int) $k)->all())
+            : [];
+
+        $data = $sales->map(function ($rows, $saleId) use ($brand, $carCom, $ssiPer, $adjust, $heldParts, $budgetBonus) {
 
             $saleUser = $rows->first()->saleUser;
             $adj = $adjust->get($saleId);
@@ -193,14 +227,28 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
                 'interestCom'     => $rows->sum(fn($r) => $r->remainingPayment->total_com ?? 0),
                 'turnCarCom'      => $rows->sum(fn($r) => $r->turnCar->com_turn ?? 0),
 
+                'comAccessorySold' => (float) ($adj->com_accessory_sold ?? 0),
+
                 'deductAbsence'   => (float) ($adj->deduct_absence ?? 0),
                 'deductOther'     => (float) ($adj->deduct_other ?? 0),
                 'deductOtherNote' => $adj->deduct_other_note ?? '',
             ];
 
+            // วินัยไม่ผ่าน → หัก 15% ของ "รวมค่าคอมรถ" (ฐานเดียวกับ SaleCommissionMonthly::computeNet)
+            if ($brand !== 2) {
+                $base = (float) $rows->sum(fn($r) => $r->effectiveCommissionSale());
+                $row['disciplineDeduct'] = ($adj && $adj->discipline_failed)
+                    ? $base * SaleCommissionMonthly::DISCIPLINE_FAIL_RATE
+                    : 0.0;
+            }
+
             if ($brand === 1) {
                 $row['ssi'] = (float) ($ssiPer[$saleId]['amount'] ?? 0);
+                $parts = $heldParts[(int) $saleId] ?? ['carried_in' => 0.0, 'withheld' => 0.0];
+                $row['heldCarriedIn'] = (float) $parts['carried_in'];
+                $row['heldWithheld']  = (float) $parts['withheld'];
             } elseif ($brand === 2) {
+                $row['budgetBonus'] = (float) ($budgetBonus[(int) $saleId] ?? 0);
                 $row['comDiscipline'] = (float) ($adj->com_discipline ?? 0);
                 $row['comLead']       = (float) ($adj->com_lead ?? 0);
                 $row['comClip']       = (float) ($adj->com_clip ?? 0);

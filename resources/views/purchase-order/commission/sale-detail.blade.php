@@ -9,6 +9,10 @@
   $canEdit = $canEdit ?? true;
   $roInput = $canEdit ? '' : 'readonly';
   $roCheck = $canEdit ? '' : 'disabled';
+  // "ค่าคอมวินัย" ล็อกแยกจากช่องอื่น (User::DISCIPLINE_ROLES) — manager แก้ช่องอื่นได้แต่วินัยไม่ได้
+  $canEditDiscipline = ($canEditDiscipline ?? true) && $canEdit;
+  $roDiscCheck = $canEditDiscipline ? '' : 'disabled';
+  $roDiscInput = $canEditDiscipline ? '' : 'readonly';
   $ssiAmount = $ssi['active'] ? (float) $ssi['amount'] : 0.0;
   // $net = คอมพื้นฐาน(CK เดือน P−1) + SSI + ค่าคอมรถจ่ายจริงเดือน P (คิดมาจาก controller)
 @endphp
@@ -306,19 +310,25 @@
               <div class="col-md-3 col-12">
                 <label class="mf-label form-label">
                   <i class="bx bx-medal text-success"></i> ค่าคอมวินัย
+                  @unless ($canEditDiscipline)
+                    <i class="bx bx-lock-alt ms-1 text-muted" title="ตั้งได้เฉพาะ MD / GM / ผู้ดูแลระบบ"></i>
+                  @endunless
                 </label>
-                <div class="d-flex gap-4 mt-1">
+                <div class="d-flex gap-4 mt-1 {{ $canEditDiscipline ? '' : 'opacity-50' }}">
                   <div class="form-check">
                     <input class="form-check-input" type="radio" name="discipline_failed" id="disc_pass"
-                      value="0" {{ !$adjustment->discipline_failed ? 'checked' : '' }} {{ $roCheck }}>
+                      value="0" {{ !$adjustment->discipline_failed ? 'checked' : '' }} {{ $roDiscCheck }}>
                     <label class="form-check-label" for="disc_pass">ผ่าน</label>
                   </div>
                   <div class="form-check">
                     <input class="form-check-input" type="radio" name="discipline_failed" id="disc_fail"
-                      value="1" {{ $adjustment->discipline_failed ? 'checked' : '' }} {{ $roCheck }}>
+                      value="1" {{ $adjustment->discipline_failed ? 'checked' : '' }} {{ $roDiscCheck }}>
                     <label class="form-check-label text-danger" for="disc_fail">ไม่ผ่าน (หัก 15%)</label>
                   </div>
                 </div>
+                @unless ($canEditDiscipline)
+                  <div class="text-muted" style="font-size:.72rem;">ตั้งได้เฉพาะ MD / GM / ผู้ดูแลระบบ</div>
+                @endunless
               </div>
               <div class="col-md-2 col-6">
                 <label for="deduct_absence" class="mf-label form-label">
@@ -333,10 +343,13 @@
               <div class="col-md-2 col-6">
                 <label for="com_discipline" class="mf-label form-label">
                   <i class="bx bx-medal text-success"></i> ค่าคอมวินัย
+                  @unless ($canEditDiscipline)
+                    <i class="bx bx-lock-alt ms-1 text-muted" title="กรอกได้เฉพาะ MD / GM / ผู้ดูแลระบบ"></i>
+                  @endunless
                 </label>
                 <input type="text" inputmode="decimal" class="form-control form-control-sm text-end cmoney"
                   id="com_discipline" name="com_discipline" value="{{ $adjustment->com_discipline ?? 0 }}"
-                  {{ $roInput }}>
+                  {{ $roDiscInput }}>
               </div>
               <div class="col-md-2 col-6">
                 <label for="deduct_absence" class="mf-label form-label">

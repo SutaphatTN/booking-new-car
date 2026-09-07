@@ -85,7 +85,12 @@ class HeldCommissionSheet implements FromView, WithTitle, WithStyles, WithEvents
     {
         [$year, $month] = [(int) Carbon::parse($this->fromDate)->year, (int) Carbon::parse($this->fromDate)->month];
 
-        $detail = HeldCommissionQuery::perCarForCkMonth($year, $month);
+        // เอาเฉพาะคันที่ "มียอดค้างจริง" — คันที่จ่ายเต็มในรอบหลักไม่ต้องขึ้น (เดิมขึ้นทุกคันเลยอ่านยาก)
+        //  · กั๊กยกไปรอบหน้า  : held_amount > 0
+        //  · พักไว้ (DD ว่าง) : main_payday = null → ยังไม่มีรอบจ่าย
+        $detail = HeldCommissionQuery::perCarForCkMonth($year, $month)
+            ->filter(fn($d) => (float) $d['held_amount'] > 0 || $d['main_payday'] === null)
+            ->values();
 
         // ข้อมูลแสดงผลต่อคัน (ลูกค้า/รุ่น/เซลล์) — โหลดครั้งเดียว
         $meta = Salecar::withoutGlobalScopes()

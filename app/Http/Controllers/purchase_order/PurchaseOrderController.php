@@ -4282,13 +4282,8 @@ class PurchaseOrderController extends Controller
             $interestCom  = $r->remainingPayment->total_com ?? 0;
             $turnCarCom   = $r->turnCar->com_turn ?? 0;
 
-            // ค่าคอมรายคัน C ของคันนี้ (สำหรับคิดคอมกั๊ก brand 1) — เกินงบทะลุเพดานก่อนวันตัด = ไม่ได้คอมตัวรถ
-            $C = 0.0;
-            if ($carEntry && $r->earnsCarCommission()) {
-                $C = $carMode === 'model'
-                    ? CarCommissionQuery::modelRate((int) $r->brand, $r->model_id !== null ? (int) $r->model_id : null)
-                    : $carRate;
-            }
+            // ค่าคอมรายคัน C ของคันนี้ (สำหรับคิดคอมกั๊ก brand 1) — สูตรกลางที่รายงานใช้ตัวเดียวกัน
+            $C = CarCommissionQuery::amountForCar($r, $carEntry);
 
             // คอมกั๊ก (โมเดลใหม่): DD > รอบหลักของ CK หรือ DD ว่าง → กั๊ก H=min(2000,C) ; โชว์เฉพาะ brand 1
             $ck = $r->DeliveryInCKDate ? Carbon::parse($r->DeliveryInCKDate) : null;
@@ -4445,6 +4440,8 @@ class PurchaseOrderController extends Controller
 
         return view('purchase-order.commission.sale-detail', [
             'canEdit'        => $canEditCommission,
+            // "ค่าคอมวินัย" แยกสิทธิ์ออกจากช่องอื่น — manager แก้ช่องอื่นได้ แต่วินัยเป็นของ MD/GM/admin
+            'canEditDiscipline' => Auth::user()->canEditDiscipline(),
             'saleUser'       => $saleUser,
             'cars'           => $cars,
             'baseCommission' => $baseCommission,
@@ -4562,6 +4559,16 @@ class PurchaseOrderController extends Controller
             403
         );
 
+        // "ค่าคอมวินัย" ตั้งได้เฉพาะ User::DISCIPLINE_ROLES — role อื่น (manager) ช่องถูกล็อกในหน้าจอ
+        // radio ที่ disabled ไม่ถูกส่งมาด้วย ถ้าเขียนทับตรง ๆ ค่า "ไม่ผ่าน" ที่ MD ตั้งไว้จะถูกล้างเป็น "ผ่าน"
+        // ตอน manager กดบันทึกช่องอื่น → ต้องคงค่าเดิมไว้เสมอ (แบบเดียวกับ CheckerID / red_license)
+        $canEditDiscipline = Auth::user()->canEditDiscipline();
+        $current = SaleCommissionMonthly::where([
+            'SaleID' => $data['SaleID'],
+            'year'   => $data['year'],
+            'month'  => $data['month'],
+        ])->first();
+
         SaleCommissionMonthly::updateOrCreate(
             [
                 'SaleID' => $data['SaleID'],
@@ -4569,7 +4576,9 @@ class PurchaseOrderController extends Controller
                 'month'  => $data['month'],
             ],
             [
-                'com_discipline'    => $data['com_discipline'] ?? 0,
+                'com_discipline'    => $canEditDiscipline
+                    ? ($data['com_discipline'] ?? 0)
+                    : (float) ($current->com_discipline ?? 0),
                 'deduct_absence'    => $data['deduct_absence'] ?? 0,
                 'deduct_other'      => $data['deduct_other'] ?? 0,
                 // ยอดหักเป็น 0 = ไม่ได้หักอะไร ไม่ต้องเก็บหมายเหตุค้างไว้ให้สับสนในรายงาน
@@ -4579,7 +4588,9 @@ class PurchaseOrderController extends Controller
                 'com_lead'          => $data['com_lead'] ?? 0,
                 'com_clip'          => $data['com_clip'] ?? 0,
                 'com_accessory_sold' => $data['com_accessory_sold'] ?? 0,
-                'discipline_failed' => (bool) ($data['discipline_failed'] ?? false),
+                'discipline_failed' => $canEditDiscipline
+                    ? (bool) ($data['discipline_failed'] ?? false)
+                    : (bool) ($current->discipline_failed ?? false),
             ]
         );
 
@@ -4626,12 +4637,28 @@ class PurchaseOrderController extends Controller
         return view('purchase-order.report.commission.view');
     }
 
+    /**
+     * รายงานค่าคอม — เลือกเป็น "เดือน" ไม่ใช่ช่วงวันที่
+     *
+     * 2026-09-02: เดิมรับ from_date/to_date อิสระ แล้วเกิดเคสช่วงวันที่คร่อมเดือน (เช่น 01/08–30/09)
+     * ดึงรถของเดือนถัดไปเข้ามารวม ทั้งที่คอมตัวรถ/SSI/คอมกั๊ก คิดจาก "เดือนของ from_date" เดือนเดียว
+     * → ยอดในรายงานไม่ตรงกับหน้าค่าคอมมิชชั่นและไม่มีความหมายในตัวเอง
+     * ยังรับ from_date/to_date แบบเดิมไว้ (ลิงก์เก่า/bookmark) แต่บังคับให้เป็นเดือนของ from_date เสมอ
+     */
     public function exportSaleCom(Request $request)
     {
-        $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
-        $toDate   = $request->to_date   ?? now()->format('Y-m-d');
+        [$year, $month] = $this->resolveCommissionMonth(
+            $request->input('month') ?: ($request->from_date ? Carbon::parse($request->from_date)->format('Y-m') : null)
+        );
 
-        return Excel::download(new SaleCommissionExport(Auth::user(), $fromDate, $toDate), ExportFilename::withBrand('sale-commission.xlsx'));
+        $period   = Carbon::create($year, $month, 1);
+        $fromDate = $period->copy()->startOfMonth()->format('Y-m-d');
+        $toDate   = $period->copy()->endOfMonth()->format('Y-m-d');
+
+        return Excel::download(
+            new SaleCommissionExport(Auth::user(), $fromDate, $toDate),
+            ExportFilename::withBrand('sale-commission-' . $period->format('Y-m') . '.xlsx')
+        );
     }
 
     // report gp

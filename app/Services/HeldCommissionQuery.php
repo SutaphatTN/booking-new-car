@@ -241,6 +241,16 @@ class HeldCommissionQuery
      */
     public static function payRoundOffsetPerSale(int $year, int $month): Collection
     {
+        return self::payRoundPartsPerSale($year, $month)
+            ->map(fn($p) => $p['carried_in'] - $p['withheld']);
+    }
+
+    /**
+     * แยกส่วนประกอบของ offset ข้างบน — ใช้ในรายงานที่ต้องโชว์เป็นคนละคอลัมน์
+     * @return Collection SaleID => ['carried_in' => กั๊กยกมาที่จ่ายรอบนี้, 'withheld' => กั๊กยกไป + พักไว้]
+     */
+    public static function payRoundPartsPerSale(int $year, int $month): Collection
+    {
         $monthStart = Carbon::create($year, $month, 1)->startOfMonth();
         $mainCK     = self::mainPaydayCK($monthStart);
 
@@ -262,7 +272,10 @@ class HeldCommissionQuery
 
         return $carriedIn->keys()->merge($withheld->keys())->unique()
             ->mapWithKeys(fn($id) => [
-                (int) $id => (float) ($carriedIn[$id] ?? 0) - (float) ($withheld[$id] ?? 0),
+                (int) $id => [
+                    'carried_in' => (float) ($carriedIn[$id] ?? 0),
+                    'withheld'   => (float) ($withheld[$id] ?? 0),
+                ],
             ]);
     }
 
@@ -272,12 +285,8 @@ class HeldCommissionQuery
      */
     private static function carCommissionOf($r, ?array $entry): float
     {
-        if (!$entry || !$r->earnsCarCommission()) {
-            return 0.0;
-        }
-        return ($entry['mode'] ?? 'volume') === 'model'
-            ? CarCommissionQuery::modelRate((int) $r->brand, $r->model_id !== null ? (int) $r->model_id : null)
-            : (float) ($entry['rate'] ?? 0);
+        // สูตรกลางที่เดียว — ห้ามคิดเองซ้ำ (ดู CarCommissionQuery::amountForCar)
+        return CarCommissionQuery::amountForCar($r, $entry);
     }
 
     /**

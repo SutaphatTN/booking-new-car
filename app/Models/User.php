@@ -280,6 +280,17 @@ class User extends Authenticatable
 	}
 
 	/**
+	 * role ที่ตั้ง "ค่าคอมวินัย" ได้ (radio ผ่าน/ไม่ผ่าน ของ brand 1/3/4 และช่องเงินของ brand 2)
+	 * 2026-09-07 (มติ MD): ตัด manager ออก — แก้ค่าคอมช่องอื่นได้ตามเดิม แต่วินัยให้เป็นของ MD/GM/admin
+	 */
+	public const DISCIPLINE_ROLES = ['admin', 'gm', 'md'];
+
+	public function canEditDiscipline(): bool
+	{
+		return in_array($this->role, self::DISCIPLINE_ROLES, true);
+	}
+
+	/**
 	 * role ที่ติ๊ก "ตรวจสอบรายการ (IA)" ได้
 	 * เป็นด่านบังคับก่อนเปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5)
 	 * role อื่นยังเห็นการ์ดใบนี้ได้ แต่ติ๊กไม่ได้ (ช่องถูก disable ไว้)
