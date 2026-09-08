@@ -172,6 +172,8 @@ class TestDriveSheet  implements FromView, WithTitle, WithStyles, WithEvents, Sh
         'sale'        => $sale?->saleUser?->name ?? '',
         'bookingDate' => $sale?->format_booking_date ?? '',
         'note_accessory' => $order->note_accessory ?? '-',
+        // หมายเหตุของใบสั่งซื้อรถ (car_order.note)
+        'note_car'       => $order->note ?? '-',
 
       ]);
     }

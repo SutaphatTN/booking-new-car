@@ -9,7 +9,7 @@
   $showTeam = \App\Support\BrandFeature::hasMultipleTeams();
 
   // จำนวนคอลัมน์รวม (ปรับตาม brand + การซ่อนราคาทุน) สำหรับแถว "ไม่มีข้อมูล"
-  $totalCols = 26;
+  $totalCols = 28;
   if (auth()->user()->brand == 2) $totalCols++;             // สาขา — GWM เท่านั้น
   if ($showInterior) $totalCols++;                          // สีภายใน
   if (in_array(auth()->user()->brand, [2, 3, 4])) $totalCols--; // ไม่มี Option
@@ -55,9 +55,11 @@
       <th>สถานะสัญญา</th>
       <th>ระยะเวลาการจอง</th>
       <th>PO Date</th>
+      <th>วันส่งมอบบริษัท</th>
       <th>สถานะรถจัดสรร</th>
       <th>วันที่จัดสรร</th>
       <th>ประดับยนต์ของรถ</th>
+      <th>หมายเหตุ (รถ)</th>
     </tr>
   </thead>
   <tbody>
@@ -99,9 +101,11 @@
         <td>{{ $s['status'] }}</td>
         <td>{{ $s['daysBind'] }}</td>
         <td>{{ $s['po_date'] }}</td>
+        <td>{{ $s['dms_date'] }}</td>
         <td>{{ $s['allocation_status'] }}</td>
         <td>{{ $s['allocation_date'] }}</td>
         <td>{{ $s['note_accessory'] }}</td>
+        <td>{{ $s['note_car'] }}</td>
       </tr>
     @empty
       <tr>

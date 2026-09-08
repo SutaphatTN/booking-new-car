@@ -250,11 +250,15 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                     : '',
 
                 'po_date'      => $sale?->remainingPayment?->format_po_date ?? '',
+                // วันส่งมอบของบริษัท (DMS) — มาจากใบจอง ไม่ใช่ตัวรถ
+                'dms_date'     => $sale?->format_dms_date ?? '',
 
                 'allocation_status' => $allocationStatus,
                 'allocation_date' => $allocationDate,
 
                 'note_accessory' => $order->note_accessory ?? '-',
+                // หมายเหตุของใบสั่งซื้อรถ (car_order.note) คนละตัวกับหมายเหตุใบจอง (salecars.Note)
+                'note_car'       => $order->note ?? '-',
 
                 // 'statusCar' => $sale ? 'ผูกรถแล้ว' : 'รถว่าง',
                 // 1 คัน = 1 แถว เสมอ

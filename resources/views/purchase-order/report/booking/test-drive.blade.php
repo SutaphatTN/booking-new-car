@@ -28,6 +28,7 @@
       <th>Sale</th>
       <th>วันที่จอง</th>
       <th>ประดับยนต์ของรถ</th>
+      <th>หมายเหตุ (รถ)</th>
     </tr>
   </thead>
   <tbody>
@@ -56,10 +57,11 @@
         <td>{{ $t['sale'] }}</td>
         <td>{{ $t['bookingDate'] }}</td>
         <td>{{ $t['note_accessory'] }}</td>
+        <td>{{ $t['note_car'] }}</td>
       </tr>
     @empty
       <tr>
-        <td colspan="{{ 15 + (auth()->user()->brand == 2 ? 1 : 0) + ($showInterior ? 1 : 0) }}" align="center">
+        <td colspan="{{ 16 + (auth()->user()->brand == 2 ? 1 : 0) + ($showInterior ? 1 : 0) }}" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>
