@@ -12,13 +12,18 @@
 @php
   $readonly = $isHistory ? 'readonly' : '';
   $disabled = $isHistory ? 'disabled' : '';
-  // "ตรวจสอบรายการ (IA)" — ใช้เฉพาะใบของ brand 2 (Salecar::IA_GATE_BRAND)
-  //  - brand 2 : ติ๊กได้เฉพาะ gm/md/admin (User::IA_CHECK_ROLES) role อื่นเห็นการ์ดแต่ช่องถูกล็อก
-  //              (ดู .approval-card.locked) และต้องติ๊กก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"
-  //  - brand อื่น: เหมือนเดิมทุกอย่าง ใครก็ติ๊กได้ ไม่มีด่าน
-  $iaGated = (int) $saleCar->brand === \App\Models\Salecar::IA_GATE_BRAND;
-  $canIaCheck = !$iaGated || auth()->user()->canIaCheck();
+  // "ตรวจสอบรายการ (IA)" — ใช้ทุกแบรนด์แล้ว (Salecar::needsIaCheck)
+  //  - ติ๊กได้เฉพาะ gm/md/admin (User::IA_CHECK_ROLES) role อื่นเห็นการ์ดแต่ช่องถูกล็อก
+  //    (ดู .approval-card.locked) และต้องติ๊กก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"
+  //  - เพิ่มด่าน: ต้องอนุมัติงบผ่านก่อน ถึงจะติ๊กได้ (budgetApproved)
+  $iaGated = $saleCar->needsIaCheck();
+  $iaBudgetOk = $saleCar->budgetApproved();
+  $canIaCheck = (!$iaGated || auth()->user()->canIaCheck()) && $iaBudgetOk;
   $iaDisabled = $canIaCheck ? $disabled : 'disabled';
+  // ข้อความบอกเหตุผลที่ล็อก — แยกกรณี "งบยังไม่อนุมัติ" กับ "ไม่ใช่ GM/MD"
+  $iaLockReason = !$iaBudgetOk
+      ? 'ต้องอนุมัติงบให้ผ่านก่อน จึงจะติ๊กตรวจสอบ (IA) ได้'
+      : 'ติ๊กได้เฉพาะ GM / MD';
   // ลายเซ็นอนุมัติ 3 ตัว — แก้ด้วยมือได้เฉพาะ User::APPROVAL_SIGNATURE_ROLES (admin/gm/md)
   // role อื่นเห็นการ์ดแต่ช่องถูกล็อก และ server ไม่รับค่าจากฟอร์ม (คงค่าใน DB ไว้)
   $canEditApprovalSig = auth()->user()->canEditApprovalSignature();
@@ -2819,7 +2824,7 @@
 
                           <div class="col-md-6">
                             <div class="approval-card @if ($saleCar->CheckerID) approved @endif @unless ($canIaCheck) locked @endunless"
-                              @unless ($canIaCheck) title="ติ๊กได้เฉพาะ GM / MD " @endunless>
+                              @unless ($canIaCheck) title="{{ $iaLockReason }}" @endunless>
                               <div class="approval-card-header">
                                 <div class="approval-icon indigo"><i class="bx bx-search-alt-2"></i></div>
                                 <div class="approval-title">
@@ -2844,7 +2849,11 @@
                                 @unless ($canIaCheck)
                                   <div class="approval-locked-note">
                                     <i class="bx bx-info-circle me-1"></i>
-                                    ต้องให้ GM / MD ตรวจสอบก่อนเปลี่ยนสถานะเป็น “ส่งมอบ”
+                                    @if (!$iaBudgetOk)
+                                      ต้องอนุมัติงบให้ผ่านก่อน จึงจะติ๊กตรวจสอบ (IA) ได้
+                                    @else
+                                      ต้องให้ GM / MD ตรวจสอบก่อนเปลี่ยนสถานะเป็น “ส่งมอบ”
+                                    @endif
                                   </div>
                                 @endunless
                               </div>

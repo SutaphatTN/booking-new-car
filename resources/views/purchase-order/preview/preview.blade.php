@@ -47,9 +47,9 @@
         </button>
 
         {{-- ส่งคำขอให้ IA ตรวจสอบ — คนละสายกับการอนุมัติงบ (เมลไม่มีปุ่มอนุมัติ มีแต่ลิงก์เปิดใบจอง)
-             เฉพาะ brand ที่มีด่าน IA จริง (needsIaCheck = GWM) brand อื่นไม่มีด่านนี้จึงไม่ต้องขอ
+             ใช้ทุกแบรนด์แล้ว (needsIaCheck) แต่ต้อง "อนุมัติงบผ่านก่อน" ปุ่มถึงจะขึ้น (budgetApproved)
              ซ่อนเมื่อ IA ติ๊กให้แล้ว เพราะไม่มีอะไรต้องขอ --}}
-        @if ($saleCar->needsIaCheck() && !$saleCar->CheckerID)
+        @if ($saleCar->needsIaCheck() && !$saleCar->CheckerID && $saleCar->budgetApproved())
           <button type="button"
             class="btn btn-outline-primary px-4"
             id="btnRequestIaCheck"

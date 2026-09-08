@@ -76,6 +76,104 @@
             font-size: .68rem;
             line-height: 1.3;
           }
+
+          /* ── กล่องใบเสร็จประดับยนต์ ── แยกจากแถวช่องเงิน เพราะความสูงเปลี่ยนตามจำนวนไฟล์ */
+          .receipt-box {
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+            background: #f8fafc;
+            padding: 10px 14px;
+          }
+
+          .receipt-box-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: .85rem;
+            color: #16a34a;
+          }
+
+          /* แถบรูป : เรียงเป็นกริดคงที่ ไม่ยืดตามจำนวนไฟล์ */
+          .receipt-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+          }
+
+          .receipt-strip:empty {
+            margin-top: 0;
+          }
+
+          .receipt-item {
+            position: relative;
+            width: 92px;
+          }
+
+          .receipt-item img,
+          .receipt-item .receipt-doc {
+            width: 92px;
+            height: 92px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            object-fit: cover;
+            cursor: pointer;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            color: #dc2626;
+            text-decoration: none;
+          }
+
+          .receipt-item .receipt-doc i {
+            font-size: 2rem;
+          }
+
+          .receipt-item .receipt-doc span {
+            font-size: .65rem;
+            font-weight: 700;
+          }
+
+          .receipt-item .receipt-name {
+            font-size: .68rem;
+            line-height: 1.3;
+            color: #475569;
+            margin-top: 3px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .receipt-x {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 20px;
+            height: 20px;
+            border: 0;
+            border-radius: 50%;
+            background: #ef4444;
+            color: #fff;
+            font-size: .9rem;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+          }
+
+          .receipt-x:hover {
+            background: #b91c1c;
+          }
+
+          /* ให้ลูกของ wrapper ไหลเข้ากริดของ .receipt-strip ตรง ๆ (ไม่งั้นรูปจะกองอยู่ในกล่องซ้อน) */
+          .d-contents {
+            display: contents;
+          }
         </style>
         <div class="fw-bold mb-2"><i class="bx bx-list-ul me-1"></i> รายชื่อลูกค้าที่ส่งมอบในเดือนนี้</div>
         <div class="table-responsive mb-4">
@@ -304,7 +402,7 @@
           <input type="hidden" name="year" value="{{ $year }}">
           <input type="hidden" name="month" value="{{ $month }}">
 
-          <div class="row g-3">
+          <div class="row g-3 align-items-end">
             @if ($isBrand13)
               {{-- brand 1/3 : วินัยเป็น ผ่าน/ไม่ผ่าน (ไม่ผ่านหัก 15%) + ขาด/ลา/มาสาย (ไม่มี lead/clip) --}}
               <div class="col-md-3 col-12">
@@ -377,7 +475,7 @@
 
             {{-- คอมประดับยนต์ (หน้าร้าน) — ใช้ทุก brand : ผู้จัดการ/GM กรอกเอง บวกเข้ายอดคอม
                  บวกนอกฐาน จึงไม่โดนหัก 15% ตอนวินัยไม่ผ่าน (ดู SaleCommissionMonthly::computeNet) --}}
-            <div class="col-md-2 col-6">
+            <div class="col-md-{{ $isBrand13 ? 2 : 2 }} col-6">
               <label for="com_accessory_sold" class="mf-label form-label">
                 <i class="bx bx-plus-circle text-success"></i> คอมประดับยนต์ (หน้าร้าน)
               </label>
@@ -386,8 +484,8 @@
                 {{ $roInput }}>
             </div>
 
-            {{-- หักอื่นๆ + หมายเหตุ — ไว้ท้ายสุดให้กรอกต่อกันได้ (ใช้ทุก brand เป็นช่องหักปลายเปิด) --}}
-            <div class="col-md-2 col-6">
+            {{-- หักอื่นๆ + หมายเหตุ — ต้องกรอกคู่กัน จึงวางติดกัน (ใช้ทุก brand เป็นช่องหักปลายเปิด) --}}
+            <div class="col-md-{{ $isBrand13 ? 1 : 2 }} col-6">
               <label for="deduct_other" class="mf-label form-label">
                 <i class="bx bx-minus-circle text-danger"></i> หักอื่นๆ
               </label>
@@ -395,7 +493,7 @@
                 id="deduct_other" name="deduct_other" value="{{ $adjustment->deduct_other ?? 0 }}"
                 {{ $roInput }}>
             </div>
-            <div class="col-md-{{ $isBrand13 ? 3 : 12 }} col-12">
+            <div class="col-md-{{ $isBrand13 ? 4 : 12 }} col-12">
               <label for="deduct_other_note" class="mf-label form-label">
                 <i class="bx bx-note text-secondary"></i> หมายเหตุหักอื่นๆ <span
                   class="text-muted">(ระบุว่าหักค่าอะไร)</span>
@@ -403,6 +501,57 @@
               <input type="text" class="form-control form-control-sm" id="deduct_other_note"
                 name="deduct_other_note" maxlength="255" placeholder="เช่น ค่าปรับผิดระเบียบ / ค่าเสียหายรถทดลองขับ"
                 value="{{ $adjustment->deduct_other_note ?? '' }}" {{ $roInput }}>
+            </div>
+          </div>
+
+          {{-- ── ใบเสร็จประดับยนต์ ── เก็บบน OneDrive ; บังคับแนบเมื่อกรอกคอมประดับยนต์
+               แยกออกมาเป็นกล่องของตัวเองเพราะความสูงเปลี่ยนตามจำนวนรูป ถ้าอยู่ในแถวเดียวกับช่องเงิน
+               จะดันช่องอื่นเบี้ยวทุกครั้งที่แนบไฟล์
+               ปุ่มลบ = เอาออกจากรายการเฉย ๆ มีผลจริงตอนกดบันทึก (เหมือนหน้าตรวจรถก่อนส่งมอบ) --}}
+          @php
+            $receipts = $adjustment->com_accessory_sold_receipt ?? [];
+            $receiptBase = url("purchase-order/commission-receipt/{$saleUser->id}/{$year}/{$month}");
+          @endphp
+          <div class="receipt-box mt-3">
+            <div class="receipt-box-head">
+              <i class="bx bx-receipt"></i>
+              <span class="fw-semibold">ใบเสร็จประดับยนต์</span>
+              <span class="text-muted small">รูปภาพ หรือ PDF — บังคับแนบเมื่อกรอกคอมประดับยนต์</span>
+              @if ($canEdit)
+                <label for="accessory_receipt" class="btn btn-sm btn-outline-success ms-auto mb-0">
+                  <i class="bx bx-plus me-1"></i> เพิ่มไฟล์
+                </label>
+                <input type="file" id="accessory_receipt" name="accessory_receipt[]" class="d-none" multiple
+                  accept="image/*,application/pdf">
+              @endif
+            </div>
+            <div class="receipt-strip">
+              <div id="existingReceipts" class="d-contents" data-proxy="{{ $receiptBase }}">
+                @foreach ($receipts as $f)
+                  @php
+                    $isImg = preg_match('/\.(jpg|jpeg|png|gif|webp|bmp)$/i', $f['name'] ?? '');
+                    $proxy = $receiptBase . '?url=' . urlencode($f['url'] ?? '');
+                  @endphp
+                  <div class="receipt-item" data-url="{{ $f['url'] ?? '' }}" title="{{ $f['name'] ?? '' }}">
+                    @if ($isImg)
+                      <img src="{{ $proxy }}" onclick="window.open('{{ $proxy }}','_blank')">
+                    @else
+                      <a href="{{ $proxy }}" target="_blank" class="receipt-doc">
+                        <i class="bx bxs-file-pdf"></i>
+                        <span>PDF</span>
+                      </a>
+                    @endif
+                    <div class="receipt-name">{{ $f['name'] ?? '' }}</div>
+                    @if ($canEdit)
+                      <button type="button" class="receipt-x btn-remove-receipt" title="ลบ"><i class="bx bx-x"></i></button>
+                    @endif
+                  </div>
+                @endforeach
+              </div>
+              <div id="newReceiptPreview" class="d-contents"></div>
+              <div id="receiptEmpty" class="text-muted small py-2 {{ $receipts ? 'd-none' : '' }}">
+                <i class="bx bx-info-circle me-1"></i> ยังไม่ได้แนบใบเสร็จ
+              </div>
             </div>
           </div>
 

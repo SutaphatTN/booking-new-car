@@ -565,15 +565,24 @@ class Salecar extends Model
 	public const TYPE_SALE_DEALER = 3;
 
 	/**
-	 * brand ที่บังคับด่าน "ตรวจสอบรายการ (IA)" ก่อนเปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5)
-	 * — GWM(2) เท่านั้น ; brand อื่นช่อง IA ยังอยู่แต่ใครก็ติ๊กได้และไม่มีด่าน
-	 * เช็คผ่าน needsIaCheck() เสมอ ห้ามเทียบ brand == 2 ตรง ๆ กระจายตามที่ต่าง ๆ
+	 * ด่าน "ตรวจสอบรายการ (IA)" ก่อนเปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5)
+	 * เดิมบังคับเฉพาะ GWM(2) — ตอนนี้ใช้ทุกแบรนด์ ติ๊กได้เฉพาะ User::IA_CHECK_ROLES
+	 * และต้องอนุมัติงบผ่านก่อน (ดู budgetApproved) เช็คผ่าน needsIaCheck() เสมอ ห้ามเทียบ brand ตรง ๆ
 	 */
-	public const IA_GATE_BRAND = 2;
-
 	public function needsIaCheck(): bool
 	{
-		return (int) $this->brand === self::IA_GATE_BRAND;
+		return true;   // เดิมเฉพาะ GWM(2) — ตอนนี้ใช้ทุกแบรนด์
+	}
+
+	/**
+	 * งบผ่านการอนุมัติแล้วหรือยัง — ด่านก่อน "ส่งขอ IA ตรวจสอบ" และก่อนติ๊ก "ตรวจสอบรายการ (IA)"
+	 * ต้องอนุมัติงบให้จบก่อนเสมอ IA ถึงจะเข้ามาตรวจได้
+	 *  · ขาย Dealer — ไม่มีสายอนุมัติงบ ถือว่าผ่าน
+	 *  · เคสอื่น — ดูลายเซ็นตามเคสของใบนั้น (isApprovedNow) ต้อง eager load 'model'
+	 */
+	public function budgetApproved(): bool
+	{
+		return $this->isDealerSale() || $this->isApprovedNow();
 	}
 
 	public function isDealerSale(): bool

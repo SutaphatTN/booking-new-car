@@ -338,15 +338,55 @@ $(document).on('submit', '#commissionMonthlyForm', function (e) {
     payload.push({ name: 'car_budget_deduct[' + $(this).data('id') + ']', value: parseMoney($(this).val()) });
   });
 
-  $.post('/purchase-order/commission-monthly', $.param(payload), function () {
-    $('.commissionDetail').modal('hide');
-    if (commissionTable) {
-      commissionTable.ajax.reload(null, false);
-    }
-    if (window.Swal) {
-      Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1400, showConfirmButton: false });
-    }
+  // ── เช็คให้ครบก่อนยิง (server เช็คซ้ำอีกชั้น ตรงนี้แค่ให้รู้เร็ว ไม่ต้องรอ 422) ──
+  const warn = msg => {
+    if (window.Swal) Swal.fire({ icon: 'warning', title: 'กรอกข้อมูลไม่ครบ', text: msg });
+    else alert(msg);
+    $btn.prop('disabled', false);
+  };
+
+  if (parseMoney($('#deduct_other').val()) > 0 && !String($('#deduct_other_note').val() || '').trim()) {
+    warn('กรอก "หักอื่นๆ" แล้วต้องระบุ "หมายเหตุหักอื่นๆ" ว่าหักค่าอะไรด้วย');
+    $('#deduct_other_note').trigger('focus');
+    return;
+  }
+
+  const receiptInput = document.getElementById('accessory_receipt');
+  const hasNewReceipt = receiptInput && receiptInput.files && receiptInput.files.length > 0;
+  const hasOldReceipt = $('#existingReceipts [data-url]').length > 0;
+  if (parseMoney($('#com_accessory_sold').val()) > 0 && !hasNewReceipt && !hasOldReceipt) {
+    warn('กรอก "คอมประดับยนต์ (หน้าร้าน)" แล้วต้องแนบใบเสร็จด้วย (รูปภาพหรือ PDF)');
+    if (receiptInput) receiptInput.focus();
+    return;
+  }
+
+  // ต้องส่งเป็น FormData เพราะมีไฟล์แนบ (urlencoded ส่งไฟล์ไม่ได้)
+  const fd = new FormData();
+  payload.forEach(f => fd.append(f.name, f.value));
+  // ใบเสร็จเดิมที่ยังอยู่ในหน้าจอ = ตัวที่ให้เก็บไว้ ; ที่กดลบไปแล้วจะไม่ถูกส่ง → server ตัดออกให้
+  $('#existingReceipts [data-url]').each(function () {
+    fd.append('receipt_keep[]', $(this).data('url'));
+  });
+  if (hasNewReceipt) {
+    Array.from(receiptInput.files).forEach(f => fd.append('accessory_receipt[]', f));
+  }
+
+  $.ajax({
+    url: '/purchase-order/commission-monthly',
+    type: 'POST',
+    data: fd,
+    processData: false,
+    contentType: false
   })
+    .done(function () {
+      $('.commissionDetail').modal('hide');
+      if (commissionTable) {
+        commissionTable.ajax.reload(null, false);
+      }
+      if (window.Swal) {
+        Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1400, showConfirmButton: false });
+      }
+    })
     .fail(function (xhr) {
       // โชว์สาเหตุจริงจาก server (422 = ข้อมูลไม่ผ่าน validate, 403 = ไม่มีสิทธิ์)
       // ไม่งั้นขึ้นแต่ "กรุณาลองใหม่อีกครั้ง" แล้วหาสาเหตุไม่ได้เลย
@@ -363,6 +403,53 @@ $(document).on('submit', '#commissionMonthlyForm', function (e) {
     .always(function () {
       $btn.prop('disabled', false);
     });
+});
+
+// ── ใบเสร็จประดับยนต์ ──
+// ข้อความ "ยังไม่ได้แนบใบเสร็จ" โผล่เมื่อไม่มีไฟล์เลย (ทั้งของเดิมและที่เพิ่งเลือก)
+function toggleReceiptEmpty() {
+  const total = $('#existingReceipts [data-url]').length + $('#newReceiptPreview .receipt-item').length;
+  $('#receiptEmpty').toggleClass('d-none', total > 0);
+}
+
+// ลบของเดิม = เอาออกจากหน้าจอเฉย ๆ มีผลจริงตอนกดบันทึก (ตัวที่เหลือถูกส่งไปเป็น receipt_keep[])
+$(document).on('click', '.btn-remove-receipt', function () {
+  $(this).closest('[data-url]').remove();
+  toggleReceiptEmpty();
+});
+
+// ── พรีวิวไฟล์ที่เพิ่งเลือก + ปุ่มลบทีละไฟล์ ──
+function renderReceiptPreview(input) {
+  const $preview = $('#newReceiptPreview').empty();
+  Array.from(input.files).forEach(function (file, idx) {
+    const isImg = /image/i.test(file.type);
+    const thumb = isImg
+      ? `<img src="${URL.createObjectURL(file)}">`
+      : `<span class="receipt-doc"><i class="bx bxs-file-pdf"></i><span>PDF</span></span>`;
+
+    const $item = $(
+      `<div class="receipt-item" title="${file.name}">
+         ${thumb}
+         <div class="receipt-name">${file.name}</div>
+         <button type="button" class="receipt-x btn-remove-new-receipt" title="ลบ"><i class="bx bx-x"></i></button>
+       </div>`
+    );
+    // ลบไฟล์ออกจาก input จริง ๆ (FileList แก้ตรง ๆ ไม่ได้ ต้องสร้าง DataTransfer ใหม่)
+    $item.find('.btn-remove-new-receipt').on('click', function () {
+      const dt = new DataTransfer();
+      Array.from(input.files).forEach((f, i) => {
+        if (i !== idx) dt.items.add(f);
+      });
+      input.files = dt.files;
+      renderReceiptPreview(input);
+    });
+    $preview.append($item);
+  });
+  toggleReceiptEmpty();
+}
+
+$(document).on('change', '#accessory_receipt', function () {
+  renderReceiptPreview(this);
 });
 
 // clear detail modal DOM after close (กัน backdrop ค้าง / focus)
