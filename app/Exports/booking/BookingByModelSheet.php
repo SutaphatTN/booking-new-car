@@ -359,10 +359,15 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
           : '',
 
         'po_date'      => $sale?->remainingPayment?->format_po_date ?? '-',
+        // วันส่งมอบของบริษัท (DMS) — มาจากใบจอง ไม่ใช่ตัวรถ
+        'dms_date'     => $sale?->format_dms_date ?? '-',
         'allocation_status' => $allocationStatus,
         'allocation_date' => $allocationDate,
         'note_accessory' => $order->note_accessory ?? '-',
-        'Note' => '-',
+        // หมายเหตุใบจอง — ปิดไว้เหมือนชื่อลูกค้า/เซลล์ ถ้าเป็นใบจองของทีมอื่น
+        'Note' => $maskSale ? '-' : ($sale?->Note ?? '-'),
+        // หมายเหตุของใบสั่งซื้อรถ (car_order.note) คนละตัวกับหมายเหตุใบจอง
+        'note_car' => $order->note ?? '-',
       ]);
     }
 
@@ -417,10 +422,13 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
         'status'      => $sale?->conStatus?->name ?? '',
         'daysBind' => '',
         'po_date'      => $sale?->remainingPayment?->format_po_date ?? '',
+        'dms_date'     => $sale?->format_dms_date ?? '',
         'allocation_status' => '',
         'allocation_date' => '',
         'note_accessory' => '-',
         'Note' => $sale->Note ?? '-',
+        // ยังไม่มีรถ จึงไม่มีหมายเหตุฝั่ง car_order
+        'note_car' => '-',
       ]);
     }
 

@@ -38,6 +38,7 @@ class SaleCommissionMonthly extends Model
         'com_lead',
         'com_clip',
         'com_accessory_sold',
+        'com_accessory_sold_receipt',
         'discipline_failed',
     ];
 
@@ -51,6 +52,7 @@ class SaleCommissionMonthly extends Model
         'com_lead' => 'float',
         'com_clip' => 'float',
         'com_accessory_sold' => 'float',
+        'com_accessory_sold_receipt' => 'array',
         'discipline_failed' => 'bool',
     ];
 

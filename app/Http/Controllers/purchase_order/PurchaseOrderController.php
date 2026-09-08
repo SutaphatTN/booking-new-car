@@ -71,6 +71,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Support\ExportFilename;
@@ -1848,9 +1849,12 @@ class PurchaseOrderController extends Controller
             // (เช็คค่าที่กำลังบันทึก เผื่อเพิ่งเปลี่ยนเป็น Dealer)
             $isDealerSale = (int) $request->input('type_sale', $saleCar->type_sale) === Salecar::TYPE_SALE_DEALER;
 
-            // ด่าน "ตรวจสอบรายการ (IA)" ใช้เฉพาะ brand 2 — brand อื่นใครก็ติ๊กได้เหมือนเดิม
+            // ด่าน "ตรวจสอบรายการ (IA)" — ใช้ทุกแบรนด์ ติ๊กได้เฉพาะ User::IA_CHECK_ROLES
+            // และต้องอนุมัติงบผ่านก่อนเสมอ (ดูสถานะ "ก่อน" บันทึกรอบนี้ — ถ้าเพิ่งติ๊กอนุมัติงบ
+            // ในรอบเดียวกัน ให้บันทึกอนุมัติก่อนแล้วค่อยติ๊ก IA รอบถัดไป)
             $iaGated = $saleCar->needsIaCheck();
-            $canIaCheck = !$iaGated || Auth::user()->canIaCheck();
+            $iaBudgetOk = $saleCar->budgetApproved();
+            $canIaCheck = (!$iaGated || Auth::user()->canIaCheck()) && $iaBudgetOk;
 
             // ลายเซ็นอนุมัติ 3 ตัว แก้ด้วยมือได้เฉพาะ admin/gm/md (User::APPROVAL_SIGNATURE_ROLES)
             // role อื่นช่องถูก disable ในฟอร์ม — แต่ checkbox ที่ไม่ติ๊กกับที่ถูก disable ส่งค่ามาเหมือนกัน
@@ -2818,6 +2822,14 @@ class PurchaseOrderController extends Controller
             // ขอให้ IA ตรวจสอบ — คนละสายกับการอนุมัติงบ (ไม่มีปุ่มอนุมัติในเมล มีแต่ลิงก์เปิดใบจอง)
             // ออก token ในทรานแซกชันเดียวกับการบันทึก แล้วค่อยยิงเมลหลัง commit
             $iaToken = null;
+            if ($action === 'request_ia' && !$iaBudgetOk) {
+                // ต้องอนุมัติงบให้จบก่อน ถึงจะขอ IA ตรวจได้ (ปุ่มฝั่งหน้าจอซ่อนอยู่แล้ว กันยิงตรงอีกชั้น)
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ยังขอ IA ตรวจสอบไม่ได้ — ใบจองนี้ต้องผ่านการอนุมัติงบก่อน',
+                ], 422);
+            }
             if ($action === 'request_ia') {
                 // token ใหม่ทุกครั้ง — ลิงก์เก่าในเมลฉบับก่อนใช้ไม่ได้ กันเปิดใบที่แก้ไปแล้ว
                 $iaToken = Str::random(48);
@@ -4533,6 +4545,54 @@ class PurchaseOrderController extends Controller
         return !$hasVisibleCars;
     }
 
+    /** brand ของรถที่เซลล์คนนั้นขายในเดือนนั้น (ใช้ตั้งชื่อโฟลเดอร์ OneDrive) — ไม่มีรถ = brand ของคนกด */
+    private function commissionBrandOf(int $saleId, int $year, int $month): int
+    {
+        $brand = Salecar::withoutGlobalScopes(['userAccess', 'saleTeam'])
+            ->where('SaleID', $saleId)
+            ->whereYear('DeliveryInCKDate', $year)
+            ->whereMonth('DeliveryInCKDate', $month)
+            ->value('brand');
+
+        return (int) ($brand ?: Auth::user()->brand);
+    }
+
+    /**
+     * เปิดดูใบเสร็จคอมประดับยนต์ (หน้าร้าน) — proxy จาก OneDrive
+     * เช็คสิทธิ์ role + ด่านข้ามทีมชุดเดียวกับหน้าค่าคอม และ url ต้องเป็นของรายการนี้จริง
+     */
+    public function commissionReceipt(Request $request, $saleId, $year, $month)
+    {
+        abort_unless(in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md', 'audit_lead', 'audit_dp']), 403);
+        abort_if($this->commissionSaleOutOfReach((int) $saleId, (int) $year, (int) $month), 403);
+
+        $adjustment = SaleCommissionMonthly::where([
+            'SaleID' => (int) $saleId,
+            'year'   => (int) $year,
+            'month'  => (int) $month,
+        ])->firstOrFail();
+
+        $shareUrl = $request->input('url');
+        $allowed = collect($adjustment->com_accessory_sold_receipt ?? [])
+            ->contains(fn($f) => ($f['url'] ?? '') === $shareUrl);
+        abort_unless($allowed, 403);
+
+        try {
+            $oneDrive = new OneDriveService();
+            ['url' => $downloadUrl, 'name' => $filename] = $oneDrive->getDownloadInfo($shareUrl);
+
+            $body = (new Client(['allow_redirects' => true]))->get($downloadUrl);
+
+            return response($body->getBody()->getContents(), 200, [
+                'Content-Type'        => $body->getHeader('Content-Type')[0] ?? 'application/octet-stream',
+                'Content-Disposition' => "inline; filename=\"{$filename}\"",
+                'Cache-Control'       => 'private, max-age=3600',
+            ]);
+        } catch (\Exception $e) {
+            abort(404);
+        }
+    }
+
     /** บันทึกค่าคอมเพิ่มเติมต่อเซลล์ต่อเดือน */
     public function saveCommissionMonthly(Request $request)
     {
@@ -4550,6 +4610,9 @@ class PurchaseOrderController extends Controller
             'com_clip'          => 'nullable|numeric',
             // คอมประดับยนต์ (หน้าร้าน) — ผู้จัดการ/GM กรอกเอง บวกเข้ายอดคอม ใช้ทุก brand
             'com_accessory_sold' => 'nullable|numeric',
+            // ใบเสร็จแนบของคอมประดับยนต์ — รูปหรือ PDF (บังคับเมื่อกรอกยอด ดูด่านด้านล่าง)
+            'accessory_receipt'   => 'nullable|array|max:5',
+            'accessory_receipt.*' => 'file|mimes:jpg,jpeg,png,webp,pdf|max:10240',
             'discipline_failed' => 'nullable|boolean',
         ]);
 
@@ -4568,6 +4631,64 @@ class PurchaseOrderController extends Controller
             'year'   => $data['year'],
             'month'  => $data['month'],
         ])->first();
+
+        // ── ด่านบังคับกรอกให้ครบ (เช็คฝั่ง server ด้วย ไม่พึ่ง JS อย่างเดียว) ──
+        // 1) หักอื่นๆ เป็นช่องปลายเปิด ถ้าไม่ระบุเหตุผลไว้ ย้อนกลับมาดูทีหลังจะไม่รู้ว่าหักค่าอะไร
+        if ((float) ($data['deduct_other'] ?? 0) > 0 && trim($data['deduct_other_note'] ?? '') === '') {
+            return response()->json([
+                'message' => 'กรอก "หักอื่นๆ" แล้วต้องระบุ "หมายเหตุหักอื่นๆ" ว่าหักค่าอะไรด้วย',
+            ], 422);
+        }
+
+        // 2) คอมประดับยนต์ (หน้าร้าน) เป็นเงินที่กรอกเอง ต้องมีใบเสร็จยืนยันเสมอ
+        //    (ไฟล์เดิมที่แนบไว้แล้วนับด้วย — แก้ยอดทีหลังไม่ต้องแนบซ้ำ)
+        $receiptFiles = array_filter((array) $request->file('accessory_receipt'));
+        $hasReceipt = $receiptFiles || !empty($current?->com_accessory_sold_receipt);
+        if ((float) ($data['com_accessory_sold'] ?? 0) > 0 && !$hasReceipt) {
+            return response()->json([
+                'message' => 'กรอก "คอมประดับยนต์ (หน้าร้าน)" แล้วต้องแนบใบเสร็จด้วย (รูปภาพหรือ PDF)',
+            ], 422);
+        }
+
+        // ── ไฟล์ใบเสร็จ : เก็บบน OneDrive (โฟลเดอร์ตาม brand) เหมือนไฟล์แนบที่อื่นในระบบ ──
+        // ของเดิมคงไว้เฉพาะที่ยังอยู่ในหน้าจอ (receipt_keep) — กดปุ่มลบในหน้าจอแล้วบันทึก = หลุดออกจากรายการ
+        $keep = (array) $request->input('receipt_keep', []);
+        $receipts = collect((array) ($current?->com_accessory_sold_receipt ?? []))
+            ->filter(fn($f) => in_array($f['url'] ?? '', $keep, true))
+            ->values()->all();
+
+        if ($receiptFiles) {
+            $brandName = config('brand.names.' . $this->commissionBrandOf((int) $data['SaleID'], (int) $data['year'], (int) $data['month']), 'Other');
+            $folder = "New Car/{$brandName}/Commission/ใบเสร็จประดับยนต์";
+            try {
+                $oneDrive = new OneDriveService();
+                foreach ($receiptFiles as $i => $f) {
+                    if (!$f->isValid()) {
+                        continue;
+                    }
+                    $base = pathinfo($f->getClientOriginalName(), PATHINFO_FILENAME);
+                    $name = sprintf('%s_%d_%04d%02d_%d.%s', $base, $data['SaleID'], $data['year'], $data['month'], time() + $i, $f->getClientOriginalExtension());
+                    $receipts[] = [
+                        'url'  => $oneDrive->upload($f->getRealPath(), $name, $folder),
+                        'name' => $f->getClientOriginalName(),
+                    ];
+                }
+            } catch (\Exception $e) {
+                return response()->json(['message' => 'อัปโหลดใบเสร็จไม่สำเร็จ: ' . $e->getMessage()], 500);
+            }
+        }
+
+        // ยอดเป็น 0 = ไม่มีคอมประดับยนต์แล้ว ไม่ต้องเก็บใบเสร็จค้างไว้
+        if ((float) ($data['com_accessory_sold'] ?? 0) <= 0) {
+            $receipts = [];
+        }
+
+        // เช็คซ้ำหลังหักไฟล์ที่ถูกลบออก — กดลบใบเสร็จทิ้งหมดแต่ยังมียอดอยู่ ต้องไม่ผ่าน
+        if ((float) ($data['com_accessory_sold'] ?? 0) > 0 && !$receipts) {
+            return response()->json([
+                'message' => 'กรอก "คอมประดับยนต์ (หน้าร้าน)" แล้วต้องแนบใบเสร็จด้วย (รูปภาพหรือ PDF)',
+            ], 422);
+        }
 
         SaleCommissionMonthly::updateOrCreate(
             [
@@ -4588,6 +4709,7 @@ class PurchaseOrderController extends Controller
                 'com_lead'          => $data['com_lead'] ?? 0,
                 'com_clip'          => $data['com_clip'] ?? 0,
                 'com_accessory_sold' => $data['com_accessory_sold'] ?? 0,
+                'com_accessory_sold_receipt' => $receipts ?: null,
                 'discipline_failed' => $canEditDiscipline
                     ? (bool) ($data['discipline_failed'] ?? false)
                     : (bool) ($current->discipline_failed ?? false),

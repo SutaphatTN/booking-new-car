@@ -43,10 +43,12 @@
       <th>สถานะสัญญา</th>
       <th>ระยะเวลาการจอง</th>
       <th>PO Date</th>
+      <th>วันส่งมอบบริษัท</th>
       <th>สถานะรถจัดสรร</th>
       <th>วันที่จัดสรร</th>
       <th>ประดับยนต์ของรถ</th>
-      <th>หมายเหตุ</th>
+      <th>หมายเหตุ (ใบจอง)</th>
+      <th>หมายเหตุ (รถ)</th>
     </tr>
   </thead>
   <tbody>
@@ -84,15 +86,17 @@
         <td>{{ $r['status'] }}</td>
         <td>{{ $r['daysBind'] }}</td>
         <td>{{ $r['po_date'] }}</td>
+        <td>{{ $r['dms_date'] }}</td>
         <td>{{ $r['allocation_status'] }}</td>
         <td>{{ $r['allocation_date'] }}</td>
         <td>{{ $r['note_accessory'] }}</td>
         <td>{{ $r['Note'] }}</td>
+        <td>{{ $r['note_car'] }}</td>
       </tr>
     @empty
       <tr>
         {{-- <td colspan="{{ auth()->user()->brand == 2 ? 21 : 20 }}" align="center"> --}}
-        <td colspan="{{ ($showCost ? 23 : 22) + (auth()->user()->brand == 2 ? 1 : 0) + ($showInterior ? 1 : 0) + ($showTeam ? 1 : 0) }}" align="center">
+        <td colspan="{{ ($showCost ? 25 : 24) + (auth()->user()->brand == 2 ? 1 : 0) + ($showInterior ? 1 : 0) + ($showTeam ? 1 : 0) }}" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>

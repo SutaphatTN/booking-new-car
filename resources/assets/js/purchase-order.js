@@ -2545,12 +2545,11 @@ $(document).ready(function () {
   $(document).on('click', '#btnUpdatePurchase', function (e) {
     e.preventDefault();
 
-    // สถานะ "ส่งมอบ" (con_status = 5) ต้องผ่าน "ตรวจสอบรายการ (IA)" ก่อน — เฉพาะ brand 2
-    // (Salecar::IA_GATE_BRAND) ; ช่อง IA ของ brand 2 ติ๊กได้เฉพาะ gm/md/admin role อื่นเห็นแต่กดไม่ได้
+    // สถานะ "ส่งมอบ" (con_status = 5) ต้องผ่าน "ตรวจสอบรายการ (IA)" ก่อน — ใช้ทุกแบรนด์แล้ว
+    // (mirror ของ Salecar::needsIaCheck) ; ช่อง IA ติ๊กได้เฉพาะ gm/md/admin role อื่นเห็นแต่กดไม่ได้
     // ดักเฉพาะตอน "เปลี่ยนเข้า" สถานะ 5 เหมือนฝั่ง server — ใบที่ส่งมอบไปแล้วไม่ต้องดักซ้ำ
     const wasDelivered = String(document.getElementById('originalConStatus')?.value ?? '') === '5';
-    const iaGated = (parseInt(document.getElementById('saleBrand')?.value, 10) || 0) === 2;
-    if (iaGated && $('#con_status').val() === '5' && !wasDelivered
+    if ($('#con_status').val() === '5' && !wasDelivered
       && $('#CheckerID').length && !$('#CheckerID').is(':checked')) {
       Swal.fire({
         icon: 'warning',

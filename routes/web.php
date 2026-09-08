@@ -594,6 +594,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('purchase-order/list-Commission', [PurchaseOrderController::class, 'listCommission']);
     Route::get('purchase-order/commission-sale-detail/{saleId}', [PurchaseOrderController::class, 'commissionSaleDetail'])->name('purchase-order.commission-sale-detail');
     Route::post('purchase-order/commission-monthly', [PurchaseOrderController::class, 'saveCommissionMonthly'])->name('purchase-order.commission-monthly.save');
+    Route::get('purchase-order/commission-receipt/{saleId}/{year}/{month}', [PurchaseOrderController::class, 'commissionReceipt'])->name('purchase-order.commission-receipt');
     Route::get('purchase-order/commission-target', [PurchaseOrderController::class, 'getMonthlyTarget'])->name('purchase-order.commission-target.get');
     Route::post('purchase-order/commission-target', [PurchaseOrderController::class, 'saveMonthlyTarget'])->name('purchase-order.commission-target.save');
     // cancellation
