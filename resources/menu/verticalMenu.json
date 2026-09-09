@@ -60,11 +60,6 @@
           "slug": "pre-approval.index"
         },
         {
-          "url": "sale/viewCommission",
-          "name": "ค่าคอมมิชชั่น",
-          "slug": "purchase-order.viewCommission"
-        },
-        {
           "url": "purchase-order/history",
           "name": "ประวัติที่ส่งมอบแล้ว",
           "slug": "purchase-order.history"
@@ -88,6 +83,23 @@
           "url": "purchase-order/view-export-insurance",
           "name": "รายงานข้อมูลประกันภัย",
           "slug": "purchase-order.view-export-insurance"
+        }
+      ]
+    },
+    {
+      "name": "ค่าคอมมิชชั่น",
+      "icon": "menu-icon icon-base bx bx-money",
+      "slug": ["commission"],
+      "submenu": [
+        {
+          "url": "sale/viewCommission",
+          "name": "ฝ่ายขาย",
+          "slug": "commission.sale"
+        },
+        {
+          "url": "staff-commission",
+          "name": "ฝ่ายสนับสนุน",
+          "slug": "commission.staff"
         }
       ]
     },

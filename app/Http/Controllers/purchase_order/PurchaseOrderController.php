@@ -4053,11 +4053,29 @@ class PurchaseOrderController extends Controller
     //commission
     public function viewCommission()
     {
-        if (!in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md', 'audit_dp', 'audit_lead'])) {
+        // sale/lead_sale เข้าได้ แต่เห็นเฉพาะของตัวเอง (กรองด้วย commissionVisibleSaleIds)
+        if (!in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md', 'audit_dp', 'audit_lead', 'sale', 'lead_sale'])) {
             abort(403);
         }
 
         return view('purchase-order.commission.view');
+    }
+
+    /**
+     * รายชื่อเซลล์ที่ผู้ใช้คนนี้ดูค่าคอมได้ — null = ไม่จำกัด (ผู้ดูแล/ผู้จัดการ)
+     * sale เห็นเฉพาะของตัวเอง ; lead_sale เห็นของตัวเอง + ทีมที่ผูกไว้
+     */
+    private function commissionVisibleSaleIds(): ?array
+    {
+        $user = Auth::user();
+
+        if (!in_array($user->role, ['sale', 'lead_sale'], true)) {
+            return null;
+        }
+
+        return $user->role === 'lead_sale'
+            ? array_merge([(int) $user->id], [9, 10, 11])
+            : [(int) $user->id];
     }
 
     public function listCommission(Request $request)
@@ -4072,16 +4090,13 @@ class PurchaseOrderController extends Controller
 
         // ดึงรายคัน (พร้อม relation ที่ต้องใช้คิดค่าคอมสด) แล้วค่อยรวมต่อเซลล์ใน PHP
         // — ใช้ effectiveCommissionSale() เพื่อรองรับเคสเกิน over_budget ที่ใช้ยอดหักของ manager
+        // เซลล์เห็นเฉพาะของตัวเอง (null = ผู้ดูแล ดูได้ทุกคนตาม scope brand/ทีมตามปกติ)
+        $visibleSaleIds = $this->commissionVisibleSaleIds();
+
         $rows = SaleCommissionQuery::base($user, false, $fromDate, $toDate)
             // withTrashed : เซลล์ที่ถูกลบชื่อไปแล้วต้องยังโชว์ชื่อในค่าคอมเดือนที่เขายังขายอยู่
             ->with(['model', 'saleUser' => fn($q) => $q->withTrashed()->with('branchInfo')])
-            ->when(in_array($user->role, ['sale', 'lead_sale']), function ($q) use ($user) {
-                $visibleSaleIds = [$user->id];
-                if ($user->role === 'lead_sale') {
-                    $visibleSaleIds = array_merge($visibleSaleIds, [9, 10, 11]);
-                }
-                $q->whereIn('SaleID', $visibleSaleIds);
-            })
+            ->when($visibleSaleIds !== null, fn($q) => $q->whereIn('SaleID', $visibleSaleIds))
             ->get();
 
         $saleCar = $rows->groupBy('SaleID')->map(function ($group, $saleId) {
@@ -4102,10 +4117,7 @@ class PurchaseOrderController extends Controller
         $ssiPerSale = $ssi['perSale'];
 
         // จำกัดสิทธิ์การมองเห็นให้ตรงกับ base query (sale/lead_sale)
-        if (in_array($user->role, ['sale', 'lead_sale'])) {
-            $visibleSaleIds = $user->role === 'lead_sale'
-                ? array_merge([$user->id], [9, 10, 11])
-                : [$user->id];
+        if ($visibleSaleIds !== null) {
             $ssiPerSale = $ssiPerSale->only($visibleSaleIds);
         }
 
@@ -4125,6 +4137,12 @@ class PurchaseOrderController extends Controller
                 ->merge($payOffset->filter(fn($v) => abs($v) > 0.005)->keys())
                 ->unique()
                 ->diff($saleCar->keys());
+
+            // เซลล์เห็นได้เฉพาะของตัวเอง — ก้อนนี้ดึงมาจาก SSI/กั๊กทั้งแบรนด์ ต้องกรองซ้ำ ไม่งั้นชื่อคนอื่นหลุดมา
+            if ($visibleSaleIds !== null) {
+                $missingIds = $missingIds->filter(fn($id) => in_array((int) $id, $visibleSaleIds, true))->values();
+            }
+
             if ($missingIds->isNotEmpty()) {
                 $extraUsers = User::withTrashed()->with('branchInfo')->whereIn('id', $missingIds)->get()->keyBy('id');
                 foreach ($missingIds as $sid) {
@@ -4238,10 +4256,14 @@ class PurchaseOrderController extends Controller
      */
     public function commissionSaleDetail(Request $request, $saleId)
     {
-        // audit_lead / audit_dp เปิดดูได้อย่างเดียว (ห้ามแก้ — endpoint บันทึกยังล็อกไว้ตามเดิม)
+        // audit_lead / audit_dp / sale / lead_sale เปิดดูได้อย่างเดียว (endpoint บันทึกยังล็อกไว้ตามเดิม)
         $role = Auth::user()->role;
-        abort_unless(in_array($role, ['admin', 'manager', 'gm', 'md', 'audit_lead', 'audit_dp']), 403);
+        abort_unless(in_array($role, ['admin', 'manager', 'gm', 'md', 'audit_lead', 'audit_dp', 'sale', 'lead_sale']), 403);
         $canEditCommission = in_array($role, ['admin', 'manager', 'gm', 'md']);
+
+        // เซลล์เปิดได้เฉพาะของตัวเอง — กันยิง URL ตรงด้วย saleId ของคนอื่น
+        $visibleSaleIds = $this->commissionVisibleSaleIds();
+        abort_if($visibleSaleIds !== null && !in_array((int) $saleId, $visibleSaleIds, true), 403);
 
         // ช่องเดือน = เดือน CK (เดือนที่ตัดยอด/ขาย)
         [$year, $month] = $this->resolveCommissionMonth($request->input('month'));
@@ -4563,7 +4585,12 @@ class PurchaseOrderController extends Controller
      */
     public function commissionReceipt(Request $request, $saleId, $year, $month)
     {
-        abort_unless(in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md', 'audit_lead', 'audit_dp']), 403);
+        abort_unless(in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md', 'audit_lead', 'audit_dp', 'sale', 'lead_sale']), 403);
+
+        // เซลล์เปิดได้เฉพาะใบเสร็จของเดือนตัวเอง (ไม่งั้นรูปในหน้ารายละเอียดของตัวเองจะโหลดไม่ขึ้น)
+        $visibleSaleIds = $this->commissionVisibleSaleIds();
+        abort_if($visibleSaleIds !== null && !in_array((int) $saleId, $visibleSaleIds, true), 403);
+
         abort_if($this->commissionSaleOutOfReach((int) $saleId, (int) $year, (int) $month), 403);
 
         $adjustment = SaleCommissionMonthly::where([

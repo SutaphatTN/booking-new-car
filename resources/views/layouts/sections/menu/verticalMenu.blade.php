@@ -39,7 +39,7 @@
       $__u = auth()->user();
       $b4CrossWuling = in_array($userRole, ['manager', 'audit'], true)
           && (int) $__u->getOriginal('brand') === 4 && (int) $__u->brand === 3;
-      $wulingAllowedMenus = ['customer-tracking', 'customer', 'purchase-order', 'report'];
+      $wulingAllowedMenus = ['customer-tracking', 'customer', 'purchase-order', 'report', 'commission'];
     @endphp
     @foreach ($menuData[0]->menu as $menu)
       @if ($b4CrossWuling && empty(array_intersect(is_array($menu->slug) ? $menu->slug : [$menu->slug], $wulingAllowedMenus)))
@@ -70,7 +70,18 @@
         @continue
       @endif
 
-      @if ($userRole == 'registration' && $menu->slug !== 'vehicle')
+      {{-- registration เห็นแค่เมนูทะเบียน + ค่าคอมมิชชั่น (มีสิทธิ์รับคอมฝ่ายสนับสนุน) --}}
+      @if ($userRole == 'registration' &&
+          empty(array_intersect(is_array($menu->slug) ? $menu->slug : [$menu->slug], ['vehicle', 'commission'])))
+        @continue
+      @endif
+
+      {{-- เมนู "ค่าคอมมิชชั่น" — ซ่อนทั้งก้อนถ้าเข้าไม่ได้สักหน้า ไม่งั้นจะเหลือหัวข้อเปล่า ๆ
+           ฝ่ายขาย : admin/manager/gm/md/audit_lead/audit_dp + sale/lead_sale (เห็นเฉพาะของตัวเอง)
+           ฝ่ายสนับสนุน : admin/md/gm + คนที่อยู่ใน config/staff_commission.php --}}
+      @if (in_array('commission', is_array($menu->slug) ? $menu->slug : [$menu->slug], true) &&
+          !in_array($userRole, ['admin', 'manager', 'gm', 'md', 'audit_lead', 'audit_dp', 'sale', 'lead_sale'], true) &&
+          !\App\Services\StaffCommissionQuery::isStaff((int) auth()->id()))
         @continue
       @endif
 
@@ -108,8 +119,8 @@
         @continue
       @endif
 
-      {{-- role marketing เห็นแค่เมนู การตลาด (source) --}}
-      @if ($userRole === 'marketing' && empty(array_intersect($menuSlugs, ['source'])))
+      {{-- role marketing เห็นแค่เมนู การตลาด (source) + ค่าคอมมิชชั่น (มีสิทธิ์รับคอมฝ่ายสนับสนุน) --}}
+      @if ($userRole === 'marketing' && empty(array_intersect($menuSlugs, ['source', 'commission'])))
         @continue
       @endif
 

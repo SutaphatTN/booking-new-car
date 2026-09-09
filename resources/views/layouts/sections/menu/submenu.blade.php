@@ -107,6 +107,14 @@
         @continue
       @endif
 
+      {{-- เมนู "ค่าคอมมิชชั่นฝ่ายสนับสนุน" — admin/md/gm เห็นทุกคน ส่วนคนที่มีสิทธิ์รับคอมเห็นของตัวเอง
+           รายชื่อคนอยู่ใน config/staff_commission.php (ผูกราย user id ไม่ใช่ role เพราะกระจายหลาย role) --}}
+      @if ($submenu->slug == 'commission.staff' &&
+          !in_array($userRole, \App\Http\Controllers\purchase_order\StaffCommissionController::MANAGE_ROLES, true) &&
+          !\App\Services\StaffCommissionQuery::isStaff((int) auth()->id()))
+        @continue
+      @endif
+
       {{-- เมนู "D/Bar" เห็นเฉพาะ role admin, audit, gm, manager, md --}}
       @if ($submenu->slug == 'dbar.index' && !in_array($userRole, ['admin', 'audit', 'audit_lead', 'audit_dp', 'gm', 'manager', 'md']))
         @continue
@@ -117,8 +125,8 @@
         @continue
       @endif
 
-      {{-- เมนู "ค่าคอมมิชชั่น" เห็นเฉพาะ role admin, manager, gm, md, audit_dp, audit_lead --}}
-      @if ($submenu->slug == 'purchase-order.viewCommission' && !in_array($userRole, ['admin', 'manager', 'gm', 'md', 'audit_dp', 'audit_lead']))
+      {{-- เมนู "ค่าคอมมิชชั่นฝ่ายขาย" — ผู้ดูแลเห็นทั้งทีม ; sale/lead_sale เห็นเฉพาะของตัวเอง --}}
+      @if ($submenu->slug == 'commission.sale' && !in_array($userRole, ['admin', 'manager', 'gm', 'md', 'audit_dp', 'audit_lead', 'sale', 'lead_sale']))
         @continue
       @endif
 
