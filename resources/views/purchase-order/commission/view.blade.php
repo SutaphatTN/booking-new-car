@@ -35,7 +35,9 @@
               <input type="month" id="commissionMonth" class="form-control form-control-sm" style="max-width:170px;"
                 value="{{ now()->format('Y-m') }}">
             </div>
-            @unless (in_array((int) auth()->user()->brand, config('car_commission.brands_without_target', []), true))
+            {{-- ช่องกรอกเป้า : เซลล์ไม่ได้ตั้งเป้าเอง (endpoint ก็ล็อกไว้อยู่แล้ว) --}}
+            @unless (in_array(auth()->user()->role, ['sale', 'lead_sale'], true) ||
+                in_array((int) auth()->user()->brand, config('car_commission.brands_without_target', []), true))
               {{-- แบรนด์ที่ไม่มีเป้า (brand 3 คิดตามรุ่น / brand 4 คิดตามจำนวนคันล้วน) ไม่ต้องมีช่องกรอกเป้า --}}
               <div class="d-flex align-items-center gap-2">
                 <label for="monthlyTarget" class="mb-0 fw-semibold text-nowrap">

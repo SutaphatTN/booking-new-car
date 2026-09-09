@@ -22,6 +22,7 @@ use App\Http\Controllers\model_car\ModelCarController;
 use App\Http\Controllers\model_car\SubModelCarController;
 use App\Http\Controllers\purchase_order\CancellationController;
 use App\Http\Controllers\purchase_order\PurchaseOrderController;
+use App\Http\Controllers\purchase_order\StaffCommissionController;
 use App\Http\Controllers\vehicle\LicenseController;
 use App\Http\Controllers\vehicle\VehicleController;
 use App\Http\Controllers\BrandSwitchController;
@@ -118,9 +119,6 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::put('purchase-order/update-fn/{id}', [FinanceController::class, 'updateFN'])->name('purchase-order.updateFN');
     Route::delete('purchase-order/destroy-fn/{id}', [FinanceController::class, 'destroyFN'])->name('purchase-order.destroyFN');
     Route::get('/purchase-order/booking-export', [PurchaseOrderController::class, 'exportBooking'])->name('purchase-order.booking-export');
-    //commission sale report
-    Route::get('purchase-order/view-export-commission', [PurchaseOrderController::class, 'viewExportCommission'])->name('purchase-order.view-export-commission');
-    Route::get('/purchase-order/sale-com-export', [PurchaseOrderController::class, 'exportSaleCom'])->name('purchase-order.sale-com-export');
     //GP Report
     Route::get('purchase-order/view-export-gp', [PurchaseOrderController::class, 'viewExportGP'])->name('purchase-order.view-export-gp');
     Route::get('/purchase-order/gp-export', [PurchaseOrderController::class, 'exportGP'])->name('purchase-order.gp-export');
@@ -590,11 +588,23 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('purchase-order/{id}/withdraw-approval', [PurchaseOrderController::class, 'withdrawApproval'])->name('purchase-order.withdrawApproval');
     Route::get('/purchase-order/search', [PurchaseOrderController::class, 'search'])->name('purchase-order.search');
     //commission sale
-    Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('purchase-order.viewCommission');
+    Route::get('sale/viewCommission', [PurchaseOrderController::class, 'viewCommission'])->name('commission.sale');
+    // รายงานค่าคอม — ย้ายออกจากกลุ่ม notsale เพราะเซลล์ต้องออกรายงานของตัวเองได้
+    // (SaleCommissionExport ตัดชีทรวม/ชีทกั๊กออกให้เอง และ SaleCommissionQuery::base กรองเหลือ SaleID ตัวเอง)
+    Route::get('purchase-order/view-export-commission', [PurchaseOrderController::class, 'viewExportCommission'])->name('purchase-order.view-export-commission');
+    Route::get('/purchase-order/sale-com-export', [PurchaseOrderController::class, 'exportSaleCom'])->name('purchase-order.sale-com-export');
     Route::get('purchase-order/list-Commission', [PurchaseOrderController::class, 'listCommission']);
     Route::get('purchase-order/commission-sale-detail/{saleId}', [PurchaseOrderController::class, 'commissionSaleDetail'])->name('purchase-order.commission-sale-detail');
     Route::post('purchase-order/commission-monthly', [PurchaseOrderController::class, 'saveCommissionMonthly'])->name('purchase-order.commission-monthly.save');
     Route::get('purchase-order/commission-receipt/{saleId}/{year}/{month}', [PurchaseOrderController::class, 'commissionReceipt'])->name('purchase-order.commission-receipt');
+
+    // ค่าคอมฝ่ายสนับสนุน (ผจก./แอดมิน/ทะเบียน/การตลาด) — คนละชุดกับค่าคอมฝ่ายขาย
+    Route::get('staff-commission', [StaffCommissionController::class, 'index'])->name('commission.staff');
+    Route::get('staff-commission/list', [StaffCommissionController::class, 'list']);
+    Route::get('staff-commission/report', [StaffCommissionController::class, 'reportView'])->name('commission.staff.report');
+    Route::get('staff-commission/export', [StaffCommissionController::class, 'export'])->name('commission.staff.export');
+    Route::get('staff-commission/detail/{userId}', [StaffCommissionController::class, 'detail'])->name('commission.staff.detail');
+    Route::post('staff-commission/save', [StaffCommissionController::class, 'save'])->name('commission.staff.save');
     Route::get('purchase-order/commission-target', [PurchaseOrderController::class, 'getMonthlyTarget'])->name('purchase-order.commission-target.get');
     Route::post('purchase-order/commission-target', [PurchaseOrderController::class, 'saveMonthlyTarget'])->name('purchase-order.commission-target.save');
     // cancellation
