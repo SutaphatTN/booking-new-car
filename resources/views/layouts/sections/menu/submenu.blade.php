@@ -29,6 +29,16 @@
         @continue
       @endif
 
+      {{-- เมนู "เงินเคลม" เห็นเฉพาะ role ใน config source.claim_roles (ตรงกับ middleware ที่ route) --}}
+      @if ($submenu->slug === 'source.claim.index' && !in_array($userRole, config('source.claim_roles', []), true))
+        @continue
+      @endif
+
+      {{-- audit_internal เข้าเมนูการตลาดได้เฉพาะ "เงินเคลม" — ตัวอื่นเป็นงานตั้งค่าของฝ่ายการตลาด --}}
+      @if ($userRole === 'audit_internal' && in_array($submenu->slug, ['source.sub.index', 'source.place.index']))
+        @continue
+      @endif
+
       {{-- 2026-09-01: เปิดเมนู "ค่าคอมมิชชั่น" คืน — เหตุผลเดียวกับเมนู "รายงาน" (ดู verticalMenu.blade.php)
            ข้อมูลถูกกรองด้วยกลุ่มทีมที่ชั้น query แล้ว (App\Models\Traits\SaleTeamScope ผ่าน
            SaleCommissionQuery::base) manager Lepas จึงเห็นเฉพาะเซลล์ทีมตัวเองที่ขาย Wuling --}}

@@ -100,7 +100,7 @@ $(document).on('click', '#btnSaveTarget', function () {
       if (commissionTable) commissionTable.ajax.reload(null, false);
       loadMonthlyTarget();
       if (window.Swal) {
-        Swal.fire({ icon: 'success', title: 'บันทึกเป้าแล้ว', timer: 1200, showConfirmButton: false });
+        Swal.fire({ icon: 'success', title: 'บันทึกเป้าแล้ว', timer: 1200, showConfirmButton: true });
       }
     }
   )
@@ -384,16 +384,14 @@ $(document).on('submit', '#commissionMonthlyForm', function (e) {
         commissionTable.ajax.reload(null, false);
       }
       if (window.Swal) {
-        Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1400, showConfirmButton: false });
+        Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1400, showConfirmButton: true });
       }
     })
     .fail(function (xhr) {
       // โชว์สาเหตุจริงจาก server (422 = ข้อมูลไม่ผ่าน validate, 403 = ไม่มีสิทธิ์)
       // ไม่งั้นขึ้นแต่ "กรุณาลองใหม่อีกครั้ง" แล้วหาสาเหตุไม่ได้เลย
       const res = xhr.responseJSON || {};
-      const detail = res.errors
-        ? Object.values(res.errors).flat().join('\n')
-        : res.message || 'กรุณาลองใหม่อีกครั้ง';
+      const detail = res.errors ? Object.values(res.errors).flat().join('\n') : res.message || 'กรุณาลองใหม่อีกครั้ง';
       if (window.Swal) {
         Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: detail });
       } else {

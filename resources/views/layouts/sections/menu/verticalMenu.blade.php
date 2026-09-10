@@ -108,6 +108,7 @@
             'purchase-order',                                                   // การจอง/ซื้อ (submenu กรองเหลือยอดเฟิร์มเงิน FN)
             'report',                                                           // รายงาน
             'floor-plan',                                                       // Floor Plan
+            'source',                                                           // การตลาด (submenu กรองเหลือเงินเคลม)
         ];
       @endphp
       @if ($userRole === 'audit_internal' && empty(array_intersect($menuSlugs, $auditInternalAllowed)))
@@ -151,6 +152,11 @@
       @endif
 
       @if (auth()->user()->brand == 2 && $menu->slug === 'sale.viewCommission')
+        @continue
+      @endif
+
+      {{-- เมนู "ประวัติการแก้ไข" (activity_logs) — เครื่องมือตรวจสอบของ admin เท่านั้น --}}
+      @if ($menu->slug === 'activity-log.index' && $userRole !== 'admin')
         @continue
       @endif
 

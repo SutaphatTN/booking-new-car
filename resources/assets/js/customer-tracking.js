@@ -50,8 +50,14 @@ function ctPickCancelReason(titleText) {
     preConfirm: () => {
       const reason = document.getElementById('ctReason').value;
       const note = document.getElementById('ctReasonNote').value.trim();
-      if (!reason) { Swal.showValidationMessage('กรุณาเลือกเหตุผล'); return false; }
-      if (reason === 'อื่นๆ' && !note) { Swal.showValidationMessage('กรุณากรอกเหตุผล'); return false; }
+      if (!reason) {
+        Swal.showValidationMessage('กรุณาเลือกเหตุผล');
+        return false;
+      }
+      if (reason === 'อื่นๆ' && !note) {
+        Swal.showValidationMessage('กรุณากรอกเหตุผล');
+        return false;
+      }
       return { reason, note };
     }
   });
@@ -183,20 +189,23 @@ $(document).ready(function () {
       { data: 'status', orderable: false },
       // คอลัมน์ "ปิดด้วยสาเหตุ" มีเฉพาะหน้าย้อนหลัง — จำนวนคอลัมน์ต้องตรงกับ <th> ใน view
       ...(ctBooked
-        ? [{
-            data: 'outcome',
-            orderable: false,
-            searchable: false,
-            render: function (outcome, type, row) {
-              if (type !== 'display') return outcome;
-              const cls = { 'จองแล้ว': 'bg-label-success', 'จบการติดตาม': 'bg-label-secondary' }[outcome] || 'bg-label-danger';
-              // เหตุผลยกเลิกเป็นข้อความที่ผู้ใช้พิมพ์เอง ต้อง escape ก่อนยัดเป็น HTML
-              const note = row.cancel_reason
-                ? `<div class="text-muted" style="font-size:.75rem;">${$('<div>').text(row.cancel_reason).html()}</div>`
-                : '';
-              return `<span class="badge ${cls}">${outcome}</span>${note}`;
+        ? [
+            {
+              data: 'outcome',
+              orderable: false,
+              searchable: false,
+              render: function (outcome, type, row) {
+                if (type !== 'display') return outcome;
+                const cls =
+                  { จองแล้ว: 'bg-label-success', จบการติดตาม: 'bg-label-secondary' }[outcome] || 'bg-label-danger';
+                // เหตุผลยกเลิกเป็นข้อความที่ผู้ใช้พิมพ์เอง ต้อง escape ก่อนยัดเป็น HTML
+                const note = row.cancel_reason
+                  ? `<div class="text-muted" style="font-size:.75rem;">${$('<div>').text(row.cancel_reason).html()}</div>`
+                  : '';
+                return `<span class="badge ${cls}">${outcome}</span>${note}`;
+              }
             }
-          }]
+          ]
         : []),
       {
         data: 'id',
@@ -1211,7 +1220,8 @@ $(document).ready(function () {
     // กันกดซ้ำ → ปิดปุ่มตั้งแต่ครั้งแรก (success จะ reload หน้าอยู่แล้ว)
     if ($btn.prop('disabled')) return;
     const btnHtml = $btn.html();
-    $btn.prop('disabled', true)
+    $btn
+      .prop('disabled', true)
       .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังบันทึก...');
 
     $.ajax({
@@ -1327,7 +1337,8 @@ $(document).ready(function () {
     // กันกดซ้ำ → ปิดปุ่มตั้งแต่ครั้งแรก (success จะ reload หน้าอยู่แล้ว)
     if ($btn.prop('disabled')) return;
     const btnHtml = $btn.html();
-    $btn.prop('disabled', true)
+    $btn
+      .prop('disabled', true)
       .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังบันทึก...');
 
     $.ajax({
@@ -1497,7 +1508,6 @@ $(document).ready(function () {
     });
   });
 
-
   // ── การ์ด "ข้อมูลผู้ขาย" (view-more) : ผู้ขาย + แหล่งที่มา/สถานที่ + คลิปแอด ──
   // ปุ่มบันทึกปุ่มเดียวคุมทั้งการ์ด แต่ยิงคนละ endpoint ตามสิทธิ์ (ย้ายผู้ขาย vs แก้แหล่งที่มา
   // เป็นคนละ role กัน) — ยิงเฉพาะส่วนที่ค่าเปลี่ยนจริง
@@ -1513,9 +1523,9 @@ $(document).ready(function () {
     const $place = $('#place_id');
     const $ad = $('#vmClipAddSelect');
 
-    const cur = ($el) => String($el.data('current') ?? '');
-    const val = ($el) => String($el.val() ?? '');
-    const changed = ($el) => $el.length && val($el) !== cur($el);
+    const cur = $el => String($el.data('current') ?? '');
+    const val = $el => String($el.val() ?? '');
+    const changed = $el => $el.length && val($el) !== cur($el);
 
     // สถานที่โหลดมาทีหลัง ถ้าค่าเดิมไม่มีอยู่ในลิสต์ (เช่นงานจบไปแล้ว) ให้ถือว่ายังไม่ถูกแก้
     // ไม่งั้นเปิดหน้ามาเฉย ๆ ปุ่มจะกดได้ทั้งที่ผู้ใช้ไม่ได้แตะอะไร
@@ -1568,16 +1578,19 @@ $(document).ready(function () {
         // include = สถานที่ที่ผูกอยู่เดิม — บังคับให้อยู่ในลิสต์แม้งานจบไปแล้ว
         // ไม่งั้นค่าเดิมจะหลุด แล้วปุ่มจะเข้าใจผิดว่ามีการแก้ไข
         const keep = preselect || '';
-        return $.get('/api/source/places/' + sourceId + (keep ? '?include=' + encodeURIComponent(keep) : ''), function (data) {
-          $place.empty();
-          if (!data || !data.length) {
-            $place.append('<option value="">— ไม่มีข้อมูลสถานที่ —</option>');
-            return;
+        return $.get(
+          '/api/source/places/' + sourceId + (keep ? '?include=' + encodeURIComponent(keep) : ''),
+          function (data) {
+            $place.empty();
+            if (!data || !data.length) {
+              $place.append('<option value="">— ไม่มีข้อมูลสถานที่ —</option>');
+              return;
+            }
+            $place.append('<option value="">— เลือก —</option>');
+            data.forEach(p => $place.append($('<option>', { value: p.id, text: p.label })));
+            if (preselect) $place.val(preselect);
           }
-          $place.append('<option value="">— เลือก —</option>');
-          data.forEach((p) => $place.append($('<option>', { value: p.id, text: p.label })));
-          if (preselect) $place.val(preselect);
-        });
+        );
       }
 
       $main.on('change', function () {
@@ -1611,11 +1624,11 @@ $(document).ready(function () {
       Swal.fire({
         icon: 'question',
         title: 'ยืนยันบันทึก',
-        html: '<div class="text-start small">' + summary.map((s) => '• ' + s).join('<br>') + '</div>',
+        html: '<div class="text-start small">' + summary.map(s => '• ' + s).join('<br>') + '</div>',
         showCancelButton: true,
         confirmButtonText: 'ยืนยัน',
         cancelButtonText: 'ยกเลิก'
-      }).then((result) => {
+      }).then(result => {
         if (!result.isConfirmed) return;
 
         $btn.prop('disabled', true);
@@ -1649,10 +1662,11 @@ $(document).ready(function () {
         }
 
         // ยิงพร้อมกันได้เพราะคนละคอลัมน์ ไม่ชนกัน — รอให้จบทุกตัวก่อนค่อยสรุปผล
-        $.when.apply($, jobs)
+        $.when
+          .apply($, jobs)
           .done(function () {
             syncBtn();
-            Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', timer: 1500, showConfirmButton: false });
+            Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', timer: 1500, showConfirmButton: true });
           })
           .fail(function (xhr) {
             syncBtn();
