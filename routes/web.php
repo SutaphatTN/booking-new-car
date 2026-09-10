@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\accessory\AccessoryController;
+use App\Http\Controllers\activity_log\ActivityLogController;
 use App\Http\Controllers\auth\ForgotController;
 use App\Http\Controllers\auth\LoginController;
 use App\Http\Controllers\auth\RegisterController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\invoice\InvoiceController;
 use App\Http\Controllers\pricelist_car\PricelistCarController;
 use App\Http\Controllers\customer_tracking\CustomerTrackingController;
 use App\Http\Controllers\source\SourceController;
+use App\Http\Controllers\source\SourcePlaceClaimController;
 use App\Http\Controllers\insurance\InsuranceController;
 use App\Http\Controllers\gwm_incentive\GwmIncentiveController;
 use App\Http\Controllers\stock_film\FilmPriceListController;
@@ -213,6 +215,22 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::post('source/request', [SourceController::class, 'storeRequest'])->name('source.request.store');
     // ขออนุมัติเพิ่ม (topup งบประมาณของสถานที่ที่อนุมัติแล้ว)
     Route::post('source/place/{id}/topup', [SourceController::class, 'storeTopupRequest'])->name('source.place.topup');
+
+    // เงินเคลม (Form B) — ยิงจากสถานที่ แก้ได้เฉพาะฝั่งเคลม ({id} = id ของสถานที่)
+    Route::middleware('role:admin,md,gm,audit,audit_lead,audit_dp,audit_internal')->group(function () {
+        Route::get('source/claim', [SourcePlaceClaimController::class, 'index'])->name('source.claim.index');
+        Route::get('source/claim/list', [SourcePlaceClaimController::class, 'list']);
+        Route::get('source/claim/export', [SourcePlaceClaimController::class, 'export'])->name('source.claim.export');
+        Route::get('source/claim/{id}/edit', [SourcePlaceClaimController::class, 'edit'])->name('source.claim.edit');
+        Route::put('source/claim/{id}', [SourcePlaceClaimController::class, 'update'])->name('source.claim.update');
+    });
+
+    // ประวัติการแก้ไข (activity_logs) — หน้ารวมของทุก model ที่ use LogsActivity, admin เท่านั้น
+    Route::middleware('role:admin')->group(function () {
+        Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
+        Route::get('activity-log/list', [ActivityLogController::class, 'list']);
+        Route::get('activity-log/{id}', [ActivityLogController::class, 'show'])->name('activity-log.show');
+    });
 
     //insurance (ประกัน) — ตั้งค่า: เพิ่ม/แก้/ลบ เฉพาะ admin, role อื่นดูตารางได้
     Route::get('insurance', [InsuranceController::class, 'index'])->name('insurance.index');

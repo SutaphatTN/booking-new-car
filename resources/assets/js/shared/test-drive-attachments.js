@@ -19,7 +19,9 @@ const EXT_BG = {
 };
 
 function escapeHtml(text) {
-  return $('<div>').text(text == null ? '' : text).html();
+  return $('<div>')
+    .text(text == null ? '' : text)
+    .html();
 }
 
 function fileTile(url, ext, uid) {
@@ -156,7 +158,7 @@ export function initTestDriveAttachments() {
         data: { index: index },
         success: function (res) {
           renderList($wrap, res.attachments || []);
-          Swal.fire({ icon: 'success', title: 'ลบไฟล์แล้ว', timer: 1200, showConfirmButton: false });
+          Swal.fire({ icon: 'success', title: 'ลบไฟล์แล้ว', timer: 1200, showConfirmButton: true });
         },
         error: function () {
           Swal.fire({ icon: 'error', title: 'ลบไม่สำเร็จ', text: 'กรุณาลองใหม่' });

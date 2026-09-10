@@ -142,6 +142,11 @@
           "url": "source/place",
           "name": "สถานที่",
           "slug": "source.place.index"
+        },
+        {
+          "url": "source/claim",
+          "name": "เงินเคลม",
+          "slug": "source.claim.index"
         }
       ]
     },
@@ -467,6 +472,12 @@
           "slug": "purchase-order.view-export-over-budget"
         }
       ]
+    },
+    {
+      "url": "activity-log",
+      "name": "ประวัติการแก้ไข",
+      "icon": "menu-icon icon-base bx bx-history",
+      "slug": "activity-log.index"
     }
   ]
 }

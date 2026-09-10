@@ -480,7 +480,10 @@ $(document).ready(function () {
   function formatIDCardPO(v) {
     // พาสปอร์ตต่างชาติ (มีตัวอักษร) ห้ามฟอร์แมต — ดู formatIDCard ใน customer.js
     if (/[A-Za-z]/.test(v)) {
-      return v.replace(/[^A-Za-z0-9]/g, '').toUpperCase().substring(0, 17);
+      return v
+        .replace(/[^A-Za-z0-9]/g, '')
+        .toUpperCase()
+        .substring(0, 17);
     }
 
     const d = v.replace(/\D/g, '').substring(0, 13);
@@ -603,7 +606,10 @@ $(document).ready(function () {
   function fmtIDPO(v) {
     // พาสปอร์ตต่างชาติ (มีตัวอักษร) ห้ามฟอร์แมต — ดู formatIDCard ใน customer.js
     if (/[A-Za-z]/.test(v)) {
-      return v.replace(/[^A-Za-z0-9]/g, '').toUpperCase().substring(0, 17);
+      return v
+        .replace(/[^A-Za-z0-9]/g, '')
+        .toUpperCase()
+        .substring(0, 17);
     }
 
     const d = v.replace(/\D/g, '').substring(0, 13);
@@ -615,8 +621,12 @@ $(document).ready(function () {
     if (d.length > 12) p.push(d.substring(12, 13));
     return p.join('-');
   }
-  $('#ccpo_phone').on('input', function () { this.value = fmtPhonePO(this.value); });
-  $('#ccpo_id_number').on('input', function () { this.value = fmtIDPO(this.value); });
+  $('#ccpo_phone').on('input', function () {
+    this.value = fmtPhonePO(this.value);
+  });
+  $('#ccpo_id_number').on('input', function () {
+    this.value = fmtIDPO(this.value);
+  });
 
   // ─── Thailand cascade (scoped to this modal) ───
   function ccpoLoadProvinces(preselect) {
@@ -636,14 +646,19 @@ $(document).ready(function () {
     });
   }
   function ccpoLoadTambons(province, district, preselect) {
-    const $sel = $('#ccpo_subdistrict').empty().append('<option value="">— เลือกตำบล —</option>').prop('disabled', true);
+    const $sel = $('#ccpo_subdistrict')
+      .empty()
+      .append('<option value="">— เลือกตำบล —</option>')
+      .prop('disabled', true);
     $('#ccpo_postal_code').val('');
     $('#ccpo_post_id').val('');
     if (!province || !district) return $.Deferred().resolve().promise();
     return $.get('/api/thailand/tambons', { province, district }).then(function (data) {
-      data.forEach(t => $sel.append(
-        `<option value="${t.Tambon_pro}" data-postal="${t.Postcode_pro}" data-post-id="${t.id}">${t.Tambon_pro}</option>`
-      ));
+      data.forEach(t =>
+        $sel.append(
+          `<option value="${t.Tambon_pro}" data-postal="${t.Postcode_pro}" data-post-id="${t.id}">${t.Tambon_pro}</option>`
+        )
+      );
       $sel.prop('disabled', false);
       if (preselect) {
         $sel.val(preselect);
@@ -703,7 +718,10 @@ $(document).ready(function () {
   window.poEnsureCustomerComplete = function (customerId, opts) {
     opts = opts || {};
     poCustomerId = customerId;
-    if (!customerId) { window.poCustomerComplete = false; return; }
+    if (!customerId) {
+      window.poCustomerComplete = false;
+      return;
+    }
     $.get('/api/purchase-order/customer-profile', { customer_id: customerId }).done(function (res) {
       if (res.complete) {
         window.poCustomerComplete = true;
@@ -755,12 +773,16 @@ $(document).ready(function () {
     setDisplay('customerPhone-display', res.mobile);
   }
 
-  const esc = (s) => $('<div>').text(s == null ? '' : s).html();
+  const esc = s =>
+    $('<div>')
+      .text(s == null ? '' : s)
+      .html();
 
   // การ์ดบอกว่าเลขบัตร/เบอร์ที่กรอกไปชนกับลูกค้ารายไหน
   function ownerCardHtml(owner) {
     const chips = [];
-    if (!owner.same_brand) chips.push('<span class="badge bg-label-secondary">แบรนด์ ' + esc(owner.brand_name) + '</span>');
+    if (!owner.same_brand)
+      chips.push('<span class="badge bg-label-secondary">แบรนด์ ' + esc(owner.brand_name) + '</span>');
     if (owner.branch) chips.push('<span class="badge bg-label-secondary">สาขา ' + esc(owner.branch) + '</span>');
     if (owner.has_tracking) chips.push('<span class="badge bg-label-info">มีการติดตามเปิดอยู่</span>');
     if (owner.has_booking) chips.push('<span class="badge bg-label-primary">มีใบจอง</span>');
@@ -768,12 +790,18 @@ $(document).ready(function () {
 
     return (
       '<div class="text-start p-3 rounded" style="background:#f8fafc;border:1px solid #e2e8f0;">' +
-        '<div class="fw-bold mb-1">' + esc(owner.name || '(ไม่มีชื่อ)') + '</div>' +
-        '<div class="small text-muted">เลขบัตร ' + esc(owner.id_number || '-') + '</div>' +
-        '<div class="small text-muted">เบอร์ ' + esc(owner.mobile || '-') +
-          (owner.mobile2 ? ' , ' + esc(owner.mobile2) : '') + '</div>' +
-        (owner.created_at ? '<div class="small text-muted">เพิ่มเมื่อ ' + esc(owner.created_at) + '</div>' : '') +
-        (chips.length ? '<div class="mt-2 d-flex flex-wrap gap-1">' + chips.join('') + '</div>' : '') +
+      '<div class="fw-bold mb-1">' +
+      esc(owner.name || '(ไม่มีชื่อ)') +
+      '</div>' +
+      '<div class="small text-muted">เลขบัตร ' +
+      esc(owner.id_number || '-') +
+      '</div>' +
+      '<div class="small text-muted">เบอร์ ' +
+      esc(owner.mobile || '-') +
+      (owner.mobile2 ? ' , ' + esc(owner.mobile2) : '') +
+      '</div>' +
+      (owner.created_at ? '<div class="small text-muted">เพิ่มเมื่อ ' + esc(owner.created_at) + '</div>' : '') +
+      (chips.length ? '<div class="mt-2 d-flex flex-wrap gap-1">' + chips.join('') + '</div>' : '') +
       '</div>'
     );
   }
@@ -784,7 +812,8 @@ $(document).ready(function () {
       Swal.fire({
         icon: 'warning',
         title: 'เลขบัตรนี้ถูกใช้อยู่แล้ว',
-        html: ownerCardHtml(owner) +
+        html:
+          ownerCardHtml(owner) +
           '<div class="small text-muted mt-2 text-start">ลูกค้ารายนี้ถูกลบไปแล้ว จึงรวมข้อมูลอัตโนมัติไม่ได้ — กรุณาแจ้งแอดมิน</div>',
         confirmButtonText: 'ตกลง'
       });
@@ -794,7 +823,8 @@ $(document).ready(function () {
     Swal.fire({
       icon: 'question',
       title: 'เลขบัตรนี้มีลูกค้าอยู่แล้ว',
-      html: ownerCardHtml(owner) +
+      html:
+        ownerCardHtml(owner) +
         '<div class="small text-muted mt-2 text-start">ถ้าเป็นคนเดียวกัน ระบบจะย้ายการติดตาม/ใบจอง/ที่อยู่ มาไว้ที่ลูกค้ารายนี้ ' +
         'เก็บเบอร์ที่กรอกเป็นเบอร์สำรอง แล้วลบข้อมูลที่ซ้ำออก</div>',
       showCancelButton: true,
@@ -829,9 +859,16 @@ $(document).ready(function () {
         Swal.fire({
           icon: 'success',
           title: 'รวมข้อมูลลูกค้าแล้ว',
-          html: '<div class="text-start">ใช้ข้อมูลของ <b>' + esc(res.name) + '</b> เป็นผู้ซื้อ' +
+          html:
+            '<div class="text-start">ใช้ข้อมูลของ <b>' +
+            esc(res.name) +
+            '</b> เป็นผู้ซื้อ' +
             (notes ? '<ul class="small text-muted mt-2 mb-0">' + notes + '</ul>' : '') +
-            (res.complete ? '' : '<div class="small text-danger mt-2">ข้อมูลยังไม่ครบ: ' + esc((res.missing || []).join(', ')) + '</div>') +
+            (res.complete
+              ? ''
+              : '<div class="small text-danger mt-2">ข้อมูลยังไม่ครบ: ' +
+                esc((res.missing || []).join(', ')) +
+                '</div>') +
             '</div>'
         }).then(function () {
           // ยังขาดข้อมูลอยู่ → เปิดโมดัลให้กรอกต่อกับลูกค้าคนใหม่
@@ -885,7 +922,7 @@ $(document).ready(function () {
         applyCustomerDisplay(res, poCustomerId);
 
         $modal.modal('hide');
-        Swal.fire({ icon: 'success', title: 'บันทึกข้อมูลลูกค้าแล้ว', timer: 1500, showConfirmButton: false });
+        Swal.fire({ icon: 'success', title: 'บันทึกข้อมูลลูกค้าแล้ว', timer: 1500, showConfirmButton: true });
       },
       error: function (xhr) {
         const res = xhr.responseJSON || {};
@@ -899,7 +936,8 @@ $(document).ready(function () {
           Swal.fire({
             icon: 'warning',
             title: 'เบอร์นี้มีลูกค้าอยู่แล้ว',
-            html: ownerCardHtml(res.owner) +
+            html:
+              ownerCardHtml(res.owner) +
               '<div class="small text-muted mt-2 text-start">เบอร์โทรห้ามซ้ำกัน — กรุณาแก้เบอร์ หรือถ้าเป็นคนเดียวกัน ให้กรอกเลขบัตรของลูกค้ารายนี้เพื่อรวมข้อมูล</div>',
             confirmButtonText: 'ตกลง'
           });
@@ -1031,7 +1069,8 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
     // เช็คสถานะการติดตามก่อนอนุญาตให้เพิ่มการจอง — แสดง spinner บนปุ่มระหว่างรอ
     const $selBtn = $(this);
     const selBtnHtml = $selBtn.html();
-    $selBtn.prop('disabled', true)
+    $selBtn
+      .prop('disabled', true)
       .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
 
     $.ajax({
@@ -1052,8 +1091,8 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
             showCancelButton: true,
             confirmButtonColor: '#6c5ffc',
             confirmButtonText: 'ไปเพิ่มการติดตาม',
-            cancelButtonText: 'ปิด',
-          }).then((result) => {
+            cancelButtonText: 'ปิด'
+          }).then(result => {
             if (result.isConfirmed) window.location.href = '/customer-tracking/create';
           });
           return;
@@ -1072,8 +1111,8 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
             showCancelButton: true,
             confirmButtonColor: '#6c5ffc',
             confirmButtonText: 'ไปที่การติดตาม',
-            cancelButtonText: 'ปิด',
-          }).then((result) => {
+            cancelButtonText: 'ปิด'
+          }).then(result => {
             if (result.isConfirmed) window.location.href = '/customer-tracking/' + res.tracking_id;
           });
           return;
@@ -1089,8 +1128,8 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
             confirmButtonColor: '#6c5ffc',
             cancelButtonColor: '#d33',
             confirmButtonText: 'เพิ่มรายการจอง',
-            cancelButtonText: 'ยกเลิก',
-          }).then((result) => {
+            cancelButtonText: 'ยกเลิก'
+          }).then(result => {
             if (result.isConfirmed) applyCustomer(data);
           });
           return;
@@ -1103,7 +1142,7 @@ function setupCustomerSearch({ searchInput, nameInput, phoneInput, idInput, hidd
         Swal.fire({
           icon: 'error',
           title: 'เกิดข้อผิดพลาด',
-          text: 'ไม่สามารถตรวจสอบข้อมูลการติดตามของลูกค้าได้ กรุณาลองใหม่อีกครั้ง',
+          text: 'ไม่สามารถตรวจสอบข้อมูลการติดตามของลูกค้าได้ กรุณาลองใหม่อีกครั้ง'
         });
       }
     });
@@ -1298,8 +1337,8 @@ $(document).on('change', '#subModel_id', function () {
   }
 
   // โหลดตัวเลือกราคา → brand 1 เติมที่ช่องสี, brand 2/3 เติมที่ช่องปี
-  const $plColor  = $('#pricelist_color');
-  const $plYear   = $('#pricelist_year');
+  const $plColor = $('#pricelist_color');
+  const $plYear = $('#pricelist_year');
   const $plTarget = $plColor.length ? $plColor : $plYear;
   setSelectLoading($plTarget);
 
@@ -2212,9 +2251,7 @@ $(document).ready(function () {
 
           // ติ๊กกลับให้รายการที่เคยเลือกไว้ (ยังไม่บันทึก) ที่โผล่ในผลค้นหานี้
           Object.values(selectedMap).forEach(sel => {
-            const $r = $tableBody.find(
-              `input[type="radio"][data-id="${sel.id}"][value="${sel.type}"]`
-            );
+            const $r = $tableBody.find(`input[type="radio"][data-id="${sel.id}"][value="${sel.type}"]`);
             if ($r.length && !$r.prop('disabled')) {
               $r.prop('checked', true);
               $r[0]._wasChecked = true;
@@ -2549,8 +2586,7 @@ $(document).ready(function () {
     // (mirror ของ Salecar::needsIaCheck) ; ช่อง IA ติ๊กได้เฉพาะ gm/md/admin role อื่นเห็นแต่กดไม่ได้
     // ดักเฉพาะตอน "เปลี่ยนเข้า" สถานะ 5 เหมือนฝั่ง server — ใบที่ส่งมอบไปแล้วไม่ต้องดักซ้ำ
     const wasDelivered = String(document.getElementById('originalConStatus')?.value ?? '') === '5';
-    if ($('#con_status').val() === '5' && !wasDelivered
-      && $('#CheckerID').length && !$('#CheckerID').is(':checked')) {
+    if ($('#con_status').val() === '5' && !wasDelivered && $('#CheckerID').length && !$('#CheckerID').is(':checked')) {
       Swal.fire({
         icon: 'warning',
         title: 'ยังไม่ผ่านการตรวจสอบ (IA)',
@@ -2565,17 +2601,24 @@ $(document).ready(function () {
 
     // สถานะ "ส่งมอบ" (con_status = 5) ต้องเลือกป้ายแดงก่อน
     // — เฉพาะใบขายที่มีประดับยนต์ "ป้ายแดง" อยู่ (ลูกค้าที่ไม่เอาป้ายแดง ส่งมอบได้เลย)
-    if ($('#con_status').val() === '5' && $('#red_license').length && !$('#red_license').val() && hasRedPlateAccessory()) {
+    if (
+      $('#con_status').val() === '5' &&
+      $('#red_license').length &&
+      !$('#red_license').val() &&
+      hasRedPlateAccessory()
+    ) {
       Swal.fire({
         icon: 'warning',
         title: 'กรุณาเลือกป้ายแดง',
         text: 'ต้องระบุป้ายแดงก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"'
       });
       // เปิดแท็บที่มีช่องป้ายแดงให้ผู้ใช้เห็น แล้ว focus
-      $('#red_license').closest('.tab-pane').each(function () {
-        const tabId = $(this).attr('id');
-        if (tabId) $(`[data-bs-target="#${tabId}"], [href="#${tabId}"]`).tab('show');
-      });
+      $('#red_license')
+        .closest('.tab-pane')
+        .each(function () {
+          const tabId = $(this).attr('id');
+          if (tabId) $(`[data-bs-target="#${tabId}"], [href="#${tabId}"]`).tab('show');
+        });
       $('#red_license').select2('open');
       return;
     }
@@ -2691,9 +2734,7 @@ $(document).ready(function () {
 
 // ปิดปุ่มทั้งหมดในฟุตเตอร์ preview (กันกดซ้ำตอนขออนุมัติ)
 function disablePreviewFooterButtons() {
-  document
-    .querySelectorAll('#previewPurchase .modal-footer button')
-    .forEach(btn => (btn.disabled = true));
+  document.querySelectorAll('#previewPurchase .modal-footer button').forEach(btn => (btn.disabled = true));
 }
 
 // สถานะที่ต้อง "อนุมัติผ่านก่อน" ถึงจะเปลี่ยนเข้าได้ — 4 ระหว่างแต่งรถ / 5 ส่งมอบ
@@ -2736,7 +2777,12 @@ function guardConStatus(locked, title, reasonText, proceed, skipAdmin) {
     return;
   }
 
-  const labelOf = v => $sel.find('option[value="' + v + '"]').first().text().trim();
+  const labelOf = v =>
+    $sel
+      .find('option[value="' + v + '"]')
+      .first()
+      .text()
+      .trim();
   const currentText = labelOf(current) || 'สถานะนี้';
   const originalText = labelOf(original);
 
@@ -2756,7 +2802,9 @@ function guardConStatus(locked, title, reasonText, proceed, skipAdmin) {
       html:
         'สถานะ <strong>' +
         currentText +
-        '</strong> ' + reasonText + '<br>' +
+        '</strong> ' +
+        reasonText +
+        '<br>' +
         '<small class="text-muted">กรุณาเปลี่ยนเป็นสถานะอื่นก่อนส่งคำขอ</small>'
     }).then(gotoConStatus);
     return;
@@ -2768,7 +2816,9 @@ function guardConStatus(locked, title, reasonText, proceed, skipAdmin) {
     html:
       'สถานะ <strong>' +
       currentText +
-      '</strong> ' + reasonText + ' — ส่งคำขอทั้งอย่างนี้จะบันทึกไม่ผ่าน<br>' +
+      '</strong> ' +
+      reasonText +
+      ' — ส่งคำขอทั้งอย่างนี้จะบันทึกไม่ผ่าน<br>' +
       '<small class="text-muted">ส่งคำขอโดยคงสถานะ <strong>' +
       originalText +
       '</strong> ไว้ก่อน แล้วค่อยกลับมาเปลี่ยนสถานะทีหลัง</small>',
@@ -2833,7 +2883,8 @@ $(document).on('click', '#btnWithdrawApproval', function () {
   const id = this.dataset.id;
   Swal.fire({
     title: 'ดึงคำขอกลับ?',
-    html: 'คำขออนุมัติจะถูกยกเลิก และลิงก์อนุมัติในอีเมลจะใช้ไม่ได้<br>' +
+    html:
+      'คำขออนุมัติจะถูกยกเลิก และลิงก์อนุมัติในอีเมลจะใช้ไม่ได้<br>' +
       '<strong class="text-danger">ถ้าอนุมัติไปแล้ว ลายเซ็นอนุมัติทุกขั้นจะถูกล้างด้วย</strong><br>' +
       '<small class="text-muted">แก้ข้อมูลแล้วส่งขออนุมัติใหม่ได้</small>',
     icon: 'warning',
@@ -2848,8 +2899,13 @@ $(document).on('click', '#btnWithdrawApproval', function () {
       url: `/purchase-order/${id}/withdraw-approval`,
       type: 'POST',
       success: function (res) {
-        Swal.fire({ icon: 'success', title: 'ดึงคำขอกลับแล้ว', text: res.message || '', timer: 1500, showConfirmButton: false })
-          .then(() => location.reload());
+        Swal.fire({
+          icon: 'success',
+          title: 'ดึงคำขอกลับแล้ว',
+          text: res.message || '',
+          timer: 1500,
+          showConfirmButton: true
+        }).then(() => location.reload());
       },
       error: function (xhr) {
         Swal.fire({ icon: 'error', title: 'ไม่สำเร็จ', text: xhr.responseJSON?.message || 'ไม่สามารถดึงคำขอกลับได้' });
@@ -3034,7 +3090,7 @@ $(document).ready(function () {
 
         if (!res || res.length === 0) {
           resetCampaign('ไม่มีแคมเปญสำหรับรุ่นและปีนี้');
-          restoreExpiredCampaigns();   // ยังต้องคงแคมเปญเดิมที่ใบนี้เลือกไว้
+          restoreExpiredCampaigns(); // ยังต้องคงแคมเปญเดิมที่ใบนี้เลือกไว้
           if ($('#CampaignID option').length) $('#CampaignID').prop('disabled', false);
           calcTotalCampaign();
           return;
@@ -3120,9 +3176,7 @@ $(document).ready(function () {
             $opt.attr('data-cash-support-final', fresh).data('cashSupportFinal', fresh);
             $opt.removeAttr('title');
             $opt.text(
-              ($opt.attr('data-label-prefix') || '') +
-                formatMoney(fresh) +
-                ($opt.attr('data-label-suffix') || '')
+              ($opt.attr('data-label-prefix') || '') + formatMoney(fresh) + ($opt.attr('data-label-suffix') || '')
             );
           });
 
@@ -3350,7 +3404,8 @@ function calculateTotalPaymentAtDelivery() {
   const vatExtra = safeNumber('#AccessoryExtraVat');
   const advanceInstallment = safeNumber('#advance_installment');
 
-  const total = downPayment + ExtraTotal + otherCostFi + vatExtra + advanceInstallment - (downDiscount + turnCost + cashDeposit);
+  const total =
+    downPayment + ExtraTotal + otherCostFi + vatExtra + advanceInstallment - (downDiscount + turnCost + cashDeposit);
 
   $('#TotalPaymentatDeliveryCar').val(
     total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -3503,7 +3558,7 @@ function calculateCommissionSale() {
 
   // % หักคอมเกินงบ : รุ่นย่อยทับรุ่นหลักได้ (เช่น Triton AT = 40% แทน 30%) — ว่าง = ใช้ของรุ่นหลัก
   const subPerBudget = parseFloat($('#subModel_id option:selected').attr('data-perbudget'));
-  const perBudget = !isNaN(subPerBudget) ? subPerBudget : (parseFloat(selectedModel.data('perbudget')) || 0);
+  const perBudget = !isNaN(subPerBudget) ? subPerBudget : parseFloat(selectedModel.data('perbudget')) || 0;
   const overBudget = parseFloat(selectedModel.data('overbudget')) || 0;
   const saleBrand = parseInt($('#saleBrand').val()) || 0;
 
@@ -3542,7 +3597,7 @@ function calculateCommissionSale() {
     if (isOverCeiling && managerDeduct !== null && !isNaN(managerDeduct)) {
       // ใช้ยอดผู้จัดการแทนสูตร → คอมงบเหลือเป็น 0 แล้วไปโชว์ที่ช่อง "คอมที่ได้ / ยอดหักค่าคอม"
       usesApproved = true;
-      approvedCom = (approvalIsDeduct || isB2Style) ? -managerDeduct : managerDeduct;
+      approvedCom = approvalIsDeduct || isB2Style ? -managerDeduct : managerDeduct;
       balanceCam = 0;
     } else {
       pendingApproval = isOverCeiling;
@@ -3567,7 +3622,11 @@ function calculateCommissionSale() {
   if ($budgetEl.length) {
     const available = parseFloat(($budgetEl.data('available') || 0).toString().replace(/,/g, '')) || 0;
     const left = available - budgetDeduct;
-    $('#budgetLeftNote').text('· เหลือหลังหักคันนี้ ' + left.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ฿');
+    $('#budgetLeftNote').text(
+      '· เหลือหลังหักคันนี้ ' +
+        left.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+        ' ฿'
+    );
   }
 
   const formatted = totalCommission.toLocaleString(undefined, {
@@ -3592,7 +3651,10 @@ function calculateCommissionSale() {
     overBudgetCell.classList.toggle('com-cell-hidden', !hasDeduct);
     const deductInput = document.getElementById('OverBudgetDeductDisplay');
     if (deductInput) {
-      deductInput.value = overBudgetDeduct.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      deductInput.value = overBudgetDeduct.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
     }
     const pendingNote = document.getElementById('overBudgetPendingNote');
     if (pendingNote) {
@@ -3606,7 +3668,10 @@ function calculateCommissionSale() {
     approvedCell.classList.toggle('com-cell-hidden', !usesApproved);
     const approvedInput = document.getElementById('ApprovedCommissionDisplay');
     if (approvedInput) {
-      approvedInput.value = approvedCom.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      approvedInput.value = approvedCom.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
     }
   }
 
@@ -3615,7 +3680,11 @@ function calculateCommissionSale() {
   if (extraNote) {
     if (extraAbsorbed > 0.005) {
       const ev = document.getElementById('extraDeductVal');
-      if (ev) ev.textContent = extraAbsorbed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (ev)
+        ev.textContent = extraAbsorbed.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
       extraNote.style.display = '';
     } else {
       extraNote.style.display = 'none';
@@ -3679,7 +3748,10 @@ $(document).on('input', '#budget_deduct', function () {
   const strip = s => parseFloat((s == null ? '' : s).toString().replace(/,/g, '')) || 0;
   const available = strip($(this).data('available'));
   let val = strip(this.value);
-  if (val < 0) { this.value = ''; return; }
+  if (val < 0) {
+    this.value = '';
+    return;
+  }
   if (val > available) {
     this.value = available.toLocaleString(); // ตัดให้พอดี budget ที่มี
   }
@@ -4052,9 +4124,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const saleNameEl = document.getElementById('sale_name');
     const customerSale = isDealerTypeSaleSelected()
       ? '-'
-      : (saleNameEl
-          ? saleNameEl.value
-          : document.querySelector('#SaleID option:checked')?.textContent.trim()) || '-';
+      : (saleNameEl ? saleNameEl.value : document.querySelector('#SaleID option:checked')?.textContent.trim()) || '-';
     let BookingDate = formatThaiDate('BookingDate');
 
     //ข้อมูลการขาย
@@ -4452,7 +4522,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const con_status = document.querySelector('#con_status option:checked')?.textContent || '-';
 
     let dateAppHtml = '';
-    if (userRole === 'admin' || userRole === 'audit' || userRole === 'gm' || userRole === 'manager' || userRole === 'md') {
+    if (
+      userRole === 'admin' ||
+      userRole === 'audit' ||
+      userRole === 'gm' ||
+      userRole === 'manager' ||
+      userRole === 'md'
+    ) {
       dateAppHtml = `
           <div class="mf-info-row"><span class="mf-info-label">วันที่ส่งมอบของบริษัท</span><span class="mf-info-val">${DeliveryInDMSDate}</span></div>
           <div class="mf-info-row"><span class="mf-info-label">วันที่ส่งมอบของฝ่ายขาย</span><span class="mf-info-val">${DeliveryInCKDate}</span></div>
@@ -4680,8 +4756,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const gmSig = document.getElementById('gmApprovalSignature')?.value === '1';
 
     // mirror ของ isApproved(): เคสไหนต้องใช้ลายเซ็นตัวไหน
-    const approvedNow =
-      currentCase === 'normal' ? smSig : currentCase === 'b1_manager' ? appSig : gmSig;
+    const approvedNow = currentCase === 'normal' ? smSig : currentCase === 'b1_manager' ? appSig : gmSig;
 
     // อนุมัติแล้ว (ตรงกับข้อมูลปัจจุบัน) → บันทึกได้
     if (approvedNow) {
@@ -4699,7 +4774,7 @@ document.addEventListener('DOMContentLoaded', function () {
       staleRequest = storedCase
         ? storedCase !== currentCase
         : // ใบเก่าที่ยังไม่มี approval_case → เทียบหยาบด้วย approval_type (งบปกติ ↔ เกินงบ)
-          (balanceCam < 0) !== (approvalType === 'overbudget');
+          balanceCam < 0 !== (approvalType === 'overbudget');
     }
 
     // ขออนุมัติแล้ว รอผลอนุมัติ (เคสยังตรงเดิม) → แสดงแค่ปิด (ยังบันทึกไม่ได้)

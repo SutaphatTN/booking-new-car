@@ -141,4 +141,37 @@ return [
 
     // role ที่เห็นส่วนบัญชี (วันที่จ่าย + อนุมัติการจ่าย) ในหน้าเคลียร์
     'accounting_roles' => ['account', 'admin', 'md'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | เงินเคลม (claim) — ติดตาม Form B ของสถานที่ที่ยิงเคลมกับผู้ผลิต
+    |--------------------------------------------------------------------------
+    | สถานะ Form B ไล่ตามขั้นอนุมัติในระบบของผู้ผลิต (key = ค่าที่เก็บใน DB)
+    | label เป็นภาษาอังกฤษตามหน้าจอต้นทาง — อย่าแปลไทย จะเทียบกับระบบผู้ผลิตไม่ได้
+    */
+    'claim_statuses' => [
+        'waiting_form_b'      => ['label' => 'Waiting form B',              'class' => 'bg-secondary'],
+        'wait_dealer_manager' => ['label' => 'Wait Dealer Manager Approve', 'class' => 'bg-warning'],
+        'wait_checker'        => ['label' => 'Wait Checker Approve Form B', 'class' => 'bg-warning'],
+        'wait_am'             => ['label' => 'Wait AM Approve Form B',      'class' => 'bg-warning'],
+        'wait_dgm'            => ['label' => 'Wait DGM Approve Form B',     'class' => 'bg-warning'],
+        'wait_gm'             => ['label' => 'Wait GM Approve Form B',      'class' => 'bg-warning'],
+        'gm_approved'         => ['label' => 'GM Approved',                 'class' => 'bg-success'],
+        'form_b_expired'      => ['label' => 'FormB Expired',               'class' => 'bg-danger'],
+        'dealer_deleted'      => ['label' => 'Dealer Deleted',              'class' => 'bg-dark'],
+    ],
+
+    // สถานะการตรวจสอบฝั่งเรา (คนละเรื่องกับสถานะ Form B ของผู้ผลิต)
+    'claim_check_statuses' => [
+        'done'         => ['label' => 'เรียบร้อย',          'class' => 'bg-success'],
+        'in_progress'  => ['label' => 'กำลังดำเนินการ',      'class' => 'bg-warning'],
+        'budget_full'  => ['label' => 'งบเต็ม',             'class' => 'bg-danger'],
+        'wait_payment' => ['label' => 'อนุมัติ รอเงินเข้า',   'class' => 'bg-info'],
+    ],
+
+    // สัดส่วนที่เคลมได้จริงจาก Form B — เปลี่ยนที่นี่ที่เดียว (ใช้ทั้งฝั่ง PHP และ JS)
+    'claim_share' => 0.5,
+
+    // role ที่เข้าเมนู "เงินเคลม" ได้ (audit_dp เกาะสิทธิ์ audit_lead เสมอ)
+    'claim_roles' => ['admin', 'md', 'gm', 'audit', 'audit_lead', 'audit_dp', 'audit_internal'],
 ];

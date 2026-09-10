@@ -35,9 +35,12 @@
       <div class="card-body pt-3">
 
         <div class="po-filter-bar d-flex align-items-center justify-content-between gap-2 flex-wrap">
+          {{-- เดือน = "เดือนที่ขออนุมัติ" (period) ตัวเดียวคุมทั้งรายงาน PDF และตัวกรองตาราง
+               (ตารางใช้เฉพาะตอนดูปิดยอดแล้ว/ทั้งหมด — "กำลังใช้งาน" ต้องเห็นฉบับร่างที่ยังไม่มี period ด้วย) --}}
           <div class="d-flex align-items-center gap-2">
-            <span class="small text-muted">รายงานเดือน</span>
+            <span class="small text-muted">เดือน</span>
             <input type="month" id="reportMonth" class="form-control form-control-sm" style="width:160px;"
+              title="เดือนที่ขออนุมัติ (period) — ใช้กับรายงาน PDF และตัวกรองตาราง"
               value="{{ now()->format('Y-m') }}">
             <button class="btn btn-outline-primary btn-sm btnPlaceReport">
               <i class="bx bx-file me-1"></i> ออก PDF
@@ -49,8 +52,6 @@
               <option value="settled">ปิดยอดแล้ว</option>
               <option value="all">ทั้งหมด</option>
             </select>
-            <input type="month" id="placeFilterMonth" class="form-control form-control-sm d-none" style="width:150px;"
-              title="เดือนที่ขออนุมัติ (period)" value="{{ now()->format('Y-m') }}">
             <button class="btn btn-success btn-sm btnRequestApproval">
               <i class="bx bx-mail-send me-1"></i> ขออนุมัติที่เลือก
             </button>

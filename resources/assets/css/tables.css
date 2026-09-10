@@ -1,4 +1,8 @@
-.dataTables_processing { display: none !important; }
+/* ตัวโหลดของ DataTables เอง — ปิดทิ้งทุกตาราง เพราะทุกหน้าใช้ overlay ของเราแทน
+   (.dataTables_processing = DataTables 1.x / .dt-processing = 2.x ที่ใช้อยู่ตอนนี้
+    ตัวของ 2.x วางทับหัวตารางพอดี ทำให้ชื่อคอลัมน์อ่านไม่ออกตอนโหลด) */
+.dataTables_processing,
+div.dt-processing { display: none !important; }
 
 #ctLoadingOverlay,
 #poLoadingOverlay,
@@ -17,6 +21,8 @@
 #vehicleLoadingOverlay,
 #filmUsageLoadingOverlay,
 #placeLoadingOverlay,
+#claimLoadingOverlay,
+#activityLogLoadingOverlay,
 #gpLoadingOverlay {
   display: none;
   position: fixed;

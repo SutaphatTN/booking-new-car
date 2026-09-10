@@ -151,14 +151,12 @@ $(document).on('submit', '#staffCommissionForm', function (e) {
     $('.staffCommissionDetail').modal('hide');
     if (staffCommissionTable) staffCommissionTable.ajax.reload(null, false);
     if (window.Swal) {
-      Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1400, showConfirmButton: false });
+      Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1400, showConfirmButton: true });
     }
   })
     .fail(function (xhr) {
       const res = xhr.responseJSON || {};
-      const detail = res.errors
-        ? Object.values(res.errors).flat().join('\n')
-        : res.message || 'กรุณาลองใหม่อีกครั้ง';
+      const detail = res.errors ? Object.values(res.errors).flat().join('\n') : res.message || 'กรุณาลองใหม่อีกครั้ง';
       if (window.Swal) Swal.fire({ icon: 'error', title: 'บันทึกไม่สำเร็จ', text: detail });
       else alert('บันทึกไม่สำเร็จ\n' + detail);
     })

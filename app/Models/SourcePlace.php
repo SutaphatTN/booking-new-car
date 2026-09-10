@@ -60,6 +60,12 @@ class SourcePlace extends Model
         return $this->belongsTo(SourcePlaceRequest::class, 'request_id');
     }
 
+    /** เงินเคลม (Form B) — มีได้ใบเดียว และมีก็ต่อเมื่อเคยกรอกแล้ว */
+    public function claim()
+    {
+        return $this->hasOne(SourcePlaceClaim::class, 'place_id');
+    }
+
     /** ใบเคลียร์ทั้งหมดของสถานที่ (รองรับเคลียร์/จ่ายหลายครั้ง — ก้อนใหญ่ทยอยจ่าย) */
     public function clears()
     {

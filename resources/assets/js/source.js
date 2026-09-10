@@ -48,7 +48,8 @@ $(document).ready(function () {
       url: '/source/place/list',
       data: function (d) {
         d.state = $('#placeStateFilter').val() || 'active';
-        d.month = $('#placeFilterMonth').val() || '';
+        // เดือนตัวเดียวกับรายงาน PDF (server ใช้เฉพาะตอน state != active)
+        d.month = $('#reportMonth').val() || '';
       }
     },
     columns: [
@@ -77,11 +78,14 @@ $(document).ready(function () {
 
 // กรองสถานะ (กำลังใช้งาน / ปิดยอดแล้ว / ทั้งหมด) — เดือนใช้เฉพาะตอนดูปิดยอด/ทั้งหมด
 $(document).on('change', '#placeStateFilter', function () {
-  $('#placeFilterMonth').toggleClass('d-none', $(this).val() === 'active');
   if (placeTable) placeTable.ajax.reload();
 });
-$(document).on('change', '#placeFilterMonth', function () {
-  if (placeTable) placeTable.ajax.reload();
+
+// เปลี่ยนเดือน — โหลดตารางใหม่เฉพาะตอนที่เดือนมีผลกับตาราง (ปิดยอดแล้ว/ทั้งหมด)
+$(document).on('change', '#reportMonth', function () {
+  if (placeTable && ($('#placeStateFilter').val() || 'active') !== 'active') {
+    placeTable.ajax.reload();
+  }
 });
 
 // ช่องเงิน: อนุญาตเฉพาะตัวเลข + จุดทศนิยม แล้วใส่ comma คั่นหลักพัน
