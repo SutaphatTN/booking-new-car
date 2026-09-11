@@ -9,6 +9,10 @@
         ajax: {
           url: '{{ route('ssi.list') }}',
           dataSrc: 'data',
+          data: function(d) {
+            // ติ๊ก "รายการที่ปิดงานแล้ว" → ขอรายการที่ถูกซ่อนแทน (admin เท่านั้น)
+            d.show_done = $('#ssiShowDone').is(':checked') ? 1 : 0;
+          },
         },
         columns: [{
             data: 'No'
@@ -60,7 +64,13 @@
                            </div>`;
                 }
               }
-              return html + resolvedTag;
+              const doneTag = row.completed_at
+                ? `<div class="text-muted" style="font-size:.72rem;margin-top:2px;">
+                     <i class="bx bx-check-double"></i> ปิดงาน ${row.completed_at}
+                   </div>`
+                : '';
+
+              return html + resolvedTag + doneTag;
             },
           },
           {
@@ -68,6 +78,18 @@
             orderable: false,
             className: 'text-center',
             render: function(data, type, row) {
+              // รายการที่ปิดงานแล้ว (ซ่อนอยู่) → ดึงกลับมาแก้ได้อย่างเดียว
+              if (row.is_done) {
+                return `
+                <div class="d-flex gap-1 justify-content-center">
+                  <button class="btn btn-icon btn-secondary text-white btn-ssi-reopen"
+                      data-id="${row.salecar_id}" data-name="${row.FullName}"
+                      title="ดึงกลับมาแก้ไข">
+                    <i class="bx bx-undo"></i>
+                  </button>
+                </div>`;
+              }
+
               const completeBtn = row.can_complete
                 ? `<button class="btn btn-icon btn-success text-white btn-ssi-complete"
                        data-id="${row.salecar_id}" title="ตรวจสอบเสร็จแล้ว">
@@ -129,6 +151,56 @@
           return;
         }
         window.location.href = '{{ route('ssi.export') }}?date_from=' + dateFrom + '&date_to=' + dateTo;
+      });
+
+      // ── สลับดูรายการที่ปิดงานแล้ว (admin) ──
+      $('#ssiShowDone').on('change', function() {
+        table.ajax.reload();
+      });
+
+      // ── ดึงงานที่ปิดแล้วกลับมาแก้ (admin) ──
+      $('#ssiTable').on('click', '.btn-ssi-reopen', function() {
+        const salecarId = $(this).data('id');
+        const name = $(this).data('name');
+
+        Swal.fire({
+          icon: 'question',
+          title: 'ดึงกลับมาแก้ไข',
+          html: `<p>ดึงรายการของ <b>${name}</b> กลับไปที่รายการ SSI ใช่ไหม?</p>
+                 <p class="text-muted small mb-0"><i class="bx bx-info-circle me-1"></i>รายการจะกลับมาแก้ไขได้ จนกว่าจะกดเสร็จสิ้นอีกครั้ง</p>`,
+          showCancelButton: true,
+          confirmButtonText: 'ใช่, ดึงกลับ',
+          cancelButtonText: 'ยกเลิก',
+          confirmButtonColor: '#6c5ffc',
+          cancelButtonColor: '#d33',
+        }).then(result => {
+          if (!result.isConfirmed) return;
+
+          $.ajax({
+            url: `/ssi/${salecarId}/reopen`,
+            method: 'POST',
+            headers: {
+              'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(res) {
+              Swal.fire({
+                icon: 'success',
+                title: 'สำเร็จ',
+                text: res.message,
+                timer: 1500,
+                showConfirmButton: true
+              });
+              table.ajax.reload(null, false);
+            },
+            error: function(xhr) {
+              Swal.fire({
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาด',
+                text: xhr.responseJSON?.message ?? 'ไม่สามารถดึงรายการกลับได้'
+              });
+            }
+          });
+        });
       });
 
       $('#ssiTable').on('click', '.btn-ssi-complete', function() {
@@ -199,6 +271,15 @@
 
           {{-- ── Action bar ── --}}
           <div class="po-filter-bar d-flex align-items-center gap-2 justify-content-end">
+            @if ($canReopen)
+              {{-- admin: เปิดดูรายการที่ปิดงานแล้ว เพื่อดึงกลับมาแก้ --}}
+              <div class="form-check form-switch me-auto mb-0">
+                <input class="form-check-input" type="checkbox" id="ssiShowDone">
+                <label class="form-check-label small text-muted" for="ssiShowDone">
+                  รายการที่ปิดงานแล้ว
+                </label>
+              </div>
+            @endif
             <span class="text-muted small">วันส่งมอบ</span>
             <input type="date" id="ssiDateFrom" class="form-control form-control-sm"
               value="{{ now()->format('Y-m-d') }}" style="width:155px;" data-no-icon>

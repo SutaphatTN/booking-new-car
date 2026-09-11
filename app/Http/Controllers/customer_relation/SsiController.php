@@ -23,13 +23,26 @@ class SsiController extends Controller
 {
     use ConvertsThaiDate;
 
+    /** role ที่ดึงงานที่ปิดแล้วกลับมาแก้ได้ */
+    private const REOPEN_ROLES = ['admin'];
+
+    private function canReopen(): bool
+    {
+        return in_array(Auth::user()->role, self::REOPEN_ROLES, true);
+    }
+
     public function index()
     {
-        return view('customer-relation.ssi.index');
+        return view('customer-relation.ssi.index', [
+            'canReopen' => $this->canReopen(),
+        ]);
     }
 
     public function list(Request $request)
     {
+        // โหมด "ปิดงานแล้ว" (ที่ถูกซ่อนไป) — เฉพาะ role ที่ดึงกลับได้
+        $showDone = $request->boolean('show_done') && $this->canReopen();
+
         $completedSalecarIds = SsiRecord::whereNotNull('completed_at')->pluck('salecar_id');
 
         $salecars = Salecar::with([
@@ -39,7 +52,11 @@ class SsiController extends Controller
         ])
             ->whereNotNull('DeliveryDate')
             ->where('con_status', 5)
-            ->whereNotIn('id', $completedSalecarIds)
+            ->when(
+                $showDone,
+                fn($q) => $q->whereIn('id', $completedSalecarIds),
+                fn($q) => $q->whereNotIn('id', $completedSalecarIds),
+            )
             ->orderByDesc('DeliveryDate')
             ->get();
 
@@ -50,7 +67,7 @@ class SsiController extends Controller
             ->keyBy('salecar_id');
 
         $no = 1;
-        $data = $salecars->map(function ($s) use (&$no, $records) {
+        $data = $salecars->map(function ($s) use (&$no, $records, $showDone) {
             $rec         = $records->get($s->id);
             $ssiInfo     = $rec ? $rec->ssiScoreInfo() : ['score' => null, 'answered' => 0, 'total' => 0, 'complete' => false];
             $canComplete = $rec ? $rec->canMarkComplete() : false;
@@ -92,6 +109,10 @@ class SsiController extends Controller
                 'ssi_complete' => $ssiInfo['complete'], // กรอกครบหรือไม่
                 'can_complete' => $canComplete,
                 'has_resolved' => $hasResolved,     // มีวันที่แก้ไขปัญหาแล้ว
+                'is_done'      => $showDone,        // อยู่ในโหมดรายการที่ปิดงานแล้ว
+                'completed_at' => $showDone && $rec?->completed_at
+                    ? $rec->completed_at->format('d/m/Y')
+                    : null,
             ];
         });
 
@@ -392,6 +413,28 @@ class SsiController extends Controller
         ]);
 
         return response()->json(['success' => true, 'message' => 'บันทึกเสร็จสิ้นเรียบร้อยแล้ว']);
+    }
+
+    /** ดึงงานที่ปิดไปแล้วกลับมาแก้ (admin) — กลับเข้ารายการหลักจนกว่าจะกดเสร็จสิ้นใหม่ */
+    public function reopen($salecarId)
+    {
+        abort_unless($this->canReopen(), 403);
+
+        $ssiRecord = SsiRecord::where('salecar_id', $salecarId)
+            ->whereNotNull('completed_at')
+            ->firstOrFail();
+
+        $ssiRecord->update([
+            'completed_at' => null,
+            'completed_by' => null,
+            'reopened_at'  => now(),
+            'reopened_by'  => Auth::id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ดึงรายการกลับมาแก้ไขเรียบร้อยแล้ว',
+        ]);
     }
 
     private function formatContact(SsiContact $contact, int $no): array

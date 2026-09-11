@@ -157,6 +157,17 @@ if ($('#formFilmUsage').length) {
   let fpPackagePrice = null,
     fpPackageCommission = null;
 
+  // ตร.ฟุต "ทั้งคัน" ของรุ่น+ยี่ห้อที่เลือก (จากหน้าราคาฟิล์ม) — ใช้เป็นเป้าหมายเทียบกับยอดที่กรอก
+  // null = ไม่มีข้อมูลราคาฟิล์มของรุ่นนี้ หรือเป็นงาน BP/แพ็กเกจเดี่ยว → ไม่ต้องเทียบ
+  let fpPackageSqft = null;
+
+  // ตำแหน่งที่คิดเพิ่มนอกเหนือ "ทั้งคัน" — ไม่นับรวมตอนเทียบยอด
+  // (ประตูคู่หลัง 2 ไม่อยู่ในนี้ เพราะระบบเพิ่มให้เองตามรุ่น ถือเป็นส่วนหนึ่งของทั้งคัน)
+  const ADDON_POSITIONS = ['ซันรูฟ', 'แพ็กเกจ 3 บาน'];
+
+  // ยอดรวมต่างจากทั้งคันได้ไม่เกินเท่านี้ ถือว่าตรง (เผื่อปัดเศษ)
+  const SQFT_TOLERANCE = 0.5;
+
   function resetNewCustomerBtn() {
     $('#btnNewCustomer')
       .html('<i class="bx bx-user-plus me-1"></i> ลูกค้าใหม่')
@@ -711,6 +722,7 @@ if ($('#formFilmUsage').length) {
     $('#positionRows').empty();
     fpPackagePrice = null;
     fpPackageCommission = null;
+    fpPackageSqft = null;
     addNoRowMsg();
     recalcTotals();
   }
@@ -820,6 +832,7 @@ if ($('#formFilmUsage').length) {
       if (!res.found) return;
 
       if (!sunroofOnly) {
+        fpPackageSqft = res.sqft != null && res.sqft !== '' ? parseFloat(res.sqft) : null;
         const $mainRow = $('#positionRows tr[data-position="รอบคัน+บานหน้า"]');
         if ($mainRow.length) {
           $mainRow.find('.rowSqft').val(res.sqft);
@@ -851,6 +864,7 @@ if ($('#formFilmUsage').length) {
         if (!onlyPosition) {
           fpPackagePrice = null;
           fpPackageCommission = null;
+          fpPackageSqft = null;
           recalcTotals();
         }
         return;
@@ -867,6 +881,7 @@ if ($('#formFilmUsage').length) {
       if (!onlyPosition) {
         fpPackagePrice = res.price != null && res.price !== '' ? parseFloat(res.price) : null;
         fpPackageCommission = res.commission != null && res.commission !== '' ? parseFloat(res.commission) : null;
+        fpPackageSqft = res.sqft != null && res.sqft !== '' ? parseFloat(res.sqft) : null;
       }
       recalcTotals();
     });
@@ -890,6 +905,68 @@ if ($('#formFilmUsage').length) {
     $('#totalSqft').text(totalSqft > 0 ? totalSqft.toFixed(2) : '-');
     $('#totalPrice').text(totalPrice > 0 ? formatMoney(totalPrice) : '-');
     $('#totalCommission').text(totalCom > 0 ? formatMoney(totalCom) : '-');
+    renderSqftHint();
+  }
+
+  // ── ยอด ตร.ฟุต ของแถวฐาน (ไม่รวมตำแหน่งเสริมที่คิดนอกเหนือทั้งคัน) ──
+  function baseSqftTotal() {
+    let base = 0;
+    $('#positionRows tr[data-position]').each(function () {
+      if (ADDON_POSITIONS.indexOf(String($(this).attr('data-position'))) !== -1) return;
+      base += parseFloat($(this).find('.rowSqft').val()) || 0;
+    });
+    return base;
+  }
+
+  function addonSqftTotal() {
+    let addon = 0;
+    $('#positionRows tr[data-position]').each(function () {
+      if (ADDON_POSITIONS.indexOf(String($(this).attr('data-position'))) === -1) return;
+      addon += parseFloat($(this).find('.rowSqft').val()) || 0;
+    });
+    return addon;
+  }
+
+  // ── บอกใต้ยอดรวมว่าตรงกับ ตร.ฟุต ทั้งคันของรุ่นนี้ไหม (เห็นตั้งแต่ตอนกรอก ไม่ต้องรอกดบันทึก) ──
+  function renderSqftHint() {
+    const $row = $('#sqftHintRow');
+    if (!$row.length) return;
+
+    if (fpPackageSqft == null) {
+      $row.addClass('d-none');
+      return;
+    }
+
+    const base = baseSqftTotal();
+    const addon = addonSqftTotal();
+    const diff = base - fpPackageSqft;
+    const addonTxt = addon > 0 ? ' + เสริมอีก ' + addon.toFixed(2) + ' ตร.ฟุต' : '';
+    const target = fpPackageSqft.toFixed(2);
+
+    let cls, html;
+    if (Math.abs(diff) <= SQFT_TOLERANCE) {
+      cls = 'text-success';
+      html = '<i class="bx bx-check-circle me-1"></i>ตรงกับทั้งคันของรุ่นนี้ (' + target + ' ตร.ฟุต)' + addonTxt;
+    } else if (diff < 0) {
+      cls = 'text-danger';
+      html =
+        '<i class="bx bx-error-circle me-1"></i>ยังขาดอีก <b>' +
+        Math.abs(diff).toFixed(2) +
+        '</b> ตร.ฟุต — รุ่นนี้ทั้งคัน ' + target + ' ตร.ฟุต แต่กรอกมา ' + base.toFixed(2) + addonTxt;
+    } else {
+      cls = 'text-warning';
+      html =
+        '<i class="bx bx-error-circle me-1"></i>เกินมา <b>' +
+        diff.toFixed(2) +
+        '</b> ตร.ฟุต — รุ่นนี้ทั้งคัน ' + target + ' ตร.ฟุต แต่กรอกมา ' + base.toFixed(2) + addonTxt;
+    }
+
+    $row
+      .removeClass('d-none')
+      .find('#totalSqftHint')
+      .removeClass('text-success text-danger text-warning')
+      .addClass(cls)
+      .html(html);
   }
 
   // ── Money format helpers ───────────────────────────────────
@@ -917,6 +994,7 @@ if ($('#formFilmUsage').length) {
 
   // ── Save ───────────────────────────────────────────────────
   $(document).on('click', '.btnSaveFilmUsage', function () {
+    const $saveBtn = $(this);
     const type = $('input[name="type"]:checked').val();
     const date = $('#fu_order_date').val();
     const filmBrand = $('#fu_film_brand_id').val();
@@ -943,12 +1021,25 @@ if ($('#formFilmUsage').length) {
       rebuildAllocations($(this));
     });
 
-    // ── ตรวจสอบ: ทุกตำแหน่งต้องเลือก Stock ให้ครบตามจำนวน ตร.ฟุต ──
+    // ── ตรวจสอบ: ทุกแถวต้องกรอกความเข้ม + ตร.ฟุต และเลือก Stock ให้ครบตามจำนวน ──
+    // (แถวที่ ตร.ฟุต ว่าง เคยถูกข้ามไปเงียบ ๆ แล้วบันทึกโดยไม่ตัดสต็อก)
+    const missingList = [];
     const shortList = [];
     $('#positionRows tr[data-position]').each(function () {
       const $tr = $(this);
+      const rowPos = $tr.attr('data-position') || '(ยังไม่เลือกตำแหน่ง)';
       const needed = parseFloat($tr.find('.rowSqft').val()) || 0;
-      if (needed <= 0) return;
+
+      const missing = [];
+      // BP: แถวที่กดเพิ่มเองแต่ยังไม่เลือกตำแหน่ง
+      if ($tr.find('.bpPosSelect').length && !$tr.find('.bpPosSelect').val()) missing.push('ตำแหน่ง');
+      if (!$tr.find('.rowShade').val()) missing.push('ความเข้ม');
+      if (needed <= 0) missing.push('ตร.ฟุต');
+      if (missing.length) {
+        missingList.push({ pos: rowPos, missing: missing });
+        return;
+      }
+
       const stocks = $tr.data('stocks') || [];
       let covered = 0;
       $tr.find('.stockAllocRow .rowStock').each(function () {
@@ -965,6 +1056,18 @@ if ($('#formFilmUsage').length) {
         shortList.push({ pos: pos || '(ยังไม่เลือกตำแหน่ง)', needed: needed, covered: covered });
       }
     });
+
+    if (missingList.length) {
+      const html =
+        'กรุณากรอกข้อมูลให้ครบทุกแถว:<br><br>' +
+        missingList
+          .map(function (m) {
+            return '• <b>' + m.pos + '</b> — ยังไม่ได้ระบุ ' + m.missing.join(' และ ');
+          })
+          .join('<br>');
+      Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', html: html });
+      return;
+    }
 
     if (shortList.length) {
       const html =
@@ -987,6 +1090,48 @@ if ($('#formFilmUsage').length) {
       Swal.fire({ icon: 'warning', title: 'เลือก Stock ไม่ครบ', html: html });
       return;
     }
+
+    // ── ยอดรวมของแถวฐานควรเท่ากับ ตร.ฟุต ทั้งคันของรุ่นนี้ — ไม่ตรงให้ยืนยันก่อนบันทึก ──
+    // (กดยืนยันแล้วจะสั่งบันทึกซ้ำโดยข้ามด่านนี้ ผ่านแฟล็ก sqftConfirmed)
+    if (fpPackageSqft != null && !$saveBtn.data('sqftConfirmed')) {
+      const base = baseSqftTotal();
+      const diff = base - fpPackageSqft;
+
+      if (Math.abs(diff) > SQFT_TOLERANCE) {
+        // เหตุผลที่ยอดไม่ตรงมีได้ 2 ทาง — งานจริงไม่เท่าทั้งคัน หรือยอดตั้งต้นในหน้าราคาฟิล์มยังไม่ตรงกับรุ่นนี้
+        const reason =
+          diff < 0
+            ? 'ถ้างานนี้ตัดไม่ครบทั้งคันจริง ๆ'
+            : 'ถ้างานนี้ใช้ฟิล์มเกินยอดทั้งคันจริง ๆ';
+
+        Swal.fire({
+          icon: 'warning',
+          title: 'ยอดรวม ตร.ฟุต ไม่ตรงกับรุ่นนี้',
+          html:
+            'รุ่นนี้ทั้งคัน <b>' +
+            fpPackageSqft.toFixed(2) +
+            '</b> ตร.ฟุต แต่กรอกมา <b>' +
+            base.toFixed(2) +
+            '</b> ตร.ฟุต (' +
+            (diff < 0 ? 'ขาด ' : 'เกิน ') +
+            Math.abs(diff).toFixed(2) +
+            ' ตร.ฟุต)' +
+            '<p class="text-muted small mt-3 mb-0">' +
+            reason +
+            ' หรือยอดทั้งคันในหน้าราคาฟิล์มยังไม่ตรงกับรุ่นนี้ กดยืนยันเพื่อบันทึกต่อได้</p>',
+          showCancelButton: true,
+          confirmButtonText: 'ยืนยัน บันทึกเลย',
+          cancelButtonText: 'กลับไปแก้',
+          confirmButtonColor: '#6c5ffc',
+          cancelButtonColor: '#d33'
+        }).then(function (r) {
+          if (!r.isConfirmed) return;
+          $saveBtn.data('sqftConfirmed', true).trigger('click');
+        });
+        return;
+      }
+    }
+    $saveBtn.removeData('sqftConfirmed');
 
     const rows = [];
     $('#positionRows tr[data-position]').each(function () {

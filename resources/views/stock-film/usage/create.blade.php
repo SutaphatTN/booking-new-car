@@ -557,6 +557,10 @@
                       <td class="text-end fu-money-col" id="totalPrice">-</td>
                       <td class="text-end fu-money-col" id="totalCommission">-</td>
                     </tr>
+                    {{-- เทียบยอด ตร.ฟุต ที่กรอก กับ ตร.ฟุต ทั้งคันของรุ่นนี้ (เติมโดย film-usage.js) --}}
+                    <tr id="sqftHintRow" class="table-light d-none">
+                      <td colspan="6" class="text-end pe-3 py-2 small" id="totalSqftHint"></td>
+                    </tr>
                   </tfoot>
                 </table>
               </div>

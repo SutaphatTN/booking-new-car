@@ -17,9 +17,19 @@ use App\Support\ExportFilename;
 
 class PreDeliveryInspectionController extends Controller
 {
+    /** role ที่ดึงรายการที่ตรวจเสร็จแล้วกลับมาแก้ได้ */
+    private const REOPEN_ROLES = ['admin'];
+
+    private function canReopen(): bool
+    {
+        return in_array(Auth::user()->role, self::REOPEN_ROLES, true);
+    }
+
     public function index()
     {
-        return view('customer-relation.pre-delivery-inspection.index');
+        return view('customer-relation.pre-delivery-inspection.index', [
+            'canReopen' => $this->canReopen(),
+        ]);
     }
 
     public function exportExcel(Request $request)
@@ -33,6 +43,9 @@ class PreDeliveryInspectionController extends Controller
 
     public function list(Request $request)
     {
+        // โหมด "รายการที่ตรวจเสร็จแล้ว" (ที่ถูกซ่อนไป) — เฉพาะ role ที่ดึงกลับได้
+        $showDone = $request->boolean('show_done') && $this->canReopen();
+
         $salecars = Salecar::with([
             'customer.prefix',
             'saleUser',
@@ -47,7 +60,7 @@ class PreDeliveryInspectionController extends Controller
             ->get();
 
         $no = 1;
-        $data = $salecars->map(function ($s) use (&$no) {
+        $data = $salecars->map(function ($s) use (&$no, $showDone) {
             $c        = $s->customer;
             $fullName = $c
                 ? trim(($c->prefix->Name_TH ?? '') . ' ' . $c->FirstName . ' ' . $c->LastName)
@@ -72,17 +85,21 @@ class PreDeliveryInspectionController extends Controller
             $ins = $s->preDeliveryInspection;
             $hasInspection = $ins !== null;
 
-            // ข้อ 1-4 เรียบร้อยทั้งหมด และข้อ 5-6 มีไฟล์ → ซ่อนออกจากรายการ
-            if (
-                $ins
-                && $ins->accessories_complete == 1
-                && $ins->exterior_clean == 1
-                && $ins->interior_clean == 1
-                && $ins->issues_resolved == 1
-                && $ins->docs->isNotEmpty()
-                && $ins->photos->isNotEmpty()
-            ) {
+            // ตรวจครบแล้ว (และยังไม่ถูกดึงกลับ) → ซ่อนจากรายการหลัก / แสดงเฉพาะโหมด "ตรวจเสร็จแล้ว"
+            $isHidden = $ins && $ins->isHidden();
+
+            if ($showDone ? !$isHidden : $isHidden) {
                 return null;
+            }
+
+            if ($isHidden) {
+                $statusBadge = '<span class="badge rounded-pill bg-success">ตรวจเสร็จแล้ว</span>';
+            } elseif ($ins && $ins->reopened_at) {
+                $statusBadge = '<span class="badge rounded-pill bg-info">ดึงกลับมาแก้</span>';
+            } elseif ($hasInspection) {
+                $statusBadge = '<span class="badge rounded-pill bg-success">มีข้อมูลแล้ว</span>';
+            } else {
+                $statusBadge = '<span class="badge rounded-pill bg-warning">ยังไม่มีข้อมูล</span>';
             }
 
             return [
@@ -92,9 +109,8 @@ class PreDeliveryInspectionController extends Controller
                 'sale_name'     => $s->saleUser?->name ?? '-',
                 'model'         => $car,
                 'delivery_date' => $s->format_delivery_date ?? '-',
-                'status_badge'  => $hasInspection
-                    ? '<span class="badge rounded-pill bg-success">มีข้อมูลแล้ว</span>'
-                    : '<span class="badge rounded-pill bg-warning">ยังไม่มีข้อมูล</span>',
+                'status_badge'  => $statusBadge,
+                'is_done'       => $isHidden,
             ];
         });
 
@@ -158,6 +174,9 @@ class PreDeliveryInspectionController extends Controller
             'brand'                        => $authUser->brand,
             'branch'                       => $authUser->branch,
             'UserInsert'                   => Auth::id(),
+            // แก้ไขแล้ว → ล้างสถานะ "ดึงกลับ" ให้กลับไปใช้กติกาซ่อนตามปกติ
+            'reopened_at'                  => null,
+            'reopened_by'                  => null,
         ])->save();
 
         // บันทึก log ถ้ามีข้อที่ไม่เรียบร้อย
@@ -232,6 +251,24 @@ class PreDeliveryInspectionController extends Controller
         }
 
         return response()->json(['success' => true, 'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว']);
+    }
+
+    /** ดึงรายการที่ตรวจเสร็จแล้วกลับมาแก้ (admin) — จะโผล่ในรายการหลักจนกว่าจะบันทึกใหม่ */
+    public function reopen($salecarId)
+    {
+        abort_unless($this->canReopen(), 403);
+
+        $inspection = PreDeliveryInspection::where('salecar_id', $salecarId)->firstOrFail();
+
+        $inspection->update([
+            'reopened_at' => now(),
+            'reopened_by' => Auth::id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ดึงรายการกลับมาแก้ไขเรียบร้อยแล้ว',
+        ]);
     }
 
     public function deleteFile(Request $request, $id)

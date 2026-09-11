@@ -10,6 +10,10 @@
         ajax: {
           url: '{{ route('pre-delivery-inspection.list') }}',
           dataSrc: 'data',
+          data: function(d) {
+            // ติ๊ก "รายการที่ตรวจเสร็จแล้ว" → ขอรายการที่ถูกซ่อนแทน (admin เท่านั้น)
+            d.show_done = $('#pdiShowDone').is(':checked') ? 1 : 0;
+          },
         },
         columns: [{
             data: 'No',
@@ -40,6 +44,21 @@
             orderable: false,
             className: 'text-center',
             render: function(data, type, row) {
+              // รายการที่ตรวจเสร็จแล้ว (ซ่อนอยู่) → ดูได้ + ดึงกลับมาแก้
+              const actionBtn = row.is_done
+                ? `<button class="btn btn-icon btn-secondary btn-reopen text-white"
+                data-id="${row.salecar_id}"
+                data-name="${row.FullName}"
+                title="ดึงกลับมาแก้ไข">
+                <i class="bx bx-undo"></i>
+              </button>`
+                : `<button class="btn btn-icon btn-warning btn-edit text-white"
+                data-id="${row.salecar_id}"
+                data-name="${row.FullName}"
+                title="แก้ไข">
+                <i class="bx bx-edit"></i>
+              </button>`;
+
               return `
             <div class="d-flex gap-1 justify-content-center">
               <button class="btn btn-icon btn-info btn-view text-white"
@@ -48,12 +67,7 @@
                 title="ดูข้อมูล">
                 <i class="bx bx-show"></i>
             </button>
-            <button class="btn btn-icon btn-warning btn-edit text-white"
-                data-id="${row.salecar_id}"
-                data-name="${row.FullName}"
-                title="แก้ไข">
-                <i class="bx bx-edit"></i>
-              </button>
+            ${actionBtn}
             </div>`;
             },
           },
@@ -641,6 +655,56 @@
         return `<div class="row g-3"><div class="col-md-4">${leftHtml}</div><div class="col-md-8">${rightHtml}</div></div>`;
       }
 
+      // ── สลับดูรายการที่ตรวจเสร็จแล้ว (admin) ──
+      $('#pdiShowDone').on('change', function() {
+        table.ajax.reload();
+      });
+
+      // ── ดึงรายการที่ตรวจเสร็จแล้วกลับมาแก้ (admin) ──
+      $('#preDeliveryTable').on('click', '.btn-reopen', function() {
+        const salecarId = $(this).data('id');
+        const name = $(this).data('name');
+
+        Swal.fire({
+          icon: 'question',
+          title: 'ดึงกลับมาแก้ไข',
+          html: `<p>ดึงรายการของ <b>${name}</b> กลับไปที่รายการตรวจรถใช่ไหม?</p>
+                 <p class="text-muted small mb-0"><i class="bx bx-info-circle me-1"></i>เจ้าหน้าที่จะแก้ไขข้อมูลได้อีกครั้ง และรายการจะซ่อนเองเมื่อบันทึกข้อมูลครบ</p>`,
+          showCancelButton: true,
+          confirmButtonText: 'ใช่, ดึงกลับ',
+          cancelButtonText: 'ยกเลิก',
+          confirmButtonColor: '#6c5ffc',
+          cancelButtonColor: '#d33',
+        }).then(result => {
+          if (!result.isConfirmed) return;
+
+          $.ajax({
+            url: `/pre-delivery-inspection/${salecarId}/reopen`,
+            method: 'POST',
+            headers: {
+              'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(res) {
+              Swal.fire({
+                icon: 'success',
+                title: 'สำเร็จ',
+                text: res.message,
+                timer: 1500,
+                showConfirmButton: true
+              });
+              table.ajax.reload(null, false);
+            },
+            error: function(xhr) {
+              Swal.fire({
+                icon: 'error',
+                title: 'ผิดพลาด',
+                text: xhr.responseJSON?.message || 'ไม่สามารถดึงรายการกลับได้'
+              });
+            }
+          });
+        });
+      });
+
       // ── Export Excel ──
       $('#btnExportPdi').on('click', function () {
         const dateFrom = $('#pdiDateFrom').val();
@@ -675,6 +739,15 @@
 
           {{-- ── Action bar ── --}}
           <div class="po-filter-bar d-flex align-items-center gap-2 justify-content-end">
+            @if ($canReopen)
+              {{-- admin: เปิดดูรายการที่ตรวจเสร็จแล้ว เพื่อดึงกลับมาแก้ --}}
+              <div class="form-check form-switch me-auto mb-0">
+                <input class="form-check-input" type="checkbox" id="pdiShowDone">
+                <label class="form-check-label small text-muted" for="pdiShowDone">
+                  รายการที่ตรวจเสร็จแล้ว
+                </label>
+              </div>
+            @endif
             <span class="text-muted small">วันส่งมอบ</span>
             <input type="date" id="pdiDateFrom" class="form-control form-control-sm"
               value="{{ now()->format('Y-m-d') }}" style="width:155px;" data-no-icon>
