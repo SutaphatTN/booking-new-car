@@ -680,6 +680,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('pre-delivery-inspection/{id}/file', [PreDeliveryInspectionController::class, 'deleteFile'])->name('pre-delivery-inspection.deleteFile');
     Route::get('pre-delivery-inspection/{inspectionId}/proxy/{filename?}', [PreDeliveryInspectionController::class, 'proxyFile'])->name('pre-delivery-inspection.proxy')->where('filename', '[^/]+');
     Route::get('pre-delivery-inspection/{salecarId}/view-data', [PreDeliveryInspectionController::class, 'viewData'])->name('pre-delivery-inspection.viewData');
+    // ดึงรายการที่ตรวจเสร็จแล้วกลับมาแก้ (admin เท่านั้น)
+    Route::post('pre-delivery-inspection/{salecarId}/reopen', [PreDeliveryInspectionController::class, 'reopen'])->middleware('role:admin')->name('pre-delivery-inspection.reopen');
     Route::get('pre-delivery-inspection', [PreDeliveryInspectionController::class, 'index'])->name('pre-delivery-inspection.index');
 
     // SSI หลังส่งมอบ
@@ -693,6 +695,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('ssi/{salecarId}/contact/{contactId}', [SsiController::class, 'deleteContact'])->name('ssi.contact.delete');
     Route::post('ssi/{salecarId}/tab2', [SsiController::class, 'saveTab2'])->name('ssi.tab2.save');
     Route::post('ssi/{salecarId}/complete', [SsiController::class, 'markComplete'])->name('ssi.complete');
+    // ดึงงานที่ปิดแล้วกลับมาแก้ (admin เท่านั้น)
+    Route::post('ssi/{salecarId}/reopen', [SsiController::class, 'reopen'])->middleware('role:admin')->name('ssi.reopen');
 
     // ขออนุมัติเกินงบล่วงหน้า (ยังไม่เป็นการจอง)
     //  - ดูลิสต์: admin/audit_lead/manager/gm/md + sale/lead_sale (เห็นเฉพาะของตัวเอง)

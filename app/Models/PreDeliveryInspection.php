@@ -18,6 +18,7 @@ class PreDeliveryInspection extends Model
         'exterior_clean'       => 'boolean',
         'interior_clean'       => 'boolean',
         'issues_resolved'      => 'boolean',
+        'reopened_at'          => 'datetime',
     ];
 
     protected $fillable = [
@@ -38,7 +39,29 @@ class PreDeliveryInspection extends Model
         'brand',
         'branch',
         'UserInsert',
+        'reopened_at',
+        'reopened_by',
     ];
+
+    /**
+     * ข้อ 1-4 เรียบร้อยทั้งหมด และข้อ 5-6 มีไฟล์ → ถือว่าตรวจเสร็จแล้ว
+     * (ใช้ตัดสินว่าจะซ่อนออกจากรายการหลักไหม)
+     */
+    public function isComplete(): bool
+    {
+        return $this->accessories_complete == 1
+            && $this->exterior_clean == 1
+            && $this->interior_clean == 1
+            && $this->issues_resolved == 1
+            && $this->docs->isNotEmpty()
+            && $this->photos->isNotEmpty();
+    }
+
+    /** ตรวจเสร็จแล้วและยังไม่ถูก admin ดึงกลับ → ซ่อนจากรายการหลัก */
+    public function isHidden(): bool
+    {
+        return $this->isComplete() && $this->reopened_at === null;
+    }
 
     public function salecar()
     {

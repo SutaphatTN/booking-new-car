@@ -22,10 +22,13 @@ class SsiRecord extends Model
         'UserInsert',
         'completed_at',
         'completed_by',
+        'reopened_at',
+        'reopened_by',
     ];
 
     protected $casts = [
         'completed_at' => 'datetime',
+        'reopened_at'  => 'datetime',
     ];
 
     public function salecar()
