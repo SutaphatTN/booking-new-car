@@ -34,7 +34,7 @@ class InvoiceController extends Controller
         $approvers = User::whereIn('role', ['audit', 'audit_lead', 'audit_dp', 'gm', 'manager', 'md', 'bp', 'cs'])
             ->where(function ($q) use ($user) {
                 $q->where('brand', $user->brand == 2 ? 2 : 1)
-                  ->orWhereIn('id', [3, 45]);
+                  ->orWhereIn('id', [3, 45, 80]);
             })
             ->where('branch', $user->branch)
             ->where('userZone', $user->userZone)
@@ -113,7 +113,7 @@ class InvoiceController extends Controller
         $approvers = User::whereIn('role', ['audit', 'audit_lead', 'audit_dp', 'gm', 'manager', 'md', 'bp', 'cs'])
             ->where(function ($q) use ($invoice) {
                 $q->where('brand', $invoice->brand == 2 ? 2 : 1)
-                  ->orWhereIn('id', [3, 45]);
+                  ->orWhereIn('id', [3, 45, 80]);
             })
             ->where('branch', $invoice->branch)
             ->where('userZone', $invoice->userZone)
