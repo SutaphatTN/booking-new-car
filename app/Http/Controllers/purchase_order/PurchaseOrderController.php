@@ -1770,10 +1770,18 @@ class PurchaseOrderController extends Controller
             //  - ผูกรถแล้ว (CarOrderID) + มีวันที่ PO (remaining_po_date) หรือ
             //  - เปลี่ยนสถานะเป็น "ส่งมอบ" (con_status = 5)
             // (role ที่ผูกรถไม่ได้จะไม่ส่ง CarOrderID มา — ต้อง fallback เป็นค่าเดิมของใบจอง ไม่งั้นเงื่อนไขนี้หลุด)
-            if (
-                ($request->input('CarOrderID', $saleCar->CarOrderID) && $request->filled('remaining_po_date'))
-                || (int) $request->con_status === 5
-            ) {
+            // ประเภทการขาย = Dealer → ไม่ต้องขออนุมัติ + ไม่ผูกฝ่ายขาย + ไม่ใช้ใบ PO (ทั้งผ่อนและสด)
+            // จึงไม่เอาวันที่ PO มาเป็นตัวจุดชนวน เหลือดักเฉพาะตอนเปลี่ยนสถานะเป็น "ส่งมอบ"
+            // (เช็คค่าที่กำลังบันทึก เผื่อเพิ่งเปลี่ยนเป็น Dealer) — ใช้ต่อยาวถึงตอนสร้าง $data
+            $typeSaleNow = (int) $request->input('type_sale', $saleCar->type_sale);
+            $isDealerSale = $typeSaleNow === Salecar::TYPE_SALE_DEALER;
+
+            $boundCarWithPoDate = !$isDealerSale
+                && $request->input('CarOrderID', $saleCar->CarOrderID)
+                && $request->filled('remaining_po_date');
+            $enteringDeliveredStatus = (int) $request->con_status === 5;
+
+            if ($boundCarWithPoDate || $enteringDeliveredStatus) {
                 $requiredDeliveryDates = [
                     'DeliveryDate'         => 'วันส่งมอบจริง (แจ้งประกัน)',
                     'DeliveryInDMSDate'    => 'วันที่ส่งมอบของบริษัท',
@@ -1782,7 +1790,6 @@ class PurchaseOrderController extends Controller
                 ];
 
                 // ประเภทการขาย = Test Drive / Dealer → ไม่บังคับ "วันที่ส่งมอบของบริษัท" (DMS)
-                $typeSaleNow = (int) $request->input('type_sale', $saleCar->type_sale);
                 if (in_array($typeSaleNow, [Salecar::TYPE_SALE_TEST_DRIVE, Salecar::TYPE_SALE_DEALER], true)) {
                     unset($requiredDeliveryDates['DeliveryInDMSDate']);
                 }
@@ -1795,9 +1802,17 @@ class PurchaseOrderController extends Controller
                 }
                 if (!empty($missingDates)) {
                     DB::rollBack();
+
+                    // ข้อความต้องตรงกับ "เหตุที่ถูกดัก" จริง ๆ — ใบซื้อสด/Dealer ไม่มีวันที่ PO อยู่แล้ว
+                    // ที่โดนดักคือเพราะเปลี่ยนสถานะเป็น "ส่งมอบ" ไม่ใช่เพราะมี PO
+                    // (เคสจริง: ใบ 860 จ่ายสด เจอข้อความ "มีวันที่ PO แล้ว" ทั้งที่ไม่เคยมี PO)
+                    $gateReason = $boundCarWithPoDate
+                        ? 'ผูกรถแล้วและมีวันที่ PO แล้ว'
+                        : 'ก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"';
+
                     return response()->json([
                         'success' => false,
-                        'message' => 'ผูกรถแล้วและมีวันที่ PO แล้ว กรุณากรอกให้ครบ: ' . implode(', ', $missingDates),
+                        'message' => $gateReason . ' กรุณากรอกให้ครบ: ' . implode(', ', $missingDates),
                     ], 422);
                 }
             }
@@ -1845,9 +1860,7 @@ class PurchaseOrderController extends Controller
             }
 
 
-            // ประเภทการขาย = Dealer → ไม่ต้องขออนุมัติ + ไม่ผูกฝ่ายขาย
-            // (เช็คค่าที่กำลังบันทึก เผื่อเพิ่งเปลี่ยนเป็น Dealer)
-            $isDealerSale = (int) $request->input('type_sale', $saleCar->type_sale) === Salecar::TYPE_SALE_DEALER;
+            // $isDealerSale / $typeSaleNow ประกาศไว้ก่อนด่านวันส่งมอบด้านบนแล้ว
 
             // ด่าน "ตรวจสอบรายการ (IA)" — ใช้ทุกแบรนด์ ติ๊กได้เฉพาะ User::IA_CHECK_ROLES
             // และต้องอนุมัติงบผ่านก่อนเสมอ (ดูสถานะ "ก่อน" บันทึกรอบนี้ — ถ้าเพิ่งติ๊กอนุมัติงบ
