@@ -118,7 +118,7 @@ class PdiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
 
             return [
                 'no'              => $no++,
-                'sale_name'       => $s->saleUser?->name ?? '-',
+                'sale_name'       => $s->report_sale_name ?? '-',
                 'full_name'       => $fullName,
                 'model'           => $modelFull,
                 'delivery_date'   => $s->DeliveryDate

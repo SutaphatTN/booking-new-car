@@ -159,11 +159,18 @@ if ($('#formFilmUsage').length) {
 
   // ตร.ฟุต "ทั้งคัน" ของรุ่น+ยี่ห้อที่เลือก (จากหน้าราคาฟิล์ม) — ใช้เป็นเป้าหมายเทียบกับยอดที่กรอก
   // null = ไม่มีข้อมูลราคาฟิล์มของรุ่นนี้ หรือเป็นงาน BP/แพ็กเกจเดี่ยว → ไม่ต้องเทียบ
-  let fpPackageSqft = null;
+  let fpFullSqft = null;
+
+  // ซันรูฟของรุ่นนี้ + ยอดทั้งคันนับซันรูฟรวมไว้แล้วหรือยัง
+  //   ORA 5: ทั้งคัน 52 = บานหน้า 14 + รอบคัน 27 + ซันรูฟ 11 → รวมไว้แล้ว (กดเพิ่มซันรูฟ ยอดก็ยังเป็น 52)
+  //   บางรุ่น: ทั้งคัน 75 = บานหน้า 15 + รอบคัน 60            → ซันรูฟ 18 คิดเพิ่มจริง (75 + 18 = 93)
+  let fpSunroofSqft = 0;
+  let fpSunroofInFull = false;
 
   // ตำแหน่งที่คิดเพิ่มนอกเหนือ "ทั้งคัน" — ไม่นับรวมตอนเทียบยอด
+  // (ซันรูฟไม่อยู่ในนี้แล้ว เพราะเป้าหมายขยับตาม fpSunroofInFull ให้เองแทน)
   // (ประตูคู่หลัง 2 ไม่อยู่ในนี้ เพราะระบบเพิ่มให้เองตามรุ่น ถือเป็นส่วนหนึ่งของทั้งคัน)
-  const ADDON_POSITIONS = ['ซันรูฟ', 'แพ็กเกจ 3 บาน'];
+  const ADDON_POSITIONS = ['แพ็กเกจ 3 บาน'];
 
   // ยอดรวมต่างจากทั้งคันได้ไม่เกินเท่านี้ ถือว่าตรง (เผื่อปัดเศษ)
   const SQFT_TOLERANCE = 0.5;
@@ -371,6 +378,7 @@ if ($('#formFilmUsage').length) {
     } else {
       removeRowByPosition('ซันรูฟ');
     }
+    syncFullPackageRow();
   });
 
   $('#addDoorRear2').on('change', function () {
@@ -722,7 +730,9 @@ if ($('#formFilmUsage').length) {
     $('#positionRows').empty();
     fpPackagePrice = null;
     fpPackageCommission = null;
-    fpPackageSqft = null;
+    fpFullSqft = null;
+    fpSunroofSqft = 0;
+    fpSunroofInFull = false;
     addNoRowMsg();
     recalcTotals();
   }
@@ -766,6 +776,7 @@ if ($('#formFilmUsage').length) {
       removeRowByPosition('ซันรูฟ');
       removeRowByPosition('กระจกประตูคู่หลัง 2');
       removeRowByPosition('แพ็กเกจ 3 บาน');
+      if (pkg === 'full') autoFillFromPriceList(false);
       if (pkg === 'front_body' || pkg === 'advanced') autoFillPositionSqft();
       checkSunroofForCurrentModel();
       if (pkg === 'advanced') checkAdvancedExtrasForCurrentModel();
@@ -831,11 +842,12 @@ if ($('#formFilmUsage').length) {
     $.get('/film-usage/price-list-lookup', { model_id: modelId, film_brand_id: filmBrandId }, function (res) {
       if (!res.found) return;
 
+      readSqftTargetFromPriceList(res);
+
       if (!sunroofOnly) {
-        fpPackageSqft = res.sqft != null && res.sqft !== '' ? parseFloat(res.sqft) : null;
+        // แพ็กเกจ "ทั้งคัน" อยู่แถวเดียว — ยอด ตร.ฟุต ของแถวนี้ให้ syncFullPackageRow คิดให้
         const $mainRow = $('#positionRows tr[data-position="รอบคัน+บานหน้า"]');
         if ($mainRow.length) {
-          $mainRow.find('.rowSqft').val(res.sqft);
           $mainRow.find('.rowPrice').val(formatMoney(res.price));
           $mainRow.find('.rowCommission').val(formatMoney(res.commission));
         }
@@ -847,8 +859,10 @@ if ($('#formFilmUsage').length) {
           $sunRow.find('.rowSqft').val(res.sqft_sunroof);
           $sunRow.find('.rowPrice').val(formatMoney(res.price_sunroof));
           $sunRow.find('.rowCommission').val(formatMoney(res.commission_sunroof));
+          rebuildAllocations($sunRow);
         }
       }
+      syncFullPackageRow();
       recalcTotals();
     });
   }
@@ -864,7 +878,9 @@ if ($('#formFilmUsage').length) {
         if (!onlyPosition) {
           fpPackagePrice = null;
           fpPackageCommission = null;
-          fpPackageSqft = null;
+          fpFullSqft = null;
+          fpSunroofSqft = 0;
+          fpSunroofInFull = false;
           recalcTotals();
         }
         return;
@@ -881,7 +897,7 @@ if ($('#formFilmUsage').length) {
       if (!onlyPosition) {
         fpPackagePrice = res.price != null && res.price !== '' ? parseFloat(res.price) : null;
         fpPackageCommission = res.commission != null && res.commission !== '' ? parseFloat(res.commission) : null;
-        fpPackageSqft = res.sqft != null && res.sqft !== '' ? parseFloat(res.sqft) : null;
+        readSqftTargetFromPriceList(res);
       }
       recalcTotals();
     });
@@ -908,8 +924,76 @@ if ($('#formFilmUsage').length) {
     renderSqftHint();
   }
 
-  // ── ยอด ตร.ฟุต ของแถวฐาน (ไม่รวมตำแหน่งเสริมที่คิดนอกเหนือทั้งคัน) ──
-  function baseSqftTotal() {
+  // ── อ่านเป้าหมาย ตร.ฟุต ของรุ่นนี้จากหน้าราคาฟิล์ม ──
+  // ยอด "ทั้งคัน" ของบางรุ่นนับซันรูฟรวมไว้แล้ว ดูออกได้จาก บานหน้า + รอบคัน:
+  //   ทั้งคัน 52 แต่ บานหน้า 14 + รอบคัน 27 = 41 → ส่วนต่าง 11 คือซันรูฟ = รวมไว้แล้ว
+  //   ทั้งคัน 75 = บานหน้า 15 + รอบคัน 60       → ไม่มีส่วนต่าง = ซันรูฟคิดเพิ่มต่างหาก
+  function readSqftTargetFromPriceList(res) {
+    const numOf = v => (v != null && v !== '' ? parseFloat(v) || 0 : 0);
+    const full = numOf(res.sqft);
+    const glass = numOf(res.sqft_windshield) + numOf(res.sqft_around);
+    const sun = res.has_sunroof ? numOf(res.sqft_sunroof) : 0;
+
+    fpFullSqft = full > 0 ? full : null;
+    fpSunroofSqft = sun;
+    fpSunroofInFull = sun > 0 && glass > 0 && full - glass > SQFT_TOLERANCE;
+  }
+
+  // ── ยอด "บานรถ" ของรุ่นนี้ (ไม่รวมซันรูฟ) — คงที่ ไม่ขึ้นกับว่าคันนี้ติดซันรูฟไหม ──
+  function glassSqftTarget() {
+    if (fpFullSqft == null) return null;
+    return fpFullSqft - (fpSunroofInFull ? fpSunroofSqft : 0);
+  }
+
+  // ── เป้าหมาย ตร.ฟุต ของใบนี้ ณ ตอนนี้ = บานรถ + ซันรูฟ (ถ้าคันนี้ติด) ──
+  //   ORA 5 ไม่ติดซันรูฟ → 41 | ติดซันรูฟ → 41 + 11 = 52 (เท่ายอดทั้งคันพอดี ไม่ใช่ 63)
+  //   รุ่นที่ซันรูฟคิดเพิ่มจริง → 75 | ติดซันรูฟ → 75 + 18 = 93
+  function currentSqftTarget() {
+    const glass = glassSqftTarget();
+    if (glass == null) return null;
+    return glass + (hasSunroofRow() ? fpSunroofSqft : 0);
+  }
+
+  function currentSqftTargetNote() {
+    if (fpFullSqft == null || !(fpSunroofSqft > 0)) return '';
+
+    if (hasSunroofRow()) {
+      return fpSunroofInFull
+        ? 'ทั้งคัน ' + fpFullSqft.toFixed(2) + ' นับซันรูฟ ' + fpSunroofSqft.toFixed(2) + ' รวมไว้แล้ว'
+        : 'ทั้งคัน ' + fpFullSqft.toFixed(2) + ' + ซันรูฟ ' + fpSunroofSqft.toFixed(2);
+    }
+
+    // คันนี้ยังไม่ได้กดเพิ่มซันรูฟ — ถ้ายอดทั้งคันนับซันรูฟไว้ ต้องหักออกก่อน
+    return fpSunroofInFull
+      ? 'ทั้งคัน ' + fpFullSqft.toFixed(2) + ' − ซันรูฟ ' + fpSunroofSqft.toFixed(2) + ' ที่ยังไม่ได้ติด'
+      : '';
+  }
+
+  // รุ่นนี้มีซันรูฟให้เลือก แต่ใบนี้ยังไม่ได้กดเพิ่ม — เตือนไว้กันลืม (ไม่ใช่ error)
+  function sunroofNotAdded() {
+    return fpSunroofSqft > 0 && !hasSunroofRow();
+  }
+
+  function hasSunroofRow() {
+    return $('#positionRows tr[data-position="ซันรูฟ"]').length > 0;
+  }
+
+  // ── แพ็กเกจ "ทั้งคัน" อยู่แถวเดียว → ใส่ยอดบานรถ (ไม่รวมซันรูฟ) ──
+  // รุ่นที่ยอดทั้งคันนับซันรูฟรวมไว้แล้ว ถ้าปล่อย 52 ไว้ในแถวนี้:
+  //   คันไม่มีซันรูฟ → ตัดสต็อกเกินไป 11  |  คันมีซันรูฟ → ซันรูฟโดนนับสองรอบเป็น 63
+  // จึงเหลือ 41 ที่แถวนี้เสมอ แล้วให้แถวซันรูฟเป็นคนบวก 11 กลับเข้าไปเองถ้ามี
+  function syncFullPackageRow() {
+    const $mainRow = $('#positionRows tr[data-position="รอบคัน+บานหน้า"]');
+    const glass = glassSqftTarget();
+    if (!$mainRow.length || glass == null) return;
+
+    $mainRow.find('.rowSqft').val(glass.toFixed(2));
+    rebuildAllocations($mainRow);
+    recalcTotals();
+  }
+
+  // ── ยอด ตร.ฟุต ที่เอาไปเทียบกับทั้งคัน (ไม่รวมตำแหน่งเสริมที่คิดนอกเหนือทั้งคัน) ──
+  function countedSqftTotal() {
     let base = 0;
     $('#positionRows tr[data-position]').each(function () {
       if (ADDON_POSITIONS.indexOf(String($(this).attr('data-position'))) !== -1) return;
@@ -927,46 +1011,77 @@ if ($('#formFilmUsage').length) {
     return addon;
   }
 
+  // รายชื่อตำแหน่งเสริมที่กรอกไว้ เช่น ['แพ็กเกจ 3 บาน 8.00'] — เอาไปบอกในบรรทัดสรุปให้เห็นว่าตัวไหนไม่ถูกนับ
+  function addonSqftList() {
+    const list = [];
+    $('#positionRows tr[data-position]').each(function () {
+      const pos = String($(this).attr('data-position'));
+      if (ADDON_POSITIONS.indexOf(pos) === -1) return;
+      const sqft = parseFloat($(this).find('.rowSqft').val()) || 0;
+      if (sqft > 0) list.push(pos + ' ' + sqft.toFixed(2));
+    });
+    return list;
+  }
+
+  // ── ข้อความสรุปยอด — แยกเป็นฟังก์ชันล้วน (ไม่ยุ่ง DOM) เพื่อให้ตรวจสอบง่าย ──
+  // ตัวเลขมี 3 ก้อน: ยอดที่เอาไปเทียบทั้งคัน (รวมซันรูฟแล้ว) / ของเสริมที่คิดเพิ่มต่างหาก / รวมที่ตัดจริง
+  function sqftHintText(total, addon, addonList, target, targetNote, sunroofHint) {
+    const diff = total - target;
+    const noteTxt = targetNote ? ' (' + targetNote + ')' : '';
+    const addonTxt = addon > 0
+      ? ' &nbsp;·&nbsp; ' + addonList.join(' + ') + ' ตร.ฟุต คิดเพิ่มต่างหาก &nbsp;·&nbsp; รวมตัดจริง ' +
+        (total + addon).toFixed(2) + ' ตร.ฟุต'
+      : '';
+    // รุ่นนี้มีซันรูฟให้เลือก แต่ยังไม่ได้กดเพิ่ม — บอกไว้กันลืม แต่ไม่ถือว่ายอดผิด
+    const sunTxt = sunroofHint
+      ? '<div class="text-muted mt-1"><i class="bx bx-sun me-1"></i>รุ่นนี้มีซันรูฟ — ถ้าคันนี้ติดด้วย ให้กด “เพิ่มซันรูฟ”</div>'
+      : '';
+
+    if (Math.abs(diff) <= SQFT_TOLERANCE) {
+      return {
+        cls: 'text-success',
+        html:
+          '<i class="bx bx-check-circle me-1"></i>รวม <b>' + total.toFixed(2) +
+          '</b> / รุ่นนี้ต้องได้ ' + target.toFixed(2) + ' ตร.ฟุต' + noteTxt + addonTxt + sunTxt
+      };
+    }
+
+    return {
+      cls: diff < 0 ? 'text-danger' : 'text-warning',
+      html:
+        '<i class="bx bx-error-circle me-1"></i>รวม <b>' + total.toFixed(2) +
+        '</b> / รุ่นนี้ต้องได้ ' + target.toFixed(2) + ' ตร.ฟุต — ' +
+        (diff < 0 ? 'ยังขาดอีก <b>' : 'เกินมา <b>') + Math.abs(diff).toFixed(2) + '</b> ตร.ฟุต' +
+        noteTxt + addonTxt + sunTxt
+    };
+  }
+
   // ── บอกใต้ยอดรวมว่าตรงกับ ตร.ฟุต ทั้งคันของรุ่นนี้ไหม (เห็นตั้งแต่ตอนกรอก ไม่ต้องรอกดบันทึก) ──
   function renderSqftHint() {
     const $row = $('#sqftHintRow');
     if (!$row.length) return;
 
-    if (fpPackageSqft == null) {
+    const target = currentSqftTarget();
+    if (target == null) {
       $row.addClass('d-none');
       return;
     }
 
-    const base = baseSqftTotal();
-    const addon = addonSqftTotal();
-    const diff = base - fpPackageSqft;
-    const addonTxt = addon > 0 ? ' + เสริมอีก ' + addon.toFixed(2) + ' ตร.ฟุต' : '';
-    const target = fpPackageSqft.toFixed(2);
-
-    let cls, html;
-    if (Math.abs(diff) <= SQFT_TOLERANCE) {
-      cls = 'text-success';
-      html = '<i class="bx bx-check-circle me-1"></i>ตรงกับทั้งคันของรุ่นนี้ (' + target + ' ตร.ฟุต)' + addonTxt;
-    } else if (diff < 0) {
-      cls = 'text-danger';
-      html =
-        '<i class="bx bx-error-circle me-1"></i>ยังขาดอีก <b>' +
-        Math.abs(diff).toFixed(2) +
-        '</b> ตร.ฟุต — รุ่นนี้ทั้งคัน ' + target + ' ตร.ฟุต แต่กรอกมา ' + base.toFixed(2) + addonTxt;
-    } else {
-      cls = 'text-warning';
-      html =
-        '<i class="bx bx-error-circle me-1"></i>เกินมา <b>' +
-        diff.toFixed(2) +
-        '</b> ตร.ฟุต — รุ่นนี้ทั้งคัน ' + target + ' ตร.ฟุต แต่กรอกมา ' + base.toFixed(2) + addonTxt;
-    }
+    const hint = sqftHintText(
+      countedSqftTotal(),
+      addonSqftTotal(),
+      addonSqftList(),
+      target,
+      currentSqftTargetNote(),
+      sunroofNotAdded()
+    );
 
     $row
       .removeClass('d-none')
       .find('#totalSqftHint')
       .removeClass('text-success text-danger text-warning')
-      .addClass(cls)
-      .html(html);
+      .addClass(hint.cls)
+      .html(hint.html);
   }
 
   // ── Money format helpers ───────────────────────────────────
@@ -1091,34 +1206,47 @@ if ($('#formFilmUsage').length) {
       return;
     }
 
-    // ── ยอดรวมของแถวฐานควรเท่ากับ ตร.ฟุต ทั้งคันของรุ่นนี้ — ไม่ตรงให้ยืนยันก่อนบันทึก ──
+    // ── ยอดรวมควรเท่ากับ ตร.ฟุต ทั้งคันของรุ่นนี้ — ไม่ตรงให้ยืนยันก่อนบันทึก ──
     // (กดยืนยันแล้วจะสั่งบันทึกซ้ำโดยข้ามด่านนี้ ผ่านแฟล็ก sqftConfirmed)
-    if (fpPackageSqft != null && !$saveBtn.data('sqftConfirmed')) {
-      const base = baseSqftTotal();
-      const diff = base - fpPackageSqft;
+    const sqftTarget = currentSqftTarget();
+    if (sqftTarget != null && !$saveBtn.data('sqftConfirmed')) {
+      const total = countedSqftTotal();
+      const diff = total - sqftTarget;
 
       if (Math.abs(diff) > SQFT_TOLERANCE) {
         // เหตุผลที่ยอดไม่ตรงมีได้ 2 ทาง — งานจริงไม่เท่าทั้งคัน หรือยอดตั้งต้นในหน้าราคาฟิล์มยังไม่ตรงกับรุ่นนี้
         const reason =
           diff < 0
-            ? 'ถ้างานนี้ตัดไม่ครบทั้งคันจริง ๆ'
+            ? 'ถ้างานนี้ตัดฟิล์มไม่ครบทั้งคันจริง ๆ'
             : 'ถ้างานนี้ใช้ฟิล์มเกินยอดทั้งคันจริง ๆ';
 
         Swal.fire({
           icon: 'warning',
           title: 'ยอดรวม ตร.ฟุต ไม่ตรงกับรุ่นนี้',
           html:
-            'รุ่นนี้ทั้งคัน <b>' +
-            fpPackageSqft.toFixed(2) +
-            '</b> ตร.ฟุต แต่กรอกมา <b>' +
-            base.toFixed(2) +
+            'รุ่นนี้ต้องได้ <b>' +
+            sqftTarget.toFixed(2) +
+            '</b> ตร.ฟุต' +
+            (currentSqftTargetNote() ? ' (' + currentSqftTargetNote() + ')' : '') +
+            ' แต่กรอกมา <b>' +
+            total.toFixed(2) +
             '</b> ตร.ฟุต (' +
             (diff < 0 ? 'ขาด ' : 'เกิน ') +
             Math.abs(diff).toFixed(2) +
             ' ตร.ฟุต)' +
+            (addonSqftTotal() > 0
+              ? '<div class="small text-muted mt-1">ยอดนี้ไม่รวม ' +
+                addonSqftList().join(' + ') +
+                ' ตร.ฟุต ที่คิดเพิ่มต่างหาก</div>'
+              : '') +
+            (sunroofNotAdded()
+              ? '<div class="small text-muted mt-1">รุ่นนี้มีซันรูฟ ' +
+                fpSunroofSqft.toFixed(2) +
+                ' ตร.ฟุต — ถ้าคันนี้ติดด้วย ให้กลับไปกด “เพิ่มซันรูฟ” ก่อน</div>'
+              : '') +
             '<p class="text-muted small mt-3 mb-0">' +
             reason +
-            ' หรือยอดทั้งคันในหน้าราคาฟิล์มยังไม่ตรงกับรุ่นนี้ กดยืนยันเพื่อบันทึกต่อได้</p>',
+            ' หรือยอดในหน้าราคาฟิล์มยังไม่ตรงกับรุ่นนี้ กดยืนยันเพื่อบันทึกต่อได้</p>',
           showCancelButton: true,
           confirmButtonText: 'ยืนยัน บันทึกเลย',
           cancelButtonText: 'กลับไปแก้',

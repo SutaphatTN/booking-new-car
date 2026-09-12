@@ -123,7 +123,16 @@ class CampaignClaimExport implements FromView, WithTitle, WithStyles, WithEvents
             $status = $claim?->status;
             $statusText = $status ? $status->id . '.' . $status->name : '';
 
+            // เอกสารแนบ — ลิงก์ OneDrive ตรง ๆ (เปิดได้ทุกคนที่ login M365 ขององค์กร
+            // แม้ไม่มี account ในระบบนี้ เพราะไฟล์รายงานมักถูกส่งต่อให้ตรวจสอบ/แบรนด์)
+            $files = collect((array) ($claim?->attachments ?? []))
+                ->map(fn($f) => ['url' => $f['url'] ?? '', 'name' => $f['name'] ?? 'file'])
+                ->filter(fn($f) => $f['url'] !== '')
+                ->values()
+                ->all();
+
             return [
+                'files'         => $files,
                 'delivery_date' => $delivery ? $delivery->format('d/m/Y') : '',
                 'year'          => $delivery ? $delivery->format('Y') : '',
                 'month'         => $delivery ? $delivery->format('n') : '',
@@ -139,6 +148,9 @@ class CampaignClaimExport implements FromView, WithTitle, WithStyles, WithEvents
             ];
         });
 
-        return view('campaign.claim.report', ['rows' => $data]);
+        // จำนวนคอลัมน์เอกสารแนบ = ไฟล์มากสุดของแถวในช่วงที่ export (ไม่มีไฟล์เลย = ไม่มีคอลัมน์นี้)
+        $maxFiles = (int) $data->max(fn($r) => count($r['files']));
+
+        return view('campaign.claim.report', ['rows' => $data, 'maxFiles' => $maxFiles]);
     }
 }

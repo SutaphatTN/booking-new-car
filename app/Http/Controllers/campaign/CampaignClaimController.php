@@ -8,6 +8,8 @@ use App\Models\Salecampaign;
 use App\Models\CampaignClaim;
 use App\Models\TbCampaignClaimStatus;
 use App\Exports\campaign\CampaignClaimExport;
+use App\Services\OneDriveService;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -198,12 +200,58 @@ class CampaignClaimController extends Controller
 
     public function updateClaim(Request $request, $id)
     {
+        // ไฟล์แนบ — กันไฟล์แปลก/ไฟล์ใหญ่ตั้งแต่ต้นทาง (validate นอก try เพื่อให้ข้อความ 422 ถึงหน้าจอ)
+        $request->validate([
+            'claim_files.*' => 'file|max:20480|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx',
+        ], [
+            'claim_files.*.max'   => 'ไฟล์แนบต้องมีขนาดไม่เกิน 20 MB',
+            'claim_files.*.mimes' => 'ไฟล์แนบต้องเป็นรูปภาพ, PDF, Word หรือ Excel เท่านั้น',
+        ]);
+
         try {
             $sc = Salecampaign::whereIn('CampaignType', self::ONTOP_TYPE_IDS)->findOrFail($id);
 
             $claimAmount = $request->filled('claim_amount')
                 ? str_replace(',', '', $request->claim_amount)
                 : null;
+
+            $claim = CampaignClaim::where('salecampaign_id', $sc->id)->first();
+
+            // ── ไฟล์แนบ : เก็บบน OneDrive โฟลเดอร์ New Car/{แบรนด์}/Campaign Claim ──
+            // ของเดิมคงไว้เฉพาะที่ยังอยู่ในหน้าจอ (keep_files) — กดปุ่มลบในหน้าจอแล้วบันทึก = หลุดออกจากรายการ
+            // (ไฟล์บน OneDrive ไม่ได้ถูกลบตาม เหมือนไฟล์แนบที่อื่นในระบบ)
+            $keep = (array) $request->input('keep_files', []);
+            $attachments = collect((array) ($claim?->attachments ?? []))
+                ->filter(fn($f) => in_array($f['url'] ?? '', $keep, true))
+                ->values()->all();
+
+            $newFiles = array_filter((array) $request->file('claim_files'));
+
+            if ($newFiles) {
+                // ชื่อโฟลเดอร์แบรนด์ต้องมาจาก tb_brand.name (Mitsu/GWM/Wuling/Lepas) ให้ตรงกับไฟล์แนบที่อื่น
+                $brandName = Auth::user()->brandInfo->name ?? 'Other';
+                $folder    = "New Car/{$brandName}/Campaign Claim";
+
+                try {
+                    $oneDrive = new OneDriveService();
+                    foreach ($newFiles as $i => $f) {
+                        if (!$f->isValid()) {
+                            continue;
+                        }
+                        $base = pathinfo($f->getClientOriginalName(), PATHINFO_FILENAME);
+                        $name = sprintf('%s_%d_%d.%s', $base, $sc->id, time() + $i, $f->getClientOriginalExtension());
+                        $attachments[] = [
+                            'url'  => $oneDrive->upload($f->getRealPath(), $name, $folder),
+                            'name' => $f->getClientOriginalName(),
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'อัปโหลดไฟล์ไม่สำเร็จ: ' . $e->getMessage(),
+                    ], 500);
+                }
+            }
 
             CampaignClaim::updateOrCreate(
                 ['salecampaign_id' => $sc->id],
@@ -212,6 +260,7 @@ class CampaignClaimController extends Controller
                     'received_date' => $this->toGregorian($request->received_date),
                     'status_id'     => $request->status_id ?: null,
                     'note'          => $request->note,
+                    'attachments'   => $attachments,
                     'userZone'      => Auth::user()->userZone ?? null,
                     'brand'         => Auth::user()->brand ?? null,
                     'branch'        => Auth::user()->branch ?? null,
@@ -227,6 +276,41 @@ class CampaignClaimController extends Controller
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
             ], 500);
+        }
+    }
+
+    /**
+     * เปิดดูไฟล์แนบของการเคลม — proxy จาก OneDrive
+     * share link เป็นของ organization เปิดตรง ๆ จากเบราว์เซอร์ผู้ใช้ไม่ได้ ต้องให้ระบบดึงมาให้
+     * url ต้องเป็นไฟล์ของรายการนี้จริง (กันเอา share url อื่นมายิงผ่านระบบ)
+     */
+    public function proxyFile(Request $request, $id, $filename = null)
+    {
+        $sc = Salecampaign::with('claim')
+            ->whereIn('CampaignType', self::ONTOP_TYPE_IDS)
+            ->findOrFail($id);
+
+        $shareUrl = (string) $request->input('url');
+
+        $exists = collect((array) ($sc->claim?->attachments ?? []))
+            ->contains(fn($f) => ($f['url'] ?? '') === $shareUrl);
+
+        abort_unless($exists, 403);
+
+        try {
+            $oneDrive = new OneDriveService();
+            ['url' => $downloadUrl, 'name' => $filename] = $oneDrive->getDownloadInfo($shareUrl);
+
+            $guzzle   = new Client(['allow_redirects' => true]);
+            $response = $guzzle->get($downloadUrl);
+
+            return response($response->getBody()->getContents(), 200, [
+                'Content-Type'        => $response->getHeader('Content-Type')[0] ?? 'application/octet-stream',
+                'Content-Disposition' => "inline; filename=\"{$filename}\"",
+                'Cache-Control'       => 'private, max-age=3600',
+            ]);
+        } catch (\Exception $e) {
+            abort(404);
         }
     }
 }

@@ -343,7 +343,8 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
             )
             : ''),
         'con_status'  => $sale?->conStatus?->name ?? '',
-        'sale'        => $maskSale ? BookingReportQuery::MASKED : ($sale?->saleUser?->name ?? ''),
+        // ใบ Dealer ไม่ผูกฝ่ายขาย → "- (Dealer)" (ดู Salecar::getReportSaleNameAttribute)
+        'sale'        => $maskSale ? BookingReportQuery::MASKED : ($sale?->report_sale_name ?? ''),
         'team'        => $sale?->saleTeam?->name ?? '',
         'bookingDate' => $sale?->format_booking_date ?? '',
         'DeliveryEstimateDate' => $sale?->format_delivery_estimate_date ?? '',
@@ -415,7 +416,7 @@ class BookingByModelSheet implements FromView, WithTitle, WithStyles, WithEvents
           : '',
 
         'con_status'  => $sale->conStatus?->name ?? '',
-        'sale'        => $sale->saleUser?->name ?? '',
+        'sale'        => $sale->report_sale_name ?? '',
         'team'        => $sale->saleTeam?->name ?? '',
         'bookingDate' => $sale->format_booking_date ?? '',
         'DeliveryEstimateDate' => $sale->format_delivery_estimate_date ?? '',

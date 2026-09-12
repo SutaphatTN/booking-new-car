@@ -407,7 +407,8 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         'firmDate' => $r->financeConfirm?->format_firm_date ?? '-',
         'FNDate' => $r->financeConfirm?->format_date ?? '-',
         'customer' => $customerName,
-        'saleName' => optional($r->saleUser)->name ?? '-',
+        // ใบ Dealer ไม่ผูกฝ่ายขาย → "- (Dealer)" (ดู Salecar::getReportSaleNameAttribute)
+        'saleName' => $r->report_sale_name ?? '-',
         'model' => $model,
         'subModel' => $subModel,
         'color' => $color,

@@ -17,7 +17,7 @@
           <i class="bx bx-receipt fs-4 text-white"></i>
         </div>
         <div>
-          <div class="text-white fw-bold mf-hd-title">รายก ารใช้แคมเปญ</div>
+          <div class="text-white fw-bold mf-hd-title">รายการใช้แคมเปญ</div>
           <div class="text-white mf-hd-sub">Campaign Usage (On-Top)</div>
         </div>
       </div>

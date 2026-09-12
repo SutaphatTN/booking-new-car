@@ -47,6 +47,7 @@ use App\Models\TbSubcarmodel;
 use App\Models\TurnCar;
 use App\Models\User;
 use App\Models\TbBranch;
+use App\Models\TbBrand;
 use App\Services\GPQuery;
 use App\Services\SaleCommissionQuery;
 use App\Services\SsiCommissionQuery;
@@ -4698,7 +4699,10 @@ class PurchaseOrderController extends Controller
             ->values()->all();
 
         if ($receiptFiles) {
-            $brandName = config('brand.names.' . $this->commissionBrandOf((int) $data['SaleID'], (int) $data['year'], (int) $data['month']), 'Other');
+            // ชื่อโฟลเดอร์แบรนด์บน OneDrive ต้องมาจาก tb_brand.name (Mitsu/GWM/Wuling/Lepas) เหมือนไฟล์แนบที่อื่น
+            // config('brand.names') เป็นชื่อสำหรับ "แสดงผล" (brand 1 = Mitsubishi) ใช้ตรงนี้แล้วได้โฟลเดอร์ใหม่ซ้อนขึ้นมาอีกอัน
+            $brandId   = $this->commissionBrandOf((int) $data['SaleID'], (int) $data['year'], (int) $data['month']);
+            $brandName = TbBrand::find($brandId)?->name ?? 'Other';
             $folder = "New Car/{$brandName}/Commission/ใบเสร็จประดับยนต์";
             try {
                 $oneDrive = new OneDriveService();

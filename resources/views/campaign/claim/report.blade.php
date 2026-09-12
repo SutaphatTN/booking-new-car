@@ -1,3 +1,7 @@
+@php
+  // คอลัมน์เอกสารแนบต่อท้าย — 1 ไฟล์ = 1 คอลัมน์ เพราะ 1 เซลล์ใส่ hyperlink ได้อันเดียว
+  $maxFiles = $maxFiles ?? 0;
+@endphp
 <table>
   <thead>
     <tr>
@@ -13,6 +17,9 @@
       <th>วันที่รับเงิน</th>
       <th>สรุปผลการตรวจสอบ</th>
       <th>Comment from Internal Audit</th>
+      @for ($i = 1; $i <= $maxFiles; $i++)
+        <th>เอกสาร {{ $i }}</th>
+      @endfor
     </tr>
   </thead>
   <tbody>
@@ -30,10 +37,18 @@
         <td>{{ $r['received_date'] }}</td>
         <td>{{ $r['status'] }}</td>
         <td>{{ $r['note'] }}</td>
+        @for ($i = 0; $i < $maxFiles; $i++)
+          @php $f = $r['files'][$i] ?? null; @endphp
+          <td>
+            @if ($f)
+              <a href="{{ $f['url'] }}">{{ $f['name'] }}</a>
+            @endif
+          </td>
+        @endfor
       </tr>
     @empty
       <tr>
-        <td colspan="12" align="center">ไม่มีข้อมูล</td>
+        <td colspan="{{ 12 + $maxFiles }}" align="center">ไม่มีข้อมูล</td>
       </tr>
     @endforelse
   </tbody>

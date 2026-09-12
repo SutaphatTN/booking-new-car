@@ -591,6 +591,23 @@ class Salecar extends Model
 	}
 
 	/**
+	 * ชื่อผู้ขายสำหรับ "รายงาน" — ใบขาย Dealer ไม่ผูกฝ่ายขาย (SaleID = null โดยตั้งใจ ดู
+	 * PurchaseOrderController::update) ถ้าปล่อยเป็นขีด/ช่องว่างเฉย ๆ คนอ่านรายงานแยกไม่ออกว่า
+	 * "ตั้งใจไม่มีผู้ขาย" หรือ "ข้อมูลตกหล่น" จึงคืน "- (Dealer)" ให้เห็นชัด
+	 *
+	 * คืน null เมื่อไม่มีผู้ขายและไม่ใช่ Dealer — ผู้เรียกใส่ค่าแทนเอง ('-' หรือ '')
+	 * ตามที่รายงานนั้นใช้อยู่เดิม จะได้ไม่ไปเปลี่ยนหน้าตาแถวอื่น
+	 */
+	public function getReportSaleNameAttribute(): ?string
+	{
+		if ($this->saleUser) {
+			return $this->saleUser->name;
+		}
+
+		return $this->isDealerSale() ? '- (Dealer)' : null;
+	}
+
+	/**
 	 * เคสอนุมัติ (brand-aware) — ตรรกะเดียวกับ PurchaseOrderController::approvalCase
 	 *  normal     = งบปกติ
 	 *  b1_manager = brand1/3 เกิน ≤ over_budget → manager (จบ)

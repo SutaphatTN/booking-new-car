@@ -106,7 +106,8 @@ class SaleCarBookingExport implements WithMultipleSheets
                 'id_card'    => $r->customer?->IDNumber ?? '-',
                 'phone'      => $r->customer?->formatted_mobile ?? '-',
                 'address'    => $r->customer?->documentAddress?->short_address ?? '-',
-                'sale' => $r->saleUser?->name ?? '-',
+                // ใบ Dealer ไม่ผูกฝ่ายขาย → "- (Dealer)" (ดู Salecar::getReportSaleNameAttribute)
+                'sale' => $r->report_sale_name ?? '-',
                 'team' => $r->saleTeam?->name ?? '-',
                 'model' => $model,
                 'subModel' => $subModel,
