@@ -164,7 +164,7 @@ class SsiReportExport implements FromView, WithTitle, WithStyles, WithEvents, Sh
                 'timestamp'         => $rec?->created_at?->format('d/m/Y H:i:s') ?? '-',
                 'delivery_date'     => $s->DeliveryDate ? Carbon::parse($s->DeliveryDate)->format('d/m/Y') : '-',
                 'full_name'         => $fullName,
-                'sale_name'         => $s->saleUser?->name ?? '-',
+                'sale_name'         => $s->report_sale_name ?? '-',
                 'model'             => $modelFull,
                 'delivery_location' => $s->delivery_location ?? '-',
                 'delivery_province' => $provinces->get($s->delivery_province)?->name ?? '-',

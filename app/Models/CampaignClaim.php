@@ -17,6 +17,8 @@ class CampaignClaim extends Model
         'claim_amount' => 'float',
         'received_date' => 'date',
         'status_id' => 'int',
+        // ไฟล์แนบบน OneDrive — [['url' => share url, 'name' => ชื่อไฟล์เดิม'], ...]
+        'attachments' => 'array',
     ];
 
     protected $fillable = [
@@ -25,6 +27,7 @@ class CampaignClaim extends Model
         'received_date',
         'status_id',
         'note',
+        'attachments',
         'userZone',
         'brand',
         'branch',

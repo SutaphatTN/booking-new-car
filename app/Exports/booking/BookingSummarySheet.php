@@ -235,7 +235,8 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                                 ($sale->customer->LastName ?? '')
                         )
                         : ''),
-                'sale'        => $maskSale ? BookingReportQuery::MASKED : ($sale?->saleUser?->name ?? ''),
+                // ใบ Dealer ไม่ผูกฝ่ายขาย → "- (Dealer)" (ดู Salecar::getReportSaleNameAttribute)
+                'sale'        => $maskSale ? BookingReportQuery::MASKED : ($sale?->report_sale_name ?? ''),
                 'team'        => $sale?->saleTeam?->name ?? '',
                 'bookingDate' => $sale?->format_booking_date ?? '',
                 'status'      => $sale?->conStatus?->name ?? '',

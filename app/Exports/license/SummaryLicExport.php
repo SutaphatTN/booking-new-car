@@ -131,7 +131,7 @@ class SummaryLicExport implements FromView, WithTitle, WithStyles, WithEvents, S
                     ($r->saleCarLic?->customer?->LastName ?? '')
             );
 
-            $nameSale = $r?->saleCarLic?->saleUser?->name ?? '';
+            $nameSale = $r?->saleCarLic?->report_sale_name ?? '';
             $statusType = [
                 'cash' => 'เงินสด',
                 'transfer' => 'โอน',

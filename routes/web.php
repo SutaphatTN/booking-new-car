@@ -259,6 +259,7 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('campaign/claim/report', [CampaignClaimController::class, 'exportReport'])->name('campaign.claim.report');
     Route::get('campaign/claim/{id}/edit', [CampaignClaimController::class, 'editClaim'])->name('campaign.claim.edit');
     Route::post('campaign/claim/{id}/update', [CampaignClaimController::class, 'updateClaim'])->name('campaign.claim.update');
+    Route::get('campaign/claim/{id}/proxy/{filename?}', [CampaignClaimController::class, 'proxyFile'])->name('campaign.claim.proxy')->where('filename', '[^/]+');
     //name campaign
     Route::get('campaign/appellation', [CampaignController::class, 'viewAppellation'])->name('campaign.appellation');
     Route::get('campaign/appellation/list', [CampaignController::class, 'listAppellation']);

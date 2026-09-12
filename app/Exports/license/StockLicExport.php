@@ -129,7 +129,7 @@ class StockLicExport implements FromView, WithTitle, WithStyles, WithEvents, Sho
                         ($history->saleCarLic?->customer?->LastName ?? '')
                 ) : '';
 
-            $nameSale = $history?->saleCarLic?->saleUser?->name ?? '';
+            $nameSale = $history?->saleCarLic?->report_sale_name ?? '';
 
             // สถานะข้ามแบรนด์ = การยืมที่ยังไม่คืน (+ แบรนด์ที่ผูกงานขายอยู่ ถ้าต่างจากเจ้าของ)
             $usedBy = [];

@@ -171,7 +171,8 @@ class MonthlyDeliveryExport implements FromView, WithTitle, WithStyles, WithEven
             return [
                 'customer'            => $customerName,
                 'address'             => ($r->customer?->documentAddress ?? $r->customer?->currentAddress)?->full_address ?? '',
-                'sale'                => $r->saleUser?->name ?? '-',
+                // ใบ Dealer ไม่ผูกฝ่ายขาย → "- (Dealer)" (ดู Salecar::getReportSaleNameAttribute)
+                'sale'                => $r->report_sale_name ?? '-',
                 'team'                => $r->saleTeam?->name ?? '-',
                 'model'               => $model,
                 'subModel'            => $subModel,
