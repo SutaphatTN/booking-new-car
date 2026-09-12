@@ -1612,7 +1612,12 @@ class CarOrderController extends Controller
         $cash = $saleCar->CashDeposit;
         $query = TbCarmodel::query();
 
-        if ($saleCar->payment_mode === 'finance') {
+        // ขาย Dealer — ไม่ใช่ลูกค้ารายย่อย ไม่มีเงินจอง/ใบ PO และไม่คิดเงินจองขั้นต่ำ
+        // → ข้ามด่านเงินจอง/PO Number และไม่กรองรุ่นตาม money_min (ใบ Dealer ส่วนใหญ่เงินจอง = 0
+        //   รุ่นของ brand 1 ที่ตั้ง money_min ไว้ 5,000-10,000 จะถูกกรองออกหมดจนผูกรถไม่ได้)
+        $isDealerSale = $saleCar->isDealerSale();
+
+        if ($saleCar->payment_mode === 'finance' && !$isDealerSale) {
 
             if (!$saleCar->reservationPayment) {
                 return response()->json([
@@ -1633,17 +1638,22 @@ class CarOrderController extends Controller
         }
 
         // กรองรุ่นตามเงินจองขั้นต่ำ — รุ่นที่ไม่ได้ตั้ง money_min ถือว่าผ่านเงื่อนไข
-        $query->where(function ($q) use ($cash) {
-            $q->whereNull('money_min')
-                ->orWhere('money_min', '<=', (float) $cash);
-        });
+        if (!$isDealerSale) {
+            $query->where(function ($q) use ($cash) {
+                $q->whereNull('money_min')
+                    ->orWhere('money_min', '<=', (float) $cash);
+            });
+        }
 
         $models = $query->select('id', 'Name_TH')->get();
 
         if ($models->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'เงินจองไม่ถึงเงื่อนไขที่กำหนด'
+                // Dealer ไม่ได้กรองด้วยเงินจอง → ว่างแปลว่าไม่มีรุ่นให้เลือกจริง ๆ ไม่ใช่เงินจองไม่ถึง
+                'message' => $isDealerSale
+                    ? 'ไม่พบรุ่นรถในระบบ'
+                    : 'เงินจองไม่ถึงเงื่อนไขที่กำหนด'
             ]);
         }
 
