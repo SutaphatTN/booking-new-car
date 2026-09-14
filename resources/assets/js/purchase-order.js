@@ -603,6 +603,13 @@ $(document).ready(function () {
     if (d.length > 7) p.push(d.substring(7, 10));
     return p.join('-');
   }
+  // ล้างเลขบัตร/พาสปอร์ตให้เหลือแต่ตัวเลข-ตัวอักษร ตรงกับ Customer::normalizeIdNumber() ฝั่ง server
+  function normalizeIdPO(v) {
+    return String(v || '')
+      .replace(/[^A-Za-z0-9]/g, '')
+      .toUpperCase();
+  }
+
   function fmtIDPO(v) {
     // พาสปอร์ตต่างชาติ (มีตัวอักษร) ห้ามฟอร์แมต — ดู formatIDCard ใน customer.js
     if (/[A-Za-z]/.test(v)) {
@@ -684,7 +691,11 @@ $(document).ready(function () {
     $('#ccpo_post_id').val(opt.data('post-id') || '');
   });
 
+  // เลขบัตรเดิมของลูกค้ารายนี้ (normalize แล้ว) — ใช้ยกเว้นการตรวจเมื่อเซลไม่ได้แก้ช่องนี้
+  let _ccpoOriginalId = '';
+
   function openCompleteModal(profile) {
+    _ccpoOriginalId = normalizeIdPO(profile.id_number || '');
     $('#ccpo_prefix').val(profile.prefix_id || '');
     $('#ccpo_first_name').val(profile.first_name || '');
     $('#ccpo_last_name').val(profile.last_name || '');
@@ -894,8 +905,32 @@ $(document).ready(function () {
       Swal.fire({ icon: 'warning', title: 'กรอกชื่อ', text: 'กรุณากรอกชื่อลูกค้า' });
       return;
     }
-    if (idNumber.replace(/\D/g, '').length !== 13) {
-      Swal.fire({ icon: 'warning', title: 'เลขบัตรไม่ถูกต้อง', text: 'กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก' });
+    // กติกาเดียวกับ Customer::idNumberError() ฝั่ง server — แก้ที่นั่นแล้วต้องแก้ที่นี่ด้วย
+    // รวมถึงข้อยกเว้น "ค่าเดิมไม่ตรวจ" ไม่งั้นฝั่งนี้จะเด้งก่อนที่ server จะได้ยกเว้นให้
+    const idClean = normalizeIdPO(idNumber);
+    const idUnchanged = idClean !== '' && idClean === _ccpoOriginalId;
+
+    if (idUnchanged) {
+      // ข้ามการตรวจ — ลูกค้าเก่าที่เลขเพี้ยนมาแต่เดิมยังแก้ที่อยู่/เบอร์ได้
+    } else if (/^\d{13}$/.test(idClean)) {
+      // หลักตรวจสอบบัตรไทย : 12 หลักแรก x น้ำหนัก 13..2 แล้ว (11 - ผลรวม % 11) % 10 ต้องเท่าหลักสุดท้าย
+      let sum = 0;
+      for (let i = 0; i < 12; i++) sum += Number(idClean[i]) * (13 - i);
+
+      if ((11 - (sum % 11)) % 10 !== Number(idClean[12])) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'เลขบัตรไม่ถูกต้อง',
+          text: 'เลขบัตรประชาชนไม่ถูกต้อง — กรุณาตรวจสอบเลขกับบัตรอีกครั้ง'
+        });
+        return;
+      }
+    } else if (!/^(?=.*[A-Z])[A-Z0-9]{6,17}$/.test(idClean)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'เลขบัตรไม่ถูกต้อง',
+        text: 'กรอกเลขบัตรประชาชนให้ครบ 13 หลัก หรือกรอกเลขพาสปอร์ต (ตัวอักษรผสมตัวเลข 6-17 ตัว)'
+      });
       return;
     }
     if (phone.replace(/\D/g, '').length < 9) {

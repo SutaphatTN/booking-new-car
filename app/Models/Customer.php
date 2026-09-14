@@ -163,6 +163,60 @@ class Customer extends Model
 		return $clean === '' ? null : strtoupper($clean);
 	}
 
+	/** ข้อความแจ้งเตือนมาตรฐานเมื่อเลขบัตร/พาสปอร์ตผิดรูปแบบ — ใช้ให้ตรงกันทุกด่าน */
+	public const ID_NUMBER_ERROR = 'เลขบัตรประชาชนต้องมี 13 หลัก หรือกรอกเลขพาสปอร์ต (ตัวอักษรผสมตัวเลข 6-17 ตัว)';
+
+	/** เลขครบ 13 หลักแต่หลักตรวจสอบไม่ตรง = พิมพ์ผิด ต้องบอกให้ต่างจาก "กรอกไม่ครบ" ไม่งั้นเซลนับเลขซ้ำแล้วซ้ำอีก */
+	public const ID_NUMBER_CHECKSUM_ERROR = 'เลขบัตรประชาชนไม่ถูกต้อง — กรุณาตรวจสอบเลขกับบัตรอีกครั้ง';
+
+	/**
+	 * ตรวจรูปแบบเลขบัตร/พาสปอร์ต — คืนข้อความแจ้งเตือน หรือ null ถ้าผ่าน
+	 *
+	 * รับ 2 แบบเท่านั้น
+	 *   บัตรประชาชน/นิติบุคคลไทย = ตัวเลขล้วน 13 หลัก + หลักตรวจสอบ (mod 11) ต้องตรง
+	 *   พาสปอร์ตต่างชาติ        = มีตัวอักษรอย่างน้อย 1 ตัว ยาว 6-17 ตัว (ไม่มีสูตรตรวจสอบสากล)
+	 *
+	 * ค่าว่างถือว่าผ่าน — ลูกค้าส่วนใหญ่เข้าระบบทางด่านติดตามโดยยังไม่มีเลขบัตร
+	 * ช่องนี้จึงต้องเป็น optional ตลอดไป ("ว่างได้ แต่ถ้ากรอกต้องถูก")
+	 *
+	 * ส่งค่าที่ผ่าน normalizeIdNumber() มาแล้วเท่านั้น (ไม่งั้นขีดคั่นจะทำให้ไม่ผ่าน)
+	 */
+	public static function idNumberError(?string $normalized): ?string
+	{
+		if ($normalized === null || $normalized === '') {
+			return null;
+		}
+
+		if (preg_match('/^\d{13}$/', $normalized)) {
+			return self::isValidThaiIdChecksum($normalized) ? null : self::ID_NUMBER_CHECKSUM_ERROR;
+		}
+
+		return preg_match('/^(?=.*[A-Z])[A-Z0-9]{6,17}$/', $normalized) ? null : self::ID_NUMBER_ERROR;
+	}
+
+	public static function isValidIdNumber(?string $normalized): bool
+	{
+		return self::idNumberError($normalized) === null;
+	}
+
+	/**
+	 * หลักตรวจสอบบัตรประชาชน/เลขผู้เสียภาษีไทย
+	 * เอา 12 หลักแรกคูณน้ำหนัก 13..2 รวมกัน แล้ว (11 - ผลรวม % 11) % 10 ต้องเท่าหลักที่ 13
+	 */
+	public static function isValidThaiIdChecksum(string $digits): bool
+	{
+		if (!preg_match('/^\d{13}$/', $digits)) {
+			return false;
+		}
+
+		$sum = 0;
+		for ($i = 0; $i < 12; $i++) {
+			$sum += (int) $digits[$i] * (13 - $i);
+		}
+
+		return (11 - ($sum % 11)) % 10 === (int) $digits[12];
+	}
+
 	/**
 	 * ล้างค่าช่องติดต่อ (LineID / Facebook) — คืน null ถ้าเป็นค่าที่แปลว่า "ไม่มีข้อมูล"
 	 *
