@@ -3743,13 +3743,19 @@ class PurchaseOrderController extends Controller
 
         // รับได้ 2 แบบ: บัตรประชาชนไทย 13 หลัก หรือพาสปอร์ตต่างชาติที่มีตัวอักษรปน
         // (เดิมบังคับ 13 หลักอย่างเดียว ลูกค้าต่างชาติเลยออกใบจองไม่ได้)
-        $isThaiId   = (bool) preg_match('/^\d{13}$/', (string) $idNumber);
-        $isPassport = (bool) preg_match('/^(?=.*[A-Z])[A-Z0-9]{6,17}$/', (string) $idNumber);
+        // ด่านนี้บังคับกรอก ต่างจากด่านอื่นที่ปล่อยว่างได้ — idNumberError() ปล่อย null ผ่าน จึงต้องเช็คเอง
+        //
+        // ตรวจรูปแบบ/หลักตรวจสอบเฉพาะตอนที่แก้เป็นค่าใหม่ เหมือนหน้าแก้ไขลูกค้า
+        // ลูกค้าเก่าที่เลขติดมาเพี้ยนแต่เดิมยังแก้ที่อยู่/เบอร์เพื่อออกเอกสารได้ ไม่ติดตายกลางทาง
+        $currentIdNumber = Customer::normalizeIdNumber(
+            Customer::withTrashed()->where('id', $request->customer_id)->value('IDNumber')
+        );
+        $idError = $idNumber === $currentIdNumber ? null : Customer::idNumberError($idNumber);
 
-        if (!$isThaiId && !$isPassport) {
+        if (!$idNumber || $idError) {
             return response()->json([
                 'success' => false,
-                'message' => 'เลขบัตรประชาชนต้องมี 13 หลัก หรือกรอกเลขพาสปอร์ต (ตัวอักษรผสมตัวเลข 6-17 ตัว)'
+                'message' => $idError ?? Customer::ID_NUMBER_ERROR
             ], 422);
         }
 

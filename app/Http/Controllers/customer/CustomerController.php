@@ -55,6 +55,13 @@ class CustomerController extends Controller
 
             $idNumber = Customer::normalizeIdNumber($request->IDNumber);
 
+            if ($idError = Customer::idNumberError($idNumber)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $idError
+                ], 422);
+            }
+
             if ($idNumber) {
                 $exists = Customer::where('IDNumber', $idNumber)->exists();
 
@@ -286,6 +293,20 @@ class CustomerController extends Controller
             // กันข้อมูลซ้ำ (ยกเว้นตัวเอง) — เบอร์โทรมี unique index ใน DB, เลขบัตรเป็น business rule
             $idNumber     = Customer::normalizeIdNumber($request->IDNumber);
             $mobilephone1 = preg_replace('/\D/', '', $request->Mobilephone1);
+
+            // ตรวจรูปแบบเฉพาะตอนที่ "แก้ค่าใหม่" เท่านั้น
+            // ลูกค้าเก่าบางรายมีเลขเพี้ยนติดมาแต่เดิม (เช่นต่างชาติที่โดนบั๊กฟอร์แมตเก่ากินตัวอักษรทิ้ง)
+            // ถ้าตรวจทุกครั้ง เซลจะแก้ชื่อ/ที่อยู่ของคนพวกนี้ไม่ได้เลย ทั้งที่ไม่ได้แตะช่องเลขบัตร
+            $idChanged = $idNumber !== Customer::normalizeIdNumber(
+                Customer::withTrashed()->where('id', $id)->value('IDNumber')
+            );
+
+            if ($idChanged && ($idError = Customer::idNumberError($idNumber))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $idError
+                ], 422);
+            }
 
             if ($idNumber && Customer::where('IDNumber', $idNumber)->where('id', '!=', $id)->exists()) {
                 return response()->json([

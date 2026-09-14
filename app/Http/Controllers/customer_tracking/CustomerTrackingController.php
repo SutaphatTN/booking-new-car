@@ -1333,6 +1333,10 @@ class CustomerTrackingController extends Controller
         $lineId   = Customer::normalizeContactValue($request->LineID);
         $facebook = Customer::normalizeContactValue($request->FacebookName);
 
+        if ($idError = Customer::idNumberError($idNumber)) {
+            return response()->json(['success' => false, 'message' => $idError], 422);
+        }
+
         if ($idNumber) {
             $idExists = Customer::where('IDNumber', $idNumber)->exists();
             if ($idExists) {
