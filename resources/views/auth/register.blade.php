@@ -90,14 +90,10 @@
               <label for="role" class="form-label">Role</label>
               <select id="role" name="role" class="form-select" required>
                 <option value="">-- เลือก Role --</option>
-                <option value="sale">Sale</option>
-                <option value="audit">Audit</option>
-                <option value="account">Account</option>
-                <option value="registration">Registration</option>
-                <option value="bp">BP</option>
-                <option value="cs">CS</option>
-                <option value="manager">Manager</option>
-                <option value="md">MD</option>
+                {{-- รายการ role มาจาก User::ROLE_LABELS ที่เดียว — เพิ่ม role ใหม่ที่ model แล้วที่นี่ขึ้นเอง --}}
+                @foreach (\App\Models\User::ROLE_LABELS as $value => $label)
+                  <option value="{{ $value }}">{{ $label }}</option>
+                @endforeach
               </select>
             </div>
 

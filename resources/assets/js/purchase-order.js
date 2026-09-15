@@ -2660,43 +2660,9 @@ $(document).ready(function () {
       return;
     }
 
-    // เลือกป้ายแดงแล้ว ต้องกรอก "วันที่ลูกค้าจ่ายเงิน (ค่าป้ายแดง)" — บังคับทุกครั้งที่บันทึก
-    // ไม่ผูกกับสถานะ (ต่างจากด่านป้ายแดงข้างบนที่ดักเฉพาะตอนจะส่งมอบ) ; server ดักซ้ำอีกชั้นใน update()
-    // เปลี่ยนเลขป้ายทีหลัง ช่องวันยังคงค่าเดิมที่เคยกรอกไว้ ไม่ต้องกรอกใหม่
-    if ($('#red_license').length && $('#red_license').val() && !$('#red_license_pay_date').val()) {
-      const payTabId = $('#red_license_pay_date').closest('.tab-pane').attr('id');
-      if (payTabId) $(`[data-bs-target="#${payTabId}"], [href="#${payTabId}"]`).tab('show');
-
-      Swal.fire({
-        icon: 'warning',
-        title: 'กรุณาระบุวันที่ลูกค้าจ่ายเงิน',
-        text: 'เลือกป้ายแดงแล้ว ต้องกรอกวันที่ลูกค้าจ่ายเงิน (ค่าป้ายแดง) ด้วย'
-      }).then(() => {
-        $('#red_license_pay_date')[0]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        $('#red_license_pay_date').trigger('focus');
-      });
-      return;
-    }
-
-    // และต้องมีหลักฐานการโอนเงินอย่างน้อย 1 ไฟล์ — ไฟล์ที่แนบไว้แล้ว (#redSlipCount) ก็นับ
-    // ไม่ต้องแนบใหม่ทุกครั้งที่กดบันทึก ; server ดักซ้ำอีกชั้นด้วยกติกาเดียวกัน
-    const redSlipSaved = parseInt($('#redSlipCount').val() || '0', 10);
-    const redSlipPicked = $('#red_license_slips')[0]?.files?.length || 0;
-
-    if ($('#red_license').length && $('#red_license').val() && !redSlipSaved && !redSlipPicked) {
-      const slipTabId = $('#red_license_slips').closest('.tab-pane').attr('id');
-      if (slipTabId) $(`[data-bs-target="#${slipTabId}"], [href="#${slipTabId}"]`).tab('show');
-
-      Swal.fire({
-        icon: 'warning',
-        title: 'กรุณาแนบหลักฐานการโอนเงิน',
-        text: 'เลือกป้ายแดงแล้ว ต้องแนบสลิป/ไฟล์หลักฐานการโอนเงินค่าป้ายแดงอย่างน้อย 1 ไฟล์'
-      }).then(() => {
-        $('#red_license_slips')[0]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        $('#red_license_slips').trigger('focus');
-      });
-      return;
-    }
+    // หมายเหตุ : "วันที่ลูกค้าจ่ายเงิน" กับ "หลักฐานการโอนเงิน" ของค่าป้ายแดง ไม่บังคับกรอกที่หน้านี้
+    // (เคยบังคับ — ถอดออกแล้ว เพราะหน้าป้ายแดงมีด่านตอน "ยืนยันการจ่ายเงินจริง" ดักให้อยู่แล้ว
+    //  ดู LicensePlateHistory::approveFinanceMissing())
 
     // ฟิล์มที่เพิ่งเพิ่มในหน้านี้ ต้องมีหมายเหตุ (ความเข้ม/ตำแหน่งที่ติด)
     // แถวเก่าที่บันทึกไว้ก่อนมีฟีเจอร์นี้ไม่บล็อก — ไม่งั้นจะแก้ใบเดิมไม่ได้
@@ -5116,30 +5082,8 @@ $(document).on('click', '.btnSaveRedPlate', function () {
   const id = $('#rp_sale_id').val();
   const plate = $('#rp_red_license').val() || '';
   const payDate = $('#rp_pay_date').val() || '';
-
-  // มีป้ายแดง = ต้องมีวันที่ลูกค้าจ่ายเงิน (ฝั่ง server ดักซ้ำอีกชั้นใน updateRedPlate)
-  // นำป้ายออก = ไม่บังคับ และวันเดิมยังถูกเก็บไว้ ถ้าใส่ป้ายใหม่ทีหลังจะเห็นวันเดิมขึ้นมาให้
-  if (plate && !payDate) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'กรุณาระบุวันที่ลูกค้าจ่ายเงิน',
-      text: 'เลือกป้ายแดงแล้ว ต้องกรอกวันที่ลูกค้าจ่ายเงิน (ค่าป้ายแดง) ด้วย'
-    }).then(() => $('#rp_pay_date').trigger('focus'));
-    return;
-  }
-
-  // และต้องมีหลักฐานการโอนเงินอย่างน้อย 1 ไฟล์ — ไฟล์ที่แนบไว้แล้วก็นับ
-  const slipSaved = parseInt($('#rp_slip_count').val() || '0', 10);
+  // วันที่ลูกค้าจ่ายเงิน / หลักฐานการโอนเงิน ไม่บังคับที่หน้านี้ — หน้าป้ายแดงดักตอนยืนยันการจ่ายเงินจริงอยู่แล้ว
   const slipFiles = $('#rp_slips')[0]?.files ?? [];
-
-  if (plate && !slipSaved && !slipFiles.length) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'กรุณาแนบหลักฐานการโอนเงิน',
-      text: 'เลือกป้ายแดงแล้ว ต้องแนบสลิป/ไฟล์หลักฐานการโอนเงินค่าป้ายแดงอย่างน้อย 1 ไฟล์'
-    }).then(() => $('#rp_slips').trigger('focus'));
-    return;
-  }
 
   $btn.prop('disabled', true);
 
@@ -5503,11 +5447,6 @@ bindFilePreviews([
   ['red_license_slips', 'redSlipPreview'],
   ['rp_slips', 'rp_slip_preview']
 ]);
-
-// ลบไฟล์หลักฐานโอนเงินค่าป้ายแดงแล้ว → อัปเดตตัวนับที่ด่าน "มีป้ายแดงต้องมีหลักฐาน" ใช้อ่าน
-$(document).on('fc:removed', '#redSlipList, #rpSlipList', function (e, info) {
-  $('#redSlipCount, #rp_slip_count').val(info.remaining);
-});
 
 // ลบไฟล์หลักฐานการจองแล้ว หัวข้อ "ไฟล์ที่แนบแล้ว" ต้องหายไปด้วยถ้าไม่เหลือไฟล์
 $(document).on('fc:removed', '#existingAttachments', function (e, info) {

@@ -2434,7 +2434,8 @@
                                   </div>
                                 </div>
 
-                                {{-- วันที่ลูกค้าจ่ายเงินค่าป้ายแดง — บังคับกรอกเมื่อมีป้ายแดง (ดักทั้ง JS และฝั่ง server)
+                                {{-- วันที่ลูกค้าจ่ายเงินค่าป้ายแดง — ไม่บังคับที่หน้านี้
+                                     (หน้าป้ายแดงดักตอน "ยืนยันการจ่ายเงินจริง" อยู่แล้ว)
                                      เปลี่ยนเลขป้ายทีหลัง ค่าวันเดิมยังอยู่ ไม่ต้องกรอกใหม่ --}}
                                 <div class="col-md-4">
                                   <div class="date-card">
@@ -2455,7 +2456,7 @@
 
                                 {{-- หลักฐานการโอนเงินค่าป้ายแดง — ไฟล์ขึ้น OneDrive
                                      New Car/{แบรนด์}/ป้ายแดง/หลักฐานลูกค้าโอนเงิน/{id-ชื่อลูกค้า}
-                                     บังคับให้มีอย่างน้อย 1 ไฟล์เมื่อเลือกป้ายแดง (ดักทั้ง JS และ server) --}}
+                                     ไม่บังคับที่หน้านี้ — ด่านจริงอยู่ที่หน้าป้ายแดงตอนยืนยันการจ่ายเงินจริง --}}
                                 <div class="col-12">
                                   <div class="date-card" style="align-items:flex-start;">
                                     <div class="date-card-icon pink">
@@ -2481,10 +2482,7 @@
                                         </div>
                                       @endif
 
-                                      {{-- มีไฟล์แล้วหรือยัง — JS ใช้ตัดสินว่าต้องบังคับแนบไฟล์ใหม่ไหม --}}
-                                      <input type="hidden" id="redSlipCount" value="{{ count($redSlips) }}">
-
-                                      <input id="red_license_slips" type="file" class="form-control"
+                                                                            <input id="red_license_slips" type="file" class="form-control"
                                         name="red_license_slips[]" accept=".pdf,.jpg,.jpeg,.png" multiple
                                         {{ $disabled }}>
                                       <small class="text-muted mt-1 d-block" style="font-size:.72rem;">

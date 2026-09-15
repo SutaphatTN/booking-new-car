@@ -1,5 +1,7 @@
 @php
   $user = auth()->user();
+  // role ดูอย่างเดียว (insurance_reg) — เห็นแต่ปุ่มดูข้อมูล ไม่มีปุ่มแก้ไข/ยืนยันการจ่ายเงิน
+  $viewOnly = $user->isRegistrationViewOnly();
 @endphp
 
 @if ($history)
@@ -7,15 +9,17 @@
     {{ $history ? '' : 'disabled' }}>
     <i class="bx bx-show"></i>
   </button>
-  <button class="btn btn-icon btn-warning btnEditLicense" data-id="{{ $history?->id }}" title="แก้ไข"
-    {{ $history ? '' : 'disabled' }}>
-    <i class="bx bx-edit"></i>
-  </button>
+  @unless ($viewOnly)
+    <button class="btn btn-icon btn-warning btnEditLicense" data-id="{{ $history?->id }}" title="แก้ไข"
+      {{ $history ? '' : 'disabled' }}>
+      <i class="bx bx-edit"></i>
+    </button>
+  @endunless
 
   @if ($history?->finance_approved)
     {{-- <span class="badge bg-success">อนุมัติแล้ว</span> --}}
   @else
-    @if (in_array(auth()->user()->role, ['account', 'admin', 'audit', 'audit_lead', 'audit_dp', 'gm']))
+    @if (!$viewOnly && in_array(auth()->user()->role, ['account', 'admin', 'audit', 'audit_lead', 'audit_dp', 'gm']))
       {{-- ข้อมูลที่ยังกรอกไม่ครบ ส่งไปกับปุ่ม เพื่อดักตั้งแต่ก่อนเปิด dialog ยืนยัน
            (ฝั่ง server ดักซ้ำด้วยกติกาชุดเดียวกันใน approveFinance) --}}
       @php $approveMissing = $history->approveFinanceMissing(); @endphp

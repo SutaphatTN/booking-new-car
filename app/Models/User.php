@@ -207,6 +207,44 @@ class User extends Authenticatable
 		return $ids;
 	}
 
+	/**
+	 * role ทั้งหมดในระบบ + ชื่อที่โชว์ให้คนอ่าน
+	 * ใช้ร่วมกันทั้งหน้า "ลงทะเบียน" และ "รายชื่อผู้ใช้งาน" (และ validate ฝั่ง server ของทั้งคู่)
+	 * เพิ่ม role ใหม่ที่นี่ที่เดียว ทั้ง 2 หน้าจะมีให้เลือกเอง
+	 */
+	public const ROLE_LABELS = [
+		'admin'          => 'Admin — ผู้ดูแลระบบ',
+		'md'             => 'MD',
+		'gm'             => 'GM',
+		'manager'        => 'Manager — ผู้จัดการ',
+		'sale'           => 'Sale — ฝ่ายขาย',
+		'lead_sale'      => 'Lead Sale — หัวหน้าฝ่ายขาย',
+		'adminPage'      => 'Admin Page — แอดมินเพจ',
+		'audit'          => 'Audit — ตรวจสอบ',
+		'audit_lead'     => 'Audit Lead — หัวหน้าตรวจสอบ',
+		'audit_dp'       => 'Audit DP',
+		'audit_internal' => 'Audit Internal — ตรวจสอบภายใน',
+		'account'        => 'Account — บัญชี',
+		'registration'   => 'Registration — ทะเบียน',
+		'insurance_reg'  => 'Insurance Reg — ทะเบียน/ประกัน (ดูอย่างเดียว)',
+		'marketing'      => 'Marketing — การตลาด',
+		'cro'            => 'CRO — ลูกค้าสัมพันธ์',
+		'bp'             => 'BP',
+		'cs'             => 'CS',
+		'sp'             => 'SP',
+	];
+
+	/**
+	 * role ที่เข้าเมนู "ทะเบียน" ได้แบบดูอย่างเดียว — กดแก้ไข/ส่งเบิก/ยืนยันอะไรไม่ได้เลย
+	 * เห็นได้แค่หน้าข้อมูลกับปุ่มออกรายงาน (ทั้งหน้าป้ายทะเบียนและป้ายแดง)
+	 */
+	public const REGISTRATION_VIEW_ONLY_ROLES = ['insurance_reg'];
+
+	public function isRegistrationViewOnly(): bool
+	{
+		return in_array($this->role, self::REGISTRATION_VIEW_ONLY_ROLES, true);
+	}
+
 	/** role ที่ย้ายลูกค้าไปให้เซลล์คนอื่นได้ (แก้ผู้ขายบนใบจอง + บนการติดตาม) */
 	public const REASSIGN_SALE_ROLES = ['admin', 'manager', 'audit', 'audit_lead', 'audit_dp', 'gm'];
 

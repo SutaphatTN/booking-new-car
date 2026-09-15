@@ -41,8 +41,10 @@
 
           {{-- ── Action bar ── --}}
           @php
-            $canLoan = in_array(auth()->user()->role, config('brand.plate_loan_roles', []));
-            $canManage = in_array(auth()->user()->role, config('brand.plate_manage_roles', []));
+            // role ดูอย่างเดียว (insurance_reg) — ตัดสิทธิ์ยืม/จัดการป้ายออกทั้งหมด เหลือแค่ดูกับรายงาน
+            $viewOnly = auth()->user()->isRegistrationViewOnly();
+            $canLoan = !$viewOnly && in_array(auth()->user()->role, config('brand.plate_loan_roles', []));
+            $canManage = !$viewOnly && in_array(auth()->user()->role, config('brand.plate_manage_roles', []));
             $userBrand = auth()->user()->brand;
             $brandNames = config('brand.names', []);
           @endphp

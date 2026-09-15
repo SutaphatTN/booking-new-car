@@ -70,6 +70,12 @@
         @continue
       @endif
 
+      {{-- role insurance_reg เห็นแค่เมนูทะเบียน และเข้าได้แบบดูอย่างเดียว (ดู User::REGISTRATION_VIEW_ONLY_ROLES) --}}
+      @if ($userRole === 'insurance_reg' &&
+          empty(array_intersect(is_array($menu->slug) ? $menu->slug : [$menu->slug], ['vehicle'])))
+        @continue
+      @endif
+
       {{-- registration เห็นแค่เมนูทะเบียน + ค่าคอมมิชชั่น (มีสิทธิ์รับคอมฝ่ายสนับสนุน) --}}
       @if ($userRole == 'registration' &&
           empty(array_intersect(is_array($menu->slug) ? $menu->slug : [$menu->slug], ['vehicle', 'commission'])))

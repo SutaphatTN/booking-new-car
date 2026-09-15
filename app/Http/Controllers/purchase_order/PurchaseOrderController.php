@@ -2154,29 +2154,9 @@ class PurchaseOrderController extends Controller
                 ], 422);
             }
 
-            // มีป้ายแดง = ต้องมี "วันที่ลูกค้าจ่ายเงิน" เสมอ (ไม่ผูกกับสถานะ — บังคับทุกครั้งที่บันทึก)
-            // ใช้ค่าที่จะบันทึกจริงทั้งคู่ ; role ที่ไม่มีการ์ดป้ายแดงในฟอร์มจะได้ค่าเดิมทั้งคู่ จึงไม่โดนดักซ้ำ
-            // ดักเฉพาะฟอร์มที่ส่งการ์ดป้ายแดงมาจริง — ใบเก่าที่มีป้ายแต่ยังไม่เคยกรอกวัน
-            // role ที่ไม่มีช่องนี้ให้กรอกจะได้บันทึกฟิลด์อื่นต่อได้ตามปกติ
-            if ($request->has('red_license') && !empty($effectiveRedLicense) && empty($data['red_license_pay_date'])) {
-                DB::rollBack();
-                return response()->json([
-                    'success' => false,
-                    'message' => 'เลือกป้ายแดงแล้ว ต้องระบุ "วันที่ลูกค้าจ่ายเงิน (ค่าป้ายแดง)" ด้วย',
-                ], 422);
-            }
-
-            // และต้องมี "หลักฐานการโอนเงิน" อย่างน้อย 1 ไฟล์ — ไฟล์เดิมที่แนบไว้แล้วก็นับ
-            // (ไม่ได้บังคับให้แนบใหม่ทุกครั้งที่กดบันทึก)
-            $hasRedSlip = $request->hasFile('red_license_slips')
-                || !empty($saleCar->red_license_slip_url);
-            if ($request->has('red_license') && !empty($effectiveRedLicense) && !$hasRedSlip) {
-                DB::rollBack();
-                return response()->json([
-                    'success' => false,
-                    'message' => 'เลือกป้ายแดงแล้ว ต้องแนบ "หลักฐานการโอนเงิน (ค่าป้ายแดง)" อย่างน้อย 1 ไฟล์',
-                ], 422);
-            }
+            // "วันที่ลูกค้าจ่ายเงิน" กับ "หลักฐานการโอนเงิน" ของค่าป้ายแดง ไม่บังคับที่หน้าใบจอง
+            // (เคยดักไว้ตรงนี้ — ถอดออกแล้ว เพราะหน้าป้ายแดงดักตอน "ยืนยันการจ่ายเงินจริง" อยู่แล้ว
+            //  ดู LicensePlateHistory::approveFinanceMissing() ซึ่งเช็คทั้ง 2 อย่างนี้ครบ)
 
             // ── กันฟอร์มเก่าเขียน "ลายเซ็นอนุมัติ" ที่ถูกล้างไปแล้วกลับมา ──
             // ช่องลายเซ็น 3 ตัวถูก render ตอนเปิดหน้า ถ้าระหว่างที่หน้าเปิดค้างมีคน "ดึงคำขอกลับ" /
@@ -3063,14 +3043,13 @@ class PurchaseOrderController extends Controller
 
         $request->validate([
             'red_license' => ['nullable', Rule::exists('tb_license_plate', 'id')],
-            // มีป้ายแดง = ต้องมี "วันที่ลูกค้าจ่ายเงิน" เสมอ (ด่านเดียวกับหน้าแก้ไขใบจอง)
-            // นำป้ายออก (red_license ว่าง) ไม่ต้องกรอกวัน — required_with จะไม่ทำงานเมื่ออีกช่องว่าง
-            'red_license_pay_date' => ['nullable', 'required_with:red_license', 'date'],
+            // ไม่บังคับกรอกวัน/ไฟล์ที่หน้านี้ — หน้าป้ายแดงดักตอน "ยืนยันการจ่ายเงินจริง" อยู่แล้ว
+            // แต่ถ้ากรอกมา ยังเช็ครูปแบบและชนิดไฟล์ให้เหมือนเดิม
+            'red_license_pay_date' => ['nullable', 'date'],
             'red_license_slips'    => ['nullable', 'array'],
             'red_license_slips.*'  => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
         ], [
             'red_license.exists' => 'ไม่พบป้ายแดงที่เลือก',
-            'red_license_pay_date.required_with' => 'เลือกป้ายแดงแล้ว ต้องระบุ "วันที่ลูกค้าจ่ายเงิน (ค่าป้ายแดง)" ด้วย',
             'red_license_pay_date.date' => 'รูปแบบวันที่ลูกค้าจ่ายเงินไม่ถูกต้อง',
             'red_license_slips.*.mimes' => 'หลักฐานการโอนเงินรองรับเฉพาะไฟล์ PDF, JPG, PNG',
             'red_license_slips.*.max'   => 'ไฟล์หลักฐานการโอนเงินต้องไม่เกิน 10 MB ต่อไฟล์',
@@ -3097,15 +3076,8 @@ class PurchaseOrderController extends Controller
                 }
             }
 
-            // หลักฐานการโอนเงินค่าป้ายแดง — ไฟล์ที่แนบไว้แล้วนับด้วย ไม่ต้องแนบใหม่ทุกครั้ง
+            // หลักฐานการโอนเงินค่าป้ายแดง — ไม่บังคับที่หน้านี้ (หน้าป้ายแดงดักตอนยืนยันการจ่ายเงินจริง)
             $slips = is_array($saleCar->red_license_slip_url) ? $saleCar->red_license_slip_url : [];
-
-            if ($newPlate && !$slips && !$request->hasFile('red_license_slips')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'เลือกป้ายแดงแล้ว ต้องแนบ "หลักฐานการโอนเงิน (ค่าป้ายแดง)" อย่างน้อย 1 ไฟล์',
-                ], 422);
-            }
 
             // อัปโหลดขึ้น OneDrive : New Car/{แบรนด์}/ป้ายแดง/หลักฐานลูกค้าโอนเงิน/{id-ชื่อลูกค้า}
             // ทำนอก transaction — งานอัปโหลดคุยกับ Graph API ช้า ไม่ควรถือ lock ของ DB ค้างไว้
@@ -5240,8 +5212,8 @@ class PurchaseOrderController extends Controller
 
     /**
      * ลบไฟล์หลักฐานโอนเงินค่าป้ายแดงทีละไฟล์ (หน้าแก้ไขใบจอง + โมดัลหน้าประวัติ)
-     * กันลบไฟล์สุดท้ายทิ้งตอนที่ใบยังถือป้ายแดงอยู่ — ไม่งั้นใบจะค้างสถานะ "มีป้ายแต่ไม่มีหลักฐาน"
-     * ซึ่งเป็นสิ่งที่ด่านตอนบันทึกกันไว้ ; ถ้าจะเปลี่ยนไฟล์ให้แนบไฟล์ใหม่ก่อนแล้วค่อยลบของเก่า
+     * ลบไฟล์สุดท้ายทิ้งได้ — ไฟล์นี้ไม่ได้บังคับที่หน้าใบจองแล้ว
+     * (ด่านจริงอยู่ที่หน้าป้ายแดงตอน "ยืนยันการจ่ายเงินจริง")
      */
     public function deleteRedPlateSlip(Request $request, $id)
     {
@@ -5258,12 +5230,6 @@ class PurchaseOrderController extends Controller
             return response()->json(['success' => false, 'message' => 'ไม่พบไฟล์'], 404);
         }
 
-        if (count($slips) === 1 && !empty($saleCar->red_license)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'ใบนี้ยังถือป้ายแดงอยู่ ต้องมีหลักฐานการโอนเงินอย่างน้อย 1 ไฟล์ — ถ้าจะเปลี่ยนไฟล์ ให้แนบไฟล์ใหม่ก่อนแล้วค่อยลบไฟล์เดิม',
-            ], 422);
-        }
 
         array_splice($slips, $index, 1);
         $saleCar->update(['red_license_slip_url' => $slips ?: null]);
