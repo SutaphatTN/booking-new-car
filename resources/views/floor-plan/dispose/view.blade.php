@@ -65,8 +65,12 @@
               <tr>
                 <th class="tbl-th-no">No.</th>
                 <th>VIN Number</th>
+                {{-- ปิดไว้ก่อน เผื่ออยากเอากลับมา — ข้อมูล 2 ตัวนี้ยังดูได้ในโมดัลแก้ไข
                 <th>เลขเครื่อง</th>
                 <th>J Number</th>
+                --}}
+                <th style="width:130px;">วันที่รับ</th>
+                <th style="width:130px;">วันที่ ทบ.เบิก</th>
                 <th style="width:130px;">วันที่ปิด FP</th>
                 <th style="width:100px;">Action</th>
               </tr>
@@ -76,8 +80,12 @@
                 <tr>
                   <td class="text-center">{{ $i + 1 }}</td>
                   <td>{{ $r['vin'] }}</td>
+                  {{-- คู่กับหัวตารางด้านบนที่ปิดไว้
                   <td>{{ $r['engine'] }}</td>
                   <td>{{ $r['jNumber'] }}</td>
+                  --}}
+                  <td class="text-center">{{ $r['receivedText'] }}</td>
+                  <td class="text-center">{{ $r['withdrawText'] }}</td>
                   <td class="text-center">{{ $r['fpCloseText'] }}</td>
                   <td class="text-center">
                     <button type="button" class="btn btn-sm btn-icon btn-warning text-white dp-edit-btn"

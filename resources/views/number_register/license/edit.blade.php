@@ -37,8 +37,7 @@
                     <i class="bx bx-hash ci-sky"></i> เลขป้ายแดง
                   </label>
                   <input id="licenseID" type="text" class="form-control" name="licenseID"
-                    value="{{ $lic->licenseLic?->number ?? '' }}"
-                    style="background:#f8fafc;color:#64748b;" disabled>
+                    value="{{ $lic->licenseLic?->number ?? '' }}" style="background:#f8fafc;color:#64748b;" disabled>
                 </div>
 
                 <div class="col-md-3">
@@ -116,34 +115,45 @@
 
           {{-- Section 3 : เอกสารป้ายแดง --}}
           <div class="mf-section">
-            <div class="mf-section-hd">
+            <div class="mf-section-hd flex-wrap">
               <div class="mf-section-icon emerald">
                 <i class="bx bx-file-blank"></i>
               </div>
               <span class="mf-section-title">เอกสารป้ายแดง</span>
+
+              {{-- คืนครบทุกรายการ = ติ๊กทีเดียวได้ทั้ง 3 ช่อง (เคสลูกค้าคืนของครบ ซึ่งเป็นเคสส่วนใหญ่)
+                   ตัวมันเองไม่ได้ถูกส่งไป server — เป็นแค่สวิตช์คุมช่องจริง 3 ช่องด้านล่าง --}}
+              <label class="ms-auto d-flex align-items-center gap-2 mb-0"
+                style="cursor:pointer;font-size:.82rem;color:#475569;">
+                <input type="checkbox" class="licRedDocAll">
+                คืนครบทุกรายการ
+              </label>
             </div>
             <div class="mf-section-body">
               <div class="row g-2">
 
                 <div class="col-md-4">
-                  <label class="border rounded p-2 d-flex align-items-center gap-2 w-100" style="cursor:pointer;font-size:.82rem;">
-                    <input type="checkbox" name="license_red_front" value="1"
+                  <label class="border rounded p-2 d-flex align-items-center gap-2 w-100"
+                    style="cursor:pointer;font-size:.82rem;">
+                    <input type="checkbox" class="licRedDoc" name="license_red_front" value="1"
                       {{ $lic->license_red_front ? 'checked' : '' }}>
                     ป้ายแดงหน้า
                   </label>
                 </div>
 
                 <div class="col-md-4">
-                  <label class="border rounded p-2 d-flex align-items-center gap-2 w-100" style="cursor:pointer;font-size:.82rem;">
-                    <input type="checkbox" name="license_red_back" value="1"
+                  <label class="border rounded p-2 d-flex align-items-center gap-2 w-100"
+                    style="cursor:pointer;font-size:.82rem;">
+                    <input type="checkbox" class="licRedDoc" name="license_red_back" value="1"
                       {{ $lic->license_red_back ? 'checked' : '' }}>
                     ป้ายแดงหลัง
                   </label>
                 </div>
 
                 <div class="col-md-4">
-                  <label class="border rounded p-2 d-flex align-items-center gap-2 w-100" style="cursor:pointer;font-size:.82rem;">
-                    <input type="checkbox" name="license_red_book" value="1"
+                  <label class="border rounded p-2 d-flex align-items-center gap-2 w-100"
+                    style="cursor:pointer;font-size:.82rem;">
+                    <input type="checkbox" class="licRedDoc" name="license_red_book" value="1"
                       {{ $lic->license_red_book ? 'checked' : '' }}>
                     สมุดป้ายแดง
                   </label>
@@ -164,7 +174,20 @@
             <div class="mf-section-body">
               <div class="row g-3">
 
-                <div class="col-md-4">
+                {{-- วันที่ลูกค้าจ่ายเงินค่าป้ายแดง — เก็บอยู่บนใบขาย (salecars.red_license_pay_date)
+                     ไม่ใช่บน license_plate_history ; แก้จากหน้านี้ได้ คอนโทรลเลอร์เขียนกลับไปที่ใบขายให้
+                     ใบที่ยังไม่ผูกใบขาย (ไม่มี saleCarLic) ช่องนี้จะกรอกไม่ได้ --}}
+                <div class="col-md-3">
+                  <label for="red_license_pay_date" class="mf-label form-label">
+                    <i class="bx bx-calendar-check ci-amber"></i> วันที่ลูกค้าจ่ายเงิน
+                  </label>
+                  <input id="red_license_pay_date" name="red_license_pay_date" type="date" class="form-control"
+                    value="{{ $lic->saleCarLic?->red_license_pay_date ? \Illuminate\Support\Carbon::parse($lic->saleCarLic->red_license_pay_date)->format('Y-m-d') : '' }}"
+                    {{ $lic->saleCarLic ? '' : 'disabled' }}>
+                  <div class="form-text">ค่าป้ายแดงที่ลูกค้าจ่าย</div>
+                </div>
+
+                <div class="col-md-3">
                   <label for="cust_refund_date" class="mf-label form-label">
                     <i class="bx bx-calendar ci-amber"></i> วันที่คืนเงินลูกค้า
                   </label>
@@ -172,7 +195,7 @@
                     value="{{ $lic->cust_refund_date ?? '' }}">
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label for="refund_amount" class="mf-label form-label">
                     <i class="bx bx-coin ci-amber"></i> ยอดคืนเงิน
                   </label>
@@ -184,7 +207,7 @@
                   </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label for="type_refund" class="mf-label form-label">
                     <i class="bx bx-transfer ci-amber"></i> ประเภท
                   </label>
@@ -195,11 +218,80 @@
                   </select>
                 </div>
 
+                {{-- หมายเหตุ — ขึ้นก่อนบล็อกไฟล์แนบ (การ์ดไฟล์สูงไม่เท่ากัน ถ้าอยู่บนจะดันช่องนี้เบี้ยว)
+                     title อยู่ที่ตัว label ทั้งอัน ไม่ใช่แค่ไอคอน + ใส่ placeholder ให้เห็นโดยไม่ต้องเอาเมาส์ไปชี้ --}}
                 <div class="col-md-12">
-                  <label for="note" class="mf-label form-label">
+                  <label for="note" class="mf-label form-label" title="เลขที่ EMS และวันที่ส่ง">
                     <i class="bx bx-note ci-amber"></i> หมายเหตุ
+                    <span class="mf-label-note ms-1">(เลขที่ EMS และวันที่ส่ง)</span>
                   </label>
-                  <textarea id="note" class="form-control" name="note" rows="2">{{ $lic->note }}</textarea>
+                  <textarea id="note" class="form-control" name="note" rows="2"
+                    placeholder="เลขที่ EMS และวันที่ส่ง">{{ $lic->note }}</textarea>
+                </div>
+
+                {{-- หลักฐานการโอนเงินค่าป้ายแดง — ไฟล์ของ "ใบขาย" (salecars.red_license_slip_url)
+                     ไฟล์ชุดเดียวกับที่หน้าใบจอง/หน้าประวัติเห็น แนบเพิ่มจากหน้านี้ได้ ขึ้น OneDrive
+                     โฟลเดอร์เดียวกัน : New Car/{แบรนด์}/ป้ายแดง/หลักฐานลูกค้าโอนเงิน/{id-ชื่อลูกค้า}
+                     ปุ่มลบใช้ endpoint ของใบขาย จึงโชว์เฉพาะ role ที่จัดการป้ายแดงได้ (RED_PLATE_ROLES)
+                     ใบที่ยังไม่ผูกใบขาย แนบไม่ได้ (ไม่รู้จะเก็บไปไว้ที่ใบไหน) --}}
+                @php
+                  $payslips = is_array($lic->saleCarLic?->red_license_slip_url)
+                      ? $lic->saleCarLic->red_license_slip_url
+                      : [];
+                  $canDelPaySlip = auth()->user()->canManageRedPlate();
+                @endphp
+                <div class="col-md-6">
+                  <label for="red_license_slips" class="mf-label form-label mb-1">
+                    <i class="bx bx-receipt ci-emerald"></i> หลักฐานการโอนเงิน (ค่าป้ายแดง)
+                  </label>
+
+                  @if ($payslips)
+                    <div class="d-flex flex-wrap mb-2" id="paySlipList">
+                      @include('_partials.file-cards', [
+                          'files' => $payslips,
+                          'proxyBase' => route('purchase-order.proxy', $lic->saleCarLic->id),
+                          'deleteUrl' => $canDelPaySlip
+                              ? route('purchase-order.red-plate.delete-slip', $lic->saleCarLic->id)
+                              : null,
+                      ])
+                    </div>
+                  @endif
+
+                  @if ($lic->saleCarLic)
+                    <input type="file" id="red_license_slips" name="red_license_slips[]" class="form-control"
+                      accept=".pdf,.jpg,.jpeg,.png" multiple>
+                    <div class="form-text">
+                      ไฟล์ชุดเดียวกับหน้าใบจอง — แนบเพิ่มได้ ไฟล์เดิมไม่ถูกลบทิ้ง
+                    </div>
+                    <div id="paySlipPreview" class="d-flex flex-wrap mt-1"></div>
+                  @else
+                    <div class="text-muted" style="font-size:.82rem;">
+                      <i class="bx bx-info-circle me-1"></i>ใบนี้ยังไม่ได้ผูกใบขาย จึงแนบไฟล์ไม่ได้
+                    </div>
+                  @endif
+                </div>
+
+                {{-- สลิปคืนเงินลูกค้า — ไฟล์ของหน้านี้เอง เก็บที่ license_plate_history.refund_slip_url
+                     ขึ้น OneDrive : New Car/{แบรนด์}/ป้ายแดง/หลักฐานคืนเงินลูกค้า/{id-ชื่อลูกค้า} --}}
+                <div class="col-md-6">
+                  <label for="refund_slips" class="mf-label form-label mb-1">
+                    <i class="bx bx-money-withdraw ci-amber"></i> สลิปคืนเงินลูกค้า
+                  </label>
+                  @php $refundSlips = is_array($lic->refund_slip_url) ? $lic->refund_slip_url : []; @endphp
+                  @if ($refundSlips)
+                    <div class="d-flex flex-wrap mb-2" id="refundSlipList">
+                      @include('_partials.file-cards', [
+                          'files' => $refundSlips,
+                          'proxyBase' => route('vehicle.license.slip-proxy', $lic->id),
+                          'deleteUrl' => route('vehicle.license.delete-refund-slip', $lic->id),
+                      ])
+                    </div>
+                  @endif
+                  <input type="file" id="refund_slips" name="refund_slips[]" class="form-control"
+                    accept=".pdf,.jpg,.jpeg,.png" multiple>
+                  <div class="form-text">รองรับ PDF, JPG, PNG — แนบได้หลายไฟล์ ไฟล์เดิมไม่ถูกลบทิ้ง</div>
+                  {{-- พรีวิวไฟล์ที่เพิ่งเลือก (ยังไม่อัปโหลดจนกว่าจะกดบันทึก) --}}
+                  <div id="refundSlipPreview" class="d-flex flex-wrap mt-1"></div>
                 </div>
 
               </div>

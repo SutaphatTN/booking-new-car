@@ -88,7 +88,7 @@ class SummaryLicExport implements FromView, WithTitle, WithStyles, WithEvents, S
                 $sheet->getTabColor()->setRGB('944b4b');
 
                 //check box ตรงกลาง
-                $centerColumns = ['G', 'H', 'I'];
+                $centerColumns = ['I', 'J', 'K'];
                 foreach ($centerColumns as $col) {
                     $sheet->getStyle("{$col}1:{$col}{$highestRow}")
                         ->getAlignment()
@@ -97,7 +97,7 @@ class SummaryLicExport implements FromView, WithTitle, WithStyles, WithEvents, S
 
                 // format comma
                 $numberColumns = [
-                    'K'
+                    'M'
                 ];
 
                 foreach ($numberColumns as $col) {
@@ -109,10 +109,38 @@ class SummaryLicExport implements FromView, WithTitle, WithStyles, WithEvents, S
         ];
     }
 
+    /**
+     * ลิงก์ไฟล์แนบสำหรับเซลล์ Excel — <a href> จะถูกแปลงเป็น hyperlink กดได้จริงตอนเซฟเป็น xlsx
+     * (เช็คแล้วว่า FromView ของ maatwebsite แปลงให้ ; ข้อความในแท็กกลายเป็นค่าของเซลล์)
+     * 1 เซลล์มีลิงก์ได้อันเดียว — ถ้าแนบหลายไฟล์จะลิงก์ไฟล์แรกแล้วต่อท้ายว่าเหลืออีกกี่ไฟล์
+     */
+    private function fileLink($files, ?string $proxyBase): string
+    {
+        $files = is_array($files) ? array_values($files) : [];
+
+        if (!$files || !$proxyBase) {
+            return '-';
+        }
+
+        $first = $files[0];
+        $url  = is_array($first) ? ($first['url'] ?? '') : $first;
+        $name = is_array($first) ? ($first['name'] ?? 'ไฟล์แนบ') : 'ไฟล์แนบ';
+
+        if (!$url) {
+            return '-';
+        }
+
+        $href  = $proxyBase . '/' . rawurlencode($name) . '?url=' . urlencode($url);
+        $label = count($files) > 1 ? $name . ' (+' . (count($files) - 1) . ' ไฟล์)' : $name;
+
+        return '<a href="' . e($href) . '">' . e($label) . '</a>';
+    }
+
     public function view(): View
     {
         $rows = LicensePlateHistory::with([
-            'saleCarLic',
+            // customer.prefix ต้อง eager load ด้วย ไม่งั้นยิง query เพิ่มทุกแถวตอนดึงชื่อลูกค้า
+            'saleCarLic.customer.prefix',
             // ข้าม brand scope ของป้าย — ประวัติอาจอ้างป้ายที่ยืมมาแล้วคืนเจ้าของไปแล้ว
             'licenseLic' => fn($q) => $q->withoutGlobalScope('brandAccess'),
         ])->where(function ($query) {
@@ -137,21 +165,29 @@ class SummaryLicExport implements FromView, WithTitle, WithStyles, WithEvents, S
                 'transfer' => 'โอน',
             ];
 
+            // หลักฐานโอนเงินค่าป้ายแดงอยู่บน "ใบขาย" ส่วนสลิปคืนเงินอยู่บน "ประวัติป้าย" — คนละ proxy กัน
+            $payProxy = $r->saleCarLic
+                ? route('purchase-order.proxy', $r->saleCarLic->id)
+                : null;
+            $refundProxy = route('vehicle.license.slip-proxy', $r->id);
+
             return [
                 'customer' => $customerName,
                 'phone' => $r->saleCarLic?->customer?->formatted_mobile ?? '-',
                 'sale_lic' => $nameSale,
                 'red_license' => $r->licenseLic?->number ?? '-',
+                'pay_date' => $r->saleCarLic?->red_license_pay_date
+                    ? \Illuminate\Support\Carbon::parse($r->saleCarLic->red_license_pay_date)->format('d-m-Y')
+                    : '-',
+                'pay_slip' => $this->fileLink($r->saleCarLic?->red_license_slip_url, $payProxy),
                 'delivery_date' => $r?->saleCarLic?->format_delivery_date ?? '-',
                 'license_front' => $r->license_red_front ? '✅' : '❌',
                 'license_back'  => $r->license_red_back ? '✅' : '❌',
                 'license_book'  => $r->license_red_book ? '✅' : '❌',
-                // 'license_front' => $r->license_red_front ? '☑' : '☐',
-                // 'license_back'  => $r->license_red_back ? '☑' : '☐',
-                // 'license_book'  => $r->license_red_book ? '☑' : '☐',
                 'refund_date' => $r->format_cust_refund_date,
                 'cost' => $r->refund_amount,
                 'type' => $statusType[$r->type_refund] ?? '-',
+                'refund_slip' => $this->fileLink($r->refund_slip_url, $refundProxy),
                 'finance' => $r->financeUser->name ?? '-',
                 'note' => $r->note ?? '-',
             ];

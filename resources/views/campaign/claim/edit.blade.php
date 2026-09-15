@@ -146,43 +146,14 @@
             </div>
             <div class="mf-section-body">
 
-              {{-- ไฟล์ที่แนบไว้แล้ว — กด X = เอาออกตอนกดบันทึก (hidden input หายไปพร้อมการ์ด) --}}
+              {{-- ไฟล์ที่แนบไว้แล้ว — การ์ดชุดกลางของระบบ (_partials/file-cards.blade.php)
+                   ส่ง keepName มา = โหมดลบแบบรอกดบันทึก : กด X แล้ว hidden input keep_files[] หายไปพร้อมการ์ด --}}
               <div id="claimExistingFiles" class="d-flex flex-wrap mb-2">
-                @foreach ($attachments as $f)
-                  @php
-                    $fname = $f['name'] ?? 'file';
-                    $furl = $f['url'] ?? '';
-                    $isImage = (bool) preg_match('/\.(jpg|jpeg|png|gif|webp|bmp)$/i', $fname);
-                    $proxy =
-                        route('campaign.claim.proxy', ['id' => $sc->id, 'filename' => $fname]) .
-                        '?url=' .
-                        urlencode($furl);
-                  @endphp
-                  <div class="position-relative d-inline-block m-1" data-claim-file style="width:80px;">
-                    <input type="hidden" name="keep_files[]" value="{{ $furl }}">
-                    <a href="{{ $proxy }}" target="_blank" class="d-block text-decoration-none" title="{{ $fname }}">
-                      @if ($isImage)
-                        <img src="{{ $proxy }}" class="rounded border"
-                          style="width:80px;height:80px;object-fit:cover;">
-                      @else
-                        <div class="d-flex flex-column align-items-center justify-content-center rounded text-white"
-                          style="width:80px;height:80px;background:#64748b;">
-                          <i class="bx bx-file" style="font-size:1.8rem;"></i>
-                          <span class="badge bg-white mt-1" style="font-size:.6rem;color:#64748b;font-weight:700;">
-                            {{ strtoupper(pathinfo($fname, PATHINFO_EXTENSION) ?: 'FILE') }}
-                          </span>
-                        </div>
-                      @endif
-                      <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;">
-                        {{ $fname }}</div>
-                    </a>
-                    <button type="button"
-                      class="btn btn-danger btn-claim-file-del position-absolute top-0 end-0"
-                      style="font-size:.8rem;line-height:1;padding:2px 5px;" title="ลบไฟล์นี้">
-                      <i class="bx bx-x"></i>
-                    </button>
-                  </div>
-                @endforeach
+                @include('_partials.file-cards', [
+                    'files' => $attachments,
+                    'proxyBase' => route('campaign.claim.proxy', ['id' => $sc->id]),
+                    'keepName' => 'keep_files[]',
+                ])
               </div>
 
               <div id="claimNoFile" class="text-muted mb-2 {{ count($attachments) ? 'd-none' : '' }}"
@@ -223,58 +194,23 @@
     const $input = $('#claim_files_input');
     const $newPreview = $('#claimNewFiles');
 
+    // การ์ด / พรีวิว / ปุ่มลบ เป็นของ resources/assets/js/file-cards.js ทั้งหมด
+    // (โหลดมากับ campaign-claim.js ที่ import โมดูลนี้ไว้ จึงมี window.FileCards ให้ใช้)
+    // ที่เหลือในนี้คือเรื่องเฉพาะของเคลม : ข้อความ "ยังไม่มีไฟล์แนบ"
     function toggleEmptyNote() {
-      const hasFile = $('#claimExistingFiles [data-claim-file]').length > 0 || $input[0].files.length > 0;
+      const hasFile = $('#claimExistingFiles .fc-item').length > 0 || $input[0].files.length > 0;
       $('#claimNoFile').toggleClass('d-none', hasFile);
     }
 
-    // ลบไฟล์เดิม — เอาการ์ดออก (hidden input keep_files[] หายตาม) ไฟล์จะหลุดออกตอนกดบันทึก
-    $box.on('click', '.btn-claim-file-del', function () {
-      $(this).closest('[data-claim-file]').remove();
-      toggleEmptyNote();
-    });
-
-    // พรีวิวไฟล์ที่เพิ่งเลือก + กด X เอาออกก่อนบันทึกได้
     function renderNewFiles() {
-      $newPreview.empty();
-
-      Array.from($input[0].files).forEach(function (file, idx) {
-        const isImg = /image/i.test(file.type);
-        const ext = (file.name.split('.').pop() || '').toUpperCase();
-        const thumb = isImg
-          ? `<img src="${URL.createObjectURL(file)}" class="rounded border" style="width:80px;height:80px;object-fit:cover;">`
-          : `<div class="d-flex flex-column align-items-center justify-content-center rounded text-white"
-                  style="width:80px;height:80px;background:#0ea5e9;">
-               <i class="bx bx-file" style="font-size:1.8rem;"></i>
-               <span class="badge bg-white mt-1" style="font-size:.6rem;color:#0ea5e9;font-weight:700;">${ext || 'FILE'}</span>
-             </div>`;
-
-        const $item = $(`
-          <div class="position-relative d-inline-block m-1" style="width:80px;vertical-align:top;">
-            ${thumb}
-            <div class="text-truncate text-center mt-1" style="font-size:.7rem;max-width:80px;">${file.name}</div>
-            <button type="button" class="btn btn-danger position-absolute top-0 end-0"
-              style="font-size:.8rem;line-height:1;padding:2px 5px;" title="เอาออก">
-              <i class="bx bx-x"></i>
-            </button>
-          </div>`);
-
-        // ตัดไฟล์ออกจาก input จริง ๆ ผ่าน DataTransfer ไม่งั้นมันยังถูกอัปโหลดไปด้วย
-        $item.find('button').on('click', function () {
-          const dt = new DataTransfer();
-          Array.from($input[0].files).forEach((f, i) => {
-            if (i !== idx) dt.items.add(f);
-          });
-          $input[0].files = dt.files;
-          renderNewFiles();
-        });
-
-        $newPreview.append($item);
-      });
-
+      FileCards.renderFilePreviews($input[0], $newPreview);
       toggleEmptyNote();
     }
 
+    // ลบไฟล์เดิม = เอาการ์ดออก (hidden input keep_files[] หายตาม) ไฟล์หลุดออกจริงตอนกดบันทึก
+    $box.on('fc:removed', '#claimExistingFiles', toggleEmptyNote);
+    // กากบาทบนพรีวิวไฟล์ใหม่ — โมดูลตัดไฟล์ออกจาก input ให้แล้ว เหลือแค่อัปเดตข้อความ
+    $input.on('fc:files-changed', toggleEmptyNote);
     $input.on('change', renderNewFiles);
   })();
 </script>

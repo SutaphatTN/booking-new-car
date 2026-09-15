@@ -30,6 +30,7 @@ class LicensePlateHistory extends Model
 		'finance_approved',
 		'finance_approved_date',
 		'refund_amount',
+		'refund_slip_url',
 		'note',
 		'userZone',
 		'brand',
@@ -37,6 +38,11 @@ class LicensePlateHistory extends Model
 	];
 
 	protected $dates = ['deleted_at'];
+
+	// สลิปคืนเงินลูกค้า — เก็บเป็น JSON [{url, name}] แบบเดียวกับไฟล์แนบที่อื่นในระบบ
+	protected $casts = [
+		'refund_slip_url' => 'array',
+	];
 
 	public function saleCarLic()
 	{
@@ -63,5 +69,44 @@ class LicensePlateHistory extends Model
 	public function getFormatCustRefundDateAttribute()
 	{
 		return $this->cust_refund_date ? Carbon::parse($this->cust_refund_date)->format('d-m-Y') : null;
+	}
+
+	/**
+	 * ช่องที่ยังกรอกไม่ครบ ก่อนกด "ยืนยันการจ่ายเงินจริง" (กดแล้วย้อนไม่ได้ + ปลดป้ายคืนสต็อก)
+	 * ใช้ร่วมกันทั้งปุ่มในตาราง (ดักก่อนเปิด dialog) และด่านฝั่ง server ใน approveFinance
+	 *  - เอกสารป้ายแดง : ขอแค่ช่องใดช่องหนึ่ง (ติ๊ก "คืนครบทุกรายการ" = ครบทั้ง 3 อยู่แล้ว)
+	 *  - การคืนเงิน : ครบทุกช่อง ยกเว้นหมายเหตุที่ไม่บังคับ
+	 *  - ไฟล์แนบ : หลักฐานการโอนเงินค่าป้ายแดง (อยู่บนใบขาย) + สลิปคืนเงินลูกค้า อย่างละ 1 ไฟล์
+	 */
+	public function approveFinanceMissing(): array
+	{
+		$missing = [];
+
+		if (!$this->license_red_front && !$this->license_red_back && !$this->license_red_book) {
+			$missing[] = 'เอกสารป้ายแดง (ติ๊กอย่างน้อย 1 รายการ)';
+		}
+		if (!$this->cust_refund_date) {
+			$missing[] = 'วันที่คืนเงินลูกค้า';
+		}
+		// คืน 0 บาทเป็นเคสที่มีจริง — นับว่า "กรอกแล้ว" ; เฉพาะปล่อยว่างเท่านั้นที่ถือว่ายังไม่กรอก
+		if ($this->refund_amount === null || $this->refund_amount === '') {
+			$missing[] = 'ยอดคืนเงิน';
+		}
+		if (!$this->type_refund) {
+			$missing[] = 'ประเภทการคืนเงิน';
+		}
+
+		// หลักฐานการโอนเงินค่าป้ายแดง — ไฟล์อยู่บนใบขาย (แนบได้ทั้งหน้าใบจอง/หน้าประวัติ/หน้านี้)
+		// ใบที่ยังไม่ผูกใบขายจะแนบไม่ได้เลย จึงไม่เอามาดัก ไม่งั้นกดยืนยันไม่ได้ตลอดไป
+		// (saleCarLic ถูก eager load มาแล้วตอนวาดตาราง จึงไม่เพิ่ม query ต่อแถว)
+		if ($this->saleCarLic && empty($this->saleCarLic->red_license_slip_url)) {
+			$missing[] = 'หลักฐานการโอนเงิน (ค่าป้ายแดง)';
+		}
+
+		if (empty($this->refund_slip_url)) {
+			$missing[] = 'สลิปคืนเงินลูกค้า';
+		}
+
+		return $missing;
 	}
 }

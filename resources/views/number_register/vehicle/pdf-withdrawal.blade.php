@@ -51,7 +51,11 @@
   {{-- แบรนด์ + สาขา (สาขาเฉพาะ brand 2) --}}
   <div style="text-align:center; margin-bottom:10px;">
     {{ $brandName ?? '' }}@if (!empty($branchName)) &nbsp;—&nbsp; สาขา{{ $branchName }} @endif
-  </div>
+  {{-- คอลัมน์ "อื่นๆ" จะโผล่เฉพาะตอนที่มีอย่างน้อย 1 รายการในชุดนี้กรอกไว้จริง
+       ชุดไหนไม่มีใครใส่เลย ตารางจะเหมือนเดิมเป๊ะ ไม่มีคอลัมน์ว่าง ๆ มารก --}}
+  @php
+    $showOther = collect($data)->contains(fn($d) => (float) ($d->withdrawal_other ?? 0) > 0);
+  @endphp
 
   <table>
     <thead>
@@ -61,13 +65,17 @@
           <th rowspan="2">ชื่อ-สกุล</th>
           <th rowspan="2">เลขตัวถัง</th>
           <th rowspan="2">จังหวัดขึ้นทะเบียน</th>
-          <th colspan="4">ตั้งเบิก</th>
+          <th colspan="{{ $showOther ? 6 : 4 }}">ตั้งเบิก</th>
         </tr>
 
         <tr>
           <th>ตรวจ</th>
           <th>ช่อง</th>
           <th>ใบเสร็จ</th>
+          @if ($showOther)
+            <th>อื่นๆ</th>
+            <th>หมายเหตุ (อื่นๆ)</th>
+          @endif
           <th>รวมเบิก</th>
         </tr>
       </thead>
@@ -77,6 +85,7 @@
         $sumCheck = 0;
         $sumChannel = 0;
         $sumBill = 0;
+        $sumOther = 0;
         $sumTotal = 0;
       @endphp
 
@@ -85,6 +94,7 @@
           $sumCheck += $d->withdrawal_check ?? 0;
           $sumChannel += $d->withdrawal_channel ?? 0;
           $sumBill += $d->withdrawal_bill ?? 0;
+          $sumOther += $d->withdrawal_other ?? 0;
           $sumTotal += $d->withdrawal_total ?? 0;
         @endphp
 
@@ -99,6 +109,10 @@
           <td>{{ number_format($d->withdrawal_check, 2) ?? '' }}</td>
           <td>{{ number_format($d->withdrawal_channel, 2) ?? '' }}</td>
           <td>{{ number_format($d->withdrawal_bill, 2) ?? '' }}</td>
+          @if ($showOther)
+            <td>{{ $d->withdrawal_other ? number_format($d->withdrawal_other, 2) : '-' }}</td>
+            <td class="text-left">{{ $d->withdrawal_other_note ?: '-' }}</td>
+          @endif
           <td>{{ number_format($d->withdrawal_total, 2) ?? '' }}</td>
         </tr>
       @endforeach
@@ -108,6 +122,10 @@
         <td><b>{{ number_format($sumCheck, 2) }}</b></td>
         <td><b>{{ number_format($sumChannel, 2) }}</b></td>
         <td><b>{{ number_format($sumBill, 2) }}</b></td>
+        @if ($showOther)
+          <td><b>{{ number_format($sumOther, 2) }}</b></td>
+          <td></td>
+        @endif
         <td><b>{{ number_format($sumTotal, 2) }}</b></td>
       </tr>
     </tbody>

@@ -381,6 +381,11 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::post('license/loan/{id}/return', [LicenseController::class, 'returnLoan']);
     Route::put('license/{id}/status', [LicenseController::class, 'updateStatus'])->name('license.update-status');
     Route::get('license/{id}/view-more', [LicenseController::class, 'viewMore'])->name('vehicle.license.viewMore');
+    // สลิปคืนเงินลูกค้า (ไฟล์บน OneDrive) — เปิดดูผ่าน proxy และลบทีละไฟล์
+    Route::get('license/{id}/slip-proxy/{filename?}', [LicenseController::class, 'proxyRefundSlip'])
+        ->where('filename', '[^/]+')->name('vehicle.license.slip-proxy');
+    Route::delete('license/{id}/refund-slip', [LicenseController::class, 'deleteRefundSlip'])
+        ->name('vehicle.license.delete-refund-slip');
     Route::post('/license/approve-finance', [LicenseController::class, 'approveFinance']);
 
     Route::get('/license/stock-export', [LicenseController::class, 'exportLicStock'])->name('license.stock-export');
@@ -599,6 +604,8 @@ Route::group(['middleware' => 'auth'], function () {
     // ใส่ป้ายแดงย้อนหลังจากหน้าประวัติ (เคสได้ป้ายมาหลังส่งมอบ) — เช็ค role ใน controller
     Route::get('purchase-order/{id}/red-plate', [PurchaseOrderController::class, 'redPlateForm'])->name('purchase-order.red-plate');
     Route::put('purchase-order/{id}/red-plate', [PurchaseOrderController::class, 'updateRedPlate'])->name('purchase-order.red-plate.update');
+    // ลบไฟล์หลักฐานโอนเงินค่าป้ายแดงทีละไฟล์ (ใช้ทั้งหน้าแก้ไขใบจองและโมดัลหน้าประวัติ)
+    Route::delete('purchase-order/{id}/red-plate-slip', [PurchaseOrderController::class, 'deleteRedPlateSlip'])->name('purchase-order.red-plate.delete-slip');
     Route::post('purchase-order/{id}/change-status', [PurchaseOrderController::class, 'changeStatus'])->name('purchase-order.change-status');
     // ปลายทางลิงก์ในเมลขอ IA ตรวจสอบ — อยู่ใน auth เพราะต้องพาเข้าหน้าใบจองจริง (สลับแบรนด์ให้ถ้าคนละแบรนด์)
     // ตัวส่งคำขอไม่มี route แยก — ไปกับการบันทึกใบจอง (action_type = request_ia) เหมือนปุ่มขออนุมัติ

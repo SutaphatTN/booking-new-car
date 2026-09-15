@@ -97,6 +97,7 @@ class Salecar extends Model
 	protected $casts = [
 		'attachment_url' => 'array',
 		'withdraw_attachment_url' => 'array',
+		'red_license_slip_url' => 'array',
 		'approval_files' => 'array',
 		'approval_is_vip' => 'bool',
 		'approval_is_deduct' => 'bool',
@@ -257,6 +258,8 @@ class Salecar extends Model
 		'reason_campaign',
 		'Note',
 		'red_license',
+		'red_license_pay_date',
+		'red_license_slip_url',
 		'ReferrerID',
 		'ReferrerAmount',
 		'balance',

@@ -779,83 +779,23 @@
               </div>
               <div class="po-section-body-edit">
 
-                {{-- ไฟล์ที่แนบไว้แล้ว --}}
+                {{-- ไฟล์ที่แนบไว้แล้ว — การ์ดชุดกลางของระบบ (ดู _partials/file-cards.blade.php)
+                     ลบทีละไฟล์ได้ทันทีผ่าน route delete-attachment ; หน้าประวัติดูได้อย่างเดียว --}}
                 @if (!empty($saleCar->attachment_url))
                   <div class="po-label mb-2"><i class="bx bx-images me-1"></i> ไฟล์ที่แนบแล้ว</div>
-                  <div class="d-flex flex-wrap gap-2 mb-3" id="existingAttachments">
-                    @foreach ($saleCar->attachment_url as $item)
-                      @php
-                        $url = is_array($item) ? $item['url'] ?? '' : $item;
-                        $name = is_array($item) ? $item['name'] ?? null : null;
-                        $ext = $name ? strtolower(pathinfo($name, PATHINFO_EXTENSION)) : null;
-                        $imgExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
-                        $isImg = $ext && in_array($ext, $imgExts);
-                        $isFile = $ext && !$isImg;
-                        $bgMap = [
-                            'pdf' => '#ef4444',
-                            'xlsx' => '#16a34a',
-                            'xls' => '#16a34a',
-                            'csv' => '#16a34a',
-                            'doc' => '#2563eb',
-                            'docx' => '#2563eb',
-                            'ppt' => '#ea580c',
-                            'pptx' => '#ea580c',
-                            'zip' => '#7c3aed',
-                            'rar' => '#7c3aed',
-                            '7z' => '#7c3aed',
-                        ];
-                        $bg = $ext ? $bgMap[$ext] ?? '#6366f1' : '#6366f1';
-                        $label = $ext ? strtoupper($ext) : 'FILE';
-                        $proxyBase = route('purchase-order.proxy', $saleCar->id);
-                        $proxyUrl = $name
-                            ? $proxyBase . '/' . rawurlencode($name) . '?url=' . urlencode($url)
-                            : $proxyBase . '?url=' . urlencode($url);
-                      @endphp
-                      <div class="att-item position-relative d-inline-block m-1" style="width:80px;vertical-align:top;"
-                        data-index="{{ $loop->index }}"
-                        data-delete-url="{{ route('purchase-order.delete-attachment', $saleCar->id) }}">
-                        @if ($isFile)
-                          <a href="{{ $proxyUrl }}" target="_blank"
-                            class="d-flex flex-column align-items-center justify-content-center rounded text-white text-decoration-none"
-                            style="width:80px;height:80px;background:{{ $bg }};">
-                            <i class="bx bx-file" style="font-size:1.8rem;"></i>
-                            <span class="badge bg-white mt-1"
-                              style="font-size:.6rem;color:{{ $bg }};font-weight:700;">{{ $label }}</span>
-                          </a>
-                          @if ($name)
-                            <div class="text-truncate text-center text-dark mt-1"
-                              style="font-size:.7rem;max-width:80px;" title="{{ $name }}">
-                              {{ $name }}</div>
-                          @endif
-                        @else
-                          <a href="{{ $proxyUrl }}" target="_blank" id="imgw-att-{{ $loop->index }}"
-                            style="display:block;">
-                            <img src="{{ $proxyUrl }}" class="rounded border"
-                              style="width:80px;height:80px;object-fit:cover;cursor:pointer;"
-                              onerror="document.getElementById('imgw-att-{{ $loop->index }}').style.display='none';document.getElementById('filew-att-{{ $loop->index }}').style.display='flex';">
-                          </a>
-                          <a href="{{ $proxyUrl }}" target="_blank" id="filew-att-{{ $loop->index }}"
-                            class="text-decoration-none"
-                            style="display:none;width:80px;height:80px;border-radius:0.375rem;background:{{ $bg }};flex-direction:column;align-items:center;justify-content:center;color:white;">
-                            <i class="bx bx-file" style="font-size:1.8rem;"></i>
-                            <span class="badge bg-white mt-1"
-                              style="font-size:.6rem;color:{{ $bg }};font-weight:700;">{{ $label }}</span>
-                          </a>
-                        @endif
-                        @if (!$isHistory)
-                          <button type="button" class="btn btn-danger btn-att-delete position-absolute top-0 end-0"
-                            style="font-size:.8rem;line-height:1;padding:2px 5px;" title="ลบไฟล์นี้">
-                            <i class="bx bx-x"></i>
-                          </button>
-                        @endif
-                      </div>
-                    @endforeach
+                  <div class="d-flex flex-wrap mb-3" id="existingAttachments">
+                    @include('_partials.file-cards', [
+                        'files' => $saleCar->attachment_url,
+                        'proxyBase' => route('purchase-order.proxy', $saleCar->id),
+                        'deleteUrl' => $isHistory
+                            ? null
+                            : route('purchase-order.delete-attachment', $saleCar->id),
+                    ])
                   </div>
                   @if (!$isHistory)
                     <hr class="my-3">
                   @endif
                 @endif
-
                 {{-- แนบหลักฐานเพิ่มเติม --}}
                 @if (!$isHistory)
                   <div>
@@ -2490,6 +2430,68 @@
                                           </option>
                                         @endforeach
                                       </select>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {{-- วันที่ลูกค้าจ่ายเงินค่าป้ายแดง — บังคับกรอกเมื่อมีป้ายแดง (ดักทั้ง JS และฝั่ง server)
+                                     เปลี่ยนเลขป้ายทีหลัง ค่าวันเดิมยังอยู่ ไม่ต้องกรอกใหม่ --}}
+                                <div class="col-md-4">
+                                  <div class="date-card">
+                                    <div class="date-card-icon emerald">
+                                      <i class="bx bx-calendar-check"></i>
+                                    </div>
+                                    <div class="date-card-body">
+                                      <label for="red_license_pay_date" class="date-card-label">
+                                        วันที่ลูกค้าจ่ายเงิน (ค่าป้ายแดง)
+                                      </label>
+                                      <input class="form-control" type="date" id="red_license_pay_date"
+                                        name="red_license_pay_date"
+                                        value="{{ old('red_license_pay_date', $saleCar->red_license_pay_date ? \Illuminate\Support\Carbon::parse($saleCar->red_license_pay_date)->format('Y-m-d') : '') }}"
+                                        {{ $disabled }} />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {{-- หลักฐานการโอนเงินค่าป้ายแดง — ไฟล์ขึ้น OneDrive
+                                     New Car/{แบรนด์}/ป้ายแดง/หลักฐานลูกค้าโอนเงิน/{id-ชื่อลูกค้า}
+                                     บังคับให้มีอย่างน้อย 1 ไฟล์เมื่อเลือกป้ายแดง (ดักทั้ง JS และ server) --}}
+                                <div class="col-12">
+                                  <div class="date-card" style="align-items:flex-start;">
+                                    <div class="date-card-icon pink">
+                                      <i class="bx bx-receipt"></i>
+                                    </div>
+                                    <div class="date-card-body w-100">
+                                      <label for="red_license_slips" class="date-card-label">
+                                        หลักฐานการโอนเงิน (ค่าป้ายแดง)
+                                      </label>
+                                      @php
+                                        $redSlips = is_array($saleCar->red_license_slip_url) ? $saleCar->red_license_slip_url : [];
+                                        $redProxyBase = route('purchase-order.proxy', $saleCar->id);
+                                      @endphp
+                                      @if ($redSlips)
+                                        <div class="d-flex flex-wrap mb-2" id="redSlipList">
+                                          @include('_partials.file-cards', [
+                                              'files' => $redSlips,
+                                              'proxyBase' => $redProxyBase,
+                                              'deleteUrl' => $isHistory
+                                                  ? null
+                                                  : route('purchase-order.red-plate.delete-slip', $saleCar->id),
+                                          ])
+                                        </div>
+                                      @endif
+
+                                      {{-- มีไฟล์แล้วหรือยัง — JS ใช้ตัดสินว่าต้องบังคับแนบไฟล์ใหม่ไหม --}}
+                                      <input type="hidden" id="redSlipCount" value="{{ count($redSlips) }}">
+
+                                      <input id="red_license_slips" type="file" class="form-control"
+                                        name="red_license_slips[]" accept=".pdf,.jpg,.jpeg,.png" multiple
+                                        {{ $disabled }}>
+                                      <small class="text-muted mt-1 d-block" style="font-size:.72rem;">
+                                        <i class="bx bx-info-circle me-1"></i>รองรับ PDF, JPG, PNG — แนบได้หลายไฟล์ ไฟล์ที่แนบแล้วจะไม่ถูกลบทิ้ง
+                                      </small>
+                                      {{-- พรีวิวไฟล์ที่เพิ่งเลือก (ยังไม่อัปโหลด) — กดกากบาทเอาออกทีละไฟล์ได้ --}}
+                                      <div id="redSlipPreview" class="d-flex flex-wrap mt-1"></div>
                                     </div>
                                   </div>
                                 </div>

@@ -89,6 +89,50 @@
                 </div>
               </div>
 
+              {{-- ยอด "อื่นๆ" ที่รวมอยู่ในยอดตั้งเบิก/ยอดเคลียร์ข้างบน พร้อมหมายเหตุกำกับว่าเป็นค่าอะไร
+                   โชว์เฉพาะใบที่มียอดจริง ใบที่ไม่มีจะได้ไม่มีช่องว่างเปล่ารก --}}
+              @php $vl = $veh->vehicleLicense; @endphp
+
+              @if ((float) ($vl?->withdrawal_other ?? 0) > 0)
+                <div class="col-md-4">
+                  <label for="withdrawal_other" class="mf-label form-label">
+                    <i class="bx bx-plus-circle ci-amber"></i> อื่นๆ (ตั้งเบิก)
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text ig-amber">฿</span>
+                    <input id="withdrawal_other" type="text" class="form-control text-end"
+                      value="{{ number_format($vl->withdrawal_other, 2) }}" disabled>
+                  </div>
+                </div>
+                <div class="col-md-8">
+                  <label for="withdrawal_other_note" class="mf-label form-label">
+                    <i class="bx bx-note ci-amber"></i> หมายเหตุ (อื่นๆ ตั้งเบิก)
+                  </label>
+                  <input id="withdrawal_other_note" type="text" class="form-control"
+                    value="{{ $vl->withdrawal_other_note }}" disabled>
+                </div>
+              @endif
+
+              @if ((float) ($vl?->receipt_other ?? 0) > 0)
+                <div class="col-md-4">
+                  <label for="receipt_other" class="mf-label form-label">
+                    <i class="bx bx-plus-circle ci-amber"></i> อื่นๆ (เคลียร์)
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text ig-amber">฿</span>
+                    <input id="receipt_other" type="text" class="form-control text-end"
+                      value="{{ number_format($vl->receipt_other, 2) }}" disabled>
+                  </div>
+                </div>
+                <div class="col-md-8">
+                  <label for="receipt_other_note" class="mf-label form-label">
+                    <i class="bx bx-note ci-amber"></i> หมายเหตุ (อื่นๆ เคลียร์)
+                  </label>
+                  <input id="receipt_other_note" type="text" class="form-control"
+                    value="{{ $vl->receipt_other_note }}" disabled>
+                </div>
+              @endif
+
             </div>
           </div>
         </div>

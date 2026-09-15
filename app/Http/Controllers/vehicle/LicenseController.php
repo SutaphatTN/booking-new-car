@@ -9,6 +9,8 @@ use App\Http\Controllers\Controller;
 use App\Models\LicensePlateHistory;
 use App\Models\LicensePlateLoan;
 use App\Models\TbLicensePlate;
+use App\Services\OneDriveService;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -344,7 +346,9 @@ class LicenseController extends Controller
       $lic = LicensePlateHistory::findOrFail($id);
       $data = $request->except(['_token', '_method']);
 
-      $data['refund_amount'] = $request->refund_amount
+      // filled() ไม่ใช่ truthy — ไม่งั้นกรอก "0" (คืนเงิน 0 บาท ซึ่งเป็นเคสที่มีจริง)
+      // จะกลายเป็น null แล้วด่านก่อนยืนยันการจ่ายเงินจะมองว่ายังไม่ได้กรอก
+      $data['refund_amount'] = $request->filled('refund_amount')
         ? str_replace(',', '', $request->refund_amount)
         : null;
 
@@ -355,6 +359,60 @@ class LicenseController extends Controller
       $data['license_red_book']  = $request->has('license_red_book') ? 1 : 0;
 
       $lic->update($data);
+
+      // "วันที่ลูกค้าจ่ายเงิน (ค่าป้ายแดง)" อยู่บนใบขาย ไม่ใช่ตารางประวัติป้าย — เขียนกลับไปที่ใบขายเอง
+      // (คีย์นี้หลุดเข้า $data ด้วย แต่ไม่อยู่ใน fillable ของ LicensePlateHistory จึงถูกมองข้าม)
+      // ส่งค่าว่างมา = ล้างวันทิ้ง ; ใบที่ยังไม่ผูกใบขาย ช่องถูก disable อยู่แล้วจึงไม่มีคีย์นี้ส่งมา
+      if ($request->has('red_license_pay_date') && $lic->saleCarLic) {
+        $lic->saleCarLic->update([
+          'red_license_pay_date' => $request->red_license_pay_date ?: null,
+        ]);
+      }
+
+      // หลักฐานการโอนเงินค่าป้ายแดง — เก็บบนใบขาย (salecars.red_license_slip_url) ไฟล์ชุดเดียว
+      // กับหน้าใบจอง/หน้าประวัติ ; โฟลเดอร์ปลายทางต้องตรงกันด้วย ไม่งั้นไฟล์ของเรื่องเดียวกันจะกระจาย 2 ที่
+      if ($request->hasFile('red_license_slips') && $lic->saleCarLic) {
+        $sale = $lic->saleCarLic;
+        $payCustomer = $sale->customer;
+        $payFolderName = ($payCustomer->id ?? $sale->id) . '-' . ($payCustomer->FirstName ?? 'unknown');
+        $payBrandName = Auth::user()->brandInfo->name ?? 'Other';
+        $payFolder = "New Car/{$payBrandName}/ป้ายแดง/หลักฐานลูกค้าโอนเงิน/{$payFolderName}";
+
+        $payDrive = new OneDriveService();
+        $paySlips = is_array($sale->red_license_slip_url) ? $sale->red_license_slip_url : [];
+
+        foreach ($request->file('red_license_slips') as $index => $file) {
+          $payFileName = 'red_plate_slip_' . $sale->id . '_' . ($index + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
+          $paySlips[] = [
+            'url'  => $payDrive->upload($file->getRealPath(), $payFileName, $payFolder),
+            'name' => $file->getClientOriginalName(),
+          ];
+        }
+
+        $sale->update(['red_license_slip_url' => $paySlips]);
+      }
+
+      // สลิปคืนเงินลูกค้า → OneDrive : New Car/{แบรนด์}/ป้ายแดง/หลักฐานคืนเงินลูกค้า/{id-ชื่อลูกค้า}
+      // ต่อท้ายของเดิมเสมอ ไม่ลบไฟล์เก่าทิ้ง (ลบทีละไฟล์ผ่านปุ่มกากบาทบนการ์ด)
+      if ($request->hasFile('refund_slips')) {
+        $customer = $lic->saleCarLic?->customer;
+        $folderName = ($customer->id ?? $lic->id) . '-' . ($customer->FirstName ?? 'unknown');
+        $brandName = Auth::user()->brandInfo->name ?? 'Other';
+        $folder = "New Car/{$brandName}/ป้ายแดง/หลักฐานคืนเงินลูกค้า/{$folderName}";
+
+        $oneDrive = new OneDriveService();
+        $slips = is_array($lic->refund_slip_url) ? $lic->refund_slip_url : [];
+
+        foreach ($request->file('refund_slips') as $index => $file) {
+          $fileName = 'refund_slip_' . $lic->id . '_' . ($index + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
+          $slips[] = [
+            'url'  => $oneDrive->upload($file->getRealPath(), $fileName, $folder),
+            'name' => $file->getClientOriginalName(),
+          ];
+        }
+
+        $lic->update(['refund_slip_url' => $slips]);
+      }
 
       return response()->json([
         'success' => true,
@@ -368,9 +426,68 @@ class LicenseController extends Controller
     }
   }
 
+  /**
+   * เปิดดูสลิปคืนเงินลูกค้า — ไฟล์อยู่บน OneDrive ที่แชร์ระดับองค์กร
+   * ต้องผ่าน proxy เพราะลิงก์ตรงเปิดได้เฉพาะคนที่ล็อกอิน OneDrive ขององค์กรอยู่
+   * เปิดได้เฉพาะไฟล์ที่ผูกกับประวัติป้ายแถวนั้นจริง (กันเอา url อะไรก็ได้มายิงผ่าน endpoint นี้)
+   */
+  public function proxyRefundSlip(Request $request, $id, $filename = null)
+  {
+    $lic = LicensePlateHistory::findOrFail($id);
+    $shareUrl = (string) $request->input('url');
+
+    $allowed = collect($lic->refund_slip_url ?? [])
+      ->contains(fn($f) => (is_array($f) ? $f['url'] ?? '' : $f) === $shareUrl);
+
+    abort_unless($allowed, 403);
+
+    try {
+      ['url' => $downloadUrl, 'name' => $name] = (new OneDriveService())->getDownloadInfo($shareUrl);
+
+      $response = (new Client(['allow_redirects' => true]))->get($downloadUrl);
+
+      return response($response->getBody()->getContents(), 200, [
+        'Content-Type'        => $response->getHeader('Content-Type')[0] ?? 'application/octet-stream',
+        'Content-Disposition' => "inline; filename=\"{$name}\"",
+        'Cache-Control'       => 'private, max-age=3600',
+      ]);
+    } catch (\Exception $e) {
+      abort(404);
+    }
+  }
+
+  /** ลบสลิปคืนเงินลูกค้าทีละไฟล์ (ลบออกจากรายการ ไฟล์บน OneDrive ยังอยู่เหมือนไฟล์แนบที่อื่นในระบบ) */
+  public function deleteRefundSlip(Request $request, $id)
+  {
+    $lic = LicensePlateHistory::findOrFail($id);
+
+    $index = (int) $request->input('index');
+    $slips = is_array($lic->refund_slip_url) ? $lic->refund_slip_url : [];
+
+    if (!isset($slips[$index])) {
+      return response()->json(['success' => false, 'message' => 'ไม่พบไฟล์'], 404);
+    }
+
+    array_splice($slips, $index, 1);
+    $lic->update(['refund_slip_url' => $slips ?: null]);
+
+    return response()->json(['success' => true, 'remaining' => count($slips)]);
+  }
+
   public function approveFinance(Request $request)
   {
     $history = LicensePlateHistory::findOrFail($request->id);
+
+    // ── ด่านก่อนยืนยันการจ่ายเงินจริง (กดแล้วย้อนไม่ได้ + ปลดป้ายคืนสต็อกทันที) ──
+    // กติกาอยู่ที่ LicensePlateHistory::approveFinanceMissing() — ปุ่มในตารางใช้ชุดเดียวกัน
+    $missing = $history->approveFinanceMissing();
+
+    if ($missing) {
+      return response()->json([
+        'success' => false,
+        'message' => 'กรุณากรอกข้อมูลในหน้า "แก้ไขข้อมูลป้ายแดง" ให้ครบก่อน : ' . implode(', ', $missing),
+      ], 422);
+    }
 
     $history->update([
       'finance_approved' => Auth::id(),

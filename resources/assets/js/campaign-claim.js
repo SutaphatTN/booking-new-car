@@ -1,3 +1,7 @@
+// การ์ดไฟล์แนบ/พรีวิว + ปุ่มลบบนการ์ด — ตัวกลางตัวเดียวของทั้งระบบ
+// โมดัลแก้ไขเคลมโหลดมาด้วย ajax แล้วเรียกผ่าน window.FileCards ที่โมดูลนี้ตั้งไว้
+import './file-cards';
+
 $.ajaxSetup({
   headers: {
     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')

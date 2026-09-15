@@ -1,5 +1,63 @@
+{{-- ตารางนี้มี 9 คอลัมน์ กว้างกว่าโมดัล — ให้ "ตัวตาราง" เป็นตัวเลื่อนเองทั้งแนวตั้งและแนวนอน
+     (ตัวโมดัลจึงต้องไม่ใส่ modal-dialog-scrollable ไม่งั้นจะมีแถบเลื่อนแนวตั้งซ้อนกัน 2 อัน
+      และแถบเลื่อนแนวนอนจะไปอยู่ล่างสุดของรายการทั้งหมด ต้องเลื่อนลงไปหาก่อนถึงจะเลื่อนข้างได้)
+     ผลคือแถบเลื่อนแนวนอนติดอยู่ขอบล่างของกรอบตารางที่มองเห็นเสมอ ไม่ว่าจะดูแถวไหนอยู่ --}}
+<style>
+  /* ธีมใส่การ์ดพื้นขาว + เงา ให้ .tab-content มาอยู่แล้ว พอข้างในมี .mf-section ที่เป็นการ์ดอีกใบ
+     เลยเห็นเป็นกรอบซ้อนกรอบ — ปิดการ์ดชั้นนอกทิ้ง เหลือการ์ดของ section ใบเดียว */
+  .viewWithdrawal .tab-content {
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  .viewWithdrawal .mf-section {
+    margin-bottom: 0;
+  }
+
+  .wd-table-wrap {
+    max-height: 60vh;
+    overflow: auto;
+  }
+
+  .wd-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  /* หัวตารางที่ตรึงไว้ต้องทึบ ไม่งั้นแถวข้างล่างจะไหลทะลุขึ้นมาให้เห็น */
+  .wd-table thead.table-success th {
+    background-color: #d1e7dd;
+  }
+
+  .wd-table thead.table-info th {
+    background-color: #cff4fc;
+  }
+
+  /* กว้างขึ้นได้เต็มที่แล้ว เพราะมีแถบเลื่อนแนวนอนให้ใช้ — ชื่อลูกค้า/หมายเหตุจะได้ไม่ตัดคำ
+     และช่องเงินไม่บีบจนตัวเลขโดนตัด */
+  .wd-col-name {
+    min-width: 200px;
+  }
+
+  .wd-col-vin {
+    min-width: 165px;
+  }
+
+  .wd-col-money {
+    width: 125px;
+    min-width: 125px;
+  }
+
+  .wd-col-note {
+    min-width: 220px;
+  }
+</style>
+
 <div class="modal fade viewWithdrawal" tabindex="-1" role="dialog" data-bs-backdrop="static">
-  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
     <div class="modal-content border-0 shadow mf-content mf-content--input">
 
       {{-- Header --}}
@@ -53,17 +111,19 @@
                 </div>
               </div>
               <div class="mf-section-body p-0">
-                <div class="table-responsive">
-                  <table class="table table-sm table-hover align-middle mb-0" style="min-width:900px;">
+                <div class="table-responsive wd-table-wrap">
+                  <table class="table table-sm table-hover align-middle mb-0 wd-table" style="min-width:1260px;">
                     <thead class="table-success">
                       <tr>
                         <th class="text-center" style="width:42px;"><input type="checkbox" id="checkAll"></th>
-                        <th>ชื่อลูกค้า</th>
-                        <th style="width:145px;min-width:145px;">VIN</th>
-                        <th class="text-center" style="width:120px;min-width:120px;">ตรวจ</th>
-                        <th class="text-center" style="width:120px;min-width:120px;">ช่อง</th>
-                        <th class="text-center" style="width:120px;min-width:120px;">ใบเสร็จ</th>
-                        <th class="text-center" style="width:120px;min-width:120px;">รวมเบิก</th>
+                        <th class="wd-col-name">ชื่อลูกค้า</th>
+                        <th class="wd-col-vin">VIN</th>
+                        <th class="text-center wd-col-money">ตรวจ</th>
+                        <th class="text-center wd-col-money">ช่อง</th>
+                        <th class="text-center wd-col-money">ใบเสร็จ</th>
+                        <th class="text-center wd-col-money">อื่นๆ</th>
+                        <th class="text-center wd-col-note">หมายเหตุ (อื่นๆ)</th>
+                        <th class="text-center wd-col-money">รวมเบิก</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -94,6 +154,18 @@
                             <input type="text" name="withdrawal[{{ $item->id }}][receipt]"
                               class="form-control calc-input withdrawal-bill money-input text-end"
                               data-id="{{ $item->id }}">
+                          </td>
+                          {{-- อื่นๆ = ค่าใช้จ่ายเพิ่มเติมนอกเหนือ 3 ช่องแรก กรอกแล้วต้องมีหมายเหตุกำกับเสมอ
+                               และยอดนี้ถูกบวกเข้า "รวมเบิก" ด้วย (คิดที่ JS และคิดซ้ำฝั่ง server) --}}
+                          <td>
+                            <input type="text" name="withdrawal[{{ $item->id }}][other]"
+                              class="form-control calc-input withdrawal-other money-input text-end"
+                              data-id="{{ $item->id }}">
+                          </td>
+                          <td>
+                            <input type="text" name="withdrawal[{{ $item->id }}][other_note]"
+                              class="form-control withdrawal-other-note" data-id="{{ $item->id }}"
+                              placeholder="ระบุเมื่อมียอดอื่นๆ" maxlength="255">
                           </td>
                           <td>
                             <input type="text" name="withdrawal[{{ $item->id }}][total]"
@@ -129,17 +201,19 @@
                 </div>
               </div>
               <div class="mf-section-body p-0">
-                <div class="table-responsive">
-                  <table class="table table-sm table-hover align-middle mb-0" style="min-width:900px;">
+                <div class="table-responsive wd-table-wrap">
+                  <table class="table table-sm table-hover align-middle mb-0 wd-table" style="min-width:1260px;">
                     <thead class="table-info">
                       <tr>
                         <th class="text-center" style="width:42px;"><input type="checkbox" id="checkAllClear"></th>
-                        <th>ชื่อลูกค้า</th>
-                        <th style="width:145px;min-width:145px;">VIN</th>
-                        <th class="text-center" style="width:120px;min-width:120px;">ตรวจ</th>
-                        <th class="text-center" style="width:120px;min-width:120px;">ช่อง</th>
-                        <th class="text-center" style="width:120px;min-width:120px;">ใบเสร็จ</th>
-                        <th class="text-center" style="width:120px;min-width:120px;">รวมเคลียร์</th>
+                        <th class="wd-col-name">ชื่อลูกค้า</th>
+                        <th class="wd-col-vin">VIN</th>
+                        <th class="text-center wd-col-money">ตรวจ</th>
+                        <th class="text-center wd-col-money">ช่อง</th>
+                        <th class="text-center wd-col-money">ใบเสร็จ</th>
+                        <th class="text-center wd-col-money">อื่นๆ</th>
+                        <th class="text-center wd-col-note">หมายเหตุ (อื่นๆ)</th>
+                        <th class="text-center wd-col-money">รวมเคลียร์</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -170,6 +244,17 @@
                             <input type="text" name="clear[{{ $item->id }}][bill]"
                               class="form-control calc-clear receipt-bill money-input text-end"
                               data-id="{{ $item->id }}">
+                          </td>
+                          {{-- อื่นๆ ฝั่งเคลียร์ — กติกาเดียวกับฝั่งส่งเบิก : มียอดต้องมีหมายเหตุ และบวกเข้า "รวมเคลียร์" --}}
+                          <td>
+                            <input type="text" name="clear[{{ $item->id }}][other]"
+                              class="form-control calc-clear receipt-other money-input text-end"
+                              data-id="{{ $item->id }}">
+                          </td>
+                          <td>
+                            <input type="text" name="clear[{{ $item->id }}][other_note]"
+                              class="form-control receipt-other-note" data-id="{{ $item->id }}"
+                              placeholder="ระบุเมื่อมียอดอื่นๆ" maxlength="255">
                           </td>
                           <td>
                             <input type="text" name="clear[{{ $item->id }}][total]"

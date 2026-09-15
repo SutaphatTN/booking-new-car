@@ -2,6 +2,8 @@
 @section('title', 'ตรวจรถก่อนส่งมอบ')
 
 @section('page-script')
+  {{-- การ์ดไฟล์แนบ/พรีวิว ตัวกลางของระบบ — หน้านี้เขียน <script> สดไว้ในบเลด จึงเรียกผ่าน window.FileCards --}}
+  @vite(['resources/assets/js/file-cards.js'])
   <script>
     $(document).ready(function() {
 
@@ -129,16 +131,21 @@
           toggleExteriorRow();
           toggleInteriorRow();
 
-          // Existing docs
-          const $docList = $('#existingDocs').empty();
-          (data.docs || []).forEach(function(f) {
-            $docList.append(buildMediaItem(f, 'doc'));
+          // ไฟล์ที่แนบไว้แล้ว — การ์ดชุดกลางของระบบ (resources/assets/js/file-cards.js)
+          // ปุ่มลบ = เอาออกจากจอเฉย ๆ (stage) ไฟล์หายจริงตอนกดบันทึก เพราะฟอร์มส่ง keep_docs[]/keep_photos[]
+          // ที่เหลืออยู่บนจอไปทั้งชุด
+          const inspId = $('#modalInspectionId').val();
+          const toCard = f => ({
+            url: f.url,
+            name: f.name,
+            href: `/pre-delivery-inspection/${inspId}/proxy/${encodeURIComponent(f.name)}?url=${encodeURIComponent(f.url)}`
           });
 
-          // Existing photos
-          const $photoList = $('#existingPhotos').empty();
-          (data.photos || []).forEach(function(f) {
-            $photoList.append(buildMediaItem(f, 'photo'));
+          FileCards.renderFileCards($('#existingDocs'), (data.docs || []).map(toCard), {
+            stage: true
+          });
+          FileCards.renderFileCards($('#existingPhotos'), (data.photos || []).map(toCard), {
+            stage: true
           });
         });
 
@@ -177,111 +184,12 @@
       $('input[name="exterior_clean"]').on('change', toggleExteriorRow);
       $('input[name="interior_clean"]').on('change', toggleInteriorRow);
 
-      // ── File card style by extension ──
-      function fileCardStyle(name) {
-        const ext = (name.split('.').pop() || '').toLowerCase();
-        if (ext === 'pdf') return {
-          bg: '#ef4444',
-          label: 'PDF'
-        };
-        if (['xlsx', 'xls', 'csv'].includes(ext)) return {
-          bg: '#16a34a',
-          label: ext.toUpperCase()
-        };
-        if (['doc', 'docx'].includes(ext)) return {
-          bg: '#2563eb',
-          label: ext.toUpperCase()
-        };
-        if (['ppt', 'pptx'].includes(ext)) return {
-          bg: '#ea580c',
-          label: ext.toUpperCase()
-        };
-        if (['zip', 'rar', '7z'].includes(ext)) return {
-          bg: '#7c3aed',
-          label: ext.toUpperCase()
-        };
-        return {
-          bg: '#64748b',
-          label: ext ? ext.toUpperCase() : 'FILE'
-        };
-      }
-
-      // ── Build media item (existing uploaded files) ──
-      function buildMediaItem(f, type) {
-        const isImage = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(f.name);
-        const inspId = $('#modalInspectionId').val();
-        const proxyUrl =
-          `/pre-delivery-inspection/${inspId}/proxy/${encodeURIComponent(f.name)}?url=${encodeURIComponent(f.url)}`;
-        if (isImage) {
-          return `
-        <div class="position-relative d-inline-block m-1" data-url="${f.url}" data-type="${type}">
-          <img src="${proxyUrl}" class="rounded border" style="width:80px;height:80px;object-fit:cover;cursor:pointer;"
-            onclick="window.open('${proxyUrl}','_blank')" title="${f.name}">
-          <button type="button" class="btn btn-danger btn-delete-file position-absolute top-0 end-0" style="font-size:.8rem;line-height:1;padding:2px 5px;" title="ลบ">
-            <i class="bx bx-x"></i>
-          </button>
-        </div>`;
-        }
-        const st = fileCardStyle(f.name);
-        return `
-        <div class="position-relative d-inline-block m-1" data-url="${f.url}" data-type="${type}" style="width:80px;">
-          <a href="${proxyUrl}" target="_blank" class="d-block text-decoration-none" title="${f.name}">
-            <div class="d-flex flex-column align-items-center justify-content-center rounded text-white" style="width:80px;height:80px;background:${st.bg};">
-              <i class="bx bx-file" style="font-size:1.8rem;"></i>
-              <span class="badge bg-white mt-1" style="font-size:.6rem;color:${st.bg};font-weight:700;">${st.label}</span>
-            </div>
-            <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;">${f.name}</div>
-          </a>
-          <button type="button" class="btn btn-danger btn-delete-file position-absolute top-0 end-0" style="font-size:.8rem;line-height:1;padding:2px 5px;" title="ลบ">
-            <i class="bx bx-x"></i>
-          </button>
-        </div>`;
-      }
-
-      // ── Remove existing file (staged – actual delete happens on save) ──
-      $(document).on('click', '.btn-delete-file', function() {
-        $(this).closest('[data-url]').remove();
-      });
-
-      // ── Preview newly selected files (shared renderer with X-button) ──
-      function renderFilePreviews(input, $preview) {
-        $preview.empty();
-        Array.from(input.files).forEach(function(file, idx) {
-          const isImg = /image/i.test(file.type);
-          const objUrl = isImg ? URL.createObjectURL(file) : null;
-          const st = isImg ? null : fileCardStyle(file.name);
-          const $item = $(
-            `<div class="position-relative d-inline-block m-1" style="width:80px;vertical-align:top;">
-              ${isImg
-                ? `<img src="${objUrl}" class="rounded border" style="width:80px;height:80px;object-fit:cover;">`
-                : `<div class="d-flex flex-column align-items-center justify-content-center rounded text-white" style="width:80px;height:80px;background:${st.bg};">
-                         <i class="bx bx-file" style="font-size:1.8rem;"></i>
-                         <span class="badge bg-white mt-1" style="font-size:.6rem;color:${st.bg};font-weight:700;">${st.label}</span>
-                       </div>
-                       <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;">${file.name}</div>`
-              }
-              <button type="button" class="btn btn-danger btn-remove-new-file position-absolute top-0 end-0" style="font-size:.8rem;line-height:1;padding:2px 5px;" title="ลบ"><i class="bx bx-x"></i></button>
-            </div>`
-          );
-          $item.find('.btn-remove-new-file').on('click', function() {
-            const dt = new DataTransfer();
-            Array.from(input.files).forEach(function(f, i) {
-              if (i !== idx) dt.items.add(f);
-            });
-            input.files = dt.files;
-            renderFilePreviews(input, $preview);
-          });
-          $preview.append($item);
-        });
-      }
-
-      $('#inspection_photos_input').on('change', function() {
-        renderFilePreviews(this, $('#newPhotosPreview'));
-      });
-
-      $('#inspection_docs_input').on('change', function() {
-        renderFilePreviews(this, $('#newDocsPreview'));
-      });
+      // พรีวิวไฟล์ที่เพิ่งเลือก + ปุ่มลบบนการ์ด — ของ resources/assets/js/file-cards.js ทั้งหมด
+      // (หน้านี้โหลด bundle file-cards ไว้ด้านบนแล้ว จึงเรียกผ่าน window.FileCards ได้)
+      FileCards.bindFilePreviews([
+        ['inspection_photos_input', 'newPhotosPreview'],
+        ['inspection_docs_input', 'newDocsPreview']
+      ]);
 
       // ── Save ──
       $('#btnSaveInspection').on('click', function() {
@@ -414,24 +322,15 @@
           '<span class="badge bg-danger"><i class="bx bx-x me-1"></i>ไม่เรียบร้อย</span>';
       }
 
+      // การ์ดไฟล์ในโมดัล "ดูข้อมูล" — อ่านอย่างเดียว ไม่มีปุ่มลบ
       function buildViewMediaItem(f, inspId) {
-        const isImg = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(f.name);
-        const proxyUrl =
-          `/pre-delivery-inspection/${inspId}/proxy/${encodeURIComponent(f.name)}?url=${encodeURIComponent(f.url)}`;
-        if (isImg) {
-          return `<a href="${proxyUrl}" target="_blank" class="d-inline-block m-1" title="${f.name}">
-            <img src="${proxyUrl}" class="rounded border" style="width:80px;height:80px;object-fit:cover;cursor:pointer;">
-          </a>`;
-        }
-        const st = fileCardStyle(f.name);
-        return `
-        <a href="${proxyUrl}" target="_blank" class="d-inline-block m-1 text-decoration-none" title="${f.name}" style="width:80px;">
-          <div class="d-flex flex-column align-items-center justify-content-center rounded text-white" style="width:80px;height:80px;background:${st.bg};">
-            <i class="bx bx-file" style="font-size:1.8rem;"></i>
-            <span class="badge bg-white mt-1" style="font-size:.6rem;color:${st.bg};font-weight:700;">${st.label}</span>
-          </div>
-          <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;">${f.name}</div>
-        </a>`;
+        return FileCards.fileCardHtml({
+          url: f.url,
+          name: f.name,
+          href: `/pre-delivery-inspection/${inspId}/proxy/${encodeURIComponent(f.name)}?url=${encodeURIComponent(f.url)}`
+        }, {
+          readonly: true
+        });
       }
 
       function buildLogEntry(log, no) {

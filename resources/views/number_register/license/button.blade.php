@@ -16,8 +16,13 @@
     {{-- <span class="badge bg-success">อนุมัติแล้ว</span> --}}
   @else
     @if (in_array(auth()->user()->role, ['account', 'admin', 'audit', 'audit_lead', 'audit_dp', 'gm']))
+      {{-- ข้อมูลที่ยังกรอกไม่ครบ ส่งไปกับปุ่ม เพื่อดักตั้งแต่ก่อนเปิด dialog ยืนยัน
+           (ฝั่ง server ดักซ้ำด้วยกติกาชุดเดียวกันใน approveFinance) --}}
+      @php $approveMissing = $history->approveFinanceMissing(); @endphp
       <button class="btn btn-icon btn-success btnApproveFinance" data-id="{{ $history?->id }}"
-        title="ยืนยันการจ่ายเงินจริง" {{ $history ? '' : 'disabled' }}>
+        data-missing="{{ implode(', ', $approveMissing) }}"
+        title="{{ $approveMissing ? 'ยังกรอกข้อมูลไม่ครบ : ' . implode(', ', $approveMissing) : 'ยืนยันการจ่ายเงินจริง' }}"
+        {{ $history ? '' : 'disabled' }}>
         <i class="bx bx-check"></i>
       </button>
     @endif
