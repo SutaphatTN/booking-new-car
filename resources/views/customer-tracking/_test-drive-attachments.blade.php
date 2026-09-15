@@ -27,7 +27,7 @@
 
     <div class="po-label mb-2"><i class="bx bx-images me-1"></i> หลักฐานทดลองขับ</div>
 
-    <div class="td-attach-list d-flex flex-wrap gap-2 mb-2"></div>
+    <div class="td-attach-list d-flex flex-wrap mb-2"></div>
     <div class="td-attach-empty text-muted mb-2" style="font-size:.8rem;">
         <i class="bx bx-info-circle me-1"></i>ยังไม่มีไฟล์แนบ
     </div>
@@ -40,7 +40,7 @@
                 <i class="bx bx-info-circle me-1"></i>รองรับ PDF, JPG, PNG — ไฟล์ละไม่เกิน 10 MB แนบได้หลายไฟล์
                 (ไฟล์จะถูกอัปโหลดเมื่อกดปุ่มบันทึก)
             </small>
-            <div class="td-attach-preview mt-2 d-flex flex-wrap gap-2"></div>
+            <div class="td-attach-preview mt-2 d-flex flex-wrap"></div>
         </div>
     @endunless
 </div>

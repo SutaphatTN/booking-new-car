@@ -2058,6 +2058,11 @@ class PurchaseOrderController extends Controller
                 'Note' => $request->Note,
                 // ช่องป้ายแดงมีเฉพาะ role ใน RED_PLATE_ROLES — role อื่นไม่ส่งมา ต้องคงค่าเดิม ไม่งั้นบันทึกทีเดียวป้ายหลุด
                 'red_license' => $request->has('red_license') ? $request->red_license : $saleCar->red_license,
+                // วันที่ลูกค้าจ่ายเงินค่าป้ายแดง — อยู่ในการ์ดเดียวกับช่องป้ายแดง (RED_PLATE_ROLES เท่านั้น)
+                // role อื่นไม่ส่งมา ต้องคงค่าเดิมแบบเดียวกับ red_license
+                'red_license_pay_date' => $request->has('red_license_pay_date')
+                    ? $this->toGregorian($request->red_license_pay_date) ?: null
+                    : $saleCar->red_license_pay_date,
                 'ReferrerID' => $request->ReferrerID,
                 'ReferrerAmount' => $request->filled('ReferrerAmount')
                     ? str_replace(',', '', $request->ReferrerAmount)
@@ -2146,6 +2151,30 @@ class PurchaseOrderController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'ต้องระบุป้ายแดงก่อนเปลี่ยนสถานะเป็น "ส่งมอบ"',
+                ], 422);
+            }
+
+            // มีป้ายแดง = ต้องมี "วันที่ลูกค้าจ่ายเงิน" เสมอ (ไม่ผูกกับสถานะ — บังคับทุกครั้งที่บันทึก)
+            // ใช้ค่าที่จะบันทึกจริงทั้งคู่ ; role ที่ไม่มีการ์ดป้ายแดงในฟอร์มจะได้ค่าเดิมทั้งคู่ จึงไม่โดนดักซ้ำ
+            // ดักเฉพาะฟอร์มที่ส่งการ์ดป้ายแดงมาจริง — ใบเก่าที่มีป้ายแต่ยังไม่เคยกรอกวัน
+            // role ที่ไม่มีช่องนี้ให้กรอกจะได้บันทึกฟิลด์อื่นต่อได้ตามปกติ
+            if ($request->has('red_license') && !empty($effectiveRedLicense) && empty($data['red_license_pay_date'])) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'เลือกป้ายแดงแล้ว ต้องระบุ "วันที่ลูกค้าจ่ายเงิน (ค่าป้ายแดง)" ด้วย',
+                ], 422);
+            }
+
+            // และต้องมี "หลักฐานการโอนเงิน" อย่างน้อย 1 ไฟล์ — ไฟล์เดิมที่แนบไว้แล้วก็นับ
+            // (ไม่ได้บังคับให้แนบใหม่ทุกครั้งที่กดบันทึก)
+            $hasRedSlip = $request->hasFile('red_license_slips')
+                || !empty($saleCar->red_license_slip_url);
+            if ($request->has('red_license') && !empty($effectiveRedLicense) && !$hasRedSlip) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'เลือกป้ายแดงแล้ว ต้องแนบ "หลักฐานการโอนเงิน (ค่าป้ายแดง)" อย่างน้อย 1 ไฟล์',
                 ], 422);
             }
 
@@ -2264,6 +2293,29 @@ class PurchaseOrderController extends Controller
                 }
 
                 $saleCar->update(['attachment_url' => $existing]);
+            }
+
+            // หลักฐานการโอนเงินค่าป้ายแดง → OneDrive
+            // New Car/{แบรนด์}/ป้ายแดง/หลักฐานลูกค้าโอนเงิน/{id-ชื่อลูกค้า} (โฟลเดอร์สร้างเองอัตโนมัติตอน PUT)
+            // ต่อท้ายของเดิมเสมอ ไม่ลบไฟล์เก่าทิ้ง — ด่านข้างบนบังคับว่ามีป้ายแดงต้องมีหลักฐานอย่างน้อย 1 ไฟล์
+            if ($request->hasFile('red_license_slips')) {
+                $slipCustomer = $saleCar->CusID ? Customer::find($saleCar->CusID) : null;
+                $slipFolderName = ($slipCustomer->id ?? $saleCar->id) . '-' . ($slipCustomer->FirstName ?? 'unknown');
+                $slipBrandName = Auth::user()->brandInfo->name ?? 'Other';
+                $slipFolder = "New Car/{$slipBrandName}/ป้ายแดง/หลักฐานลูกค้าโอนเงิน/{$slipFolderName}";
+
+                $slipDrive = new OneDriveService();
+                $slips = is_array($saleCar->red_license_slip_url) ? $saleCar->red_license_slip_url : [];
+
+                foreach ($request->file('red_license_slips') as $index => $file) {
+                    $slipFileName = 'red_plate_slip_' . $saleCar->id . '_' . ($index + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    $slips[] = [
+                        'url'  => $slipDrive->upload($file->getRealPath(), $slipFileName, $slipFolder),
+                        'name' => $file->getClientOriginalName(),
+                    ];
+                }
+
+                $saleCar->update(['red_license_slip_url' => $slips]);
             }
 
             //ยกเลิกการจอง
@@ -2999,7 +3051,10 @@ class PurchaseOrderController extends Controller
         return view('purchase-order.history.red-plate', compact('saleCar', 'licensePlateRed'));
     }
 
-    /** บันทึกป้ายแดงจากหน้าประวัติ — แตะเฉพาะ red_license ไม่ยุ่งกับฟิลด์อื่นของใบจอง */
+    /**
+     * บันทึกป้ายแดง + วันที่ลูกค้าจ่ายเงิน + หลักฐานการโอนเงิน จากหน้าประวัติ
+     * แตะแค่ 3 ช่องนี้ ไม่ยุ่งกับฟิลด์อื่นของใบจอง
+     */
     public function updateRedPlate(Request $request, $id)
     {
         if (!Auth::user()->canManageRedPlate()) {
@@ -3008,14 +3063,28 @@ class PurchaseOrderController extends Controller
 
         $request->validate([
             'red_license' => ['nullable', Rule::exists('tb_license_plate', 'id')],
+            // มีป้ายแดง = ต้องมี "วันที่ลูกค้าจ่ายเงิน" เสมอ (ด่านเดียวกับหน้าแก้ไขใบจอง)
+            // นำป้ายออก (red_license ว่าง) ไม่ต้องกรอกวัน — required_with จะไม่ทำงานเมื่ออีกช่องว่าง
+            'red_license_pay_date' => ['nullable', 'required_with:red_license', 'date'],
+            'red_license_slips'    => ['nullable', 'array'],
+            'red_license_slips.*'  => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
         ], [
             'red_license.exists' => 'ไม่พบป้ายแดงที่เลือก',
+            'red_license_pay_date.required_with' => 'เลือกป้ายแดงแล้ว ต้องระบุ "วันที่ลูกค้าจ่ายเงิน (ค่าป้ายแดง)" ด้วย',
+            'red_license_pay_date.date' => 'รูปแบบวันที่ลูกค้าจ่ายเงินไม่ถูกต้อง',
+            'red_license_slips.*.mimes' => 'หลักฐานการโอนเงินรองรับเฉพาะไฟล์ PDF, JPG, PNG',
+            'red_license_slips.*.max'   => 'ไฟล์หลักฐานการโอนเงินต้องไม่เกิน 10 MB ต่อไฟล์',
         ]);
 
         try {
             $saleCar = Salecar::findOrFail($id);
             $newPlate = $request->red_license ?: null;
             $oldPlate = $saleCar->red_license;
+
+            // ไม่ส่งวันมา (เคสนำป้ายออก) = คงวันเดิมไว้ ไม่ล้างทิ้ง — เปลี่ยนเลขป้ายทีหลังจะได้เห็นวันที่เคยกรอก
+            $payDate = $request->filled('red_license_pay_date')
+                ? $this->toGregorian($request->red_license_pay_date)
+                : $saleCar->red_license_pay_date;
 
             // ป้ายที่ถูกใบอื่นจองไปแล้ว / สถานะใช้ไม่ได้ — กันเคสสองคนเปิดหน้าค้างไว้แล้วกดพร้อมกัน
             if ($newPlate && $newPlate != $oldPlate) {
@@ -3028,15 +3097,52 @@ class PurchaseOrderController extends Controller
                 }
             }
 
-            DB::transaction(function () use ($saleCar, $oldPlate, $newPlate) {
+            // หลักฐานการโอนเงินค่าป้ายแดง — ไฟล์ที่แนบไว้แล้วนับด้วย ไม่ต้องแนบใหม่ทุกครั้ง
+            $slips = is_array($saleCar->red_license_slip_url) ? $saleCar->red_license_slip_url : [];
+
+            if ($newPlate && !$slips && !$request->hasFile('red_license_slips')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'เลือกป้ายแดงแล้ว ต้องแนบ "หลักฐานการโอนเงิน (ค่าป้ายแดง)" อย่างน้อย 1 ไฟล์',
+                ], 422);
+            }
+
+            // อัปโหลดขึ้น OneDrive : New Car/{แบรนด์}/ป้ายแดง/หลักฐานลูกค้าโอนเงิน/{id-ชื่อลูกค้า}
+            // ทำนอก transaction — งานอัปโหลดคุยกับ Graph API ช้า ไม่ควรถือ lock ของ DB ค้างไว้
+            if ($request->hasFile('red_license_slips')) {
+                $slipCustomer = $saleCar->CusID ? Customer::find($saleCar->CusID) : null;
+                $slipFolderName = ($slipCustomer->id ?? $saleCar->id) . '-' . ($slipCustomer->FirstName ?? 'unknown');
+                $slipBrandName = Auth::user()->brandInfo->name ?? 'Other';
+                $slipFolder = "New Car/{$slipBrandName}/ป้ายแดง/หลักฐานลูกค้าโอนเงิน/{$slipFolderName}";
+
+                $slipDrive = new OneDriveService();
+
+                foreach ($request->file('red_license_slips') as $index => $file) {
+                    $slipFileName = 'red_plate_slip_' . $saleCar->id . '_' . ($index + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    $slips[] = [
+                        'url'  => $slipDrive->upload($file->getRealPath(), $slipFileName, $slipFolder),
+                        'name' => $file->getClientOriginalName(),
+                    ];
+                }
+            }
+
+            DB::transaction(function () use ($saleCar, $oldPlate, $newPlate, $payDate, $slips) {
                 $this->syncRedPlate($saleCar, $oldPlate, $newPlate);
                 $saleCar->red_license = $newPlate;
+                $saleCar->red_license_pay_date = $payDate ?: null;
+                $saleCar->red_license_slip_url = $slips ?: null;
                 $saleCar->save();
             });
 
+            // ข้อความให้ตรงกับสิ่งที่เพิ่งทำจริง — ใบที่ไม่มีป้ายอยู่แล้วแล้วแค่แนบไฟล์เพิ่ม
+            // ไม่ควรขึ้นว่า "นำป้ายแดงออก"
+            $message = $newPlate
+                ? 'บันทึกป้ายแดงเรียบร้อยแล้ว'
+                : ($oldPlate ? 'นำป้ายแดงออกเรียบร้อยแล้ว' : 'บันทึกข้อมูลเรียบร้อยแล้ว');
+
             return response()->json([
                 'success' => true,
-                'message' => $newPlate ? 'บันทึกป้ายแดงเรียบร้อยแล้ว' : 'นำป้ายแดงออกเรียบร้อยแล้ว',
+                'message' => $message,
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'], 500);
@@ -3908,8 +4014,12 @@ class PurchaseOrderController extends Controller
                 // ทีมขาย (snapshot ตอนออกใบจอง) — โชว์เฉพาะ brand ที่ถูกขายโดยหลายทีม
                 'team'       => $s->saleTeam?->name ?? '-',
                 // ป้ายแดง — คันที่ยังไม่มีจะขึ้นป้ายจาง ๆ ให้เห็นว่าต้องตามใส่
+                // ใต้เลขป้ายโชว์ "วันที่ลูกค้าจ่ายเงิน" ; ใบเก่าที่ยังไม่เคยกรอกจะขึ้นเตือนสีแดงให้ตามเก็บ
                 'red_plate' => $s->licensePlateRed
                     ? '<span class="badge bg-label-danger">' . e($s->licensePlateRed->number) . '</span>'
+                    . ($s->red_license_pay_date
+                        ? '<div class="text-muted small mt-1">' . \Illuminate\Support\Carbon::parse($s->red_license_pay_date)->format('d/m/Y') . '</div>'
+                        : '<div class="text-danger small mt-1">ยังไม่ระบุวันจ่ายเงิน</div>')
                     : '<span class="text-muted small">-</span>',
                 'Action' => view('purchase-order.history.button', compact('s'))->render(),
             ];
@@ -5096,7 +5206,11 @@ class PurchaseOrderController extends Controller
         $saleCar  = Salecar::findOrFail($id);
         $shareUrl = $request->input('url');
 
-        $allowed = collect($saleCar->attachment_url ?? [])->contains(function ($item) use ($shareUrl) {
+        // ไฟล์ที่เปิดผ่าน proxy นี้ได้ = หลักฐานการจอง + หลักฐานโอนเงินค่าป้ายแดง ของใบนี้เท่านั้น
+        $allowedUrls = collect($saleCar->attachment_url ?? [])
+            ->merge($saleCar->red_license_slip_url ?? []);
+
+        $allowed = $allowedUrls->contains(function ($item) use ($shareUrl) {
             return is_array($item) ? ($item['url'] ?? '') === $shareUrl : $item === $shareUrl;
         });
 
@@ -5122,6 +5236,39 @@ class PurchaseOrderController extends Controller
         } catch (\Exception $e) {
             abort(404);
         }
+    }
+
+    /**
+     * ลบไฟล์หลักฐานโอนเงินค่าป้ายแดงทีละไฟล์ (หน้าแก้ไขใบจอง + โมดัลหน้าประวัติ)
+     * กันลบไฟล์สุดท้ายทิ้งตอนที่ใบยังถือป้ายแดงอยู่ — ไม่งั้นใบจะค้างสถานะ "มีป้ายแต่ไม่มีหลักฐาน"
+     * ซึ่งเป็นสิ่งที่ด่านตอนบันทึกกันไว้ ; ถ้าจะเปลี่ยนไฟล์ให้แนบไฟล์ใหม่ก่อนแล้วค่อยลบของเก่า
+     */
+    public function deleteRedPlateSlip(Request $request, $id)
+    {
+        if (!Auth::user()->canManageRedPlate()) {
+            return response()->json(['success' => false, 'message' => 'คุณไม่มีสิทธิ์แก้ไขป้ายแดง'], 403);
+        }
+
+        $saleCar = Salecar::findOrFail($id);
+
+        $index = (int) $request->input('index');
+        $slips = is_array($saleCar->red_license_slip_url) ? $saleCar->red_license_slip_url : [];
+
+        if (!isset($slips[$index])) {
+            return response()->json(['success' => false, 'message' => 'ไม่พบไฟล์'], 404);
+        }
+
+        if (count($slips) === 1 && !empty($saleCar->red_license)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ใบนี้ยังถือป้ายแดงอยู่ ต้องมีหลักฐานการโอนเงินอย่างน้อย 1 ไฟล์ — ถ้าจะเปลี่ยนไฟล์ ให้แนบไฟล์ใหม่ก่อนแล้วค่อยลบไฟล์เดิม',
+            ], 422);
+        }
+
+        array_splice($slips, $index, 1);
+        $saleCar->update(['red_license_slip_url' => $slips ?: null]);
+
+        return response()->json(['success' => true, 'remaining' => count($slips)]);
     }
 
     public function deleteAttachment(Request $request, $id)

@@ -1,3 +1,12 @@
+// การ์ดไฟล์แนบ/พรีวิว + ปุ่มลบบนการ์ด — ตัวกลางตัวเดียวของทั้งระบบ
+import { bindFilePreviews } from './file-cards';
+
+// ช่องแนบไฟล์ในโมดัลแก้ไขป้ายแดง (โมดัลโหลดด้วย ajax — bindFilePreviews ผูกที่ document ให้แล้ว)
+bindFilePreviews([
+  ['refund_slips', 'refundSlipPreview'],
+  ['red_license_slips', 'paySlipPreview']
+]);
+
 $.ajaxSetup({
   headers: {
     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -101,6 +110,27 @@ $(document).on('hide.bs.modal', '.editLicense', function () {
     $('body').trigger('focus');
   }, 1);
 });
+// edit license : "คืนครบทุกรายการ" — ติ๊กทีเดียวคุมเอกสารป้ายแดงทั้ง 3 ช่อง
+// ผูกที่ document เพราะโมดัลถูกโหลดเข้ามาทีหลังด้วย ajax
+const syncLicRedDocAll = $scope => {
+  const $docs = $scope.find('.licRedDoc');
+  const checked = $docs.filter(':checked').length;
+  const $all = $scope.find('.licRedDocAll');
+
+  $all.prop('checked', checked === $docs.length && $docs.length > 0);
+  // ติ๊กมาบางช่อง = ขีดกลาง (ไม่ใช่ทั้งติ๊ก/ไม่ติ๊ก) ให้เห็นว่ายังคืนไม่ครบ
+  $all.prop('indeterminate', checked > 0 && checked < $docs.length);
+};
+
+$(document).on('change', '.licRedDocAll', function () {
+  $(this).closest('.mf-section').find('.licRedDoc').prop('checked', this.checked);
+  $(this).prop('indeterminate', false);
+});
+
+$(document).on('change', '.licRedDoc', function () {
+  syncLicRedDocAll($(this).closest('.mf-section'));
+});
+
 
 //edit : license
 $(document).on('click', '.btnEditLicense', function () {
@@ -111,6 +141,9 @@ $(document).on('click', '.btnEditLicense', function () {
   $.get('/license/' + id + '/edit', function (html) {
     $('.editLicenseModel').html(html);
     const $modal = $('.editLicense');
+
+    // ตั้งสถานะ "คืนครบทุกรายการ" ให้ตรงกับค่าที่บันทึกไว้ ตั้งแต่ตอนเปิดโมดัล
+    syncLicRedDocAll($modal);
 
     $modal.modal('show');
 
@@ -173,6 +206,19 @@ $(document).on('click', '.btnEditLicense', function () {
 //finance approve
 $(document).on('click', '.btnApproveFinance', function () {
   let id = $(this).data('id');
+  const missing = String($(this).data('missing') || '').trim();
+
+  // ต้องกรอกข้อมูลในหน้า "แก้ไขข้อมูลป้ายแดง" ครบก่อน — เอกสารป้ายแดงอย่างน้อย 1 ช่อง
+  // และการคืนเงินครบทุกช่อง (หมายเหตุไม่บังคับ) ; รายการที่ขาดคำนวณมาจาก
+  // LicensePlateHistory::approveFinanceMissing() ตอน render ปุ่ม และ server ดักซ้ำอีกชั้น
+  if (missing) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'ยังกรอกข้อมูลไม่ครบ',
+      html: 'กรุณากรอกข้อมูลในหน้า "แก้ไขข้อมูลป้ายแดง" ให้ครบก่อน<br><b>ที่ยังขาด :</b> ' + missing
+    });
+    return;
+  }
 
   Swal.fire({
     title: 'ยืนยันการจ่ายเงินจริง?',
@@ -199,11 +245,15 @@ $(document).on('click', '.btnApproveFinance', function () {
 
           licenseTable.ajax.reload(null, false);
         },
-        error: function () {
+        error: function (xhr) {
+          // 422 = ด่านข้อมูลไม่ครบฝั่ง server (เคสเปิดหน้าค้างไว้แล้วข้อมูลถูกแก้) — โชว์ข้อความจริง
           Swal.fire({
-            icon: 'error',
-            title: 'เกิดข้อผิดพลาด'
+            icon: xhr.status === 422 ? 'warning' : 'error',
+            title: xhr.status === 422 ? 'ยังกรอกข้อมูลไม่ครบ' : 'เกิดข้อผิดพลาด',
+            text: xhr.responseJSON?.message ?? ''
           });
+
+          if (xhr.status === 422) licenseTable.ajax.reload(null, false);
         }
       });
     }

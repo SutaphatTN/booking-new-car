@@ -4,6 +4,8 @@ import {
   clearTestDriveInput,
   testDriveFormData
 } from './shared/test-drive-attachments';
+// การ์ดไฟล์แนบ/พรีวิว + ปุ่มลบบนการ์ด — ตัวกลางตัวเดียวของทั้งระบบ
+import { bindFilePreviews } from './file-cards';
 
 $.ajaxSetup({
   headers: {
@@ -2658,6 +2660,44 @@ $(document).ready(function () {
       return;
     }
 
+    // เลือกป้ายแดงแล้ว ต้องกรอก "วันที่ลูกค้าจ่ายเงิน (ค่าป้ายแดง)" — บังคับทุกครั้งที่บันทึก
+    // ไม่ผูกกับสถานะ (ต่างจากด่านป้ายแดงข้างบนที่ดักเฉพาะตอนจะส่งมอบ) ; server ดักซ้ำอีกชั้นใน update()
+    // เปลี่ยนเลขป้ายทีหลัง ช่องวันยังคงค่าเดิมที่เคยกรอกไว้ ไม่ต้องกรอกใหม่
+    if ($('#red_license').length && $('#red_license').val() && !$('#red_license_pay_date').val()) {
+      const payTabId = $('#red_license_pay_date').closest('.tab-pane').attr('id');
+      if (payTabId) $(`[data-bs-target="#${payTabId}"], [href="#${payTabId}"]`).tab('show');
+
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณาระบุวันที่ลูกค้าจ่ายเงิน',
+        text: 'เลือกป้ายแดงแล้ว ต้องกรอกวันที่ลูกค้าจ่ายเงิน (ค่าป้ายแดง) ด้วย'
+      }).then(() => {
+        $('#red_license_pay_date')[0]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        $('#red_license_pay_date').trigger('focus');
+      });
+      return;
+    }
+
+    // และต้องมีหลักฐานการโอนเงินอย่างน้อย 1 ไฟล์ — ไฟล์ที่แนบไว้แล้ว (#redSlipCount) ก็นับ
+    // ไม่ต้องแนบใหม่ทุกครั้งที่กดบันทึก ; server ดักซ้ำอีกชั้นด้วยกติกาเดียวกัน
+    const redSlipSaved = parseInt($('#redSlipCount').val() || '0', 10);
+    const redSlipPicked = $('#red_license_slips')[0]?.files?.length || 0;
+
+    if ($('#red_license').length && $('#red_license').val() && !redSlipSaved && !redSlipPicked) {
+      const slipTabId = $('#red_license_slips').closest('.tab-pane').attr('id');
+      if (slipTabId) $(`[data-bs-target="#${slipTabId}"], [href="#${slipTabId}"]`).tab('show');
+
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณาแนบหลักฐานการโอนเงิน',
+        text: 'เลือกป้ายแดงแล้ว ต้องแนบสลิป/ไฟล์หลักฐานการโอนเงินค่าป้ายแดงอย่างน้อย 1 ไฟล์'
+      }).then(() => {
+        $('#red_license_slips')[0]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        $('#red_license_slips').trigger('focus');
+      });
+      return;
+    }
+
     // ฟิล์มที่เพิ่งเพิ่มในหน้านี้ ต้องมีหมายเหตุ (ความเข้ม/ตำแหน่งที่ติด)
     // แถวเก่าที่บันทึกไว้ก่อนมีฟีเจอร์นี้ไม่บล็อก — ไม่งั้นจะแก้ใบเดิมไม่ได้
     const $missingNote = $(
@@ -5074,13 +5114,48 @@ $(document).on('click', '.btnRedPlate', function () {
 $(document).on('click', '.btnSaveRedPlate', function () {
   const $btn = $(this);
   const id = $('#rp_sale_id').val();
+  const plate = $('#rp_red_license').val() || '';
+  const payDate = $('#rp_pay_date').val() || '';
+
+  // มีป้ายแดง = ต้องมีวันที่ลูกค้าจ่ายเงิน (ฝั่ง server ดักซ้ำอีกชั้นใน updateRedPlate)
+  // นำป้ายออก = ไม่บังคับ และวันเดิมยังถูกเก็บไว้ ถ้าใส่ป้ายใหม่ทีหลังจะเห็นวันเดิมขึ้นมาให้
+  if (plate && !payDate) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'กรุณาระบุวันที่ลูกค้าจ่ายเงิน',
+      text: 'เลือกป้ายแดงแล้ว ต้องกรอกวันที่ลูกค้าจ่ายเงิน (ค่าป้ายแดง) ด้วย'
+    }).then(() => $('#rp_pay_date').trigger('focus'));
+    return;
+  }
+
+  // และต้องมีหลักฐานการโอนเงินอย่างน้อย 1 ไฟล์ — ไฟล์ที่แนบไว้แล้วก็นับ
+  const slipSaved = parseInt($('#rp_slip_count').val() || '0', 10);
+  const slipFiles = $('#rp_slips')[0]?.files ?? [];
+
+  if (plate && !slipSaved && !slipFiles.length) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'กรุณาแนบหลักฐานการโอนเงิน',
+      text: 'เลือกป้ายแดงแล้ว ต้องแนบสลิป/ไฟล์หลักฐานการโอนเงินค่าป้ายแดงอย่างน้อย 1 ไฟล์'
+    }).then(() => $('#rp_slips').trigger('focus'));
+    return;
+  }
 
   $btn.prop('disabled', true);
 
+  // ส่งเป็น multipart (มีไฟล์) — PHP อ่าน multipart จาก PUT ไม่ได้ ต้องยิง POST + _method=PUT
+  const fd = new FormData();
+  fd.append('_method', 'PUT');
+  fd.append('red_license', plate);
+  fd.append('red_license_pay_date', payDate);
+  Array.from(slipFiles).forEach(f => fd.append('red_license_slips[]', f));
+
   $.ajax({
     url: `/purchase-order/${id}/red-plate`,
-    type: 'PUT',
-    data: { red_license: $('#rp_red_license').val() || '' },
+    type: 'POST',
+    data: fd,
+    processData: false,
+    contentType: false,
     success: function (res) {
       $('.redPlateModal').modal('hide');
       Swal.fire({
@@ -5414,102 +5489,32 @@ $(document).on('change', 'input[name$="_bank_select"]', function () {
   $(`#${prefix}_transfer_no`).val(info.no);
 });
 
-// file attachment preview
-function fileCardStyle(name) {
-  const ext = (name.split('.').pop() || '').toLowerCase();
-  if (ext === 'pdf') return { bg: '#ef4444', label: 'PDF' };
-  if (['xlsx', 'xls', 'csv'].includes(ext)) return { bg: '#16a34a', label: ext.toUpperCase() };
-  if (['doc', 'docx'].includes(ext)) return { bg: '#2563eb', label: ext.toUpperCase() };
-  if (['ppt', 'pptx'].includes(ext)) return { bg: '#ea580c', label: ext.toUpperCase() };
-  if (['zip', 'rar', '7z'].includes(ext)) return { bg: '#7c3aed', label: ext.toUpperCase() };
-  return { bg: '#64748b', label: ext ? ext.toUpperCase() : 'FILE' };
-}
-
-function renderFilePreviews(input, $preview) {
-  $preview.empty();
-  Array.from(input.files).forEach(function (file, idx) {
-    const isImg = /image/i.test(file.type);
-    const objUrl = isImg ? URL.createObjectURL(file) : null;
-    const st = isImg ? null : fileCardStyle(file.name);
-    const $item = $(
-      `<div class="position-relative d-inline-block m-1" style="width:80px;vertical-align:top;">
-        ${
-          isImg
-            ? `<img src="${objUrl}" class="rounded border" style="width:80px;height:80px;object-fit:cover;">`
-            : `<div class="d-flex flex-column align-items-center justify-content-center rounded text-white" style="width:80px;height:80px;background:${st.bg};">
-               <i class="bx bx-file" style="font-size:1.8rem;"></i>
-               <span class="badge bg-white mt-1" style="font-size:.6rem;color:${st.bg};font-weight:700;">${st.label}</span>
-             </div>
-             <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;">${file.name}</div>`
-        }
-        <button type="button" class="btn btn-danger btn-remove-new-file position-absolute top-0 end-0" style="font-size:.8rem;line-height:1;padding:2px 5px;" title="ลบ"><i class="bx bx-x"></i></button>
-      </div>`
-    );
-    $item.find('.btn-remove-new-file').on('click', function () {
-      const dt = new DataTransfer();
-      Array.from(input.files).forEach(function (f, i) {
-        if (i !== idx) dt.items.add(f);
-      });
-      input.files = dt.files;
-      renderFilePreviews(input, $preview);
-    });
-    $preview.append($item);
-  });
-}
-
-[
+// การ์ดไฟล์แนบ/พรีวิว ใช้ตัวกลางของระบบ (resources/assets/js/file-cards.js)
+// ปุ่มลบบนการ์ด (.fc-delete) โมดูลผูกไว้ให้แล้ว หน้าไหนต้องทำอะไรต่อให้ดัก event 'fc:removed'
+bindFilePreviews([
   ['attachments_cash', 'preview_cash'],
   ['attachments_credit', 'preview_credit'],
   ['attachments_check', 'preview_check'],
   ['attachments_check2', 'preview_check2'],
   ['attachments_bank', 'preview_bank'],
   ['attachments_bank2', 'preview_bank2'],
-  ['attachments_edit', 'preview_edit']
-].forEach(function ([inputId, previewId]) {
-  $(document).on('change', '#' + inputId, function () {
-    renderFilePreviews(this, $('#' + previewId));
-  });
+  ['attachments_edit', 'preview_edit'],
+  // หลักฐานโอนเงินค่าป้ายแดง — หน้าแก้ไขใบจอง และโมดัลหน้าประวัติ (โหลดทีหลังด้วย ajax)
+  ['red_license_slips', 'redSlipPreview'],
+  ['rp_slips', 'rp_slip_preview']
+]);
+
+// ลบไฟล์หลักฐานโอนเงินค่าป้ายแดงแล้ว → อัปเดตตัวนับที่ด่าน "มีป้ายแดงต้องมีหลักฐาน" ใช้อ่าน
+$(document).on('fc:removed', '#redSlipList, #rpSlipList', function (e, info) {
+  $('#redSlipCount, #rp_slip_count').val(info.remaining);
 });
 
-// ลบไฟล์แนบที่มีอยู่แล้ว (edit page)
-$(document).on('click', '.btn-att-delete', function () {
-  const $item = $(this).closest('.att-item');
-  const index = $item.data('index');
-  const url = $item.data('delete-url');
-
-  Swal.fire({
-    title: 'ลบไฟล์นี้?',
-    text: 'ไฟล์จะถูกลบออกจากหลักฐานการจอง',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#6c5ffc',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'ใช่, ลบเลย!',
-    cancelButtonText: 'ยกเลิก'
-  }).then(function (result) {
-    if (!result.isConfirmed) return;
-
-    $.ajax({
-      url: url,
-      type: 'DELETE',
-      data: { _token: $('meta[name="csrf-token"]').attr('content'), index: index },
-      success: function () {
-        $item.remove();
-        // อัปเดต data-index ของรายการที่เหลือ
-        $('#existingAttachments .att-item').each(function (i) {
-          $(this).data('index', i);
-        });
-        if ($('#existingAttachments .att-item').length === 0) {
-          $('#existingAttachments').closest('.mb-3').remove();
-          $('#existingAttachments').prev('.po-label').remove();
-        }
-        Swal.fire({ icon: 'success', title: 'ลบไฟล์แล้ว', timer: 1200, showConfirmButton: true });
-      },
-      error: function () {
-        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถลบไฟล์ได้' });
-      }
-    });
-  });
+// ลบไฟล์หลักฐานการจองแล้ว หัวข้อ "ไฟล์ที่แนบแล้ว" ต้องหายไปด้วยถ้าไม่เหลือไฟล์
+$(document).on('fc:removed', '#existingAttachments', function (e, info) {
+  if (info.remaining === 0) {
+    $('#existingAttachments').prev('.po-label').remove();
+    $('#existingAttachments').remove();
+  }
 });
 
 // ── เปลี่ยนผู้ซื้อ ──

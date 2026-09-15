@@ -23,6 +23,8 @@ $(document).ready(function () {
       { data: 'No' },
       { data: 'FullName', orderable: false },
       { data: 'vin', orderable: false },
+      // ป้ายแดง/ป้ายขาว 2 บรรทัดในคอลัมน์เดียว — ค้นหาได้ด้วย (เลขป้ายอยู่ในข้อความ)
+      { data: 'plates', orderable: false },
       { data: 'province', orderable: false },
       { data: 'withdrawn_cost', orderable: false },
       { data: 'receipt_total', orderable: false },
@@ -210,6 +212,39 @@ $(document).on('click', '.btnEditVehicle', function () {
   });
 });
 
+
+// หน้าแก้ไข : คิด "รวมเบิก / รวมเคลียร์" ใหม่ทันทีที่พิมพ์ (ตรวจ + ช่อง + ใบเสร็จ + อื่นๆ)
+// ฝั่ง server คิดซ้ำตอนบันทึกอยู่แล้ว ตรงนี้แค่ให้เห็นยอดทันทีไม่ต้องเดา
+// ผูกที่ document เพราะโมดัลแก้ไขโหลดมาด้วย ajax
+function recalcVehicleEdit($scope, prefix) {
+  const num = cls => parseFloat(($scope.find('.' + prefix + cls).val() || '0').replace(/,/g, '')) || 0;
+  const total = num('-check') + num('-channel') + num('-bill') + num('-other');
+
+  $scope
+    .find('.' + prefix + '-total')
+    .val(total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+  // มียอดอื่นๆ ต้องมีหมายเหตุ — ขึ้นกรอบแดงไว้ก่อน ฝั่ง server ดักซ้ำตอนกดบันทึก
+  const $note = $scope.find('.' + prefix + '-other-note');
+  $note.toggleClass('is-invalid', num('-other') > 0 && !String($note.val() || '').trim());
+}
+
+$(document).on(
+  'input',
+  '.veh-wd-check, .veh-wd-channel, .veh-wd-bill, .veh-wd-other, .veh-wd-other-note',
+  function () {
+    recalcVehicleEdit($(this).closest('form'), 'veh-wd');
+  }
+);
+
+$(document).on(
+  'input',
+  '.veh-rc-check, .veh-rc-channel, .veh-rc-bill, .veh-rc-other, .veh-rc-other-note',
+  function () {
+    recalcVehicleEdit($(this).closest('form'), 'veh-rc');
+  }
+);
+
 //withdrawal pending
 // blur focus viewWithdrawal
 $(document).on('hide.bs.modal', '.viewWithdrawal', function () {
@@ -229,6 +264,7 @@ $(document).on('click', '.btnViewWithdrawal', function () {
 
 $(document).on('click', '.btnConfirmWithdrawal', function () {
   let items = [];
+  let missingNote = 0;
 
   $('.checkItem:checked').each(function () {
     let row = $(this).closest('tr');
@@ -236,7 +272,15 @@ $(document).on('click', '.btnConfirmWithdrawal', function () {
     let check = row.find('.withdrawal-check').val().replace(/,/g, '');
     let channel = row.find('.withdrawal-channel').val().replace(/,/g, '');
     let receipt = row.find('.withdrawal-bill').val().replace(/,/g, '');
+    let other = row.find('.withdrawal-other').val().replace(/,/g, '');
+    let otherNote = (row.find('.withdrawal-other-note').val() || '').trim();
     let total = row.find('.withdrawal-total').val().replace(/,/g, '');
+
+    // มียอด "อื่นๆ" ต้องมีหมายเหตุกำกับเสมอ — ไม่งั้นทีหลังไม่มีใครรู้ว่าเงินก้อนนี้ค่าอะไร
+    if (parseFloat(other) > 0 && !otherNote) {
+      missingNote++;
+      return;
+    }
 
     let isComplete = check >= 0 && channel >= 0 && receipt > 0 && total >= 0;
 
@@ -247,16 +291,39 @@ $(document).on('click', '.btnConfirmWithdrawal', function () {
       check: check,
       channel: channel,
       receipt: receipt,
+      other: other,
+      other_note: otherNote,
       total: total
     });
   });
 
-  if (items.length === 0) {
+  if (missingNote > 0) {
     $('.viewWithdrawal')
       .one('hidden.bs.modal', function () {
         Swal.fire({
           icon: 'warning',
-          title: 'กรุณาเลือกข้อมูล'
+          title: 'กรุณากรอกหมายเหตุ',
+          text: 'มี ' + missingNote + ' รายการที่ใส่ยอด "อื่นๆ" ไว้แต่ยังไม่ได้ระบุหมายเหตุ'
+        }).then(() => {
+          $('.viewWithdrawal').modal('show');
+        });
+      })
+      .modal('hide');
+    return;
+  }
+
+
+  if (items.length === 0) {
+    // แถวที่กรอกครบแล้วแต่ยังไม่ได้ติ๊ก — บอกให้ตรงจุด ดีกว่าขึ้น "กรุณาเลือกข้อมูล" ลอย ๆ
+    // (เคสที่เจอบ่อย : กรอกเสร็จแล้วกดส่งเบิกเลย โดยไม่รู้ว่าติ๊กยังไม่ได้ติ๊ก/หลุดไป)
+    let ready = $('#tab-withdrawal .checkItem:not(:disabled):not(:checked)').length;
+
+    $('.viewWithdrawal')
+      .one('hidden.bs.modal', function () {
+        Swal.fire({
+          icon: 'warning',
+          title: ready > 0 ? 'ยังไม่ได้ติ๊กเลือกรายการ' : 'กรุณาเลือกข้อมูล',
+          text: ready > 0 ? 'มี ' + ready + ' รายการที่กรอกข้อมูลครบแล้ว แต่ยังไม่ได้ติ๊กเลือกหน้ารายการ' : ''
         }).then(() => {
           $('.viewWithdrawal').modal('show');
         });
@@ -308,33 +375,55 @@ $(document).on('click', '.btnConfirmWithdrawal', function () {
   }, 300);
 });
 
-//เช็คกรอกข้อมูลครบ
+//เช็คกรอกข้อมูลครบ — มียอด "อื่นๆ" ต้องมีหมายเหตุด้วย ถึงจะติ๊กเลือกได้
+// จำไว้ด้วยว่าก่อนหน้านี้ผู้ใช้ติ๊กไว้ไหม : ระหว่างพิมพ์ "อื่นๆ" แถวจะไม่ครบชั่วคราว (ยังไม่ได้พิมพ์หมายเหตุ)
+// ถ้าปล่อยให้ติ๊กหลุดแล้วไม่คืนให้ ผู้ใช้ที่กรอกเสร็จแล้วกดส่งเบิกเลยจะเสียรายการนั้นไปเงียบ ๆ
 function checkWithdrawalRow(row) {
   let check = row.find('.withdrawal-check').val().replace(/,/g, '');
   let channel = row.find('.withdrawal-channel').val().replace(/,/g, '');
   let receipt = row.find('.withdrawal-bill').val().replace(/,/g, '');
+  let other = parseFloat(row.find('.withdrawal-other').val().replace(/,/g, '')) || 0;
+  let otherNote = (row.find('.withdrawal-other-note').val() || '').trim();
   let total = row.find('.withdrawal-total').val().replace(/,/g, '');
 
-  let isComplete = check >= 0 && check !== '' && channel >= 0 && receipt > 0 && total >= 0;
+  let otherOk = other <= 0 || otherNote !== '';
+  let isComplete = check >= 0 && check !== '' && channel >= 0 && receipt > 0 && total >= 0 && otherOk;
+
+  // ย้ำด้วยกรอบแดงตรงช่องหมายเหตุ จะได้รู้ว่าติ๊กไม่ได้เพราะอะไร
+  row.find('.withdrawal-other-note').toggleClass('is-invalid', other > 0 && otherNote === '');
 
   let checkbox = row.find('.checkItem');
 
   if (isComplete) {
-    checkbox.show().prop('disabled', false);
+    checkbox.prop('disabled', false).attr('title', '');
+    // คืนติ๊กที่หลุดไปตอนแถวยังกรอกไม่ครบ
+    if (checkbox.data('wasChecked')) {
+      checkbox.prop('checked', true).removeData('wasChecked');
+    }
   } else {
-    checkbox.prop('checked', false).prop('disabled', true).hide();
+    if (checkbox.is(':checked')) {
+      checkbox.data('wasChecked', true);
+    }
+    // โชว์ช่องติ๊กไว้เหมือนเดิมแต่กดไม่ได้ (ของเดิมซ่อนทิ้ง ทำให้ดูเหมือนช่องหายไปเฉย ๆ)
+    checkbox
+      .prop('checked', false)
+      .prop('disabled', true)
+      .attr('title', other > 0 && otherNote === '' ? 'ใส่ยอด "อื่นๆ" แล้วต้องกรอกหมายเหตุก่อน' : 'กรอกข้อมูลให้ครบก่อน');
   }
+
+  checkbox.show();
 }
 
-//คำนวณรวม ส่งเบิก
+//คำนวณรวม ส่งเบิก — "อื่นๆ" ถูกบวกเข้ายอดรวมด้วย
 $(document).on('input', '.calc-input', function () {
   let row = $(this).closest('tr');
 
   let check = parseFloat(row.find('.withdrawal-check').val().replace(/,/g, '')) || 0;
   let channel = parseFloat(row.find('.withdrawal-channel').val().replace(/,/g, '')) || 0;
   let receipt = parseFloat(row.find('.withdrawal-bill').val().replace(/,/g, '')) || 0;
+  let other = parseFloat(row.find('.withdrawal-other').val().replace(/,/g, '')) || 0;
 
-  let total = check + channel + receipt;
+  let total = check + channel + receipt + other;
 
   row
     .find('.withdrawal-total')
@@ -343,15 +432,20 @@ $(document).on('input', '.calc-input', function () {
   checkWithdrawalRow(row);
 });
 
+// พิมพ์หมายเหตุแล้วต้องเช็คแถวใหม่ (ติ๊กได้/ไม่ได้ ขึ้นกับว่ามีหมายเหตุครบหรือยัง)
+$(document).on('input', '.withdrawal-other-note', function () {
+  checkWithdrawalRow($(this).closest('tr'));
+});
+
 $(document).on('change', '#checkAll', function () {
   let isChecked = this.checked;
 
-  $('.checkItem').each(function () {
-    let row = $(this).closest('tr');
+  // เลือกได้เฉพาะแถวที่กรอกครบ (ช่องติ๊กไม่ถูก disable) — เช็คจาก :disabled ไม่ใช่ :visible
+  // เพราะตอนนี้แถวที่ยังไม่ครบจะโชว์ช่องติ๊กไว้แบบกดไม่ได้ ไม่ได้ซ่อนทิ้งเหมือนเดิม
+  $('#tab-withdrawal .checkItem').each(function () {
+    checkWithdrawalRow($(this).closest('tr'));
 
-    checkWithdrawalRow(row);
-
-    if ($(this).is(':visible')) {
+    if (!$(this).is(':disabled')) {
       $(this).prop('checked', isChecked);
     } else {
       $(this).prop('checked', false);
@@ -360,14 +454,11 @@ $(document).on('change', '#checkAll', function () {
 });
 
 $(document).on('shown.bs.modal', '.viewWithdrawal', function () {
-  // withdrawal
-  $('#tab-withdrawal .checkItem').hide();
+  // ตั้งสถานะช่องติ๊กของทุกแถวตอนเปิดโมดัล — แถวที่ยังกรอกไม่ครบจะโชว์แต่กดไม่ได้
   $('#tab-withdrawal tbody tr').each(function () {
     checkWithdrawalRow($(this));
   });
 
-  // clear
-  $('#tab-clear .checkItemClear').hide();
   $('#tab-clear tbody tr').each(function () {
     checkClearRow($(this));
   });
@@ -376,6 +467,7 @@ $(document).on('shown.bs.modal', '.viewWithdrawal', function () {
 //clear
 $(document).on('click', '.btnConfirmClear', function () {
   let items = [];
+  let missingNote = 0;
 
   $('.checkItemClear:checked').each(function () {
     let row = $(this).closest('tr');
@@ -383,7 +475,15 @@ $(document).on('click', '.btnConfirmClear', function () {
     let check = row.find('.receipt-check').val().replace(/,/g, '');
     let channel = row.find('.receipt-channel').val().replace(/,/g, '');
     let receipt = row.find('.receipt-bill').val().replace(/,/g, '');
+    let other = row.find('.receipt-other').val().replace(/,/g, '');
+    let otherNote = (row.find('.receipt-other-note').val() || '').trim();
     let total = row.find('.receipt-total').val().replace(/,/g, '');
+
+    // มียอด "อื่นๆ" ต้องมีหมายเหตุกำกับเสมอ (กติกาเดียวกับฝั่งส่งเบิก)
+    if (parseFloat(other) > 0 && !otherNote) {
+      missingNote++;
+      return;
+    }
 
     let isComplete = check >= 0 && channel >= 0 && receipt > 0 && total >= 0;
 
@@ -394,16 +494,37 @@ $(document).on('click', '.btnConfirmClear', function () {
       check: check,
       channel: channel,
       receipt: receipt,
+      other: other,
+      other_note: otherNote,
       total: total
     });
   });
 
-  if (items.length === 0) {
+  if (missingNote > 0) {
     $('.viewWithdrawal')
       .one('hidden.bs.modal', function () {
         Swal.fire({
           icon: 'warning',
-          title: 'กรุณาเลือกข้อมูล'
+          title: 'กรุณากรอกหมายเหตุ',
+          text: 'มี ' + missingNote + ' รายการที่ใส่ยอด "อื่นๆ" ไว้แต่ยังไม่ได้ระบุหมายเหตุ'
+        }).then(() => {
+          $('.viewWithdrawal').modal('show');
+        });
+      })
+      .modal('hide');
+    return;
+  }
+
+
+  if (items.length === 0) {
+    let ready = $('#tab-clear .checkItemClear:not(:disabled):not(:checked)').length;
+
+    $('.viewWithdrawal')
+      .one('hidden.bs.modal', function () {
+        Swal.fire({
+          icon: 'warning',
+          title: ready > 0 ? 'ยังไม่ได้ติ๊กเลือกรายการ' : 'กรุณาเลือกข้อมูล',
+          text: ready > 0 ? 'มี ' + ready + ' รายการที่กรอกข้อมูลครบแล้ว แต่ยังไม่ได้ติ๊กเลือกหน้ารายการ' : ''
         }).then(() => {
           $('.viewWithdrawal').modal('show');
         });
@@ -455,33 +576,50 @@ $(document).on('click', '.btnConfirmClear', function () {
   }, 300);
 });
 
-//เช็คครบไหม
+//เช็คครบไหม — กติกาและการคืนติ๊กเหมือนฝั่งส่งเบิก (ดู checkWithdrawalRow)
 function checkClearRow(row) {
   let check = row.find('.receipt-check').val().replace(/,/g, '');
   let channel = row.find('.receipt-channel').val().replace(/,/g, '');
   let receipt = row.find('.receipt-bill').val().replace(/,/g, '');
+  let other = parseFloat(row.find('.receipt-other').val().replace(/,/g, '')) || 0;
+  let otherNote = (row.find('.receipt-other-note').val() || '').trim();
   let total = row.find('.receipt-total').val().replace(/,/g, '');
 
-  let isComplete = check >= 0 && check !== '' && channel >= 0 && receipt > 0 && total >= 0;
+  let otherOk = other <= 0 || otherNote !== '';
+  let isComplete = check >= 0 && check !== '' && channel >= 0 && receipt > 0 && total >= 0 && otherOk;
+
+  row.find('.receipt-other-note').toggleClass('is-invalid', other > 0 && otherNote === '');
 
   let checkbox = row.find('.checkItemClear');
 
   if (isComplete) {
-    checkbox.show().prop('disabled', false);
+    checkbox.prop('disabled', false).attr('title', '');
+    if (checkbox.data('wasChecked')) {
+      checkbox.prop('checked', true).removeData('wasChecked');
+    }
   } else {
-    checkbox.prop('checked', false).prop('disabled', true).hide();
+    if (checkbox.is(':checked')) {
+      checkbox.data('wasChecked', true);
+    }
+    checkbox
+      .prop('checked', false)
+      .prop('disabled', true)
+      .attr('title', other > 0 && otherNote === '' ? 'ใส่ยอด "อื่นๆ" แล้วต้องกรอกหมายเหตุก่อน' : 'กรอกข้อมูลให้ครบก่อน');
   }
+
+  checkbox.show();
 }
 
-//คำนวณรวม ส่งเคลียร์
+//คำนวณรวม ส่งเคลียร์ — "อื่นๆ" ถูกบวกเข้ายอดรวมด้วย
 $(document).on('input', '#tab-clear .calc-clear', function () {
   let row = $(this).closest('tr');
 
   let check = parseFloat(row.find('.receipt-check').val().replace(/,/g, '')) || 0;
   let channel = parseFloat(row.find('.receipt-channel').val().replace(/,/g, '')) || 0;
   let receipt = parseFloat(row.find('.receipt-bill').val().replace(/,/g, '')) || 0;
+  let other = parseFloat(row.find('.receipt-other').val().replace(/,/g, '')) || 0;
 
-  let total = check + channel + receipt;
+  let total = check + channel + receipt + other;
 
   row
     .find('.receipt-total')
@@ -490,15 +628,17 @@ $(document).on('input', '#tab-clear .calc-clear', function () {
   checkClearRow(row);
 });
 
+$(document).on('input', '#tab-clear .receipt-other-note', function () {
+  checkClearRow($(this).closest('tr'));
+});
+
 $(document).on('change', '#checkAllClear', function () {
   let isChecked = this.checked;
 
   $('#tab-clear .checkItemClear').each(function () {
-    let row = $(this).closest('tr');
+    checkClearRow($(this).closest('tr'));
 
-    checkClearRow(row);
-
-    if ($(this).is(':visible')) {
+    if (!$(this).is(':disabled')) {
       $(this).prop('checked', isChecked);
     } else {
       $(this).prop('checked', false);

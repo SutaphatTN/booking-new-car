@@ -40,20 +40,68 @@
               @endif
             </div>
 
-            <label for="rp_red_license" class="mf-label form-label">
-              <i class="bx bx-purchase-tag ci-rose"></i> เลือกป้ายแดง
-            </label>
-            <select id="rp_red_license" class="form-select">
-              <option value="">— ไม่ระบุ (นำป้ายออก) —</option>
-              @foreach ($licensePlateRed as $r)
-                <option value="{{ $r->id }}" {{ $saleCar->red_license == $r->id ? 'selected' : '' }}>
-                  {{ $r->number }}
-                </option>
-              @endforeach
-            </select>
-            <div class="form-text">
-              รายการนี้แสดงเฉพาะป้ายที่ยังว่างของแบรนด์ตัวเอง ป้ายที่ยืมมา และป้ายที่ใบนี้ถืออยู่
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="rp_red_license" class="mf-label form-label">
+                  <i class="bx bx-purchase-tag ci-rose"></i> เลือกป้ายแดง
+                </label>
+                <select id="rp_red_license" class="form-select">
+                  <option value="">— ไม่ระบุ (นำป้ายออก) —</option>
+                  @foreach ($licensePlateRed as $r)
+                    <option value="{{ $r->id }}" {{ $saleCar->red_license == $r->id ? 'selected' : '' }}>
+                      {{ $r->number }}
+                    </option>
+                  @endforeach
+                </select>
+                <div class="form-text">
+                  แสดงเฉพาะป้ายที่ยังว่างของแบรนด์ตัวเอง ป้ายที่ยืมมา และป้ายที่ใบนี้ถืออยู่
+                </div>
+              </div>
+
+              {{-- วันที่ลูกค้าจ่ายเงินค่าป้ายแดง — บังคับเมื่อมีป้าย ; เปลี่ยนเลขป้ายทีหลังจะเห็นวันที่เคยกรอกไว้ --}}
+              <div class="col-md-6">
+                <label for="rp_pay_date" class="mf-label form-label">
+                  <i class="bx bx-calendar-check ci-emerald"></i> วันที่ลูกค้าจ่ายเงิน
+                  <span class="text-danger">*</span>
+                </label>
+                <input type="date" id="rp_pay_date" class="form-control"
+                  value="{{ $saleCar->red_license_pay_date ? \Illuminate\Support\Carbon::parse($saleCar->red_license_pay_date)->format('Y-m-d') : '' }}">
+                <div class="form-text">
+                  ค่าป้ายแดงที่ลูกค้าจ่าย — เลือกป้ายแดงแล้วต้องระบุวันที่ด้วย
+                </div>
+              </div>
             </div>
+
+            {{-- หลักฐานการโอนเงินค่าป้ายแดง — ไฟล์ขึ้น OneDrive
+                 New Car/{แบรนด์}/ป้ายแดง/หลักฐานลูกค้าโอนเงิน/{id-ชื่อลูกค้า}
+                 บังคับให้มีอย่างน้อย 1 ไฟล์เมื่อมีป้ายแดง ; ไฟล์เดิมนับด้วย ไม่ต้องแนบใหม่ทุกครั้ง --}}
+            @php
+              $rpSlips = is_array($saleCar->red_license_slip_url) ? $saleCar->red_license_slip_url : [];
+              $rpProxyBase = route('purchase-order.proxy', $saleCar->id);
+            @endphp
+
+            <label for="rp_slips" class="mf-label form-label mt-3">
+              <i class="bx bx-receipt ci-indigo"></i> หลักฐานการโอนเงิน (ค่าป้ายแดง)
+              <span class="text-danger">*</span>
+            </label>
+
+            @if ($rpSlips)
+              <div class="d-flex flex-wrap mb-2" id="rpSlipList">
+                @include('_partials.file-cards', [
+                    'files' => $rpSlips,
+                    'proxyBase' => $rpProxyBase,
+                    'deleteUrl' => route('purchase-order.red-plate.delete-slip', $saleCar->id),
+                ])
+              </div>
+            @endif
+
+            <input type="hidden" id="rp_slip_count" value="{{ count($rpSlips) }}">
+            <input type="file" id="rp_slips" class="form-control" accept=".pdf,.jpg,.jpeg,.png" multiple>
+            <div class="form-text">
+              รองรับ PDF, JPG, PNG — แนบได้หลายไฟล์ ไฟล์ที่แนบไว้แล้วจะไม่ถูกลบทิ้ง
+            </div>
+            {{-- พรีวิวไฟล์ที่เพิ่งเลือก (ยังไม่อัปโหลด) — กดกากบาทเอาออกทีละไฟล์ได้ --}}
+            <div id="rp_slip_preview" class="d-flex flex-wrap mt-1"></div>
 
           </div>
         </div>

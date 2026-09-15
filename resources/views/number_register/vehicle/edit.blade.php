@@ -103,6 +103,22 @@
                       value="{{ number_format($veh->vehicleLicense?->withdrawal_bill ?? 0, 2) }}">
                   </div>
                 </div>
+                {{-- อื่นๆ = ค่าใช้จ่ายเพิ่มเติม มียอดต้องมีหมายเหตุ และถูกบวกเข้า "รวมเบิก" --}}
+                <div class="col-md-3">
+                  <label class="mf-label form-label">อื่นๆ</label>
+                  <div class="input-group">
+                    <span class="input-group-text ig-amber">฿</span>
+                    <input name="withdrawal_other" type="text"
+                      class="form-control text-end money-input veh-wd-other"
+                      value="{{ number_format($veh->vehicleLicense?->withdrawal_other ?? 0, 2) }}">
+                  </div>
+                </div>
+                <div class="col-md-9">
+                  <label class="mf-label form-label">หมายเหตุ (อื่นๆ)</label>
+                  <input name="withdrawal_other_note" type="text" class="form-control veh-wd-other-note"
+                    maxlength="255" placeholder="ระบุเมื่อมียอดอื่นๆ"
+                    value="{{ $veh->vehicleLicense?->withdrawal_other_note }}">
+                </div>
                 <div class="col-md-3">
                   <label for="edit_veh_withdrawal_total" class="mf-label form-label">
                     <i class="bx bx-wallet ci-amber"></i> รวมเบิก
@@ -114,7 +130,6 @@
                       value="{{ number_format($veh->vehicleLicense?->withdrawal_total ?? 0, 2) }}">
                   </div>
                 </div>
-              </div>
 
               {{-- ── ยอดเคลียร์ (ตรวจ + ช่อง + ใบเสร็จ) ── --}}
               <div class="mb-2 mt-3 fw-semibold text-muted small">
@@ -148,6 +163,22 @@
                       value="{{ number_format($veh->vehicleLicense?->receipt_bill ?? 0, 2) }}">
                   </div>
                 </div>
+                {{-- อื่นๆ ฝั่งเคลียร์ — กติกาเดียวกับฝั่งเบิก --}}
+                <div class="col-md-3">
+                  <label class="mf-label form-label">อื่นๆ</label>
+                  <div class="input-group">
+                    <span class="input-group-text ig-amber">฿</span>
+                    <input name="receipt_other" type="text"
+                      class="form-control text-end money-input veh-rc-other"
+                      value="{{ number_format($veh->vehicleLicense?->receipt_other ?? 0, 2) }}">
+                  </div>
+                </div>
+                <div class="col-md-9">
+                  <label class="mf-label form-label">หมายเหตุ (อื่นๆ)</label>
+                  <input name="receipt_other_note" type="text" class="form-control veh-rc-other-note"
+                    maxlength="255" placeholder="ระบุเมื่อมียอดอื่นๆ"
+                    value="{{ $veh->vehicleLicense?->receipt_other_note }}">
+                </div>
                 <div class="col-md-3">
                   <label for="edit_veh_receipt_total" class="mf-label form-label">
                     <i class="bx bx-check-circle ci-amber"></i> รวมเคลียร์
@@ -159,7 +190,6 @@
                       value="{{ number_format($veh->vehicleLicense?->receipt_total ?? 0, 2) }}">
                   </div>
                 </div>
-              </div>
 
             </div>
           </div>

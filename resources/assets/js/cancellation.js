@@ -1,3 +1,6 @@
+// การ์ดไฟล์แนบ/พรีวิว + ปุ่มลบบนการ์ด — ตัวกลางตัวเดียวของทั้งระบบ
+import { fileCardHtml, renderFileCards, renderFilePreviews } from './file-cards';
+
 $.ajaxSetup({
   headers: {
     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -142,142 +145,35 @@ function attachProxy(url, salecarId, name) {
   return `${path}?url=${encodeURIComponent(url)}`;
 }
 
-function fileCardStyle(name) {
-  const ext = (name.split('.').pop() || '').toLowerCase();
-  if (ext === 'pdf') return { bg: '#ef4444', label: 'PDF' };
-  if (['xlsx', 'xls', 'csv'].includes(ext)) return { bg: '#16a34a', label: ext.toUpperCase() };
-  if (['doc', 'docx'].includes(ext)) return { bg: '#2563eb', label: ext.toUpperCase() };
-  if (['ppt', 'pptx'].includes(ext)) return { bg: '#ea580c', label: ext.toUpperCase() };
-  if (['zip', 'rar', '7z'].includes(ext)) return { bg: '#7c3aed', label: ext.toUpperCase() };
-  return { bg: '#64748b', label: ext ? ext.toUpperCase() : 'FILE' };
-}
-
+/** การ์ดไฟล์ 1 ใบสำหรับโมดัล "ดูข้อมูล" (อ่านอย่างเดียว ไม่มีปุ่มลบ) */
 function attachPreviewHtml(attachment, salecarId) {
   const url = typeof attachment === 'object' ? attachment.url : attachment;
   const name = typeof attachment === 'object' ? attachment.name : null;
-  const proxy = attachProxy(url, salecarId, name);
-  const uid = Math.random().toString(36).slice(2, 8);
-  const ext = name ? name.split('.').pop().toLowerCase() : null;
-  const imgExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
-  const isFile = ext && !imgExts.includes(ext);
 
-  if (isFile) {
-    const st = fileCardStyle(name);
-    return `
-    <div class="d-inline-block m-1" style="width:80px;vertical-align:top;">
-      <a href="${proxy}" target="_blank" class="d-flex flex-column align-items-center justify-content-center rounded text-white text-decoration-none" style="width:80px;height:80px;background:${st.bg};">
-        <i class="bx bx-file" style="font-size:1.8rem;"></i>
-        <span class="badge bg-white mt-1" style="font-size:.6rem;color:${st.bg};font-weight:700;">${st.label}</span>
-      </a>
-      <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;" title="${name}">${name}</div>
-    </div>`;
-  }
-  return `
-  <div class="d-inline-block m-1" style="width:80px;vertical-align:top;">
-    <a href="${proxy}" target="_blank" id="imgw-${uid}" style="display:block;">
-      <img src="${proxy}" class="rounded border" style="width:80px;height:80px;object-fit:cover;cursor:pointer;"
-        onerror="document.getElementById('imgw-${uid}').style.display='none';document.getElementById('filew-${uid}').style.display='flex';">
-    </a>
-    <a href="${proxy}" target="_blank" id="filew-${uid}" class="text-decoration-none"
-      style="display:none;width:80px;height:80px;border-radius:0.375rem;background:#64748b;flex-direction:column;align-items:center;justify-content:center;color:white;">
-      <i class="bx bx-file" style="font-size:1.8rem;"></i>
-    </a>
-  </div>`;
+  return fileCardHtml({ url: url, href: attachProxy(url, salecarId, name), name: name }, { readonly: true });
 }
 
+/**
+ * รายการไฟล์ในโมดัลแก้ไข — ลบแบบ "เอาออกจากจอ" (stage) ไฟล์หายจริงตอนกดบันทึก
+ * ปุ่มลบเป็นของ file-cards.js ; ที่นี่ดัก 'fc:removed' เพื่อจำ url ที่ถูกเอาออกไว้ใน stagedDeletes
+ */
 function renderWithdrawAttachments(attachments, salecarId) {
   currentAttachments = attachments || [];
-  const $list = $('#withdrawAttachmentList');
-  $list.empty();
 
-  const visible = currentAttachments.filter(att => {
-    const u = typeof att === 'object' ? att.url : att;
-    return !stagedDeletes.includes(u);
-  });
-
-  if (visible.length === 0) {
-    // $list.html('<p class="text-muted small">ยังไม่มีไฟล์แนบ</p>');
-    return;
-  }
-
-  visible.forEach(function (att) {
-    const url = typeof att === 'object' ? att.url : att;
-    const name = typeof att === 'object' ? att.name : null;
-    const proxy = attachProxy(url, salecarId, name);
-    const uid = Math.random().toString(36).slice(2, 8);
-    const ext = name ? name.split('.').pop().toLowerCase() : null;
-    const imgExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
-    const isFile = ext && !imgExts.includes(ext);
-
-    let cardHtml;
-    if (isFile) {
-      const st = fileCardStyle(name);
-      cardHtml = `
-        <a href="${proxy}" target="_blank" class="d-flex flex-column align-items-center justify-content-center rounded text-white text-decoration-none" style="width:80px;height:80px;background:${st.bg};">
-          <i class="bx bx-file" style="font-size:1.8rem;"></i>
-          <span class="badge bg-white mt-1" style="font-size:.6rem;color:${st.bg};font-weight:700;">${st.label}</span>
-        </a>
-        <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;" title="${name}">${name}</div>`;
-    } else {
-      cardHtml = `
-        <a href="${proxy}" target="_blank" id="imgw-${uid}" style="display:block;">
-          <img src="${proxy}" class="rounded border" style="width:80px;height:80px;object-fit:cover;cursor:pointer;"
-            onerror="document.getElementById('imgw-${uid}').style.display='none';document.getElementById('filew-${uid}').style.display='flex';">
-        </a>
-        <a href="${proxy}" target="_blank" id="filew-${uid}" class="text-decoration-none"
-          style="display:none;width:80px;height:80px;border-radius:0.375rem;background:#64748b;flex-direction:column;align-items:center;justify-content:center;color:white;">
-          <i class="bx bx-file" style="font-size:1.8rem;"></i>
-        </a>`;
-    }
-
-    const $item = $(
-      `<div class="position-relative d-inline-block m-1" style="width:80px;vertical-align:top;">
-        ${cardHtml}
-        <button type="button" class="btn btn-danger btn-stage-delete position-absolute top-0 end-0" 
-                style="font-size:.8rem;line-height:1;padding:2px 5px;" title="ลบ" data-url="${url}">
-          <i class="bx bx-x"></i>
-        </button>
-      </div>`
-    );
-    $item.find('.btn-stage-delete').on('click', function () {
-      stagedDeletes.push($(this).data('url'));
-      renderWithdrawAttachments(currentAttachments, salecarId);
+  const visible = currentAttachments
+    .filter(att => !stagedDeletes.includes(typeof att === 'object' ? att.url : att))
+    .map(att => {
+      const url = typeof att === 'object' ? att.url : att;
+      const name = typeof att === 'object' ? att.name : null;
+      return { url: url, href: attachProxy(url, salecarId, name), name: name };
     });
-    $list.append($item);
-  });
+
+  renderFileCards($('#withdrawAttachmentList'), visible, { stage: true });
 }
 
-function renderFilePreviews(input, $preview) {
-  $preview.empty();
-  Array.from(input.files).forEach(function (file, idx) {
-    const isImg = /image/i.test(file.type);
-    const objUrl = isImg ? URL.createObjectURL(file) : null;
-    const st = isImg ? null : fileCardStyle(file.name);
-    const $item = $(
-      `<div class="position-relative d-inline-block m-1" style="width:80px;vertical-align:top;">
-        ${
-          isImg
-            ? `<img src="${objUrl}" class="rounded border" style="width:80px;height:80px;object-fit:cover;">`
-            : `<div class="d-flex flex-column align-items-center justify-content-center rounded text-white" style="width:80px;height:80px;background:${st.bg};">
-               <i class="bx bx-file" style="font-size:1.8rem;"></i>
-               <span class="badge bg-white mt-1" style="font-size:.6rem;color:${st.bg};font-weight:700;">${st.label}</span>
-             </div>
-             <div class="text-truncate text-center text-dark mt-1" style="font-size:.7rem;max-width:80px;">${file.name}</div>`
-        }
-        <button type="button" class="btn btn-danger btn-remove-new-file position-absolute top-0 end-0" style="font-size:.8rem;line-height:1;padding:2px 5px;" title="ลบ"><i class="bx bx-x"></i></button>
-      </div>`
-    );
-    $item.find('.btn-remove-new-file').on('click', function () {
-      const dt = new DataTransfer();
-      Array.from(input.files).forEach(function (f, i) {
-        if (i !== idx) dt.items.add(f);
-      });
-      input.files = dt.files;
-      renderFilePreviews(input, $preview);
-    });
-    $preview.append($item);
-  });
-}
+$(document).on('fc:removed', '#withdrawAttachmentList', function (e, info) {
+  stagedDeletes.push(info.url);
+});
 
 $('#withdrawAttachmentInput').on('change', function () {
   renderFilePreviews(this, $('#newFilePreview'));

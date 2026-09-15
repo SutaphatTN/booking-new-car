@@ -151,14 +151,19 @@ class VehicleExport implements FromView, WithTitle, WithStyles, WithEvents, Shou
                 'withdrawal_check' => $r->withdrawal_check ?? '',
                 'withdrawal_channel'       => $r->withdrawal_channel ?? '',
                 'withdrawal_bill'       => $r->withdrawal_bill ?? '',
+                'withdrawal_other'       => $r->withdrawal_other ?? '',
                 'withdrawal_total'       => $r->withdrawal_total ?? '',
                 'backup_clear_date'       => $r->format_backup_clear_date ?? '-',
                 'receipt_check'       => $r->receipt_check  ?? '',
                 'receipt_channel'       => $r->receipt_channel ?? '',
                 'receipt_bill'       => $r->receipt_bill ?? '',
+                'receipt_other'       => $r->receipt_other ?? '',
                 'receipt_total'       => $r->receipt_total ?? '',
                 'diff'      => $r->diff ?? '',
-                'labe_status'       => $statusMap[$r->labe_status] ?? '-'
+                'labe_status'       => $statusMap[$r->labe_status] ?? '-',
+                // หมายเหตุของยอด "อื่นๆ" ไว้ท้ายสุด จะได้ไม่ไปคั่นกลุ่มคอลัมน์ตัวเลขที่เอาไว้ซัมยอด
+                'withdrawal_other_note' => $r->withdrawal_other_note ?? '',
+                'receipt_other_note'    => $r->receipt_other_note ?? '',
             ];
         });
 

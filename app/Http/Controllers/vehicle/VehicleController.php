@@ -22,38 +22,49 @@ class VehicleController extends Controller
         return view('number_register.vehicle.view');
     }
 
+    /**
+     * วันตัด go-live ของเมนูป้ายทะเบียน — ซ่อนรถที่ส่งมอบก่อนวันนั้นออกจากหน้ารายการ
+     * (ข้อมูลยังอยู่ใน DB ครบ แค่ไม่เอามารกหน้าจอ)
+     *
+     * ใบเก่าชุดที่ import ตอนเปิดระบบ (ก.พ. 2026) หลายใบสถานะเป็น "ส่งมอบ" แต่ไม่มี DeliveryDate
+     * ถ้าเทียบเฉพาะ DeliveryDate จะกรองไม่ออก จึงไล่หาวันสำรองตามลำดับ :
+     *   DeliveryDate → DeliveryInDMSDate → DeliveryInCKDate → BookingDate
+     * ใบที่ไม่มีวันไหนเลยสักช่อง = ใบใหม่ที่ยังกรอกไม่ครบ ปล่อยให้เห็นไว้ ไม่ซ่อน
+     */
+    private function applyRegistrationCutoff($query): void
+    {
+        $startDate = config('vehicle.registration_start_date');
+
+        if (empty($startDate)) {
+            return;
+        }
+
+        $effectiveDate = 'COALESCE(DeliveryDate, DeliveryInDMSDate, DeliveryInCKDate, BookingDate)';
+
+        $query->where(function ($q) use ($effectiveDate, $startDate) {
+            $q->whereRaw("{$effectiveDate} >= ?", [$startDate])
+                ->orWhereRaw("{$effectiveDate} IS NULL");
+        });
+    }
+
     public function listVehicle(Request $request)
     {
         $status = $request->status ?? 'unWithdrawal';
 
         $query = Salecar::with([
+            // customer.prefix ต้อง eager load ด้วย — ตารางเอาชื่อลูกค้ามาโชว์ทุกแถว
+            'customer.prefix',
             'carOrder',
             'provinces',
             'vehicleLicense',
+            'licensePlateRed',
             'financeConfirm'
         ])
             ->whereNotNull('CarOrderID')
-            // ->whereNotNull('DeliveryDate')
             ->where('con_status', 5);
 
         // ซ่อนรถที่ส่งมอบก่อนวัน go-live ของเมนูนี้ (ตั้งค่าใน config/vehicle.php → .env)
-        // รถที่ยังไม่มีวันส่งมอบ (DeliveryDate = NULL) ยังคงแสดงอยู่
-        $registrationStartDate = config('vehicle.registration_start_date');
-        if (!empty($registrationStartDate)) {
-            $query->where(function ($q) use ($registrationStartDate) {
-                $q->whereNull('DeliveryDate')
-                    ->orWhereDate('DeliveryDate', '>=', $registrationStartDate);
-            });
-        }
-            // ->where(function ($q) {
-            //     $q->where('payment_mode', 'non-finance')
-            //         ->orWhere(function ($q2) {
-            //             $q2->where('payment_mode', 'finance')
-            //                 ->whereHas('financeConfirm', function ($q3) {
-            //                     $q3->whereNotNull('firm_date');
-            //                 });
-            //         });
-            // });
+        $this->applyRegistrationCutoff($query);
 
         if ($status === 'unWithdrawal') {
             $query->where(function ($q) {
@@ -93,6 +104,20 @@ class VehicleController extends Controller
             $eng_num = $s->carOrder?->engine_number ?? '-';
             $vin = "Vin : {$vin_num}<br>Engine : {$eng_num}";
 
+            // คอลัมน์ "ป้าย" — ป้ายแดงบรรทัดบน ป้ายขาวบรรทัดล่าง ใช้ไอคอนแทนคำว่าป้ายแดง/ป้ายขาว
+            // ชี้ที่บรรทัดไหนก็ได้ (title ครอบทั้งบรรทัด ไม่ใช่แค่ตัวไอคอน) จะได้รู้ว่าอันไหนคืออะไร
+            $redPlate = $s->licensePlateRed?->number;
+            $whitePlate = trim(($s->vehicleLicense?->license_name ?? '') . ' ' . ($s->vehicleLicense?->license_number ?? ''));
+
+            $plateLine = fn(string $icon, string $color, string $label, ?string $value) =>
+                '<div class="d-flex align-items-center gap-1" style="font-size:.8rem;" title="' . $label . '">'
+                . '<i class="bx ' . $icon . '" style="color:' . $color . ';"></i>'
+                . '<span class="' . ($value ? '' : 'text-muted') . '">' . ($value ? e($value) : '-') . '</span>'
+                . '</div>';
+
+            $plates = $plateLine('bx-purchase-tag', '#ef4444', 'ป้ายแดง', $redPlate)
+                . $plateLine('bx-id-card', '#334155', 'ป้ายขาว', $whitePlate ?: null);
+
             return [
                 'No' => $index + 1,
                 'FullName' => implode(' ', array_filter([
@@ -101,6 +126,7 @@ class VehicleController extends Controller
                     $last ?? null,
                 ])),
                 'vin' => $vin,
+                'plates' => $plates,
                 'province' => $s->provinces?->name,
                 'withdrawn_cost' => $s->vehicleLicense?->withdrawal_total !== null ? number_format($s->vehicleLicense?->withdrawal_total, 2) : '-',
                 'receipt_total' => $s->vehicleLicense?->receipt_total !== null ? number_format($s->vehicleLicense?->receipt_total, 2) : '-',
@@ -197,8 +223,8 @@ class VehicleController extends Controller
 
             // ล้าง comma ช่องเงินทั้งหมด (breakdown + ยอดรวม)
             $moneyFields = [
-                'withdrawal_check', 'withdrawal_channel', 'withdrawal_bill', 'withdrawal_total',
-                'receipt_check', 'receipt_channel', 'receipt_bill', 'receipt_total',
+                'withdrawal_check', 'withdrawal_channel', 'withdrawal_bill', 'withdrawal_other', 'withdrawal_total',
+                'receipt_check', 'receipt_channel', 'receipt_bill', 'receipt_other', 'receipt_total',
             ];
             foreach ($moneyFields as $f) {
                 if (array_key_exists($f, $data)) {
@@ -208,16 +234,28 @@ class VehicleController extends Controller
                 }
             }
 
-            // คิดยอดรวมใหม่จาก breakdown ให้ตรงกับ PDF เสมอ (ตรวจ + ช่อง + ใบเสร็จ)
-            if (array_key_exists('withdrawal_check', $data) || array_key_exists('withdrawal_channel', $data) || array_key_exists('withdrawal_bill', $data)) {
+            // "อื่นๆ" มียอดต้องมีหมายเหตุ — กติกาเดียวกับตอนส่งเบิก/ส่งเคลียร์
+            foreach ([['withdrawal_other', 'withdrawal_other_note'], ['receipt_other', 'receipt_other_note']] as [$amountKey, $noteKey]) {
+                if ((float) ($data[$amountKey] ?? 0) > 0 && trim((string) ($data[$noteKey] ?? '')) === '') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'มียอด "อื่นๆ" แต่ยังไม่ได้ระบุหมายเหตุ',
+                    ], 422);
+                }
+            }
+
+            // คิดยอดรวมใหม่จาก breakdown ให้ตรงกับ PDF เสมอ (ตรวจ + ช่อง + ใบเสร็จ + อื่นๆ)
+            if (array_key_exists('withdrawal_check', $data) || array_key_exists('withdrawal_channel', $data) || array_key_exists('withdrawal_bill', $data) || array_key_exists('withdrawal_other', $data)) {
                 $data['withdrawal_total'] = (float) ($data['withdrawal_check'] ?? 0)
                     + (float) ($data['withdrawal_channel'] ?? 0)
-                    + (float) ($data['withdrawal_bill'] ?? 0);
+                    + (float) ($data['withdrawal_bill'] ?? 0)
+                    + (float) ($data['withdrawal_other'] ?? 0);
             }
-            if (array_key_exists('receipt_check', $data) || array_key_exists('receipt_channel', $data) || array_key_exists('receipt_bill', $data)) {
+            if (array_key_exists('receipt_check', $data) || array_key_exists('receipt_channel', $data) || array_key_exists('receipt_bill', $data) || array_key_exists('receipt_other', $data)) {
                 $data['receipt_total'] = (float) ($data['receipt_check'] ?? 0)
                     + (float) ($data['receipt_channel'] ?? 0)
-                    + (float) ($data['receipt_bill'] ?? 0);
+                    + (float) ($data['receipt_bill'] ?? 0)
+                    + (float) ($data['receipt_other'] ?? 0);
             }
 
             // key ด้วย SaleID อย่างเดียว (กันสร้างแถวซ้ำเวลาคนแก้อยู่คนละ zone/brand/branch)
@@ -252,30 +290,26 @@ class VehicleController extends Controller
 
     public function withdrawalPending()
     {
-        $withdrawalData = Salecar::with(['carOrder', 'vehicleLicense', 'customer'])
+        // ฝั่ง "ส่งเบิก" — ใช้วันตัด go-live ชุดเดียวกับหน้ารายการ ไม่งั้นโมดัลจะมีของเก่าก่อนเปิดระบบปนมาเยอะ
+        $withdrawalQuery = Salecar::with(['carOrder', 'vehicleLicense', 'customer'])
             ->whereNotNull('CarOrderID')
             ->where('con_status', 5)
-            // ->whereNotNull('DeliveryDate')
-            // ->where(function ($q) {
-            //     $q->where('payment_mode', 'non-finance')
-            //         ->orWhere(function ($q2) {
-            //             $q2->where('payment_mode', 'finance')
-            //                 ->whereHas('financeConfirm', function ($q3) {
-            //                     $q3->whereNotNull('firm_date');
-            //                 });
-            //         });
-            // })
             ->where(function ($q) {
                 $q->doesntHave('vehicleLicense')
                     ->orWhereHas('vehicleLicense', function ($qq) {
                         $qq->whereNull('withdrawal_date');
                     });
-            })->get();
+            });
 
+        $this->applyRegistrationCutoff($withdrawalQuery);
+
+        $withdrawalData = $withdrawalQuery->get();
+
+        // ฝั่ง "เคลียร์" — ไม่ใส่วันตัด : รายการที่นี่คือของที่ "ส่งเบิกไปแล้ว" ทั้งหมด
+        // ถ้าซ่อนตามวันส่งมอบ ใบเก่าที่เพิ่งส่งเบิกหลังเปิดระบบจะเคลียร์ไม่ได้เลย (ค้างถาวร)
         $clearData = Salecar::with(['carOrder', 'vehicleLicense', 'customer'])
             ->whereNotNull('CarOrderID')
             ->where('con_status', 5)
-            // ->whereNotNull('DeliveryDate')
             ->whereHas('vehicleLicense', function ($q) {
                 $q->whereNotNull('withdrawal_date')
                     ->whereNull('backup_clear_date');
@@ -297,6 +331,25 @@ class VehicleController extends Controller
 
         foreach ($request->items as $item) {
 
+            // "อื่นๆ" มียอดต้องมีหมายเหตุ — ดักซ้ำฝั่ง server (JS กันไว้ชั้นแรกแล้ว)
+            $other = isset($item['other']) && $item['other'] !== ''
+                ? (float) str_replace(',', '', $item['other'])
+                : 0;
+            $otherNote = trim($item['other_note'] ?? '');
+
+            if ($other > 0 && $otherNote === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'มียอด "อื่นๆ" แต่ยังไม่ได้ระบุหมายเหตุ',
+                ], 422);
+            }
+
+            // ยอดรวมคิดใหม่ฝั่ง server เสมอ (ตรวจ + ช่อง + ใบเสร็จ + อื่นๆ) ไม่เชื่อค่าที่ส่งมาจากหน้าจอ
+            $total = (float) str_replace(',', '', $item['check'] ?? 0)
+                + (float) str_replace(',', '', $item['channel'] ?? 0)
+                + (float) str_replace(',', '', $item['receipt'] ?? 0)
+                + $other;
+
             VehicleLicense::updateOrCreate(
                 [
                     'SaleID' => $item['id'],
@@ -307,7 +360,9 @@ class VehicleController extends Controller
                     'withdrawal_check' => $item['check'] ? str_replace(',', '', $item['check']) : null,
                     'withdrawal_channel' => $item['channel'] ? str_replace(',', '', $item['channel']) : null,
                     'withdrawal_bill' => $item['receipt'] ? str_replace(',', '', $item['receipt']) : null,
-                    'withdrawal_total' => $item['total'] ? str_replace(',', '', $item['total']) : null,
+                    'withdrawal_other' => $other ?: null,
+                    'withdrawal_other_note' => $otherNote ?: null,
+                    'withdrawal_total' => $total,
                     'userZone' => $userZone,
                     'brand' => $brand,
                     'branch' => $branch,
@@ -351,14 +406,28 @@ class VehicleController extends Controller
 
             if (!$vehicle) continue;
 
-            $receiptTotal = isset($item['total'])
-                ? str_replace(',', '', $item['total'])
-                : null;
+            // "อื่นๆ" มียอดต้องมีหมายเหตุ — กติกาเดียวกับฝั่งส่งเบิก
+            $other = isset($item['other']) && $item['other'] !== ''
+                ? (float) str_replace(',', '', $item['other'])
+                : 0;
+            $otherNote = trim($item['other_note'] ?? '');
+
+            if ($other > 0 && $otherNote === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'มียอด "อื่นๆ" แต่ยังไม่ได้ระบุหมายเหตุ',
+                ], 422);
+            }
+
+            // ยอดรวมคิดใหม่ฝั่ง server เสมอ (ตรวจ + ช่อง + ใบเสร็จ + อื่นๆ)
+            $receiptTotal = (float) str_replace(',', '', $item['check'] ?? 0)
+                + (float) str_replace(',', '', $item['channel'] ?? 0)
+                + (float) str_replace(',', '', $item['receipt'] ?? 0)
+                + $other;
 
             $withdrawalTotal = $vehicle->withdrawal_total ?? 0;
 
             $diff = ($withdrawalTotal ?? 0) - ($receiptTotal ?? 0);
-            // $diff = abs(($withdrawalTotal ?? 0) - ($receiptTotal ?? 0));
 
             $vehicle->update([
                 'backup_clear_date' => $now,
@@ -366,6 +435,8 @@ class VehicleController extends Controller
                 'receipt_check'   => str_replace(',', '', $item['check']) ?? null,
                 'receipt_channel' => str_replace(',', '', $item['channel']) ?? null,
                 'receipt_bill'    => str_replace(',', '', $item['receipt']) ?? null,
+                'receipt_other'   => $other ?: null,
+                'receipt_other_note' => $otherNote ?: null,
                 'receipt_total'   => $receiptTotal,
                 'diff'            => $diff,
             ]);
