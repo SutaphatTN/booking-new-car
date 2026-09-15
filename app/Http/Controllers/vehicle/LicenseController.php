@@ -141,6 +141,9 @@ class LicenseController extends Controller
   // เพิ่มป้ายแดงใหม่ (resource route: POST /license)
   public function store(Request $request)
   {
+    // role ดูอย่างเดียว (insurance_reg) แก้ไขอะไรในเมนูทะเบียนไม่ได้เลย — ปุ่มถูกซ่อนแล้ว ตรงนี้กันยิง endpoint ตรง
+    abort_if(Auth::user()->isRegistrationViewOnly(), 403);
+
     $this->ensureManageRole();
 
     $request->validate([
@@ -188,6 +191,9 @@ class LicenseController extends Controller
    */
   public function updateStatus(Request $request, $id)
   {
+    // role ดูอย่างเดียว (insurance_reg) แก้ไขอะไรในเมนูทะเบียนไม่ได้เลย — ปุ่มถูกซ่อนแล้ว ตรงนี้กันยิง endpoint ตรง
+    abort_if(Auth::user()->isRegistrationViewOnly(), 403);
+
     $this->ensureManageRole();
 
     $request->validate([
@@ -235,6 +241,9 @@ class LicenseController extends Controller
 
   public function storeLoan(Request $request)
   {
+    // role ดูอย่างเดียว (insurance_reg) แก้ไขอะไรในเมนูทะเบียนไม่ได้เลย — ปุ่มถูกซ่อนแล้ว ตรงนี้กันยิง endpoint ตรง
+    abort_if(Auth::user()->isRegistrationViewOnly(), 403);
+
     $this->ensureLoanRole();
 
     $request->validate([
@@ -283,6 +292,9 @@ class LicenseController extends Controller
 
   public function returnLoan(Request $request, $id)
   {
+    // role ดูอย่างเดียว (insurance_reg) แก้ไขอะไรในเมนูทะเบียนไม่ได้เลย — ปุ่มถูกซ่อนแล้ว ตรงนี้กันยิง endpoint ตรง
+    abort_if(Auth::user()->isRegistrationViewOnly(), 403);
+
     $this->ensureLoanRole();
 
     $request->validate(['return_date' => 'required|date']);
@@ -342,6 +354,9 @@ class LicenseController extends Controller
 
   public function update(Request $request, $id)
   {
+    // role ดูอย่างเดียว (insurance_reg) แก้ไขอะไรในเมนูทะเบียนไม่ได้เลย — ปุ่มถูกซ่อนแล้ว ตรงนี้กันยิง endpoint ตรง
+    abort_if(Auth::user()->isRegistrationViewOnly(), 403);
+
     try {
       $lic = LicensePlateHistory::findOrFail($id);
       $data = $request->except(['_token', '_method']);
@@ -476,6 +491,9 @@ class LicenseController extends Controller
 
   public function approveFinance(Request $request)
   {
+    // role ดูอย่างเดียว (insurance_reg) แก้ไขอะไรในเมนูทะเบียนไม่ได้เลย — ปุ่มถูกซ่อนแล้ว ตรงนี้กันยิง endpoint ตรง
+    abort_if(Auth::user()->isRegistrationViewOnly(), 403);
+
     $history = LicensePlateHistory::findOrFail($request->id);
 
     // ── ด่านก่อนยืนยันการจ่ายเงินจริง (กดแล้วย้อนไม่ได้ + ปลดป้ายคืนสต็อกทันที) ──

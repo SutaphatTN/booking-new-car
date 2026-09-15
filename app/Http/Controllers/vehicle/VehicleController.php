@@ -214,6 +214,9 @@ class VehicleController extends Controller
 
     public function update(Request $request, $id)
     {
+        // role ดูอย่างเดียว (insurance_reg) แก้ไขอะไรในเมนูทะเบียนไม่ได้เลย — ปุ่มถูกซ่อนแล้ว ตรงนี้กันยิง endpoint ตรง
+        abort_if(Auth::user()->isRegistrationViewOnly(), 403);
+
         try {
             $userZone = Auth::user()->userZone ?? null;
             $brand = Auth::user()->brand ?? null;
@@ -321,6 +324,9 @@ class VehicleController extends Controller
 
     public function confirmWithdrawal(Request $request)
     {
+        // role ดูอย่างเดียว (insurance_reg) แก้ไขอะไรในเมนูทะเบียนไม่ได้เลย — ปุ่มถูกซ่อนแล้ว ตรงนี้กันยิง endpoint ตรง
+        abort_if(Auth::user()->isRegistrationViewOnly(), 403);
+
         $userZone = Auth::user()->userZone ?? null;
         $brand = Auth::user()->brand ?? null;
         $branch = Auth::user()->branch ?? null;
@@ -396,6 +402,9 @@ class VehicleController extends Controller
     //clear
     public function confirmClear(Request $request)
     {
+        // role ดูอย่างเดียว (insurance_reg) แก้ไขอะไรในเมนูทะเบียนไม่ได้เลย — ปุ่มถูกซ่อนแล้ว ตรงนี้กันยิง endpoint ตรง
+        abort_if(Auth::user()->isRegistrationViewOnly(), 403);
+
         // เลขชุดเคลียร์ 1 ค่า ประทับทุกรายการในการกดครั้งเดียว + เวลาเดียว (ใช้ re-export ทั้งชุด)
         $now = now();
         $batch = (int) (VehicleLicense::withoutGlobalScopes()->max('clear_batch') ?? 0) + 1;

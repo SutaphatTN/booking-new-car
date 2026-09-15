@@ -28,6 +28,10 @@
         <div class="card-body pt-3">
 
           {{-- ── Filter / action bar ── --}}
+          @php
+            // role ดูอย่างเดียว (insurance_reg) — เหลือแค่เมนูรายงาน ไม่มีปุ่มที่ทำให้ข้อมูลเปลี่ยน
+            $viewOnly = auth()->user()->isRegistrationViewOnly();
+          @endphp
           <div class="po-filter-bar d-flex align-items-center gap-2 flex-wrap">
             <div class="d-flex gap-2">
               <div class="btn-group">
@@ -39,10 +43,12 @@
                   <li><a class="dropdown-item" href="{{ route('vehicle.export-license-plate') }}">รายงานป้ายทะเบียน</a></li>
                 </ul>
               </div>
-              <button class="btn btn-info btn-sm btnViewWithdrawal">
-                <i class="bx bx-transfer me-1"></i> ส่งเบิก/เคลียร์
-              </button>
-              @if (in_array(auth()->user()->role, ['admin', 'registration']))
+              @unless ($viewOnly)
+                <button class="btn btn-info btn-sm btnViewWithdrawal">
+                  <i class="bx bx-transfer me-1"></i> ส่งเบิก/เคลียร์
+                </button>
+              @endunless
+              @if (in_array(auth()->user()->role, ['admin', 'registration', 'insurance_reg']))
                 <a href="{{ route('vehicle.history') }}" class="btn btn-secondary btn-sm">
                   <i class="bx bx-history me-1"></i> ประวัติส่งเบิก/เคลียร์
                 </a>

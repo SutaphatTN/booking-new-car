@@ -58,23 +58,23 @@
                 </div>
               </div>
 
-              {{-- วันที่ลูกค้าจ่ายเงินค่าป้ายแดง — บังคับเมื่อมีป้าย ; เปลี่ยนเลขป้ายทีหลังจะเห็นวันที่เคยกรอกไว้ --}}
+              {{-- วันที่ลูกค้าจ่ายเงินค่าป้ายแดง — ไม่บังคับ (หน้าป้ายแดงดักตอนยืนยันการจ่ายเงินจริง)
+                   เปลี่ยนเลขป้ายทีหลังจะเห็นวันที่เคยกรอกไว้ --}}
               <div class="col-md-6">
                 <label for="rp_pay_date" class="mf-label form-label">
                   <i class="bx bx-calendar-check ci-emerald"></i> วันที่ลูกค้าจ่ายเงิน
-                  <span class="text-danger">*</span>
                 </label>
                 <input type="date" id="rp_pay_date" class="form-control"
                   value="{{ $saleCar->red_license_pay_date ? \Illuminate\Support\Carbon::parse($saleCar->red_license_pay_date)->format('Y-m-d') : '' }}">
                 <div class="form-text">
-                  ค่าป้ายแดงที่ลูกค้าจ่าย — เลือกป้ายแดงแล้วต้องระบุวันที่ด้วย
+                  ค่าป้ายแดงที่ลูกค้าจ่าย
                 </div>
               </div>
             </div>
 
             {{-- หลักฐานการโอนเงินค่าป้ายแดง — ไฟล์ขึ้น OneDrive
                  New Car/{แบรนด์}/ป้ายแดง/หลักฐานลูกค้าโอนเงิน/{id-ชื่อลูกค้า}
-                 บังคับให้มีอย่างน้อย 1 ไฟล์เมื่อมีป้ายแดง ; ไฟล์เดิมนับด้วย ไม่ต้องแนบใหม่ทุกครั้ง --}}
+                 ไม่บังคับที่หน้านี้ — ด่านจริงอยู่ที่หน้าป้ายแดงตอนยืนยันการจ่ายเงินจริง --}}
             @php
               $rpSlips = is_array($saleCar->red_license_slip_url) ? $saleCar->red_license_slip_url : [];
               $rpProxyBase = route('purchase-order.proxy', $saleCar->id);
@@ -82,7 +82,6 @@
 
             <label for="rp_slips" class="mf-label form-label mt-3">
               <i class="bx bx-receipt ci-indigo"></i> หลักฐานการโอนเงิน (ค่าป้ายแดง)
-              <span class="text-danger">*</span>
             </label>
 
             @if ($rpSlips)
@@ -95,7 +94,6 @@
               </div>
             @endif
 
-            <input type="hidden" id="rp_slip_count" value="{{ count($rpSlips) }}">
             <input type="file" id="rp_slips" class="form-control" accept=".pdf,.jpg,.jpeg,.png" multiple>
             <div class="form-text">
               รองรับ PDF, JPG, PNG — แนบได้หลายไฟล์ ไฟล์ที่แนบไว้แล้วจะไม่ถูกลบทิ้ง

@@ -9,6 +9,7 @@ use App\Models\TbBrand;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class RegisterController extends Controller
 {
@@ -31,7 +32,8 @@ class RegisterController extends Controller
             'username' => ['required', 'string', 'max:255', 'unique:users'],
             'cardID' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:6'],
-            'role' => ['required', 'string', 'in:sale,audit,account,manager,md,bp,cs,registration'],
+            // รายการ role มาจาก User::ROLE_LABELS ที่เดียว — เพิ่มที่ model แล้วที่นี่รับตามเอง
+            'role' => ['required', 'string', Rule::in(array_keys(User::ROLE_LABELS))],
             'branch' => ['required', 'integer', 'exists:tb_branch,id'],
             'brand' => ['required', 'integer', 'exists:tb_brand,id'],
             'userZone' => ['required', 'in:10,40'],

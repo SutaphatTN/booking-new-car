@@ -1,17 +1,10 @@
 @php
-    $selectableRoles = [
-        'sale' => 'Sale',
-        'audit' => 'Audit',
-        'account' => 'Account',
-        'registration' => 'Registration',
-        'bp' => 'BP',
-        'cs' => 'CS',
-        'manager' => 'Manager',
-        'md' => 'MD',
-    ];
+    // รายการ role มาจาก User::ROLE_LABELS ที่เดียว (ใช้ร่วมกับหน้าลงทะเบียน)
+    // เลือกได้ทุก role แล้ว — เดิมล็อกไว้ 8 ตัว ที่เหลือต้องไปแก้ใน DB เอง
+    $selectableRoles = \App\Models\User::ROLE_LABELS;
 
-    // role พิเศษ (admin/gm/audit_lead/cro/sp/marketing/adminPage) ตั้งใจไม่ให้เลือกจาก dropdown
-    // ต้องส่งค่าเดิมกลับไปด้วย ไม่งั้นฟอร์มจะเขียนทับเป็น option แรก (sale) ตอนแก้ฟิลด์อื่น
+    // เผื่อเจอ user ที่ role เก่าไม่มีในรายการ (ข้อมูลเก่า/ตั้งมาจาก DB) — ต้องส่งค่าเดิมกลับไปด้วย
+    // ไม่งั้นฟอร์มจะเขียนทับเป็น option แรกตอนแก้ฟิลด์อื่น
     $isSpecialRole = !array_key_exists($user->role, $selectableRoles);
 @endphp
 

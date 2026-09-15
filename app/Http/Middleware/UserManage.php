@@ -11,8 +11,7 @@ class UserManage
 {
     /**
      * จัดการสิทธิ์หน้า "รายชื่อผู้ใช้งาน"
-     *  - read  : ดูได้ (admin + audit_lead)
-     *  - write : แก้ไข/ลบ (admin เท่านั้น) — audit_lead ดูได้อย่างเดียว
+     * ตอนนี้เหลือ admin อย่างเดียวทั้ง read และ write — พารามิเตอร์ level ยังคงไว้เผื่อแยกสิทธิ์อีก
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
@@ -20,7 +19,8 @@ class UserManage
     {
         $role = Auth::user()->role ?? null;
 
-        $allowed = $level === 'write' ? ['admin'] : ['admin', 'audit_lead', 'audit_dp'];
+        // 2026-09-15 : เหลือ admin อย่างเดียวทั้งดูและแก้ (เดิม audit_lead/audit_dp ดูรายชื่อได้)
+        $allowed = ['admin'];
 
         if (!in_array($role, $allowed, true)) {
             abort(403);
