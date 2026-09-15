@@ -167,7 +167,7 @@ class User extends Authenticatable
 
 	/**
 	 * รายการ brand id ที่ user นี้ "สลับไปได้" (ใช้ที่ปุ่มสลับ navbar + กันใน BrandSwitcher middleware)
-	 *  - admin/gm/md/account/registration/adminPage → ทุก brand
+	 *  - admin/gm/md/account/registration/adminPage/audit_lead/audit_dp/audit_internal/insurance_reg → ทุก brand
 	 *  - marketing/cro/sp/bp/cs/lead_sale           → ทุก brand ยกเว้น GWM(2)
 	 *  - sale/audit/manager                         → ตาม config brand.sale_switch_scope[home brand]
 	 * ใช้ home brand (getOriginal) เสมอ เพราะ BrandSwitcher เขียนทับ $this->brand ตอน runtime
@@ -176,7 +176,7 @@ class User extends Authenticatable
 	{
 		$all = array_map('intval', array_keys(config('brand.names', [])));
 
-		if (in_array($this->role, ['admin', 'gm', 'md', 'account', 'registration', 'adminPage', 'audit_lead', 'audit_dp', 'audit_internal'], true)) {
+		if (in_array($this->role, ['admin', 'gm', 'md', 'account', 'registration', 'adminPage', 'audit_lead', 'audit_dp', 'audit_internal', 'insurance_reg'], true)) {
 			$base = $all;
 		} elseif (in_array($this->role, ['sale', 'audit', 'manager'], true)) {
 			$home = (int) $this->getOriginal('brand');
