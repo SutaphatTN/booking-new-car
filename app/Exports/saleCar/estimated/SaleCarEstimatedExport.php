@@ -202,6 +202,8 @@ class SaleCarEstimatedExport implements FromView, WithTitle, WithStyles, WithEve
                 'DeliveryDate' => $r?->format_delivery_date ?? '-',
                 'status' => $r?->conStatus?->name ?? '-',
                 'Note' => $r->Note ?? '-',
+                // ลิงก์เปิดใบจองใบนั้นตรง ๆ จากไฟล์ Excel (ผู้ใช้จะได้ไม่ต้องไปค้นหาเอง)
+                'booking_url' => route('purchase-order.edit', $r->id),
             ];
         });
 
