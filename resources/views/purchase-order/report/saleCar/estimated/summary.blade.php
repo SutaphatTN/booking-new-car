@@ -36,6 +36,7 @@
       <th>วันส่งมอบจริง</th>
       <th>สถานะ</th>
       <th>หมายเหตุ</th>
+      <th>ลิงก์ใบจอง</th>
     </tr>
   </thead>
   <tbody>
@@ -69,10 +70,13 @@
         <td>{{ $s['DeliveryDate'] }}</td>
         <td>{{ $s['status'] }}</td>
         <td>{{ $s['Note'] }}</td>
+        <td style="color:#0563C1;text-decoration:underline;">
+          <a href="{{ $s['booking_url'] }}">เปิดใบจอง</a>
+        </td>
       </tr>
     @empty
       <tr>
-        <td colspan="{{ 20 + ($showTeam ? 1 : 0) }}" align="center">
+        <td colspan="{{ 20 + ($showTeam ? 1 : 0) + ($showInterior ? 1 : 0) + (in_array(auth()->user()->brand, [2, 3, 4]) ? 0 : 1) }}" align="center">
           ไม่มีข้อมูล
         </td>
       </tr>
