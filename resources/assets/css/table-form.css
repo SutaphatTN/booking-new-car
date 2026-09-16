@@ -181,4 +181,8 @@
 
 .tbl-styled tbody td:last-child .btn-icon i {
   font-size: 1rem !important;
+  /* ไอคอนในปุ่ม action ขาวหมดทั้งระบบ — ปุ่มพวกนี้เป็นสีทึบ (warning/danger/info/success/primary/secondary)
+     ถ้าไม่บังคับ bootstrap จะให้ btn-warning เป็นตัวอักษรสีเข้ม เลยดูไม่เข้าพวกกับปุ่มอื่น
+     ประกาศไว้ที่นี่ที่เดียว หน้าใหม่ไม่ต้องก๊อป <style> ไปแปะเองอีก */
+  color: #fff !important;
 }

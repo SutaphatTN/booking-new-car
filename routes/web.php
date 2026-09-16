@@ -387,6 +387,10 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::delete('license/{id}/refund-slip', [LicenseController::class, 'deleteRefundSlip'])
         ->name('vehicle.license.delete-refund-slip');
     Route::post('/license/approve-finance', [LicenseController::class, 'approveFinance']);
+    // คืนป้ายก่อนปิดเงิน + หน้าไล่เก็บรายการที่ค้างปิดเงิน
+    Route::post('license/{id}/return-plate', [LicenseController::class, 'returnPlateEarly'])->name('license.return-plate');
+    Route::get('license-pending-refund', [LicenseController::class, 'pendingRefund'])->name('vehicle.license.pending-refund');
+    Route::get('license-pending-refund/list', [LicenseController::class, 'listPendingRefund']);
 
     Route::get('/license/stock-export', [LicenseController::class, 'exportLicStock'])->name('license.stock-export');
     Route::get('/license/loan-export', [LicenseController::class, 'exportLicLoan'])->name('license.loan-export');

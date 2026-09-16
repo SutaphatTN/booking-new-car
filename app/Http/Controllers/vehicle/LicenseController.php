@@ -8,12 +8,14 @@ use App\Exports\license\SummaryLicExport;
 use App\Http\Controllers\Controller;
 use App\Models\LicensePlateHistory;
 use App\Models\LicensePlateLoan;
+use App\Models\Salecar;
 use App\Models\TbLicensePlate;
 use App\Services\OneDriveService;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Support\ExportFilename;
@@ -512,13 +514,123 @@ class LicenseController extends Controller
       'finance_approved_date' => now()
     ]);
 
-    if ($history->licenseLic) {
+    // ปลดป้ายคืนสต็อกเฉพาะรายการที่ "ยังถือป้ายอยู่"
+    // รายการที่กด "คืนป้ายก่อน" ไปแล้ว ป้ายถูกปลดไปตั้งแต่ตอนนั้นและอาจถูกผูกกับลูกค้ารายใหม่แล้ว
+    // ถ้าปลดซ้ำตรงนี้ = ไปแย่งป้ายจากเจ้าของคนใหม่
+    if ($history->licenseLic && !$history->plate_returned_at) {
       $history->licenseLic->update([
         'is_used' => 0
       ]);
     }
 
     return response()->json(['success' => true]);
+  }
+
+  /** role ที่กด "ยืนยันการจ่ายเงินจริง" และ "คืนป้ายก่อน" ได้ — ชุดเดียวกัน */
+  public const FINANCE_ROLES = ['account', 'admin', 'audit', 'audit_lead', 'audit_dp', 'gm'];
+
+  /**
+   * คืนป้ายก่อน (ยังไม่ปิดเงิน)
+   * เคสจริง : ลูกค้ายังไม่มารับเงินคืน/ยังไม่ถึงรอบจ่าย แต่ป้ายต้องเอาไปผูกกับลูกค้ารายใหม่แล้ว
+   * ทำ 3 อย่าง : ปลดป้ายคืนสต็อก + ล้างป้ายออกจากใบขายเดิม + ประทับว่าใครคืนเมื่อไรเพราะอะไร
+   * รายการจะยังค้างอยู่ (finance_approved = null) ให้ไปตามเก็บที่หน้า "ค้างคืนเงินป้ายแดง"
+   */
+  public function returnPlateEarly(Request $request, $id)
+  {
+    abort_if(Auth::user()->isRegistrationViewOnly(), 403);
+    abort_unless(in_array(Auth::user()->role, self::FINANCE_ROLES, true), 403);
+
+    $request->validate([
+      'note' => ['required', 'string', 'max:255'],
+    ], [
+      'note.required' => 'กรุณาระบุเหตุผลที่คืนป้ายก่อนปิดเงิน',
+    ]);
+
+    $history = LicensePlateHistory::withoutGlobalScope('brandAccess')->findOrFail($id);
+
+    if ($history->finance_approved) {
+      return response()->json(['success' => false, 'message' => 'รายการนี้ปิดเงินไปแล้ว ไม่ต้องคืนป้ายซ้ำ'], 422);
+    }
+
+    if ($history->plate_returned_at) {
+      return response()->json(['success' => false, 'message' => 'รายการนี้คืนป้ายไปแล้ว'], 422);
+    }
+
+    DB::transaction(function () use ($history, $request) {
+      $history->update([
+        'plate_returned_at'  => now(),
+        'plate_returned_by'  => Auth::id(),
+        'plate_return_note'  => trim($request->note),
+      ]);
+
+      // ปลดป้ายคืนสต็อก — ข้าม brand scope เผื่อเป็นป้ายที่ยืมมาจากแบรนด์อื่น
+      // ใช้ updateLogged ไม่ใช่ ->update() ตรง ๆ : query builder update ไม่ผ่าน model event
+      // ประวัติใน activity_logs จะหาย ทั้งที่การปลดป้ายเป็นเรื่องที่ต้องตามหลังได้
+      if ($history->licenseID) {
+        TbLicensePlate::updateLogged(
+          fn($q) => $q->withoutGlobalScope('brandAccess')->whereKey($history->licenseID),
+          ['is_used' => 0]
+        );
+      }
+
+      // ล้างป้ายออกจากใบขายเดิม — ของจริงไม่ได้อยู่กับใบนี้แล้ว และกันเคสมีคนแก้ใบนี้ทีหลัง
+      // แล้ว syncRedPlate ไปปลด is_used ของป้ายที่ลูกค้ารายใหม่ถืออยู่
+      // (ประวัติว่าใบนี้เคยถือป้ายไหน ยังอยู่ครบใน license_plate_history)
+      if ($history->saleID) {
+        Salecar::updateLogged(
+          fn($q) => $q->withoutGlobalScopes()
+            ->whereKey($history->saleID)
+            ->where('red_license', $history->licenseID),
+          ['red_license' => null]
+        );
+      }
+    });
+
+    return response()->json([
+      'success' => true,
+      'message' => 'คืนป้ายเรียบร้อยแล้ว — รายการนี้ยังค้างปิดเงิน ดูได้ที่เมนู "ค้างคืนเงินป้ายแดง"',
+    ]);
+  }
+
+  /** หน้า "ค้างคืนเงินป้ายแดง" — รายการที่คืนป้ายไปก่อนแล้วแต่ยังไม่ได้ปิดเงิน */
+  public function pendingRefund()
+  {
+    return view('number_register.license.pending-refund');
+  }
+
+  public function listPendingRefund()
+  {
+    $rows = LicensePlateHistory::pendingRefund()
+      ->with([
+        'saleCarLic' => fn($q) => $q->withoutGlobalScope('userAccess')->with(['customer.prefix', 'saleUser']),
+        'licenseLic' => fn($q) => $q->withoutGlobalScope('brandAccess'),
+        'plateReturnUser',
+      ])
+      ->orderBy('plate_returned_at')
+      ->get();
+
+    $data = $rows->map(function ($r, $i) {
+      $cus = $r->saleCarLic?->customer;
+      $name = trim(($cus?->prefix?->Name_TH ?? '') . ' ' . ($cus?->FirstName ?? '') . ' ' . ($cus?->LastName ?? ''));
+      $missing = $r->approveFinanceMissing();
+
+      return [
+        'No'        => $i + 1,
+        'customer'  => $name ?: '-',
+        'plate'     => $r->licenseLic?->number ?? '-',
+        'vin'       => $r->saleCarLic?->carOrder?->vin_number ?? '-',
+        'sale'      => $r->saleCarLic?->saleUser?->display_name ?? '-',
+        'returned'  => $r->format_plate_returned_at ?? '-',
+        'returnBy'  => $r->plateReturnUser?->name ?? '-',
+        'note'      => $r->plate_return_note ?? '-',
+        'missing'   => $missing
+          ? '<span class="badge bg-label-warning" title="' . e(implode(', ', $missing)) . '">ยังขาด ' . count($missing) . ' อย่าง</span>'
+          : '<span class="badge bg-label-success">ข้อมูลครบ</span>',
+        'Action'    => view('number_register.license.pending-refund-button', ['history' => $r])->render(),
+      ];
+    });
+
+    return response()->json(['data' => $data]);
   }
 
   public function exportLicStock(Request $request)

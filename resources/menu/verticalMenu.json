@@ -385,6 +385,11 @@
           "url": "license",
           "name": "ป้ายแดง",
           "slug": "vehicle.license.index"
+        },
+        {
+          "url": "license-pending-refund",
+          "name": "ค้างคืนเงินป้ายแดง",
+          "slug": "vehicle.license.pending-refund"
         }
       ]
     },
