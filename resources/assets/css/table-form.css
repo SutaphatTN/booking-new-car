@@ -179,6 +179,24 @@
   border-radius: 7px !important;
 }
 
+/* ── ปุ่ม action สีชมพู ── ใช้กับงานที่ไม่ใช่ "แก้ไข" แต่ก็ไม่ใช่ "ลบ"
+   (ตอนนี้ = คืนป้ายแดงก่อนปิดเงิน) แยกสีจากปุ่มแก้ไขสีส้ม จะได้ไม่กดผิด
+   #ff4d9d = ชมพูสดกว่าโทนเดิมของระบบ (#ec4899) แต่ยังอิ่มสีพอให้ไอคอนขาวอ่านออกชัด
+   ตอน hover ค่อยเข้มลงเป็นโทนเดิม จะได้รู้สึกว่ากดติด */
+.btn-pink {
+  background-color: #ff4d9d !important;
+  border-color: #ff4d9d !important;
+  color: #fff !important;
+}
+
+.btn-pink:hover,
+.btn-pink:focus,
+.btn-pink:active {
+  background-color: #ec4899 !important;
+  border-color: #ec4899 !important;
+  color: #fff !important;
+  box-shadow: 0 2px 6px rgba(255, 77, 157, 0.45);
+}
 .tbl-styled tbody td:last-child .btn-icon i {
   font-size: 1rem !important;
   /* ไอคอนในปุ่ม action ขาวหมดทั้งระบบ — ปุ่มพวกนี้เป็นสีทึบ (warning/danger/info/success/primary/secondary)
