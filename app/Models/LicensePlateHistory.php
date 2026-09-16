@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Traits\BrandScope;
+use App\Models\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -11,6 +12,8 @@ class LicensePlateHistory extends Model
 {
 	use SoftDeletes;
 	use BrandScope;
+	// เรื่องเงินคืนป้ายแดง (ยอด/วันที่/เอกสาร/คืนป้ายก่อน) ต้องตามได้ว่าใครแก้ — ดู activity_logs
+	use LogsActivity;
 
 	protected $table = 'license_plate_history';
 
@@ -31,6 +34,9 @@ class LicensePlateHistory extends Model
 		'finance_approved_date',
 		'refund_amount',
 		'refund_slip_url',
+		'plate_returned_at',
+		'plate_returned_by',
+		'plate_return_note',
 		'note',
 		'userZone',
 		'brand',
@@ -42,6 +48,7 @@ class LicensePlateHistory extends Model
 	// สลิปคืนเงินลูกค้า — เก็บเป็น JSON [{url, name}] แบบเดียวกับไฟล์แนบที่อื่นในระบบ
 	protected $casts = [
 		'refund_slip_url' => 'array',
+		'plate_returned_at' => 'datetime',
 	];
 
 	public function saleCarLic()
@@ -56,6 +63,22 @@ class LicensePlateHistory extends Model
 			->withoutGlobalScope('brandAccess');
 	}
 
+	/** คนที่กด "คืนป้ายก่อน" (ปลดป้ายคืนสต็อกทั้งที่ยังไม่ปิดเงิน) */
+	public function plateReturnUser()
+	{
+		return $this->belongsTo(User::class, 'plate_returned_by', 'id')->withTrashed();
+	}
+
+	/** คืนป้ายไปก่อนแล้วแต่ยังไม่ปิดเงิน — รายการที่ต้องไปตามเก็บในหน้า "ค้างคืนเงินป้ายแดง" */
+	public function scopePendingRefund($query)
+	{
+		return $query->whereNotNull('plate_returned_at')->whereNull('finance_approved');
+	}
+
+	public function getFormatPlateReturnedAtAttribute(): ?string
+	{
+		return $this->plate_returned_at ? Carbon::parse($this->plate_returned_at)->format('d-m-Y') : null;
+	}
 	public function financeUser()
 	{
 		return $this->belongsTo(User::class, 'finance_approved', 'id')->withTrashed();

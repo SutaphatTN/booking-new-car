@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Traits\BrandScope;
+use App\Models\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -11,6 +12,8 @@ class VehicleLicense extends Model
 {
 	use SoftDeletes;
 	use BrandScope;
+	// ยอดตั้งเบิก/เคลียร์ + เลขป้ายขาว ต้องตามได้ว่าใครแก้ — ดู activity_logs
+	use LogsActivity;
 
 	protected $table = 'vehicle_license';
 

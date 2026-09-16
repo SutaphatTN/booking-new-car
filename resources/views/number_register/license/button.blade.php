@@ -29,6 +29,16 @@
         {{ $history ? '' : 'disabled' }}>
         <i class="bx bx-check"></i>
       </button>
+
+      {{-- คืนป้ายก่อนปิดเงิน — เคสลูกค้ายังไม่มารับเงินคืน แต่ป้ายต้องเอาไปผูกกับลูกค้ารายใหม่แล้ว
+           กดแล้วป้ายกลับเข้าสต็อกทันที ส่วนเรื่องเงินไปตามเก็บที่เมนู "ค้างคืนเงินป้ายแดง" --}}
+      @unless ($history?->plate_returned_at)
+        <button class="btn btn-icon btn-warning text-white btnReturnPlateEarly" data-id="{{ $history?->id }}"
+          data-plate="{{ $plate->number ?? '' }}"
+          title="คืนป้ายก่อน (ยังไม่ปิดเงิน)">
+          <i class="bx bx-undo"></i>
+        </button>
+      @endunless
     @endif
   @endif
 @else

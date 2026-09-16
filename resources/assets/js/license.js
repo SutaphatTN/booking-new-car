@@ -13,8 +13,97 @@ $.ajaxSetup({
   }
 });
 
+// ── หน้า "ค้างคืนเงินป้ายแดง" ─────────────────────────────────────────────
+// ตารางคนละตัวกับหน้าป้ายแดง แต่ใช้ปุ่มแก้ไข/ยืนยันการจ่ายเงินชุดเดียวกัน (handler อยู่ไฟล์นี้)
+$(document).ready(function () {
+  if (!$('.pendingRefundTable').length) return;
+
+  pendingRefundTable = $('.pendingRefundTable').DataTable({
+    ajax: '/license-pending-refund/list',
+    columns: [
+      { data: 'No' },
+      { data: 'customer', orderable: false },
+      { data: 'plate', orderable: false },
+      { data: 'vin', orderable: false },
+      { data: 'sale', orderable: false },
+      { data: 'returned', orderable: false },
+      { data: 'returnBy', orderable: false },
+      { data: 'note', orderable: false },
+      { data: 'missing', orderable: false },
+      { data: 'Action', orderable: false, searchable: false }
+    ],
+    pageLength: 10,
+    order: [],
+    language: {
+      lengthMenu: 'แสดง _MENU_ แถว',
+      zeroRecords: 'ไม่มีรายการค้างปิดเงิน',
+      info: 'แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ',
+      infoEmpty: 'ไม่มีรายการค้างปิดเงิน',
+      search: 'ค้นหา:',
+      paginate: { next: 'ถัดไป', previous: 'ก่อนหน้า' }
+    }
+  });
+});
+
+// คืนป้ายก่อนปิดเงิน — ถามเหตุผลก่อนเสมอ (ฝั่ง server บังคับเหมือนกัน)
+$(document).on('click', '.btnReturnPlateEarly', function () {
+  const id = $(this).data('id');
+  const plate = $(this).data('plate') || '';
+
+  Swal.fire({
+    title: 'คืนป้ายก่อนปิดเงิน?',
+    html:
+      'ป้าย <b>' + plate + '</b> จะกลับเข้าสต็อกทันที เอาไปผูกกับลูกค้ารายใหม่ได้เลย<br>' +
+      'ส่วนเรื่องเงินจะยัง <b>ค้างอยู่</b> ไปตามเก็บที่เมนู "ค้างคืนเงินป้ายแดง"',
+    icon: 'warning',
+    input: 'text',
+    inputLabel: 'เหตุผลที่คืนก่อน (บังคับกรอก)',
+    inputPlaceholder: 'เช่น ลูกค้ายังไม่มารับเงิน แต่ต้องใช้ป้ายกับคันใหม่',
+    inputAttributes: { maxlength: 255 },
+    inputValidator: value => (!value || !value.trim() ? 'กรุณาระบุเหตุผล' : undefined),
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'ใช่, คืนป้าย',
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+
+    $.ajax({
+      url: '/license/' + id + '/return-plate',
+      type: 'POST',
+      data: { note: result.value },
+      success: function (res) {
+        Swal.fire({
+          icon: 'success',
+          title: 'คืนป้ายแล้ว',
+          text: res.message ?? 'คืนป้ายเรียบร้อย',
+          timer: 2500,
+          showConfirmButton: true
+        });
+        reloadLicenseTables();
+      },
+      error: function (xhr) {
+        Swal.fire({
+          icon: xhr.status === 422 ? 'warning' : 'error',
+          title: xhr.status === 422 ? 'คืนป้ายไม่ได้' : 'เกิดข้อผิดพลาด',
+          text: xhr.responseJSON?.message ?? 'กรุณาลองใหม่'
+        });
+        reloadLicenseTables();
+      }
+    });
+  });
+});
 //view : table finance
 let licenseTable;
+let pendingRefundTable; // ตารางหน้า "ค้างคืนเงินป้ายแดง"
+
+// หน้าป้ายแดงกับหน้าค้างคืนเงินใช้ปุ่ม/โมดัลชุดเดียวกัน แต่คนละตาราง
+// เรียกตัวนี้แทนการอ้าง licenseTable ตรง ๆ ไม่งั้นอีกหน้าจะพังเพราะตัวแปรเป็น undefined
+function reloadLicenseTables() {
+  if (licenseTable) licenseTable.ajax.reload(null, false);
+  if (pendingRefundTable) pendingRefundTable.ajax.reload(null, false);
+}
 
 $(document).ready(function () {
   if ($.fn.DataTable.isDataTable('.licenseTable')) {
@@ -185,7 +274,7 @@ $(document).on('click', '.btnEditLicense', function () {
               showConfirmButton: true
             });
 
-            licenseTable.ajax.reload(null, false);
+            reloadLicenseTables();
           },
           error: function (xhr) {
             $modal.modal('hide');
@@ -243,7 +332,7 @@ $(document).on('click', '.btnApproveFinance', function () {
             showConfirmButton: true
           });
 
-          licenseTable.ajax.reload(null, false);
+          reloadLicenseTables();
         },
         error: function (xhr) {
           // 422 = ด่านข้อมูลไม่ครบฝั่ง server (เคสเปิดหน้าค้างไว้แล้วข้อมูลถูกแก้) — โชว์ข้อความจริง
@@ -253,7 +342,7 @@ $(document).on('click', '.btnApproveFinance', function () {
             text: xhr.responseJSON?.message ?? ''
           });
 
-          if (xhr.status === 422) licenseTable.ajax.reload(null, false);
+          if (xhr.status === 422) reloadLicenseTables();
         }
       });
     }
@@ -285,7 +374,7 @@ $(document).on('click', '.btnSaveAddPlate', function () {
     success: function (res) {
       $modal.modal('hide');
       Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: res.message, timer: 2000, showConfirmButton: true });
-      licenseTable.ajax.reload(null, false);
+      reloadLicenseTables();
     },
     error: function (xhr) {
       Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกได้' });
@@ -357,7 +446,7 @@ $(document).on('click', '.btnSaveBorrow', function () {
     success: function (res) {
       $modal.modal('hide');
       Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: res.message, timer: 2000, showConfirmButton: true });
-      licenseTable.ajax.reload(null, false);
+      reloadLicenseTables();
     },
     error: function (xhr) {
       Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกได้' });
@@ -403,7 +492,7 @@ $(document).on('click', '.btnReturnPlate', function () {
         data: { return_date: result.value },
         success: function (res) {
           Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: res.message, timer: 2000, showConfirmButton: true });
-          licenseTable.ajax.reload(null, false);
+          reloadLicenseTables();
         },
         error: function (xhr) {
           Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: xhr.responseJSON?.message || 'ไม่สามารถคืนป้ายได้' });
@@ -443,7 +532,7 @@ $(document).on('click', '.btnEditPlateStatus', function () {
       data: { _method: 'PUT', plate_status: result.value },
       success: function (res) {
         Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: res.message, timer: 2000, showConfirmButton: true });
-        licenseTable.ajax.reload(null, false);
+        reloadLicenseTables();
       },
       error: function (xhr) {
         Swal.fire({
