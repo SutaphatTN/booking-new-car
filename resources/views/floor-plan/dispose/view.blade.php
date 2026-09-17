@@ -4,6 +4,9 @@
 @php
   $showOption   = $brand == 1;   // option เฉพาะ brand 1
   $showInterior = \App\Support\BrandFeature::hasInteriorColor($brand);   // สีภายใน — ดู config/brand.php
+
+  // รายชื่อรุ่นหลักที่มีจริงในตาราง — ใช้เป็นตัวเลือกของปุ่มกรองหัวคอลัมน์ (กรองฝั่ง client)
+  $modelOptions = collect($rows)->pluck('modelName')->filter()->unique()->sort()->values();
 @endphp
 
 @section('content')
@@ -69,6 +72,15 @@
                 <th>เลขเครื่อง</th>
                 <th>J Number</th>
                 --}}
+                <th class="col-filter-th">
+                  <div class="col-filter-wrap">
+                    <span>รุ่นหลัก</span>
+                    <button class="col-filter-btn" id="dpModelFilterBtn" type="button" title="กรองรุ่นหลัก">
+                      <i class="bx bx-filter-alt"></i>
+                      <span class="col-filter-dot"></span>
+                    </button>
+                  </div>
+                </th>
                 <th style="width:130px;">วันที่รับ</th>
                 <th style="width:130px;">วันที่ ทบ.เบิก</th>
                 <th style="width:130px;">วันที่ปิด FP</th>
@@ -84,6 +96,7 @@
                   <td>{{ $r['engine'] }}</td>
                   <td>{{ $r['jNumber'] }}</td>
                   --}}
+                  <td>{{ $r['modelName'] }}</td>
                   <td class="text-center">{{ $r['receivedText'] }}</td>
                   <td class="text-center">{{ $r['withdrawText'] }}</td>
                   <td class="text-center">{{ $r['fpCloseText'] }}</td>
@@ -241,6 +254,30 @@
   </div>
 </div>
 
+{{-- ── ตัวกรองรุ่นหลัก (ปุ่มกรวยที่หัวคอลัมน์) — วางนอกตาราง เพราะ .table-responsive
+     มี overflow:auto ถ้าอยู่ข้างในจะโดนตัด ตำแหน่งจริงคำนวณด้วย JS (position:fixed) --}}
+<div class="col-filter-dropdown" id="dpModelFilterDropdown">
+  <div class="col-filter-search">
+    <input type="text" id="dpModelFilterSearch" placeholder="ค้นหา...">
+  </div>
+  <div class="col-filter-list" id="dpModelFilterList">
+    <div class="col-filter-item col-filter-all">
+      <input type="checkbox" id="dpModelChkAll" checked>
+      <label for="dpModelChkAll">(เลือกทั้งหมด)</label>
+    </div>
+    @foreach ($modelOptions as $i => $m)
+      <div class="col-filter-item">
+        <input type="checkbox" class="dp-model-chk" id="dpModelChk{{ $i }}" value="{{ $m }}" checked>
+        <label for="dpModelChk{{ $i }}">{{ $m }}</label>
+      </div>
+    @endforeach
+  </div>
+  <div class="col-filter-actions">
+    <button type="button" class="btn btn-sm btn-light" id="dpModelFilterClear">ล้าง</button>
+    <button type="button" class="btn btn-sm btn-primary" id="dpModelFilterApply">ตกลง</button>
+  </div>
+</div>
+
 <div id="dpLoadingOverlay" style="display:none;">
   <div class="ct-loading-box">
     <div class="spinner-border text-primary" role="status" style="width:1.4rem;height:1.4rem;"></div>
@@ -278,8 +315,21 @@
       $('#dpLoadingOverlay').css('display', 'none');
     });
 
+    // ── ตัวกรองรุ่นหลัก (ปุ่มกรวยหัวคอลัมน์) ──
+    // ตารางนี้เป็น client-side จึงกรองด้วย ext.search แทนการยิง ajax ใหม่
+    // null = ไม่กรอง (เลือกครบทุกรุ่น) — เก็บเป็น Set เทียบ text ของคอลัมน์รุ่นหลักตรง ๆ
+    const DP_MODEL_COL = 2;   // No.=0, VIN=1, รุ่นหลัก=2 (ต้องแก้ถ้าสลับ/เปิดคอลัมน์ที่ปิดไว้)
+    let dpModelFilter = null;
+
+    $.fn.dataTable.ext.search.push(function (settings, data) {
+      // ext.search เป็น global — ตารางอื่นในหน้าเดียวกันต้องไม่โดนด้วย
+      if (settings.nTable.id !== 'dpTable') return true;
+      if (!dpModelFilter) return true;
+      return dpModelFilter.has((data[DP_MODEL_COL] || '').trim());
+    });
+
     // DataTable client-side 10 แถว/หน้า
-    $('#dpTable').DataTable({
+    const dpTable = $('#dpTable').DataTable({
       ordering: false,
       pageLength: 10,
       lengthMenu: [10, 25, 50, 100],
@@ -293,6 +343,77 @@
         search: 'ค้นหา:',
         paginate: { next: 'ถัดไป', previous: 'ก่อนหน้า' },
       },
+    });
+
+    // ── dropdown ของปุ่มกรองรุ่นหลัก ──
+    function dpSyncModelAll() {
+      const $items = $('.dp-model-chk:visible');
+      const checked = $items.filter(':checked').length;
+      const $all = $('#dpModelChkAll');
+      if ($items.length === 0 || checked === 0) {
+        $all.prop({ indeterminate: false, checked: false });
+      } else if (checked === $items.length) {
+        $all.prop({ indeterminate: false, checked: true });
+      } else {
+        $all.prop({ indeterminate: true, checked: false });
+      }
+    }
+
+    // เปิด/ปิด — วางตำแหน่งเองแบบ fixed เพื่อหนี overflow ของ .table-responsive
+    $('#dpModelFilterBtn').on('click', function (e) {
+      e.stopPropagation();
+      const $dd = $('#dpModelFilterDropdown');
+      if ($dd.hasClass('show')) {
+        $dd.removeClass('show');
+        $(this).removeClass('active');
+        return;
+      }
+      const rect = this.getBoundingClientRect();
+      $dd.css({ top: rect.bottom + 4 + 'px', left: rect.left + 'px' });
+      $dd.addClass('show');
+      $(this).addClass('active');
+      $('#dpModelFilterSearch').val('').trigger('input').focus();
+    });
+
+    $(document).on('click', function (e) {
+      if (!$(e.target).closest('#dpModelFilterDropdown, #dpModelFilterBtn').length) {
+        $('#dpModelFilterDropdown').removeClass('show');
+        $('#dpModelFilterBtn').removeClass('active');
+      }
+    });
+
+    $(document).on('change', '#dpModelChkAll', function () {
+      $('.dp-model-chk:visible').prop('checked', $(this).is(':checked'));
+    });
+
+    $(document).on('change', '.dp-model-chk', dpSyncModelAll);
+
+    $(document).on('input', '#dpModelFilterSearch', function () {
+      const q = $(this).val().toLowerCase();
+      $('#dpModelFilterList .col-filter-item:not(.col-filter-all)').each(function () {
+        const label = $(this).find('label').text().toLowerCase();
+        $(this).toggle(!q || label.includes(q));
+      });
+      dpSyncModelAll();
+    });
+
+    $(document).on('click', '#dpModelFilterApply', function () {
+      const $all = $('.dp-model-chk');
+      const checked = $all.filter(':checked').map(function () { return this.value; }).get();
+      // เลือกครบ = ไม่กรอง (ปุ่มไม่ต้องขึ้นจุด)
+      dpModelFilter = checked.length === $all.length ? null : new Set(checked);
+      $('#dpModelFilterBtn').toggleClass('filtered', dpModelFilter !== null).removeClass('active');
+      $('#dpModelFilterDropdown').removeClass('show');
+      dpTable.draw();
+    });
+
+    $(document).on('click', '#dpModelFilterClear', function () {
+      dpModelFilter = null;
+      $('.dp-model-chk').prop('checked', true);
+      $('#dpModelChkAll').prop({ indeterminate: false, checked: true });
+      $('#dpModelFilterBtn').removeClass('filtered active');
+      $('#dpModelFilterDropdown').removeClass('show');
+      dpTable.draw();
     });
 
     // เปลี่ยนฟิลเตอร์ (สถานะ/เดือน) -> โหลดหน้าใหม่

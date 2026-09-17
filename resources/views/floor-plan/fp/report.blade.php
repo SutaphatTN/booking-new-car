@@ -8,6 +8,7 @@
       <th>Chassis</th>
       <th>เลขเครื่อง</th>
       <th>Net Amount</th>
+      <th>วันส่งมอบ</th>
       <th>Period_From</th>
       <th>- To</th>
       <th>สถานะ</th>
@@ -23,6 +24,8 @@
         <td>{{ $r['vin'] }}</td>
         <td>{{ $r['engine'] }}</td>
         <td>{{ $r['netAmount'] }}</td>
+        {{-- วันส่งมอบจากใบจอง (ใช้เรียงลำดับรายงานด้วย) — คันที่ยังไม่มีใบจอง/ยังไม่ส่งมอบเป็น '-' --}}
+        <td>{{ $r['deliveryText'] }}</td>
         <td>{{ $r['periodFrom'] }}</td>
         {{-- * เฉพาะงวดที่จบด้วยวันตัดประมาณการ (งวดกลางจบที่วันที่ 15 ตามปกติ ไม่ต้องใส่) --}}
         <td>{{ $r['isEstimateCut'] ? $r['periodTo'] . ' *' : $r['periodTo'] }}</td>
@@ -41,7 +44,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="10" align="center">ไม่มีข้อมูล</td>
+        <td colspan="11" align="center">ไม่มีข้อมูล</td>
       </tr>
     @endforelse
   </tbody>
