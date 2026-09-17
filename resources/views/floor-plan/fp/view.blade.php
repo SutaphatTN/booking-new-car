@@ -69,10 +69,11 @@
           <div class="text-muted small mb-3">
             <i class="bx bx-info-circle"></i>
             เดือนที่เลือก = <b>เดือนที่เริ่มงวด</b> (วันที่ 16 ของเดือนนั้น – วันที่ 15 ของเดือนถัดไป) เช่น เลือก ก.ค. = งวด 16/07 – 15/08
-            &nbsp;•&nbsp; "ปิดแล้ว" แสดงในทุกงวดที่คันนั้นกินวันอยู่ — คอลัมน์วัน/ดอกเบี้ยเป็นของ<b>งวดที่เลือกเท่านั้น</b>
-            &nbsp;•&nbsp; <b>รอปิด FP แสดงเสมอ</b> (ยกเว้นเลือกสถานะ "ปิดแล้ว") — ยังไม่คิดดอกเบี้ยจนกว่าจะกรอกวันปิด
+            {{-- &nbsp;•&nbsp; "ปิดแล้ว" แสดงในทุกงวดที่คันนั้นกินวันอยู่ — คอลัมน์วัน/ดอกเบี้ยเป็นของ<b>งวดที่เลือกเท่านั้น</b>
+            &nbsp;•&nbsp; <b>รอปิด FP แสดงเสมอ</b> (ยกเว้นเลือกสถานะ "ปิดแล้ว") — ยังไม่คิดดอกเบี้ยจนกว่าจะกรอกวันปิด --}}
             &nbsp;•&nbsp; รายงาน Excel เลือกได้หลายงวด — <b>1 แถว = 1 คัน × 1 งวด</b> คันที่คร่อมงวดจะแยกแถว คิดวัน/ดอกเบี้ยเฉพาะช่วงในงวดนั้น
             &nbsp;•&nbsp; คันที่ยังไม่ปิด FP จะ<b>ประมาณการดอกเบี้ย</b>ถึงวันที่ 15 สิ้นงวดของเดือนสุดท้าย (แถวสีเหลือง)
+            {{-- &nbsp;•&nbsp; เรียงตาม<b>วันส่งมอบ เก่า → ใหม่</b> คันที่ยังไม่ส่งมอบอยู่ท้ายตาราง (เรียงตาม Billing date เก่า → ใหม่) --}}
           </div>
 
           <div class="table-responsive">
@@ -81,10 +82,13 @@
                 <tr>
                   <th class="tbl-th-no">No.</th>
                   <th>VIN Number</th>
+                  {{-- ปิดไว้ก่อน เผื่ออยากเอากลับมา — ข้อมูล 2 ตัวนี้ยังดูได้ในโมดัลดูข้อมูล/แก้ไข
                   <th>เลขเครื่อง</th>
                   <th>J Number</th>
+                  --}}
                   <th>ราคาทุน</th>
                   <th>Billing date</th>
+                  <th>วันส่งมอบ</th>
                   <th>วัน (งวดนี้)</th>
                   <th>ดอกเบี้ย (งวดนี้)</th>
                   <th>สถานะ</th>
@@ -99,10 +103,13 @@
                   <tr>
                     <td class="text-center">{{ $i + 1 }}</td>
                     <td>{{ $r['vin'] }}</td>
+                    {{-- คู่กับหัวตารางด้านบนที่ปิดไว้
                     <td>{{ $r['engine'] }}</td>
                     <td>{{ $r['jNumber'] }}</td>
+                    --}}
                     <td class="text-end">{{ number_format($r['cost'], 2) }}</td>
                     <td class="text-center">{{ $r['billingText'] }}</td>
+                    <td class="text-center">{{ $r['deliveryText'] }}</td>
                     <td class="text-center">{{ $r['periodDays'] !== null ? $r['periodDays'] : '-' }}</td>
                     <td class="text-end">{{ $r['periodInterest'] !== null ? number_format($r['periodInterest'], 2) : '-' }}</td>
                     <td class="text-center">
@@ -200,6 +207,10 @@
               <div class="col-md-4">
                 <span class="fp-info-label">ชื่อไฟแนนซ์</span>
                 <div class="fp-info-val">{{ $r['financeName'] }}</div>
+              </div>
+              <div class="col-md-4">
+                <span class="fp-info-label">วันส่งมอบ</span>
+                <div class="fp-info-val">{{ $r['deliveryText'] }}</div>
               </div>
             </div>
           </div>

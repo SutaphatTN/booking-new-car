@@ -330,6 +330,9 @@ class FloorPlanController extends Controller
                 'downPayment'    => $sale && $sale->DownPayment !== null ? (float) $sale->DownPayment : null,
                 'balanceFinance' => $sale && $sale->balanceFinance !== null ? (float) $sale->balanceFinance : null,
                 'financeName'    => $sale->remainingPayment->financeInfo->FinanceCompany ?? '-',
+                // วันส่งมอบจากใบจอง — คันที่ยังไม่มีใบจอง/ยังไม่ส่งมอบจะเป็น '-'
+                'deliveryDate'   => $sale->DeliveryDate ?? null,            // Y-m-d
+                'deliveryText'   => $sale->format_delivery_date ?? '-',
                 'closeDate'     => $o->fp_close_date,          // Y-m-d สำหรับ input
                 // ประมาณการ → แสดงวันตัด (วันที่ 15 สิ้นงวด) แทนช่องว่าง
                 // ใช้ d-m-Y ให้ตรงกับ accessor format_fp_date / format_fp_close_date
@@ -344,6 +347,17 @@ class FloorPlanController extends Controller
                 'totalInterest' => $calc['totalInterest'] ?? null,
             ];
         });
+    }
+
+    /**
+     * คีย์เรียงลำดับของรายการ FP — ใช้ร่วมกันทั้งหน้า list และรายงาน Excel (ลำดับจะได้ไม่ต่างกัน)
+     *  วันส่งมอบ เก่า → ใหม่ / คันที่ยังไม่ส่งมอบยกไปกองท้าย เรียงกันเองตาม Billing date เก่า → ใหม่
+     * เทียบเป็น string ตรง ๆ ได้เพราะทุกวันเป็น Y-m-d ความยาวคงที่ ('9999-99-99' = ไม่มีวัน → ท้ายสุด)
+     */
+    private function fpSortKey(array $r): string
+    {
+        return ($r['deliveryDate'] ? '0_' . $r['deliveryDate'] : '1_')
+            . ($r['billingDate'] ?: '9999-99-99');
     }
 
     /**
@@ -389,6 +403,9 @@ class FloorPlanController extends Controller
 
             return $r;
         });
+
+        // ลำดับ : วันส่งมอบ เก่า → ใหม่ (ดู fpSortKey) — รายงาน Excel ใช้คีย์เดียวกันภายในแต่ละงวด
+        $rows = $rows->sortBy(fn ($r) => $this->fpSortKey($r))->values();
 
         $canEditFp = $this->canEditFp();
 
@@ -545,8 +562,11 @@ class FloorPlanController extends Controller
             }
         }
 
-        // เรียงตามงวด (usort ของ PHP 8 เป็น stable → ในงวดเดียวกันคงลำดับเดิมจาก fpRows คือ billing ใหม่สุดก่อน)
-        usort($reportRows, fn ($a, $b) => ($a['period'] ?? '') <=> ($b['period'] ?? ''));
+        // เรียงตามงวดก่อน (รายงานเลือกได้หลายงวด ต้องจัดกลุ่มให้ตรงกับ statement ของ Tisco)
+        // แล้วภายในงวดเดียวกันเรียงแบบเดียวกับหน้า list — วันส่งมอบ เก่า → ใหม่ (ดู fpSortKey)
+        // คันที่คร่อมงวดจึงอยู่ตำแหน่งเดียวกันในทุกงวดที่มันโผล่
+        usort($reportRows, fn ($a, $b) => [$a['period'] ?? '', $this->fpSortKey($a)]
+            <=> [$b['period'] ?? '', $this->fpSortKey($b)]);
 
         $rangeLabel = $from
             ? ($from === $to ? " {$from}" : " {$from} ถึง {$to}")
