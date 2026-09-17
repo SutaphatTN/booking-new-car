@@ -4007,7 +4007,7 @@ class PurchaseOrderController extends Controller
 
     public function viewMoreHistory($id)
     {
-        $saleCar = Salecar::with(['customer.prefix', 'customer.currentAddress', 'customer.documentAddress', 'customerReferrer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'conStatus', 'provinces', 'remainingPayment.financeInfo', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'reservationPayment', 'remainingPayment', 'deliveryPayment'])->findOrFail($id);
+        $saleCar = Salecar::with(['customer.prefix', 'customer.currentAddress', 'customer.documentAddress', 'customerReferrer.prefix', 'turnCar', 'accessories', 'model', 'carOrder', 'conStatus', 'provinces', 'remainingPayment.financeInfo', 'campaigns.campaign.type', 'campaigns.campaign.appellation', 'reservationPayment', 'remainingPayment', 'deliveryPayment', 'salePayments'])->findOrFail($id);
         $campaignText = $saleCar->campaigns
             ->map(function ($saleCampaign) {
                 return $saleCampaign->campaign?->appellation?->name;

@@ -110,14 +110,14 @@
                   <span class="mf-info-label">ปี</span>
                   <span class="mf-info-val">{{ $saleCar->Year ?? '-' }}</span>
                 </div>
-                @if (auth()->user()->canViewCarCost())
-                  <div class="mf-info-row">
-                    <span class="mf-info-label">ราคา</span>
-                    <span class="mf-info-val">
-                      {{ $saleCar->carOrder?->car_DNP !== null ? number_format($saleCar->carOrder->car_DNP, 2) : '-' }} บาท
-                    </span>
-                  </div>
-                @endif
+                {{-- ราคารถ = ราคาขายตาม pricelist ไม่ใช่ราคาทุน (car_DNP) — ตรงกับ preview หน้าใบจอง
+                     ฝั่งไฟแนนซ์มี "ราคาสุทธิ" (CarSalePriceFinal) แยกอีกแถวในบล็อกข้อมูลการเงิน --}}
+                <div class="mf-info-row">
+                  <span class="mf-info-label">ราคารถ</span>
+                  <span class="mf-info-val">
+                    {{ $saleCar->price_sub !== null ? number_format($saleCar->price_sub, 2) : '-' }} บาท
+                  </span>
+                </div>
                 <div class="mf-info-row">
                   <span class="mf-info-label">เงินจอง</span>
                   <span class="mf-info-val">
@@ -205,6 +205,12 @@
                       {{ $saleCar->AccessoryExtraVat !== null ? number_format($saleCar->AccessoryExtraVat, 2) : '-' }} บาท
                     </span>
                   </div>
+                  <div class="mf-info-row">
+                    <span class="mf-info-label">ราคาสุทธิ</span>
+                    <span class="mf-info-val">
+                      {{ $saleCar->CarSalePriceFinal !== null ? number_format($saleCar->CarSalePriceFinal, 2) : '-' }} บาท
+                    </span>
+                  </div>
                   <div class="mf-sub-heading">สรุปไฟแนนซ์</div>
                   <div class="mf-info-row">
                     <span class="mf-info-label">สรุปค่าใช้จ่ายวันออกรถ</span>
@@ -279,10 +285,50 @@
                     <span class="mf-info-label">หมายเหตุ ลูกค้าจ่ายเพิ่ม</span>
                     <span class="mf-info-val">{{ $saleCar->reason_other_cost ?? '-' }}</span>
                   </div>
+                  {{-- คงเหลือ = ยอดก่อนลูกค้าจ่าย (ตรงกับ preview หน้าใบจอง)
+                       salecars.balance หักยอดในตาราง "ข้อมูลการจ่ายเงิน" ไปแล้ว พอจ่ายครบจะเป็น 0 → บวกกลับ
+                       ได้ = ราคารถ + ซื้อเพิ่ม + จ่ายเพิ่ม − (เทิร์น + เงินจอง + ส่วนลด) --}}
+                  @php
+                    $balanceBeforePayment = $saleCar->balance !== null
+                      ? $saleCar->balance + $saleCar->salePayments->sum('cost')
+                      : null;
+                  @endphp
                   <div class="mf-info-row">
                     <span class="mf-info-label">คงเหลือ</span>
                     <span class="mf-info-val">
-                      {{ $saleCar->balance !== null ? number_format($saleCar->balance, 2) : '-' }} บาท
+                      {{ $balanceBeforePayment !== null ? number_format($balanceBeforePayment, 2) : '-' }} บาท
+                    </span>
+                  </div>
+
+                  {{-- ลูกค้าจ่ายมาแล้วกี่รายการ วันไหน ยังขาดอีกเท่าไร — ดูจบในพรีวิว ไม่ต้องเปิดใบจอง --}}
+                  @php
+                    $paidTotal = $saleCar->salePayments->sum('cost');
+                    $balanceAfterPayment = $balanceBeforePayment !== null ? $balanceBeforePayment - $paidTotal : null;
+                    $paymentTypeLabels = ['cash' => 'เงินสด', 'transfer' => 'เงินโอน'];
+                  @endphp
+                  <div class="mf-sub-heading">การจ่ายเงิน</div>
+                  @forelse ($saleCar->salePayments as $pay)
+                    <div class="mf-info-row">
+                      <span class="mf-info-label">
+                        {{ $paymentTypeLabels[$pay->type] ?? ($pay->type ?: 'ไม่ระบุประเภท') }}
+                        ({{ $pay->date ? \Illuminate\Support\Carbon::parse($pay->date)->format('d-m-Y') : 'ไม่ระบุวันที่' }})
+                      </span>
+                      <span class="mf-info-val">{{ number_format($pay->cost, 2) }} บาท</span>
+                    </div>
+                  @empty
+                    <div class="mf-info-row">
+                      <span class="mf-info-label">รายการจ่ายเงิน</span>
+                      <span class="mf-info-val text-danger">ยังไม่มีรายการ</span>
+                    </div>
+                  @endforelse
+                  <div class="mf-info-row">
+                    <span class="mf-info-label">รวมจ่ายแล้ว</span>
+                    <span class="mf-info-val">{{ number_format($paidTotal, 2) }} บาท</span>
+                  </div>
+                  <div class="mf-info-row">
+                    <span class="mf-info-label">คงเหลือหลังหักชำระ</span>
+                    <span class="mf-info-val {{ $balanceAfterPayment > 0 ? 'text-danger fw-bold' : '' }}">
+                      {{ $balanceAfterPayment !== null ? number_format($balanceAfterPayment, 2) : '-' }} บาท
                     </span>
                   </div>
                 @endif

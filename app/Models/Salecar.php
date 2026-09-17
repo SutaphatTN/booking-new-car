@@ -472,6 +472,12 @@ class Salecar extends Model
 		return $this->hasOne(PaymentType::class, 'saleCar_id', 'id')->where('category', 'delivery');
 	}
 
+	/** รายการที่ลูกค้าจ่ายมาแล้ว (ตาราง "ข้อมูลการจ่ายเงิน" ในหน้าแก้ไขใบจอง) — salecars.balance หักยอดนี้ไปแล้ว */
+	public function salePayments()
+	{
+		return $this->hasMany(SaleCarPayment::class, 'SaleID', 'id');
+	}
+
 	public function saleUser()
 	{
 		return $this->belongsTo(User::class, 'SaleID', 'id')->withTrashed();
