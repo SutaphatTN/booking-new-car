@@ -4094,6 +4094,48 @@ $(document).ready(function () {
 // });
 
 //edit preview : all campaign
+/**
+ * บล็อก "การจ่ายเงิน" ในพรีวิว (ฝั่งซื้อสด) — อ่านสดจากตารางในฟอร์ม
+ * โชว์ว่าลูกค้าจ่ายมาแล้วกี่รายการ วันไหน และยังขาดอีกเท่าไร (เผื่อจ่ายไม่ครบ)
+ * หน้าสร้างใบจองไม่มีตารางนี้ (#paymentContainer อยู่เฉพาะหน้าแก้ไข) → คืนค่าว่าง
+ */
+function buildPaymentHtml(balanceBeforePayment) {
+  const container = document.getElementById('paymentContainer');
+  if (!container) return '';
+
+  const TYPE_LABEL = { cash: 'เงินสด', transfer: 'เงินโอน' };
+  const fmt = n => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtDate = v =>
+    v ? new Date(v).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'ไม่ระบุวันที่';
+
+  let rows = '';
+  container.querySelectorAll('.payment-row').forEach(row => {
+    const type = row.querySelector('select[name="payment_type[]"]')?.value || '';
+    const cost = parseFloat((row.querySelector('input[name="payment_cost[]"]')?.value || '0').replace(/,/g, '')) || 0;
+    const date = row.querySelector('input[name="payment_date[]"]')?.value || '';
+
+    // แถวเปล่า (ช่องที่ยังไม่กรอก) ไม่ต้องโชว์
+    if (!type && !cost && !date) return;
+
+    const label = TYPE_LABEL[type] || (type || 'ไม่ระบุประเภท');
+    rows += `<div class="mf-info-row"><span class="mf-info-label">${label} (${fmtDate(date)})</span><span class="mf-info-val">${fmt(cost)} บาท</span></div>`;
+  });
+
+  if (!rows) {
+    rows = `<div class="mf-info-row"><span class="mf-info-label">รายการจ่ายเงิน</span><span class="mf-info-val text-danger">ยังไม่มีรายการ</span></div>`;
+  }
+
+  const paidTotal = calculatePaymentTotal();
+  const balanceAfter = balanceBeforePayment - paidTotal;
+
+  return `
+          <p class="mf-sub-heading mt-2">การจ่ายเงิน</p>
+          ${rows}
+          <div class="mf-info-row"><span class="mf-info-label">รวมจ่ายแล้ว</span><span class="mf-info-val">${fmt(paidTotal)} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">คงเหลือหลังหักชำระ</span><span class="mf-info-val ${balanceAfter > 0 ? 'text-danger fw-bold' : ''}">${fmt(balanceAfter)} บาท</span></div>
+  `;
+}
+
 function getSelectedCampaignText() {
   const campaignSelect = document.getElementById('CampaignID');
   if (!campaignSelect) return '-';
@@ -4281,8 +4323,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const reasonOtherCost = document.getElementById('reason_other_cost')?.value || '-';
     const balanceValue = parseFloat(document.getElementById('balance')?.value.replace(/,/g, '') || 0);
 
+    // พรีวิวโชว์ "คงเหลือ" แบบยังไม่หักเงินที่ลูกค้าจ่ายมาแล้ว
+    // #balance หักยอดในตาราง "ข้อมูลการจ่ายเงิน" ไปด้วย พอจ่ายครบจะเป็น 0 จนอ่านไม่ออกว่าดีลนี้ยอดเท่าไร
+    // ที่ต้องการคือ ราคารถ + ซื้อเพิ่ม + จ่ายเพิ่ม − (เทิร์น + เงินจอง + ส่วนลด)
+    const balanceBeforePayment = balanceValue + calculatePaymentTotal();
+
     // ฟอร์แมตเป็นเลขไทย มี comma และ 2 ทศนิยม
-    const balanceDisplay = balanceValue.toLocaleString(undefined, {
+    const balanceDisplay = balanceBeforePayment.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
@@ -4297,7 +4344,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const totalBalance2 = totalBalance / 2;
     // const totalBalance2 = Math.max(totalBalance / 2, 0); ให้เป็น 0 ถ้าติดลบ
 
-    let price = '-';
+    // ราคาสุทธิรวมบวกหัว — โชว์เฉพาะฝั่งไฟแนนซ์ (ท้ายบล็อกข้อมูลการเงิน ก่อนหัวข้อ "วันออกรถ")
+    let finalPrice = '-';
     let discountHtml = '';
     let campaignHtml = '';
 
@@ -4320,7 +4368,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     if (paymentType === 'finance') {
-      price = document.getElementById('CarSalePriceFinal')?.value || '-';
+      finalPrice = document.getElementById('CarSalePriceFinal')?.value || '-';
 
       discountHtml = `
           <div class="mf-info-row"><span class="mf-info-label">เงินดาวน์</span><span class="mf-info-val">${downPayment} บาท</span></div>
@@ -4331,6 +4379,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="mf-info-row"><span class="mf-info-label">ลูกค้าจ่ายเพิ่ม</span><span class="mf-info-val">${otherCostFi} บาท</span></div>
           <div class="mf-info-row"><span class="mf-info-label">หมายเหตุ ลูกค้าจ่ายเพิ่ม</span><span class="mf-info-val">${reasonOtherCostFi}</span></div>
           <div class="mf-info-row"><span class="mf-info-label">Vat ซื้อเพิ่ม</span><span class="mf-info-val">${vatExtra} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">ราคาสุทธิ</span><span class="mf-info-val">${finalPrice} บาท</span></div>
           <p class="mf-sub-heading mt-2">วันออกรถ</p>
           <div class="mf-info-row"><span class="mf-info-label">สรุปค่าใช้จ่ายวันออกรถ</span><span class="mf-info-val">${TotalPaymentatDeliveryCar} บาท</span></div>
           <div class="mf-info-row"><span class="mf-info-label">Po Number</span><span class="mf-info-val">${poNumber}</span></div>
@@ -4360,13 +4409,12 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="mf-info-row"><span class="mf-info-label">คงเหลือ (แบ่ง 2 ส่วน)</span><span class="mf-info-val">${balanceCampaignDisplay} บาท</span></div>
       `;
     } else {
-      price = document.getElementById('price_sub')?.value || '-';
-
       discountHtml = `
           <div class="mf-info-row"><span class="mf-info-label">ส่วนลด</span><span class="mf-info-val">${paymentDiscount} บาท</span></div>
           <div class="mf-info-row"><span class="mf-info-label">ลูกค้าจ่ายเพิ่ม</span><span class="mf-info-val">${otherCost} บาท</span></div>
           <div class="mf-info-row"><span class="mf-info-label">หมายเหตุ ลูกค้าจ่ายเพิ่ม</span><span class="mf-info-val">${reasonOtherCost}</span></div>
           <div class="mf-info-row"><span class="mf-info-label">คงเหลือ</span><span class="mf-info-val">${balanceDisplay} บาท</span></div>
+          ${buildPaymentHtml(balanceBeforePayment)}
       `;
 
       campaignHtml = `
@@ -4623,7 +4671,7 @@ document.addEventListener('DOMContentLoaded', function () {
               ${optionHtml}
               <div class="mf-info-row"><span class="mf-info-label">สี</span><span class="mf-info-val">${color}</span></div>
               ${interiorColorHtml}
-              <div class="mf-info-row"><span class="mf-info-label">ราคา</span><span class="mf-info-val">${price} บาท</span></div>
+              <div class="mf-info-row"><span class="mf-info-label">ราคารถ</span><span class="mf-info-val">${carSale} บาท</span></div>
               <div class="mf-info-row"><span class="mf-info-label">เงินจอง</span><span class="mf-info-val">${cashDeposit} บาท</span></div>
               <div class="mf-info-row"><span class="mf-info-label">รถเทิร์น</span><span class="mf-info-val">${turn} บาท</span></div>
               <div class="mf-info-row"><span class="mf-info-label">ลูกค้าซื้อเพิ่ม</span><span class="mf-info-val">${summaryExtraTotal} บาท</span></div>
