@@ -402,6 +402,9 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('vehicle/list', [VehicleController::class, 'listVehicle']);
     Route::get('vehicle/{id}/view-more', [VehicleController::class, 'viewMore'])->name('vehicle.viewMore');
     Route::post('/vehicle/update-vehicle', [VehicleController::class, 'updateVehicle']);
+    // ลูกค้าไปจดทะเบียนเอง — ข้ามด่านส่งเบิก/เคลียร์ (คืนค่าได้เฉพาะ admin, registration)
+    Route::post('vehicle/{id}/self-register', [VehicleController::class, 'markSelfRegister'])->name('vehicle.self-register');
+    Route::post('vehicle/{id}/self-register/cancel', [VehicleController::class, 'unmarkSelfRegister'])->name('vehicle.self-register.cancel');
 
     Route::get('vehicle/withdrawal-pending', [VehicleController::class, 'withdrawalPending'])->name('vehicle.withdrawal-pending');
     Route::post('/vehicle/confirm-withdrawal', [VehicleController::class, 'confirmWithdrawal']);

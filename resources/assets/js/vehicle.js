@@ -102,6 +102,69 @@ $(document).on('hide.bs.modal', '.viewVehicle', function () {
   }, 1);
 });
 
+// ลูกค้าไปจดทะเบียนเอง — คันนี้ข้ามด่านส่งเบิก/เคลียร์ ไปกรอกป้ายขาวได้เลย
+// ใช้ตัวเดียวกันทั้งกดเป็น "ลูกค้าจดเอง" และกดคืนเป็น "บริษัทจดให้"
+function toggleSelfRegister(url, confirmTitle, confirmText, confirmButtonText) {
+  Swal.fire({
+    title: confirmTitle,
+    text: confirmText,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#6c5ffc',
+    cancelButtonColor: '#d33',
+    confirmButtonText: confirmButtonText,
+    cancelButtonText: 'ยกเลิก'
+  }).then(result => {
+    if (!result.isConfirmed) return;
+
+    Swal.fire({
+      title: 'กำลังดำเนินการ...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    $.post(url)
+      .done(function (res) {
+        Swal.fire({
+          icon: 'success',
+          title: 'สำเร็จ',
+          text: res.message,
+          timer: 2000,
+          showConfirmButton: true
+        });
+
+        vehicleTable.ajax.reload(null, false);
+      })
+      .fail(function (xhr) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด!',
+          text: xhr.responseJSON?.message || 'ไม่สามารถบันทึกข้อมูลได้'
+        });
+      });
+  });
+}
+
+$(document).on('click', '.btnMarkSelfRegister', function () {
+  toggleSelfRegister(
+    '/vehicle/' + $(this).data('id') + '/self-register',
+    'ลูกค้าไปจดทะเบียนเอง?',
+    'รายการนี้จะไม่ต้องส่งเบิก/เคลียร์ และจะหลุดจากรายการรอส่งเบิก',
+    'ใช่, ลูกค้าจดเอง'
+  );
+});
+
+$(document).on('click', '.btnUnmarkSelfRegister', function () {
+  toggleSelfRegister(
+    '/vehicle/' + $(this).data('id') + '/self-register/cancel',
+    'คืนเป็น "บริษัทจดทะเบียนให้"?',
+    'รายการนี้จะกลับไปอยู่ในรายการรอส่งเบิกตามปกติ',
+    'ใช่, คืนค่า'
+  );
+});
+
 //view-more vehicle
 $(document).on('click', '.btnViewVehicle', function () {
   const id = $(this).data('id');

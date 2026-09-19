@@ -66,12 +66,22 @@ class VehicleController extends Controller
         // ซ่อนรถที่ส่งมอบก่อนวัน go-live ของเมนูนี้ (ตั้งค่าใน config/vehicle.php → .env)
         $this->applyRegistrationCutoff($query);
 
+        // "ยังไม่ได้ตั้งเบิก" = คันที่รอบริษัทจดให้เท่านั้น — คันที่ลูกค้าไปจดเองไม่ต้องรอส่งเบิก
+        // ถ้าไม่ตัดออก มันจะค้างอยู่ในสถานะนี้ตลอดไปเพราะไม่มีวันมี withdrawal_date
         if ($status === 'unWithdrawal') {
             $query->where(function ($q) {
                 $q->doesntHave('vehicleLicense')
                     ->orWhereHas('vehicleLicense', function ($qq) {
-                        $qq->whereNull('withdrawal_date');
+                        $qq->whereNull('withdrawal_date')
+                            ->where('reg_by', '!=', VehicleLicense::REG_BY_CUSTOMER);
                     });
+            });
+        }
+
+        // ลูกค้าไปจดทะเบียนเอง — ไม่มียอดเบิก/เคลียร์ มีแต่เลขป้ายขาว
+        if ($status === 'selfRegistered') {
+            $query->whereHas('vehicleLicense', function ($q) {
+                $q->where('reg_by', VehicleLicense::REG_BY_CUSTOMER);
             });
         }
 
@@ -118,6 +128,11 @@ class VehicleController extends Controller
             $plates = $plateLine('bx-purchase-tag', '#ef4444', 'ป้ายแดง', $redPlate)
                 . $plateLine('bx-id-card', '#334155', 'ป้ายขาว', $whitePlate ?: null);
 
+            // คันที่ลูกค้าจดเองจะไม่มียอดเบิก/เคลียร์ตลอดไป — ขึ้นป้ายบอกแทนขีด '-' ลอย ๆ
+            // จะได้ไม่มีใครเข้าใจผิดว่าเป็นรายการที่ยังกรอกไม่เสร็จ
+            $selfRegistered = $s->vehicleLicense?->isSelfRegistered() ?? false;
+            $selfBadge = '<span class="badge bg-label-info" style="font-size:.72rem;">ลูกค้าจดเอง</span>';
+
             return [
                 'No' => $index + 1,
                 'FullName' => implode(' ', array_filter([
@@ -128,8 +143,12 @@ class VehicleController extends Controller
                 'vin' => $vin,
                 'plates' => $plates,
                 'province' => $s->provinces?->name,
-                'withdrawn_cost' => $s->vehicleLicense?->withdrawal_total !== null ? number_format($s->vehicleLicense?->withdrawal_total, 2) : '-',
-                'receipt_total' => $s->vehicleLicense?->receipt_total !== null ? number_format($s->vehicleLicense?->receipt_total, 2) : '-',
+                'withdrawn_cost' => $selfRegistered
+                    ? $selfBadge
+                    : ($s->vehicleLicense?->withdrawal_total !== null ? number_format($s->vehicleLicense?->withdrawal_total, 2) : '-'),
+                'receipt_total' => $selfRegistered
+                    ? $selfBadge
+                    : ($s->vehicleLicense?->receipt_total !== null ? number_format($s->vehicleLicense?->receipt_total, 2) : '-'),
                 // 'withdrawn_cost' => view('number_register.vehicle.input-withdrawn', [
                 //     'vl' => $s->vehicleLicense,
                 //     'SaleID' => $s->id
@@ -224,6 +243,24 @@ class VehicleController extends Controller
 
             $data = $request->except(['_token', '_method']);
 
+            // key ด้วย SaleID อย่างเดียว (กันสร้างแถวซ้ำเวลาคนแก้อยู่คนละ zone/brand/branch)
+            $vl = VehicleLicense::firstOrNew(['SaleID' => $id]);
+
+            // ลูกค้าไปจดทะเบียนเอง — ไม่มีรอบส่งเบิก/เคลียร์ ตัดฟิลด์เงินกับวันเบิก/เคลียร์ทิ้งทั้งชุด
+            // (โมดัลแก้ไขไม่ได้ส่งมาอยู่แล้ว ตรงนี้กันคนยิง endpoint ตรงเอายอดมายัด)
+            // reg_by เปลี่ยนได้เฉพาะผ่าน mark/unmark เท่านั้น ไม่ให้แก้ผ่านฟอร์ม
+            $isSelfRegistered = $vl->isSelfRegistered();
+
+            if ($isSelfRegistered) {
+                $data = collect($data)->except([
+                    'withdrawal_check', 'withdrawal_channel', 'withdrawal_bill', 'withdrawal_other', 'withdrawal_other_note', 'withdrawal_total',
+                    'receipt_check', 'receipt_channel', 'receipt_bill', 'receipt_other', 'receipt_other_note', 'receipt_total',
+                    'withdrawal_date', 'withdrawal_batch', 'backup_clear_date', 'clear_batch', 'diff',
+                ])->all();
+            }
+
+            $data = collect($data)->except(['reg_by', 'reg_by_marked_at', 'reg_by_marked_by'])->all();
+
             // ล้าง comma ช่องเงินทั้งหมด (breakdown + ยอดรวม)
             $moneyFields = [
                 'withdrawal_check', 'withdrawal_channel', 'withdrawal_bill', 'withdrawal_other', 'withdrawal_total',
@@ -261,8 +298,6 @@ class VehicleController extends Controller
                     + (float) ($data['receipt_other'] ?? 0);
             }
 
-            // key ด้วย SaleID อย่างเดียว (กันสร้างแถวซ้ำเวลาคนแก้อยู่คนละ zone/brand/branch)
-            $vl = VehicleLicense::firstOrNew(['SaleID' => $id]);
             $vl->fill($data);
 
             // เติม scope เฉพาะแถวที่สร้างใหม่ — ไม่ทับ scope เดิมของแถวที่มีอยู่
@@ -291,16 +326,84 @@ class VehicleController extends Controller
         }
     }
 
+    /**
+     * ทำเครื่องหมาย "ลูกค้าไปจดทะเบียนเอง" — คันนี้ข้ามด่านส่งเบิก/เคลียร์ไปกรอกป้ายขาวได้เลย
+     * กดได้เฉพาะคันที่ยังไม่ได้ส่งเบิก : ถ้าส่งเบิกไปแล้วแปลว่าบริษัทจดให้ มีเงินออกไปแล้ว
+     */
+    public function markSelfRegister($id)
+    {
+        // role ดูอย่างเดียว (insurance_reg) แก้ไขอะไรในเมนูทะเบียนไม่ได้เลย — ปุ่มถูกซ่อนแล้ว ตรงนี้กันยิง endpoint ตรง
+        abort_if(Auth::user()->isRegistrationViewOnly(), 403);
+
+        $sale = Salecar::findOrFail($id);
+
+        $vl = VehicleLicense::firstOrNew(['SaleID' => $sale->id]);
+
+        if ($vl->withdrawal_date) {
+            return response()->json([
+                'success' => false,
+                'message' => 'รายการนี้ส่งเบิกไปแล้ว เปลี่ยนเป็น "ลูกค้าจดเอง" ไม่ได้',
+            ], 422);
+        }
+
+        $vl->reg_by = VehicleLicense::REG_BY_CUSTOMER;
+        $vl->reg_by_marked_at = now();
+        $vl->reg_by_marked_by = Auth::id();
+
+        // เติม scope เฉพาะแถวที่สร้างใหม่ — ไม่ทับ scope เดิมของแถวที่มีอยู่
+        if (!$vl->exists) {
+            $vl->userZone = Auth::user()->userZone ?? null;
+            $vl->brand = Auth::user()->brand ?? null;
+            $vl->branch = Auth::user()->branch ?? null;
+        }
+
+        $vl->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'บันทึกเป็น "ลูกค้าจดทะเบียนเอง" แล้ว',
+        ]);
+    }
+
+    /** คืนเป็น "บริษัทจดให้" กรณีกดผิด — เฉพาะ admin / registration */
+    public function unmarkSelfRegister($id)
+    {
+        if (!in_array(Auth::user()->role, ['admin', 'registration'])) {
+            abort(403);
+        }
+
+        $vl = VehicleLicense::where('SaleID', $id)->first();
+
+        if (!$vl || !$vl->isSelfRegistered()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'รายการนี้ไม่ได้ถูกทำเครื่องหมายว่าลูกค้าจดเอง',
+            ], 422);
+        }
+
+        $vl->reg_by = VehicleLicense::REG_BY_COMPANY;
+        $vl->reg_by_marked_at = null;
+        $vl->reg_by_marked_by = null;
+        $vl->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'คืนเป็น "บริษัทจดทะเบียนให้" แล้ว รายการจะกลับไปรอส่งเบิก',
+        ]);
+    }
+
     public function withdrawalPending()
     {
         // ฝั่ง "ส่งเบิก" — ใช้วันตัด go-live ชุดเดียวกับหน้ารายการ ไม่งั้นโมดัลจะมีของเก่าก่อนเปิดระบบปนมาเยอะ
         $withdrawalQuery = Salecar::with(['carOrder', 'vehicleLicense', 'customer'])
             ->whereNotNull('CarOrderID')
             ->where('con_status', 5)
+            // คันที่ลูกค้าไปจดทะเบียนเองไม่ต้องส่งเบิก — ตัดออกจากรายการรอส่งเบิก
             ->where(function ($q) {
                 $q->doesntHave('vehicleLicense')
                     ->orWhereHas('vehicleLicense', function ($qq) {
-                        $qq->whereNull('withdrawal_date');
+                        $qq->whereNull('withdrawal_date')
+                            ->where('reg_by', '!=', VehicleLicense::REG_BY_CUSTOMER);
                     });
             });
 

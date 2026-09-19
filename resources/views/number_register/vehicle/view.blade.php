@@ -61,6 +61,7 @@
                 <option value="unWithdrawal" selected>ยังไม่ได้ตั้งเบิก</option>
                 <option value="withdrawal">รอเคลียร์</option>
                 <option value="cleared">เคลียร์แล้ว</option>
+                <option value="selfRegistered">ลูกค้าจดทะเบียนเอง</option>
                 <option value="all">ทั้งหมด</option>
               </select>
             </div>

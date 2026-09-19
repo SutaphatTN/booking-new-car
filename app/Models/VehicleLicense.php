@@ -19,6 +19,9 @@ class VehicleLicense extends Model
 
 	protected $fillable = [
 		'SaleID',
+		'reg_by',
+		'reg_by_marked_at',
+		'reg_by_marked_by',
 		'withdrawal_date',
 		'withdrawal_batch',
 		'backup_clear_date',
@@ -48,6 +51,22 @@ class VehicleLicense extends Model
 	];
 
 	protected $dates = ['deleted_at'];
+
+	/** บริษัทจดทะเบียนให้ตามปกติ — ต้องผ่านด่านส่งเบิกก่อนถึงกรอกป้ายขาวได้ */
+	public const REG_BY_COMPANY = 'company';
+
+	/** ลูกค้าไปจดทะเบียนเอง — ข้ามด่านส่งเบิก/เคลียร์ ไม่มียอดเบิก ไม่มียอดเคลียร์ มีแต่เลขป้ายขาว */
+	public const REG_BY_CUSTOMER = 'customer';
+
+	public function isSelfRegistered(): bool
+	{
+		return $this->reg_by === self::REG_BY_CUSTOMER;
+	}
+
+	public function markedByUser()
+	{
+		return $this->belongsTo(User::class, 'reg_by_marked_by', 'id');
+	}
 
 	public function saleCar()
 	{
