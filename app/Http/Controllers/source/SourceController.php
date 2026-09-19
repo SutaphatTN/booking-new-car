@@ -243,7 +243,7 @@ class SourceController extends Controller
 
     public function editPlace($id)
     {
-        $place          = SourcePlace::with(['request', 'budgetItems'])->findOrFail($id);
+        $place          = SourcePlace::with(['request.places', 'budgetItems'])->findOrFail($id);
         $offlineSources = TbSalecarType::where('main_source', $this->placeMain())
             ->orderBy('name')->get();
         $approvers      = User::where('role', 'md')->orderBy('name')->get(['id', 'name', 'full_name']);
@@ -288,6 +288,19 @@ class SourceController extends Controller
 
                 $validated += $totals;
                 $this->syncBudgetItems($place, $items);
+            }
+
+            // เดือนที่ขออนุมัติเก็บอยู่บนใบขออนุมัติ (1 ใบมีได้หลายสถานที่) — แก้ที่นี่ = แก้ทั้งใบ
+            // ฟอร์มโชว์ช่องนี้เฉพาะ admin — เช็คซ้ำที่นี่กันยิง endpoint ตรง ๆ
+            if ($request->filled('period') && $place->request && Auth::user()->role === 'admin') {
+                $period = $request->validate(
+                    ['period' => 'date_format:Y-m'],
+                    ['period.date_format' => 'รูปแบบเดือนที่ขออนุมัติไม่ถูกต้อง']
+                )['period'];
+
+                if ($period !== $place->request->period) {
+                    $place->request->update(['period' => $period]);
+                }
             }
 
             $place->update($validated);

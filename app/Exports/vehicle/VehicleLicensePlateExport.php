@@ -95,7 +95,9 @@ class VehicleLicensePlateExport implements FromView, WithTitle, WithStyles, With
                 'customer'       => $customer,
                 'vin'            => $r->saleCar?->carOrder?->vin_number ?? '-',
                 'engine_number'  => $r->saleCar?->carOrder?->engine_number ?? '-',
+                // เคสลูกค้าจดเองไม่มีวันรับป้ายจากขนส่ง และไม่ได้เก็บวันที่จดทะเบียน — ขึ้น '-' ดูคู่กับคอลัมน์ผู้จดทะเบียน
                 'backup_clear_date' => $r->format_backup_clear_date ?? '-',
+                'reg_by'         => $r->isSelfRegistered() ? 'ลูกค้าจดเอง' : 'บริษัทจดให้',
                 'license_plate'  => trim(($r->license_name ?? '') . ' ' . ($r->license_number ?? '')),
                 'license_province' => $r->provincesV?->name ?? '-',
             ];

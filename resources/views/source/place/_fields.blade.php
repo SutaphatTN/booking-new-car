@@ -81,7 +81,7 @@
           value="{{ $place->location ?? '' }}" placeholder="เช่น AL (2 June) KOL อบต.ทุ่งสูง">
       </div>
 
-      <div class="col-md-3">
+      <div class="col-md-2">
         <label for="{{ $pfx }}_target" class="mf-label form-label"><i class="bx bx-target-lock"></i> เป้า PP</label>
         <input id="{{ $pfx }}_target" type="number" min="0" step="1" class="form-control text-end" name="target" autocomplete="off"
           value="{{ isset($place->target) ? (int) $place->target : '' }}" placeholder="0"
@@ -99,6 +99,33 @@
         <input id="{{ $pfx }}_end_date" type="date" class="form-control" name="end_date"
           value="{{ optional($place?->end_date)->format('Y-m-d') }}">
       </div>
+
+      @if (!empty($place) && auth()->user()->role === 'admin')
+        @php
+          // เดือนที่ขออนุมัติเก็บอยู่บน "ใบขออนุมัติ" (1 ใบมีได้หลายสถานที่) ไม่ใช่รายสถานที่ — แอดมินเท่านั้นที่เห็น
+          // แก้จากตรงนี้จึงกระทบทุกรายการในใบเดียวกัน — บอกจำนวนไว้ข้าง ๆ กันแก้แล้วงง
+          $req         = $place->request;
+          $reqPlaceQty = $req ? $req->places->count() : 0;
+        @endphp
+        <div class="col-md-4">
+          <label for="{{ $pfx }}_period" class="mf-label form-label">
+            <i class="bx bx-calendar-event ci-{{ $dateCi }}"></i> เดือนที่ขออนุมัติ
+          </label>
+          <input id="{{ $pfx }}_period" type="month" class="form-control" name="period"
+            value="{{ $req->period ?? '' }}" {{ $req ? '' : 'disabled' }}>
+        </div>
+        <div class="col-md-8 d-flex align-items-end">
+          <small class="text-muted pb-2">
+            <i class="bx bx-info-circle"></i>
+            @if ($req)
+              เดือนนี้อยู่บนใบขออนุมัติ #{{ $req->id }} — แก้แล้วมีผลกับสถานที่ทุกรายการในใบเดียวกัน
+              (<strong>{{ $reqPlaceQty }} รายการ</strong>) และเป็นตัวกำหนดว่ารายการนี้จะไปอยู่ในรายงาน PDF เดือนไหน
+            @else
+              ยังไม่ได้ขออนุมัติ — เดือนจะถูกกำหนดตอนกด "ขออนุมัติที่เลือก"
+            @endif
+          </small>
+        </div>
+      @endif
 
     </div>
   </div>

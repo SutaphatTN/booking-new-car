@@ -6,6 +6,7 @@
       <th>เลขตัวถัง</th>
       <th>เลขเครื่อง</th>
       <th>วันที่จดทะเบียน</th>
+      <th>ผู้จดทะเบียน</th>
       <th>เลขทะเบียน</th>
       <th>จังหวัด</th>
     </tr>
@@ -18,12 +19,13 @@
       <td>{{ $r['vin'] }}</td>
       <td>{{ $r['engine_number'] }}</td>
       <td>{{ $r['backup_clear_date'] }}</td>
+      <td>{{ $r['reg_by'] }}</td>
       <td>{{ $r['license_plate'] }}</td>
       <td>{{ $r['license_province'] }}</td>
     </tr>
     @empty
     <tr>
-      <td colspan="7" align="center">ไม่มีข้อมูล</td>
+      <td colspan="8" align="center">ไม่มีข้อมูล</td>
     </tr>
     @endforelse
   </tbody>

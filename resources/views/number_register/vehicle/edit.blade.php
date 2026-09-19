@@ -21,6 +21,21 @@
           @csrf
           @method('PUT')
 
+          @php
+            // ลูกค้าไปจดทะเบียนเอง — ไม่มีรอบส่งเบิก/เคลียร์ ซ่อนข้อมูลการเงินกับวันเบิก/เคลียร์ทั้งชุด
+            // เหลือแค่เลขป้ายขาว + จังหวัด + วันที่จดทะเบียน (ฝั่ง server ตัดฟิลด์เงินทิ้งอีกชั้น)
+            $selfRegistered = $veh->vehicleLicense?->isSelfRegistered() ?? false;
+          @endphp
+
+          @if ($selfRegistered)
+            <div class="alert alert-info d-flex align-items-center gap-2 py-2 mb-3" style="font-size:.85rem;">
+              <i class="bx bx-user-check fs-5"></i>
+              <div>
+                <span class="fw-semibold">ลูกค้าไปจดทะเบียนเอง</span> — รายการนี้ไม่ต้องส่งเบิก/เคลียร์ กรอกเฉพาะข้อมูลป้ายทะเบียน
+              </div>
+            </div>
+          @endif
+
           {{-- Section 1 : ข้อมูลรถและลูกค้า --}}
           <div class="mf-section">
             <div class="mf-section-hd">
@@ -61,7 +76,8 @@
             </div>
           </div>
 
-          {{-- Section 2 : ข้อมูลการเงิน --}}
+          {{-- Section 2 : ข้อมูลการเงิน (เคสลูกค้าจดเองไม่มียอดเบิก/เคลียร์ ไม่ต้องโชว์) --}}
+          @unless ($selfRegistered)
           <div class="mf-section">
             <div class="mf-section-hd">
               <div class="mf-section-icon amber">
@@ -191,8 +207,11 @@
                   </div>
                 </div>
 
-            </div>
-          </div>
+              </div>{{-- row : ยอดเคลียร์ --}}
+              </div>{{-- row : ยอดตั้งเบิก (ของเดิมไม่ได้ปิดไว้ ทำให้ section 3-4 ไปซ้อนอยู่ข้างใน) --}}
+            </div>{{-- mf-section-body --}}
+          </div>{{-- mf-section : ข้อมูลการเงิน --}}
+          @endunless
 
           {{-- Section 3 : ข้อมูลป้ายทะเบียน --}}
           <div class="mf-section">
@@ -205,21 +224,24 @@
             <div class="mf-section-body">
               <div class="row g-3">
 
-                <div class="col-md-3">
-                  <label for="edit_veh_withdrawal_date" class="mf-label form-label">
-                    <i class="bx bx-calendar-plus ci-emerald"></i> วันที่ตั้งเบิก
-                  </label>
-                  <input id="edit_veh_withdrawal_date" name="withdrawal_date" type="date" class="form-control"
-                    value="{{ $veh->vehicleLicense?->withdrawal_date ?? '' }}">
-                </div>
+                {{-- ลูกค้าจดเอง : ไม่มีวันตั้งเบิก/วันรับป้ายจากขนส่ง และไม่เก็บวันที่จดทะเบียน — กรอกแค่เลขป้าย --}}
+                @unless ($selfRegistered)
+                  <div class="col-md-3">
+                    <label for="edit_veh_withdrawal_date" class="mf-label form-label">
+                      <i class="bx bx-calendar-plus ci-emerald"></i> วันที่ตั้งเบิก
+                    </label>
+                    <input id="edit_veh_withdrawal_date" name="withdrawal_date" type="date" class="form-control"
+                      value="{{ $veh->vehicleLicense?->withdrawal_date ?? '' }}">
+                  </div>
 
-                <div class="col-md-3">
-                  <label for="edit_veh_backup_clear_date" class="mf-label form-label">
-                    <i class="bx bx-calendar-check ci-emerald"></i> วันที่รับป้ายจากขนส่ง
-                  </label>
-                  <input id="edit_veh_backup_clear_date" name="backup_clear_date" type="date" class="form-control"
-                    value="{{ $veh->vehicleLicense?->backup_clear_date ?? '' }}">
-                </div>
+                  <div class="col-md-3">
+                    <label for="edit_veh_backup_clear_date" class="mf-label form-label">
+                      <i class="bx bx-calendar-check ci-emerald"></i> วันที่รับป้ายจากขนส่ง
+                    </label>
+                    <input id="edit_veh_backup_clear_date" name="backup_clear_date" type="date" class="form-control"
+                      value="{{ $veh->vehicleLicense?->backup_clear_date ?? '' }}">
+                  </div>
+                @endunless
 
                 <div class="col-md-3">
                   <label for="license_number" class="mf-label form-label">
