@@ -4,9 +4,11 @@ namespace App\Models;
 
 use App\Models\Traits\BrandScope;
 use App\Models\Traits\LogsActivity;
+use App\Support\ScopeBypass;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class LicensePlateHistory extends Model
 {
@@ -73,6 +75,25 @@ class LicensePlateHistory extends Model
 	public function scopePendingRefund($query)
 	{
 		return $query->whereNotNull('plate_returned_at')->whereNull('finance_approved');
+	}
+
+	/**
+	 * เฉพาะ brand ที่ user กำลังทำงานอยู่ — ไม่รวม brand อื่นในกลุ่มเดียวกัน
+	 *
+	 * ตัวป้ายแดงเป็นกองเดียวกันทั้งกลุ่ม (1/3/4) ประวัติจึงตั้ง $sharedByBrandGroup ไว้
+	 * แต่ "เรื่องเงิน" ของใบขาย เป็นของ brand นั้นคนเดียว — หน้าที่ไล่ตามเก็บเงินลูกค้า
+	 * ต้องกรองซ้ำด้วยตัวนี้ ไม่งั้น Lepas/Wuling จะเห็นรายการค้างของ Mitsu ปนมาด้วย
+	 */
+	public function scopeOwnBrandOnly($query)
+	{
+		// flow อนุมัติผ่าน token สั่งปิด scope brand ชั่วคราว — ตัวนี้ต้องเงียบตามด้วย
+		if (ScopeBypass::$brand) {
+			return $query;
+		}
+
+		$brand = Auth::check() ? Auth::user()->brand : null;
+
+		return $brand ? $query->where($this->getTable() . '.brand', $brand) : $query;
 	}
 
 	public function getFormatPlateReturnedAtAttribute(): ?string

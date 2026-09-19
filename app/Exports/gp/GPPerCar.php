@@ -220,7 +220,10 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
 
     $rows = GPQuery::base($this->fromDate)->get();
 
-    $data = $rows->map(function ($r) {
+    // คอมขายรายคัน = ค่าคอมตัวรถจริงของเซลล์แต่ละคน (ดู GPQuery::commissionSaleMap)
+    $comSaleMap = GPQuery::commissionSaleMap($rows);
+
+    $data = $rows->map(function ($r) use ($comSaleMap) {
       $customerName = trim(
         ($r->customer->prefix->Name_TH ?? '') . ' ' .
           ($r->customer->FirstName ?? '') . ' ' .
@@ -358,8 +361,10 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       $total_discount_re = $total_discount - $down_payDis - $carDiscount;
 
       //ต้นทุนรวม
-      // คอมขาย: ใช้ที่กรอกเอง (gp_commission_sale จากหน้า "ตั้งค่า GP") ถ้ายังไม่กรอก fallback เป็น 3500
-      $comSale = $r->gp_commission_sale ?? 3500;
+      // คอมขาย: ค่าคอมตัวรถจริงของเซลล์เจ้าของใบ (สูตรกลาง CarCommissionQuery)
+      // เดิมเป็น 3500 ตายตัว / ค่าที่กรอกเองในหน้า "ตั้งค่า GP" — ทั้งคู่ไม่ตรงกับที่จ่ายจริง
+      // 2026-09-19 (มติเจ้าของ): ใช้ค่าคอมจริงทุกคัน ไม่สนค่าที่เคยกรอกไว้ (คอลัมน์เดิมยังอยู่ใน DB เฉย ๆ)
+      $comSale = (float) ($comSaleMap[(int) $r->id] ?? 0);
       // $total_cost = ($totalCostFund + $down_payDis + $com_sale) - $total_discount;
       $total_cost = $totalCostFund + $down_payDis + $comSale + $total_discount_re;
       //P/L

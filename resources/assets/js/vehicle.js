@@ -1,3 +1,9 @@
+// การ์ดไฟล์แนบ/พรีวิว + ปุ่มลบบนการ์ด — ตัวกลางตัวเดียวของทั้งระบบ
+import { bindFilePreviews } from './file-cards';
+
+// ช่องแนบไฟล์ในโมดัลแก้ไขป้ายทะเบียน (โมดัลโหลดด้วย ajax — bindFilePreviews ผูกที่ document ให้แล้ว)
+bindFilePreviews([['reg_files', 'regFilePreview']]);
+
 $.ajaxSetup({
   headers: {
     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -207,6 +213,54 @@ $(document).on('hide.bs.modal', '.editVehicle', function () {
   }, 1);
 });
 
+/**
+ * ด่านกันลืมแนบไฟล์ : "เพิ่งกรอก/แก้" เลขป้ายขาวครบทั้งตัวอักษรและตัวเลข = ต้องมีไฟล์แนบอย่างน้อย 1 ไฟล์
+ * เทียบกับค่าที่โหลดมาตอนเปิดโมดัล (defaultValue) — ใบเก่าที่มีเลขป้ายอยู่แล้วและไม่ได้แตะเลขป้ายรอบนี้
+ * จะแก้ช่องอื่น (เช่น จังหวัด) ได้ตามปกติ ไม่ถูกบังคับแนบไฟล์ย้อนหลัง
+ * นับไฟล์เดิมที่อยู่บนการ์ด (#regFileList) + ไฟล์ที่เพิ่งเลือกใน input
+ * @returns {boolean} true = ผ่าน บันทึกต่อได้
+ */
+function checkVehiclePlateAttachment($modal) {
+  const $plateName = $modal.find('#edit_veh_license_name');
+  const $plateNumber = $modal.find('#edit_veh_license_number');
+  const $files = $modal.find('#reg_files');
+
+  const plateName = ($plateName.val() || '').trim();
+  const plateNumber = ($plateNumber.val() || '').trim();
+
+  const plateChanged =
+    plateName !== ($plateName.prop('defaultValue') || '').trim() ||
+    plateNumber !== ($plateNumber.prop('defaultValue') || '').trim();
+
+  if (!plateName || !plateNumber || !plateChanged) {
+    $files.removeClass('is-invalid');
+    return true;
+  }
+
+  const hasOldFiles = $modal.find('#regFileList .fc-item').length > 0;
+  const hasNewFiles = ($files[0]?.files?.length || 0) > 0;
+  const ok = hasOldFiles || hasNewFiles;
+
+  // ย้ำด้วยกรอบแดงตรงช่องแนบไฟล์ จะได้รู้ว่าติดตรงไหน
+  $files.toggleClass('is-invalid', !ok);
+
+  return ok;
+}
+
+// เลือกไฟล์แล้ว/ลบไฟล์แล้ว ให้เช็คใหม่ทันที ไม่ต้องรอกดบันทึก
+$(document).on('change fc:files-changed', '#reg_files', function () {
+  checkVehiclePlateAttachment($(this).closest('.editVehicle'));
+});
+
+$(document).on('fc:removed', '#regFileList', function () {
+  checkVehiclePlateAttachment($(this).closest('.editVehicle'));
+});
+
+// พิมพ์เลขป้ายแล้วเช็คใหม่ — กรอบแดงจะได้ขึ้น/หายตามเงื่อนไขทันที
+$(document).on('input', '#edit_veh_license_name, #edit_veh_license_number', function () {
+  checkVehiclePlateAttachment($(this).closest('.editVehicle'));
+});
+
 //edit : vehicle
 $(document).on('click', '.btnEditVehicle', function () {
   const id = $(this).data('id');
@@ -224,6 +278,23 @@ $(document).on('click', '.btnEditVehicle', function () {
       .off('click')
       .on('click', function (e) {
         e.preventDefault();
+
+        // กรอกเลขป้ายขาวครบ (ตัวอักษร + ตัวเลข) แล้วต้องมีไฟล์แนบด้วย — กันลืมแนบหลักฐาน
+        // นับทั้งไฟล์ที่แนบไว้เดิมและไฟล์ที่เพิ่งเลือก ; ฝั่ง server ดักซ้ำตอนบันทึก
+        if (!checkVehiclePlateAttachment($modal)) {
+          $modal
+            .one('hidden.bs.modal', function () {
+              Swal.fire({
+                icon: 'warning',
+                title: 'ยังไม่ได้แนบไฟล์',
+                text: 'กรอกเลขป้ายทะเบียนแล้วต้องแนบไฟล์ด้วย'
+              }).then(() => {
+                $modal.modal('show');
+              });
+            })
+            .modal('hide');
+          return;
+        }
 
         const form = $modal.find('form')[0];
         const formData = new FormData(form);

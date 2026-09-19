@@ -6,6 +6,7 @@ use App\Exports\license\LoanLicExport;
 use App\Exports\license\StockLicExport;
 use App\Exports\license\SummaryLicExport;
 use App\Http\Controllers\Controller;
+use App\Models\CarOrder;
 use App\Models\LicensePlateHistory;
 use App\Models\LicensePlateLoan;
 use App\Models\Salecar;
@@ -52,9 +53,24 @@ class LicenseController extends Controller
     $canManage = in_array($user->role, config('brand.plate_manage_roles', []));
     $brandNames = config('brand.names', []);
 
-    $data = $plates->values()->map(function ($p, $index) use ($histories, $userBrand, $canLoan, $canManage, $brandNames) {
+    // Vin ของรถทดลองขับที่ผูกกับป้าย (ผูกจากหน้า Car Order เมื่อประเภทการซื้อรถ = TestDrive)
+    // ข้าม userAccess scope เพราะรถอาจถูกบันทึกโดยคนละสาขา/โซนกับคนที่เปิดหน้านี้
+    // ป้ายทดลองขับไม่ได้ผูกใบขาย ช่อง "ลูกค้า" เลยว่าง — เอา Vin มาโชว์แทน (ชุดเดียวกับรายงาน Stock ป้ายแดง)
+    $testDriveVins = CarOrder::withoutGlobalScopes(['userAccess', 'saleTeam'])
+      ->whereIn('license_plate_id', $plates->pluck('id'))
+      ->orderBy('id')
+      ->get(['license_plate_id', 'vin_number'])
+      ->groupBy('license_plate_id')
+      ->map(fn($group) => $group->pluck('vin_number')->filter()->unique()->implode(', '));
+
+    $data = $plates->values()->map(function ($p, $index) use ($histories, $userBrand, $canLoan, $canManage, $brandNames, $testDriveVins) {
       $history = $histories->get($p->id);
       $loan = $p->activeLoan;
+
+      // ป้ายทดลองขับที่ผูกกับรถไว้ — เอา Vin มาโชว์ในช่องลูกค้า (ป้ายพวกนี้ไม่มีใบขาย จึงไม่มีลูกค้า)
+      $testDriveVin = $p->plate_status_value === TbLicensePlate::STATUS_TEST_DRIVE
+        ? $testDriveVins->get($p->id)
+        : null;
 
       $prefix = $history?->saleCarLic?->customer?->prefix?->Name_TH ?? '';
       $first  = $history?->saleCarLic?->customer?->FirstName ?? '';
@@ -120,7 +136,9 @@ class LicenseController extends Controller
         'status' => $status,
         'FullName' => $p->is_used
           ? implode(' ', array_filter([$prefix, $first, $last]))
-          : '-',
+          : ($testDriveVin
+            ? '<span class="text-muted" style="font-size:.8rem;" title="Vin รถทดลองขับ">' . e($testDriveVin) . '</span>'
+            : '-'),
         'sale' => $p->is_used
           ? $nameSale
           : '-',
@@ -526,8 +544,15 @@ class LicenseController extends Controller
     return response()->json(['success' => true]);
   }
 
-  /** role ที่กด "ยืนยันการจ่ายเงินจริง" และ "คืนป้ายก่อน" ได้ — ชุดเดียวกัน */
+  /** role ที่กด "ยืนยันการจ่ายเงินจริง" ได้ (ปิดรายการเงิน กดแล้วย้อนไม่ได้) */
   public const FINANCE_ROLES = ['account', 'admin', 'audit', 'audit_lead', 'audit_dp', 'gm'];
+
+  /**
+   * role ที่กด "คืนป้ายก่อน (ยังไม่ปิดเงิน)" ได้ — กว้างกว่า FINANCE_ROLES เพราะเป็นเรื่องหมุนป้าย
+   * ไม่ใช่การปิดเงิน (รายการยังค้างไปโผล่หน้า "ค้างคืนเงินป้ายแดง" เหมือนเดิม)
+   * 2026-09-19: เพิ่ม md ตามที่เจ้าของสั่ง — md ยังปิดเงินเองไม่ได้
+   */
+  public const RETURN_PLATE_EARLY_ROLES = [...self::FINANCE_ROLES, 'md'];
 
   /**
    * คืนป้ายก่อน (ยังไม่ปิดเงิน)
@@ -538,7 +563,7 @@ class LicenseController extends Controller
   public function returnPlateEarly(Request $request, $id)
   {
     abort_if(Auth::user()->isRegistrationViewOnly(), 403);
-    abort_unless(in_array(Auth::user()->role, self::FINANCE_ROLES, true), 403);
+    abort_unless(in_array(Auth::user()->role, self::RETURN_PLATE_EARLY_ROLES, true), 403);
 
     $request->validate([
       'note' => ['required', 'string', 'max:255'],
@@ -600,7 +625,10 @@ class LicenseController extends Controller
 
   public function listPendingRefund()
   {
+    // ประวัติป้ายแดงแชร์ทั้งกลุ่ม brand (ป้ายเป็นกองเดียวกัน) แต่หน้านี้เป็นการไล่เก็บเงินของใบขาย
+    // จึงต้องเห็นเฉพาะ brand ที่ตัวเองทำงานอยู่ ไม่งั้น Lepas/Wuling เห็นรายการค้างของ Mitsu ปนมา
     $rows = LicensePlateHistory::pendingRefund()
+      ->ownBrandOnly()
       ->with([
         'saleCarLic' => fn($q) => $q->withoutGlobalScope('userAccess')->with(['customer.prefix', 'saleUser']),
         'licenseLic' => fn($q) => $q->withoutGlobalScope('brandAccess'),

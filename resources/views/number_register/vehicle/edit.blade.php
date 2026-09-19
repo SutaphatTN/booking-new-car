@@ -288,7 +288,38 @@
             </div>
           </div>
 
-          {{-- Section 4 : รายการเกี่ยวกับทะเบียน (accessory ที่ is_registration) --}}
+          {{-- Section 4 : ไฟล์แนบ — ขึ้น OneDrive : New Car/{แบรนด์}/ทะเบียน/{SaleID-ชื่อลูกค้า}
+               ต่อท้ายของเดิมเสมอ ไฟล์เก่าไม่ถูกลบทิ้ง (ลบทีละไฟล์ด้วยปุ่มกากบาทบนการ์ด) --}}
+          <div class="mf-section">
+            <div class="mf-section-hd">
+              <div class="mf-section-icon sky">
+                <i class="bx bx-paperclip"></i>
+              </div>
+              <span class="mf-section-title">ไฟล์แนบ</span>
+            </div>
+            <div class="mf-section-body">
+              @php $regFiles = is_array($veh->vehicleLicense?->attachment_url) ? $veh->vehicleLicense->attachment_url : []; @endphp
+              @if ($regFiles)
+                <div class="d-flex flex-wrap mb-2" id="regFileList">
+                  @include('_partials.file-cards', [
+                      'files' => $regFiles,
+                      'proxyBase' => route('vehicle.attachment-proxy', $veh->id),
+                      'deleteUrl' => route('vehicle.attachment.delete', $veh->id),
+                  ])
+                </div>
+              @endif
+              <input type="file" id="reg_files" name="reg_files[]" class="form-control"
+                accept=".pdf,.jpg,.jpeg,.png" multiple>
+              <div class="form-text">
+                รองรับ PDF, JPG, PNG — แนบได้หลายไฟล์ ไฟล์เดิมไม่ถูกลบทิ้ง<br>
+                <span class="text-danger">* กรอกหรือแก้เลขป้ายทะเบียน (ตัวอักษร + ตัวเลข) แล้วต้องแนบไฟล์อย่างน้อย 1 ไฟล์ ถึงจะบันทึกได้</span>
+              </div>
+              {{-- พรีวิวไฟล์ที่เพิ่งเลือก (ยังไม่อัปโหลดจนกว่าจะกดบันทึก) --}}
+              <div id="regFilePreview" class="d-flex flex-wrap mt-1"></div>
+            </div>
+          </div>
+
+          {{-- Section 5 : รายการเกี่ยวกับทะเบียน (accessory ที่ is_registration) --}}
           @php
             $regAccs = $veh->accessories?->where('is_registration', true) ?? collect();
             $regTypeLabel = ['gift' => 'แถม', 'extra' => 'ซื้อเพิ่ม'];

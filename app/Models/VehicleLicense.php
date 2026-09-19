@@ -45,12 +45,18 @@ class VehicleLicense extends Model
 		'diff',
 		'labe_status',
 		'note',
+		'attachment_url',
 		'userZone',
 		'brand',
 		'branch',
 	];
 
 	protected $dates = ['deleted_at'];
+
+	// ไฟล์แนบของงานทะเบียน — array ของ ['url' => share url, 'name' => ชื่อไฟล์เดิม] เหมือน salecars.attachment_url
+	protected $casts = [
+		'attachment_url' => 'array',
+	];
 
 	/** บริษัทจดทะเบียนให้ตามปกติ — ต้องผ่านด่านส่งเบิกก่อนถึงกรอกป้ายขาวได้ */
 	public const REG_BY_COMPANY = 'company';

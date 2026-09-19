@@ -402,6 +402,11 @@ Route::middleware(['auth', 'notsale'])->group(function () {
     Route::get('vehicle/list', [VehicleController::class, 'listVehicle']);
     Route::get('vehicle/{id}/view-more', [VehicleController::class, 'viewMore'])->name('vehicle.viewMore');
     Route::post('/vehicle/update-vehicle', [VehicleController::class, 'updateVehicle']);
+    // ไฟล์แนบงานทะเบียน (OneDrive : New Car/{แบรนด์}/ทะเบียน/{SaleID-ชื่อลูกค้า})
+    Route::get('vehicle/{id}/attachment-proxy/{filename?}', [VehicleController::class, 'proxyAttachment'])
+        ->where('filename', '[^/]+')->name('vehicle.attachment-proxy');
+    Route::delete('vehicle/{id}/attachment', [VehicleController::class, 'deleteAttachment'])
+        ->name('vehicle.attachment.delete');
     // ลูกค้าไปจดทะเบียนเอง — ข้ามด่านส่งเบิก/เคลียร์ (คืนค่าได้เฉพาะ admin, registration)
     Route::post('vehicle/{id}/self-register', [VehicleController::class, 'markSelfRegister'])->name('vehicle.self-register');
     Route::post('vehicle/{id}/self-register/cancel', [VehicleController::class, 'unmarkSelfRegister'])->name('vehicle.self-register.cancel');
