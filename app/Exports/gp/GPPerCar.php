@@ -161,6 +161,8 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       true,  // ราคาขายรวมบวกหัว (ไม่รวม VAT)
       true,  // บวกหัก (Exc Vat)
       true,  // ราคาทุน (ไม่รวม VAT)
+      true,  // ค่าอุปกรณ์ตกแต่ง
+      true,  // ราคาทุน+อุปกรณ์ตกแต่ง (ไม่รวม VAT)
       true,  // GP
       true,  // %GP
       true,  // WS
@@ -263,11 +265,21 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
       //Net price ราคาขาย ลบ ส่วนลด บวก บวกหัว คือ carSaleMake
       $totalSaleMake =  $carSaleMake / 1.07;
 
-      // ราคาทุน (ไม่รวม VAT)
-      // ถ้ามีราคาทุนกรอกเอง (gp_cost_price_override) ใช้ค่านั้น + ค่าอุปกรณ์ตกแต่ง ถ้าไม่มี ใช้สูตรเดิม
-      $totalCostFund =  $r->gp_cost_price_override !== null
-        ? ($r->gp_cost_price_override + ($r->gp_accessory_cost ?? 0))
+      // ราคาทุน (ไม่รวม VAT) — แยกเป็น 2 ก้อนเพื่อโชว์แยกคอลัมน์ ผลรวมเท่าเดิมเป๊ะ
+      //   ก้อนที่ 1 ราคาทุน  : กรอก "ราคาทุนตาม DMS" ไว้ = ใช้ค่านั้น (ถือว่าไม่รวม VAT มาแล้ว)
+      //                       ไม่ได้กรอก = car_DNP ÷ 1.07 (DNP รวม VAT ต้องถอดออก)
+      //   ก้อนที่ 2 อุปกรณ์  : บวกได้เฉพาะเคสกรอกราคาทุนเอง — เคส DNP ไม่เคยบวกค่าอุปกรณ์อยู่แล้ว
+      //                       (โชว์ 0 ในคอลัมน์ด้วย ไม่งั้น 2 คอลัมน์แรกบวกกันแล้วไม่เท่าคอลัมน์รวม)
+      $costFundBase = $r->gp_cost_price_override !== null
+        ? (float) $r->gp_cost_price_override
         : ($totalCostPrice / 1.07);
+
+      $costFundAcc = $r->gp_cost_price_override !== null
+        ? (float) ($r->gp_accessory_cost ?? 0)
+        : 0.0;
+
+      // ตัวนี้คือค่าที่ GP / ต้นทุนรวม / P-L ใช้เหมือนเดิม (ไม่ได้เปลี่ยนวิธีคิด)
+      $totalCostFund = $costFundBase + $costFundAcc;
 
       //บวกหัก
       $makeVat = $makePrice / 1.07;
@@ -434,6 +446,9 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         'makeUp' => $makePrice,
         'sale_make' => $totalSaleMake,
         'makeVat' => $makeVat,
+        // 3 คอลัมน์เรียงกัน : ราคาทุน + ค่าอุปกรณ์ = ราคาทุน+อุปกรณ์ตกแต่ง (ตัวสุดท้ายคือตัวที่สูตรอื่นใช้)
+        'costFundBase' => $costFundBase,
+        'costFundAcc' => $costFundAcc,
         'totalCostFund' => $totalCostFund,
         'gp' => $totalGP,
         'per_gp' => $totalPerGP,

@@ -38,6 +38,8 @@
       <th>ราคาขายรวมบวกหัว (ไม่รวมVAT)</th>
       <th>บวกหัก (Exc Vat)</th>
       <th>ราคาทุน (ไม่รวมVAT)</th>
+      <th>ค่าอุปกรณ์ตกแต่ง</th>
+      <th>ราคาทุน+อุปกรณ์ตกแต่ง (ไม่รวมVAT)</th>
       <th>GP</th>
       <th>%GP</th>
       <th>WS</th>
@@ -130,6 +132,8 @@
         <td>{{ $p['makeUp'] }}</td>
         <td>{{ $p['sale_make'] }}</td>
         <td>{{ $p['makeVat'] }}</td>
+        <td>{{ $p['costFundBase'] }}</td>
+        <td>{{ $p['costFundAcc'] }}</td>
         <td>{{ $p['totalCostFund'] }}</td>
         <td>{{ $p['gp'] }}</td>
         <td>{{ $p['per_gp'] }}</td>
@@ -194,7 +198,7 @@
       </tr>
     @empty
       <tr>
-        <td colspan="62" align="center">ไม่มีข้อมูล</td>
+        <td colspan="64" align="center">ไม่มีข้อมูล</td>
       </tr>
     @endforelse
 
