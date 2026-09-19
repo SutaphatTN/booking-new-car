@@ -9,7 +9,9 @@ use App\Models\Salecar;
 use App\Models\TbBranch;
 use App\Models\TbProvinces;
 use App\Models\VehicleLicense;
+use App\Services\OneDriveService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
@@ -241,7 +243,7 @@ class VehicleController extends Controller
             $brand = Auth::user()->brand ?? null;
             $branch = Auth::user()->branch ?? null;
 
-            $data = $request->except(['_token', '_method']);
+            $data = $request->except(['_token', '_method', 'reg_files']);
 
             // key ด้วย SaleID อย่างเดียว (กันสร้างแถวซ้ำเวลาคนแก้อยู่คนละ zone/brand/branch)
             $vl = VehicleLicense::firstOrNew(['SaleID' => $id]);
@@ -284,6 +286,29 @@ class VehicleController extends Controller
                 }
             }
 
+            // "เพิ่งกรอก/แก้" เลขป้ายขาวครบ (ตัวอักษร + ตัวเลข) แล้วต้องมีไฟล์แนบอย่างน้อย 1 ไฟล์ — กันลืมแนบหลักฐาน
+            // เทียบกับค่าเดิมบนแถว : ใบเก่าที่มีเลขป้ายอยู่แล้วและไม่ได้แตะเลขป้ายรอบนี้ ยังแก้ช่องอื่นได้ตามปกติ
+            // นับทั้งไฟล์ที่แนบไว้เดิมและไฟล์ที่ส่งมารอบนี้ (JS กันไว้ชั้นแรกแล้ว ตรงนี้ดักซ้ำ)
+            $oldPlateName = trim((string) $vl->license_name);
+            $oldPlateNumber = trim((string) $vl->license_number);
+
+            $plateName = array_key_exists('license_name', $data)
+                ? trim((string) $data['license_name'])
+                : $oldPlateName;
+            $plateNumber = array_key_exists('license_number', $data)
+                ? trim((string) $data['license_number'])
+                : $oldPlateNumber;
+
+            $plateChanged = $plateName !== $oldPlateName || $plateNumber !== $oldPlateNumber;
+
+            if ($plateName !== '' && $plateNumber !== '' && $plateChanged
+                && !$request->hasFile('reg_files') && empty($vl->attachment_url)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'กรอกเลขป้ายทะเบียนแล้วต้องแนบไฟล์อย่างน้อย 1 ไฟล์',
+                ], 422);
+            }
+
             // คิดยอดรวมใหม่จาก breakdown ให้ตรงกับ PDF เสมอ (ตรวจ + ช่อง + ใบเสร็จ + อื่นๆ)
             if (array_key_exists('withdrawal_check', $data) || array_key_exists('withdrawal_channel', $data) || array_key_exists('withdrawal_bill', $data) || array_key_exists('withdrawal_other', $data)) {
                 $data['withdrawal_total'] = (float) ($data['withdrawal_check'] ?? 0)
@@ -314,6 +339,29 @@ class VehicleController extends Controller
 
             $vl->save();
 
+            // ไฟล์แนบงานทะเบียน → OneDrive : New Car/{แบรนด์}/ทะเบียน/{SaleID-ชื่อลูกค้า}
+            // ต่อท้ายของเดิมเสมอ ไม่ลบไฟล์เก่าทิ้ง (ลบทีละไฟล์ผ่านปุ่มกากบาทบนการ์ด)
+            if ($request->hasFile('reg_files')) {
+                $sale = Salecar::with('customer')->find($id);
+                $customer = $sale?->customer;
+                $folderName = $id . '-' . ($customer->FirstName ?? 'unknown');
+                $brandName = Auth::user()->brandInfo->name ?? 'Other';
+                $folder = "New Car/{$brandName}/ทะเบียน/{$folderName}";
+
+                $oneDrive = new OneDriveService();
+                $files = is_array($vl->attachment_url) ? $vl->attachment_url : [];
+
+                foreach ($request->file('reg_files') as $index => $file) {
+                    $fileName = 'reg_' . $id . '_' . ($index + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    $files[] = [
+                        'url'  => $oneDrive->upload($file->getRealPath(), $fileName, $folder),
+                        'name' => $file->getClientOriginalName(),
+                    ];
+                }
+
+                $vl->update(['attachment_url' => $files]);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว'
@@ -324,6 +372,57 @@ class VehicleController extends Controller
                 'message' => 'เกิดข้อผิดพลาด กรุณาติดต่อแอดมิน'
             ], 500);
         }
+    }
+
+    /**
+     * เปิดดูไฟล์แนบงานทะเบียน — ไฟล์อยู่บน OneDrive ที่แชร์ระดับองค์กร
+     * ต้องผ่าน proxy เพราะลิงก์ตรงเปิดได้เฉพาะคนที่ล็อกอิน OneDrive ขององค์กรอยู่
+     * เปิดได้เฉพาะไฟล์ที่ผูกกับใบนั้นจริง (กันเอา url อะไรก็ได้มายิงผ่าน endpoint นี้)
+     */
+    public function proxyAttachment(Request $request, $id, $filename = null)
+    {
+        $vl = VehicleLicense::where('SaleID', $id)->firstOrFail();
+        $shareUrl = (string) $request->input('url');
+
+        $allowed = collect($vl->attachment_url ?? [])
+            ->contains(fn($f) => (is_array($f) ? $f['url'] ?? '' : $f) === $shareUrl);
+
+        abort_unless($allowed, 403);
+
+        try {
+            ['url' => $downloadUrl, 'name' => $name] = (new OneDriveService())->getDownloadInfo($shareUrl);
+
+            $response = (new Client(['allow_redirects' => true]))->get($downloadUrl);
+
+            return response($response->getBody()->getContents(), 200, [
+                'Content-Type'        => $response->getHeader('Content-Type')[0] ?? 'application/octet-stream',
+                'Content-Disposition' => "inline; filename=\"{$name}\"",
+                'Cache-Control'       => 'private, max-age=3600',
+            ]);
+        } catch (\Exception $e) {
+            abort(404);
+        }
+    }
+
+    /** ลบไฟล์แนบงานทะเบียนทีละไฟล์ (ลบออกจากรายการ ไฟล์บน OneDrive ยังอยู่เหมือนไฟล์แนบที่อื่นในระบบ) */
+    public function deleteAttachment(Request $request, $id)
+    {
+        // role ดูอย่างเดียว (insurance_reg) แก้ไขอะไรในเมนูทะเบียนไม่ได้เลย — ปุ่มถูกซ่อนแล้ว ตรงนี้กันยิง endpoint ตรง
+        abort_if(Auth::user()->isRegistrationViewOnly(), 403);
+
+        $vl = VehicleLicense::where('SaleID', $id)->firstOrFail();
+
+        $index = (int) $request->input('index');
+        $files = is_array($vl->attachment_url) ? $vl->attachment_url : [];
+
+        if (!isset($files[$index])) {
+            return response()->json(['success' => false, 'message' => 'ไม่พบไฟล์'], 404);
+        }
+
+        array_splice($files, $index, 1);
+        $vl->update(['attachment_url' => $files ?: null]);
+
+        return response()->json(['success' => true, 'remaining' => count($files)]);
     }
 
     /**

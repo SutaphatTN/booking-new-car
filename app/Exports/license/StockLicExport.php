@@ -129,6 +129,12 @@ class StockLicExport implements FromView, WithTitle, WithStyles, WithEvents, Sho
                         ($history->saleCarLic?->customer?->LastName ?? '')
                 ) : '';
 
+            // ป้ายทดลองขับไม่มีลูกค้า (ผูกกับรถ ไม่ได้ผูกกับใบขาย) — ช่องชื่อลูกค้าเลยว่างเปล่า
+            // โชว์ Vin ของรถที่ผูกป้ายไว้แทน จะได้รู้ว่าป้ายนี้อยู่กับรถคันไหน
+            if ($customerName === '' && $r->plate_status_value === TbLicensePlate::STATUS_TEST_DRIVE) {
+                $customerName = (string) ($testDriveVins->get($r->id) ?? '');
+            }
+
             $nameSale = $history?->saleCarLic?->report_sale_name ?? '';
 
             // สถานะข้ามแบรนด์ = การยืมที่ยังไม่คืน (+ แบรนด์ที่ผูกงานขายอยู่ ถ้าต่างจากเจ้าของ)

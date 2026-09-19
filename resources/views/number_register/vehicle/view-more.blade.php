@@ -222,7 +222,31 @@
           </div>
         </div>
 
-        {{-- Section 4 : รายการเกี่ยวกับทะเบียน (accessory ที่ is_registration) --}}
+        {{-- Section 4 : ไฟล์แนบ (ดูอย่างเดียว — ลบ/เพิ่มทำที่โมดัลแก้ไข) --}}
+        @php $regFiles = is_array($veh->vehicleLicense?->attachment_url) ? $veh->vehicleLicense->attachment_url : []; @endphp
+        <div class="mf-section">
+          <div class="mf-section-hd">
+            <div class="mf-section-icon sky">
+              <i class="bx bx-paperclip"></i>
+            </div>
+            <span class="mf-section-title">ไฟล์แนบ</span>
+          </div>
+          <div class="mf-section-body">
+            @if ($regFiles)
+              <div class="d-flex flex-wrap">
+                @include('_partials.file-cards', [
+                    'files' => $regFiles,
+                    'proxyBase' => route('vehicle.attachment-proxy', $veh->id),
+                    'readonly' => true,
+                ])
+              </div>
+            @else
+              <div class="text-muted small text-center py-2">— ไม่มีไฟล์แนบ —</div>
+            @endif
+          </div>
+        </div>
+
+        {{-- Section 5 : รายการเกี่ยวกับทะเบียน (accessory ที่ is_registration) --}}
         @php
           $regAccs = $veh->accessories?->where('is_registration', true) ?? collect();
           $regTypeLabel = ['gift' => 'แถม', 'extra' => 'ซื้อเพิ่ม'];

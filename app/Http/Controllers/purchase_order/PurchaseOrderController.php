@@ -4938,7 +4938,10 @@ class PurchaseOrderController extends Controller
             ->orderBy('DeliveryInDMSDate')
             ->get();
 
-        return view('purchase-order.gp-setting.view', compact('rows', 'month'));
+        // คอมขาย = ค่าคอมตัวรถจริงของเซลล์ (อ่านอย่างเดียว) — กรอกเองไม่ได้แล้ว ดู GPQuery::commissionSaleMap
+        $comSaleMap = GPQuery::commissionSaleMap($rows);
+
+        return view('purchase-order.gp-setting.view', compact('rows', 'month', 'comSaleMap'));
     }
 
     public function updateGpSetting(Request $request, $id)
@@ -4950,7 +4953,6 @@ class PurchaseOrderController extends Controller
         $validated = $request->validate([
             'gp_cost_price_override' => 'nullable|numeric|min:0',
             'gp_accessory_cost'      => 'nullable|numeric|min:0',
-            'gp_commission_sale'     => 'nullable|numeric|min:0',
             'gp_support_amount'      => 'nullable|numeric|min:0',
             'gp_support_date'        => 'nullable|date',
             'car_DNP'                => 'nullable|numeric|min:0',
@@ -4962,7 +4964,8 @@ class PurchaseOrderController extends Controller
         $salecar = Salecar::findOrFail($id);
         $salecar->gp_cost_price_override = $validated['gp_cost_price_override'] ?? null;
         $salecar->gp_accessory_cost      = $validated['gp_accessory_cost'] ?? null;
-        $salecar->gp_commission_sale     = $validated['gp_commission_sale'] ?? null;
+        // gp_commission_sale ไม่รับค่าจากฟอร์มแล้ว — คอมขายดึงจากค่าคอมตัวรถจริงของเซลล์
+        // (ค่าเก่าที่เคยกรอกไว้ยังอยู่ใน DB แต่ไม่ถูกใช้ที่ไหน)
         $salecar->save();
 
         // RI / WS / ราคาทุน(DNP) / ราคาขาย(MSRP) / เงินสนับสนุน เก็บที่ car_order

@@ -80,7 +80,8 @@
                     data-ws="{{ $r->carOrder->WS ?? '' }}"
                     data-cost="{{ $r->gp_cost_price_override ?? '' }}"
                     data-acc="{{ $r->gp_accessory_cost ?? '' }}"
-                    data-com="{{ $r->gp_commission_sale ?? '' }}"
+                    {{-- คอมขาย = ค่าคอมตัวรถจริงของเซลล์ (อ่านอย่างเดียว) ไม่ใช่ค่าที่กรอกเองอีกแล้ว --}}
+                    data-com="{{ $comSaleMap[$r->id] ?? 0 }}"
                     data-brand="{{ $r->brand ?? '' }}"
                     data-support-amount="{{ $r->carOrder->gp_support_amount ?? '' }}"
                     data-support-date="{{ optional($r->carOrder?->gp_support_date)->format('Y-m-d') ?? '' }}">
@@ -226,7 +227,9 @@
                 </div>
                 <div class="col-md-4">
                   <label for="m_gp_com" class="mf-label form-label"><i class="bx bx-dollar-circle ci-amber"></i> คอมขาย</label>
-                  <input type="text" inputmode="decimal" class="form-control text-end gp-num" id="m_gp_com">
+                  <input type="text" class="form-control text-end" id="m_gp_com" readonly
+                    style="background:#f8fafc;color:#64748b;">
+                  <div class="form-text">ดึงจากค่าคอมตัวรถของเซลล์อัตโนมัติ — แก้ที่นี่ไม่ได้</div>
                 </div>
               </div>
             </div>
@@ -389,9 +392,8 @@
         $('#m_WS').val(fmtNum(d.ws));
         $('#m_gp_cost').val(fmtNum(d.cost));
         $('#m_gp_acc').val(fmtNum(d.acc));
-        // คอมขาย: ถ้ายังไม่มีค่า แสดง default 3500
-        const comVal = (d.com === '' || d.com === null || d.com === undefined) ? 3500 : d.com;
-        $('#m_gp_com').val(fmtNum(comVal));
+        // คอมขาย: ค่าคอมตัวรถจริงของเซลล์ (อ่านอย่างเดียว) — คันที่ไม่เข้าเงื่อนไขคอมจะเป็น 0
+        $('#m_gp_com').val(fmtNum(d.com ?? 0));
 
         // เงินสนับสนุน — เฉพาะ brand 4 (Lepas)
         const isSupportBrand = Number(d.brand) === 4;
@@ -410,7 +412,6 @@
           _token: csrf,
           gp_cost_price_override: unfmtNum('#m_gp_cost'),
           gp_accessory_cost: unfmtNum('#m_gp_acc'),
-          gp_commission_sale: unfmtNum('#m_gp_com'),
           car_DNP: unfmtNum('#m_car_DNP'),
           car_MSRP: unfmtNum('#m_car_MSRP'),
           RI: unfmtNum('#m_RI'),
@@ -433,7 +434,6 @@
             if ($activeRow) {
               $activeRow.data('cost', payload.gp_cost_price_override ?? '')
                 .data('acc', payload.gp_accessory_cost ?? '')
-                .data('com', payload.gp_commission_sale ?? '')
                 .data('dnp', payload.car_DNP ?? '')
                 .data('msrp', payload.car_MSRP ?? '')
                 .data('ri', payload.RI ?? '')
