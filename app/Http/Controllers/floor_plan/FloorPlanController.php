@@ -273,7 +273,7 @@ class FloorPlanController extends Controller
         $orders = CarOrder::with([
                 'model', 'subModel', 'interiorColor', 'gwmColor',
                 // ใบจองผูกผ่าน salecars.CarOrderID (car_order.salecar_id ไม่ถูกใช้)
-                'salecars' => fn ($q) => $q->with('remainingPayment.financeInfo'),
+                'salecars' => fn ($q) => $q->with(['remainingPayment.financeInfo', 'customer.prefix']),
             ])
             ->where('payment_type', 'fp_tisco')
             ->orderByDesc('fp_date')
@@ -327,6 +327,9 @@ class FloorPlanController extends Controller
                 // กรอกยอดเองไว้หรือยัง (ใช้บอกในหน้าจอว่าค่านี้มาจากราคาทุนหรือคนกรอก)
                 'netIsCustom'   => $o->fp_net_amount !== null,
                 // ── ข้อมูลการเงินจากใบจอง (salecars ผูกด้วย CarOrderID) ──
+                'customerName'   => $sale && $sale->customer
+                    ? (trim(($sale->customer->prefix->Name_TH ?? '') . ' ' . ($sale->customer->FirstName ?? '') . ' ' . ($sale->customer->LastName ?? '')) ?: '-')
+                    : '-',
                 'downPayment'    => $sale && $sale->DownPayment !== null ? (float) $sale->DownPayment : null,
                 'balanceFinance' => $sale && $sale->balanceFinance !== null ? (float) $sale->balanceFinance : null,
                 'financeName'    => $sale->remainingPayment->financeInfo->FinanceCompany ?? '-',

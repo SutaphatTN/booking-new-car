@@ -11,6 +11,7 @@ use App\Mail\ApproveCarOrderMail;
 use App\Mail\BatchApproveCarOrderMail;
 use Illuminate\Validation\Rule;
 use App\Models\CarOrder;
+use App\Services\DeliveryNotifier;
 use App\Models\CarOrderHistory;
 use App\Models\CarOrderWaiting;
 use App\Models\Salecar;
@@ -299,9 +300,14 @@ class CarOrderController extends Controller
         $saleCar = SaleCar::find($order->salecar_id);
 
         if ($saleCar) {
+            $oldCarOrderID = $saleCar->CarOrderID;
+
             $saleCar->update([
                 'CarOrderID' => null
             ]);
+
+            // ปลดผูกทั้งที่เคยแจ้งส่งมอบไปแล้ว → ปลายทางต้องรู้ว่า VIN เดิมใช้จบยอดไม่ได้
+            DeliveryNotifier::notifyCarChanged($saleCar, $oldCarOrderID, null);
         }
 
         $order->update([
@@ -657,7 +663,10 @@ class CarOrderController extends Controller
 
             $order = CarOrder::create($data);
 
-            DB::transaction(function () use ($request, $order) {
+            // ผลการผูกรถ — ไว้ยิงเมลหลัง transaction ปิด (เมลล้มไม่ควร rollback การผูกรถ)
+            $bound = null;
+
+            DB::transaction(function () use ($request, $order, &$bound) {
 
                 if ($request->filled('salecar_id')) {
 
@@ -665,6 +674,8 @@ class CarOrderController extends Controller
 
                     $oldCarOrderID = $saleCar->CarOrderID;
                     $newCarOrderID = $order->id;
+
+                    $bound = [$saleCar, $oldCarOrderID, $newCarOrderID];
 
                     // update Salecar
                     $saleCar->update([
@@ -702,6 +713,13 @@ class CarOrderController extends Controller
                     ]);
                 }
             });
+
+            // สลับคันจากหน้านี้ก็ต้องแจ้งปลายทางเหมือนสลับจากหน้าใบจอง
+            if ($bound) {
+                [$boundSaleCar, $boundOldCarOrderID, $boundNewCarOrderID] = $bound;
+                DeliveryNotifier::notifyCarChanged($boundSaleCar, $boundOldCarOrderID, $boundNewCarOrderID);
+                DeliveryNotifier::notifyDelivered($boundSaleCar);
+            }
 
             // หมายเหตุ: ไม่ส่งเมลตอนสร้าง order แล้ว — ใช้ปุ่ม "ขออนุมัติที่เลือก" ในหน้า process ส่งเมลรวมครั้งเดียวแทน
 

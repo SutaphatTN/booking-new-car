@@ -196,6 +196,10 @@
           </div>
           <div class="mf-section-body">
             <div class="row g-3">
+              <div class="col-md-8">
+                <span class="fp-info-label">ชื่อลูกค้า</span>
+                <div class="fp-info-val">{{ $r['customerName'] }}</div>
+              </div>
               <div class="col-md-4">
                 <span class="fp-info-label">เงินดาวน์</span>
                 <div class="fp-info-val">{{ $r['downPayment'] !== null ? number_format($r['downPayment'], 2) : '-' }}</div>

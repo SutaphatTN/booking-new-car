@@ -61,7 +61,7 @@ use App\Support\ScopeBypass;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Mail\Mailables\Attachment;
 use App\Mail\SaleApprovedMail;
-use App\Mail\CarDeliveredMail;
+use App\Services\DeliveryNotifier;
 use App\Mail\ApprovalReturnMail;
 use App\Mail\IaCheckRequestMail;
 use Illuminate\Support\Facades\Log;
@@ -2892,36 +2892,12 @@ class PurchaseOrderController extends Controller
                 $this->sendIaCheckRequest($saleCar, $iaToken);
             }
 
-            // แจ้งอีเมล "ส่งมอบ" — ยิง "ครั้งเดียว" เมื่อมีข้อมูลส่งมอบตัวใดตัวหนึ่ง
-            //  trigger: DeliveryDate / DeliveryInDMSDate / DeliveryInCKDate / con_status=5
-            //  ถ้าตัวถัดมามีข้อมูลตามมาทีหลังจะไม่ยิงซ้ำ (กันด้วย delivered_notified_at)
-            if (!$saleCar->delivered_notified_at) {
-                $deliveryTriggers = [];
-                if ((int) $saleCar->con_status === 5) $deliveryTriggers[] = 'สถานะ = ส่งมอบ';
-                if ($saleCar->DeliveryDate)           $deliveryTriggers[] = 'วันส่งมอบจริง (แจ้งประกัน)';
-                if ($saleCar->DeliveryInDMSDate)      $deliveryTriggers[] = 'วันส่งมอบของบริษัท (DMS)';
-                if ($saleCar->DeliveryInCKDate)       $deliveryTriggers[] = 'วันส่งมอบของฝ่ายขาย (CK)';
-
-                if (!empty($deliveryTriggers)) {
-                    try {
-                        $saleCar->load([
-                            'customer.prefix',
-                            'model',
-                            'subModel',
-                            'carOrder',
-                            'saleUser.branchInfo',
-                            'gwmColor',
-                            'interiorColor',
-                            'conStatus',
-                            'remainingPayment.financeInfo', // ชื่อไฟแนนซ์ในเมล
-                        ]);
-                        Mail::to('waliwan.mitsuchookiatkrabi@gmail.com')->send(new CarDeliveredMail($saleCar, $deliveryTriggers));
-                        $saleCar->update(['delivered_notified_at' => now()]); // มาร์คว่าแจ้งแล้ว (ยิงครั้งเดียว)
-                    } catch (\Throwable $mailEx) {
-                        report($mailEx); // ส่งเมลล้มเหลวไม่ควรทำให้การบันทึกล้มเหลว (จะลองใหม่รอบหน้า)
-                    }
-                }
-            }
+            // แจ้งอีเมลสาย "ส่งมอบ" — ทำหลัง commit เสมอ (เมลล้มไม่ทำให้การบันทึกล้ม)
+            //  1) สลับคันรถหลังเมลแจ้งส่งมอบของคันเดิมออกไปแล้ว → แจ้งยกเลิกคันเก่าก่อน
+            //  2) คันที่ผูกอยู่ตอนนี้มีข้อมูลส่งมอบและยังไม่เคยแจ้ง → แจ้งส่งมอบ
+            //  เงื่อนไขและการกันยิงซ้ำอยู่ใน DeliveryNotifier (ใช้ร่วมกับหน้าใบสั่งรถ)
+            DeliveryNotifier::notifyCarChanged($saleCar, $oldCarOrderID, $newCarOrderID);
+            DeliveryNotifier::notifyDelivered($saleCar);
 
             // คำขออนุมัติล่วงหน้า (ยังไม่เป็นการจอง) → กลับหน้าโมดูลของมัน ไม่ใช่รายการจอง
             return response()->json([
