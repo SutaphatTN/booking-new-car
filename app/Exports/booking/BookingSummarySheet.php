@@ -239,6 +239,8 @@ class BookingSummarySheet implements FromView, WithTitle, WithStyles, WithEvents
                 'sale'        => $maskSale ? BookingReportQuery::MASKED : ($sale?->report_sale_name ?? ''),
                 'team'        => $sale?->saleTeam?->name ?? '',
                 'bookingDate' => $sale?->format_booking_date ?? '',
+                // ประมาณการส่งมอบ (เก็บเป็นเดือน) — ใบจองที่ยังไม่ได้กรอกจะเว้นว่าง
+                'DeliveryEstimateDate' => $sale?->format_delivery_estimate_date ?? '',
                 'status'      => $sale?->conStatus?->name ?? '',
                 'daysBind' => (
                     $sale

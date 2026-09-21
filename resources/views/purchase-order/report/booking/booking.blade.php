@@ -9,7 +9,7 @@
   $showTeam = \App\Support\BrandFeature::hasMultipleTeams();
 
   // จำนวนคอลัมน์รวม (ปรับตาม brand + การซ่อนราคาทุน) สำหรับแถว "ไม่มีข้อมูล"
-  $totalCols = 28;
+  $totalCols = 29;
   if (auth()->user()->brand == 2) $totalCols++;             // สาขา — GWM เท่านั้น
   if ($showInterior) $totalCols++;                          // สีภายใน
   if (in_array(auth()->user()->brand, [2, 3, 4])) $totalCols--; // ไม่มี Option
@@ -52,6 +52,7 @@
         <th>ทีม</th>
       @endif
       <th>วันจอง</th>
+      <th>วันประมาณการ</th>
       <th>สถานะสัญญา</th>
       <th>ระยะเวลาการจอง</th>
       <th>PO Date</th>
@@ -98,6 +99,7 @@
           <td>{{ $s['team'] }}</td>
         @endif
         <td>{{ $s['bookingDate'] }}</td>
+        <td>{{ $s['DeliveryEstimateDate'] }}</td>
         <td>{{ $s['status'] }}</td>
         <td>{{ $s['daysBind'] }}</td>
         <td>{{ $s['po_date'] }}</td>
