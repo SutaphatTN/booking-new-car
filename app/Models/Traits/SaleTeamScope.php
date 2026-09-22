@@ -72,7 +72,7 @@ trait SaleTeamScope
         $user   = Auth::user();
         $teamId = $user->sale_team_id ?? null;
 
-        if (!$teamId || !in_array($user->role, ['manager', 'audit'], true)) {
+        if (!$teamId || !in_array($user->role, SaleTeam::SCOPED_ROLES, true)) {
             return null;
         }
 

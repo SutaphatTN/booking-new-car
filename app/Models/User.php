@@ -71,7 +71,8 @@ class User extends Authenticatable
 		'profile_photo_path',
 		'phone',
 		'userZone',
-		'sale_team_id'
+		'sale_team_id',
+		'branch_make'
 	];
 
 	protected $dates = ['deleted_at'];
@@ -83,6 +84,26 @@ class User extends Authenticatable
 	 *
 	 * ถ้ากำลัง save ระหว่างมี session สลับอยู่ ให้คืนค่า home (original) ก่อนเขียน แล้วคืนค่า effective ให้ request ที่เหลือ
 	 */
+	/**
+	 * สาขาที่ "ทำยอด" (branch_make) — คนละตัวกับ branch ที่เป็นสาขาสังกัด/ออกเอกสาร
+	 *
+	 * BI อ่านคอลัมน์นี้ตรง ๆ จาก users (ไม่ผ่าน view) ถ้าปล่อย NULL ยอดของคนนั้นจะหลุด
+	 * ออกจากการแบ่งสาขาในรายงาน → ต้องมีค่าเสมอตั้งแต่ตอนสร้าง user
+	 *
+	 * กติกา: ยึดสาขาของ "ทีมขาย" ก่อน (sale_teams.branch = สาขาที่ทีมรายงานยอดเข้า)
+	 * เช่น ทีม Mitsu อ่าวลึก นั่งอยู่สำนักงานใหญ่ (branch 1) แต่ยอดต้องเข้าอ่าวลึก (branch_make 2)
+	 * ไม่มีทีม / ทีมไม่ได้ระบุสาขา (เช่น GWM ที่ตั้งใจไม่มีทีม) → ใช้สาขาสังกัดตามเดิม
+	 */
+	public static function resolveBranchMake($branch, $saleTeamId): ?int
+	{
+		$teamBranch = $saleTeamId
+			? SaleTeam::whereKey($saleTeamId)->value('branch')
+			: null;
+
+		$value = $teamBranch ?: $branch;
+
+		return $value !== null && $value !== '' ? (int) $value : null;
+	}
 	public function save(array $options = [])
 	{
 		$restore = [];

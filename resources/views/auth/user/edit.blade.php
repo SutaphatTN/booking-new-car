@@ -156,6 +156,27 @@
                         </div>
                     </div>
 
+                    {{-- สาขาที่ทำยอด (branch_make) — BI อ่านคอลัมน์นี้ตรง ๆ จาก users
+                         คนละตัวกับ "สาขา" ด้านบนที่เป็นสาขาสังกัด/ออกเอกสาร
+                         เว้นว่าง = ระบบคิดจากสาขาของทีมขาย (ไม่มีทีม → ใช้สาขาสังกัด) --}}
+                    <div class="row mb-3">
+                        <label for="branch_make"
+                            class="col-md-4 col-form-label text-md-end">{{ __('สาขาที่ทำยอด') }}
+                            <small class="d-block text-muted">ใช้ในรายงาน BI</small></label>
+
+                        <div class="col-md-6">
+                            <select id="branch_make" class="form-control" name="branch_make">
+                                <option value="">— ตั้งอัตโนมัติตามทีมขาย/สาขา —</option>
+                                @foreach ($branch as $item)
+                                <option value="{{ @$item->id }}"
+                                    {{ (int) $user->branch_make === (int) $item->id ? 'selected' : '' }}>
+                                    {{ @$item->name }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
                     {{-- ทีมขาย — "หน่วยทำยอด" แยกจาก brand (สินค้าที่ขาย) และสาขา (ที่ตั้งจริง)
                          ทีมที่ตั้งเป็น isolated จะทำให้ manager/audit ของทีมนั้นเห็นเฉพาะงานของทีมตัวเอง
                          ตอนไปทำงานใต้แบรนด์ที่ใช้ร่วมกับทีมอื่น --}}
