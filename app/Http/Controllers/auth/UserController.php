@@ -75,6 +75,20 @@ class UserController extends Controller
                     : null;
             }
 
+            // สาขาที่ทำยอด (branch_make) — BI อ่านคอลัมน์นี้ตรง ๆ จาก users ห้ามปล่อยว่าง
+            // เว้นว่างในฟอร์ม = ให้คิดใหม่จากค่าที่กำลังจะบันทึก (ทีมขายก่อน แล้วค่อยสาขาสังกัด)
+            // ฟอร์มที่ไม่มีช่องนี้เลยก็ยังเติมให้ ถ้าแถวนั้นยังว่างอยู่ — กันข้อมูลเก่าค้าง NULL
+            $branchForMake = array_key_exists('branch', $data) ? $data['branch'] : $user->branch;
+            $teamForMake   = array_key_exists('sale_team_id', $data) ? $data['sale_team_id'] : $user->sale_team_id;
+
+            if ($request->filled('branch_make')) {
+                $data['branch_make'] = (int) $request->branch_make;
+            } elseif ($request->has('branch_make') || $user->branch_make === null) {
+                $data['branch_make'] = User::resolveBranchMake($branchForMake, $teamForMake);
+            } else {
+                unset($data['branch_make']);
+            }
+
             if ($request->filled('password')) {
                 $data['password_plain'] = $request->password;
                 $data['password'] = bcrypt($request->password);

@@ -39,7 +39,16 @@ class RegisterController extends Controller
             'userZone' => ['required', 'in:10,40'],
             'phone' => ['nullable', 'string', 'max:20'],
             'sale_team_id' => ['nullable', 'integer', 'exists:sale_teams,id'],
+            // สาขาที่ทำยอด (BI อ่านคอลัมน์นี้) — เว้นว่างได้ ระบบคิดให้จากทีมขาย/สาขา
+            'branch_make' => ['nullable', 'integer', 'exists:tb_branch,id'],
         ]);
+
+        // ทีมขายที่จะบันทึกจริง — ใช้ซ้ำตอนคิด branch_make ด้วย
+        // ไม่ได้เลือกเอง → ตั้งทีมเริ่มต้นของ brand ให้เฉพาะ role สายทีม (SaleTeam::TEAM_ROLES)
+        // role อื่นปล่อย NULL ไม่มีใครอ่านค่านั้นอยู่ดี (เลือกเองได้ถ้าตั้งใจ)
+        $saleTeamId = $request->filled('sale_team_id')
+            ? (int) $request->sale_team_id
+            : SaleTeam::defaultIdForRole($request->role, $request->brand);
 
         try {
             User::create([
@@ -55,9 +64,12 @@ class RegisterController extends Controller
                 'userZone' => $request->userZone,
                 'phone' => preg_replace('/\D/', '', $request->phone),
                 // ทีมขาย: ถ้าไม่ได้เลือก ให้ตั้งอัตโนมัติจาก brand (sale_teams.default_for_brand)
-                'sale_team_id' => $request->filled('sale_team_id')
-                    ? (int) $request->sale_team_id
-                    : SaleTeam::defaultIdForBrand($request->brand),
+                'sale_team_id' => $saleTeamId,
+                // สาขาที่ทำยอด: เลือกเองได้ ไม่เลือก = คิดจากทีมขาย (fallback = สาขาสังกัด)
+                // ห้ามปล่อย NULL — BI อ่านคอลัมน์นี้ตรง ๆ ไม่มีค่าแล้วยอดคนนั้นหลุดการแบ่งสาขา
+                'branch_make' => $request->filled('branch_make')
+                    ? (int) $request->branch_make
+                    : User::resolveBranchMake($request->branch, $saleTeamId),
             ]);
 
             return response()->json([

@@ -27,6 +27,21 @@ class SaleTeam extends Model
     public const VISIBILITY_SHARED   = 'shared';
     public const VISIBILITY_ISOLATED = 'isolated';
 
+    /**
+     * role ที่ "ทีมของตัวเอง" มีผลต่อการมองเห็นข้อมูล
+     * (App\Models\Traits\SaleTeamScope อ่านค่านี้ — แก้ที่นี่ที่เดียว ห้าม hardcode ซ้ำ)
+     */
+    public const SCOPED_ROLES = ['manager', 'audit'];
+
+    /**
+     * role ที่ควรสังกัดทีมเสมอ = สายขาย + role ที่ scope ใช้ทีมตัวเองตัดสินการมองเห็น
+     *
+     * role นอกลิสต์นี้ (account / cs / registration / insurance_reg ฯลฯ) ไม่ต้องมีทีม —
+     * ค่าที่ติดมาไม่เคยถูกอ่าน เพราะ snapshot บนใบจอง/ใบติดตามดึงจากทีมของ "ผู้ขาย"
+     * ไม่ใช่ทีมของคนที่กดสร้าง (ดู Salecar::booted / CustomerTracking::booted)
+     */
+    public const TEAM_ROLES = ['sale', 'lead_sale', 'manager', 'audit'];
+
     protected $fillable = [
         'name',
         'code',
@@ -96,6 +111,21 @@ class SaleTeam extends Model
         return static::where('active', 1)
             ->where('default_for_brand', (int) $brand)
             ->value('id');
+    }
+
+    /**
+     * ทีมเริ่มต้นตอนสร้าง user ใหม่ที่ยังไม่ได้เลือกทีม — ตั้งให้เฉพาะ role ในสายทีม
+     *
+     * เดิมตั้งให้ทุก role ทำให้ account/cs/insurance_reg ติดทีมมาโดยไม่มีใครใช้ค่านั้น
+     * (แอดมินยังเลือกทีมให้ role นอกลิสต์เองได้อยู่ ถ้าตั้งใจ — ตรงนี้คุมแค่ค่าอัตโนมัติ)
+     */
+    public static function defaultIdForRole(?string $role, $brand): ?int
+    {
+        if (!in_array($role, self::TEAM_ROLES, true)) {
+            return null;
+        }
+
+        return static::defaultIdForBrand($brand);
     }
 
     public function branchInfo()

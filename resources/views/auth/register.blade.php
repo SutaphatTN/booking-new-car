@@ -64,6 +64,20 @@
               </select>
             </div>
 
+            {{-- สาขาที่ทำยอด (branch_make) — BI อ่านคอลัมน์นี้ตรง ๆ จาก users
+                 คนละตัวกับ "สาขา" ด้านบนที่เป็นสาขาสังกัด/ออกเอกสาร
+                 เช่น ทีมอ่าวลึกนั่งอยู่สำนักงานใหญ่ แต่ยอดต้องเข้าอ่าวลึก
+                 เว้นว่าง = ระบบคิดจากสาขาของทีมขาย (ไม่มีทีม → ใช้สาขาสังกัด) --}}
+            <div class="mb-3">
+              <label for="branch_make" class="form-label">สาขาที่ทำยอด <small class="text-muted">(ใช้ในรายงาน BI)</small></label>
+              <select id="branch_make" name="branch_make" class="form-select">
+                <option value="">-- ตั้งอัตโนมัติตามทีมขาย/สาขา --</option>
+                @foreach ($branch as $item)
+                <option value="{{ @$item->id }}">{{ @$item->name }}</option>
+                @endforeach
+              </select>
+            </div>
+
             {{-- ทีมขาย — ปล่อยว่างไว้ได้ ระบบจะตั้งทีมเริ่มต้นของ brand นั้นให้เอง --}}
             <div class="mb-3">
               <label for="sale_team_id" class="form-label">ทีมขาย</label>
