@@ -2619,8 +2619,10 @@
 
                   </div>
 
-                  {{-- sale/adminPage ไม่เห็นแท็บ "ข้อมูลเพิ่มเติม" → ปุ่มตรวจสอบ (ทางเข้าโมดัลบันทึก) ต้องอยู่แท็บนี้ --}}
-                  @if (in_array($userRole, ['sale', 'adminPage']))
+                  {{-- role ที่ไม่เห็นแท็บ "ข้อมูลเพิ่มเติม" (sale / adminPage / account)
+                       → ปุ่ม "ตรวจสอบ" ซึ่งเป็นทางเข้าเดียวของโมดัลบันทึก ต้องมาอยู่แท็บนี้
+                       ไม่งั้นจะเดินมาจบที่ "สรุปยอด" แล้วกดบันทึกไม่ได้เลย (เคส account) --}}
+                  @if (in_array($userRole, ['sale', 'adminPage', 'account']))
                     <div class="mt-6 d-flex justify-content-end gap-2">
                       <button id="prevExtra" class="btn btn-danger">ย้อนกลับ</button>
                       <button type="button" class="btn btn-info" id="btnPreviewCar">
