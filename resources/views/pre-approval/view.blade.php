@@ -2,7 +2,7 @@
 @section('title', 'ขออนุมัติเกินงบล่วงหน้า')
 
 @section('page-script')
-@vite(['resources/assets/js/pre-approval.js'])
+@vite(['resources/assets/js/pre-approval.js', 'resources/assets/js/customer-complete.js'])
 @endsection
 
 @section('content')
@@ -54,4 +54,7 @@
     </div>
   </div>
 </div>
+
+{{-- กด "สร้างการจอง" แล้วข้อมูลลูกค้ายังไม่ครบ → กรอกในโมดัลเดียวกับหน้าจอง (customer-complete.js) --}}
+@include('purchase-order._complete-customer-modal')
 @endsection

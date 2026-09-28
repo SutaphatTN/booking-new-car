@@ -181,7 +181,7 @@ class ActivityLogController extends Controller
             $rows = DB::table($table)->whereIn('id', $ids)->pluck($column, 'id');
 
             // บางประเภทเก็บแค่ id ของอีกตาราง — ต่ออีกทอดให้เป็นชื่อที่คนอ่านออก
-            if ($type === 'Salecar') {
+            if ($type === 'Salecar' || $type === 'CustomerTracking') {
                 $names = DB::table('customers')->whereIn('id', $rows->filter()->unique())
                     ->get(['id', 'FirstName', 'LastName'])
                     ->keyBy('id');

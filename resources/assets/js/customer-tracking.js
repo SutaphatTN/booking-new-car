@@ -1446,6 +1446,14 @@ $(document).ready(function () {
     const $wrap = $btn.closest('.po-section-edit').find('.td-attach-wrap');
 
     $btn.prop('disabled', true);
+    // อัปโหลดไฟล์ขึ้น OneDrive อาจนานหลายวินาที — บังจอไว้ กันผู้ใช้ปิดหน้าไปก่อนเพราะคิดว่าเสร็จแล้ว
+    Swal.fire({
+      title: 'กำลังบันทึก...',
+      text: 'กรุณาอย่าปิดหน้านี้จนกว่าจะบันทึกเสร็จ',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => Swal.showLoading()
+    });
     $.ajax({
       url: `/customer-tracking/${trackingId}/test-drive`,
       type: 'POST',

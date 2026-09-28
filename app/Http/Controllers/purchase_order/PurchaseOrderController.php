@@ -1205,7 +1205,10 @@ class PurchaseOrderController extends Controller
             ]);
 
             // กันข้ามฝั่ง server: ลูกค้าต้องมีเลขบัตร/เบอร์โทร/ที่อยู่ปัจจุบันครบก่อนทำการจอง
-            $missingProfile = $this->customerProfileMissing(Customer::find($request->CusID));
+            // คำขออนุมัติเกินงบล่วงหน้ายังไม่ใช่การจอง (ลองขอก่อนได้) → ไปดักตอนกด "สร้างการจอง" แทน
+            $missingProfile = $request->boolean('is_pre_approval')
+                ? []
+                : $this->customerProfileMissing(Customer::find($request->CusID));
             if (!empty($missingProfile)) {
                 DB::rollBack();
                 return response()->json([
@@ -3549,23 +3552,7 @@ class PurchaseOrderController extends Controller
     // คืนรายการข้อมูลที่ลูกค้ายังขาดสำหรับทำการจอง (ว่าง = ครบ) — ใช้ร่วมกันทั้ง gate หน้าจอและ store()
     private function customerProfileMissing(?Customer $customer): array
     {
-        if (!$customer) {
-            return ['ไม่พบข้อมูลลูกค้า'];
-        }
-
-        $addr = Address::where('customer_id', $customer->id)
-            ->where('type', 'current')
-            ->orderByDesc('id')
-            ->first();
-
-        $missing = [];
-        if (empty($customer->IDNumber))      $missing[] = 'เลขบัตรประชาชน';
-        if (empty($customer->Mobilephone1))  $missing[] = 'เบอร์โทรศัพท์';
-        if (!($addr && !empty($addr->province) && !empty($addr->district) && !empty($addr->subdistrict))) {
-            $missing[] = 'ที่อยู่ปัจจุบัน';
-        }
-
-        return $missing;
+        return $customer ? $customer->bookingProfileMissing() : ['ไม่พบข้อมูลลูกค้า'];
     }
 
     /**

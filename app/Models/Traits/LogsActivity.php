@@ -15,9 +15,23 @@ use Illuminate\Support\Facades\Auth;
  *    - mass update แบบ Model::where(...)->update([...]) และ DB::table(...)->update([...]) จะ "ไม่" ถูกบันทึก
  *
  * ปรับคอลัมน์ที่ไม่อยากเก็บเพิ่มได้ โดยประกาศ property $activityExclude ในแต่ละ model
+ * หรือเก็บ "เฉพาะบางคอลัมน์" ด้วย $activityOnly — โหมดนี้ไม่เขียน log ถ้าไม่มีคอลัมน์ในลิสต์เปลี่ยน
+ * และไม่เก็บ deleted/restored (ใช้กับตารางที่อยากตามดูแค่บางเรื่อง เช่น ทดลองขับใน customer_trackings)
  */
 trait LogsActivity
 {
+    /** null = เก็บทุกคอลัมน์ (ตัด noise) ; array = เก็บเฉพาะคอลัมน์เหล่านี้ */
+    protected function activityOnlyFields(): ?array
+    {
+        return property_exists($this, 'activityOnly') ? $this->activityOnly : null;
+    }
+
+    /** แปลงค่าก่อนลง log — override ได้ในแต่ละ model (เช่น JSON ไฟล์แนบ → ชื่อไฟล์) */
+    protected function activityValue(string $key, $value)
+    {
+        return $value;
+    }
+
     /** คอลัมน์ noise ที่ไม่ต้องเก็บลง log (บวกกับ $activityExclude ของ model ถ้ามี) */
     protected function activityExcluded(): array
     {
@@ -31,7 +45,11 @@ trait LogsActivity
     protected static function bootLogsActivity(): void
     {
         static::created(function ($model) {
-            $model->writeActivityLog('created', $model->activityCreatedChanges());
+            $changes = $model->activityCreatedChanges();
+            if ($model->activityOnlyFields() !== null && empty($changes)) {
+                return;
+            }
+            $model->writeActivityLog('created', $changes);
         });
 
         static::updated(function ($model) {
@@ -42,7 +60,10 @@ trait LogsActivity
         });
 
         static::deleted(function ($model) {
-            // ข้าม force delete (ลบถาวร) — เก็บเฉพาะ soft delete
+            // ข้าม force delete (ลบถาวร) — เก็บเฉพาะ soft delete ; โหมด $activityOnly ไม่เก็บการลบ
+            if ($model->activityOnlyFields() !== null) {
+                return;
+            }
             if (method_exists($model, 'isForceDeleting') && $model->isForceDeleting()) {
                 return;
             }
@@ -51,6 +72,9 @@ trait LogsActivity
 
         if (method_exists(static::class, 'restored')) {
             static::restored(function ($model) {
+                if ($model->activityOnlyFields() !== null) {
+                    return;
+                }
                 $model->writeActivityLog('restored', null);
             });
         }
@@ -80,13 +104,17 @@ trait LogsActivity
     protected function activityDiff(): array
     {
         $excluded = $this->activityExcluded();
+        $only     = $this->activityOnlyFields();
         $changes  = [];
 
         foreach ($this->getChanges() as $key => $new) {
-            if (in_array($key, $excluded, true)) {
+            if (in_array($key, $excluded, true) || ($only !== null && !in_array($key, $only, true))) {
                 continue;
             }
-            $changes[$key] = ['old' => $this->getOriginal($key), 'new' => $new];
+            $changes[$key] = [
+                'old' => $this->activityValue($key, $this->getOriginal($key)),
+                'new' => $this->activityValue($key, $new),
+            ];
         }
 
         return $changes;
@@ -96,13 +124,14 @@ trait LogsActivity
     protected function activityCreatedChanges(): array
     {
         $excluded = $this->activityExcluded();
+        $only     = $this->activityOnlyFields();
         $changes  = [];
 
         foreach ($this->getAttributes() as $key => $new) {
-            if ($new === null || in_array($key, $excluded, true)) {
+            if ($new === null || in_array($key, $excluded, true) || ($only !== null && !in_array($key, $only, true))) {
                 continue;
             }
-            $changes[$key] = ['old' => null, 'new' => $new];
+            $changes[$key] = ['old' => null, 'new' => $this->activityValue($key, $new)];
         }
 
         return $changes;

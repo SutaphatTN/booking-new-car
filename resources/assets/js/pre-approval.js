@@ -55,38 +55,56 @@ $(document).on('click', '.btnConvertBooking', function () {
     confirmButtonText: 'ใช่, สร้างการจอง',
     cancelButtonText: 'ยกเลิก'
   }).then(result => {
-    if (!result.isConfirmed) return;
-
-    $.ajax({
-      url: '/pre-approval/' + id + '/convert',
-      type: 'POST',
-      beforeSend: function () {
-        Swal.fire({
-          title: 'กำลังดำเนินการ...',
-          allowOutsideClick: false,
-          didOpen: () => Swal.showLoading()
-        });
-      },
-      success: function (res) {
-        Swal.fire({
-          icon: 'success',
-          title: 'สำเร็จ!',
-          text: res.message,
-          timer: 2000,
-          showConfirmButton: true
-        });
-        preApprovalTable.ajax.reload(null, false);
-      },
-      error: function (xhr) {
-        Swal.fire({
-          icon: 'error',
-          title: 'เกิดข้อผิดพลาด',
-          text: xhr.responseJSON?.message || 'ไม่สามารถสร้างการจองได้'
-        });
-      }
-    });
+    if (result.isConfirmed) convertToBooking(id, false);
   });
 });
+
+// retried = รอบที่ยิงซ้ำหลังกรอกข้อมูลลูกค้าครบแล้ว — กันวนเปิด modal ไม่จบถ้า server ยังตอบว่าไม่ครบ
+function convertToBooking(id, retried) {
+  $.ajax({
+    url: '/pre-approval/' + id + '/convert',
+    type: 'POST',
+    beforeSend: function () {
+      Swal.fire({
+        title: 'กำลังดำเนินการ...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+    },
+    success: function (res) {
+      Swal.fire({
+        icon: 'success',
+        title: 'สำเร็จ!',
+        text: res.message,
+        timer: 2000,
+        showConfirmButton: true
+      });
+      preApprovalTable.ajax.reload(null, false);
+    },
+    error: function (xhr) {
+      const res = xhr.responseJSON || {};
+
+      // ตอนขออนุมัติไม่บังคับข้อมูลลูกค้า → ถึงตอนจองจริงให้กรอกในโมดัลเดียวกับหน้าจอง แล้วสร้างการจองต่อให้เลย
+      if (res.need_profile && !retried && typeof window.poEnsureCustomerComplete === 'function') {
+        Swal.fire({
+          icon: 'warning',
+          title: 'ข้อมูลลูกค้ายังไม่ครบ',
+          text: 'ขาด: ' + (res.missing || []).join(', ') + ' — กรอกให้ครบแล้วระบบจะสร้างการจองให้ต่อ',
+          confirmButtonText: 'กรอกข้อมูล'
+        }).then(() => {
+          window.poEnsureCustomerComplete(res.customer_id, { onComplete: () => convertToBooking(id, true) });
+        });
+        return;
+      }
+
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: res.message || 'ไม่สามารถสร้างการจองได้'
+      });
+    }
+  });
+}
 
 // ลบคำขอ (ลบได้เฉพาะที่ยังไม่ถูกสร้างเป็นการจอง)
 $(document).on('click', '.btnDeletePreApproval', function () {

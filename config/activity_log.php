@@ -39,6 +39,11 @@ return [
             'class'   => 'bg-success',
             'subject' => ['tb_source_place_claim', 'place_id'],   // แปลงต่อเป็นชื่อสถานที่ใน controller
         ],
+        'CustomerTracking' => [
+            'label'   => 'ทดลองขับ',   // เก็บเฉพาะฟิลด์ทดลองขับของการติดตาม (ดู CustomerTracking::$activityOnly)
+            'class'   => 'bg-success',
+            'subject' => ['customer_trackings', 'customer_id'],   // แปลงต่อเป็นชื่อลูกค้าใน controller
+        ],
         'FpMorRate' => [
             'label'   => 'MOR (Floor Plan)',
             'class'   => 'bg-dark',
@@ -89,6 +94,11 @@ return [
             'borrower_brand'   => 'แบรนด์ผู้ยืม',
             'borrow_date'      => 'วันที่ยืม',
             'return_date'      => 'วันที่คืน',
+        ],
+        'CustomerTracking' => [
+            'test_drive_date'        => 'วันที่ทดลองขับ',
+            'test_drive_note'        => 'หมายเหตุทดลองขับ',
+            'test_drive_attachments' => 'ไฟล์หลักฐานทดลองขับ',
         ],
         'SourcePlaceClaim' => [
             'form_b'        => 'Form B',
