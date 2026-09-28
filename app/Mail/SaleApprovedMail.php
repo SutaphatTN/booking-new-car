@@ -19,7 +19,9 @@ class SaleApprovedMail extends Mailable
 
     public function build()
     {
-        return $this->subject('ใบจองได้รับการอนุมัติแล้ว')
+        return $this->subject($this->saleCar->is_pre_approval
+            ? 'คำขออนุมัติเกินงบล่วงหน้าได้รับการอนุมัติแล้ว'
+            : 'ใบจองได้รับการอนุมัติแล้ว')
             ->markdown('emails.sale-approved');
     }
 }

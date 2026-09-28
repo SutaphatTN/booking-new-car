@@ -1,8 +1,12 @@
 @php $__brandName = config("brand.names.{$saleCar->brand}") ?? ('Brand ' . ($saleCar->brand ?? '-')); @endphp
 @component('mail::message')
-# แจ้งเตือนการขออนุมัติ
+# {{ $saleCar->is_pre_approval ? 'แจ้งเตือนการขออนุมัติเกินงบล่วงหน้า' : 'แจ้งเตือนการขออนุมัติ' }}
 
 **แบรนด์: {{ $__brandName }}**
+@if ($saleCar->is_pre_approval)
+
+🟣 *คำขออนุมัติเกินงบล่วงหน้า — ลูกค้ายังไม่ได้จอง อนุมัติแล้วจึงจะสร้างเป็นการจองได้*
+@endif
 
 มีรายการขออนุมัติจาก {{ $saleCar->saleUser->name }}
 

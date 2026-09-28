@@ -57,8 +57,9 @@ class SaleRequestMail extends Mailable
      */
     public function envelope(): Envelope
     {
+        // subject ตรงนี้ทับของ build() — คำขอล่วงหน้ายังไม่ใช่ใบจอง ใช้คำให้ตรงกับที่ผู้อนุมัติกำลังพิจารณา
         return new Envelope(
-            subject: 'ขออนุมัติใบจอง',
+            subject: $this->saleCar->is_pre_approval ? 'ขออนุมัติเกินงบล่วงหน้า' : 'ขออนุมัติใบจอง',
         );
     }
 

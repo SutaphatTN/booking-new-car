@@ -3,11 +3,11 @@
     $__brandName = config("brand.names.{$__brand}") ?? ('Brand ' . ($__brand ?: '-'));
 @endphp
 @component('mail::message')
-# ใบจองได้รับการอนุมัติแล้ว
+# {{ $saleCar->is_pre_approval ? 'คำขออนุมัติเกินงบล่วงหน้าได้รับการอนุมัติแล้ว' : 'ใบจองได้รับการอนุมัติแล้ว' }}
 
 **แบรนด์: {{ $__brandName }}**
 
-ใบจองของ **{{ $saleCar->saleUser->name ?? '-' }}** ได้รับการอนุมัติเรียบร้อยแล้ว
+{{ $saleCar->is_pre_approval ? 'คำขออนุมัติเกินงบล่วงหน้า' : 'ใบจอง' }}ของ **{{ $saleCar->saleUser->name ?? '-' }}** ได้รับการอนุมัติเรียบร้อยแล้ว
 
 ---
 
