@@ -105,6 +105,11 @@ class CustomerTracking extends Model
         return $this->belongsTo(TbBrand::class, 'brand', 'id');
     }
 
+    public function branchInfo()
+    {
+        return $this->belongsTo(TbBranch::class, 'branch', 'id');
+    }
+
     public function userInsert()
     {
         return $this->belongsTo(User::class, 'UserInsert')->withTrashed();

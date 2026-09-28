@@ -694,16 +694,26 @@ $(document).ready(function () {
         // brand 1 = คอลัมน์ Option, brand 2 = คอลัมน์สีภายใน, brand อื่น = ไม่มีคอลัมน์เสริม
         const extraCol = $table.data('extra-col') || '';
         const colCount = $table.find('thead th').length;
+        const rows = res.data || [];
+        const hints = res.hints || [];
         $tableBody.empty();
 
-        if (!res.length) {
+        if (!rows.length) {
+          // บอกเหตุผลรายลูกค้าที่ชื่อตรง เช่น ยังไม่มีใบจอง / ใบจองผูกรถแล้ว
+          const hintHtml = hints
+            .map(h => `<div class="text-warning mt-1">${$('<span>').text(h.name).html()} : ${h.reason}</div>`)
+            .join('');
+
           $tableBody.append(`
           <tr>
-            <td colspan="${colCount}" class="text-center">ไม่พบข้อมูลการจองของลูกค้า</td>
+            <td colspan="${colCount}" class="text-center">
+              ไม่พบข้อมูลการจองของลูกค้า
+              ${hintHtml}
+            </td>
           </tr>
         `);
         } else {
-          res.forEach(c => {
+          rows.forEach(c => {
             const fullName = `${c.customer?.prefix?.Name_TH ?? ''}${c.customer?.FirstName ?? ''} ${c.customer?.LastName ?? ''}`;
 
             let extraTd = '';

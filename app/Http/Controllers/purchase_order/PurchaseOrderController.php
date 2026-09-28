@@ -4125,7 +4125,59 @@ class PurchaseOrderController extends Controller
             $s->setAttribute('interior_color_name', $s->interiorColor->name ?? null);
         });
 
-        return response()->json($saleCars);
+        return response()->json([
+            'data'  => $saleCars,
+            'hints' => $saleCars->isEmpty() ? $this->searchNotFoundHints($keyword) : [],
+        ]);
+    }
+
+    /**
+     * ค้นไม่เจอใบจอง → บอกเหตุผลรายลูกค้าที่ชื่อตรง ผู้ใช้จะได้ไม่งงว่าทำไมไม่ขึ้น
+     * (เคยมีเคสลูกค้ามีแค่ข้อมูลติดตาม ยังไม่เปิดใบจอง แล้วค้นไม่เจอโดยไม่รู้สาเหตุ)
+     */
+    private function searchNotFoundHints(?string $keyword): array
+    {
+        $brand = Auth::user()->brand;
+
+        $customers = Customer::with('prefix')
+            ->searchFullName($keyword)
+            ->when($brand, fn($q) => $q->where('brand', $brand))
+            ->limit(5)
+            ->get();
+
+        if ($customers->isEmpty()) {
+            return [];
+        }
+
+        $ids = $customers->pluck('id');
+
+        $bookings = Salecar::withoutGlobalScope('preApproval')
+            ->with('carOrder:id,vin_number,order_code')
+            ->whereIn('CusID', $ids)
+            ->get(['id', 'CusID', 'CarOrderID', 'is_pre_approval'])
+            ->groupBy('CusID');
+
+        $trackedIds = CustomerTracking::whereIn('customer_id', $ids)
+            ->pluck('customer_id')
+            ->flip();
+
+        return $customers->map(function ($c) use ($bookings, $trackedIds) {
+            $name = trim(($c->prefix->Name_TH ?? '') . $c->FirstName . ' ' . $c->LastName);
+            $rows = $bookings->get($c->id, collect());
+
+            if ($linked = $rows->firstWhere('CarOrderID', '!=', null)) {
+                $car = $linked->carOrder->vin_number ?? $linked->carOrder->order_code ?? null;
+                $reason = 'ใบจองผูกกับรถ' . ($car ? " {$car}" : '') . ' แล้ว';
+            } elseif ($rows->contains('is_pre_approval', true)) {
+                $reason = 'ใบจองยังอยู่ระหว่างรออนุมัติ';
+            } elseif ($trackedIds->has($c->id)) {
+                $reason = 'ยังไม่มีใบจอง (มีเฉพาะข้อมูลติดตาม) กรุณาเปิดใบจองก่อน';
+            } else {
+                $reason = 'ยังไม่มีใบจอง กรุณาเปิดใบจองก่อน';
+            }
+
+            return ['name' => $name, 'reason' => $reason];
+        })->all();
     }
 
     //commission

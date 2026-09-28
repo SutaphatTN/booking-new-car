@@ -8,6 +8,7 @@ use App\Exports\customerTracking\CustomerTrackingDailyExport;
 use App\Exports\customerTracking\CustomerTrackingOverdueExport;
 use App\Exports\customerTracking\CustomerTrackingOverdueReport;
 use App\Exports\customerTracking\CustomerTrackingOfflinePlaceReport;
+use App\Exports\customerTracking\CustomerTrackingTestDriveReport;
 use App\Http\Controllers\Controller;
 use App\Models\Ad;
 use App\Traits\ConvertsThaiDate;
@@ -1127,6 +1128,14 @@ class CustomerTrackingController extends Controller
         $filename = ExportFilename::withBrand('รายงานลูกค้างาน Offline แยกสถานที่_' . $month . '.xlsx');
 
         return Excel::download(new CustomerTrackingOfflinePlaceReport($month), $filename);
+    }
+
+    // รายงานทดลองขับ — sale เห็นเฉพาะของตัวเอง ; 1 brand = 1 sheet ตาม brand ที่ user สลับไปได้
+    public function exportTestDriveReport(Request $request)
+    {
+        $month = $request->month ?: now()->format('Y-m');
+
+        return Excel::download(new CustomerTrackingTestDriveReport($month), 'รายงานทดลองขับ_' . $month . '.xlsx');
     }
 
     public function saveTestDrive(Request $request, $id)

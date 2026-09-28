@@ -47,16 +47,11 @@
           {{-- ── Filter bar ── --}}
           <div class="po-filter-bar d-flex flex-column gap-2">
 
-            {{-- แถว 1: รายงานประจำวัน + กรองสถานะ (desktop เท่านั้น) --}}
+            {{-- แถว 1: ปุ่มออกรายงาน (เปิด modal เลือกรายงาน) + กรองสถานะ (desktop เท่านั้น) --}}
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-              <div class="d-flex align-items-center flex-wrap gap-2">
-                <i class="bx bx-file-export text-muted"></i>
-                <span class="text-muted small" style="min-width:105px;">รายงานการกรอกข้อมูลประจำวัน :</span>
-                <input type="date" id="reportDailyDate" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="width:155px;" data-no-icon>
-                <button type="button" class="btn btn-success btn-sm" id="btnExportDaily">
-                  <i class="bx bx-download me-1"></i>Excel
-                </button>
-              </div>
+              <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalCtReport">
+                <i class="bx bx-export me-1"></i>ออกรายงาน
+              </button>
 
               {{-- สถานะ: desktop เท่านั้น --}}
               <div class="d-none d-md-flex align-items-center gap-2">
@@ -71,57 +66,7 @@
               </div>
             </div>
 
-            {{-- แถว 2: รายงานเพิ่มลูกค้าประจำวัน --}}
-            @if (Auth::user()->role !== 'sale')
-            <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
-              <i class="bx bx-file-export text-muted"></i>
-              <span class="text-muted small" style="min-width:105px;">รายงานเพิ่มลูกค้าประจำวัน :</span>
-              <input type="date" id="reportDateFrom" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="width:155px;" data-no-icon>
-              <span class="text-muted small">–</span>
-              <input type="date" id="reportDateTo" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="width:155px;" data-no-icon>
-              <button type="button" class="btn btn-success btn-sm" id="btnExportByDate">
-                <i class="bx bx-download me-1"></i>Excel
-              </button>
-            </div>
-            @endif
-
-            {{-- แถว 3: รายงานเลยกำหนดติดตามลูกค้า (ผจก.) --}}
-            @if (Auth::user()->role !== 'sale')
-            <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
-              <i class="bx bx-file-export text-muted"></i>
-              <span class="text-muted small">รายงานเลยกำหนดติดตาม (ผจก.) :</span>
-              <input type="month" id="reportOverdueMonth" class="form-control form-control-sm" value="{{ date('Y-m') }}" style="width:155px;">
-              <button type="button" class="btn btn-success btn-sm" id="btnExportOverdue">
-                <i class="bx bx-download me-1"></i>Excel
-              </button>
-            </div>
-            @endif
-
-            {{-- แถว 3.2: รายงานลูกค้าจากงาน Offline แยกตามสถานที่ (1 สถานที่ = 1 sheet) --}}
-            @if (Auth::user()->role !== 'sale')
-            <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
-              <i class="bx bx-file-export text-muted"></i>
-              <span class="text-muted small">รายงานลูกค้างาน Offline (แยกสถานที่) :</span>
-              <input type="month" id="reportOfflinePlaceMonth" class="form-control form-control-sm" value="{{ date('Y-m') }}" style="width:155px;">
-              <button type="button" class="btn btn-success btn-sm" id="btnExportOfflinePlace">
-                <i class="bx bx-download me-1"></i>Excel
-              </button>
-            </div>
-            @endif
-
-            {{-- แถว 3.1: รายงานเลยกำหนดติดตามลูกค้า (เซลล์) — เห็นทุก role ; sale เห็นเฉพาะของตัวเอง
-                 ** ปิดชั่วคราว (ยังไม่เปิดหน้าบ้าน) — backend/route พร้อมใช้ เปิดได้โดยเอาคอมเมนต์ออก **
-            <div class="d-flex align-items-center flex-wrap gap-2 mt-2">
-              <i class="bx bx-file-export text-muted"></i>
-              <span class="text-muted small">รายงานเลยกำหนดติดตาม (เซลล์) :</span>
-              <input type="month" id="reportOverdueSaleMonth" class="form-control form-control-sm" value="{{ date('Y-m') }}" style="width:155px;">
-              <button type="button" class="btn btn-success btn-sm" id="btnExportOverdueSale">
-                <i class="bx bx-download me-1"></i>Excel
-              </button>
-            </div>
-            --}}
-
-            {{-- แถว 4: สถานะ (mobile เท่านั้น) --}}
+            {{-- แถว 2: สถานะ (mobile เท่านั้น) --}}
             <div class="d-flex d-md-none align-items-center gap-2">
               <i class="bx bx-filter-alt text-muted"></i>
               <label for="filterDecisionMobile" class="mb-0 text-muted">สถานะ :</label>
@@ -272,5 +217,7 @@
     <span>กำลังโหลด...</span>
   </div>
 </div>
+
+@include('customer-tracking._report-modal')
 
 @endsection
