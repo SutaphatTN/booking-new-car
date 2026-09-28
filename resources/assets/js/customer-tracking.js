@@ -630,59 +630,46 @@ $(document).ready(function () {
     $('#ctStatusFilterDropdown').removeClass('show');
   });
 
-  $('#btnExportDaily').on('click', function () {
-    const date = $('#reportDailyDate').val();
-    if (!date) {
-      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกวันที่', timer: 1500, showConfirmButton: true });
-      return;
-    }
-    window.location.href = `/customer-tracking/export-daily?date=${date}`;
-  });
+  // ── Modal ออกรายงาน — รายการรายงาน + url + ชนิดช่องวันที่ มาจาก data-* ใน _report-modal.blade.php
+  function syncReportParams() {
+    const input = $('input[name="ctReport"]:checked').data('input');
+    $('.ct-report-param').removeClass('is-active');
+    $(`.ct-report-param[data-for="${input}"]`).addClass('is-active');
+  }
 
-  $('#btnExportByDate').on('click', function () {
-    const dateFrom = $('#reportDateFrom').val();
-    const dateTo = $('#reportDateTo').val();
-    if (!dateFrom || !dateTo) {
-      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกวันที่', timer: 1500, showConfirmButton: true });
-      return;
-    }
-    if (dateFrom > dateTo) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด',
-        timer: 2000,
-        showConfirmButton: true
-      });
-      return;
-    }
-    window.location.href = `/customer-tracking/export-by-date?date_from=${dateFrom}&date_to=${dateTo}`;
-  });
+  $(document).on('change', 'input[name="ctReport"]', syncReportParams);
+  $('#modalCtReport').on('show.bs.modal', syncReportParams);
 
-  $('#btnExportOverdue').on('click', function () {
-    const month = $('#reportOverdueMonth').val();
-    if (!month) {
-      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกเดือน', timer: 1500, showConfirmButton: true });
-      return;
-    }
-    window.location.href = `/customer-tracking/export-overdue?month=${month}`;
-  });
+  $('#btnCtReportDownload').on('click', function () {
+    const $report = $('input[name="ctReport"]:checked');
+    if (!$report.length) return;
 
-  $('#btnExportOfflinePlace').on('click', function () {
-    const month = $('#reportOfflinePlaceMonth').val();
-    if (!month) {
-      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกเดือน', timer: 1500, showConfirmButton: true });
-      return;
-    }
-    window.location.href = `/customer-tracking/export-offline-place?month=${month}`;
-  });
+    const warn = title => Swal.fire({ icon: 'warning', title, timer: 1500, showConfirmButton: true });
+    let params;
 
-  $('#btnExportOverdueSale').on('click', function () {
-    const month = $('#reportOverdueSaleMonth').val();
-    if (!month) {
-      Swal.fire({ icon: 'warning', title: 'กรุณาเลือกเดือน', timer: 1500, showConfirmButton: true });
-      return;
+    switch ($report.data('input')) {
+      case 'date': {
+        const date = $('#ctReportDate').val();
+        if (!date) return warn('กรุณาเลือกวันที่');
+        params = { date };
+        break;
+      }
+      case 'range': {
+        const dateFrom = $('#ctReportDateFrom').val();
+        const dateTo = $('#ctReportDateTo').val();
+        if (!dateFrom || !dateTo) return warn('กรุณาเลือกวันที่');
+        if (dateFrom > dateTo) return warn('วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด');
+        params = { date_from: dateFrom, date_to: dateTo };
+        break;
+      }
+      default: {
+        const month = $('#ctReportMonth').val();
+        if (!month) return warn('กรุณาเลือกเดือน');
+        params = { month };
+      }
     }
-    window.location.href = `/customer-tracking/export-overdue-sale?month=${month}`;
+
+    window.location.href = `${$report.data('url')}?${$.param(params)}`;
   });
 });
 
