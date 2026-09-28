@@ -134,6 +134,18 @@ class PreApprovalController extends Controller
             return response()->json(['success' => false, 'message' => 'ยังไม่ได้รับการอนุมัติ — สร้างการจองไม่ได้'], 422);
         }
 
+        // ตอนขออนุมัติไม่บังคับข้อมูลลูกค้า แต่จะเป็นการจองจริงต้องครบเหมือนจองปกติ
+        $missing = $saleCar->customer ? $saleCar->customer->bookingProfileMissing() : ['ไม่พบข้อมูลลูกค้า'];
+        if (!empty($missing)) {
+            return response()->json([
+                'success'      => false,
+                'need_profile' => true,
+                'customer_id'  => (int) $saleCar->CusID,
+                'missing'      => $missing,
+                'message'      => 'ข้อมูลลูกค้ายังไม่ครบ (' . implode(', ', $missing) . ') กรุณากรอกให้ครบก่อนสร้างการจอง',
+            ], 422);
+        }
+
         $saleCar->update([
             'is_pre_approval'        => false,
             'pre_approval_booked_at' => now(),

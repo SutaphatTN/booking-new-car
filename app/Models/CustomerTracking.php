@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\LogsActivity;
 use App\Models\Traits\TracksUserActions;
 use App\Models\Traits\SaleTeamScope;
 use App\Models\Traits\UserAccessScope;
@@ -12,9 +13,32 @@ use Carbon\Carbon;
 
 class CustomerTracking extends Model
 {
-    use SoftDeletes, UserAccessScope, SaleTeamScope, TracksUserActions;
+    use SoftDeletes, UserAccessScope, SaleTeamScope, TracksUserActions, LogsActivity;
 
     protected $table = 'customer_trackings';
+
+    /**
+     * ประวัติการแก้ไข (activity_logs) เก็บเฉพาะข้อมูลทดลองขับ — กรอกได้ 2 ที่ : หน้าการติดตาม + หน้าแก้ไขใบจอง
+     * (ดูว่ากรอกจากหน้าไหนได้จาก url ของ log ; หน้าใบจองส่ง ?from=purchase-order มาด้วย)
+     */
+    protected array $activityOnly = ['test_drive_date', 'test_drive_note', 'test_drive_attachments'];
+
+    /** ไฟล์แนบเก็บเป็น JSON [{url, name}] — ลง log แค่ชื่อไฟล์ อ่านง่ายและไม่หลุด share link ของ OneDrive */
+    protected function activityValue(string $key, $value)
+    {
+        if ($key !== 'test_drive_attachments') {
+            return $value;
+        }
+
+        $items = is_string($value) ? json_decode($value, true) : $value;
+        if (!is_array($items) || empty($items)) {
+            return null;
+        }
+
+        return collect($items)
+            ->map(fn($i) => is_array($i) ? ($i['name'] ?? 'ไฟล์') : 'ไฟล์')
+            ->implode(', ');
+    }
 
     protected $casts = [
         'booked_at'    => 'datetime',

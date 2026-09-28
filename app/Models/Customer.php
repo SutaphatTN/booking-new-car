@@ -124,6 +124,28 @@ class Customer extends Model
 		});
 	}
 
+	/**
+	 * ข้อมูลที่ยังขาดสำหรับทำการจอง (ว่าง = ครบ) : เลขบัตร + เบอร์โทร + ที่อยู่ปัจจุบัน (จังหวัด/อำเภอ/ตำบล)
+	 * ใช้ทั้งตอนบันทึกใบจอง และตอนแปลงคำขออนุมัติเกินงบเป็นการจอง (คำขอเองไม่บังคับ — ลองขอก่อนได้)
+	 */
+	public function bookingProfileMissing(): array
+	{
+		// address เคยซ้ำ/ผูกผิดคน — อ่านแถวล่าสุดเสมอ
+		$addr = Address::where('customer_id', $this->id)
+			->where('type', 'current')
+			->orderByDesc('id')
+			->first();
+
+		$missing = [];
+		if (empty($this->IDNumber))      $missing[] = 'เลขบัตรประชาชน';
+		if (empty($this->Mobilephone1))  $missing[] = 'เบอร์โทรศัพท์';
+		if (!($addr && !empty($addr->province) && !empty($addr->district) && !empty($addr->subdistrict))) {
+			$missing[] = 'ที่อยู่ปัจจุบัน';
+		}
+
+		return $missing;
+	}
+
 	public function salecars()
 	{
 		return $this->hasMany(Salecar::class, 'CusID', 'id');
