@@ -31,8 +31,10 @@ class ApprovalReturnMail extends Mailable
     {
         $brandName = config("brand.names.{$this->saleCar->brand}") ?? '';
 
+        $what = $this->saleCar->is_pre_approval ? 'คำขออนุมัติเกินงบล่วงหน้า' : 'ใบจอง';
+
         return $this->subject(
-            'ตีกลับใบจอง' . ($brandName ? " {$brandName}" : '') . ' — กรุณาตรวจสอบ/แก้ไข'
+            'ตีกลับ' . $what . ($brandName ? " {$brandName}" : '') . ' — กรุณาตรวจสอบ/แก้ไข'
         )->markdown('emails.approval-return');
     }
 }
