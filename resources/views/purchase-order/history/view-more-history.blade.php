@@ -215,9 +215,44 @@
                   <div class="mf-info-row">
                     <span class="mf-info-label">สรุปค่าใช้จ่ายวันออกรถ</span>
                     <span class="mf-info-val">
-                      {{ $saleCar->TotalPaymentatDeliveryCar !== null ? number_format($saleCar->TotalPaymentatDeliveryCar, 2) : '-' }} บาท
+                      {{ $saleCar->TotalPaymentatDelivery !== null ? number_format($saleCar->TotalPaymentatDelivery, 2) : '-' }} บาท
                     </span>
                   </div>
+
+                  {{-- ผ่อน: ทุกยอดในประวัติการจ่ายเงินหักกับค่าใช้จ่ายวันออกรถ (ตรงกับ preview หน้าใบจอง) --}}
+                  @php
+                    $deliveryPaid = $saleCar->salePayments->sum('cost');
+                    $deliveryBalance = $saleCar->TotalPaymentatDelivery !== null
+                      ? $saleCar->TotalPaymentatDelivery - $deliveryPaid
+                      : null;
+                    $paymentTypeLabels = ['cash' => 'เงินสด', 'transfer' => 'เงินโอน'];
+                  @endphp
+                  <div class="mf-sub-heading">การจ่ายเงินค่าออกรถ</div>
+                  @forelse ($saleCar->salePayments as $pay)
+                    <div class="mf-info-row">
+                      <span class="mf-info-label">
+                        {{ $paymentTypeLabels[$pay->type] ?? ($pay->type ?: 'ไม่ระบุประเภท') }}
+                        ({{ $pay->date ? \Illuminate\Support\Carbon::parse($pay->date)->format('d-m-Y') : 'ไม่ระบุวันที่' }})
+                      </span>
+                      <span class="mf-info-val">{{ number_format($pay->cost, 2) }} บาท</span>
+                    </div>
+                  @empty
+                    <div class="mf-info-row">
+                      <span class="mf-info-label">รายการจ่ายเงิน</span>
+                      <span class="mf-info-val text-danger">ยังไม่มีรายการ</span>
+                    </div>
+                  @endforelse
+                  <div class="mf-info-row">
+                    <span class="mf-info-label">รวมจ่ายแล้ว</span>
+                    <span class="mf-info-val">{{ number_format($deliveryPaid, 2) }} บาท</span>
+                  </div>
+                  <div class="mf-info-row">
+                    <span class="mf-info-label">คงเหลือค่าออกรถ</span>
+                    <span class="mf-info-val {{ $deliveryBalance > 0 ? 'text-danger fw-bold' : '' }}">
+                      {{ $deliveryBalance !== null ? number_format($deliveryBalance, 2) : '-' }} บาท
+                    </span>
+                  </div>
+                  <div class="mf-sub-heading">ข้อมูลไฟแนนซ์</div>
                   <div class="mf-info-row">
                     <span class="mf-info-label">Po Number</span>
                     <span class="mf-info-val">{{ $saleCar->remainingPayment?->po_number ?? '-' }}</span>
