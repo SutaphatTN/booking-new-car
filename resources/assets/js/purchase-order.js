@@ -3039,8 +3039,12 @@ function calculateTotalPaymentAtDelivery() {
   const total =
     downPayment + ExtraTotal + otherCostFi + vatExtra + advanceInstallment - (downDiscount + turnCost + cashDeposit);
 
+  // ผ่อน: ช่องที่โชว์ = ยอดเต็ม − ทุกยอดในประวัติการจ่ายเงินค่าออกรถ (เหมือน "ยอดคงเหลือ" ฝั่งเงินสด)
+  //   hidden #TotalPaymentatDelivery ยังเก็บยอดเต็ม — PDF สรุป/หน้าประวัติอ่านตัวนี้เป็นค่าใช้จ่ายวันออกรถ
+  const paidTotal = $('#payment_mode').val() === 'finance' ? calculatePaymentTotal() : 0;
+
   $('#TotalPaymentatDeliveryCar').val(
-    total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    (total - paidTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   );
 
   $('#TotalPaymentatDelivery').val(total);
@@ -3082,7 +3086,8 @@ function calculateBalance() {
   const cashDeposit = safeNumber('#CashDeposit');
   const discount = safeNumber('#PaymentDiscount');
   const otherCost = safeNumber('#other_cost');
-  const paymentTotal = calculatePaymentTotal();
+  // โหมดผ่อน รายการจ่ายเงินเป็นของค่าออกรถ ไม่หักจากยอดคงเหลือเงินสด
+  const paymentTotal = $('#payment_mode').val() === 'finance' ? 0 : calculatePaymentTotal();
 
   const total = carSale + ExtraTotal + otherCost - (turnCost + cashDeposit + discount + paymentTotal);
 
@@ -3094,6 +3099,9 @@ function calculateBalance() {
   );
 
   $('#balance').val(total);
+
+  // รายการจ่ายเงินเปลี่ยน → ค่าใช้จ่ายวันออกรถ (ผ่อน) ต้องหักใหม่
+  calculateTotalPaymentAtDelivery();
 }
 
 //edit : clone value
@@ -3587,15 +3595,27 @@ $(document).ready(function () {
   $('#remaining_date_finance').on('change', updateRemainingDate);
   $('#remaining_date_cash').on('change', updateRemainingDate);
 
-  // เงินสด
+  // ประวัติการจ่ายเงิน — ใช้ชุดเดียวกันทั้ง 2 โหมด (salecars_payment) แค่ย้ายที่วาง
+  //   เงินสด : แท็บ "ข้อมูลการจ่ายเงิน" หักจากยอดคงเหลือ
+  //   ผ่อน   : ใต้การ์ดค่าออกรถ หักจากค่าใช้จ่ายวันออกรถ
+  // สลับโหมดแล้วรายการติดไปด้วย (เงินที่ลูกค้าจ่ายแล้วคือจ่ายแล้ว)
   function togglePaymentSection() {
     const mode = $('#payment_mode').val();
+    const $section = $('#paymentSection');
+    const isFinance = mode === 'finance';
 
-    if (mode === 'non-finance') {
-      $('#paymentSection').show();
+    if (isFinance) {
+      $section.appendTo('#financePaymentSlot').show();
     } else {
-      $('#paymentSection').hide();
+      $section.insertAfter('#cashPaymentSlot');
+      if (mode === 'non-finance') $section.show();
+      else $section.hide();
     }
+
+    $section.find('.pay-finance-only').toggleClass('is-hidden', !isFinance);
+    $section.find('.pay-cash-only').toggleClass('is-hidden', isFinance);
+
+    calculateBalance();
   }
 
   togglePaymentSection();
@@ -3690,7 +3710,7 @@ $(document).ready(function () {
  * โชว์ว่าลูกค้าจ่ายมาแล้วกี่รายการ วันไหน และยังขาดอีกเท่าไร (เผื่อจ่ายไม่ครบ)
  * หน้าสร้างใบจองไม่มีตารางนี้ (#paymentContainer อยู่เฉพาะหน้าแก้ไข) → คืนค่าว่าง
  */
-function buildPaymentHtml(balanceBeforePayment) {
+function buildPaymentHtml(balanceBeforePayment, balanceLabel = 'คงเหลือหลังหักชำระ') {
   const container = document.getElementById('paymentContainer');
   if (!container) return '';
 
@@ -3723,7 +3743,7 @@ function buildPaymentHtml(balanceBeforePayment) {
           <p class="mf-sub-heading mt-2">การจ่ายเงิน</p>
           ${rows}
           <div class="mf-info-row"><span class="mf-info-label">รวมจ่ายแล้ว</span><span class="mf-info-val">${fmt(paidTotal)} บาท</span></div>
-          <div class="mf-info-row"><span class="mf-info-label">คงเหลือหลังหักชำระ</span><span class="mf-info-val ${balanceAfter > 0 ? 'text-danger fw-bold' : ''}">${fmt(balanceAfter)} บาท</span></div>
+          <div class="mf-info-row"><span class="mf-info-label">${balanceLabel}</span><span class="mf-info-val ${balanceAfter > 0 ? 'text-danger fw-bold' : ''}">${fmt(balanceAfter)} บาท</span></div>
   `;
 }
 
@@ -3870,7 +3890,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // วันออกรถ
     const poNumber = document.getElementById('remaining_po_number')?.value || '-';
-    const TotalPaymentatDeliveryCar = document.getElementById('TotalPaymentatDeliveryCar')?.value || '-';
+    // ยอดเต็มก่อนหักที่จ่ายแล้ว — ช่องบนหน้าจอหักรายการจ่ายไปแล้ว พรีวิวจะโชว์หักอีกทีด้านล่าง
+    const TotalPaymentatDeliveryCar = document.getElementById('TotalPaymentatDelivery')?.value
+      ? safeNumber('#TotalPaymentatDelivery').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : '-';
     const financeCompany = document.querySelector('#remaining_finance option:checked')?.textContent || '-';
     const balanceFinanceDisplay = document.getElementById('balanceFinanceDisplay')?.value || '-';
     const interest = document.getElementById('remaining_interest')?.value || '-';
@@ -3973,6 +3996,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="mf-info-row"><span class="mf-info-label">ราคาสุทธิ</span><span class="mf-info-val">${finalPrice} บาท</span></div>
           <p class="mf-sub-heading mt-2">วันออกรถ</p>
           <div class="mf-info-row"><span class="mf-info-label">สรุปค่าใช้จ่ายวันออกรถ</span><span class="mf-info-val">${TotalPaymentatDeliveryCar} บาท</span></div>
+          ${buildPaymentHtml(safeNumber('#TotalPaymentatDelivery'), 'คงเหลือค่าออกรถ')}
           <div class="mf-info-row"><span class="mf-info-label">Po Number</span><span class="mf-info-val">${poNumber}</span></div>
           <div class="mf-info-row"><span class="mf-info-label">ไฟแนนซ์</span><span class="mf-info-val">${financeCompany}</span></div>
           <div class="mf-info-row"><span class="mf-info-label">ยอดจัดไฟแนนซ์</span><span class="mf-info-val">${balanceFinanceDisplay} บาท</span></div>

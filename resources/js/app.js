@@ -111,7 +111,9 @@ function destroyDatePickers(node) {
       if (el._flatpickr) els.push(el);
     });
   }
-  els.forEach((el) => el._flatpickr.destroy());
+  // ข้ามตัวที่แค่ "ย้ายที่" (appendTo/insertAfter) — observer เห็นเป็น removed แต่จริง ๆ ยังอยู่ในหน้า
+  // ถ้า destroy ไป input จะกลายเป็น text เปล่า + กล่องไอคอนค้าง และไม่ถูก init ใหม่ (ไม่ใช่ type=date แล้ว)
+  els.filter((el) => !el.isConnected).forEach((el) => el._flatpickr.destroy());
 }
 
 // flatpickr converts date inputs to hidden/readonly fields, which makes the

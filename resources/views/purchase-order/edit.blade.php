@@ -3,6 +3,11 @@
 
 @section('page-style')
   @vite(['resources/css/app.css'])
+  <style>
+    /* สลับด้วย class — jQuery show()/hide() สู้ transition ของ tab-pane ไม่ได้ */
+    #paymentSection .pay-finance-only.is-hidden,
+    #paymentSection .pay-cash-only.is-hidden { display: none !important; }
+  </style>
 @endsection
 
 @section('page-script')
@@ -2024,6 +2029,10 @@
                             </div>
                           </div>
 
+                          {{-- ผ่อน: #paymentSection (ประวัติการจ่ายเงิน) ถูก JS ย้ายมาวางตรงนี้
+                               ใช้ชุด input เดียวกับเงินสด (salecars_payment) ห้ามก๊อปมาอีกชุด ไม่งั้น payment_*[] ส่งซ้ำ --}}
+                          <div id="financePaymentSlot" class="mt-3"></div>
+
                         </div>{{-- /financeSection1 --}}
 
                       </div>{{-- /sum-tab1 --}}
@@ -2205,11 +2214,16 @@
                         <!-- ข้อมูลการจ่ายเงิน -->
                         <!-- <option value="cash" {{ $remainingPayment?->type == 'cash' ? 'selected' : '' }}>เงินสด</option> -->
 
+                        {{-- เงินสด: #paymentSection อยู่ตรงนี้ / ผ่อน: JS ย้ายไป #financePaymentSlot (หักกับค่าใช้จ่ายวันออกรถ) --}}
+                        <div id="cashPaymentSlot"></div>
                         <div id="paymentSection" style="display:none;">
                           <div class="po-section-edit">
                             <div class="po-section-header">
                               <div class="po-section-icon indigo"><i class="bx bx-wallet"></i></div>
-                              <h6 class="po-section-title">ข้อมูลการจ่ายเงิน</h6>
+                              <h6 class="po-section-title">
+                                <span class="pay-cash-only">ข้อมูลการจ่ายเงิน</span>
+                                <span class="pay-finance-only is-hidden">ประวัติการจ่ายเงินค่าออกรถ</span>
+                              </h6>
                               <div class="ms-auto">
                                 <button type="button" id="btnAddPayment" class="btn btn-primary btn-sm">
                                   <i class="bx bx-plus me-1"></i> เพิ่มรายการ
