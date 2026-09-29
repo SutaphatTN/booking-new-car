@@ -21,7 +21,7 @@ class GPQuery
             'financeConfirm',
             'remainingPayment.financeInfo',
             'salePurType',
-            'saleUser.branchInfo',
+            'saleUser.branchMakeInfo',
             'conStatus',
             'campaigns.campaign.type',
             'campaigns.campaign.appellation',

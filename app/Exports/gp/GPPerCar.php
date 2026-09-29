@@ -436,7 +436,8 @@ class GPPerCar implements FromView, WithTitle, WithStyles, WithEvents, ShouldAut
         'engine_number' => $r->carOrder?->engine_number ?? '-',
         'finance' => $r->remainingPayment?->financeInfo?->FinanceCompany ?? '-',
         'type_sale' => $r->salePurType?->name ?? '-',
-        'branch_sale' => $r->saleUser?->branchInfo?->name ?? '-',
+        // สาขาที่ทำยอดของเซลล์ (branch_make) ไม่ใช่สาขาสังกัด — เช่น ทีมอ่าวลึกสังกัดสำนักงานใหญ่แต่ยอดเข้าอ่าวลึก
+        'branch_sale' => $r->saleUser?->branchMakeInfo?->name ?? '-',
         'sale_price' => $totalSalePrice,
         'cost_price' => $totalCostPrice,
         'car_discount' => $carDiscount,
