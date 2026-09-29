@@ -659,7 +659,7 @@ $(document).ready(function () {
         const dateTo = $('#ctReportDateTo').val();
         if (!dateFrom || !dateTo) return warn('กรุณาเลือกวันที่');
         if (dateFrom > dateTo) return warn('วันที่เริ่มต้นต้องไม่มากกว่าวันที่สิ้นสุด');
-        params = { date_from: dateFrom, date_to: dateTo };
+        params = { date_from: dateFrom, date_to: dateTo, date_type: $('#ctReportDateType').val() };
         break;
       }
       default: {

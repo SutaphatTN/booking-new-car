@@ -20,10 +20,23 @@ use App\Support\BrandFeature;
 
 class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, WithEvents, ShouldAutoSize
 {
+    public const DATE_TYPES = [
+        'created'       => 'วันที่เพิ่มเข้าระบบ',
+        'first_contact' => 'วันที่ติดต่อครั้งแรก',
+    ];
+
+    // $saleId != null → เฉพาะลูกค้าของเซลล์คนนั้น (role sale) ; null = ทุกคนในแบรนด์
+    // $dateType : created = วันที่สร้างใบติดตาม (created_at) / first_contact = contact_date ของการติดต่อครั้งแรก
     public function __construct(
         protected string $dateFrom,
-        protected string $dateTo
-    ) {}
+        protected string $dateTo,
+        protected ?int $saleId = null,
+        protected string $dateType = 'created'
+    ) {
+        if (!array_key_exists($this->dateType, self::DATE_TYPES)) {
+            $this->dateType = 'created';
+        }
+    }
 
     public function title(): string
     {
@@ -79,15 +92,18 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
     {
         $user = Auth::user();
 
-        $trackingIds = CustomerTracking::where('brand', $user->brand)
-            ->whereDate('created_at', '>=', $this->dateFrom)
-            ->whereDate('created_at', '<=', $this->dateTo)
-            ->pluck('id');
+        // ใบติดตามในขอบเขต (แบรนด์ + เซลล์ถ้าเป็น role sale) — ส่งเป็น subquery ไม่ pluck ออกมา (DB remote)
+        $trackings = CustomerTracking::where('brand', $user->brand)
+            ->when($this->saleId, fn($q) => $q->where('sale_id', $this->saleId))
+            ->when($this->dateType === 'created', fn($q) => $q
+                ->whereDate('created_at', '>=', $this->dateFrom)
+                ->whereDate('created_at', '<=', $this->dateTo))
+            ->select('id');
 
-        $firstDetailIds = CustomerTrackingDetail::whereIn('tracking_id', $trackingIds)
+        // ลูกค้า 1 คน = 1 แถว ใช้การติดต่อครั้งแรก (detail id น้อยสุดของแต่ละใบติดตาม)
+        $firstDetailIds = CustomerTrackingDetail::whereIn('tracking_id', $trackings)
             ->selectRaw('MIN(id) as id')
-            ->groupBy('tracking_id')
-            ->pluck('id');
+            ->groupBy('tracking_id');
 
         $details = CustomerTrackingDetail::with([
             'tracking.customer.prefix',
@@ -102,6 +118,11 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
             'insertedBy',
         ])
             ->whereIn('id', $firstDetailIds)
+            // โหมดวันที่ติดต่อครั้งแรก — กรองที่ contact_date ของการติดต่อครั้งแรก (บางรายกรอกย้อนหลัง ติดต่อก่อนวันเพิ่มเข้าระบบ)
+            ->when($this->dateType === 'first_contact', fn($q) => $q
+                ->whereDate('contact_date', '>=', $this->dateFrom)
+                ->whereDate('contact_date', '<=', $this->dateTo)
+                ->orderBy('contact_date'))
             ->orderBy('id')
             ->get();
 
@@ -148,6 +169,7 @@ class CustomerTrackingByDateExport implements FromView, WithTitle, WithStyles, W
             'rows'             => $rows,
             'dateFromFormatted' => Carbon::parse($this->dateFrom)->format('d/m/Y'),
             'dateToFormatted'   => Carbon::parse($this->dateTo)->format('d/m/Y'),
+            'dateTypeLabel'     => self::DATE_TYPES[$this->dateType],
             // คุมการแสดงคอลัมน์ตาม brand: สีภายใน = ตาม config/brand.php, Option = Mitsubishi(1)
             'showInterior'     => BrandFeature::hasInteriorColor($user->brand),
             'showOption'       => $user->brand == 1,
