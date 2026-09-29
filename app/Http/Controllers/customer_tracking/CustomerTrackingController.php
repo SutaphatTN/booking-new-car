@@ -1073,17 +1073,17 @@ class CustomerTrackingController extends Controller
         return Excel::download(new CustomerTrackingExport(), ExportFilename::withBrand('รายงานการติดตามลูกค้า.xlsx'));
     }
 
+    // รายงานเพิ่มลูกค้าประจำวัน (กรองตามวันที่เพิ่มเข้าระบบ หรือวันที่ติดต่อครั้งแรก) — sale เห็นเฉพาะลูกค้าของตัวเอง role อื่นเห็นทั้งแบรนด์
     public function exportExcelByDate(Request $request)
     {
-        if (Auth::user()->role === 'sale') {
-            abort(403);
-        }
-
+        $user     = Auth::user();
         $dateFrom = $request->date_from ?? now()->toDateString();
         $dateTo   = $request->date_to   ?? now()->toDateString();
-        $filename = ExportFilename::withBrand('รายงานการกรอกข้อมูล_' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx');
+        $saleId   = $user->role === 'sale' ? $user->id : null;
+        $dateType = $request->date_type === 'first_contact' ? 'first_contact' : 'created';
+        $filename = ExportFilename::withBrand('รายงานเพิ่มลูกค้า_' . $dateFrom . '_ถึง_' . $dateTo . '.xlsx');
 
-        return Excel::download(new CustomerTrackingByDateExport($dateFrom, $dateTo), $filename);
+        return Excel::download(new CustomerTrackingByDateExport($dateFrom, $dateTo, $saleId, $dateType), $filename);
     }
 
     public function exportDailyReport(Request $request)

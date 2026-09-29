@@ -7,8 +7,9 @@
     'รายวัน' => [
       ['key' => 'daily', 'url' => '/customer-tracking/export-daily', 'input' => 'date', 'saleHidden' => false,
         'icon' => 'bx-calendar-edit', 'label' => 'การกรอกข้อมูลประจำวัน', 'desc' => 'รายการที่กรอก/ติดตามในวันที่เลือก'],
-      ['key' => 'by-date', 'url' => '/customer-tracking/export-by-date', 'input' => 'range', 'saleHidden' => true,
-        'icon' => 'bx-user-plus', 'label' => 'เพิ่มลูกค้าประจำวัน', 'desc' => 'ลูกค้าที่เพิ่มเข้าระบบในช่วงวันที่เลือก'],
+      ['key' => 'by-date', 'url' => '/customer-tracking/export-by-date', 'input' => 'range', 'saleHidden' => false,
+        'icon' => 'bx-user-plus', 'label' => 'เพิ่มลูกค้าประจำวัน',
+        'desc' => $isSale ? 'ลูกค้าของคุณที่เพิ่มเข้าระบบในช่วงวันที่เลือก' : 'ลูกค้าที่เพิ่มเข้าระบบในช่วงวันที่เลือก (ทุกคนในแบรนด์)'],
     ],
     'รายเดือน' => [
       ['key' => 'overdue', 'url' => '/customer-tracking/export-overdue', 'input' => 'month', 'saleHidden' => true,
@@ -78,6 +79,13 @@
               <span class="text-muted small">–</span>
               <input type="date" id="ctReportDateTo" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" data-no-icon>
             </div>
+            {{-- ช่วงวันที่ใช้กับรายงานเพิ่มลูกค้าเท่านั้น — บางรายกรอกย้อนหลัง (ติดต่อก่อนวันเพิ่มเข้าระบบ) จึงให้เลือกได้ --}}
+            <label for="ctReportDateType" class="form-label small text-muted mb-1 mt-2">นับจาก</label>
+            <select id="ctReportDateType" class="form-select form-select-sm">
+              @foreach (\App\Exports\customerTracking\CustomerTrackingByDateExport::DATE_TYPES as $value => $label)
+                <option value="{{ $value }}">{{ $label }}</option>
+              @endforeach
+            </select>
           </div>
           <div class="ct-report-param" data-for="month">
             <label for="ctReportMonth" class="form-label small text-muted mb-1">เดือน</label>

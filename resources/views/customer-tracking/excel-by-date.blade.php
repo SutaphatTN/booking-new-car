@@ -6,7 +6,7 @@
 <table>
   <thead>
     <tr>
-      <th colspan="{{ $colspan }}">รายงานการกรอกข้อมูลการติดตามลูกค้า วันที่ {{ $dateFromFormatted }} ถึง {{ $dateToFormatted }}</th>
+      <th colspan="{{ $colspan }}">รายงานเพิ่มลูกค้า ({{ $dateTypeLabel }}) วันที่ {{ $dateFromFormatted }} ถึง {{ $dateToFormatted }}</th>
     </tr>
     <tr>
       <th>No.</th>
