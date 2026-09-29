@@ -142,6 +142,12 @@ class User extends Authenticatable
 		return $this->belongsTo(TbBranch::class, 'branch', 'id');
 	}
 
+	/** สาขาที่ทำยอด (branch_make) — ใช้แบ่งยอดตามสาขาในรายงาน ไม่ใช่สาขาสังกัด */
+	public function branchMakeInfo()
+	{
+		return $this->belongsTo(TbBranch::class, 'branch_make', 'id');
+	}
+
 	public function brandInfo()
 	{
 		return $this->belongsTo(TbBrand::class, 'brand', 'id');
