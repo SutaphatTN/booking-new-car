@@ -77,6 +77,23 @@ class Campaign extends Model
 		return is_null($this->subModel_id) ? 'ทุกรุ่นย่อย' : '-';
 	}
 
+	/**
+	 * ชื่อรุ่นย่อยแบบอ่านง่าย — brand 1 ชื่อเต็มอยู่ใน detail (name เป็นรหัสรุ่น เช่น A13ASTMXRU)
+	 * แบรนด์อื่นชื่อเต็มอยู่ใน name / ช่องที่เลือกว่าง → ใช้อีกช่องแทน
+	 * กติกาเดียวกับหน้าอนุมัติ (approve.blade) และ PDF แคมเปญ CK
+	 */
+	public function getSubModelDisplayAttribute(): string
+	{
+		$sub = $this->subModel;
+		if (!$sub) {
+			return is_null($this->subModel_id) ? 'ทุกรุ่นย่อย' : '-';
+		}
+
+		$text = ((int) $this->brand === 1) ? $sub->detail : $sub->name;
+
+		return $text ?: ($sub->name ?: ($sub->detail ?: '-'));
+	}
+
 	public function type()
 	{
 		return $this->belongsTo(TbCampaignType::class, 'campaign_type', 'id');
