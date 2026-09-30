@@ -1092,14 +1092,21 @@ class CarOrderController extends Controller
     {
         $authUser = Auth::user();
 
-        // ลิงก์จากอีเมลขออนุมัติจะพ่วง ?brand=N มาด้วย — สลับ brand ให้ตรงกับคำขอก่อน
-        // ต้อง redirect เพราะ BrandSwitcher middleware อ่าน session ไปแล้วตั้งแต่ก่อนเข้า controller
-        if ($request->filled('brand')) {
-            $target = (int) $request->query('brand');
+        // ลิงก์จากอีเมลขออนุมัติจะพ่วง ?brand=N&branch=M มาด้วย — สลับ brand/สาขา ให้ตรงกับคำขอก่อน
+        // ต้อง redirect เพราะ BrandSwitcher/BranchSwitcher middleware อ่าน session ไปแล้วตั้งแต่ก่อนเข้า controller
+        if ($request->filled('brand') || $request->filled('branch')) {
+            $target = (int) $request->query('brand', $authUser->brand);
             if ($target !== (int) $authUser->brand && in_array($target, $authUser->switchableBrandIds(), true)) {
                 session(['brand_switch' => $target]);
             }
-            return redirect()->route('car-order.process', $request->except('brand'));
+
+            // สาขา: เฉพาะ brand ที่แยกสาขาจริง (หน้ารายการกรองตามสาขา) — เหมือนปุ่มสลับสาขาบน navbar
+            $branch = (int) $request->query('branch');
+            if ($branch && BrandFeature::hasMultipleBranches($target) && $branch !== (int) $authUser->branch) {
+                session(['branch_switch' => $branch]);
+            }
+
+            return redirect()->route('car-order.process', $request->except(['brand', 'branch']));
         }
 
         $process = CarOrder::all();
@@ -1288,7 +1295,9 @@ class CarOrderController extends Controller
                 ->values()->all();
 
             $approverName = $approver->full_name ?: $approver->name;
-            Mail::to($approver->email)->send(new BatchApproveCarOrderMail($items, $approverName, Auth::user()->brand));
+            // สาขาของคำขอ = สาขาของรายการที่เลือก (ผู้ขอเห็นเฉพาะสาขาที่ทำงานอยู่ ทุกรายการจึงสาขาเดียวกัน)
+            $branch = $orders->first()?->branch ?? $waitings->first()?->branch ?? Auth::user()->branch;
+            Mail::to($approver->email)->send(new BatchApproveCarOrderMail($items, $approverName, Auth::user()->brand, $branch));
 
             return response()->json([
                 'success' => true,

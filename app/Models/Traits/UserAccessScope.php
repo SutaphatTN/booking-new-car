@@ -3,12 +3,17 @@
 namespace App\Models\Traits;
 
 use Illuminate\Support\Facades\Auth;
+use App\Support\ScopeBypass;
 
 trait UserAccessScope
 {
   protected static function bootUserAccessScope()
   {
     static::addGlobalScope('userAccess', function ($query) {
+
+      // flow ผ่านลิงก์อีเมล (token) สั่งปิด scope ทั้ง request — ไม่งั้น relation ของใบจอง
+      // (carOrder / financeConfirm) ถูกกรองตามแบรนด์/สาขาของคนกด จนกลายเป็น "-"
+      if (ScopeBypass::$brand) return;
 
       if (!Auth::check()) return;
 

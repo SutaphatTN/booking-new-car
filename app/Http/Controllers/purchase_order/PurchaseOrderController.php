@@ -4017,6 +4017,7 @@ class PurchaseOrderController extends Controller
      *
      * ต้องล็อกอินก่อน (route อยู่ใน middleware auth — Laravel จะเด้งไป login แล้วกลับมาที่นี่เอง)
      * ถ้าผู้กดกำลังใช้งานอยู่คนละแบรนด์กับใบจอง จะสลับแบรนด์ให้ก่อน redirect
+     * (brand ที่แยกสาขา เช่น GWM ก็สลับสาขาให้ตรงกับใบจองด้วย)
      * เพราะหน้าใบจองยิง query ที่ติด BrandScope เต็มไปหมด — ScopeBypass ครอบได้แค่ request เดียว
      * ใช้ไม่ได้กับการ redirect (คนละ request) จึงต้องสลับ session เหมือนปุ่มสลับแบรนด์
      */
@@ -4037,6 +4038,13 @@ class PurchaseOrderController extends Controller
             }
 
             session(['brand_switch' => $brand]);
+        }
+
+        // brand ที่แยกสาขาจริง (GWM) — scope สาขาตามสาขาที่กำลังใช้งานอยู่ ใบจองคนละสาขาจะเปิดไม่ขึ้น
+        // สลับไปสาขาของใบจองให้เลย เหมือนกดปุ่มสลับสาขาบน navbar (session branch_switch — ดู BranchSwitcher)
+        if (BrandFeature::hasMultipleBranches($brand) && $saleCar->branch
+            && (int) $user->branch !== (int) $saleCar->branch) {
+            session(['branch_switch' => (int) $saleCar->branch]);
         }
 
         return redirect()->route('purchase-order.edit', $saleCar->id);
