@@ -146,7 +146,7 @@ class CampaignApprovalController extends Controller
                     'id'         => $c->id,
                     'model_id'   => $c->model->id ?? 0,
                     'model_main' => $c->model->Name_TH ?? '-',           // รุ่นหลัก (ใช้จัดกลุ่ม/เลือกทั้งรุ่น)
-                    'sub'        => $c->sub_model_label,                  // รุ่นย่อย (NULL = ทุกรุ่นย่อย)
+                    'sub'        => $c->sub_model_display,                // รุ่นย่อย (brand 1 = detail / NULL = ทุกรุ่นย่อย)
                     'model'      => trim(($c->model->Name_TH ?? '') . ' / ' . $c->sub_model_label),
                     'name'       => $c->appellation?->name ?? '-',
                     'type'       => $c->type?->name ?? '-',
