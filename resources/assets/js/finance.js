@@ -569,6 +569,7 @@ $(document).ready(function () {
       { data: 'No', searchable: false },
       { data: 'FullName', orderable: false },
       { data: 'finance_name', orderable: false },
+      { data: 'vin_number', orderable: false },
       { data: 'delivery_date', orderable: false, searchable: false },
       { data: 'document_date', orderable: false, searchable: false },
       { data: 'firm_date', orderable: false, searchable: false },

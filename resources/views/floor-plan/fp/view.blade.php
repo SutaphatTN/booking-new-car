@@ -4,6 +4,7 @@
 @php
   $showOption   = $brand == 1;   // option เฉพาะ brand 1
   $showInterior = \App\Support\BrandFeature::hasInteriorColor($brand);   // สีภายใน — ดู config/brand.php
+  $canSplitFp   = \App\Support\BrandFeature::hasFpSplitClose($brand);   // แบ่งปิด FP 2 ยอด — ดู config/brand.php
   // ยอดรวมของ "งวดที่เลือก" เท่านั้น — คันที่คร่อมงวดนับเฉพาะส่วนที่ตกในงวดนี้
   $grandTotal   = collect($rows)->sum(fn ($r) => $r['periodInterest'] ?? 0);
 @endphp
@@ -115,6 +116,8 @@
                     <td class="text-center">
                       @if ($r['isClosed'])
                         <span class="badge bg-label-success">ปิดแล้ว</span>
+                      @elseif ($r['isPartial'])
+                        <span class="badge bg-label-info">ปิดบางส่วน</span>
                       @else
                         <span class="badge bg-label-warning">รอปิด FP</span>
                       @endif
@@ -130,6 +133,12 @@
                           data-net="{{ number_format($r['netAmount'], 2) }}"
                           data-billing-date="{{ $r['billingDate'] }}"
                           data-close-date="{{ $r['closeDate'] }}"
+                          data-cost="{{ number_format($r['cost'], 2, '.', '') }}"
+                          @if ($r['isSplit'])
+                            data-split-amount1="{{ number_format($r['tranches'][0]['amount'], 2) }}"
+                            data-split-close1="{{ $r['tranches'][0]['closeDate'] }}"
+                            data-split-close2="{{ $r['tranches'][1]['closeDate'] ?? '' }}"
+                          @endif
                           title="แก้ไขข้อมูล FP">
                           <i class="bx bx-edit"></i>
                         </button>
@@ -179,6 +188,8 @@
                 <div class="fp-info-val">
                   @if ($r['isClosed'])
                     <span class="badge bg-label-success">ปิดแล้ว</span>
+                  @elseif ($r['isPartial'])
+                    <span class="badge bg-label-info">ปิดบางส่วน</span>
                   @else
                     <span class="badge bg-label-warning">รอปิด FP</span>
                   @endif
@@ -248,6 +259,21 @@
                 <div class="fp-info-val">{{ $r['closeText'] }}</div>
               </div>
             </div>
+            @if ($r['isSplit'])
+              {{-- แบ่งปิด : ยอดละวันปิด ใช้ Billing date เดียวกัน --}}
+              <div class="row g-3 mt-0">
+                @foreach ($r['tranches'] as $t)
+                  <div class="col-md-4">
+                    <span class="fp-info-label">ยอดที่ {{ $t['seq'] }}</span>
+                    <div class="fp-info-val">{{ number_format($t['amount'], 2) }}</div>
+                  </div>
+                  <div class="col-md-8">
+                    <span class="fp-info-label">วันที่ปิด FP ยอดที่ {{ $t['seq'] }}</span>
+                    <div class="fp-info-val">{{ $t['closeText'] }}</div>
+                  </div>
+                @endforeach
+              </div>
+            @endif
           </div>
         </div>
 
@@ -258,7 +284,57 @@
             <span class="mf-section-title">การคิดดอกเบี้ย</span>
           </div>
           <div class="mf-section-body">
-            @if ($r['isClosed'] && count($r['segments']))
+            @if ($r['isSplit'])
+              @foreach ($r['tranches'] as $t)
+                <div class="fw-semibold mb-2 {{ $loop->first ? '' : 'mt-3' }}">
+                  ยอดที่ {{ $t['seq'] }} : {{ number_format($t['amount'], 2) }}
+                  <small class="text-muted">(ปิด {{ $t['closeText'] }})</small>
+                </div>
+                @if ($t['isClosed'] && count($t['segments']))
+                  <div class="table-responsive">
+                    <table class="table table-bordered tbl-table tbl-styled w-100 mb-0">
+                      <thead>
+                        <tr>
+                          <th>งวด (ช่วงวันที่)</th>
+                          <th>จำนวนวัน</th>
+                          <th>MOR</th>
+                          <th>MLR</th>
+                          <th>Rate</th>
+                          <th>ดอกที่ต้องจ่าย</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @foreach ($t['segments'] as $seg)
+                          <tr>
+                            <td class="text-center">{{ $seg['startText'] }} – {{ $seg['endText'] }}</td>
+                            <td class="text-center">{{ $seg['days'] }}</td>
+                            <td class="text-end">{{ number_format($seg['mor'], 2) }}</td>
+                            <td class="text-end">{{ number_format($seg['mlr'], 2) }}</td>
+                            <td class="text-end fw-semibold">{{ number_format($seg['rate'], 2) }}</td>
+                            <td class="text-end">{{ number_format($seg['interest'], 2) }}</td>
+                          </tr>
+                        @endforeach
+                        <tr>
+                          <td colspan="5" class="text-end fw-semibold">รวมดอกเบี้ยยอดที่ {{ $t['seq'] }}</td>
+                          <td class="text-end fw-semibold">{{ number_format($t['totalInterest'], 2) }} ฿</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                @else
+                  <div class="text-muted small ps-1">ยังไม่ปิดยอดนี้ — กรอกวันที่ปิด FP เพื่อคำนวณดอกเบี้ย</div>
+                @endif
+              @endforeach
+              <div class="d-flex justify-content-between align-items-center border-top mt-3 pt-2">
+                <span class="fw-bold">รวมดอกเบี้ยที่ต้องจ่าย (ทุกยอด)</span>
+                <span class="fw-bold text-success">{{ number_format($r['totalInterest'] ?? 0, 2) }} ฿</span>
+              </div>
+              <div class="text-muted small mt-2">
+                <i class="bx bx-info-circle"></i>
+                แบ่งปิดจาก Net Amount <b>{{ number_format($r['netAmount'], 2) }}</b>
+                &nbsp;— แต่ละยอด × Rate ÷ 100 × จำนวนวันของยอดนั้น ÷ 365 &nbsp;ต่องวด
+              </div>
+            @elseif ($r['isClosed'] && count($r['segments']))
               <div class="table-responsive">
                 <table class="table table-bordered tbl-table tbl-styled w-100 mb-0">
                   <thead>
@@ -378,14 +454,67 @@
                     <input type="date" id="fpEditBillingDate" class="form-control">
                     <div class="form-text">กรอกได้กรณีรถที่ยังไม่มี Billing date</div>
                   </div>
-                  <div class="col-md-4">
+                  <div class="col-md-4 fp-single-close">
                     <label for="fpEditCloseDate" class="mf-label form-label">วันที่ปิด FP</label>
                     <input type="date" id="fpEditCloseDate" class="form-control">
                     <div class="form-text">เว้นว่าง = กลับเป็น "รอปิด FP"</div>
                   </div>
+                  @if ($canSplitFp)
+                    <div class="col-12">
+                      <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" id="fpSplitToggle">
+                        <label class="form-check-label fw-semibold" for="fpSplitToggle">
+                          แบ่งปิด FP 2 ยอด
+                          <small class="text-muted fw-normal">— เปิดเมื่อปิด FP 2 รอบ (กรอกวันที่ปิดรายยอดด้านล่างแทน)</small>
+                        </label>
+                      </div>
+                    </div>
+                  @endif
                 </div>
               </div>
             </div>
+
+            @if ($canSplitFp)
+              {{-- แบ่งปิด FP 2 ยอด : โชว์เมื่อเปิดสวิตช์ #fpSplitToggle (ช่อง "วันที่ปิด FP" ด้านบนซ่อนไปแทน)
+                   ยอดที่ 1 กรอกเอง / ยอดที่ 2 = Net − ยอดที่ 1 (server คิดซ้ำตอนบันทึก) --}}
+              <div class="mf-section fp-split-card">
+                <div class="mf-section-hd">
+                  <div class="mf-section-icon amber"><i class="bx bx-git-branch"></i></div>
+                  <span class="mf-section-title">แบ่งปิด FP 2 ยอด <small class="text-muted fw-normal">(Billing date เดียวกัน)</small></span>
+                </div>
+                <div class="mf-section-body">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label for="fpSplitAmount1" class="mf-label form-label">ยอดที่ 1</label>
+                      <div class="input-group">
+                        <span class="input-group-text">฿</span>
+                        <input type="text" inputmode="decimal" id="fpSplitAmount1" class="form-control text-end"
+                          placeholder="0.00">
+                      </div>
+                      <div class="form-text">ยอดที่ปิดรอบแรก</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label for="fpSplitClose1" class="mf-label form-label">วันที่ปิด FP ยอดที่ 1</label>
+                      <input type="date" id="fpSplitClose1" class="form-control">
+                      <div class="form-text">เว้นว่าง = ยอดนี้ยังไม่ปิด</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label for="fpSplitAmount2" class="mf-label form-label">ยอดที่ 2 <small class="text-muted">(ยอดที่เหลือ)</small></label>
+                      <div class="input-group">
+                        <span class="input-group-text">฿</span>
+                        <input type="text" id="fpSplitAmount2" class="form-control text-end" readonly tabindex="-1">
+                      </div>
+                      <div class="form-text">คำนวณอัตโนมัติ = Net Amount − ยอดที่ 1</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label for="fpSplitClose2" class="mf-label form-label">วันที่ปิด FP ยอดที่ 2</label>
+                      <input type="date" id="fpSplitClose2" class="form-control">
+                      <div class="form-text">เว้นว่าง = ยอดนี้ยังไม่ปิด</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            @endif
 
             {{-- Actions --}}
             <div class="d-flex justify-content-end gap-2 pt-1">
@@ -430,6 +559,10 @@
       min-height: 2.1rem;
       line-height: 1.35;
     }
+
+    /* แบ่งปิด FP : เปิดสวิตช์ → โชว์การ์ดแบ่งปิด + ซ่อนช่องวันปิดครั้งเดียว (สลับด้วย class ไม่ใช้ jQuery hide/show) */
+    #fpEditForm.fp-split-on .fp-single-close,
+    #fpEditForm:not(.fp-split-on) .fp-split-card { display: none !important; }
 
     /* flatpickr ห่อ input ด้วย .input-group เอง — บังคับให้เต็มคอลัมน์ */
     #fpEditModal .flatpickr-input + .input-group,
@@ -522,7 +655,7 @@
       }
 
       // ── Net Amount : ใส่ลูกน้ำระหว่างพิมพ์ แล้วเติมทศนิยม 2 ตำแหน่งตอนออกจากช่อง ──
-      $(document).on('input', '#fpEditNet', function () {
+      $(document).on('input', '#fpEditNet, #fpSplitAmount1', function () {
         let v = this.value.replace(/[^\d.]/g, '');
         const dot = v.indexOf('.');
         if (dot !== -1) v = v.slice(0, dot + 1) + v.slice(dot + 1).replace(/\./g, ''); // จุดได้ตัวเดียว
@@ -531,12 +664,28 @@
         this.value = dec !== undefined ? intp + '.' + dec.slice(0, 2) : intp;
       });
 
-      $(document).on('blur', '#fpEditNet', function () {
+      $(document).on('blur', '#fpEditNet, #fpSplitAmount1', function () {
         const n = parseFloat(this.value.replace(/,/g, ''));
         this.value = isNaN(n)
-          ? '' // เว้นว่าง = กลับไปใช้ราคาทุน
+          ? '' // เว้นว่าง = กลับไปใช้ราคาทุน / ไม่แบ่งปิด
           : n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        updateSplit();
       });
+
+      // ── แบ่งปิด FP : ยอดที่ 2 = Net (ว่าง = ราคาทุน) − ยอดที่ 1 ──
+      const toNum = v => parseFloat(String(v || '').replace(/,/g, ''));
+      function updateSplit() {
+        if (!document.getElementById('fpSplitAmount1')) return;
+        const on  = $('#fpSplitToggle').is(':checked');
+        const a1  = toNum($('#fpSplitAmount1').val());
+        const net = !isNaN(toNum($('#fpEditNet').val())) ? toNum($('#fpEditNet').val()) : toNum($('#fpEditForm').data('cost'));
+        $('#fpEditForm').toggleClass('fp-split-on', on);
+        $('#fpSplitAmount2').val(on && !isNaN(a1) && !isNaN(net)
+          ? (net - a1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : '');
+      }
+      $(document).on('input', '#fpEditNet, #fpSplitAmount1', updateSplit);
+      $(document).on('change', '#fpSplitToggle', updateSplit);
 
       // แก้ไขข้อมูล FP — ข้อมูลรถ/การเงิน ยัดจาก template ส่วนช่องกรอกเป็น element จริงในฟอร์ม
       $(document).on('click', '.fp-btn-edit', function () {
@@ -548,6 +697,16 @@
         $('#fpEditNet').val(d.net || '');
         setDateValue(document.getElementById('fpEditBillingDate'), d.billingDate);
         setDateValue(document.getElementById('fpEditCloseDate'), d.closeDate);
+
+        if (document.getElementById('fpSplitAmount1')) {
+          $('#fpEditForm').data('cost', d.cost);
+          $('#fpSplitAmount1').val(d.splitAmount1 || '');
+          // คันที่แบ่งปิดไว้แล้ว → เปิดสวิตช์ให้เลย
+          $('#fpSplitToggle').prop('checked', !!d.splitAmount1);
+          setDateValue(document.getElementById('fpSplitClose1'), d.splitClose1);
+          setDateValue(document.getElementById('fpSplitClose2'), d.splitClose2);
+          updateSplit();
+        }
 
         fpEditModal.show();
       });
@@ -564,6 +723,18 @@
           fp_close_date: $('#fpEditCloseDate').val() || '',
           fp_net_amount: ($('#fpEditNet').val() || '').replace(/,/g, ''),
         };
+        // ส่งเฉพาะ brand ที่แบ่งปิดได้ — สวิตช์ปิด = ส่งยอดที่ 1 ว่าง → ปิดครั้งเดียว (server ล้างยอดแบ่งเดิมทิ้ง)
+        if (document.getElementById('fpSplitAmount1')) {
+          const splitOn = $('#fpSplitToggle').is(':checked');
+          const a1 = ($('#fpSplitAmount1').val() || '').replace(/,/g, '');
+          if (splitOn && !a1) {
+            Swal.fire({ icon: 'warning', title: 'กรุณากรอกยอดที่ 1', text: 'เปิดแบ่งปิด FP ไว้ ต้องกรอกยอดที่ 1 หรือปิดสวิตช์ถ้าปิดครั้งเดียว' });
+            return;
+          }
+          payload.split_amount1 = splitOn ? a1 : '';
+          payload.split_close1  = splitOn ? ($('#fpSplitClose1').val() || '') : '';
+          payload.split_close2  = splitOn ? ($('#fpSplitClose2').val() || '') : '';
+        }
         $('#fpLoadingOverlay').css('display', 'flex');
 
         $.ajax({
