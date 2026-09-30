@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Exports\dispose\DisposeReportExport;
 use App\Exports\fp\FpReportExport;
 use App\Models\CarOrder;
+use App\Models\CarOrderFpClosing;
 use App\Models\FpMorRate;
 use App\Models\FpInterestRate;
 use Illuminate\Http\Request;
@@ -15,6 +16,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Support\ExportFilename;
+use App\Support\BrandFeature;
+use Illuminate\Support\Facades\DB;
 
 class FloorPlanController extends Controller
 {
@@ -274,6 +277,7 @@ class FloorPlanController extends Controller
                 'model', 'subModel', 'interiorColor', 'gwmColor',
                 // ใบจองผูกผ่าน salecars.CarOrderID (car_order.salecar_id ไม่ถูกใช้)
                 'salecars' => fn ($q) => $q->with(['remainingPayment.financeInfo', 'customer.prefix']),
+                'fpClosings',
             ])
             ->where('payment_type', 'fp_tisco')
             ->orderByDesc('fp_date')
@@ -290,21 +294,67 @@ class FloorPlanController extends Controller
             // ข้อมูลการเงินจากใบจอง (ถ้ามี)
             $sale = $o->salecars->first();
 
-            $isClosed = $billing && $close && $close->gte($billing);
-            $calc     = $isClosed ? $this->buildFpSegments($billing, $close, $brand, $netAmount) : null;
+            // ── ยอดที่คิดดอกเบี้ย ──
+            // ปกติ = ยอดเดียว (Net Amount × Billing → วันปิด FP)
+            // แบ่งปิด (brand ที่เปิดไว้ + มีแถวใน car_order_fp_closings) = หลายยอด ใช้ Billing เดียวกัน
+            // แต่ละยอดคิดแยก (จำนวนวัน/ช่วง aging ของ MLR เป็นของยอดนั้นเอง) แล้วรวมกัน
+            $isSplit  = BrandFeature::hasFpSplitClose($brand) && $o->fpClosings->isNotEmpty();
+            $tranches = $isSplit
+                ? $o->fpClosings->map(fn ($c) => [
+                    'seq'    => (int) $c->seq,
+                    'amount' => (float) $c->amount,
+                    'close'  => $c->close_date ? Carbon::parse($c->close_date) : null,
+                ])->all()
+                : [['seq' => null, 'amount' => $netAmount, 'close' => $close]];
 
-            // ยังไม่ปิด FP + มีวันตัดประมาณการ → คิดดอกเบี้ยถึงวันตัดนั้นแทน (billing ต้องไม่เลยวันตัดไปแล้ว)
-            $isEstimated = !$isClosed && $estimateTo && $billing && $billing->lte($estimateTo);
-            if ($isEstimated) {
-                $calc = $this->buildFpSegments($billing, $estimateTo->copy(), $brand, $netAmount);
+            $trancheRows = [];
+            foreach ($tranches as $t) {
+                $tClosed = $billing && $t['close'] && $t['close']->gte($billing);
+                $tCalc   = $tClosed ? $this->buildFpSegments($billing, $t['close'], $brand, $t['amount']) : null;
+
+                // ยังไม่ปิด + มีวันตัดประมาณการ → คิดดอกเบี้ยถึงวันตัดนั้นแทน (billing ต้องไม่เลยวันตัดไปแล้ว)
+                $tEstimated = !$tClosed && $estimateTo && $billing && $billing->lte($estimateTo);
+                if ($tEstimated) {
+                    $tCalc = $this->buildFpSegments($billing, $estimateTo->copy(), $brand, $t['amount']);
+                }
+
+                // Rate = อัตราเฉลี่ยถ่วงน้ำหนักด้วยจำนวนวันของทุก segment
+                // (คร่อมหลายงวดมี MOR/MLR คนละค่า) — segment เดียวจะเท่ากับ rate ของงวดนั้นพอดี
+                $tDays = $tCalc['totalDays'] ?? 0;
+
+                $trancheRows[] = [
+                    'seq'           => $t['seq'],
+                    'amount'        => $t['amount'],
+                    'closeDate'     => $t['close'] ? $t['close']->format('Y-m-d') : null,
+                    // ประมาณการ → แสดงวันตัด (วันที่ 15 สิ้นงวด) แทนช่องว่าง / d-m-Y ให้ตรงกับ accessor
+                    'closeText'     => $tEstimated
+                        ? $estimateTo->format('d-m-Y')
+                        : ($t['close'] ? $t['close']->format('d-m-Y') : '-'),
+                    'isClosed'      => $tClosed,
+                    'isEstimated'   => $tEstimated,
+                    // ติดเลขยอดไว้ทุก segment — หน้า list ใช้แยกจำนวนวันรายยอด
+                    'segments'      => array_map(fn ($s) => $s + ['seq' => $t['seq']], $tCalc['segments'] ?? []),
+                    'totalDays'     => $tCalc['totalDays'] ?? null,
+                    'totalInterest' => $tCalc['totalInterest'] ?? null,
+                    'rate'          => $tCalc && $t['amount'] > 0 && $tDays > 0
+                        ? $tCalc['totalInterest'] / ($t['amount'] * $tDays / 365) * 100
+                        : null,
+                ];
             }
 
-            // Rate ที่แสดงในรายงาน = อัตราเฉลี่ยถ่วงน้ำหนักด้วยจำนวนวันของทุก segment
-            // (คันที่คร่อมหลายงวดมี MOR/MLR คนละค่า) — ถ้ามี segment เดียวจะเท่ากับ rate ของงวดนั้นพอดี
-            $totalDays = $calc['totalDays'] ?? 0;
-            $rate = $calc && $netAmount > 0 && $totalDays > 0
-                ? $calc['totalInterest'] / ($netAmount * $totalDays / 365) * 100
-                : null;
+            $tr          = collect($trancheRows);
+            $isClosed    = $tr->every(fn ($t) => $t['isClosed']);
+            $isEstimated = $tr->contains(fn ($t) => $t['isEstimated']);
+            $hasCalc     = $tr->contains(fn ($t) => $t['totalInterest'] !== null);
+            $calc = $hasCalc ? [
+                'segments'      => $tr->pluck('segments')->flatten(1)->all(),
+                'totalDays'     => $tr->max('totalDays'),
+                'totalInterest' => $tr->sum(fn ($t) => $t['totalInterest'] ?? 0),
+            ] : null;
+
+            // Rate รวมทั้งคัน = ดอกรวม ÷ (Σ ยอด × วันของยอด ÷ 365) — ยอดเดียวได้ค่าเท่าสูตรเดิม
+            $weight = $tr->sum(fn ($t) => $t['totalDays'] ? $t['amount'] * $t['totalDays'] / 365 : 0);
+            $rate   = $calc && $weight > 0 ? $calc['totalInterest'] / $weight * 100 : null;
 
             return [
                 'id'            => $o->id,
@@ -337,13 +387,17 @@ class FloorPlanController extends Controller
                 'deliveryDate'   => $sale->DeliveryDate ?? null,            // Y-m-d
                 'deliveryText'   => $sale->format_delivery_date ?? '-',
                 'closeDate'     => $o->fp_close_date,          // Y-m-d สำหรับ input
-                // ประมาณการ → แสดงวันตัด (วันที่ 15 สิ้นงวด) แทนช่องว่าง
-                // ใช้ d-m-Y ให้ตรงกับ accessor format_fp_date / format_fp_close_date
-                'closeText'     => $isEstimated
-                    ? $estimateTo->format('d-m-Y')
-                    : ($o->format_fp_close_date ?? '-'),
+                // แบ่งปิด → วันปิดทุกยอดต่อกัน "27-09-2026 / 29-09-2026"
+                // ปกติ: ประมาณการ → แสดงวันตัด (วันที่ 15 สิ้นงวด) แทนช่องว่าง (d-m-Y ตรงกับ accessor)
+                'closeText'     => $isSplit
+                    ? $tr->pluck('closeText')->implode(' / ')
+                    : $trancheRows[0]['closeText'],
                 'isClosed'      => $isClosed,
                 'isEstimated'   => $isEstimated,
+                'isSplit'       => $isSplit,
+                // แบ่งปิดแล้วบางยอด (ยอดอื่นยังไม่มีวันปิด)
+                'isPartial'     => $isSplit && !$isClosed && $tr->contains(fn ($t) => $t['isClosed']),
+                'tranches'      => $trancheRows,
                 'segments'      => $calc['segments'] ?? [],
                 'totalDays'     => $calc['totalDays'] ?? null,
                 'rate'          => $rate,
@@ -401,7 +455,11 @@ class FloorPlanController extends Controller
         $rows = $rows->map(function ($r) use ($month) {
             $segs = collect($r['segments'])->where('period', $month);
 
-            $r['periodDays']     = $segs->isNotEmpty() ? (int) $segs->sum('days') : null;
+            // แบ่งปิด → วันของแต่ละยอดนับแยก ("9 / 11") บวกรวมกันไม่ได้เพราะเป็นช่วงวันซ้อนกัน
+            $r['periodDays']     = $segs->isEmpty() ? null
+                : ($r['isSplit']
+                    ? $segs->groupBy('seq')->map(fn ($g) => (int) $g->sum('days'))->implode(' / ')
+                    : (int) $segs->sum('days'));
             $r['periodInterest'] = $segs->isNotEmpty() ? (float) $segs->sum('interest') : null;
 
             return $r;
@@ -441,27 +499,41 @@ class FloorPlanController extends Controller
         $order = CarOrder::where('payment_type', 'fp_tisco')->findOrFail($id);
 
         // ช่องกรอกใส่ลูกน้ำให้อ่านง่าย (905,509.84) — ตัดออกก่อน validate
-        if ($request->has('fp_net_amount')) {
-            $request->merge([
-                'fp_net_amount' => str_replace(',', '', (string) $request->fp_net_amount),
-            ]);
+        foreach (['fp_net_amount', 'split_amount1'] as $moneyField) {
+            if ($request->has($moneyField)) {
+                $request->merge([
+                    $moneyField => str_replace(',', '', (string) $request->input($moneyField)),
+                ]);
+            }
         }
 
         $validated = $request->validate([
             'fp_close_date' => 'nullable|date',
             'fp_date'       => 'nullable|date',
             'fp_net_amount' => 'nullable|numeric|min:0',
+            // แบ่งปิด 2 ยอด (เฉพาะ brand ที่เปิดไว้) — ยอดที่ 2 = Net − ยอดที่ 1 คิดที่ server เสมอ
+            'split_amount1' => 'nullable|numeric|min:0',
+            'split_close1'  => 'nullable|date',
+            'split_close2'  => 'nullable|date',
         ]);
+
+        // ส่งมาจากโมดัลของ brand ที่แบ่งปิดได้ + กรอกยอดที่ 1 = โหมดแบ่งปิด
+        $canSplit  = BrandFeature::hasFpSplitClose($order->brand) && $request->has('split_amount1');
+        $isSplit   = $canSplit && ($validated['split_amount1'] ?? '') !== '' && $validated['split_amount1'] !== null;
 
         // Billing date ที่จะใช้เทียบ = ค่าที่ส่งมา (ถ้าฟอร์มส่งมา) มิฉะนั้นใช้ของเดิม
         $editBilling = $request->has('fp_date');
         $billing     = $editBilling ? ($validated['fp_date'] ?: null) : $order->fp_date;
 
-        if (!empty($validated['fp_close_date']) && $billing
-            && Carbon::parse($validated['fp_close_date'])->lt(Carbon::parse($billing))) {
-            throw ValidationException::withMessages([
-                'fp_close_date' => 'วันที่ปิด FP ต้องไม่ก่อน Billing date',
-            ]);
+        // วันปิดทุกช่องที่ใช้จริงต้องไม่ก่อน Billing date
+        $closeFields = $isSplit ? ['split_close1', 'split_close2'] : ['fp_close_date'];
+        foreach ($closeFields as $f) {
+            if (!empty($validated[$f]) && $billing
+                && Carbon::parse($validated[$f])->lt(Carbon::parse($billing))) {
+                throw ValidationException::withMessages([
+                    $f => 'วันที่ปิด FP ต้องไม่ก่อน Billing date',
+                ]);
+            }
         }
 
         if ($editBilling) {
@@ -473,8 +545,52 @@ class FloorPlanController extends Controller
                 ? $validated['fp_net_amount']
                 : null;
         }
-        $order->fp_close_date = $validated['fp_close_date'] ?: null;
-        $order->save();
+
+        // Net Amount ที่ใช้แบ่ง = ค่าที่เพิ่งบันทึก หรือราคาทุนถ้าเว้นว่าง
+        $net = round((float) ($order->fp_net_amount ?? $order->car_DNP ?? 0), 2);
+
+        $splitRows = [];
+        if ($isSplit) {
+            $amount1 = round((float) $validated['split_amount1'], 2);
+            if ($amount1 <= 0 || $amount1 >= $net) {
+                throw ValidationException::withMessages([
+                    'split_amount1' => 'ยอดที่ 1 ต้องมากกว่า 0 และน้อยกว่า Net Amount (' . number_format($net, 2) . ')',
+                ]);
+            }
+            $splitRows = [
+                1 => ['amount' => $amount1,                'close_date' => $validated['split_close1'] ?: null],
+                2 => ['amount' => round($net - $amount1, 2), 'close_date' => $validated['split_close2'] ?: null],
+            ];
+            // fp_close_date = วันปิดยอดสุดท้าย เมื่อปิดครบทุกยอด (รายงานแจ้งจำหน่ายยังอ่านช่องนี้)
+            $dates = array_filter(array_column($splitRows, 'close_date'));
+            $order->fp_close_date = count($dates) === count($splitRows) ? max($dates) : null;
+        } else {
+            $order->fp_close_date = $validated['fp_close_date'] ?: null;
+        }
+
+        DB::transaction(function () use ($order, $canSplit, $isSplit, $splitRows) {
+            $order->save();
+
+            if (!$canSplit) {
+                return;
+            }
+
+            if (!$isSplit) {
+                // ล้างยอดที่ 1 = กลับไปปิดครั้งเดียว
+                CarOrderFpClosing::where('car_order_id', $order->id)->delete();
+                return;
+            }
+
+            foreach ($splitRows as $seq => $data) {
+                $row = CarOrderFpClosing::firstOrNew(['car_order_id' => $order->id, 'seq' => $seq]);
+                if (!$row->exists) {
+                    $row->UserInsert = Auth::id();
+                }
+                $row->fill($data);
+                $row->UserUpdate = Auth::id();
+                $row->save();
+            }
+        });
 
         return response()->json([
             'success' => true,
@@ -523,53 +639,64 @@ class FloorPlanController extends Controller
         // คันที่คร่อมงวด (เช่น billing 14/08 ปิด 17/08) จะได้ 2 แถว — งวด 2026-07 ช่วง 14–15/08
         // และงวด 2026-08 ช่วง 16–17/08 โดยจำนวนวัน/ดอกเบี้ยของแต่ละแถวคิดเฉพาะช่วงในงวดนั้น
         // (รวมทุกงวดแล้วเท่ากับดอกเบี้ยทั้งคันเท่าเดิม)
+        // คันที่แบ่งปิด → แยกแถวรายยอดด้วย (1 แถว = 1 คัน × 1 ยอด × 1 งวด) Net Amount = ยอดนั้น
         $reportRows = [];
-        foreach ($rows as $r) {
-            $segments = $r['segments'] ?: [];
+        foreach ($rows as $car) {
+            foreach ($car['tranches'] as $t) {
+                $r = array_merge($car, [
+                    'netAmount'   => $t['amount'],
+                    'closeText'   => $t['closeText'],
+                    'isClosed'    => $t['isClosed'],
+                    'isEstimated' => $t['isEstimated'],
+                    'trancheSeq'  => $t['seq'] ?? 0,
+                    'trancheText' => $car['isSplit'] ? "ยอด {$t['seq']}/" . count($car['tranches']) : null,
+                ]);
+                $segments = $t['segments'] ?: [];
 
-            // ไม่มี segment = ยังไม่มี Billing date → ไม่มีงวดให้ลง เก็บไว้เฉพาะตอนไม่กรองงวด
-            if (!$segments) {
-                if (!$from) {
-                    $reportRows[] = array_merge($r, [
-                        'period'      => null,
-                        'periodText'  => '-',
-                        'periodFrom'  => $r['billingText'],
-                        'periodTo'    => $r['closeText'],
-                        'segDays'     => null,
-                        'segRate'     => null,
-                        'segInterest' => null,
-                        'isEstimateCut' => false,
-                    ]);
-                }
-                continue;
-            }
-
-            foreach ($segments as $seg) {
-                if ($from && ($seg['period'] < $from || $seg['period'] > $to)) {
+                // ไม่มี segment = ยังไม่มี Billing date → ไม่มีงวดให้ลง เก็บไว้เฉพาะตอนไม่กรองงวด
+                if (!$segments) {
+                    if (!$from) {
+                        $reportRows[] = array_merge($r, [
+                            'period'      => null,
+                            'periodText'  => '-',
+                            'periodFrom'  => $r['billingText'],
+                            'periodTo'    => $r['closeText'],
+                            'segDays'     => null,
+                            'segRate'     => null,
+                            'segInterest' => null,
+                            'isEstimateCut' => false,
+                        ]);
+                    }
                     continue;
                 }
-                $reportRows[] = array_merge($r, [
-                    'period'      => $seg['period'],
-                    'periodText'  => Carbon::createFromFormat('Y-m-d', $seg['period'] . '-01')->format('m/Y'),
-                    'periodFrom'  => $seg['startText'],
-                    'periodTo'    => $seg['endText'],
-                    'segDays'     => $seg['days'],
-                    'segRate'     => $seg['rate'],
-                    'segInterest' => $seg['interest'],
-                    // ใส่ * เฉพาะงวดสุดท้ายที่จบด้วย "วันตัดประมาณการ" จริง ๆ
-                    // (งวดกลาง ๆ จบที่วันที่ 15 ตามปกติ ไม่ใช่วันประมาณการ)
-                    'isEstimateCut' => $r['isEstimated']
-                        && $estimateTo
-                        && $seg['endText'] === $estimateTo->format('d/m/Y'),
-                ]);
+
+                foreach ($segments as $seg) {
+                    if ($from && ($seg['period'] < $from || $seg['period'] > $to)) {
+                        continue;
+                    }
+                    $reportRows[] = array_merge($r, [
+                        'period'      => $seg['period'],
+                        'periodText'  => Carbon::createFromFormat('Y-m-d', $seg['period'] . '-01')->format('m/Y'),
+                        'periodFrom'  => $seg['startText'],
+                        'periodTo'    => $seg['endText'],
+                        'segDays'     => $seg['days'],
+                        'segRate'     => $seg['rate'],
+                        'segInterest' => $seg['interest'],
+                        // ใส่ * เฉพาะงวดสุดท้ายที่จบด้วย "วันตัดประมาณการ" จริง ๆ
+                        // (งวดกลาง ๆ จบที่วันที่ 15 ตามปกติ ไม่ใช่วันประมาณการ)
+                        'isEstimateCut' => $r['isEstimated']
+                            && $estimateTo
+                            && $seg['endText'] === $estimateTo->format('d/m/Y'),
+                    ]);
+                }
             }
         }
 
         // เรียงตามงวดก่อน (รายงานเลือกได้หลายงวด ต้องจัดกลุ่มให้ตรงกับ statement ของ Tisco)
         // แล้วภายในงวดเดียวกันเรียงแบบเดียวกับหน้า list — วันส่งมอบ เก่า → ใหม่ (ดู fpSortKey)
-        // คันที่คร่อมงวดจึงอยู่ตำแหน่งเดียวกันในทุกงวดที่มันโผล่
-        usort($reportRows, fn ($a, $b) => [$a['period'] ?? '', $this->fpSortKey($a)]
-            <=> [$b['period'] ?? '', $this->fpSortKey($b)]);
+        // คันที่คร่อมงวดจึงอยู่ตำแหน่งเดียวกันในทุกงวดที่มันโผล่ / คันแบ่งปิดเรียงยอด 1 → 2 ติดกัน
+        usort($reportRows, fn ($a, $b) => [$a['period'] ?? '', $this->fpSortKey($a), $a['id'], $a['trancheSeq']]
+            <=> [$b['period'] ?? '', $this->fpSortKey($b), $b['id'], $b['trancheSeq']]);
 
         $rangeLabel = $from
             ? ($from === $to ? " {$from}" : " {$from} ถึง {$to}")

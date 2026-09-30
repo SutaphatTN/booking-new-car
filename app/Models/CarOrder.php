@@ -153,6 +153,12 @@ class CarOrder extends Model
         return $this->hasMany(Salecar::class, 'CarOrderID', 'id');
     }
 
+    /** ยอดปิด FP รายรอบ (เฉพาะคันที่แบ่งปิด) — ว่าง = ปิดครั้งเดียวตาม fp_close_date */
+    public function fpClosings()
+    {
+        return $this->hasMany(CarOrderFpClosing::class, 'car_order_id', 'id')->orderBy('seq');
+    }
+
     public function historyCar()
     {
         return $this->hasMany(CarOrderHistory::class, 'CarOrderID', 'id');

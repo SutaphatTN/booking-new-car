@@ -51,4 +51,17 @@ class BrandFeature
 
         return in_array($brand, array_map('intval', (array) config('brand.multi_team_brands', [])), true);
     }
+
+    /**
+     * brand นี้ปิด FP แบ่งเป็น 2 ยอดได้ไหม (ยอดละวันปิด ใช้ Billing date เดียวกัน)
+     *
+     * ใช้คุมช่องกรอกในโมดัลแก้ไข FP + การคิดดอกเบี้ยรายยอดในหน้า FP/รายงาน Excel
+     * ไม่ส่ง $brand = ใช้ brand ของ user ที่ล็อกอินอยู่ (effective brand)
+     */
+    public static function hasFpSplitClose($brand = null): bool
+    {
+        $brand = (int) ($brand ?? (Auth::user()->brand ?? 0));
+
+        return in_array($brand, array_map('intval', (array) config('brand.fp_split_close_brands', [])), true);
+    }
 }

@@ -254,7 +254,8 @@ class FinanceController extends Controller
             'model',
             'subModel',
             'remainingPayment.financeInfo',
-            'financeConfirm'
+            'financeConfirm',
+            'carOrder',
         ])
             ->where('payment_mode', 'finance')
             ->where('con_status', '5');
@@ -277,7 +278,7 @@ class FinanceController extends Controller
         // จำนวนทั้งหมดก่อนค้นหา
         $recordsTotal = (clone $query)->count();
 
-        // ค้นหา (ชื่อ-นามสกุลลูกค้า / ชื่อไฟแนนซ์)
+        // ค้นหา (ชื่อ-นามสกุลลูกค้า / ชื่อไฟแนนซ์ / เลข VIN)
         $search = $request->input('search.value');
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
@@ -286,6 +287,9 @@ class FinanceController extends Controller
                 })
                     ->orWhereHas('remainingPayment.financeInfo', function ($qq) use ($search) {
                         $qq->where('FinanceCompany', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('carOrder', function ($qq) use ($search) {
+                        $qq->where('vin_number', 'like', "%{$search}%");
                     });
             });
         }
@@ -348,6 +352,7 @@ class FinanceController extends Controller
                     $c->LastName ?? null,
                 ])),
                 'finance_name' => $financeF,
+                'vin_number' => $s->carOrder?->vin_number ?: '-',
                 'delivery_date' => $s->format_delivery_date ?? '-',
                 'document_date' => $s->financeConfirm->format_document_date ?? '-',
                 'firm_date' => $s->financeConfirm->format_firm_date ?? '-',
