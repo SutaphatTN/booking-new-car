@@ -17,8 +17,9 @@
 @endforeach
 @endcomponent
 
-{{-- พ่วง brand ของคำขอไปด้วย — ผู้อนุมัติที่กำลังอยู่คนละ brand จะถูกสลับให้ตรงก่อนเข้าหน้า --}}
-@component('mail::button', ['url' => route('car-order.process', array_filter(['brand' => $brand]))])
+{{-- พ่วง brand + branch ของคำขอไปด้วย — ผู้อนุมัติที่กำลังอยู่คนละ brand/สาขา จะถูกสลับให้ตรงก่อนเข้าหน้า
+     (หน้ารายการสั่งรถกรองตามสาขาด้วย — brand ที่แยกสาขาอย่าง GWM ถ้าไม่สลับจะไม่เห็นรายการ) --}}
+@component('mail::button', ['url' => route('car-order.process', array_filter(['brand' => $brand, 'branch' => $branch ?? null]))])
 ดูรายละเอียด / อนุมัติ
 @endcomponent
 

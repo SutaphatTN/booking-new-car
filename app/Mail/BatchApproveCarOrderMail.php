@@ -13,17 +13,20 @@ class BatchApproveCarOrderMail extends Mailable
     public $items;
     public $approverName;
     public $brand;
+    public $branch;
 
     /**
      * @param array    $items        รายการที่ขออนุมัติ (order_code, model, subModel, color, year, type, qty)
      * @param string   $approverName ชื่อผู้อนุมัติ
      * @param int|null $brand        brand ของคำขอ (สำหรับแสดงหัวอีเมล/subject)
+     * @param int|null $branch       สาขาของคำขอ — ใส่ในลิงก์ให้หน้ารายการสลับสาขาให้ตรง
      */
-    public function __construct(array $items, string $approverName, $brand = null)
+    public function __construct(array $items, string $approverName, $brand = null, $branch = null)
     {
         $this->items = $items;
         $this->approverName = $approverName;
         $this->brand = $brand;
+        $this->branch = $branch;
     }
 
     public function build()
