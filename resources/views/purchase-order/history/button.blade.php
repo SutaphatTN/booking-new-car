@@ -27,7 +27,7 @@ $hasRemaining = !empty($s->remainingPayment);
   </button>
 @endif
 
-@if (auth()->user()->role === 'admin')
+@if (in_array(auth()->user()->role, \App\Http\Controllers\purchase_order\PurchaseOrderController::CHANGE_STATUS_ROLES, true))
   <button class="btn btn-icon btn-warning btnChangeStatus" data-id="{{ $s->id }}"
     data-status="{{ $s->con_status }}" title="ดึงกลับ / เปลี่ยนสถานะ">
     <i class="bx bx-transfer"></i>

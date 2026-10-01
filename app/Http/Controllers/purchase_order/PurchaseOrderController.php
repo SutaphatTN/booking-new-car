@@ -4050,13 +4050,16 @@ class PurchaseOrderController extends Controller
         return redirect()->route('purchase-order.edit', $saleCar->id);
     }
 
+    /** role ที่ใช้ปุ่ม "ดึงกลับ / เปลี่ยนสถานะ" ในหน้าประวัติได้ (ปุ่มใน history/button.blade ใช้ชุดเดียวกัน) */
+    public const CHANGE_STATUS_ROLES = ['admin', 'gm'];
+
     /**
-     * ดึงคำสั่งซื้อที่ส่งมอบแล้วกลับมา / เปลี่ยนสถานะ — เฉพาะ role = admin
+     * ดึงคำสั่งซื้อที่ส่งมอบแล้วกลับมา / เปลี่ยนสถานะ — เฉพาะ CHANGE_STATUS_ROLES (admin, gm)
      * เปลี่ยนแค่ con_status เท่านั้น ไม่ยุ่งกับ CarOrder / tracking
      */
     public function changeStatus(Request $request, $id)
     {
-        if (Auth::user()->role !== 'admin') {
+        if (!in_array(Auth::user()->role, self::CHANGE_STATUS_ROLES, true)) {
             abort(403);
         }
 
