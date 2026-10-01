@@ -4668,7 +4668,7 @@ $(document).on('click', '.btnViewHistory', function () {
   });
 });
 
-//history : ดึงกลับ / เปลี่ยนสถานะ (admin เท่านั้น)
+//history : ดึงกลับ / เปลี่ยนสถานะ (admin, gm — ดู PurchaseOrderController::CHANGE_STATUS_ROLES)
 $(document).on('click', '.btnChangeStatus', function () {
   const id = $(this).data('id');
   const current = String($(this).data('status'));
