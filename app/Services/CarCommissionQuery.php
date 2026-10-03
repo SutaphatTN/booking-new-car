@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 /**
  * คอมตัวรถรายคัน (รายเดือน) — เรตต่อคันตามตาราง config/car_commission.php
  *  - นับเฉพาะ Retail (purchase_type=2) + type_sale Normal (=1) ตาม DeliveryInCKDate ในเดือน
- *  - ตัดรถ dealer (purchase_source=OTHDealer) ออก ไม่คิดคอมตัวรถ
+ *  - รถที่ซื้อมาจากดีลเลอร์อื่น (purchase_source=OTHDealer) นับด้วย ; ขาย Dealer (type_sale=3) ไม่นับ — ดู Salecar::scopeSalesQualifying
  *  - "บรรลุเป้า 120%" = ยอดรวมทั้ง brand ในเดือน >= เป้า × target_multiplier
  *  - ยอดต่อเซลล์ = เรต × จำนวนคันที่ได้คอม (paidCount)
  *  - คันที่ "เกินงบทะลุเพดาน" (MD/GM อนุมัติ) ไม่ได้คอมตัวรถ แต่ยังนับจำนวนคัน (เรต/เป้าเหมือนเดิม)
@@ -19,7 +19,7 @@ class CarCommissionQuery
 {
     public const SALE_TYPE_NORMAL   = 1; // salecars.type_sale
     public const PURCHASE_TYPE_RETAIL = 2; // carOrder.purchase_type
-    public const SOURCE_DEALER      = 'OTHDealer'; // carOrder.purchase_source — รถ dealer ไม่คิดคอม
+    public const SOURCE_DEALER      = 'OTHDealer'; // carOrder.purchase_source (นับคิดคอมแล้ว — ไม่ได้ใช้กรอง)
 
     /** เริ่มใช้ตั้งแต่เดือน config('car_commission.start') เท่านั้น */
     public static function isActiveMonth(int $year, int $month): bool
