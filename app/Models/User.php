@@ -350,9 +350,19 @@ class User extends Authenticatable
 	 */
 	public const DISCIPLINE_ROLES = ['admin', 'gm', 'md'];
 
-	public function canEditDiscipline(): bool
+	/** brand ที่ให้ "ผู้จัดการ" กรอกค่าคอมวินัยเองได้ด้วย (brand 2 = ช่องเงิน ; brand 1/3/4 = ผ่าน/ไม่ผ่าน ยังล็อกไว้) */
+	public const DISCIPLINE_MANAGER_BRANDS = [2];
+
+	/** $brand = brand ของค่าคอมที่กำลังแก้ (ไม่ส่ง = เช็คเฉพาะ DISCIPLINE_ROLES แบบเดิม) */
+	public function canEditDiscipline(?int $brand = null): bool
 	{
-		return in_array($this->role, self::DISCIPLINE_ROLES, true);
+		if (in_array($this->role, self::DISCIPLINE_ROLES, true)) {
+			return true;
+		}
+
+		return $this->role === 'manager'
+			&& $brand !== null
+			&& in_array($brand, self::DISCIPLINE_MANAGER_BRANDS, true);
 	}
 
 	/**
