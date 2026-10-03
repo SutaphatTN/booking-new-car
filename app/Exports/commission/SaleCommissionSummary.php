@@ -208,6 +208,11 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
             $overBudgetDeduct = -(
                 $autoBal->sum(fn($v) => min($v, 0.0)) + $approved->sum(fn($v) => min($v, 0.0))
             );
+            // คันที่หักเกินงบเกินรวมเงินได้ → คอมสุทธิของคันเป็น 0 — ต้องคิด "รายคัน" แล้วค่อยรวม
+            // (ปัดที่ยอดรวมทั้งคนไม่ได้ คันบวกจะไปกลบคันลบ) ; ช่องหักเกินงบยังโชว์ยอดจริง
+            $carEntry = CarCommissionQuery::entry($carCom, (int) $saleId, $brand);
+            $floored  = $rows->map(fn($r) => $r->flooredCommissionSale(CarCommissionQuery::amountForCar($r, $carEntry)));
+            $netAdjust = $floored->sum() - $rows->sum(fn($r) => $r->effectiveCommissionSale());
 
             // ยอดสุทธิ = ยอดที่ได้ทั้งเดือน (คอมกั๊กเป็นเรื่องเวลาจ่าย ดูละเอียดในชีท "คอมกั๊ก (รายคัน)")
             $row = [
@@ -222,6 +227,7 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
                 'extraDeduct'     => $rows->sum(fn($r) => ExtraBudgetLedger::absorbedFor($r)) ?: null,
                 'approvedCom'     => $approved->sum(fn($v) => max($v, 0.0)),  // ยอดผู้จัดการ/GM (เกินเพดาน) เฉพาะยอดบวก
                 'overBudgetDeduct' => $overBudgetDeduct,
+                '__netAdjust'      => $netAdjust,
                 'accessoryCom'    => $rows->sum(fn($r) => $r->effectiveAccessoryCommission()),
                 'specialCom'      => $rows->sum(fn($r) => $r->effectiveSpecialCommission()),
                 'interestCom'     => $rows->sum(fn($r) => $r->remainingPayment->total_com ?? 0),
@@ -236,7 +242,7 @@ class SaleCommissionSummary implements FromView, WithTitle, WithStyles, WithEven
 
             // วินัยไม่ผ่าน → หัก 15% ของ "รวมค่าคอมรถ" (ฐานเดียวกับ SaleCommissionMonthly::computeNet)
             if ($brand !== 2) {
-                $base = (float) $rows->sum(fn($r) => $r->effectiveCommissionSale());
+                $base = (float) $floored->sum();
                 $row['disciplineDeduct'] = ($adj && $adj->discipline_failed)
                     ? $base * SaleCommissionMonthly::DISCIPLINE_FAIL_RATE
                     : 0.0;

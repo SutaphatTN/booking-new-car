@@ -921,6 +921,18 @@ class Salecar extends Model
 			+ $fiCom + $turnCom + $this->effectiveSpecialCommission();
 	}
 
+	/**
+	 * รวมค่าคอมรถของคันนี้ หลังกันคอมสุทธิของคันติดลบ
+	 * คอมสุทธิของคัน = รวมค่าคอมรถ + คอมตัวรถ ($C) — ถ้าหักเกินงบมากกว่ารวมเงินได้ ให้คันนั้นเป็น 0
+	 * (ถือว่าคันนั้นไม่ได้อะไรเลย ไม่ไปหักลบคอมของคันอื่น) → รวมค่าคอมรถจึงต่ำสุดได้แค่ −C
+	 *
+	 * ใช้ตัวนี้เป็นฐานรายเดือน (computeNet / หักวินัย 15%) ทุกที่ — หน้าค่าคอม / รายชื่อ / export
+	 */
+	public function flooredCommissionSale(float $C): float
+	{
+		return max($this->effectiveCommissionSale(), -$C);
+	}
+
 	public function branchInfo()
 	{
 		return $this->belongsTo(TbBranch::class, 'branch', 'id');

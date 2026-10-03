@@ -221,8 +221,10 @@
                   $rowNeg = min($autoBal, 0) + min($approved, 0);
                   // ฐานคงที่ของแถว (ถอดเฉพาะช่องที่แก้สดได้) — budget หักไม่อยู่ในสูตรคอมแล้ว จึงไม่ต้องถอด
                   $rowBase = $c['commissionSale'] - $c['specialCom'];
-                  $rowNet = $c['commissionSale'] + $carCom;
-                  $rowPos = $rowNet - $rowNeg;
+                  $rowRaw = $c['commissionSale'] + $carCom;
+                  $rowPos = $rowRaw - $rowNeg;
+                  // หักเกินงบเกินรวมเงินได้ → คอมสุทธิของคันเป็น 0 ไม่ติดลบ (ตรงกับ Salecar::flooredCommissionSale)
+                  $rowNet = max($rowRaw, 0);
 
                   // สะสมยอดรวมท้ายตาราง — บวกด้วย "ค่าที่แสดงในช่อง" ให้ตรงกับที่ตาเห็น
                   // (งบเหลือ/คอมที่ได้ ตัดยอดติดลบออก เพราะติดลบไปโผล่ช่อง "หักเกินงบ" แล้ว)
@@ -334,6 +336,10 @@
                        (ยอดในช่องไม่ลด — กั๊กเป็นเรื่องเวลาจ่าย ; แถว "รวมทั้งหมด" ถึงจะหักออกให้เห็นเงินที่ได้รอบนี้) --}}
                   <td class="text-end fw-bold col-sum-net">
                     <div class="car-row-total">{{ number_format($rowNet, 2) }}</div>
+                    <div class="text-muted cell-note fw-normal car-row-floored {{ $rowRaw < 0 ? '' : 'd-none' }}"
+                      title="หักเกินงบมากกว่ารวมเงินได้ — คันนี้ถือว่าไม่ได้คอม (ปัดเป็น 0 ไม่ไปหักคันอื่น)">
+                      <i class="bx bx-info-circle"></i> หักเกินเงินได้ → 0
+                    </div>
                     @if ($rounds['active'] ?? false)
                       @if (empty($c['mainPayDate']) && $carCom > 0)
                         <div class="text-danger cell-note fw-normal"

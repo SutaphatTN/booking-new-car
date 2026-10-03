@@ -189,8 +189,11 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
       : [];
 
     // ฐานคิดหักวินัย 15% = รวมค่าคอมรถทั้งเดือนของเซลล์คนนั้น (ตรงกับ computeNet)
+    // ใช้ยอดที่ปัดคันติดลบเป็น 0 แล้ว (Salecar::flooredCommissionSale) ให้ตรงกับหน้าค่าคอม
     $baseBySale = $rows->groupBy('SaleID')
-      ->map(fn($g) => (float) $g->sum(fn($r) => $r->effectiveCommissionSale()));
+      ->map(fn($g) => (float) $g->sum(fn($r) => $r->flooredCommissionSale(
+        CarCommissionQuery::amountForCar($r, CarCommissionQuery::entry($carCom, (int) $r->SaleID, (int) $r->brand))
+      )));
 
     // ค่ารายเซลล์/เดือน โชว์ครั้งเดียว (แถวแรกของเซลล์) กัน Total ซ้ำ
     $seen = [];
@@ -234,6 +237,8 @@ class SaleCommissionPerCar implements FromView, WithTitle, WithStyles, WithEvent
         'extraDeduct'     => ExtraBudgetLedger::absorbedFor($r) ?: null,
         'approvedCom'     => max($approved, 0.0),           // ยอดผู้จัดการ/GM (เกินเพดาน) เฉพาะยอดบวก
         'overBudgetDeduct' => -(min($autoBal, 0.0) + min($approved, 0.0)),
+        // หักเกินงบเกินรวมเงินได้ → คอมสุทธิของคันเป็น 0 (ช่องหักเกินงบยังโชว์ยอดจริง)
+        '__netAdjust'      => $r->flooredCommissionSale($carCommission) - $r->effectiveCommissionSale(),
         'accessoryCom'    => $r->effectiveAccessoryCommission(),
         'specialCom'      => $r->effectiveSpecialCommission(),
         'interestCom'     => $r->remainingPayment->total_com ?? 0,

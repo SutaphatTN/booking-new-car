@@ -4227,8 +4227,13 @@ class PurchaseOrderController extends Controller
             ->when($visibleSaleIds !== null, fn($q) => $q->whereIn('SaleID', $visibleSaleIds))
             ->get();
 
-        $saleCar = $rows->groupBy('SaleID')->map(function ($group, $saleId) {
+        // คอมตัวรถรายคัน (รายเดือน) → รวมเข้ายอดสุทธิ + ใช้กันคอมสุทธิรายคันติดลบ
+        $viewerBrand = (int) $user->brand;
+        $carCommission = CarCommissionQuery::forMonth($year, $month)['perSale'];
+
+        $saleCar = $rows->groupBy('SaleID')->map(function ($group, $saleId) use ($carCommission, $viewerBrand) {
             $first = $group->first();
+            $carEntry = CarCommissionQuery::entry($carCommission, (int) $saleId, $viewerBrand);
             return (object) [
                 'SaleID'           => $saleId,
                 'saleUser'         => $first->saleUser,
@@ -4236,7 +4241,10 @@ class PurchaseOrderController extends Controller
                 // ต้องคิดคอมย้อนหลังด้วยกติกาของแบรนด์ที่ขายตอนนั้น ไม่ใช่แบรนด์ที่สังกัดวันนี้
                 'brand'            => (int) $first->brand,
                 'total_cars'       => $group->count(),
-                'total_commission' => (float) $group->sum(fn($r) => $r->effectiveCommissionSale()),
+                // คันที่หักเกินงบเกินรวมเงินได้ → คอมสุทธิของคันเป็น 0 (ไม่ติดลบ) ให้ตรงกับหน้ารายละเอียด
+                'total_commission' => (float) $group->sum(
+                    fn($r) => $r->flooredCommissionSale(CarCommissionQuery::amountForCar($r, $carEntry))
+                ),
             ];
         })->values();
 
@@ -4253,7 +4261,6 @@ class PurchaseOrderController extends Controller
 
         // ส่วนต่าง "คอมของเดือน" -> "เงินเข้ารอบจ่ายของเดือนนี้" (กั๊กยกมา − กั๊กยกไป − พักไว้)
         // brand 1 เท่านั้น (ระบบกั๊กมีแบรนด์เดียว) — ใช้ตัวเดียวกับที่หน้ารายละเอียดคิด ยอดจะได้ตรงกัน
-        $viewerBrand = (int) $user->brand;
         $payOffset = $viewerBrand === 1
             ? HeldCommissionQuery::payRoundOffsetPerSale($year, $month)
             : collect();
@@ -4284,9 +4291,6 @@ class PurchaseOrderController extends Controller
                 }
             }
         }
-
-        // คอมตัวรถรายคัน (รายเดือน) → รวมเข้ายอดสุทธิ
-        $carCommission = CarCommissionQuery::forMonth($year, $month)['perSale'];
 
         // ค่าปรับต่อเซลล์ต่อเดือน (วินัย / ขาด-ลา-สาย / lead / clip) → รวมเข้ายอดสุทธิ
         $adjustments = SaleCommissionMonthly::where('year', $year)
@@ -4483,10 +4487,12 @@ class PurchaseOrderController extends Controller
                 'turnCarCom'      => $turnCarCom,
                 'budgetDeduct'    => $r->effectiveBudgetDeduct(),   // budget หัก (brand 2)
                 'commissionSale'  => $r->effectiveCommissionSale(), // รวมค่าคอมรถ (รวม budget หักแล้ว)
+                // เหมือนข้างบน แต่กันคอมสุทธิของคันติดลบ (หักเกินงบเกินรวมเงินได้ → คันนี้ได้ 0)
+                'commissionSaleNet' => $r->flooredCommissionSale($C),
             ];
         });
 
-        $baseCommission = (float) $rows->sum(fn($r) => $r->effectiveCommissionSale());
+        $baseCommission = (float) $cars->sum('commissionSaleNet');
 
         $adjustment = SaleCommissionMonthly::firstOrNew([
             'SaleID' => $saleId,
