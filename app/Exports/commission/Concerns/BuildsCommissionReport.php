@@ -60,7 +60,9 @@ trait BuildsCommissionReport
             }
             $d['__recv'] = $recv;
             $d['__ded'] = $ded;
-            $d['__net'] = $recv - $ded;
+            // __netAdjust : ยอดที่บวกคืนเข้าคอมสุทธิ ไม่โชว์เป็นคอลัมน์ — คันที่หักเกินงบเกินรวมเงินได้
+            // ให้คอมสุทธิของคันเป็น 0 แต่ช่อง "หักเกินงบ" ยังโชว์ยอดจริง (Salecar::flooredCommissionSale)
+            $d['__net'] = $recv - $ded + (float) ($d['__netAdjust'] ?? 0);
 
             $cells = [];
             foreach (array_values($columns) as $i => $c) {

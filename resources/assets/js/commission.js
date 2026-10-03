@@ -245,11 +245,14 @@ function recomputeCarsTable() {
     // budget หัก : ไปหักกระเป๋า budget ยกมาอย่างเดียว ไม่เข้าคอมของคันนี้ (ตรงกับ Salecar::effectiveCommissionSale)
     const budget = parseMoney($row.find('.car-budget-input').val());
     const rowTotal = rowbase + special; // = รวมค่าคอมรถของคันนี้ (มียอดติดลบรวมอยู่แล้ว)
-    const rowNet = rowTotal + rowcar; // คอมสุทธิ = รวมค่าคอมรถ + คอมตัวรถ
-    const rowPos = rowNet - rowneg; // รวมเงินได้ = คอมสุทธิ − (ยอดติดลบ)
+    const rowRaw = rowTotal + rowcar; // คอมสุทธิ = รวมค่าคอมรถ + คอมตัวรถ
+    const rowPos = rowRaw - rowneg; // รวมเงินได้ = คอมสุทธิ − (ยอดติดลบ)
+    // หักเกินงบเกินรวมเงินได้ → คันนี้ได้ 0 ไม่ติดลบ (ตรงกับ Salecar::flooredCommissionSale)
+    const rowNet = Math.max(rowRaw, 0);
     $row.find('.car-row-positive').text(fmt(rowPos));
     $row.find('.car-row-total').text(fmt(rowNet));
-    base += rowTotal;
+    $row.find('.car-row-floored').toggleClass('d-none', rowRaw >= 0);
+    base += rowNet - rowcar; // ฐานรายเดือนใช้ยอดที่ปัด 0 แล้ว
     budgetUsed += budget;
     carTotal += rowcar;
     posTotal += rowPos;
