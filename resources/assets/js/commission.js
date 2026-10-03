@@ -63,8 +63,9 @@ $(document).ready(function () {
   commissionTable.on('preXhr.dt', function () {
     $('#commissionLoadingOverlay').css('display', 'flex');
   });
-  commissionTable.on('xhr.dt', function () {
+  commissionTable.on('xhr.dt', function (e, settings, json) {
     $('#commissionLoadingOverlay').css('display', 'none');
+    fillAddSaleOptions(json && json.addable);
   });
 });
 
@@ -125,11 +126,38 @@ $(document).on('change', '#commissionMonth', function () {
 
 // click action button -> open detail modal (customer list + monthly extra commission)
 $(document).on('click', '.btnCommissionDetail', function () {
-  const saleId = $(this).closest('tr').data('saleid');
+  openCommissionDetail($(this).closest('tr').data('saleid'), $(this));
+});
+
+// ปุ่ม "เพิ่มยอดให้ฝ่ายขาย" — เปิดหน้ากรอกของเซลล์ที่เลือก (ใช้กับคนที่ไม่มีรถเดือนนี้ จึงไม่อยู่ในตาราง)
+$(document).on('click', '#btnAddSaleCommission', function () {
+  const saleId = $('#addSaleCommission').val();
+  if (!saleId) {
+    if (window.Swal) Swal.fire({ icon: 'warning', title: 'กรุณาเลือกฝ่ายขายก่อน' });
+    else alert('กรุณาเลือกฝ่ายขายก่อน');
+    return;
+  }
+  openCommissionDetail(saleId, $(this));
+});
+
+// เติม dropdown "เพิ่มยอดให้ฝ่ายขาย" — เฉพาะเซลล์ที่ยังไม่อยู่ในตารางของเดือนที่เลือก (server คัดมาให้)
+function fillAddSaleOptions(list) {
+  const $sel = $('#addSaleCommission');
+  if (!$sel.length) return;
+
+  const items = Array.isArray(list) ? list : [];
+  $sel.empty().append(
+    $('<option>', { value: '', text: items.length ? '— เลือกฝ่ายขาย —' : '— ทุกคนอยู่ในตารางแล้ว —' })
+  );
+  items.forEach(u => $sel.append($('<option>', { value: u.id, text: u.name })));
+  $sel.prop('disabled', !items.length);
+  $('#btnAddSaleCommission').prop('disabled', !items.length);
+}
+
+function openCommissionDetail(saleId, $btn) {
   if (!saleId) return;
 
   const month = $('#commissionMonth').val();
-  const $btn = $(this);
   if ($btn.prop('disabled')) return; // กันกดรัว ๆ ยิงซ้ำระหว่างรอ
 
   $btn.prop('disabled', true);
@@ -147,7 +175,7 @@ $(document).on('click', '.btnCommissionDetail', function () {
       $('#commissionLoadingOverlay').css('display', 'none');
       $btn.prop('disabled', false);
     });
-});
+}
 
 // live recompute net commission in the detail modal (brand-aware)
 function recomputeCommissionNet() {

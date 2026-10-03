@@ -73,9 +73,9 @@
           </table>
         </div>
 
-        {{-- ── รายการที่กรอกเอง (มีเฉพาะบางคน) ── --}}
+        {{-- ── รายการที่กรอกเอง (ทุกคนมี ขาด/ลา/มาสาย, ค่าคอมอื่นๆ, หักอื่นๆ — บางคนมีช่องเฉพาะเพิ่ม) ── --}}
         @if (!empty($data['extras']))
-          <div class="fw-bold mb-2"><i class="bx bx-edit me-1"></i> รายการเพิ่มเติม (กรอกรายเดือน)</div>
+          <div class="fw-bold mb-2"><i class="bx bx-edit me-1"></i> รายการเพิ่มเติม / รายการหัก (กรอกรายเดือน)</div>
         @endif
 
         <form id="staffCommissionForm">
@@ -86,9 +86,18 @@
           @if (!empty($data['extras']))
             <div class="row g-3 align-items-end">
               @foreach ($data['extras'] as $e)
-                <div class="col-md-3 col-6">
+                @php $isDeduct = !empty($e['deduct']); @endphp
+                {{-- ช่องที่มีหมายเหตุคู่ ขึ้นบรรทัดใหม่เสมอ → [ยอด | หมายเหตุ] อยู่แถวเดียวกันพอดี 3 + 9 คอลัมน์ --}}
+                @if (!empty($e['note_required']))
+                  <div class="w-100 m-0"></div>
+                @endif
+                <div class="col-md-3 col-12">
                   <label class="mf-label form-label" for="extra_{{ $e['key'] }}">
-                    <i class="bx bx-plus-circle text-success"></i> {{ $e['label'] }}
+                    @if ($isDeduct)
+                      <i class="bx bx-minus-circle text-danger"></i> {{ $e['label'] }}
+                    @else
+                      <i class="bx bx-plus-circle text-success"></i> {{ $e['label'] }}
+                    @endif
                   </label>
                   @if (($e['type'] ?? 'money') === 'bool')
                     <div class="form-check form-switch mt-1">
@@ -100,14 +109,15 @@
                       </label>
                     </div>
                   @else
+                    {{-- data-sign : ช่องหักกรอกเป็นบวก แต่ JS เอาไปลบออกจากยอดสุทธิ --}}
                     <input type="text" inputmode="decimal" class="form-control form-control-sm text-end smoney"
-                      id="extra_{{ $e['key'] }}" name="extras[{{ $e['key'] }}]"
+                      id="extra_{{ $e['key'] }}" name="extras[{{ $e['key'] }}]" data-sign="{{ $isDeduct ? -1 : 1 }}"
                       value="{{ number_format($e['value'], 2) }}" {{ $ro }}>
                   @endif
                 </div>
                 @if (!empty($e['note_required']))
                   {{-- หมายเหตุของช่องนี้ — บังคับกรอกเมื่อยอดไม่เป็น 0 (server ตรวจซ้ำ) --}}
-                  <div class="col-md-6 col-12">
+                  <div class="col-md-9 col-12">
                     <label class="mf-label form-label" for="extra_note_{{ $e['key'] }}">
                       <i class="bx bx-note text-secondary"></i> หมายเหตุ{{ $e['label'] }}
                       <span class="text-danger">*</span> <span class="text-muted small">(ต้องกรอกเมื่อมียอด)</span>
@@ -115,7 +125,8 @@
                     <input type="text" class="form-control form-control-sm" maxlength="255"
                       id="extra_note_{{ $e['key'] }}" name="extra_notes[{{ $e['key'] }}]"
                       data-amount-for="#extra_{{ $e['key'] }}" data-label="{{ $e['label'] }}"
-                      value="{{ $e['note_value'] ?? '' }}" placeholder="ระบุที่มาของ{{ $e['label'] }}" {{ $ro }}>
+                      value="{{ $e['note_value'] ?? '' }}"
+                      placeholder="{{ $isDeduct ? 'ระบุว่าหักค่าอะไร' : 'ระบุที่มาของ' . $e['label'] }}" {{ $ro }}>
                   </div>
                 @endif
               @endforeach

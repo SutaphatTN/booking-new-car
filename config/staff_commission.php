@@ -28,12 +28,21 @@
  *       type money = ช่องเงิน (default = ค่าตั้งต้น) | bool = ติ๊กได้/ไม่ได้ (amount = ยอดถ้าติ๊ก)
  *       note_required (money) = มีช่องหมายเหตุคู่กัน และต้องกรอกเมื่อยอดไม่เป็น 0
  *                               (เก็บใน extras ด้วย key "{key}_note")
+ *       deduct        (money) = เป็นยอด "หัก" — กรอกเป็นบวก แต่ไปลบออกจากยอดสุทธิ
+ *
+ * common_extras : ช่องที่ "ทุกคน" มี — ต่อท้าย extras ของแต่ละคนให้อัตโนมัติ (ห้ามตั้ง key ซ้ำกับ extras ของคน)
  */
 
 return [
 
     // เริ่มใช้ตั้งแต่เดือนนี้ (YYYY-MM) — ก่อนหน้านี้ไม่คิด
     'start' => '2026-09',
+
+    'common_extras' => [
+        ['key' => 'deduct_absence', 'label' => 'ขาด/ลา/มาสาย (หัก)', 'type' => 'money', 'default' => 0, 'deduct' => true],
+        ['key' => 'other',          'label' => 'ค่าคอมอื่นๆ',        'type' => 'money', 'default' => 0, 'note_required' => true],
+        ['key' => 'deduct_other',   'label' => 'หักอื่นๆ',           'type' => 'money', 'default' => 0, 'note_required' => true, 'deduct' => true],
+    ],
 
     'staff' => [
 
@@ -95,9 +104,6 @@ return [
                         ['min' => 9, 'rate' => 900],
                     ],
                 ],
-            ],
-            'extras' => [
-                ['key' => 'other', 'label' => 'ค่าคอมอื่นๆ', 'type' => 'money', 'default' => 0, 'note_required' => true],
             ],
         ],
 

@@ -5,6 +5,20 @@
 @vite(['resources/assets/js/commission.js'])
 @endsection
 
+@section('page-style')
+<style>
+  /* แถว "เพิ่มยอดให้ฝ่ายขาย" ใต้แถวเลือกเดือน — คั่นด้วยเส้นประให้รู้ว่าเป็นคนละเรื่องกับตัวกรอง */
+  .com-add-row {
+    border-top: 1px dashed #dfe3ea;
+    padding-top: 10px;
+    margin-top: 2px;
+  }
+  /* select + ปุ่มติดกันใน input-group : ปิดมุมโค้งด้านที่ชนกัน (po-filter-bar บังคับโค้งทุกมุม) */
+  .com-add-row .input-group > .form-select { border-radius: 8px 0 0 8px !important; }
+  .com-add-row .input-group > .btn { border-radius: 0 8px 8px 0; }
+</style>
+@endsection
+
 @section('content')
 <div class="viewExportComModel"></div>
 <div class="commissionDetailModel"></div>
@@ -55,6 +69,25 @@
           <button class="btn btn-warning btn-sm btnViewExportCom">
             <i class="bx bx-file me-1"></i> รายงานค่าคอม
           </button>
+
+          {{-- ── เพิ่มยอดให้เซลล์ที่ไม่มีรถเดือนนี้ (เช่น คอมประดับยนต์หน้าร้าน / SSI) — บันทึกแล้วชื่อจะขึ้นในตาราง
+               แยกเป็นแถวของตัวเองใต้เส้นประ ไม่ให้ไปเบียดแถวเลือกเดือน/เป้าจนตัดบรรทัดเละ --}}
+          @if ($salePool->isNotEmpty())
+            <div class="com-add-row w-100 d-flex align-items-center gap-2 flex-wrap">
+              <span class="small text-muted">
+                <i class="bx bx-user-plus me-1"></i> ฝ่ายขายที่ไม่มีรถเดือนนี้ แต่มียอดอื่น
+              </span>
+              <div class="input-group input-group-sm" style="max-width:380px;">
+                {{-- ตัวเลือกเติมจาก JS ทุกครั้งที่ตารางโหลด (เฉพาะคนที่ยังไม่อยู่ในตารางของเดือนที่เลือก) --}}
+                <select id="addSaleCommission" class="form-select">
+                  <option value="">— เลือกฝ่ายขาย —</option>
+                </select>
+                <button type="button" class="btn btn-success text-nowrap" id="btnAddSaleCommission">
+                  <i class="bx bx-plus me-1"></i> เพิ่มยอด
+                </button>
+              </div>
+            </div>
+          @endif
         </div>
         <div class="text-muted small mb-2">
           <i class="bx bx-info-circle me-1"></i> กดปุ่ม <span class="fw-semibold text-primary">“รายละเอียด / กรอกค่าคอม”</span> เพื่อดูรายชื่อลูกค้าและกรอกค่าคอมเพิ่มเติมของเดือนนั้น

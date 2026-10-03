@@ -46,6 +46,18 @@ class StaffCommissionQuery
     }
 
     /**
+     * ช่องกรอกเองของคนนั้น = extras ของตัวเอง (เช่น LAS/PDS) + common_extras ที่ทุกคนมี
+     * ใช้ตัวนี้ทั้งตอนคิดยอดและตอนบันทึก (controller) จะได้รับ key ชุดเดียวกัน
+     */
+    public static function extrasConfigFor(int $userId): array
+    {
+        return array_merge(
+            (array) config("staff_commission.staff.$userId.extras", []),
+            (array) config('staff_commission.common_extras', [])
+        );
+    }
+
+    /**
      * นับรถที่เข้าเกณฑ์คอมของเดือนนั้น ตามเงื่อนไขของก้อน (brand / รุ่น)
      * ปลด userAccess + saleTeam เพราะเป็นยอดระดับบริษัท ไม่ใช่ของคนเปิดดู
      */
@@ -217,7 +229,7 @@ class StaffCommissionQuery
         $extras = [];
         $extraTotal = 0.0;
 
-        foreach ($conf['extras'] ?? [] as $e) {
+        foreach (self::extrasConfigFor($userId) as $e) {
             if (($e['type'] ?? 'money') === 'bool') {
                 $on = (bool) ($savedExtras[$e['key']] ?? false);
                 // ต้อง array_merge ไม่ใช่ $e + [...] เพราะ config มี key 'amount' อยู่แล้ว
@@ -233,9 +245,10 @@ class StaffCommissionQuery
                 $value = array_key_exists($e['key'], $savedExtras)
                     ? (float) $savedExtras[$e['key']]
                     : (float) ($e['default'] ?? 0);
+                // ช่องหัก (deduct) กรอกเป็นบวก → amount ติดลบ เพื่อให้ยอดรวมลบออกเอง
                 $extras[] = array_merge($e, [
                     'value'      => $value,
-                    'amount'     => $value,
+                    'amount'     => !empty($e['deduct']) && $value != 0 ? -abs($value) : $value,
                     'note_value' => (string) ($savedExtras[$e['key'] . '_note'] ?? ''),
                 ]);
             }

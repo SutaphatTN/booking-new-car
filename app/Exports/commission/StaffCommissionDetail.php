@@ -53,15 +53,22 @@ class StaffCommissionDetail implements FromView, WithTitle, WithStyles, WithEven
                 $sum += (float) $b['amount'];
             }
 
+            $commonKeys = array_column((array) config('staff_commission.common_extras', []), 'key');
+
             foreach ($d['extras'] as $e) {
+                // ช่องที่ทุกคนมี (ขาด/ลา, ค่าคอมอื่นๆ, หักอื่นๆ) ข้ามถ้าไม่ได้กรอก — ไม่งั้นทุกคนมีแถว 0 เต็มชีท
+                if (in_array($e['key'], $commonKeys, true) && (float) $e['amount'] == 0) {
+                    continue;
+                }
+
                 $note = ($e['type'] ?? 'money') === 'bool'
                     ? ($e['value'] ? 'ติ๊กว่าได้รับ' : 'ไม่ได้ติ๊ก')
-                    : 'กรอกเอง';
+                    : (($e['note_value'] ?? '') !== '' ? $e['note_value'] : 'กรอกเอง');
 
                 $rows[] = [
                     $r['name'],
                     $d['label'],
-                    'รายการเพิ่มเติม',
+                    !empty($e['deduct']) ? 'รายการหัก' : 'รายการเพิ่มเติม',
                     $e['label'],
                     '',
                     $note,

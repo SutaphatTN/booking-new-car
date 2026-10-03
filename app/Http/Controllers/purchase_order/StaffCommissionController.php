@@ -165,7 +165,7 @@ class StaffCommissionController extends Controller
         abort_unless(StaffCommissionQuery::isStaff((int) $data['user_id']), 404);
 
         // รับเฉพาะ key ที่ประกาศไว้ใน config ของคนนั้น — กันยิงค่าอื่นเข้ามา
-        $conf = (array) config('staff_commission.staff.' . $data['user_id'] . '.extras', []);
+        $conf = StaffCommissionQuery::extrasConfigFor((int) $data['user_id']);
         $clean = [];
         $errors = [];
         foreach ($conf as $e) {
@@ -173,6 +173,10 @@ class StaffCommissionController extends Controller
             $clean[$e['key']] = ($e['type'] ?? 'money') === 'bool'
                 ? (bool) $raw
                 : (float) str_replace(',', '', (string) ($raw ?? 0));
+            // ช่องหัก เก็บเป็นบวกเสมอ (กรอกติดลบมาก็ถือเป็นยอดหักเท่าเดิม ไม่กลายเป็นบวกเข้ายอด)
+            if (!empty($e['deduct'])) {
+                $clean[$e['key']] = abs($clean[$e['key']]);
+            }
 
             if (!empty($e['note_required'])) {
                 $note = trim((string) ($data['extra_notes'][$e['key']] ?? ''));
