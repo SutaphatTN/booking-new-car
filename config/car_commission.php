@@ -36,13 +36,6 @@ return [
     'over_ceiling_car_commission_from' => '2026-09-11',
 
     /**
-     * brand ที่ "ขายให้ดีลเลอร์อื่น (purchase_source = OTHDealer) ก็ได้คอม"
-     * ปกติรถ dealer ถูกตัดออกจากคอมทุกก้อน — brand 2 (GWM) ตกลงให้นับเป็นยอดขายปกติ
-     * มีผลกับทั้งคอมพื้นฐานและคอมตัวรถ (ใช้ scope Salecar::scopeSalesQualifying ตัวเดียวกัน)
-     */
-    'dealer_sale_earns_commission_brands' => [2],
-
-    /**
      * วันตัดเฉพาะแบรนด์ (ทับค่าด้านบน)
      *  - brand 4 (Lepas) ตกลงให้เริ่มตั้งแต่เดือน 8
      *  - brand 2 (GWM)  = null → ไม่มีวันตัด ได้คอมตัวรถทุกคันแม้เกินงบทะลุเพดาน (เป็นแบบนี้มาตั้งแต่ต้น)

@@ -367,27 +367,21 @@ class Salecar extends Model
 
 	/**
 	 * รถที่นับเป็น "ยอดขาย" (คิดคอม) — ตรงกับเงื่อนไข CarCommissionQuery
-	 *  - type_sale Normal (=1)
+	 *  - type_sale Normal (=1)      → ตัด Test Drive / ขาย Dealer (type_sale = 3) ออก
 	 *  - purchase_type Retail (=2)  → ตัด TestDrive / ActivityCar / Company
-	 *  - purchase_source ไม่ใช่ OTHDealer → ตัดรถ dealer
+	 *
+	 * รถที่ซื้อมาจากดีลเลอร์อื่น (car_order.purchase_source = OTHDealer) นับคิดคอมแล้วทุก brand
+	 * (เดิมตัดออก ยกเว้น brand ใน config car_commission.dealer_sale_earns_commission_brands)
+	 * — ที่ไม่คิดคือ "ขายให้ Dealer" ซึ่งดูจาก salecars.type_sale ไม่ใช่ purchase_source
 	 */
 	public function scopeSalesQualifying($query)
 	{
 		$table = $this->getTable();
 
-		// brand ที่ "ขายให้ดีลเลอร์อื่น (OTHDealer) ก็ได้คอม" — ตั้งที่ config/car_commission.php
-		// brand อื่นตัด dealer ออกจากคอมตามเดิม
-		$dealerOkBrands = array_map('intval', (array) config('car_commission.dealer_sale_earns_commission_brands', []));
-
 		return $query
-			->where($table . '.type_sale', 1)
+			->where($table . '.type_sale', self::TYPE_SALE_NORMAL)
 			->whereHas('carOrder', fn($c) => $c->withoutGlobalScopes()
-				->where('purchase_type', 2))
-			->where(fn($q) => $q
-				->whereHas('carOrder', fn($c) => $c->withoutGlobalScopes()
-					->where(fn($w) => $w->where('purchase_source', '!=', 'OTHDealer')
-						->orWhereNull('purchase_source')))
-				->when($dealerOkBrands, fn($w) => $w->orWhereIn($table . '.brand', $dealerOkBrands)));
+				->where('purchase_type', 2));
 	}
 
 	public function carOrderHistories()
