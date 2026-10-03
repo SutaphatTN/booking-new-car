@@ -4675,8 +4675,8 @@ class PurchaseOrderController extends Controller
 
         return view('purchase-order.commission.sale-detail', [
             'canEdit'        => $canEditCommission,
-            // "ค่าคอมวินัย" แยกสิทธิ์ออกจากช่องอื่น — manager แก้ช่องอื่นได้ แต่วินัยเป็นของ MD/GM/admin
-            'canEditDiscipline' => Auth::user()->canEditDiscipline(),
+            // "ค่าคอมวินัย" แยกสิทธิ์ออกจากช่องอื่น — เป็นของ MD/GM/admin ; brand 2 ให้ manager กรอกได้ด้วย
+            'canEditDiscipline' => Auth::user()->canEditDiscipline((int) $brand),
             'saleUser'       => $saleUser,
             'cars'           => $cars,
             'baseCommission' => $baseCommission,
@@ -4855,7 +4855,12 @@ class PurchaseOrderController extends Controller
         // "ค่าคอมวินัย" ตั้งได้เฉพาะ User::DISCIPLINE_ROLES — role อื่น (manager) ช่องถูกล็อกในหน้าจอ
         // radio ที่ disabled ไม่ถูกส่งมาด้วย ถ้าเขียนทับตรง ๆ ค่า "ไม่ผ่าน" ที่ MD ตั้งไว้จะถูกล้างเป็น "ผ่าน"
         // ตอน manager กดบันทึกช่องอื่น → ต้องคงค่าเดิมไว้เสมอ (แบบเดียวกับ CheckerID / red_license)
+        // ยกเว้นช่องเงิน "ค่าคอมวินัย" ของ brand 2 ที่ให้ manager กรอกได้ (User::DISCIPLINE_MANAGER_BRANDS)
+        // ส่วน ผ่าน/ไม่ผ่าน (brand 1/3/4) ยังเป็นของ admin/GM/MD เท่านั้น → แยกสองตัวแปร
         $canEditDiscipline = Auth::user()->canEditDiscipline();
+        $canEditComDiscipline = Auth::user()->canEditDiscipline(
+            $this->commissionBrandOf((int) $data['SaleID'], (int) $data['year'], (int) $data['month'])
+        );
         $current = SaleCommissionMonthly::where([
             'SaleID' => $data['SaleID'],
             'year'   => $data['year'],
@@ -4930,7 +4935,7 @@ class PurchaseOrderController extends Controller
                 'month'  => $data['month'],
             ],
             [
-                'com_discipline'    => $canEditDiscipline
+                'com_discipline'    => $canEditComDiscipline
                     ? ($data['com_discipline'] ?? 0)
                     : (float) ($current->com_discipline ?? 0),
                 'deduct_absence'    => $data['deduct_absence'] ?? 0,
