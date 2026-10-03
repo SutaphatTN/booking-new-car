@@ -17,7 +17,7 @@ use Maatwebsite\Excel\Facades\Excel;
  *
  * สิทธิ์ (ตามที่ตกลง):
  *  - admin / md / gm  : เห็นทุกคน + แก้ช่องที่กรอกเองได้
- *  - คนที่อยู่ใน config/staff_commission.php : เห็นเฉพาะของตัวเอง (อ่านอย่างเดียว)
+ *  - คนที่อยู่ใน config/staff_commission.php : เห็นเฉพาะของตัวเอง + กรอกช่องที่กรอกเองของตัวเองได้
  *  - role อื่น : เข้าไม่ได้
  * ไม่ผูกกับ brand — ยอดคิดจากแบรนด์ที่แต่ละคนดูแลตาม config ไม่ใช่แบรนด์ที่กำลังเปิดดู
  */
@@ -29,6 +29,12 @@ class StaffCommissionController extends Controller
     private function canManage(): bool
     {
         return in_array(Auth::user()->role, self::MANAGE_ROLES, true);
+    }
+
+    /** แก้ช่องกรอกเองของคนนี้ได้ไหม — ผู้ดูแลแก้ได้ทุกคน ; เจ้าของแก้ของตัวเองได้ */
+    private function canEditFor(int $userId): bool
+    {
+        return $this->canManage() || $userId === (int) Auth::id();
     }
 
     /** เข้าหน้านี้ได้ไหม (ผู้ดูแล หรือเป็นคนที่มีสิทธิ์รับคอมเอง) */
@@ -142,14 +148,15 @@ class StaffCommissionController extends Controller
             'year'       => $year,
             'month'      => $month,
             'monthLabel' => ($months[$month] ?? $month) . ' ' . ($year + 543),
-            'canEdit'    => $this->canManage(),
+            'canEdit'    => $this->canEditFor((int) $userId),
         ]);
     }
 
     /** บันทึกช่องที่กรอกเอง (LAS / PDS / Lepas ฯลฯ) */
     public function save(Request $request)
     {
-        abort_unless($this->canManage(), 403);
+        // ผู้ดูแลบันทึกให้ใครก็ได้ ; คนที่รับคอมบันทึกได้เฉพาะของตัวเอง (เช็ค user_id ด้านล่าง)
+        abort_unless($this->canAccess(), 403);
 
         $data = $request->validate([
             'user_id' => 'required|integer',
@@ -163,6 +170,7 @@ class StaffCommissionController extends Controller
         ]);
 
         abort_unless(StaffCommissionQuery::isStaff((int) $data['user_id']), 404);
+        abort_unless($this->canEditFor((int) $data['user_id']), 403);
 
         // รับเฉพาะ key ที่ประกาศไว้ใน config ของคนนั้น — กันยิงค่าอื่นเข้ามา
         $conf = StaffCommissionQuery::extrasConfigFor((int) $data['user_id']);
