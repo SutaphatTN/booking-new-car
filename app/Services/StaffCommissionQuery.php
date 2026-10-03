@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
  *
  * ฐานการนับรถ = ชุดเดียวกับค่าคอมฝ่ายขาย (ตัด CK ในเดือนนั้น + ผ่าน scope salesQualifying)
  * ไม่งั้นจำนวนคันที่ผู้จัดการเห็นจะไม่ตรงกับที่เซลล์เห็น
+ * ยกเว้นคนที่ตั้ง date_field ไว้ใน config (เช่น ผจก. GWM นับตาม DeliveryInDMSDate)
  */
 class StaffCommissionQuery
 {
@@ -48,12 +49,20 @@ class StaffCommissionQuery
      * นับรถที่เข้าเกณฑ์คอมของเดือนนั้น ตามเงื่อนไขของก้อน (brand / รุ่น)
      * ปลด userAccess + saleTeam เพราะเป็นยอดระดับบริษัท ไม่ใช่ของคนเปิดดู
      */
-    public static function countCars(int $year, int $month, array $bucket): int
+    /** คอลัมน์วันที่ที่ยอมให้ตั้งใน config (กันพิมพ์ชื่อคอลัมน์ผิด/แปลกปลอมเข้า query) */
+    private const DATE_FIELDS = ['DeliveryInCKDate', 'DeliveryInDMSDate'];
+
+    public static function countCars(int $year, int $month, array $bucket, string $dateField = 'DeliveryInCKDate'): int
     {
+        if (!in_array($dateField, self::DATE_FIELDS, true)) {
+            $dateField = 'DeliveryInCKDate';
+        }
+
         $key = $year . '-' . $month . '|' . md5(json_encode([
             $bucket['brands'] ?? [],
             $bucket['models'] ?? [],
             $bucket['models_not'] ?? [],
+            $dateField,
         ]));
 
         if (isset(self::$countMemo[$key])) {
@@ -64,10 +73,10 @@ class StaffCommissionQuery
         $to   = Carbon::create($year, $month, 1)->endOfMonth();
 
         $q = Salecar::withoutGlobalScopes(['userAccess', 'saleTeam'])
-            ->whereNotNull('DeliveryInCKDate')
+            ->whereNotNull($dateField)
             ->whereNotNull('CarOrderID')
             ->salesQualifying()
-            ->whereBetween('DeliveryInCKDate', [$from, $to]);
+            ->whereBetween($dateField, [$from, $to]);
 
         if (!empty($bucket['brands'])) {
             $q->whereIn('brand', $bucket['brands']);
@@ -130,8 +139,29 @@ class StaffCommissionQuery
         $buckets = [];
         $carTotal = 0.0;
 
+        // นับทุกก้อนก่อน — ก้อนที่มี requires ต้องดูจำนวนคันของก้อนอื่น (ซึ่งอาจอยู่ลำดับหลัง)
+        // วันที่ที่ใช้ตัดเดือน : ระดับก้อน > ระดับคน > DeliveryInCKDate
+        $counts = [];
         foreach ($conf['buckets'] ?? [] as $b) {
-            $count = self::countCars($year, $month, $b);
+            $counts[$b['name']] = self::countCars($year, $month, $b, $b['date_field'] ?? $conf['date_field'] ?? 'DeliveryInCKDate');
+        }
+
+        foreach ($conf['buckets'] ?? [] as $b) {
+            $count = $counts[$b['name']];
+
+            // เงื่อนไขพ่วง : ก้อนอื่นต้องถึงจำนวนคันก่อน ก้อนนี้ถึงจะได้
+            $req = $b['requires'] ?? null;
+            if ($req && ($counts[$req['bucket']] ?? 0) < (int) $req['min']) {
+                $buckets[] = [
+                    'name'   => $b['name'],
+                    'count'  => $count,
+                    'mode'   => $b['mode'] ?? 'per_car',
+                    'rate'   => null,
+                    'amount' => 0.0,
+                    'note'   => 'ไม่ได้ — ' . $req['bucket'] . ' ต้องถึง ' . (int) $req['min'] . ' คัน (ได้ ' . ($counts[$req['bucket']] ?? 0) . ')',
+                ];
+                continue;
+            }
 
             // การันตี : เดือนที่ยังไม่เกินวันตัด ได้ยอดคงที่แทนการคิดตามขั้น
             $guarantee = $b['guarantee'] ?? null;
@@ -203,7 +233,11 @@ class StaffCommissionQuery
                 $value = array_key_exists($e['key'], $savedExtras)
                     ? (float) $savedExtras[$e['key']]
                     : (float) ($e['default'] ?? 0);
-                $extras[] = array_merge($e, ['value' => $value, 'amount' => $value]);
+                $extras[] = array_merge($e, [
+                    'value'      => $value,
+                    'amount'     => $value,
+                    'note_value' => (string) ($savedExtras[$e['key'] . '_note'] ?? ''),
+                ]);
             }
             $extraTotal += end($extras)['amount'];
         }

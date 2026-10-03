@@ -4499,12 +4499,16 @@ class PurchaseOrderController extends Controller
         // ต้องคิดคอม + เห็นฟอร์มของแบรนด์ที่ขายตอนนั้น (เดือนที่ไม่มีรถ = ใช้แบรนด์ของหน้าที่กำลังดู)
         $brand = (int) ($rows->first()->brand ?? $viewerBrand);
 
-        // คอม SSI (brand 1, เฉพาะเดือน 3/10) — เฉลี่ยแยกสาขา + เกณฑ์ ≥18 คัน/≥1 ทุกเดือน
+        // คอม SSI (brand 1) — ตั้งแต่ 2026-09 กรอกเองเฉพาะเดือน 9 (manual) ;
+        // รอบเก่าเดือน 3/10 คิดอัตโนมัติ (เฉลี่ยแยกสาขา + เกณฑ์ ≥18 คัน/≥1 ทุกเดือน)
         $ssi = SsiCommissionQuery::forPeriod($year, $month);
         $ssiEntry  = $ssi['perSale'][$saleId] ?? null;
         $ssiActive = $ssi['active'] && $brand === 1 && $viewerBrand === 1;
         $ssiData = [
             'active'      => $ssiActive,
+            // กรอกเอง → หน้าจอโชว์ช่องกรอกแทนกล่องสูตร (ยังไม่รัน ALTER = ยังกรอกไม่ได้)
+            'manual'      => !empty($ssi['manual']),
+            'can_input'   => SsiCommissionQuery::hasManualColumn(),
             'branch'      => $ssiEntry['branch'] ?? SsiCommissionQuery::branchOf((int) $saleId),
             'rate'        => $ssiEntry['rate'] ?? 0,
             'average'     => $ssiEntry['average'] ?? null,
@@ -4770,6 +4774,8 @@ class PurchaseOrderController extends Controller
             'accessory_receipt'   => 'nullable|array|max:5',
             'accessory_receipt.*' => 'file|mimes:jpg,jpeg,png,webp,pdf|max:10240',
             'discipline_failed' => 'nullable|boolean',
+            // คอม SSI กรอกเอง (brand 1 เดือน 9 ตั้งแต่ 2026-09) — หน้าอื่นไม่ส่งช่องนี้มา
+            'com_ssi'           => 'nullable|numeric|min:0',
         ]);
 
         // ห้ามบันทึกให้เซลล์นอกขอบเขตตัวเอง (ยิง POST ตรงข้ามทีม/ข้ามแบรนด์)
@@ -4873,6 +4879,13 @@ class PurchaseOrderController extends Controller
                     ? (bool) ($data['discipline_failed'] ?? false)
                     : (bool) ($current->discipline_failed ?? false),
             ]
+            // คอม SSI : รับเฉพาะเดือนที่เปิดกรอก (ช่องโชว์เฉพาะหน้านั้น) — เดือนอื่นไม่แตะค่าเดิม
+            + ($request->has('com_ssi')
+                && SsiCommissionQuery::hasManualColumn()
+                && SsiCommissionQuery::isManualPeriod((int) $data['year'], (int) $data['month'])
+                && SsiCommissionQuery::isPayoutMonth((int) $data['month'], (int) $data['year'])
+                ? ['com_ssi' => (float) ($data['com_ssi'] ?? 0) ?: null]
+                : [])
         );
 
         // ── ช่องรายคัน — รับเฉพาะ id ที่อยู่ในตารางของหน้านั้นจริง ──

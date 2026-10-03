@@ -135,6 +135,21 @@ $(document).on('blur', '#staffCommissionForm .smoney', function () {
 $(document).on('submit', '#staffCommissionForm', function (e) {
   e.preventDefault();
   const $btn = $('#btnSaveStaffCommission');
+
+  // ช่องเงินที่มีหมายเหตุคู่ (เช่น ค่าคอมอื่นๆ) : มียอดแล้วต้องกรอกหมายเหตุ (server ตรวจซ้ำอีกชั้น)
+  let missing = null;
+  $('#staffCommissionForm [data-amount-for]').each(function () {
+    const amount = parseStaffMoney($($(this).data('amountFor')).val());
+    if (!missing && amount !== 0 && $(this).val().trim() === '') missing = this;
+  });
+  if (missing) {
+    const msg = 'กรุณากรอกหมายเหตุของ' + $(missing).data('label');
+    if (window.Swal) Swal.fire({ icon: 'warning', title: msg });
+    else alert(msg);
+    missing.focus();
+    return;
+  }
+
   $btn.prop('disabled', true);
 
   // ตัด comma ก่อนส่ง (backend validate เป็นตัวเลข)

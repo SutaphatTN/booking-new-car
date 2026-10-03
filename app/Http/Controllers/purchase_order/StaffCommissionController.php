@@ -157,6 +157,9 @@ class StaffCommissionController extends Controller
             'month'   => 'required|integer|min:1|max:12',
             'note'    => 'nullable|string|max:255',
             'extras'  => 'nullable|array',
+            // หมายเหตุคู่กับช่องเงินที่ตั้ง note_required (แยก name ออกจาก extras[] กัน JS ตัดเป็นตัวเลข)
+            'extra_notes'   => 'nullable|array',
+            'extra_notes.*' => 'nullable|string|max:255',
         ]);
 
         abort_unless(StaffCommissionQuery::isStaff((int) $data['user_id']), 404);
@@ -164,11 +167,23 @@ class StaffCommissionController extends Controller
         // รับเฉพาะ key ที่ประกาศไว้ใน config ของคนนั้น — กันยิงค่าอื่นเข้ามา
         $conf = (array) config('staff_commission.staff.' . $data['user_id'] . '.extras', []);
         $clean = [];
+        $errors = [];
         foreach ($conf as $e) {
             $raw = $data['extras'][$e['key']] ?? null;
             $clean[$e['key']] = ($e['type'] ?? 'money') === 'bool'
                 ? (bool) $raw
                 : (float) str_replace(',', '', (string) ($raw ?? 0));
+
+            if (!empty($e['note_required'])) {
+                $note = trim((string) ($data['extra_notes'][$e['key']] ?? ''));
+                if ((float) $clean[$e['key']] != 0 && $note === '') {
+                    $errors["extra_notes.{$e['key']}"] = "กรุณากรอกหมายเหตุของ{$e['label']}";
+                }
+                $clean[$e['key'] . '_note'] = $note !== '' ? $note : null;
+            }
+        }
+        if ($errors) {
+            throw \Illuminate\Validation\ValidationException::withMessages($errors);
         }
 
         StaffCommissionMonthly::updateOrCreate(
@@ -177,10 +192,10 @@ class StaffCommissionController extends Controller
                 'year'    => $data['year'],
                 'month'   => $data['month'],
             ],
-            [
-                'extras' => $clean,
-                'note'   => trim($data['note'] ?? '') ?: null,
-            ]
+            // หน้าที่ไม่มีช่องหมายเหตุทั่วไป (มีหมายเหตุคู่กับรายการแทน) ไม่ส่ง note มา → คงค่าเดิม
+            ['extras' => $clean] + ($request->has('note')
+                ? ['note' => trim($data['note'] ?? '') ?: null]
+                : [])
         );
 
         return response()->json(['status' => 'success']);

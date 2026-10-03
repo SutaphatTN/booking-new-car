@@ -40,6 +40,7 @@ class SaleCommissionMonthly extends Model
         'com_accessory_sold',
         'com_accessory_sold_receipt',
         'discipline_failed',
+        'com_ssi', // คอม SSI กรอกเอง (brand 1 ตั้งแต่ 2026-09 — ดู SsiCommissionQuery::MANUAL_FROM)
     ];
 
     protected $casts = [
@@ -54,6 +55,7 @@ class SaleCommissionMonthly extends Model
         'com_accessory_sold' => 'float',
         'com_accessory_sold_receipt' => 'array',
         'discipline_failed' => 'bool',
+        'com_ssi' => 'float',
     ];
 
     /**
