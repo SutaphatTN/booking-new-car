@@ -148,7 +148,7 @@
           @unless ($canEdit)
             <div class="alert alert-secondary d-flex align-items-center gap-2 py-2 px-3 mt-3 mb-0">
               <i class="bx bx-lock-alt"></i>
-              <span class="small">โหมดดูอย่างเดียว — แก้ไขได้เฉพาะ admin, MD และ GM</span>
+              <span class="small">โหมดดูอย่างเดียว — แก้ไขได้เฉพาะเจ้าของ, admin, MD และ GM</span>
             </div>
           @endunless
 
