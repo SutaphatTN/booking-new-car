@@ -4181,7 +4181,36 @@ class PurchaseOrderController extends Controller
             abort(403);
         }
 
-        return view('purchase-order.commission.view');
+        // ปุ่ม "เพิ่มยอดให้ฝ่ายขาย" — เปิดหน้ากรอกให้เซลล์ที่ไม่มีรถในเดือนนั้น (role ที่บันทึกค่าคอมได้เท่านั้น)
+        $canAddSale = in_array(Auth::user()->role, ['admin', 'manager', 'gm', 'md'], true);
+
+        return view('purchase-order.commission.view', [
+            'salePool' => $canAddSale ? $this->commissionSalePool() : collect(),
+        ]);
+    }
+
+    /**
+     * เซลล์ของแบรนด์ที่กำลังดู ที่ผู้ใช้คนนี้มีสิทธิ์เห็น/กรอกค่าคอมให้
+     * ใช้ pool เดียวกับ dropdown เซลล์ในใบจอง (sale_pool + สิทธิ์ขายราย user) ; ลาออกแล้วไม่ดึงมา
+     * กรองขอบเขต : เซลล์ = ของตัวเอง / ทีมขาย / สาขา (role ที่ถูกจำกัดสาขาตาม UserAccessScope)
+     */
+    private function commissionSalePool()
+    {
+        $user = Auth::user();
+        $visibleSaleIds = $this->commissionVisibleSaleIds();
+        $teamIds = Salecar::visibleSaleTeamIds();
+
+        return User::salePoolForBrand((int) $user->brand)
+            ->filter(function ($u) use ($user, $visibleSaleIds, $teamIds) {
+                if ($visibleSaleIds !== null && !in_array((int) $u->id, $visibleSaleIds, true)) {
+                    return false;
+                }
+                if ($teamIds !== null && !in_array((int) $u->sale_team_id, $teamIds, true)) {
+                    return false;
+                }
+                return $user->role === 'admin' || !$user->branch || (int) $u->branch === (int) $user->branch;
+            })
+            ->values();
     }
 
     /**
@@ -4287,6 +4316,32 @@ class PurchaseOrderController extends Controller
             }
         }
 
+        // เซลล์ที่ไม่มีรถเดือนนั้น แต่ถูกกรอกยอดรายเดือนไว้ (ผ่านปุ่ม "เพิ่มยอดให้ฝ่ายขาย")
+        // เช่น คอมประดับยนต์หน้าร้าน / SSI / วินัย / หักอื่นๆ → ต้องขึ้นในรายชื่อ ไม่งั้นยอดหาย
+        // คัดเฉพาะเซลล์ใน pool ที่คนดูมีสิทธิ์เห็น (ทีม/สาขา/ของตัวเอง — ดู commissionSalePool)
+        $hasAmount = fn($a) => (float) $a->com_discipline != 0 || (float) $a->deduct_absence != 0
+            || (float) $a->deduct_other != 0 || (float) $a->com_lead != 0 || (float) $a->com_clip != 0
+            || (float) $a->com_accessory_sold != 0 || (float) ($a->com_ssi ?? 0) != 0;
+        $poolIds = SaleCommissionMonthly::where('year', $year)->where('month', $month)->get()
+            ->filter($hasAmount)
+            ->pluck('SaleID')
+            ->map(fn($id) => (int) $id)
+            ->intersect($this->commissionSalePool()->pluck('id')->map(fn($id) => (int) $id))
+            ->diff($saleCar->keys()->map(fn($id) => (int) $id));
+
+        if ($poolIds->isNotEmpty()) {
+            $poolUsers = User::with('branchInfo')->whereIn('id', $poolIds)->get()->keyBy('id');
+            foreach ($poolIds as $sid) {
+                $saleCar->put($sid, (object) [
+                    'SaleID'           => $sid,
+                    'saleUser'         => $poolUsers->get($sid),
+                    'brand'            => $viewerBrand,
+                    'total_cars'       => 0,
+                    'total_commission' => 0.0,
+                ]);
+            }
+        }
+
         // ค่าปรับต่อเซลล์ต่อเดือน (วินัย / ขาด-ลา-สาย / lead / clip) → รวมเข้ายอดสุทธิ
         $adjustments = SaleCommissionMonthly::where('year', $year)
             ->where('month', $month)
@@ -4320,12 +4375,16 @@ class PurchaseOrderController extends Controller
             return $s;
         })->values()->sortByDesc('net_commission')->values();
 
-        $showEmoji = !in_array($user->role, ['sale', 'lead_sale']) && $saleCar->count() > 1;
-        $lastIndex = $saleCar->count() - 1;
+        // อีโมจิอันดับ 1 / อันดับสุดท้าย นับเฉพาะคนที่มีรถขายเดือนนั้น
+        // (เซลล์ที่ไม่มีการขายแต่มียอดอื่นถูกเติมเข้ามาในรายชื่อ — ไม่ควรโดนป้าย 😢 เพราะไม่ได้ขาย)
+        $rankedIdx = $saleCar->keys()->filter(fn($i) => (int) $saleCar[$i]->total_cars > 0)->values();
+        $showEmoji = !in_array($user->role, ['sale', 'lead_sale']) && $rankedIdx->count() > 1;
+        $firstIndex = $rankedIdx->first();
+        $lastIndex  = $rankedIdx->last();
 
         $brandNames = config('brand.names', []);
 
-        $data = $saleCar->map(function ($s, $index) use ($showEmoji, $lastIndex, $brandNames) {
+        $data = $saleCar->map(function ($s, $index) use ($showEmoji, $firstIndex, $lastIndex, $brandNames) {
             $nameSale = $s->saleUser->name ?? '(ไม่พบผู้ใช้ #' . $s->SaleID . ')';
             $branchSale = $s->saleUser->branchInfo->name ?? '-';
 
@@ -4346,7 +4405,7 @@ class PurchaseOrderController extends Controller
 
             $emoji = '';
             if ($showEmoji) {
-                if ($index === 0) {
+                if ($index === $firstIndex) {
                     $emoji = ' 😊';
                 } elseif ($index === $lastIndex) {
                     $emoji = ' 😢';
@@ -4364,7 +4423,16 @@ class PurchaseOrderController extends Controller
             ];
         });
 
-        return response()->json(['data' => $data]);
+        // ตัวเลือกของ dropdown "เพิ่มยอดให้ฝ่ายขาย" = เซลล์ใน pool ที่ "ยังไม่อยู่ในตาราง" ของเดือนนี้
+        // (ไม่มีรถ และยังไม่ได้กรอกยอดอื่น) — คิดใหม่ทุกครั้งที่เปลี่ยนเดือน/บันทึก เพราะ JS เติม dropdown จากตรงนี้
+        $addable = in_array($user->role, ['admin', 'manager', 'gm', 'md'], true)
+            ? $this->commissionSalePool()
+                ->reject(fn($u) => $saleCar->contains(fn($s) => (int) $s->SaleID === (int) $u->id))
+                ->map(fn($u) => ['id' => (int) $u->id, 'name' => $u->name])
+                ->values()
+            : [];
+
+        return response()->json(['data' => $data, 'addable' => $addable]);
     }
 
     /** แปลงค่า month ("YYYY-MM") เป็น [year, month]; ถ้าไม่ส่งมาใช้เดือนปัจจุบัน */

@@ -32,7 +32,8 @@ class StaffCommissionSummary implements FromView, WithTitle, WithStyles, WithEve
 
     public function view(): View
     {
-        $headers = ['ชื่อ', 'ฝ่าย', 'ฐานที่นับ', 'คอมตามยอดขาย', 'รายการเพิ่มเติม', 'รวมสุทธิ', 'หมายเหตุ'];
+        // "รายการเพิ่มเติม / หัก" = ยอดสุทธิของช่องกรอกเอง (ช่องหักติดลบอยู่แล้ว)
+        $headers = ['ชื่อ', 'ฝ่าย', 'ฐานที่นับ', 'คอมตามยอดขาย', 'รายการเพิ่มเติม / หัก', 'รวมสุทธิ', 'หมายเหตุ'];
 
         $rows = [];
         $sumCar = $sumExtra = $sumTotal = 0.0;

@@ -108,8 +108,10 @@ function recomputeStaffNet() {
 
   let total = parseFloat($display.data('car')) || 0;
 
+  // ช่องหัก (data-sign = -1) กรอกเป็นบวก → ลบออก
   $('#staffCommissionForm .smoney').each(function () {
-    total += parseStaffMoney($(this).val());
+    const sign = parseFloat($(this).data('sign')) || 1;
+    total += sign * Math.abs(parseStaffMoney($(this).val()));
   });
   // ช่องติ๊ก : ยอดอยู่ใน label ฝั่ง server แล้ว อ่านจาก data ที่ฝังไว้กับ checkbox
   $('#staffCommissionForm input[type="checkbox"][name^="extras"]').each(function () {
