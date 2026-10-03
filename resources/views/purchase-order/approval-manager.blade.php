@@ -38,9 +38,10 @@
     $finalLabel    = strtoupper($saleCar->finalApproverRole());
     $decisionValue = old('decision', $saleCar->approval_is_vip ? 'vip' : 'deduct');
 
-    // เกินงบยอดเต็ม + ยอดหักแนะนำ (เกินงบ × 10%) — เติมให้เป็นค่าตั้งต้น ผู้จัดการแก้เพิ่มได้
+    // เกินงบยอดเต็ม + ยอดหักแนะนำ (ทะลุเพดาน 10% / ไม่ทะลุ = per_budget% ของรุ่น) — ค่าตั้งต้น ผู้จัดการแก้ได้
     $overFull    = abs((float) ($saleCar->balanceCampaign ?? 0)) * 2;
     $suggest     = $saleCar->suggestedCommissionDeduct();
+    $suggestPct  = rtrim(rtrim(number_format($saleCar->suggestedDeductPercent(), 2), '0'), '.');
     $deductValue = old('commission_deduct', $saleCar->approval_commission_deduct ?? ($suggest > 0 ? number_format($suggest, 2, '.', '') : ''));
   @endphp
   <div class="card">
@@ -88,7 +89,7 @@
           @if ($suggest > 0)
             <div class="hint">
               ยอดตั้งต้นจาก เกินงบ {{ number_format($overFull, 2) }} ×
-              {{ \App\Models\Salecar::OVER_BUDGET_DEDUCT_PERCENT }}% =
+              {{ $suggestPct }}% =
               <strong>{{ number_format($suggest, 2) }}</strong> — แก้ได้ถ้าต้องการหักเพิ่ม
             </div>
           @endif
