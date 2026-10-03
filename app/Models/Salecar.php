@@ -537,14 +537,31 @@ class Salecar extends Model
 	public const PRE_APPROVAL_CASES = ['b1_md', 'b2_gm'];
 
 	/**
-	 * อนุมัติแล้ว "ตรงกับข้อมูลปัจจุบัน" ไหม (mirror PurchaseOrderController::isApproved)
+	 * เคสเกินงบที่ผู้จัดการ "กรอกยอดที่ต้องหัก" แล้วส่งต่อขั้นสุดท้ายอนุมัติจบ (GM / MD ถ้า VIP)
+	 * b1_manager (ไม่ทะลุเพดาน) เข้าสายนี้ด้วยแล้ว — แต่ส่ง GM อย่างเดียว ไม่ CC md
+	 * (คนละเรื่องกับ isOverBudgetCeiling ที่ใช้ตัดสินคอมตัวรถ — b1_manager ยังได้คอมตัวรถตามเดิม)
+	 */
+	public const DEDUCT_FLOW_CASES = ['b1_manager', 'b1_md', 'b2_gm'];
+
+	/** เคสนี้ผู้จัดการต้องกรอกยอดหัก แล้วส่งต่อผู้อนุมัติขั้นสุดท้ายไหม */
+	public function usesDeductFlow(): bool
+	{
+		return in_array($this->approvalCase(), self::DEDUCT_FLOW_CASES, true);
+	}
+
+	/**
+	 * อนุมัติแล้ว "ตรงกับข้อมูลปัจจุบัน" ไหม (PurchaseOrderController::isApproved เรียกตัวนี้)
 	 * ต้อง eager load relation 'model' เพื่อความแม่นของเคส
+	 *
+	 * b1_manager : สายใหม่จบที่ GM — ใบเก่าที่ผู้จัดการอนุมัติจบไปแล้ว (ไม่มียอดหัก) ยังถือว่าอนุมัติ
+	 *              สายใหม่ผู้จัดการต้องกรอกยอดเสมอ ยอดหักจึงไม่ว่าง = รอ GM อยู่
 	 */
 	public function isApprovedNow(): bool
 	{
 		return match ($this->approvalCase()) {
 			'normal'         => (bool) $this->SMSignature,
-			'b1_manager'     => (bool) $this->ApprovalSignature,
+			'b1_manager'     => (bool) $this->GMApprovalSignature
+				|| ($this->ApprovalSignature && $this->approval_commission_deduct === null),
 			'b1_md', 'b2_gm' => (bool) $this->GMApprovalSignature,
 			default          => false,
 		};
@@ -620,7 +637,7 @@ class Salecar extends Model
 	/**
 	 * เคสอนุมัติ (brand-aware) — ตรรกะเดียวกับ PurchaseOrderController::approvalCase
 	 *  normal     = งบปกติ
-	 *  b1_manager = brand1/3 เกิน ≤ over_budget → manager (จบ)
+	 *  b1_manager = brand1/3 เกิน ≤ over_budget → manager กรอกยอดหัก (per_budget%) → GM อนุมัติจบ (ไม่ CC md)
 	 *  b1_md      = brand1/3 เกิน > over_budget → manager กรอกค่าคอมที่ได้ → GM อนุมัติจบ (CC md)
 	 *  b2_gm      = brand2/4 เกินงบ (ไม่มีเพดาน) → manager กรอกยอดหัก → GM อนุมัติจบ (CC md)
 	 *               brand 2 เลือก "ไม่หักเงิน VIP" ได้ → ส่ง MD อนุมัติจบแทน (CC gm) — ดู approval_is_vip
@@ -716,15 +733,25 @@ class Salecar extends Model
 	 */
 	public function usesApprovedCommission(): bool
 	{
-		return $this->approval_commission_deduct !== null
-			&& in_array($this->approvalCase(), ['b1_md', 'b2_gm'], true);
+		return $this->approval_commission_deduct !== null && $this->usesDeductFlow();
 	}
 
 	/** % ที่ใช้คิด "ยอดหักแนะนำ" ของเคสเกินเพดาน — เกินงบยอดเต็ม × % นี้ (แก้ตัวเลขที่เดียวจบ) */
 	public const OVER_BUDGET_DEDUCT_PERCENT = 10;
-	
+
 	/**
-	 * ยอดหักแนะนำที่ระบบเติมให้ในหน้ากรอกของผู้จัดการ = |เกินงบยอดเต็ม| × 10%
+	 * % ของยอดหักแนะนำ — ทะลุเพดาน = 10% ; ไม่ทะลุเพดาน (b1_manager) = per_budget ของรุ่น (รุ่นย่อยทับได้)
+	 * ตรงกับยอดชั่วคราวใน autoBalanceCommission() → ถ้าไม่มีใครแก้ ยอดคอมก่อน/หลังอนุมัติเท่าเดิม
+	 */
+	public function suggestedDeductPercent(): float
+	{
+		return $this->isOverBudgetCeiling()
+			? (float) self::OVER_BUDGET_DEDUCT_PERCENT
+			: $this->effectivePerBudget();
+	}
+
+	/**
+	 * ยอดหักแนะนำที่ระบบเติมให้ในหน้ากรอกของผู้จัดการ = |เกินงบยอดเต็ม| × suggestedDeductPercent()
 	 * "เกินงบยอดเต็ม" = balanceCampaign × 2 (คอลัมน์เก็บค่าที่หาร 2 ไว้แล้ว) — ตัวเดียวกับบรรทัด
 	 * "เกินงบ" ในไฟล์สรุปการขาย ; ผู้จัดการแก้ยอดเองได้ถ้าจะหักมากกว่านี้
 	 */
@@ -734,7 +761,7 @@ class Salecar extends Model
 		if ($balance >= 0) {
 			return 0.0;
 		}
-		return abs($balance * 2) * (self::OVER_BUDGET_DEDUCT_PERCENT / 100);
+		return abs($balance * 2) * ($this->suggestedDeductPercent() / 100);
 	}
 	
 	/**
@@ -836,6 +863,11 @@ class Salecar extends Model
 			if (in_array((int) $this->brand, [2, 4], true)) {
 				return 0.0;
 			}
+			// brand 3 : งบเหลือไม่เป็นค่าคอมเซลล์แล้ว → 0 (เกินงบยังหักตามปกติด้านล่าง)
+			// อยากเปิดคืน → ลบ block นี้ออก แล้ว brand 3 จะกลับไปใช้สูตรงบเหลือด้านล่างเหมือน brand 1
+			if ((int) $this->brand === 3) {
+				return 0.0;
+			}
 			// เคสงบปกติ: หัก "เก็บงบเพิ่มเติม" (running deduction) จากงบเต็มก่อน แล้วค่อยหาร 2 + เพดาน 2500
 			$full     = $balance * 2;
 			$absorbed = ExtraBudgetLedger::absorbedFor($this);
@@ -846,10 +878,7 @@ class Salecar extends Model
 		//  · ทะลุเพดาน (b1_md / b2_gm) : พรีวิวด้วยกติกาใหม่ 10% ให้ตรงกับยอดหักแนะนำที่ผู้จัดการจะกรอก
 		//  · ไม่ทะลุเพดาน (b1_manager) : ผู้จัดการอนุมัติจบเอง ไม่มีหน้ากรอกยอด → คงสูตรเดิม per_budget%
 		//    (รุ่นย่อย AT ทับรุ่นหลักเป็น 40% ได้)
-		$percent = $this->isOverBudgetCeiling()
-			? self::OVER_BUDGET_DEDUCT_PERCENT
-			: $this->effectivePerBudget();
-		return $balance * 2 * ($percent / 100);
+		return $balance * 2 * ($this->suggestedDeductPercent() / 100);
 	}
 
 	/**

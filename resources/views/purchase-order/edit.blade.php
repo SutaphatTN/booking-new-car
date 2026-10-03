@@ -62,8 +62,8 @@
         $apWaitingFor = null;
         if ($apPending) {
             $apWaitingFor = match ($saleCar->approvalCase()) {
-                // เกินเพดานทุกแบรนด์: ผู้จัดการกรอกยอดก่อน → ขั้นสุดท้าย GM (หรือ MD ถ้า VIP)
-                'b1_md', 'b2_gm' => $saleCar->ApprovalSignature
+                // เกินงบทุกเคส: ผู้จัดการกรอกยอดก่อน → ขั้นสุดท้าย GM (หรือ MD ถ้า VIP)
+                'b1_manager', 'b1_md', 'b2_gm' => $saleCar->ApprovalSignature
                     ? strtoupper($saleCar->finalApproverRole())
                     : 'ผู้จัดการ',
                 default => 'ผู้จัดการ',
@@ -2984,7 +2984,7 @@
                           {{-- ค่าคอมฝ่ายขายที่ผู้จัดการ/GM กรอกตอนอนุมัติ (เคสเกินเพดาน) + ยอดที่เหลือ
                                แก้ได้เฉพาะ admin — role อื่นไม่เห็นช่องนี้ ฟอร์มจึงไม่ส่งฟิลด์มา
                                และ update() จะไม่แตะค่าเดิม (ดู $request->has ใน PurchaseOrderController) --}}
-                          @php $usesDeduct = in_array($saleCar->approvalCase(), ['b1_md', 'b2_gm'], true); @endphp
+                          @php $usesDeduct = $saleCar->usesDeductFlow(); @endphp
                           @if ($userRole === 'admin' && $usesDeduct)
                             @php $deductLabel = $saleCar->approvalDeductLabel(); @endphp {{-- ใบใหม่ = ยอดหัก ทุกแบรนด์ --}}
                             <div class="col-12">

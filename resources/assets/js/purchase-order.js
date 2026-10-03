@@ -3224,7 +3224,9 @@ function calculateCommissionSale() {
 
   if (balanceCam >= 0) {
     // brand 2/4 : งบเหลือไม่คิดเป็นค่าคอมเซลล์ → 0 (เกินงบถึงจะคิด: −D ที่ GM อนุมัติ ในบล็อก else)
-    if (isB2Style) {
+    // brand 3 : งบเหลือไม่เป็นค่าคอมเซลล์แล้ว → 0 (ตรงกับ Salecar::autoBalanceCommission)
+    //   อยากเปิดคืน → เอา `|| saleBrand === 3` ออก
+    if (isB2Style || saleBrand === 3) {
       balanceCam = 0;
     } else {
       const full = balanceCam * 2;
@@ -3234,7 +3236,8 @@ function calculateCommissionSale() {
   } else {
     // เกินเพดาน: เทียบ "ยอดเต็ม" (×2) กับ over_budget (brand 2/4 = เกินเสมอ)
     const isOverCeiling = isB2Style || Math.abs(balanceCam) * 2 > overBudget;
-    if (isOverCeiling && managerDeduct !== null && !isNaN(managerDeduct)) {
+    // เกินงบทุกเคส (รวมไม่ทะลุเพดาน) ผู้จัดการกรอกยอดหักแล้ว → ใช้ยอดนั้น (ตรงกับ Salecar::usesApprovedCommission)
+    if (managerDeduct !== null && !isNaN(managerDeduct)) {
       // ใช้ยอดผู้จัดการแทนสูตร → คอมงบเหลือเป็น 0 แล้วไปโชว์ที่ช่อง "คอมที่ได้ / ยอดหักค่าคอม"
       usesApproved = true;
       approvedCom = approvalIsDeduct || isB2Style ? -managerDeduct : managerDeduct;
@@ -4391,15 +4394,14 @@ document.addEventListener('DOMContentLoaded', function () {
       currentCase = Math.abs(balanceCam) * 2 <= overBudgetVal ? 'b1_manager' : 'b1_md';
     }
 
-    // เปิดปุ่มขออนุมัติให้ตรงเคส — งบปกติใช้ปุ่มเดียว ส่วนเกินงบต้องบอกด้วยว่าวิ่งเข้าใคร (manager/GM)
-    //  - b1_manager (brand 1/3 เกินไม่ทะลุเพดาน) → ผู้จัดการอนุมัติจบ
-    //  - b1_md (ทะลุเพดาน) / b2_gm (brand 2) → เข้าสาย GM
+    // เปิดปุ่มขออนุมัติให้ตรงเคส — งบปกติใช้ปุ่มเดียว เกินงบทุกเคสเข้าสาย GM แล้ว
+    //  (b1_manager ไม่ทะลุเพดาน : ผู้จัดการกรอกยอดหัก → GM อนุมัติจบ เหมือน b1_md / b2_gm)
     const revealRequestButton = () => {
       if (currentCase === 'normal') {
         btnRequestNormal.classList.remove('d-none');
         return;
       }
-      const toGm = currentCase !== 'b1_manager';
+      const toGm = true;
       btnRequestOverBudget.classList.remove('d-none');
       btnRequestOverBudget.dataset.level = toGm ? 'gm' : 'manager';
       btnRequestOverBudget.textContent = toGm ? 'ขออนุมัติเกินงบ (GM)' : 'ขออนุมัติเกินงบ';

@@ -386,10 +386,11 @@ class PurchaseOrderController extends Controller
 
     // เคสอนุมัติ (brand-aware) — ทุกแบรนด์เริ่มที่ "ผู้จัดการ" เหมือนกันหมด:
     //  normal     = งบปกติ → manager (จบ)
-    //  b1_manager = brand1/3 เกิน ≤ over_budget → manager (จบ)
+    //  b1_manager = brand1/3 เกิน ≤ over_budget → manager กรอกยอดที่ต้องหัก → GM อนุมัติจบ (ไม่ CC md)
     //  b1_md      = brand1/3 เกิน > over_budget → manager กรอกยอดที่ต้องหัก → GM อนุมัติจบ (CC ให้ md)
     //  b2_gm      = brand2/4 เกินงบ (ไม่มีเพดาน) → manager กรอกยอดที่ต้องหัก → GM อนุมัติจบ (CC ให้ md)
-    //  ยอดที่กรอก ระบบเติมค่าตั้งต้นให้ = เกินงบยอดเต็ม × 10% (Salecar::suggestedCommissionDeduct) แก้เพิ่มได้
+    //  ยอดที่กรอก ระบบเติมค่าตั้งต้นให้ = เกินงบยอดเต็ม × 10% (ไม่ทะลุเพดาน = per_budget% ของรุ่น)
+    //               (Salecar::suggestedCommissionDeduct) แก้เพิ่มได้
     //               brand 2 เลือก "ไม่หักเงิน VIP" ได้ → ส่ง MD อนุมัติจบแทน (CC ให้ gm)
     //  brand 3 ใช้ logic เดียวกับ brand 1 (ไม่มี over_budget → เกินงบทุกกรณีจะได้ b1_md เสมอ)
     private function approvalCase(Salecar $saleCar): string
@@ -399,14 +400,10 @@ class PurchaseOrderController extends Controller
     }
 
     // signature ที่ถือว่า "อนุมัติครบ" ตามเคส (ใช้ gate การผูกรถ + ปลดล็อก save)
+    // ตรรกะรวมไว้ที่ Salecar::isApprovedNow() (b1_manager มีกติกาใบเก่าที่ผู้จัดการอนุมัติจบไปแล้ว)
     private function isApproved(Salecar $saleCar): bool
     {
-        return match ($this->approvalCase($saleCar)) {
-            'normal'     => (bool) $saleCar->SMSignature,
-            'b1_manager' => (bool) $saleCar->ApprovalSignature,
-            'b1_md', 'b2_gm' => (bool) $saleCar->GMApprovalSignature,
-            default      => false,
-        };
+        return $saleCar->isApprovedNow();
     }
 
     // role ผู้อนุมัติด่านแรก — ทุกเคส/ทุกแบรนด์เริ่มที่ผู้จัดการเสมอ
@@ -500,6 +497,10 @@ class PurchaseOrderController extends Controller
     //  - กันซ้ำกับ To ที่ส่ง (เช่น danut เป็น md อยู่แล้วในเมลส่งต่อ → เหลือ CC แค่ ketsudap)
     private function overBudgetCc(Salecar $saleCar, array $to = []): array
     {
+        // เกินงบไม่ทะลุเพดาน (b1_manager) → GM อนุมัติคนเดียว ไม่ส่งให้ md
+        if ($this->approvalCase($saleCar) === 'b1_manager') {
+            return [];
+        }
         if ((int) $saleCar->brand === 2) {
             $cc = ['ketsudap@chookiat.org', 'danut@chookiat.org'];
         } else {
@@ -526,6 +527,7 @@ class PurchaseOrderController extends Controller
     }
 
     // อีเมลขั้นถัดไป (ผู้อนุมัติขั้นสุดท้าย) พร้อมข้อมูล+ไฟล์ทั้งสอง
+    //  - b1_manager (brand 1/3)  : ส่งต่อ GM อย่างเดียว (ไม่มี MD)
     //  - b1_md (brand 1/3)       : ส่งต่อ GM (MD ได้ลิงก์อนุมัติด้วย)
     //  - b2_gm ปกติ (brand 2/4)  : ส่งต่อ GM (MD ได้ลิงก์อนุมัติด้วย)
     //  - b2_gm VIP (brand 2)     : ส่งต่อ MD (GM ได้ลิงก์อนุมัติด้วย)
@@ -658,10 +660,10 @@ class PurchaseOrderController extends Controller
 
         switch ($case) {
             case 'normal':
-            case 'b1_manager':
                 // ผู้จัดการกดยืนยัน (ไม่ต้องกรอกหัก)
                 return view('purchase-order.approval-manager', ['saleCar' => $saleCar, 'token' => $token, 'showDeduct' => false]);
 
+            case 'b1_manager':
             case 'b1_md':
             case 'b2_gm':
                 // ผู้จัดการกรอกยอด (b2_gm ของ brand 2 เลือก "ไม่หักเงิน VIP" ได้) → ส่งต่อขั้นสุดท้าย
@@ -683,7 +685,7 @@ class PurchaseOrderController extends Controller
         }
     }
 
-    // ผู้จัดการกดอนุมัติ — normal/b1_manager: กดยืนยัน | b1_md/b2_gm: กรอกยอด → ส่งต่อขั้นสุดท้าย
+    // ผู้จัดการกดอนุมัติ — normal: กดยืนยัน | b1_manager/b1_md/b2_gm: กรอกยอด → ส่งต่อขั้นสุดท้าย
     public function managerApprove(Request $request, $token)
     {
         ScopeBypass::$brand = true; // ผู้อนุมัติอาจล็อกอินคนละ brand → ปิด BrandScope ทั้ง request
@@ -698,11 +700,7 @@ class PurchaseOrderController extends Controller
                 $saleCar->update(['SMSignature' => 1, 'SMCheckedDate' => $today]);
                 $this->notifyApproved($saleCar);
                 return 'อนุมัติเรียบร้อย (ผู้จัดการ – อนุมัติการขาย)';
-            } elseif ($case === 'b1_manager') {
-                $saleCar->update(['ApprovalSignature' => 1, 'ApprovalSignatureDate' => $today]);
-                $this->notifyApproved($saleCar);
-                return 'อนุมัติเรียบร้อย (ผู้จัดการ – เกินงบ ไม่เกินเพดาน)';
-            } elseif ($case === 'b1_md' || $case === 'b2_gm') {
+            } elseif ($saleCar->usesDeductFlow()) {
                 // brand 2 เท่านั้นที่เลือก "ไม่หักเงิน VIP" ได้ → ข้ามการกรอกยอด แล้วส่งให้ MD อนุมัติจบ
                 $isVip = $saleCar->allowsVipChoice() && $request->input('decision') === 'vip';
 
@@ -769,9 +767,8 @@ class PurchaseOrderController extends Controller
             ]);
         }
 
-        $case = $this->approvalCase($saleCar);
-        // ทุกเคสเกินเพดานผ่านมือผู้จัดการมาก่อนแล้ว → ผู้อนุมัติขั้นสุดท้ายแก้ยอด/ส่งกลับได้เหมือนกันหมด
-        $canRevise = in_array($case, ['b1_md', 'b2_gm'], true);
+        // ทุกเคสเกินงบ (รวมไม่ทะลุเพดาน) ผ่านมือผู้จัดการมาก่อนแล้ว → ผู้อนุมัติขั้นสุดท้ายแก้ยอด/ส่งกลับได้เหมือนกันหมด
+        $canRevise = $saleCar->usesDeductFlow();
         $approverLabel = $this->finalApproverLabel($saleCar); // GM (ปกติ) | MD (VIP)
 
         // ── ผู้อนุมัติขั้นสุดท้ายตีกลับให้ผู้จัดการกรอกยอดใหม่ ──
@@ -860,10 +857,8 @@ class PurchaseOrderController extends Controller
 
         $request->validate(['return_reason' => 'nullable|string|max:1000']);
 
-        $case = $this->approvalCase($saleCar);
-
-        // ขั้นปัจจุบัน — ดูจากลายเซ็น "ก่อน" รีเซ็ต (เกินเพดานทุกเคส: ผู้จัดการ → ขั้นสุดท้าย)
-        $stage = (in_array($case, ['b1_md', 'b2_gm'], true) && $saleCar->ApprovalSignature)
+        // ขั้นปัจจุบัน — ดูจากลายเซ็น "ก่อน" รีเซ็ต (เกินงบทุกเคส: ผู้จัดการ → ขั้นสุดท้าย)
+        $stage = ($saleCar->usesDeductFlow() && $saleCar->ApprovalSignature)
             ? 'final'
             : 'manager';
 
