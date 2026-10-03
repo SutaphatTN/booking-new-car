@@ -157,7 +157,8 @@ function recomputeCommissionNet() {
   const num = id => parseMoney($('#' + id).val());
   const base = parseFloat($display.data('base')) || 0;
   const brand = parseInt($display.data('brand'), 10) || 0;
-  const ssi = parseFloat($display.data('ssi')) || 0; // คอม SSI (คิดสดจาก server) รวมเข้ายอด
+  // คอม SSI รวมเข้ายอด — เดือนที่กรอกเอง (มีช่อง #com_ssi) อ่านสดจากช่อง ; นอกนั้นใช้ยอดจาก server
+  const ssi = $('#com_ssi').length ? num('com_ssi') : parseFloat($display.data('ssi')) || 0;
   const car = parseFloat($display.data('car')) || 0; // คอมตัวรถรายคัน (คิดสดจาก server)
   const held = parseFloat($display.data('held')) || 0; // คอมกั๊ก brand 1 = (ยกมา) − (กั๊กเดือนนี้)
 
@@ -329,7 +330,8 @@ $(document).on('submit', '#commissionMonthlyForm', function (e) {
     'deduct_other',
     'com_lead',
     'com_clip',
-    'com_accessory_sold'
+    'com_accessory_sold',
+    'com_ssi'
   ];
   const payload = $(this)
     .serializeArray()

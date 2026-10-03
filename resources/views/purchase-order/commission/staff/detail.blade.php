@@ -105,15 +105,32 @@
                       value="{{ number_format($e['value'], 2) }}" {{ $ro }}>
                   @endif
                 </div>
+                @if (!empty($e['note_required']))
+                  {{-- หมายเหตุของช่องนี้ — บังคับกรอกเมื่อยอดไม่เป็น 0 (server ตรวจซ้ำ) --}}
+                  <div class="col-md-6 col-12">
+                    <label class="mf-label form-label" for="extra_note_{{ $e['key'] }}">
+                      <i class="bx bx-note text-secondary"></i> หมายเหตุ{{ $e['label'] }}
+                      <span class="text-danger">*</span> <span class="text-muted small">(ต้องกรอกเมื่อมียอด)</span>
+                    </label>
+                    <input type="text" class="form-control form-control-sm" maxlength="255"
+                      id="extra_note_{{ $e['key'] }}" name="extra_notes[{{ $e['key'] }}]"
+                      data-amount-for="#extra_{{ $e['key'] }}" data-label="{{ $e['label'] }}"
+                      value="{{ $e['note_value'] ?? '' }}" placeholder="ระบุที่มาของ{{ $e['label'] }}" {{ $ro }}>
+                  </div>
+                @endif
               @endforeach
 
-              <div class="col-md-{{ 12 - count($data['extras']) * 3 }} col-12">
-                <label for="staff_note" class="mf-label form-label">
-                  <i class="bx bx-note text-secondary"></i> หมายเหตุ
-                </label>
-                <input type="text" class="form-control form-control-sm" id="staff_note" name="note" maxlength="255"
-                  value="{{ $data['note'] ?? '' }}" placeholder="ระบุเพิ่มเติมถ้ามี" {{ $ro }}>
-              </div>
+              {{-- หมายเหตุทั่วไป — ซ่อนเมื่อมีช่องที่มีหมายเหตุคู่อยู่แล้ว (เช่น ค่าคอมอื่นๆ) กันซ้ำซ้อน
+                   ไม่ส่ง name="note" มา → controller คงค่าเดิมไว้ ไม่ล้าง --}}
+              @unless (collect($data['extras'])->contains(fn($e) => !empty($e['note_required'])))
+                <div class="col-md-{{ 12 - count($data['extras']) * 3 }} col-12">
+                  <label for="staff_note" class="mf-label form-label">
+                    <i class="bx bx-note text-secondary"></i> หมายเหตุ
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="staff_note" name="note" maxlength="255"
+                    value="{{ $data['note'] ?? '' }}" placeholder="ระบุเพิ่มเติมถ้ามี" {{ $ro }}>
+                </div>
+              @endunless
             </div>
           @endif
 

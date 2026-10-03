@@ -44,6 +44,14 @@ class StaffCommissionSummary implements FromView, WithTitle, WithStyles, WithEve
                 ->map(fn($b) => $b['name'] . ' ' . number_format($b['count']) . ' คัน')
                 ->implode(' / ') ?: '-';
 
+            // หมายเหตุ = หมายเหตุของรายการที่มียอด (เช่น ค่าคอมอื่นๆ) + หมายเหตุทั่วไป
+            $notes = collect($d['extras'] ?? [])
+                ->filter(fn($e) => !empty($e['note_required']) && (float) $e['amount'] != 0 && ($e['note_value'] ?? '') !== '')
+                ->map(fn($e) => $e['label'] . ' ' . number_format((float) $e['amount'], 2) . ': ' . $e['note_value'])
+                ->push($d['note'] ?? '')
+                ->filter()
+                ->implode(' / ');
+
             $rows[] = [
                 $r['name'],
                 $d['label'],
@@ -51,7 +59,7 @@ class StaffCommissionSummary implements FromView, WithTitle, WithStyles, WithEve
                 (float) $d['car_total'],
                 (float) $d['extra_total'],
                 (float) $d['total'],
-                $d['note'] ?? '',
+                $notes,
             ];
 
             $sumCar   += (float) $d['car_total'];

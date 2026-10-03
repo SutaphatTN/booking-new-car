@@ -40,13 +40,68 @@ class CarCommissionQuery
     /** เรตต่อคัน จากตาราง (เกินแถวสุดท้าย = ใช้แถวสุดท้าย) — ใช้กับ brand ที่มีเป้า */
     public static function rate(int $brand, int $count, bool $achieved): float
     {
-        $table = config("car_commission.rates.$brand", []);
+        return self::rateFromTable(config("car_commission.rates.$brand", []), $count, $achieved);
+    }
+
+    /** เรตต่อคันจากตาราง [จำนวนคัน => [ไม่บรรลุ, บรรลุ]] (เกินแถวสุดท้าย = ใช้แถวสุดท้าย) */
+    private static function rateFromTable(array $table, int $count, bool $achieved): float
+    {
         if (empty($table) || $count < 1) {
             return 0.0;
         }
         $maxRow = max(array_keys($table));
         $row = $table[min($count, $maxRow)] ?? [0, 0];
         return (float) ($achieved ? ($row[1] ?? 0) : ($row[0] ?? 0));
+    }
+
+    /**
+     * เรตแยกรายสาขาของเดือนนี้ (config car_commission.branch_rates) คิดเป็น "ยอดต่อคัน" พร้อมใช้
+     *  - rates  : หาแถวจาก $count (รถทุกรุ่นของเซลล์)
+     *  - groups : หาแถวจากจำนวนรถในกลุ่มนั้นของเซลล์เท่านั้น ($cars)
+     * @return array<int, array{rate:float, models:array, groups:array}>  branch => กติกา
+     */
+    private static function branchRatesFor(int $brand, int $year, int $month, int $count, bool $achieved, Collection $cars): array
+    {
+        $ym  = sprintf('%04d-%02d', $year, $month);
+        $out = [];
+        foreach ((array) config("car_commission.branch_rates.$brand", []) as $branch => $cfg) {
+            if (!empty($cfg['from']) && $ym < $cfg['from']) {
+                continue;
+            }
+            $out[(int) $branch] = [
+                'rate'   => self::rateFromTable((array) ($cfg['rates'] ?? []), $count, $achieved),
+                'models' => array_map('floatval', (array) ($cfg['model_rates'] ?? [])),
+                'groups' => array_map(function ($g) use ($cars, $achieved) {
+                    $models = array_map('intval', (array) ($g['models'] ?? []));
+                    $groupCount = $cars->filter(fn($c) => in_array((int) $c->model_id, $models, true))->count();
+                    return [
+                        'models' => $models,
+                        'rate'   => self::rateFromTable((array) ($g['rates'] ?? []), $groupCount, $achieved),
+                    ];
+                }, (array) ($cfg['groups'] ?? [])),
+            ];
+        }
+        return $out;
+    }
+
+    /** ยอดต่อคันของรถ 1 คันในโหมด volume — สาขาที่มีเรตแยก ดูตามรุ่น ; นอกนั้นใช้เรตปกติของ entry */
+    private static function volumeRateForCar($car, array $entry): float
+    {
+        $rule = $entry['branchRates'][(int) ($car->branch ?? 0)] ?? null;
+        if (!$rule) {
+            return (float) ($entry['rate'] ?? 0);
+        }
+
+        $modelId = $car->model_id !== null ? (int) $car->model_id : null;
+        if ($modelId !== null && isset($rule['models'][$modelId])) {
+            return (float) $rule['models'][$modelId];
+        }
+        foreach ($rule['groups'] as $g) {
+            if (in_array($modelId, $g['models'], true)) {
+                return (float) $g['rate'];
+            }
+        }
+        return (float) $rule['rate'];
     }
 
     /** เรตต่อคัน "ตามรุ่นหลัก" (model_id) */
@@ -78,7 +133,7 @@ class CarCommissionQuery
 
         return ($entry['mode'] ?? 'volume') === 'model'
             ? self::modelRate((int) $car->brand, $car->model_id !== null ? (int) $car->model_id : null)
-            : (float) ($entry['rate'] ?? 0);
+            : self::volumeRateForCar($car, $entry);
     }
 
     /**
@@ -137,7 +192,8 @@ class CarCommissionQuery
             // ทำให้กติกา "รถแบบไหนได้คอม" มี 2 ชุดต้องแก้พร้อมกัน พลาดทีเดียวคอมตัวรถกับคอมพื้นฐานไม่ตรงกัน
             ->salesQualifying()
             // DeliveryInCKDate : ใช้เทียบวันตัดใน earnsCarCommission()
-            ->get(['id', 'SaleID', 'brand', 'model_id', 'balanceCampaign', 'DeliveryInCKDate']);
+            // branch : เรตแยกรายสาขา (config car_commission.branch_rates)
+            ->get(['id', 'SaleID', 'brand', 'branch', 'model_id', 'balanceCampaign', 'DeliveryInCKDate']);
 
         if ($cars->isEmpty()) {
             return self::$memo[$key] = array_merge($empty, ['active' => true]);
@@ -166,8 +222,8 @@ class CarCommissionQuery
 
         // แยกคอมตาม (SaleID + brand) — เซลล์ที่ขายหลาย brand (เช่น brand 3 ใช้ทีมขายร่วมกับ brand 1)
         // จะได้คอมของแต่ละ brand แยกกัน ไม่ปนกัน → perSale[SaleID][brand]
-        $perSale = $cars->groupBy('SaleID')->map(function (Collection $g) use ($achievedByBrand, $hasTargetByBrand) {
-            return $g->groupBy('brand')->map(function (Collection $bg) use ($achievedByBrand, $hasTargetByBrand) {
+        $perSale = $cars->groupBy('SaleID')->map(function (Collection $g) use ($achievedByBrand, $hasTargetByBrand, $year, $month) {
+            return $g->groupBy('brand')->map(function (Collection $bg) use ($achievedByBrand, $hasTargetByBrand, $year, $month) {
                 $brand = (int) $bg->first()->brand;
                 $count = $bg->count();
 
@@ -195,16 +251,21 @@ class CarCommissionQuery
                 $achieved = (bool) ($achievedByBrand[$brand] ?? false);
                 $rate     = self::rate($brand, $count, $achieved);
 
-                return [
-                    'brand'     => $brand,
-                    'mode'      => 'volume',
-                    'count'     => $count,
-                    'paidCount' => $paidCount,
-                    'achieved'  => $achieved,
-                    'hasTarget' => (bool) ($hasTargetByBrand[$brand] ?? false),
-                    'rate'      => $rate,
-                    'amount'    => $rate * $paidCount,
+                $entry = [
+                    'brand'       => $brand,
+                    'mode'        => 'volume',
+                    'count'       => $count,
+                    'paidCount'   => $paidCount,
+                    'achieved'    => $achieved,
+                    'hasTarget'   => (bool) ($hasTargetByBrand[$brand] ?? false),
+                    'rate'        => $rate,   // เรตปกติ (สาขาที่ไม่มีเรตแยก)
+                    // เรตแยกรายสาขา — เป้าตัวเดียวกัน ; กลุ่มรุ่น (ORA 5) นับคันเฉพาะกลุ่มตัวเอง
+                    'branchRates' => self::branchRatesFor($brand, $year, $month, $count, $achieved, $bg),
                 ];
+                // ยอดรวม = ผลรวมยอดต่อคัน (คันสาขาที่มีเรตแยกได้ไม่เท่ากันตามรุ่น)
+                $entry['amount'] = (float) $paidCars->sum(fn($c) => self::volumeRateForCar($c, $entry));
+
+                return $entry;
             });
         });
 

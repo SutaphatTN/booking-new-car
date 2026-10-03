@@ -313,7 +313,7 @@ class HeldCommissionQuery
             ->salesQualifying()
             ->where('DeliveryInCKDate', '<', $ckEnd)
             ->whereBetween('DeliveryDate', [$ddFrom, $ddTo])
-            ->get(['id', 'SaleID', 'DeliveryInCKDate', 'DeliveryDate', 'model_id', 'brand', 'balanceCampaign']);
+            ->get(['id', 'SaleID', 'DeliveryInCKDate', 'DeliveryDate', 'model_id', 'brand', 'branch', 'balanceCampaign']);
 
         $ckCache = [];
         return $cars->map(function ($r) use (&$ckCache, $pay20) {

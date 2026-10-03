@@ -2,12 +2,17 @@
 
 namespace App\Services;
 
+use App\Models\SaleCommissionMonthly;
 use App\Models\SsiRecord;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 /**
- * คอมค่าครึ่งปี (SSI) — เฉพาะ brand 1 — จ่ายปีละ 2 ครั้ง: เดือน 3 และ เดือน 10
+ * คอม SSI — เฉพาะ brand 1
+ *
+ * ตั้งแต่ MANUAL_FROM (2026-09) : เลิกคิดอัตโนมัติ — ผู้จัดการ/GM กรอกยอดเองรายเซลล์ เฉพาะเดือน 9
+ * ด้านล่างคือสูตรอัตโนมัติเดิม (ใช้กับรอบก่อน MANUAL_FROM) — จ่ายปีละ 2 ครั้ง: เดือน 3 และ เดือน 10
  *  - เดือน 3  : นับยอดส่งมอบ ต.ค.(ปีก่อน)–มี.ค. (DeliveryInCKDate, คำนวณข้ามปี)
  *  - เดือน 10 : นับยอดส่งมอบ เม.ย.–ก.ย.
  *
@@ -43,10 +48,61 @@ class SsiCommissionQuery
             : self::BRANCH_HQ;
     }
 
-    /** คอม SSI จ่ายเฉพาะเดือน 3 และ 10 */
-    public static function isPayoutMonth(int $month): bool
+    /**
+     * ตั้งแต่เดือนนี้ (YYYY-MM) เลิกคิด SSI อัตโนมัติ → ผู้จัดการ/GM "กรอกยอดเอง" รายเซลล์
+     * (เก็บที่ sale_commission_monthly.com_ssi) และกรอกได้เฉพาะเดือนใน MANUAL_MONTHS
+     * รอบก่อนหน้านี้ (เช่น 3/2026) ยังคิดอัตโนมัติเหมือนเดิม — ยอดที่จ่ายไปแล้วไม่ขยับ
+     */
+    public const MANUAL_FROM   = '2026-09';
+    public const MANUAL_MONTHS = [9];
+
+    /** รอบ (year, month) นี้ใช้แบบกรอกเองไหม */
+    public static function isManualPeriod(int $year, int $month): bool
     {
+        return sprintf('%04d-%02d', $year, $month) >= self::MANUAL_FROM;
+    }
+
+    /** เดือนนี้มีคอม SSI ไหม — แบบกรอกเอง = MANUAL_MONTHS ; แบบอัตโนมัติ (รอบเก่า) = เดือน 3 และ 10 */
+    public static function isPayoutMonth(int $month, ?int $year = null): bool
+    {
+        if ($year !== null && self::isManualPeriod($year, $month)) {
+            return in_array($month, self::MANUAL_MONTHS, true);
+        }
         return in_array($month, [3, 10], true);
+    }
+
+    /** มีคอลัมน์ com_ssi แล้วหรือยัง (กันพังถ้า deploy โค้ดก่อนรัน ALTER TABLE) */
+    public static function hasManualColumn(): bool
+    {
+        static $has = null;
+
+        return $has ??= Schema::hasColumn('sale_commission_monthly', 'com_ssi');
+    }
+
+    /**
+     * SSI แบบกรอกเอง ของรอบ (year, month) — โครงเดียวกับ forPeriod เพื่อให้ผู้เรียกเดิมใช้ต่อได้เลย
+     * perSale : SaleID => ['amount', 'manual' => true]
+     */
+    private static function manualForPeriod(int $year, int $month): array
+    {
+        $active = in_array($month, self::MANUAL_MONTHS, true);
+
+        $perSale = ($active && self::hasManualColumn())
+            ? SaleCommissionMonthly::where('year', $year)
+            ->where('month', $month)
+            ->where('com_ssi', '>', 0)
+            ->get(['SaleID', 'com_ssi'])
+            ->mapWithKeys(fn($r) => [(int) $r->SaleID => ['amount' => (float) $r->com_ssi, 'manual' => true]])
+            : collect();
+
+        return [
+            'active'     => $active,
+            'manual'     => true,
+            'window'     => [null, null],
+            'car_count'  => 0,
+            'branchRate' => collect(),
+            'perSale'    => $perSale,
+        ];
     }
 
     public static function rate(float $averagePercent): float
@@ -103,6 +159,11 @@ class SsiCommissionQuery
      */
     public static function forPeriod(int $year, int $month): array
     {
+        // ตั้งแต่ MANUAL_FROM : ยอดกรอกเอง (สูตรอัตโนมัติด้านล่างเก็บไว้ใช้กับรอบเก่า/เผื่อเปิดคืน)
+        if (self::isManualPeriod($year, $month)) {
+            return self::manualForPeriod($year, $month);
+        }
+
         $empty = [
             'active'     => false,
             'window'     => [null, null],

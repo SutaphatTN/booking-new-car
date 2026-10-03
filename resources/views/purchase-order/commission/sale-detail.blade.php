@@ -4,7 +4,7 @@
   // (เดิมฟอร์ม brand 4 โชว์ช่อง วินัย/lead/clip แบบ brand 2 ทั้งที่ computeNet ไม่เอามาคิด → กรอกแล้วยอดไม่ขยับ)
   $isBrand13 = in_array((int) $brand, [1, 3, 4], true);
   // คอลัมน์ "budget หัก" ผูกกับระบบ budget ไม่ใช่แค่ brand 2 — เดือนที่เลิกใช้ budget แล้วต้องไม่มีคอลัมน์นี้
-  $showBudgetCol = (int) $brand === 2 && ($budget["active"] ?? false);
+  $showBudgetCol = (int) $brand === 2 && ($budget['active'] ?? false);
   // audit_lead / audit_dp = ดูอย่างเดียว (ไม่มีปุ่มบันทึก + ทุกช่องเป็น readonly/disabled)
   $canEdit = $canEdit ?? true;
   $roInput = $canEdit ? '' : 'readonly';
@@ -279,8 +279,7 @@
                         <i class="bx bx-error-circle"></i> เกินงบทะลุเพดาน
                       </div>
                     @elseif (!empty($c['isOverBudget']))
-                      <div class="text-warning cell-note"
-                        title="ใบนี้เกินงบ (งบเหลือติดลบ) — ยังได้คอมตัวรถเต็ม">
+                      <div class="text-warning cell-note" title="ใบนี้เกินงบ (งบเหลือติดลบ) — ยังได้คอมตัวรถเต็ม">
                         <i class="bx bx-error-circle"></i> เกินงบ
                       </div>
                     @endif
@@ -549,7 +548,8 @@
                     @endif
                     <div class="receipt-name">{{ $f['name'] ?? '' }}</div>
                     @if ($canEdit)
-                      <button type="button" class="receipt-x btn-remove-receipt" title="ลบ"><i class="bx bx-x"></i></button>
+                      <button type="button" class="receipt-x btn-remove-receipt" title="ลบ"><i
+                          class="bx bx-x"></i></button>
                     @endif
                   </div>
                 @endforeach
@@ -588,14 +588,32 @@
             </div>
           @endif
 
-          {{-- ── คอม SSI (brand 1 เดือน 3/10) — เฉลี่ยแยกสาขา + เกณฑ์ ≥18 คัน/≥1 ทุกเดือน ── --}}
-          @if ($ssi['active'])
+          {{-- ── คอม SSI แบบกรอกเอง (brand 1 เดือน 9 ตั้งแต่ 2026-09 — ดู SsiCommissionQuery::MANUAL_FROM) ── --}}
+          @if ($ssi['active'] && !empty($ssi['manual']))
+            <div
+              class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3">
+              <div class="small">
+                <i class="bx bx-award me-1"></i>
+                <strong>คอม SSI</strong> — กรอกยอดเอง (รวมเข้ายอดค่าคอมสุทธิ)
+                @unless ($ssi['can_input'])
+                  <div class="text-danger mt-1">ยังกรอกไม่ได้ — รอเพิ่มคอลัมน์ com_ssi ในฐานข้อมูล</div>
+                @endunless
+              </div>
+              <div style="min-width:160px;">
+                <input type="text" inputmode="decimal" class="form-control form-control-sm text-end cmoney"
+                  id="com_ssi" name="com_ssi" value="{{ $ssiAmount }}" placeholder="0"
+                  {{ $ssi['can_input'] ? $roInput : 'readonly' }}>
+              </div>
+            </div>
+
+            {{-- ── คอม SSI อัตโนมัติ (รอบเก่า brand 1 เดือน 3/10) — เฉลี่ยแยกสาขา + เกณฑ์ ≥18 คัน/≥1 ทุกเดือน ── --}}
+          @elseif ($ssi['active'])
             @php $ssiOk = $ssi['eligible']; @endphp
             <div
               class="alert {{ $ssiOk ? 'alert-info' : 'alert-secondary' }} d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-0 py-2 px-3">
               <div class="small">
                 <i class="bx bx-award me-1"></i>
-                <strong>คอมค่าครึ่งปี (SSI)</strong>
+                <strong>คอม SSI</strong>
                 — SSI เฉลี่ยสาขา <strong>{{ $ssi['branch'] ?? '-' }}</strong>
                 <strong>{{ $ssi['average'] !== null ? number_format($ssi['average'], 2) . '%' : '-' }}</strong>
                 → เรต <strong>{{ number_format($ssi['rate'], 0) }}</strong>/คัน
